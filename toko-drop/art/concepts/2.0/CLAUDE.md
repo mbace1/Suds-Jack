@@ -12,6 +12,7 @@
 - `world-5/05-boiler-modules-APPROVED.png` (+ arena complete)
 - `world-6/06-river-modules-APPROVED.png` (+ arena complete)
 - `world-7/07-ice-modules-APPROVED.png` (+ arena complete)
+- `world-8/08-deep-modules-APPROVED.png` (+ arena complete)
 
 Shape from art; style from LOOK.md picker.
 

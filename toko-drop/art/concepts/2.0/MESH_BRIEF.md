@@ -14,4 +14,6 @@ Mesh NOW (APPROVED only):
 
 - World 7: `world-7/07-ice-modules-APPROVED.png` — ~56×34 m; ice/frost/floe.
 
+- World 8: `world-8/08-deep-modules-APPROVED.png` — ~48×32 m; silt/biolum/kelp.
+
 Do not mesh `elements/`, `modules/`, `pending/`, or `*-more-*` / arena complete pieces until APPROVED.
