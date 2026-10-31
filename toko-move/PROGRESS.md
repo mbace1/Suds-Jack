@@ -1,5 +1,5 @@
 # PROGRESS — Toko Move
-**Updated:** 2026-10-25 22:13 EET  
+**Updated:** 2026-10-31 10:16 EET  
 **Lane:** Helsinki content first (main focus), store in parallel, Nagoya later  
 **Owner direction:** ROADMAP.md (2026-10-24) — publish Toko Move first.  
 **Priority (2026-10-25, clarified):**
@@ -14,15 +14,17 @@ Make the Helsinki map a real, polished, mobile-first game that is easy to start 
 - v2.64–v2.67: network, packaging, stranger first minutes, Finnish draft, ship bar. On main.
 - Walking, events, hand-offs, regulars, kit, week+rent, rival, city days exist.
 - City pipeline is data-driven. Helsinki is the only playable city. Nagoya / New York / Tokyo are planned (CAMPAIGN.md).
+- **Mobile clarity pass started (2026-10-31):** first job now shows a short instructional hint (“Tap a job below. Then tap the lit tram to board.”) and the first available offer is marked primary (stronger border/background). Job rows raised to 56 px on narrow screens. No gameplay change.
 
 ## Next
 **Main focus — Helsinki content (mobile first):**
-1. UI clarity + touch pass on phone: obvious targets, short instructions that fade, less basic feel. Measure on a real phone first.
-2. Unlockable missions and progression.
-3. More ways to move and real strategic differences.
-4. Bigger inventory that changes decisions.
-5. Other challenge types beyond the basic three-delivery shift.
-6. Tablet layout and touch only after the phone version feels good.
+1. **Real-phone measurement** of the new hint + primary row. Confirm the next tap is obvious and targets feel good.
+2. Further UI clarity if the phone pass still shows problems (zoom rail discoverability, sheet vs map balance).
+3. Unlockable missions and progression.
+4. More ways to move and real strategic differences.
+5. Bigger inventory that changes decisions.
+6. Other challenge types beyond the basic three-delivery shift.
+7. Tablet layout and touch only after the phone version feels good.
 
 **Store (parallel, not blocking content):**
 - Real-phone LIVE check, native Finnish read, itch.io upload when ready.
@@ -37,9 +39,9 @@ Make the Helsinki map a real, polished, mobile-first game that is easy to start 
 - Store: zip plays alone, phone confirmed, itch page live (can happen before or after content Exit).
 
 ## Open questions for owner
-- Which phone UI/touch problems are worst right now?
+- After a phone play of the new hint + primary row, what still feels unclear?
 - What should unlock first (missions, walking, inventory, challenge types)?
-- What does “polished and working nicely” mean for the Helsinki map (specific systems, or a play session you’re happy with)?
+- What does “polished and working nicely” mean for the Helsinki map?
 
 ## Gates
 ```bash
@@ -54,4 +56,4 @@ node toko-move/test/shifts.cjs
 - Content on Helsinki is the main focus. Do not start Nagoya until the Helsinki map is polished and working nicely.
 - Mobile first, tablet second.
 - New systems stay inside existing verbs and city-data shape.
-- One ?v= token per module.
+- One ?v= token per module. The job-board and index.html changes need a token bump on next real release.
