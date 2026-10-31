@@ -19,6 +19,16 @@
     Never `--no-verify`.
 -->
 
+## v73 — 2026-10-31
+**The campaign's rooms wear the worlds: each campaign world in the look of the arcade world its rule comes from**
+- The owner, 2026-10-31: "also apply same to the campaign levels". The 36 rooms were 1.x's grid in each world's colours; now each campaign world wears the floor, the set and the rail of the arcade world its rule comes from (`look` in TUNING.campaign.worlds): THE SURFACE the driveway (no rule; the curb, the lawn and the summer day), THE WELL the river (the current), THE VEIN the cistern (the sweep), THE VOID the deep (the dark), THE FOAM the ice (the slip), THE KILN the boiler room (the updraft). The grid's tiles keep the worlds' own colours.
+- A shaped room is that floor cut to its shape with its rail round it, the dark past it as the arcade's moving floors have it; on the driveway the grass is the limit instead ("you can see there is a curb and grass behind it, or just grass as the limit"): past a shaped room's rail its floor is not drawn and the lawn shows.
+- The river's lily pads drift with THE WELL's current as they do in the arcade.
+- The smoke's shaped room now also checks it wears its world's look (its floor and its set).
+- Cache tokens `?v=72` → `?v=73`; HUD label → `2.0 · v73`
+
+---
+
 ## v72 — 2026-10-31
 **Worlds 5 to 9 built as places: the boiler room, the river, the ice, the deep and the core, each from a brief of its own**
 - The owner, 2026-10-31: "you can build all levels/worlds now". Built as worlds 3 and 4 were, from a brief per world written for Grok in the World 2 sheet's format (art-ref/briefs/world-5-boiler.md … world-9-core.md, eight modules each), in the game's own look. Each world has a set of its own in `js/render/sets/`; nothing stands along the near side.

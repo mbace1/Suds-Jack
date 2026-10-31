@@ -24,9 +24,9 @@
 // `swirlAt`, out to `swirlR`, and opens a hole of `hole` m in the middle).
 import * as THREE from 'three/webgpu';
 import { Fn, If, uv, uniform, float, abs, fract, min, max, sin, cos, length, smoothstep, step, mix, fwidth, texture, clamp, vec2, vec3, pow, floor as tfloor, round, select, mod, dFdx, dFdy, exp, normalize, dot, cameraPosition, positionWorld } from 'three/tsl';
-import { GEL_TIME } from './gel.js?v=72';
-import { noise, grate, cells, sewerSpots } from './scenery.js?v=72';
-import { lilyPads, DRIFT } from './kit.js?v=72';
+import { GEL_TIME } from './gel.js?v=73';
+import { noise, grate, cells, sewerSpots } from './scenery.js?v=73';
+import { lilyPads, DRIFT } from './kit.js?v=73';
 
 const _white = new THREE.Color(0xffffff);
 
@@ -503,6 +503,9 @@ export function buildFloor(T, hx, hz, light, { style = 'grid', bounds: hasBounds
     return mix(voidCol, out.add(S.lineCol.mul(S.mask).mul(wake).mul(1.4)), inside).add(frontCol.mul(front).mul(1.3));
   })();
 
+  // v73: on the driveway the grass is the limit — a shaped room's floor stops at its rail and
+  // the lawn (scenery.js, drawn after the floor) shows past it, where the others show the dark
+  if (regionSdf && style === 'concrete') { mat.opacityNode = Fn(() => step(regionSdf(toWorld(uv())), 0.09))(); mat.alphaTest = 0.5; }
   const plane = new THREE.Mesh(new THREE.PlaneGeometry(hx * 2, hz * 2).rotateX(-Math.PI / 2), mat);
   group.add(plane);
 
