@@ -32,7 +32,8 @@
     #backend { color: var(--dim); }
     :root { --gold: #f0c040; --amber: #ffb468; --line: rgba(217, 220, 226, .22); }
     #sticks { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 3; }
-    #hud { position: fixed; inset: 0; pointer-events: none; z-index: 4; }
+    /* a dark edge on the HUD's text, so it reads over world 2's sunlit slab as over the night (v66) */
+    #hud { position: fixed; inset: 0; pointer-events: none; z-index: 4; text-shadow: 0 1px 2px rgba(0,0,0,.75), 0 0 10px rgba(0,0,0,.3); }
     #hud[hidden] { display: none; }
     #scorebox { position: absolute; left: max(14px, env(safe-area-inset-left)); top: max(10px, env(safe-area-inset-top)); }
     #score { font-size: 22px; letter-spacing: .06em; }
@@ -56,9 +57,9 @@
     #heat[data-m="w"] > i { background: #fff; }
     #menu .mutator { font-size: 11px; color: var(--gold); letter-spacing: .04em; margin: 2px 0 4px; }
     #lives { display: flex; gap: 6px; margin-top: 6px; }
-    #lives i { width: 10px; height: 10px; border-radius: 50%; background: #f2efe6; box-shadow: 0 0 6px rgba(242, 239, 230, .6); }
+    #lives i { width: 10px; height: 10px; border-radius: 50%; background: #f2efe6; box-shadow: 0 0 6px rgba(242, 239, 230, .6), 0 1px 2px rgba(0, 0, 0, .6); }
     #fx { display: flex; flex-wrap: wrap; gap: 4px 10px; margin-top: 6px; max-width: min(48vw, 420px); font-size: 11px; letter-spacing: .08em; }
-    #fx span { white-space: nowrap; text-shadow: 0 0 6px currentColor; }
+    #fx span { white-space: nowrap; text-shadow: 0 0 6px currentColor, 0 1px 2px rgba(0,0,0,.75); }
     /* MENU sits where 1.x had it, over the clock, top right; the clock under it (owner, 2026-10-24) */
     #clock { position: absolute; right: max(14px, env(safe-area-inset-right)); top: calc(max(6px, env(safe-area-inset-top)) + 52px); font-size: 16px; letter-spacing: .1em; color: var(--amber); text-align: right; max-width: 44vw; }
     @media (max-width: 480px) { #clock { font-size: 13px; letter-spacing: .05em; } }
@@ -238,7 +239,7 @@
   <div id="banner" hidden></div>
   <div id="vignette" aria-hidden="true"></div>
   <div id="menu" class="menu" hidden></div>
-  <div id="ver">2.0 · v65<span id="backend"></span></div>
+  <div id="ver">2.0 · v66<span id="backend"></span></div>
   <pre id="fault" hidden></pre>
   <script>
     // A failure must be visible on the phone: there is no console there.
@@ -347,6 +348,6 @@
       });
     })();
   </script>
-  <script type="module" src="js/main.js?v=65"></script>
+  <script type="module" src="js/main.js?v=66"></script>
 </body>
 </html>

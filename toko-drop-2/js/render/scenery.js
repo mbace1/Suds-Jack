@@ -5,7 +5,8 @@
 //   world 2  the driveway: a concrete curb along the far side and the two
 //            long ones with the lawn behind it, and the lawn meeting the
 //            slab straight at the near side ("you can see there is a curb
-//            and grass behind it, or just grass as the limit"). Since v65
+//            and grass behind it, or just grass as the limit"); in summer
+//            daylight since v66, the curb taller than the hero. Since v65
 //            built to the owner's module sheet: the curb in pieces with a
 //            rounded top and a seam between them, an L at each far corner,
 //            a rounded end where it stops at the near side, its shadow on
@@ -33,7 +34,7 @@
 // bars stand up, so they are lit by the scene's lights. Every number is
 // TUNING.scenery.
 import * as THREE from 'three/webgpu';
-import { Fn, float, vec2, vec3, fract, sin, dot, floor as tfloor, mix, smoothstep, abs, positionWorld, positionLocal, clamp, max, min, length, step, fwidth, uv, attribute } from 'three/tsl';
+import { Fn, float, vec2, vec3, fract, sin, dot, floor as tfloor, mix, smoothstep, abs, positionWorld, positionLocal, normalWorld, clamp, max, min, length, step, fwidth, uv, attribute } from 'three/tsl';
 
 // a hash and value noise on the world plane, cheap enough for a picture
 const hash = (p) => fract(sin(dot(p, vec2(127.1, 311.7))).mul(43758.5453));
@@ -126,10 +127,10 @@ export class Scenery {
       // the curb's shadow on the grass along its outside, as far as its near ends
       const past = length(max(vec2(abs(p.x).sub(hx + W), p.y.negate().sub(hz + W)), 0));
       const shade = float(1).sub(smoothstep(0, S.curbShadowW, past)).mul(float(1).sub(smoothstep(hz - S.curbNose, hz + 0.1, p.y)));
-      // it falls into the night the further it is from the slab
+      // it goes into the summer haze the further it is from the slab (v66; it fell into the night)
       const dx = max(abs(p.x).sub(hx), 0), dz = max(abs(p.y).sub(hz), 0);
       const far = clamp(length(vec2(dx, dz)).div(S.fade), 0, 1);
-      return col.mul(float(1).sub(shade.mul(S.curbShadow))).mul(float(1).sub(far.mul(0.85)));
+      return mix(col.mul(float(1).sub(shade.mul(S.curbShadow))), vec3(...S.haze), far.mul(S.fadeTo));
     })();
     const lawn = this._add(new THREE.Mesh(new THREE.PlaneGeometry(2 * (hx + out), 2 * (hz + out)).rotateX(-Math.PI / 2), lawnMat));
     lawn.position.y = -0.02; lawn.renderOrder = -2;
@@ -189,10 +190,11 @@ export class Scenery {
     geo.computeVertexNormals();
     const mat = new THREE.MeshStandardNodeMaterial({ roughness: 0.9, metalness: 0 });
     mat.colorNode = Fn(() => {
-      const p = positionWorld, k = attribute('kerb', 'vec2');
-      const grit = noise(vec2(p.x.add(p.y.mul(3)), p.z).mul(9)).mul(0.12);
+      const p = positionWorld, k = attribute('kerb', 'vec2'), n = abs(normalWorld);
+      // grit on every face the same, whichever way it looks (a noise across each of the three planes)
+      const grit = noise(p.xy.mul(9)).mul(n.z).add(noise(p.zy.mul(9)).mul(n.x)).add(noise(p.xz.mul(9)).mul(n.y)).div(n.x.add(n.y).add(n.z)).mul(0.12);
       // each piece a shade of its own, dark toward its seams and where it stands in the grass
-      const seam = mix(float(0.5), float(1), smoothstep(0.1, 1, k.x)), foot = mix(float(1 - S.curbShade), float(1), smoothstep(0, 0.14, p.y));
+      const seam = mix(float(0.5), float(1), smoothstep(0.1, 1, k.x)), foot = mix(float(1 - S.curbShade), float(1), smoothstep(0, H * 0.3, p.y));
       return vec3(...S.curb).mul(float(0.92).add(grit)).mul(k.y.mul(S.curbTone).add(1)).mul(seam).mul(foot);
     })();
     this._add(new THREE.Mesh(geo, mat));

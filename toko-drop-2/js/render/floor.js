@@ -6,9 +6,10 @@
 // toward the rim, the grid fading as it goes, and a soft pool of light that
 // follows the hero. The border is a thin rail in the same blue as 1.x's.
 // That is `style: 'grid'`. The others (owner, 2026-10-23):
-//   'concrete'  world 2, the driveway: a night slab under a warm flood from
-//               the far end, aggregate and mottling in it, expansion joints
-//               cut every few metres, an old oil stain or two; since v65
+//   'concrete'  world 2, the driveway: a slab in the summer sun (v66; it
+//               was a night slab under a garage flood), aggregate and
+//               mottling in it, expansion joints cut every few metres, an
+//               old oil stain or two, shade along the curb; since v65
 //               (the owner's module sheet) hairline cracks in some slabs and
 //               a storm drain toward the far right corner
 //   'sewer'     world 3: wet dark flagstones in running bond, the tunnel's
@@ -23,8 +24,8 @@
 // `swirlAt`, out to `swirlR`, and opens a hole of `hole` m in the middle).
 import * as THREE from 'three/webgpu';
 import { Fn, uv, uniform, float, abs, fract, min, max, sin, cos, length, smoothstep, mix, fwidth, texture, clamp, vec2, vec3, pow, floor as tfloor, select, mod, dFdx, dFdy, exp, normalize, dot, cameraPosition, positionWorld } from 'three/tsl';
-import { GEL_TIME } from './gel.js?v=65';
-import { noise, grate, cells } from './scenery.js?v=65';
+import { GEL_TIME } from './gel.js?v=66';
+import { noise, grate, cells } from './scenery.js?v=66';
 
 const _white = new THREE.Color(0xffffff);
 
@@ -57,7 +58,8 @@ export function buildFloor(T, hx, hz, light, { style = 'grid', bounds: hasBounds
   // it. At rest revealR is huge and the front is off, so play is unchanged.
   // A droplet landing in a new world reveals that world's floor the same way.
   const revealAt = uniform(new THREE.Vector2(0, 0)), revealR = uniform(1e4), revealFront = uniform(0);
-  const voidCol = uniform(new THREE.Color(T.render.clearColor)), frontCol = uniform(new THREE.Color({ grid: 0x5f8cff, concrete: 0xffd9a0, sewer: 0x7fd8d0, hex: 0xff5fd0, tide: 0x5fffe8, cistern: 0x7fe8ff, boiler: 0xffb060, river: 0x7fffe0, ice: 0xe0f4ff, deep: 0x6688ff, core: 0xff66ee }[style] ?? 0x5f8cff));
+  // the void past the floor: the night, or world 2's summer haze (v66)
+  const voidCol = uniform(style === 'concrete' ? new THREE.Color(...T.worlds.floor.concrete.sky) : new THREE.Color(T.render.clearColor)), frontCol = uniform(new THREE.Color({ grid: 0x5f8cff, concrete: 0xffd9a0, sewer: 0x7fd8d0, hex: 0xff5fd0, tide: 0x5fffe8, cistern: 0x7fe8ff, boiler: 0xffb060, river: 0x7fffe0, ice: 0xe0f4ff, deep: 0x6688ff, core: 0xff66ee }[style] ?? 0x5f8cff));
   // the drain's swirl
   const swirl = uniform(0), swirlAt = uniform(new THREE.Vector2(0, 0)), swirlR = uniform(8), hole = uniform(0);
   const holeRim = uniform(new THREE.Color({ grid: 0x2fe0ff, concrete: 0x9fd6ff, sewer: 0x6fffe0, hex: 0xff7fe0, tide: 0x7ffff0, cistern: 0x6fefff, boiler: 0xffaa44, river: 0x6fffdd, ice: 0xcff0ff, deep: 0x5577ff, core: 0xff55ee }[style] ?? 0x2fe0ff));
@@ -195,19 +197,22 @@ export function buildFloor(T, hx, hz, light, { style = 'grid', bounds: hasBounds
     const edge = cells(w.mul(C.crackScale).add(jag)), eaa = max(fwidth(edge), 1e-4), cwid = float(C.crackW * C.crackScale * 2);
     const crack = float(1).sub(smoothstep(cwid, cwid.add(eaa), edge))
       .mul(smoothstep(0.42, 0.56, noise(w.mul(C.crackBreak).add(vec2(11.1, 2.3)))))
-      .mul(smoothstep(0.5, 0.64, noise(w.mul(C.crackPatch).add(vec2(5.2, 1.7)))));
+      .mul(smoothstep(0.54, 0.68, noise(w.mul(C.crackPatch).add(vec2(5.2, 1.7)))));
     col = col.mul(float(1).sub(crack.mul(C.crackDepth)));
     // the storm drain (v65), set in the slab toward the far right corner: an iron
     // frame round rows of slots (the slots below, past the flood: no light
     // reaches the bottom of a drain)
     const G = C.grate, g = grate(w.sub(vec2(hx - G.at[0], -hz + G.at[1])).div(G.r));
     col = mix(col, mix(vec3(...G.iron), vec3(...G.frame), g.z), g.x);
-    // the flood from the far end (the garage), warm, falling off toward the
-    // street; the near end in the cold
+    // the curb's shade on the slab along it: the far side and the two long
+    // ones, none at the open near side (v66)
+    const toCurb = min(float(hx).sub(abs(w.x)), w.y.add(hz));
+    col = col.mul(float(1).sub(float(1).sub(smoothstep(0, C.curbAO, toCurb)).mul(C.curbAODepth)));
+    // the sun, a little warmer toward the far end (it was the garage's flood at night)
     const flood = smoothstep(float(hz * 2.2), float(-hz * 0.2), w.y.add(hz)).mul(C.flood);
     col = mix(col.mul(float(C.ambient).add(flood)).add(vec3(...C.floodTint).mul(flood.mul(0.06))), vec3(...G.slot), g.y);
     const pool = float(1).sub(smoothstep(0, F.poolRadius * 0.6, length(p.sub(player))));
-    return { col: col.add(col.mul(pool).mul(0.35)), mask: groove.add(lip.mul(0.5)).add(crack.mul(float(1).sub(g.x)).mul(0.3)).add(g.z.mul(0.4)), lineCol: vec3(...C.lip) };
+    return { col: col.add(col.mul(pool).mul(C.pool)), mask: groove.add(lip.mul(0.5)).add(crack.mul(float(1).sub(g.x)).mul(0.3)).add(g.z.mul(0.4)), lineCol: vec3(...C.lip) };
   };
 
   const sewer = (p, w) => {

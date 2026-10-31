@@ -1,8 +1,8 @@
 // curbking.js — how CURB KING looks: HOPPA's look (the dome up in the air on
 // its hop, the landing marked on the floor while it squats and flies), with a
 // gold crown riding on its head and the boss ring under it.
-import hoppa from './hoppa.js?v=65';
-import { auraBuild, auraUpdate, auraReset } from './bossaura.js?v=65';
+import hoppa from './hoppa.js?v=66';
+import { auraBuild, auraUpdate, auraReset } from './bossaura.js?v=66';
 
 export default {
   build(ctx) {

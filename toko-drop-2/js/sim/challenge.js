@@ -40,11 +40,11 @@
 //   chStep   { what, n, of }   progress the HUD reads: a gate, a lit body, an orb
 //   heart    { hp, x, z }      the heart was hurt
 // Pure: no DOM, no clock, w.rng only.
-import { TUNING } from '../tuning.js?v=65';
-import { levelShape, KIND } from './shape.js?v=65';
-import * as pickups from './pickups.js?v=65';
-import * as rules from './rules.js?v=65';
-import * as heat from './heat.js?v=65';
+import { TUNING } from '../tuning.js?v=66';
+import { levelShape, KIND } from './shape.js?v=66';
+import * as pickups from './pickups.js?v=66';
+import * as rules from './rules.js?v=66';
+import * as heat from './heat.js?v=66';
 
 const T = TUNING, C = T.campaign, P = C.points, HG = T.heat.goal;
 // a room's goal taken pays its points × the heat, and heats you (v51)

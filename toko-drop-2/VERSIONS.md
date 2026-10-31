@@ -19,6 +19,18 @@
     Never `--no-verify`.
 -->
 
+## v66 — 2026-10-31
+**World 2 in summer daylight, its curb taller than the hero (owner)**
+- The owner's answers on v65 (2026-10-31): the curb "taller than the hero", the style sheet's Micro Machines scale (PR #630: the hero tiny against the curb), and world 2 in summer daylight instead of at night.
+- **Micro Machines**: the curb is 1.2 m tall and 1.0 m wide (v65: 0.34 × 0.55; the hero is 1 m across), its pieces 3 m long, the corner arms 1.6 m, the rounded ends 1.0 m. The lawn's blades and mower stripes are grown with it, and the tufts are 0.5 to 1 m tall. The arena reads as a toy on a lawn.
+- **Summer daylight**: the slab is light concrete in the sun, a little warmer toward the far end (it was a night slab under a garage flood), with the hero's own pool of light all but gone in the day. The curb shades the slab and the grass along it. The lawn is a bright summer green going into a pale haze over 30 m (it fell into the night over 8 m), and runs 40 m out so the play camera never sees past it. Behind it is a light sky, which is also the void the floor runs out over when the droplet lands in world 2: `scene.background` follows the floor's void now, the night everywhere else.
+- The cracks are fainter on the light slab (depth 0.45 → 0.3) and in fewer slabs; the slab's storm drain is the size of the drain the way down opens through.
+- The HUD's text has a dark edge (a text shadow), so the score, the heat, the clock and the lives read over the sunlit slab; over the night floors it does not show.
+- The curb's grit is the same on every face (on the tall sides it ran in diagonal streaks).
+- Cache tokens `?v=65` → `?v=66`; HUD label → `2.0 · v66`
+
+---
+
 ## v65 — 2026-10-30
 **World 2 built to the owner's curb and lawn sheet: curb pieces, corners, rounded ends, grass tufts, cracks, the storm drain**
 - Of the concept pack in PR #630 the owner approved one sheet, "World 2 — curb / lawn modules" (eight drawings), and nothing else. Built in the game's own look (its light, its night slab), not in the sheet's ink and wash (art-ref/README.md: mood and design, not a style to copy):

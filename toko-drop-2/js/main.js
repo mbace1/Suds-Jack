@@ -7,33 +7,33 @@
 // The rules live in sim/ and run on a fixed step; this file feeds them input,
 // hands their events to the view and the sound, and draws in between steps.
 import * as THREE from 'three/webgpu';
-import { TUNING } from './tuning.js?v=65';
-import { buildFloor } from './render/floor.js?v=65';
-import { fitCamera, screenToWorld, screenDown } from './render/view.js?v=65';
-import * as worldsSim from './sim/worlds.js?v=65';
-import { shapeAt as shiftShape } from './sim/floorshift.js?v=65';
-import * as reshapeSim from './sim/reshape.js?v=65';
-import { Scenery } from './render/scenery.js?v=65';
-import { Transit } from './render/transit.js?v=65';
-import { Splats } from './render/splats.js?v=65';
-import { Actors } from './render/actors.js?v=65';
-import { GEL_TIME } from './render/gel.js?v=65';
-import { studioEnvironment } from './render/env.js?v=65';
-import { Specimen } from './render/specimen.js?v=65';
-import { createWorld, step, api as simApi } from './sim/world.js?v=65';
-import { stage as stagePk } from './sim/pickups.js?v=65';
-import { Input } from './input.js?v=65';
-import { UI, t, timeText, LANGS, getLang, setLang, goalText, bossName } from './ui.js?v=65';
-import { Announcer } from './announcer.js?v=65';
-import { rooms as campaignRooms, isOpen as roomOpen, better as betterGrade } from './sim/director/campaign.js?v=65';
-import { levelShape, slots as regionSlots } from './sim/shape.js?v=65';
-import { Sound } from './audio.js?v=65';
-import { Music, worldWant, cueFor, renderMusicWav } from './music.js?v=65';
-import { Intro, CUES as INTRO } from './intro/intro.js?v=65';
-import { scheduleIntroSfx, renderIntroSfxWav } from './intro/sfx.js?v=65';
-import { Readout } from './readout.js?v=65';
-import { Meter, device } from './meter.js?v=65';
-import * as record from './record.js?v=65';
+import { TUNING } from './tuning.js?v=66';
+import { buildFloor } from './render/floor.js?v=66';
+import { fitCamera, screenToWorld, screenDown } from './render/view.js?v=66';
+import * as worldsSim from './sim/worlds.js?v=66';
+import { shapeAt as shiftShape } from './sim/floorshift.js?v=66';
+import * as reshapeSim from './sim/reshape.js?v=66';
+import { Scenery } from './render/scenery.js?v=66';
+import { Transit } from './render/transit.js?v=66';
+import { Splats } from './render/splats.js?v=66';
+import { Actors } from './render/actors.js?v=66';
+import { GEL_TIME } from './render/gel.js?v=66';
+import { studioEnvironment } from './render/env.js?v=66';
+import { Specimen } from './render/specimen.js?v=66';
+import { createWorld, step, api as simApi } from './sim/world.js?v=66';
+import { stage as stagePk } from './sim/pickups.js?v=66';
+import { Input } from './input.js?v=66';
+import { UI, t, timeText, LANGS, getLang, setLang, goalText, bossName } from './ui.js?v=66';
+import { Announcer } from './announcer.js?v=66';
+import { rooms as campaignRooms, isOpen as roomOpen, better as betterGrade } from './sim/director/campaign.js?v=66';
+import { levelShape, slots as regionSlots } from './sim/shape.js?v=66';
+import { Sound } from './audio.js?v=66';
+import { Music, worldWant, cueFor, renderMusicWav } from './music.js?v=66';
+import { Intro, CUES as INTRO } from './intro/intro.js?v=66';
+import { scheduleIntroSfx, renderIntroSfxWav } from './intro/sfx.js?v=66';
+import { Readout } from './readout.js?v=66';
+import { Meter, device } from './meter.js?v=66';
+import * as record from './record.js?v=66';
 
 const T = TUNING;
 const params = new URLSearchParams(location.search);
@@ -153,6 +153,7 @@ function useWorld(n, hx, hz) {
   floorFull = { hx, hz };
   if (WD?.rail != null) floor.setRail(WD.rail);
   scene.add(floor.group);
+  scene.background.copy(floor.reveal.void.value);   // the void past the floor: the night, or world 2's summer haze (v66)
   // STREET's driveway and sewer stand their lawn and walls; every other floor, NEON's too, a surround (v43)
   scenery.build(n, hx, hz, { look: worldsLook() });
   camAt.set(0, 0, 0);
@@ -170,6 +171,7 @@ function useSurvival() {
   actors.setArena(hx, hz);
   floor = buildFloor(T, hx, hz, actors.light.texture, { style: 'grid', bounds: true, film: actors.gooKit.film });
   scene.add(floor.group);
+  scene.background.copy(floor.reveal.void.value);
   scenery.build(1, hx, hz);
   camAt.set(0, 0, 0);
   resize();
@@ -508,7 +510,7 @@ const campaignProgress = (hard = false) => { try { return JSON.parse(store.str(h
 let lastRoom = null;   // AGAIN replays it
 const levels = new Map();
 async function loadLevel(id) {
-  if (!levels.has(id)) levels.set(id, fetch(new URL(`../levels/${id}.json?v=65`, import.meta.url)).then((r) => { if (!r.ok) throw new Error(`levels/${id}.json ${r.status}`); return r.json(); }));
+  if (!levels.has(id)) levels.set(id, fetch(new URL(`../levels/${id}.json?v=66`, import.meta.url)).then((r) => { if (!r.ok) throw new Error(`levels/${id}.json ${r.status}`); return r.json(); }));
   return levels.get(id);
 }
 // the list the room screen draws: worlds, their rooms, open or not, best grades
@@ -556,6 +558,7 @@ function useRoom(w) {
   floor = buildFloor(T, hx, hz, actors.light.texture, { style: 'grid', film: actors.gooKit.film, region: sh ? regionSlots(sh) : null, regionRail: rail, colors: WD?.base ? { base: WD.base, gridHi: WD.gridHi } : null });
   if (rail != null) floor.setRail(rail);
   scene.add(floor.group);
+  scene.background.copy(floor.reveal.void.value);
   scenery.build(1, hx, hz);
   camAt.set(0, 0, 0);
   resize();

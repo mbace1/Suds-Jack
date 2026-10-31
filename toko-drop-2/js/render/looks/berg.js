@@ -1,7 +1,7 @@
 // berg.js — how BERG looks: the rounded cube in ice, turning slowly about
 // its own axis as it slides; frosting white as it tells (the sim's g.tell)
 // before it fires its icicles. The boss ring under it.
-import { auraBuild, auraUpdate, auraReset } from './bossaura.js?v=65';
+import { auraBuild, auraUpdate, auraReset } from './bossaura.js?v=66';
 
 export default {
   build(ctx) {
