@@ -7,35 +7,35 @@
 // The rules live in sim/ and run on a fixed step; this file feeds them input,
 // hands their events to the view and the sound, and draws in between steps.
 import * as THREE from 'three/webgpu';
-import { TUNING } from './tuning.js?v=79';
-import { buildFloor } from './render/floor.js?v=79';
-import { fitCamera, screenToWorld, screenDown } from './render/view.js?v=79';
-import * as worldsSim from './sim/worlds.js?v=79';
-import { shapeAt as shiftShape } from './sim/floorshift.js?v=79';
-import * as reshapeSim from './sim/reshape.js?v=79';
-import { Scenery } from './render/scenery.js?v=79';
-import { DRIFT } from './render/kit.js?v=79';
-import { Glow } from './render/glow.js?v=79';
-import { Transit } from './render/transit.js?v=79';
-import { Splats } from './render/splats.js?v=79';
-import { Actors } from './render/actors.js?v=79';
-import { GEL_TIME } from './render/gel.js?v=79';
-import { studioEnvironment } from './render/env.js?v=79';
-import { Specimen } from './render/specimen.js?v=79';
-import { createWorld, step, api as simApi } from './sim/world.js?v=79';
-import { stage as stagePk } from './sim/pickups.js?v=79';
-import { Input } from './input.js?v=79';
-import { UI, t, timeText, LANGS, getLang, setLang, goalText, bossName } from './ui.js?v=79';
-import { Announcer } from './announcer.js?v=79';
-import { rooms as campaignRooms, isOpen as roomOpen, better as betterGrade } from './sim/director/campaign.js?v=79';
-import { levelShape, slots as regionSlots } from './sim/shape.js?v=79';
-import { Sound } from './audio.js?v=79';
-import { Music, worldWant, cueFor, renderMusicWav } from './music.js?v=79';
-import { Intro, CUES as INTRO } from './intro/intro.js?v=79';
-import { scheduleIntroSfx, renderIntroSfxWav } from './intro/sfx.js?v=79';
-import { Readout } from './readout.js?v=79';
-import { Meter, device } from './meter.js?v=79';
-import * as record from './record.js?v=79';
+import { TUNING } from './tuning.js?v=80';
+import { buildFloor } from './render/floor.js?v=80';
+import { fitCamera, screenToWorld, screenDown } from './render/view.js?v=80';
+import * as worldsSim from './sim/worlds.js?v=80';
+import { shapeAt as shiftShape } from './sim/floorshift.js?v=80';
+import * as reshapeSim from './sim/reshape.js?v=80';
+import { Scenery } from './render/scenery.js?v=80';
+import { DRIFT } from './render/kit.js?v=80';
+import { Glow } from './render/glow.js?v=80';
+import { Transit } from './render/transit.js?v=80';
+import { Splats } from './render/splats.js?v=80';
+import { Actors } from './render/actors.js?v=80';
+import { GEL_TIME } from './render/gel.js?v=80';
+import { studioEnvironment } from './render/env.js?v=80';
+import { Specimen } from './render/specimen.js?v=80';
+import { createWorld, step, api as simApi } from './sim/world.js?v=80';
+import { stage as stagePk } from './sim/pickups.js?v=80';
+import { Input } from './input.js?v=80';
+import { UI, t, timeText, LANGS, getLang, setLang, goalText, bossName } from './ui.js?v=80';
+import { Announcer } from './announcer.js?v=80';
+import { rooms as campaignRooms, isOpen as roomOpen, better as betterGrade } from './sim/director/campaign.js?v=80';
+import { levelShape, slots as regionSlots } from './sim/shape.js?v=80';
+import { Sound } from './audio.js?v=80';
+import { Music, worldWant, cueFor, renderMusicWav } from './music.js?v=80';
+import { Intro, CUES as INTRO } from './intro/intro.js?v=80';
+import { scheduleIntroSfx, renderIntroSfxWav } from './intro/sfx.js?v=80';
+import { Readout } from './readout.js?v=80';
+import { Meter, device } from './meter.js?v=80';
+import * as record from './record.js?v=80';
 
 const T = TUNING;
 const params = new URLSearchParams(location.search);
@@ -356,10 +356,25 @@ async function shareRecord() {
 // (v63, js/meter.js) how the phone ran it
 const meter = new Meter();
 const recordHow = () => ({
-  input: input.source, screen: arenaName, date: new Date(), frames: meter.summary(), letGos: input.letGos,
+  input: input.source, screen: arenaName, date: new Date(), frames: meter.summary(), letGos: input.letGos, cont: continuedFrom,
   device: device({ ua: navigator.userAgent, touchPoints: navigator.maxTouchPoints, width: renderer.domElement.width, height: renderer.domElement.height,
     ratio: renderer.getPixelRatio(), backend, gels: actors.gels, goo: gooOn(), glow: glowOn() }),
 });
+// v80 (the owner's first QoL pick): CONTINUE A RUN. An ARCADE or HARDCADE run is saved
+// at each world's door — the world, the score, the lives, the weapon and the dash
+// level — and the title offers to take it up again from that door (a phone call
+// no longer costs a twenty-minute run). It is cleared when the run ends, by a
+// death or the win, and when a fresh run of that mode is started; a run left from
+// the pause menu keeps it. The record marks a continued run with the world it took up
+const CONT_KEY = 'toko2.continue';
+let continuedFrom = 0;
+const contSnap = () => { try { const s = JSON.parse(store.str(CONT_KEY) || 'null'); return s && s.world > 1 && MODES.includes(s.mode) ? s : null; } catch { return null; } };
+function saveContinue() {
+  if (!world || world.room || world.over || !(mode === 'arcade' || mode === 'hardcade')) return;
+  const h = world.hero;
+  store.set(CONT_KEY, JSON.stringify({ mode, world: world.world, score: world.score, kills: world.kills, heat: world.heat || 0, lives: h.lives, weapon: h.weapon ? { ...h.weapon } : null, dashLevel: h.dashLevel || 0, when: Date.now(), v: T.version ?? null }));
+}
+const clearContinue = () => { try { localStorage.removeItem(CONT_KEY); } catch { /* private mode */ } };
 // a room or a run left from the pause menu goes in the record as a quit (js/record.js)
 function recordQuit() {
   if (!world || world.over || (state !== 'paused' && state !== 'play')) return;
@@ -387,6 +402,9 @@ addEventListener('keydown', () => sound.unlock(), { once: true });
 const ui = new UI({
   // a start from the title plays the intro film first; AGAIN after a run does not (owner, 2026-10-24)
   onStart: (m) => start(m, { intro: true }),
+  // v80: the run kept at a world's door, for the title's CONTINUE, and taking it up
+  continueInfo: () => { const c = contSnap(); return c && c.mode === (hardOn() ? 'hardcade' : 'arcade') ? { world: c.world, score: c.score } : null; },
+  onContinue: () => { const c = contSnap(); if (c) start(c.mode, { intro: true, resume: c }); },
   // the title's HARD switch: ARCADE becomes HARDCADE (toko2.hard)
   hard: () => store.str('toko2.hard') === 'on',
   onHard: () => { store.set('toko2.hard', store.str('toko2.hard') === 'on' ? 'off' : 'on'); showTitle(true); },
@@ -485,9 +503,11 @@ function toMenu() {
   showTitle();
 }
 
-function start(m, { intro: asked = false, room = null } = {}) {
+function start(m, { intro: asked = false, room = null, resume = null } = {}) {
   debug.hold = false; debug.freeCam = false;
   mode = MODES.includes(m) ? m : 'arcade';
+  continuedFrom = resume ? resume.world : 0;
+  if (!resume && !room && (mode === 'arcade' || mode === 'hardcade')) clearContinue();   // v80: a fresh run lets the kept one go
   if (mode === 'campaign' && !room) room = lastRoom;
   if (mode === 'campaign' && !room) { showCampaign(); return; }
   lastRoom = room;
@@ -496,11 +516,17 @@ function start(m, { intro: asked = false, room = null } = {}) {
   // toko2.gateUsed: this browser has dashed a gate, so the DASH THROUGH! tag
   // is not shown again (1.x's tokoDropGateUsed, main.js:5310, 11166)
   // ?world=2 or 3 starts the run in a later world (a test on the phone)
-  const startWorld = Math.max(1, Math.min(T.worlds.list.length, Number(params.get('world')) || 1));
+  const startWorld = Math.max(1, Math.min(T.worlds.list.length, resume ? resume.world : Number(params.get('world')) || 1));   // v80: or the kept run's door
   const turnRoom = arenaName === 'portrait';   // a room lies along the phone, either way up
   world = createWorld({ seed: (Math.random() * 2 ** 32) >>> 0, mode, arena, shape: arenaName, world: mode === 'campaign' ? 1 : startWorld, dashMode: test.dash, hpMult: test.hp, gateUsed: store.num('toko2.gateUsed') === 1,
     room: mode === 'campaign' ? { ...room, turn: turnRoom } : null });
   lost = []; meter.reset(); input.resetCounts();
+  if (resume && !world.room) {   // v80: what the kept run had at that door
+    const h = world.hero;
+    world.score = resume.score || 0; world.kills = resume.kills || 0; world.heat = resume.heat || 0;
+    h.lives = Math.max(1, Math.min(T.hero.lives, resume.lives || 1)); h.dashLevel = resume.dashLevel || 0;
+    if (resume.weapon?.fam && T.hero.weapons?.[resume.weapon.fam]) h.weapon = { fam: resume.weapon.fam, level: resume.weapon.level || 1 };
+  }
   if (world.room) useRoom(world);
   else if (world.world > 1) useWorld(world.world, world.hx, world.hz);
   if (world.shapeT) useSurvival();
@@ -537,7 +563,7 @@ const campaignProgress = (hard = false) => { try { return JSON.parse(store.str(h
 let lastRoom = null;   // AGAIN replays it
 const levels = new Map();
 async function loadLevel(id) {
-  if (!levels.has(id)) levels.set(id, fetch(new URL(`../levels/${id}.json?v=79`, import.meta.url)).then((r) => { if (!r.ok) throw new Error(`levels/${id}.json ${r.status}`); return r.json(); }));
+  if (!levels.has(id)) levels.set(id, fetch(new URL(`../levels/${id}.json?v=80`, import.meta.url)).then((r) => { if (!r.ok) throw new Error(`levels/${id}.json ${r.status}`); return r.json(); }));
   return levels.get(id);
 }
 // the list the room screen draws: worlds, their rooms, open or not, best grades
@@ -644,6 +670,7 @@ document.addEventListener('visibilitychange', () => { if (document.hidden) pause
 function finish() {
   state = 'over'; input.enabled = false;
   ui.setHud(false);
+  if (!world.room) clearContinue();   // v80: a run that ended is not taken up again
   // the play record (js/record.js, v61): every finished room and run, on this phone only
   record.add(store, record.entryFor(world, mode, lost, recordHow()), T.record.cap);
   // a room: its grade is kept; a clear goes back to the rooms, a death to the death screen
@@ -722,6 +749,7 @@ function onEvent(e) {
   if (e.type === 'dash') lastDash = e;
   if (e.type === 'hurt' && world) lost.push([world.wave, e.by ?? '?']);   // the play record's lives lost (js/record.js)
   if (e.type === 'worldIn') { useWorld(e.world, e.hx, e.hz); splats.clear(); actors.goo?.clear(); }   // the next world's floor, under the falling droplet; the last one's puddles went down the drain with it
+  if (e.type === 'worldGo') saveContinue();   // v80: the run kept at this world's door
   if (e.type.startsWith('world')) transit.onEvent(e, floor, world);
   if (e.type === 'reshape') shake(T.survival.reshape.shake);
   if (e.type === 'shift') shake(T.survival.reshape.shake);
