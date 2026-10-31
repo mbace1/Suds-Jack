@@ -15,18 +15,18 @@
 // that springs in and fades (splats.js). Views are pooled per species, so a
 // gel's material is built once and reused, never compiled mid-fight.
 import * as THREE from 'three/webgpu';
-import { TUNING } from '../tuning.js?v=80';
+import { TUNING } from '../tuning.js?v=81';
 import * as TSL from 'three/tsl';
-import { gelMaterial, domeGeometry, cubeGeometry, heroGeometry, GEL_TIME } from './gel.js?v=80';
-import { LOOKS } from './looks/index.js?v=80';
-import { JellyBody } from './jelly.js?v=80';
-import { Juice } from './juice.js?v=80';
-import { ArenaLight } from './light.js?v=80';
-import { toSdf } from './sdf.js?v=80';
-import { PickupView } from './pickups.js?v=80';
-import { ChallengeView } from './challenge.js?v=80';
-import { Goo } from './goo.js?v=80';
-import { mult as heatMult } from '../sim/heat.js?v=80';
+import { gelMaterial, domeGeometry, cubeGeometry, heroGeometry, GEL_TIME } from './gel.js?v=81';
+import { LOOKS } from './looks/index.js?v=81';
+import { JellyBody } from './jelly.js?v=81';
+import { Juice } from './juice.js?v=81';
+import { ArenaLight } from './light.js?v=81';
+import { toSdf } from './sdf.js?v=81';
+import { PickupView } from './pickups.js?v=81';
+import { ChallengeView } from './challenge.js?v=81';
+import { Goo } from './goo.js?v=81';
+import { mult as heatMult } from '../sim/heat.js?v=81';
 
 const T = TUNING;
 const B = T.blob, D = T.death;
@@ -114,7 +114,7 @@ export class Actors {
   // The arena this run plays on.
   setArena(hx, hz) { this.hx = hx; this.hz = hz; this.light.setArena(hx, hz); this.gooKit.setArena(hx, hz); }
   // the SPLATTER switch: off clears what is thrown and laid, and 1.x's puddles take over
-  setGoo(on) { if (!on) this.gooKit.clear(); this.goo = on ? this.gooKit : null; }
+  setGoo(on) { if (!on) this.gooKit.clear(); this.gooKit.setOn(on); this.goo = on ? this.gooKit : null; }
 
   _makeHero() {
     const L = T.heroLook, r = T.hero.radius;

@@ -7,10 +7,10 @@
 // things that work"). The arena is 1.x's, so every 1.x number ports as it is
 // instead of through a rescale. Axes: x across the screen (right +), y up,
 // z toward the bottom of the screen. The arena is centred on the origin.
-import { SPECIES } from './tuning/species/index.js?v=80';
-import WAVES from './tuning/waves.js?v=80';
-import PICKUPS from './tuning/pickups.js?v=80';
-import MUSIC from './tuning/music.js?v=80';
+import { SPECIES } from './tuning/species/index.js?v=81';
+import WAVES from './tuning/waves.js?v=81';
+import PICKUPS from './tuning/pickups.js?v=81';
+import MUSIC from './tuning/music.js?v=81';
 
 export const TUNING = {
   render: {
@@ -1011,6 +1011,35 @@ export const TUNING = {
       dryEdge: 0.08, dryBase: 0.2, dryDepth: 2.5, dryAlpha: 0.5, dryDark: 0.7, dryTint: 0.14 },
     // a body's puddle: `lobes` blobs, `spread` × its radius off the middle, each `size` × its radius by its share
     puddle: { lobes: 6, spread: 1.0, size: [0.3, 0.7] },
+    // v81 (owner, 2026-10-31: "more physical splatter and jelly like effects"):
+    // GOO UP THE WALLS. For the goo the rail is a wall `h` m tall: a drop that
+    // meets it below that height CLINGS — an impact stain on the wall
+    // (`impact` of it, stretched along the way it came, as on the floor; a
+    // fast fat one throws a crown back off the wall instead) — then it runs
+    // down at the speed a film its size runs (`creep + creepR·r²` m/s, the
+    // law a drop riding a body creeps by, reached at `settle` 1/s), its
+    // sideways slip dying at `slip` 1/s and `keep` of it kept from the
+    // impact, shedding `shed` of its volume a metre as a streak `streakWide`
+    // × its width, until it reaches the foot (and slides on across the
+    // floor, `out` m/s off the wall) or runs dry (under `minR` m: a last blob
+    // `blob` × its radius on the wall). It stands `proud` × its radius off
+    // the wall. Above `h` the rail is what it was: an invisible wall the
+    // drop bounces off. The wall has a FILM of its own (goo.js Film, wall):
+    // the rail unwrapped into one strip, perimetre × `h`, `perMetre` texels a
+    // metre along it and `rows` up it, with the floor's flow turned on its
+    // side (`film`): goo deeper than `yield` mm RUNS DOWN (`run` of the
+    // mobile depth a step into the texel below, at full rate once `ref` mm
+    // can run; the bottom row keeps what reaches it, the bead at the foot)
+    // and creeps sideways (`spread`), evaporates and dries to a stain as the
+    // floor's does. `look` draws it as a decal over whatever the wall is
+    // (goo.js): the hue by depth (`absorb` mm, `scatter`), the contact line
+    // (`edge` mm), the slope lit by the sun (`bump`, `relief`, `rim`, a glint
+    // `shine`/`spec` where it curves) and the stain (`dryAlpha`, `dryTint`).
+    wall: { on: true, h: 1.1, perMetre: 16, rows: 36, impact: 0.3, keep: 0.5, proud: 0.4, creep: 0.45, creepR: 60, settle: 6, slip: 3,
+      shed: 1.6, streakWide: 0.9, minR: 0.012, blob: 1.6, out: 0.8,
+      film: { yield: 4, run: 0.3, spread: 0.06, ref: 10, evap: 4, deposit: 0.6, ring: 2.5, ringAt: 0.5, dryHalfLife: 8, stampCap: 2048, minWid: 0.8, hz: 30, wetFor: 20, idleEvery: 0.5 },
+      look: { edge: 0.3, absorb: 6, scatter: 0.9, bump: 4, curve: [0.02, 0.12], relief: 1.2, shine: 50, spec: 0.5, rim: 0.35,
+              dryEdge: 0.08, dryBase: 0.2, dryDepth: 2.5, dryAlpha: 0.45, dryTint: 0.35 } },
     // what throws goo
     emit: {
       // a kill: base + perR × its radius drops (more while kills come fast:

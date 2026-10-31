@@ -21,12 +21,12 @@
 // runs down in its enemy loop — the same sequence 1.x runs, with the seam in
 // a different place. test/director.mjs holds all of it in lockstep with 1.x's
 // own loop source.
-import { TUNING } from '../../tuning.js?v=80';
-import * as worlds from '../worlds.js?v=80';
-import * as challenge from '../challenge.js?v=80';
-import { makeRng } from '../rng.js?v=80';
-import * as bossfight from '../bossfight.js?v=80';
-import * as floorshift from '../floorshift.js?v=80';
+import { TUNING } from '../../tuning.js?v=81';
+import * as worlds from '../worlds.js?v=81';
+import * as challenge from '../challenge.js?v=81';
+import { makeRng } from '../rng.js?v=81';
+import * as bossfight from '../bossfight.js?v=81';
+import * as floorshift from '../floorshift.js?v=81';
 
 const T = TUNING, W = T.waves, TAU = Math.PI * 2;
 

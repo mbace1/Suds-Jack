@@ -7,6 +7,12 @@
 //           glint), alpha-tested so they write depth and need no sorting. One
 //           draw call for every drop in the air, sliding or riding a body,
 //           and one more for their soft shadows straight below them.
+//   wall  — v81: the rail is a wall for the goo (goo-sim.js CLING), and the
+//           wall has a film of its own: the same Film with the rail unwrapped
+//           into one strip (perimetre × wall.h) and the flow turned on its
+//           side, so a run of goo RUNS DOWN it and dries where it stops; drawn
+//           as a decal on a strip standing just inside the rail, over
+//           whatever the world's wall is (a curb, a brick wall, the void)
 //   film  — the floor's goo as a THIN FILM over the arena: two HalfFloat
 //           targets of two textures each, ping-ponged by fragment passes, so
 //           it runs the same on WebGPU and on the WebGL 2 fallback:
@@ -42,10 +48,10 @@
 import * as THREE from 'three/webgpu';
 import {
   Fn, uniform, attribute, texture, uv, vec2, vec3, vec4, float, normalize, dot, length, max, min, clamp, pow, sqrt,
-  mix, cameraViewMatrix, varying, select, positionGeometry, step, smoothstep, mrt,
+  mix, cameraViewMatrix, varying, select, positionGeometry, step, smoothstep, mrt, fwidth, dFdx, dFdy, exp, abs, normalLocal, cameraPosition, positionWorld,
 } from 'three/tsl';
-import { TUNING } from '../tuning.js?v=80';
-import { GooSim, BODY, STAMP } from './goo-sim.js?v=80';
+import { TUNING } from '../tuning.js?v=81';
+import { GooSim, BODY, STAMP, wallLen, WALL_N, WALL_T } from './goo-sim.js?v=81';
 
 const T = TUNING, G = T.goo;
 const MAX_BODIES = 256;
@@ -59,11 +65,85 @@ export class Goo {
     this.left = G.budget;        // drops this frame may still throw (a boss's death cannot stall a frame)
     this._buildDrops(G.cap);
     this.film = new Film(G.film);
+    // v81: the wall's film, and the strip it is drawn on
+    this.wall = G.wall?.on ? new Film({ ...G.wall.film, perMetre: G.wall.perMetre, rows: G.wall.rows, h: G.wall.h }, { wall: true }) : null;
+    if (this.wall) this._buildWall();
   }
 
   get n() { return this.sim.n; }
 
-  setArena(hx, hz) { this.hx = hx; this.hz = hz; this.film.setArena(hx, hz); }
+  setArena(hx, hz) { this.hx = hx; this.hz = hz; this.film.setArena(hx, hz); if (this.wall) { this.wall.setArena(hx, hz); this._fitWall(hx, hz); } }
+
+  // the title's SPLATTER switch: the strip draws nothing while the goo is off
+  setOn(on) { if (this.strip) this.strip.visible = !!on; }
+
+  // The wall's strip (v81): one quad a wall, standing just inside the rail
+  // and facing in, its u the rail unwrapped (goo-sim.js wallS) and its v the
+  // height up the wall, so it reads the wall's film straight. Built once, its
+  // corners moved by _fitWall when the arena changes.
+  _buildWall() {
+    const Wl = G.wall, K = Wl.look;
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(16 * 3), 3).setUsage(THREE.DynamicDrawUsage));
+    geo.setAttribute('normal', new THREE.BufferAttribute(new Float32Array(16 * 3), 3));
+    geo.setAttribute('wTan', new THREE.BufferAttribute(new Float32Array(16 * 3), 3));
+    geo.setAttribute('uv', new THREE.BufferAttribute(new Float32Array(16 * 2), 2).setUsage(THREE.DynamicDrawUsage));
+    const idx = [];
+    for (let k = 0; k < 4; k++) { const b = k * 4; idx.push(b, b + 2, b + 3, b, b + 3, b + 1); }   // wound so the inward face is the front
+    geo.setIndex(idx);
+    this.wWet = texture(this.wall.wetTexture); this.wDry = texture(this.wall.dryTexture);
+    this.wSize = uniform(new THREE.Vector2(16, 16)); this.wDims = uniform(new THREE.Vector2(100, Wl.h));
+    const mat = new THREE.MeshBasicNodeMaterial({ transparent: true, depthWrite: false });
+    const Ld = normalize(vec3(...T.light.sun.position));
+    const out = Fn(() => {
+      const st = uv();
+      const W = smoothRead(this.wWet, st, this.wSize), Dr = smoothRead(this.wDry, st, this.wSize);
+      const h = W.a, hue = W.rgb.div(max(h, 1e-4)), d = Dr.a, dHue = Dr.rgb.div(max(d, 1e-4));
+      const edgeOf = (v, at) => { const fw = fwidth(v).mul(0.75).add(1e-4); return smoothstep(float(at).sub(fw), float(at).add(fw), v); };
+      // the slope in the wall's own plane from the screen's derivatives (floor.js's trick, in uv): along the wall, and up it
+      const ax = dFdx(st), ay = dFdy(st), hX = dFdx(h), hY = dFdy(h);
+      const det = ax.x.mul(ay.y).sub(ax.y.mul(ay.x)), inv = float(0.001).div(select(abs(det).greaterThan(1e-9), det, float(1e-9)));
+      const su = hX.mul(ay.y).sub(hY.mul(ax.y)).mul(inv).div(this.wDims.x), sv = ax.x.mul(hY).sub(ay.x.mul(hX)).mul(inv).div(this.wDims.y);
+      const n = normalize(vec3(su.mul(-K.bump), sv.mul(-K.bump), 1));          // in the wall's frame: along, up, out
+      const tg = attribute('wTan', 'vec3'), nw = normalLocal;                 // the strip stands at the origin: local is world
+      const L = vec3(dot(Ld, tg), Ld.y, dot(Ld, nw));
+      const Vw = normalize(cameraPosition.sub(positionWorld)), Vf = vec3(dot(Vw, tg), Vw.y, dot(Vw, nw));
+      const curve = smoothstep(K.curve[0], K.curve[1], length(vec2(su, sv)));
+      const relief = dot(n, L).sub(L.z).mul(K.relief);
+      const glint = pow(max(dot(n, normalize(L.add(Vf))), 0), float(K.shine)).mul(K.spec).mul(curve);
+      const thick = float(1).sub(exp(h.div(K.absorb).negate()));
+      const wetCol = hue.mul(K.scatter).mul(float(1).add(relief)).add(mix(hue, vec3(1), 0.5).mul(max(relief, 0)).mul(K.rim)).add(vec3(glint));
+      const wetA = edgeOf(h, K.edge).mul(max(thick, float(0.35)));         // the thinnest film still shows as a tint
+      const dryK = edgeOf(d, K.dryEdge).mul(mix(float(K.dryBase), float(1), float(1).sub(exp(d.div(K.dryDepth).negate())))).mul(K.dryAlpha);
+      const dryCol = dHue.mul(K.dryTint);
+      const a = wetA.add(dryK.mul(float(1).sub(wetA)));
+      const col = wetCol.mul(wetA).add(dryCol.mul(dryK).mul(float(1).sub(wetA))).div(max(a, 1e-4));
+      return vec4(col, a);
+    })();
+    mat.colorNode = out.rgb; mat.opacityNode = out.a;
+    this.strip = new THREE.Mesh(geo, mat);
+    this.strip.frustumCulled = false; this.strip.renderOrder = 2;
+    this.scene.add(this.strip);
+    this._fitWall(this.hx, this.hz);
+  }
+
+  _fitWall(hx, hz) {
+    if (!this.strip) return;
+    const Wl = G.wall, H = Wl.h, P = wallLen(hx, hz), inset = 0.012, g = this.strip.geometry;
+    const pos = g.getAttribute('position'), nor = g.getAttribute('normal'), tan = g.getAttribute('wTan'), uvs = g.getAttribute('uv');
+    const corners = [[-hx, -hz], [hx, -hz], [hx, hz], [-hx, hz], [-hx, -hz]];   // s runs round from the far wall's left end
+    let s = 0, v = 0;
+    for (let k = 0; k < 4; k++) {
+      const [ax, az] = corners[k], [bx, bz] = corners[k + 1], len = Math.hypot(bx - ax, bz - az), N = WALL_N[k], Tg = WALL_T[k];
+      for (const [px, pz, u] of [[ax, az, s / P], [bx, bz, (s + len) / P]]) for (const y of [0, H]) {
+        pos.setXYZ(v, px + N[0] * inset, y, pz + N[1] * inset); nor.setXYZ(v, N[0], 0, N[1]); tan.setXYZ(v, Tg[0], 0, Tg[1]); uvs.setXY(v, u, y / H); v++;
+      }
+      s += len;
+    }
+    pos.needsUpdate = nor.needsUpdate = tan.needsUpdate = uvs.needsUpdate = true;
+    this.wDims.value.set(P, H);
+    this.wSize.value.set(1 / this.wall.texel.value.x, 1 / this.wall.texel.value.y);
+  }
 
   _buildDrops(cap) {
     const base = new THREE.PlaneGeometry(1, 1);
@@ -186,9 +266,17 @@ export class Goo {
         const o = i * STAMP;
         this.film.add(s[o], s[o + 1], s[o + 2], s[o + 3], s[o + 4], s[o + 5], s[o + 6], s[o + 7], s[o + 8], s[o + 9]);
       }
+      // the wall's stamps (v81): up the wall is the strip's −z, as the floor's far is
+      const ws = this.sim.wstamps;
+      this.wallStamps = (this.wallStamps || 0) + this.sim.nws;
+      if (this.wall) for (let i = 0; i < this.sim.nws; i++) {
+        const o = i * STAMP;
+        this.wall.add(ws[o], -ws[o + 1], ws[o + 2], -ws[o + 3], ws[o + 4], ws[o + 5], ws[o + 6], ws[o + 7], ws[o + 8], ws[o + 9]);
+      }
     }
     this.film.feet(this.bodies, this.nb);
     this.film.dt += dt;
+    if (this.wall) this.wall.dt += dt;
   }
 
   // the drops, as the GPU reads them: one contiguous run, uploaded as far as it goes
@@ -204,9 +292,28 @@ export class Goo {
   }
 
   // `maxDt`: the longest step the film takes (a fast-forward catches up coarsely)
-  render(renderer, maxDt) { this.film.render(renderer, maxDt); }
+  render(renderer, maxDt) {
+    this.film.render(renderer, maxDt);
+    if (this.wall) { this.wall.render(renderer, maxDt); this.wWet.value = this.wall.wetTexture; this.wDry.value = this.wall.dryTexture; }
+  }
 
-  clear() { this.sim.clear(); this.drops.geometry.instanceCount = 0; this.shadows.geometry.instanceCount = 0; this.film.clear(); }
+  clear() { this.sim.clear(); this.drops.geometry.instanceCount = 0; this.shadows.geometry.instanceCount = 0; this.film.clear(); this.wall?.clear(); }
+}
+
+// A cubic B-spline read of a film in four bilinear taps (Sigg and Hadwiger's
+// trick; floor.js has the same): a bilinear read draws a stain as the outline
+// of the texels it fell in, a staircase, and the spline's contour is round
+function smoothRead(tex, st, size) {
+  const t = st.mul(size).sub(0.5), i = t.floor(), f = t.sub(i);
+  const f2 = f.mul(f), f3 = f2.mul(f);
+  const w0 = float(1).sub(f).pow(3).div(6), w1 = float(4).sub(f2.mul(6)).add(f3.mul(3)).div(6);
+  const w2 = float(1).add(f.mul(3)).add(f2.mul(3)).sub(f3.mul(3)).div(6), w3 = f3.div(6);
+  const g0 = w0.add(w1), g1 = w2.add(w3);
+  const h0 = i.sub(0.5).add(w1.div(g0)), h1 = i.add(1.5).add(w3.div(g1));
+  const a = h0.div(size), b = h1.div(size);
+  const top = tex.sample(vec2(a.x, a.y)).mul(g0.x).add(tex.sample(vec2(b.x, a.y)).mul(g1.x));
+  const bot = tex.sample(vec2(a.x, b.y)).mul(g0.x).add(tex.sample(vec2(b.x, b.y)).mul(g1.x));
+  return top.mul(g0.y).add(bot.mul(g1.y));
 }
 
 const _c = new THREE.Color();
@@ -228,8 +335,10 @@ function shadeDrop(col, N) {
 // Stamps and footprints are drawn top-down over the arena, as the light map
 // is (light.js): an orthographic camera over the floor, far edge at the top.
 class Film {
-  constructor(F) {
-    this.F = F;
+  // `wall` (v81): the rail's film — one strip, the rail unwrapped (x = metres
+  // along it, the camera's far = metres UP it), and the flow runs down
+  constructor(F, { wall = false } = {}) {
+    this.F = F; this.wall = wall;
     const opt = { type: THREE.HalfFloatType, depthBuffer: false, minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter };
     // each target holds the wet film and the stain (textures 0 and 1), so one
     // pass steps both: on a phone's tiled GPU every pass is a trip through memory
@@ -303,10 +412,13 @@ class Film {
     this.wetIn = texture(this.rt[0].textures[0]); this.dryIn = texture(this.rt[0].textures[1]); this.velIn = texture(this.vel.texture);
     const wetFlow = Fn(() => {
       const p = uv(), tx = this.texel;
-      // the bodies drag the film along: look back along their mean velocity
-      const vv = this.velIn.sample(p);
-      const u = select(vv.z.greaterThan(1e-3), vv.xy.div(max(vv.z, 1e-3)).mul(min(vv.z, 1)).mul(F.drag), vec2(0));
-      const q = p.sub(u.mul(this.uDt).div(this.uSize));
+      let q = p;
+      if (!wall) {
+        // the bodies drag the film along: look back along their mean velocity
+        const vv = this.velIn.sample(p);
+        const u = select(vv.z.greaterThan(1e-3), vv.xy.div(max(vv.z, 1e-3)).mul(min(vv.z, 1)).mul(F.drag), vec2(0));
+        q = p.sub(u.mul(this.uDt).div(this.uSize));
+      }
       const c = this.wetIn.sample(q);
       // flux between two texels: the difference in mobile goo (above the
       // yield) × a mobility that grows with how much is mobile, so deep goo
@@ -321,8 +433,21 @@ class Film {
         return vec4(hue.mul(f), f);
       };
       const nE = this.wetIn.sample(q.add(vec2(tx.x, 0))), nW = this.wetIn.sample(q.sub(vec2(tx.x, 0)));
-      const nN = this.wetIn.sample(q.add(vec2(0, tx.y))), nS = this.wetIn.sample(q.sub(vec2(0, tx.y)));
-      const o = c.add(flux(nE)).add(flux(nW)).add(flux(nN)).add(flux(nS));
+      let o = c.add(flux(nE)).add(flux(nW));
+      if (!wall) {
+        const nN = this.wetIn.sample(q.add(vec2(0, tx.y))), nS = this.wetIn.sample(q.sub(vec2(0, tx.y)));
+        o = o.add(flux(nN)).add(flux(nS));
+      } else {
+        // on a wall the goo RUNS: the mobile depth of the texel above comes
+        // down into this one and this one's goes on down, `run` of it a step
+        // (the top row takes nothing in; the bottom row lets nothing out — the
+        // bead at the wall's foot — so the strip conserves what it is given)
+        const Kg = float(F.run);
+        const up = this.wetIn.sample(q.add(vec2(0, tx.y))), hasUp = step(q.y.add(tx.y), float(1)), hasDown = step(tx.y, q.y);
+        const mu = mob(up.a), mc = mob(c.a);
+        const gin = mu.mul(Kg).mul(min(mu.div(Hr), 1)).mul(hasUp), gout = mc.mul(Kg).mul(min(mc.div(Hr), 1)).mul(hasDown);
+        o = o.add(vec4(up.rgb.div(max(up.a, 1e-4)).mul(gin), gin)).sub(vec4(c.rgb.div(max(c.a, 1e-4)).mul(gout), gout));
+      }
       // evaporation: a constant depth a second, whatever the depth
       const e = min(o.a, float(F.evap).mul(this.uDt));
       const keep = select(o.a.greaterThan(1e-4), o.a.sub(e).div(max(o.a, 1e-4)), float(0));
@@ -346,14 +471,29 @@ class Film {
     const m = new THREE.NodeMaterial(); m.depthTest = false; m.depthWrite = false;
     m.fragmentNode = mrt({ wet: wetFlow, dry: dryFlow });
     this.flowQuad = new THREE.QuadMesh(m);
+    // the wipe: both textures to nothing. A pass, not renderer.clear(): on a
+    // two-texture target the clear reached only the first (v81: the wall's
+    // stain started at a millimetre everywhere and faded from there)
+    const z = new THREE.NodeMaterial(); z.depthTest = false; z.depthWrite = false;
+    z.fragmentNode = mrt({ wet: vec4(0), dry: vec4(0) });
+    this.zeroQuad = new THREE.QuadMesh(z);
     this._prev = new THREE.Color();
   }
 
   get wetTexture() { return this.rt[this.cur].textures[0]; }
   get dryTexture() { return this.rt[this.cur].textures[1]; }
 
-  // the film covers the arena exactly, at perMetre texels a metre
+  // the film covers the arena exactly, at perMetre texels a metre; the wall's
+  // covers the rail unwrapped, `rows` texels up its `h` metres
   setArena(hx, hz) {
+    if (this.wall) {
+      const P = wallLen(hx, hz), w = Math.max(16, Math.round(P * this.F.perMetre)), h = Math.max(4, this.F.rows);
+      Object.assign(this.cam, { left: 0, right: P, top: this.F.h, bottom: 0 }); this.cam.updateProjectionMatrix();
+      for (const rt of this.rt) rt.setSize(w, h);
+      this.texel.value.set(1 / w, 1 / h); this.uSize.value.set(P, this.F.h); this.px = P / w;
+      this.clear();
+      return;
+    }
     Object.assign(this.cam, { left: -hx, right: hx, top: hz, bottom: -hz }); this.cam.updateProjectionMatrix();
     const w = Math.max(16, Math.round(2 * hx * this.F.perMetre)), h = Math.max(16, Math.round(2 * hz * this.F.perMetre));
     for (const rt of this.rt) rt.setSize(w, h);
@@ -381,6 +521,7 @@ class Film {
   }
 
   feet(bodies, nb) {
+    if (this.wall) return;   // nothing walks on a wall
     let k = 0;
     for (let i = 0; i < nb && k < MAX_BODIES; i++) {
       const o = i * BODY;
@@ -397,11 +538,14 @@ class Film {
   async probe(renderer, x, z, n = 64) {
     const out = { wet: 0, dry: 0, covered: 0 };
     const W = this.rt[0].width, H = this.rt[0].height;
-    n = Math.min(n, W, H);
-    const S = this.uSize.value, cx = Math.round((x / S.x + 0.5) * W), cy = Math.round((z / S.y + 0.5) * H);
-    const x0 = Math.max(0, Math.min(W - n, cx - n / 2)), y0 = Math.max(0, Math.min(H - n, cy - n / 2));
+    // the wall's strip is small: the whole of it is read
+    let nx = Math.min(n, W, H), ny = nx, x0 = 0, y0 = 0;
+    if (this.wall) { nx = W; ny = H; } else {
+      const S = this.uSize.value, cx = Math.round((x / S.x + 0.5) * W), cy = Math.round((z / S.y + 0.5) * H);
+      x0 = Math.max(0, Math.min(W - nx, cx - nx / 2)); y0 = Math.max(0, Math.min(H - ny, cy - ny / 2));
+    }
     for (const [i, key] of [[0, 'wet'], [1, 'dry']]) {
-      const px = await renderer.readRenderTargetPixelsAsync(this.rt[this.cur], x0, y0, n, n, i);
+      const px = await renderer.readRenderTargetPixelsAsync(this.rt[this.cur], x0, y0, nx, ny, i);
       for (let i = 3; i < px.length; i += 4) {
         const a = px instanceof Uint16Array ? THREE.DataUtils.fromHalfFloat(px[i]) : px[i];
         if (a > 0) { out[key] += a; if (a > 0.05) out.covered++; }
@@ -423,7 +567,7 @@ class Film {
     renderer.getClearColor(this._prev);
     renderer.setClearColor(0x000000, 0);
     if (this.dirty) {
-      for (const rt of this.rt) { renderer.setRenderTarget(rt); renderer.clear(); }
+      for (const rt of this.rt) { renderer.setRenderTarget(rt); renderer.clear(); this.zeroQuad.render(renderer); }
       this.dirty = false;
     }
     const a = this.cur, b = 1 - a;
@@ -438,12 +582,14 @@ class Film {
         renderer.render(this.stampScene, this.cam);
         this.ns = 0;
       }
-      // 2. the bodies' footprints
-      const fg = this.footMesh.geometry;
-      fg.instanceCount = this.nf;
-      for (const at of [this.fA, this.fV]) { at.clearUpdateRanges(); at.addUpdateRange(0, Math.max(1, this.nf) * at.itemSize); at.needsUpdate = true; }
-      renderer.autoClear = true;
-      renderer.setRenderTarget(this.vel); renderer.render(this.velScene, this.cam);
+      // 2. the bodies' footprints (the floor's: nothing walks on a wall)
+      if (!this.wall) {
+        const fg = this.footMesh.geometry;
+        fg.instanceCount = this.nf;
+        for (const at of [this.fA, this.fV]) { at.clearUpdateRanges(); at.addUpdateRange(0, Math.max(1, this.nf) * at.itemSize); at.needsUpdate = true; }
+        renderer.autoClear = true;
+        renderer.setRenderTarget(this.vel); renderer.render(this.velScene, this.cam);
+      }
     }
     // 3. the flow: the wet film and the stain together, from the current pair into the other
     this.uDt.value = dt;

@@ -16,6 +16,10 @@
 //   RIDE  stuck to a body's skin, carried with it and creeping down its side
 //         under gravity (faster for a fatter drop: a film runs as its
 //         thickness squared); it drips off at the foot
+//   CLING on the rail's wall (v81): a drop that met the rail below the
+//         wall's height sticks where it struck and runs down the wall by the
+//         same law, streaking it as it goes (a WALL stamp a step), until it
+//         reaches the foot and slides on across the floor, or runs dry
 // A floor impact decides between SPLASH (fast and fat: a crown of finer drops
 // and an elongated stain), BOUNCE (fast and fine: surface tension wins, a
 // little mark and off again) and SLIDE (everything else). The stain of an
@@ -27,13 +31,32 @@
 // from (x, z) along (dx, dz) of length `len` and half-width `wid`, carrying
 // `amt` of goo VOLUME (m³) and a colour. What a drop loses to the floor is
 // what the floor gains, so a big kill leaves a deep pool and a mist a stipple.
+// The wall's stamps (`wstamps`, v81) are the same floats on the wall's own
+// plane: `s` metres along the rail (wallS) for x, metres UP the wall for z.
 // Every number is TUNING.goo.
 
 export const STAMP = 10;   // x, z, dx, dz, len, wid, amt, r, g, b
 export const BODY = 8;     // x, z, R, H, vx, vz, id, shape (0 dome, 1 box, 2 ball)
-export const AIR = 1, SLIDE = 2, RIDE = 3;
+export const AIR = 1, SLIDE = 2, RIDE = 3, CLING = 4;
 const VOL = 4 / 3 * Math.PI;   // a drop of radius r holds VOL r³
 const _w = new Float32Array(16);   // a splash's shares
+const _p = { x: 0, z: 0 };
+
+// The rail unwrapped into one line (v81), `s` metres along it from the far
+// wall's left end, going round clockwise seen from above: side 0 the far wall
+// (z = −hz, s runs with x), 1 the right wall (x = hx, s with z), 2 the near
+// wall (z = hz, s against x), 3 the left wall (x = −hx, s against z). Seen
+// from inside the arena every wall has s running left to right.
+export const wallLen = (hx, hz) => 4 * (hx + hz);
+export function wallS(side, x, z, hx, hz) { return side === 0 ? x + hx : side === 1 ? 2 * hx + z + hz : side === 2 ? 3 * hx + 2 * hz - x : 4 * hx + 3 * hz - z; }
+export function wallXZ(side, s, hx, hz, out) {
+  if (side === 0) { out.x = s - hx; out.z = -hz; } else if (side === 1) { out.x = hx; out.z = s - 2 * hx - hz; }
+  else if (side === 2) { out.x = 3 * hx + 2 * hz - s; out.z = hz; } else { out.x = -hx; out.z = 4 * hx + 3 * hz - s; }
+  return out;
+}
+// each wall's inward normal and the way s runs along it, and the span of s it covers
+export const WALL_N = [[0, 1], [-1, 0], [0, -1], [1, 0]], WALL_T = [[1, 0], [0, 1], [-1, 0], [0, -1]];
+export function wallSpan(side, hx, hz) { const a = side === 0 ? 0 : side === 1 ? 2 * hx : side === 2 ? 2 * hx + 2 * hz : 4 * hx + 2 * hz; return [a, a + (side % 2 ? 2 * hz : 2 * hx)]; }
 
 export class GooSim {
   constructor(cap, P) {
@@ -42,14 +65,16 @@ export class GooSim {
     this.x = f(); this.y = f(); this.z = f(); this.vx = f(); this.vy = f(); this.vz = f();
     this.r = f(); this.life = f(); this.cr = f(); this.cg = f(); this.cb = f();
     this.ra = f(); this.rh = f();               // RIDE: bearing round the body, height up it
+    this.ws = f(); this.side = new Uint8Array(cap);   // CLING: s along the rail, which wall
     this.st = new Uint8Array(cap); this.body = new Int32Array(cap);
     this.n = 0;                                  // live drops, packed at the front
     this.stamps = new Float32Array(P.stampCap * STAMP); this.ns = 0;
-    this.stats = { emitted: 0, refused: 0, splashed: 0, bounced: 0, rode: 0, stamps: 0 };
+    this.wstamps = new Float32Array(P.stampCap * STAMP); this.nws = 0;   // the wall's (v81)
+    this.stats = { emitted: 0, refused: 0, splashed: 0, bounced: 0, rode: 0, clung: 0, stamps: 0 };
     this._bi = new Map();
   }
 
-  clear() { this.n = 0; this.ns = 0; }
+  clear() { this.n = 0; this.ns = 0; this.nws = 0; }
 
   // one drop; false when the pool is full (the view's budget decides how
   // much a single event may throw, so this is the last guard, not the plan)
@@ -71,6 +96,7 @@ export class GooSim {
     this.vx[i] = this.vx[j]; this.vy[i] = this.vy[j]; this.vz[i] = this.vz[j];
     this.r[i] = this.r[j]; this.life[i] = this.life[j]; this.cr[i] = this.cr[j]; this.cg[i] = this.cg[j]; this.cb[i] = this.cb[j];
     this.ra[i] = this.ra[j]; this.rh[i] = this.rh[j]; this.st[i] = this.st[j]; this.body[i] = this.body[j];
+    this.ws[i] = this.ws[j]; this.side[i] = this.side[j];
   }
 
   stamp(x, z, dx, dz, len, wid, amt, r, g, b) {
@@ -80,12 +106,21 @@ export class GooSim {
     this.stats.stamps++;
   }
 
+  // a stamp on the wall (v81): `s` along the rail, `y` up the wall
+  wstamp(s_, y, ds, dy, len, wid, amt, r, g, b) {
+    if (this.nws >= this.P.stampCap) return;
+    const o = this.nws++ * STAMP, s = this.wstamps;
+    s[o] = s_; s[o + 1] = y; s[o + 2] = ds; s[o + 3] = dy; s[o + 4] = len; s[o + 5] = wid; s[o + 6] = amt; s[o + 7] = r; s[o + 8] = g; s[o + 9] = b;
+    this.stats.stamps++;
+  }
+
   // One step. `bodies` is a flat array of BODY floats a body; `hx`, `hz` the
   // arena's half sizes: its rail is a wall the goo runs down, as a curb is.
-  // The stamps of this step are left in `stamps[0 … ns)` for the view.
+  // The stamps of this step are left in `stamps[0 … ns)` for the view, and
+  // the wall's in `wstamps[0 … nws)`.
   step(dt, bodies, nb, hx, hz) {
-    const P = this.P, G = P.gravity, A = P.air, F = P.floor, Rd = P.ride;
-    this.ns = 0;
+    const P = this.P, G = P.gravity, A = P.air, F = P.floor, Rd = P.ride, Wl = P.wall;
+    this.ns = 0; this.nws = 0;
     const bi = this._bi; bi.clear();
     for (let k = 0; k < nb; k++) bi.set(bodies[k * BODY + 6], k);
     // newest first: a splash's crown is appended past the end and waits a step
@@ -98,9 +133,16 @@ export class GooSim {
         const k = 1 / (1 + (A.lin + A.quad * sp / r) * dt);       // implicit: stable at any dt
         this.vx[i] *= k; this.vy[i] *= k; this.vz[i] *= k;
         let x = this.x[i] + this.vx[i] * dt, y = this.y[i] + this.vy[i] * dt, z = this.z[i] + this.vz[i] * dt;
-        // the rail: the goo meets it, loses its way and runs down it
-        if (x < -hx + r || x > hx - r) { x = Math.max(-hx + r, Math.min(hx - r, x)); this.vx[i] *= -A.wall; this.vz[i] *= 0.5; }
-        if (z < -hz + r || z > hz - r) { z = Math.max(-hz + r, Math.min(hz - r, z)); this.vz[i] *= -A.wall; this.vx[i] *= 0.5; }
+        // the rail: below the wall's height the goo meets a WALL and clings to
+        // it (v81); above it, the old invisible rail: it loses its way and runs down
+        let side = -1;
+        if (x < -hx + r) side = 3; else if (x > hx - r) side = 1;
+        else if (z < -hz + r) side = 0; else if (z > hz - r) side = 2;
+        if (side >= 0) {
+          if (Wl?.on && y <= Wl.h && y > r) { this.x[i] = x; this.y[i] = y; this.z[i] = z; this._cling(i, side, r, hx, hz); continue; }
+          if (x < -hx + r || x > hx - r) { x = Math.max(-hx + r, Math.min(hx - r, x)); this.vx[i] *= -A.wall; this.vz[i] *= 0.5; }
+          if (z < -hz + r || z > hz - r) { z = Math.max(-hz + r, Math.min(hz - r, z)); this.vz[i] *= -A.wall; this.vx[i] *= 0.5; }
+        }
         this.x[i] = x; this.y[i] = y; this.z[i] = z;
         // a body in the way: the drop sticks to it
         let hit = -1;
@@ -145,6 +187,32 @@ export class GooSim {
           this.stamp(x, z, 1, 0, 0, nr * F.blob, VOL * nr * nr * nr, this.cr[i], this.cg[i], this.cb[i]);
           this._kill(i);
         }
+      } else if (st === CLING) {
+        // down the wall at the speed a film its size runs, its sideways slip
+        // dying out; it leaves itself behind on the wall as it goes
+        const side = this.side[i], span = wallSpan(side, hx, hz);
+        const term = Wl.creep + Wl.creepR * r * r;
+        this.vy[i] += (-term - this.vy[i]) * Math.min(1, Wl.settle * dt);
+        this.vx[i] *= Math.exp(-Wl.slip * dt);
+        const ds = this.vx[i] * dt, dy = this.vy[i] * dt, dist = Math.hypot(ds, dy);
+        const V = VOL * r * r * r, lose = Math.min(V, V * Wl.shed * dist);
+        if (dist > 1e-4 && lose > 0) this.wstamp(this.ws[i], this.y[i], ds / dist, dy / dist, dist, r * Wl.streakWide, lose, this.cr[i], this.cg[i], this.cb[i]);
+        const nr = Math.cbrt((V - lose) / VOL);
+        let s = this.ws[i] + ds;
+        const y = this.y[i] + dy;
+        if (s < span[0] + nr) { s = span[0] + nr; this.vx[i] = 0; } else if (s > span[1] - nr) { s = span[1] - nr; this.vx[i] = 0; }   // it stops at the corner
+        this.ws[i] = s; this.r[i] = nr;
+        if (y <= nr) {
+          // at the foot: onto the floor, sliding on a little off the wall
+          const vs = this.vx[i], o = wallXZ(side, s, hx, hz, _p), N = WALL_N[side], Tg = WALL_T[side];
+          this.st[i] = SLIDE; this.y[i] = nr * F.flat;
+          this.x[i] = o.x + N[0] * nr * 1.5; this.z[i] = o.z + N[1] * nr * 1.5;
+          this.vx[i] = Tg[0] * vs + N[0] * Wl.out; this.vz[i] = Tg[1] * vs + N[1] * Wl.out;
+          this.life[i] = Math.max(this.life[i], 0.6);
+        } else if (nr < Wl.minR) {
+          this.wstamp(s, y, 0, -1, 0, nr * Wl.blob, VOL * nr * nr * nr, this.cr[i], this.cg[i], this.cb[i]);
+          this._kill(i);
+        } else this._onWall(i, side, s, y, nr, hx, hz);
       } else {   // RIDE
         const k = bi.get(this.body[i]);
         if (k === undefined) {
@@ -208,6 +276,51 @@ export class GooSim {
     this.vx[i] = vx * F.keep; this.vz[i] = vz * F.keep;
   }
 }
+
+// AIR → a wall (v81): an impact stain on it; a crown back off it if it came
+// in fast and fat, else it clings with what is left and runs down
+GooSim.prototype._cling = function (i, side, r, hx, hz) {
+  const P = this.P, Wl = P.wall, S = P.splash, F = P.floor, N = WALL_N[side], Tg = WALL_T[side];
+  const vx = this.vx[i], vy = this.vy[i], vz = this.vz[i];
+  const vn = Math.max(0, -(vx * N[0] + vz * N[1])), vt = vx * Tg[0] + vz * Tg[1];   // into the wall; along it
+  const span = wallSpan(side, hx, hz);
+  const s = Math.max(span[0] + r, Math.min(span[1] - r, wallS(side, this.x[i], this.z[i], hx, hz)));
+  const y = Math.max(r, Math.min(Wl.h, this.y[i]));
+  const vp = Math.hypot(vt, vy), ut = vp > 1e-6 ? vt / vp : 1, uy = vp > 1e-6 ? vy / vp : 0;   // the way it travels on the wall
+  const sinA = vn / Math.max(1e-6, Math.hypot(vn, vp)), stretch = Math.min(F.maxElong, 1 / Math.max(0.05, sinA));
+  const cr = this.cr[i], cg = this.cg[i], cb = this.cb[i], V = VOL * r * r * r;
+  if (vn > S.speed && r > S.minR) {
+    // a crown back off the wall: the stain keeps `keep` of the drop, the rest
+    // flies back into the arena, swung toward the way it was travelling
+    this.stats.splashed++;
+    this.wstamp(s, y, ut, uy, r * (stretch - 1) * 2, r * F.blob, V * S.keep, cr, cg, cb);
+    const n = Math.max(1, Math.min(S.count, Math.round(S.perSpeed * vn * r / S.minR)));
+    const w = _w; let sum = 0;
+    for (let k = 0; k < n; k++) { w[k] = 0.5 + Math.random(); sum += w[k]; }
+    const px = this.x[i], pz = this.z[i], sw = vt < 0 ? -1 : 1;
+    this._kill(i);
+    for (let k = 0; k < n; k++) {
+      const rc = r * Math.cbrt((1 - S.keep) * w[k] / sum), sp = (0.3 + 0.7 * Math.random()) * S.out * vn, a = (Math.random() * 2 - 1) * 1.2;
+      const ox = N[0] * Math.cos(a) + Tg[0] * Math.sin(a) * sw, oz = N[1] * Math.cos(a) + Tg[1] * Math.sin(a) * sw;
+      const ex = Math.max(-hx + rc, Math.min(hx - rc, px + N[0] * rc * 2)), ez = Math.max(-hz + rc, Math.min(hz - rc, pz + N[1] * rc * 2));
+      if (!this.emit(ex, y, ez, ox * sp + Tg[0] * vt * S.carry, Math.abs(vy) * S.up * (0.4 + 0.6 * Math.random()), oz * sp + Tg[1] * vt * S.carry, rc, cr, cg, cb)) this.wstamp(s, y, ut, uy, 0, rc * F.blob, VOL * rc * rc * rc, cr, cg, cb);
+    }
+    return;
+  }
+  // the impact's stain on the wall, then it clings with what is left
+  this.wstamp(s, y, ut, uy, r * (stretch - 1), r * F.blob * 0.8, V * Wl.impact, cr, cg, cb);
+  const nr = r * Math.cbrt(1 - Wl.impact);
+  this.st[i] = CLING; this.side[i] = side; this.ws[i] = s; this.r[i] = nr;
+  this.vx[i] = vt * Wl.keep; this.vy[i] = Math.min(0, vy) * Wl.keep; this.vz[i] = 0;   // vx: along the wall; vy: down it
+  this._onWall(i, side, s, y, nr, hx, hz);
+  this.stats.clung++;
+};
+
+// a clinging drop's place in the world: on its wall, `proud` × its radius off it
+GooSim.prototype._onWall = function (i, side, s, y, r, hx, hz) {
+  const o = wallXZ(side, s, hx, hz, _p), off = r * this.P.wall.proud, N = WALL_N[side];
+  this.x[i] = o.x + N[0] * off; this.z[i] = o.z + N[1] * off; this.y[i] = y;
+};
 
 // how wide a body is at height y: the dome is the unit sphere raised 0.7 and
 // cut at the floor (gel.js domeGeometry), the box stands upright, the ball
