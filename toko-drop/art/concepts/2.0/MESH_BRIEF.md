@@ -8,4 +8,6 @@ Mesh NOW (APPROVED only):
 
 - World 4: `world-4/04-cistern-modules-APPROVED.png` — ~52×28 m; slab 2.4 m; cyan rim; columns r0.62.
 
+- World 5: `world-5/05-boiler-modules-APPROVED.png` — ~46×28 m; steel plate 3.2×2.1; orange rim/grates.
+
 Do not mesh `elements/`, `modules/`, `pending/`, or `*-more-*` / arena complete pieces until APPROVED.
