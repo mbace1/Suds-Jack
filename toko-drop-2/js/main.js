@@ -7,34 +7,35 @@
 // The rules live in sim/ and run on a fixed step; this file feeds them input,
 // hands their events to the view and the sound, and draws in between steps.
 import * as THREE from 'three/webgpu';
-import { TUNING } from './tuning.js?v=78';
-import { buildFloor } from './render/floor.js?v=78';
-import { fitCamera, screenToWorld, screenDown } from './render/view.js?v=78';
-import * as worldsSim from './sim/worlds.js?v=78';
-import { shapeAt as shiftShape } from './sim/floorshift.js?v=78';
-import * as reshapeSim from './sim/reshape.js?v=78';
-import { Scenery } from './render/scenery.js?v=78';
-import { DRIFT } from './render/kit.js?v=78';
-import { Transit } from './render/transit.js?v=78';
-import { Splats } from './render/splats.js?v=78';
-import { Actors } from './render/actors.js?v=78';
-import { GEL_TIME } from './render/gel.js?v=78';
-import { studioEnvironment } from './render/env.js?v=78';
-import { Specimen } from './render/specimen.js?v=78';
-import { createWorld, step, api as simApi } from './sim/world.js?v=78';
-import { stage as stagePk } from './sim/pickups.js?v=78';
-import { Input } from './input.js?v=78';
-import { UI, t, timeText, LANGS, getLang, setLang, goalText, bossName } from './ui.js?v=78';
-import { Announcer } from './announcer.js?v=78';
-import { rooms as campaignRooms, isOpen as roomOpen, better as betterGrade } from './sim/director/campaign.js?v=78';
-import { levelShape, slots as regionSlots } from './sim/shape.js?v=78';
-import { Sound } from './audio.js?v=78';
-import { Music, worldWant, cueFor, renderMusicWav } from './music.js?v=78';
-import { Intro, CUES as INTRO } from './intro/intro.js?v=78';
-import { scheduleIntroSfx, renderIntroSfxWav } from './intro/sfx.js?v=78';
-import { Readout } from './readout.js?v=78';
-import { Meter, device } from './meter.js?v=78';
-import * as record from './record.js?v=78';
+import { TUNING } from './tuning.js?v=79';
+import { buildFloor } from './render/floor.js?v=79';
+import { fitCamera, screenToWorld, screenDown } from './render/view.js?v=79';
+import * as worldsSim from './sim/worlds.js?v=79';
+import { shapeAt as shiftShape } from './sim/floorshift.js?v=79';
+import * as reshapeSim from './sim/reshape.js?v=79';
+import { Scenery } from './render/scenery.js?v=79';
+import { DRIFT } from './render/kit.js?v=79';
+import { Glow } from './render/glow.js?v=79';
+import { Transit } from './render/transit.js?v=79';
+import { Splats } from './render/splats.js?v=79';
+import { Actors } from './render/actors.js?v=79';
+import { GEL_TIME } from './render/gel.js?v=79';
+import { studioEnvironment } from './render/env.js?v=79';
+import { Specimen } from './render/specimen.js?v=79';
+import { createWorld, step, api as simApi } from './sim/world.js?v=79';
+import { stage as stagePk } from './sim/pickups.js?v=79';
+import { Input } from './input.js?v=79';
+import { UI, t, timeText, LANGS, getLang, setLang, goalText, bossName } from './ui.js?v=79';
+import { Announcer } from './announcer.js?v=79';
+import { rooms as campaignRooms, isOpen as roomOpen, better as betterGrade } from './sim/director/campaign.js?v=79';
+import { levelShape, slots as regionSlots } from './sim/shape.js?v=79';
+import { Sound } from './audio.js?v=79';
+import { Music, worldWant, cueFor, renderMusicWav } from './music.js?v=79';
+import { Intro, CUES as INTRO } from './intro/intro.js?v=79';
+import { scheduleIntroSfx, renderIntroSfxWav } from './intro/sfx.js?v=79';
+import { Readout } from './readout.js?v=79';
+import { Meter, device } from './meter.js?v=79';
+import * as record from './record.js?v=79';
 
 const T = TUNING;
 const params = new URLSearchParams(location.search);
@@ -74,6 +75,9 @@ sun.position.set(...T.light.sun.position);
 scene.add(sun);
 // what the jelly reflects (render/env.js): 2.0's, 1.x had nothing to reflect
 if (T.env.on) { scene.environment = studioEnvironment(); scene.environmentIntensity = T.env.intensity; }
+// v79: the GLOW option (render/glow.js), off unless asked for; ?glow=1 / ?glow=0 override it for a link
+const glow = new Glow(renderer, scene, T);   // its pass takes the frame's camera when it first draws
+const glowOn = () => (params.get('glow') === '1' ? true : params.get('glow') === '0' ? false : store.str('toko2.glow') === 'on');
 // v75: each world lit in its own light (TUNING.worlds.light): the sun's colour, strength
 // and place, the ambient's, and how much the jelly reflects. Set as a floor is built, which
 // for a world change is under the dark
@@ -354,7 +358,7 @@ const meter = new Meter();
 const recordHow = () => ({
   input: input.source, screen: arenaName, date: new Date(), frames: meter.summary(), letGos: input.letGos,
   device: device({ ua: navigator.userAgent, touchPoints: navigator.maxTouchPoints, width: renderer.domElement.width, height: renderer.domElement.height,
-    ratio: renderer.getPixelRatio(), backend, gels: actors.gels, goo: gooOn() }),
+    ratio: renderer.getPixelRatio(), backend, gels: actors.gels, goo: gooOn(), glow: glowOn() }),
 });
 // a room or a run left from the pause menu goes in the record as a quit (js/record.js)
 function recordQuit() {
@@ -396,6 +400,7 @@ const ui = new UI({
   onAnnouncer: () => { announcer.on = !announcer.on; store.set('toko2.announcer', announcer.on ? 'on' : 'off'); if (announcer.on) announcer.say('start'); else announcer.stop(); refreshMenu(); },
   onAnnVolume: () => { announcer.volume = next(VOLUMES.slice(1), announcer.volume); store.set('toko2.annVolume', announcer.volume); announcer.last = -1e9; announcer.say('clear'); refreshMenu(); },
   onMotion: () => { store.set('toko2.motion', reduceMotion() ? 'off' : 'on'); if (reduceMotion()) trauma = 0; refreshMenu(); },
+  onGlow: () => { store.set('toko2.glow', glowOn() ? 'off' : 'on'); refreshMenu(); },   // v79
   onLang: () => { setLang(LANGS[(LANGS.indexOf(getLang()) + 1) % LANGS.length]); refreshMenu(); },
   onDash: () => { store.set('toko2.dash', DASHES[(DASHES.indexOf(tests().dash) + 1) % DASHES.length]); refreshMenu(); },
   onGelHp: () => { const h = tests().hp; store.set('toko2.gelHp', HP_STEPS[(HP_STEPS.indexOf(h) + 1) % HP_STEPS.length]); refreshMenu(); },
@@ -406,7 +411,7 @@ const ui = new UI({
   onTitle: (keep) => (world?.room ? toMenu() : showTitle(keep)),
   onCampaign: () => showCampaign(),
   onRoom: (id) => startRoom(id),
-  optionsState: () => ({ sound: sound.on, volume: sound.volume, music: music.volume, announcer: announcer.on, annVolume: announcer.volume, reduceMotion: reduceMotion(), test: tests(),
+  optionsState: () => ({ sound: sound.on, volume: sound.volume, music: music.volume, announcer: announcer.on, annVolume: announcer.volume, reduceMotion: reduceMotion(), glow: glowOn(), test: tests(),
     ...((list) => ({ records: list.length, frames: record.lastFrames(list) }))(record.read(store)), recordSaid }),
   onRecord: () => shareRecord(),
   onBack: () => { if (state === 'paused') resume(); else if (state === 'over') toMenu(); },
@@ -532,7 +537,7 @@ const campaignProgress = (hard = false) => { try { return JSON.parse(store.str(h
 let lastRoom = null;   // AGAIN replays it
 const levels = new Map();
 async function loadLevel(id) {
-  if (!levels.has(id)) levels.set(id, fetch(new URL(`../levels/${id}.json?v=78`, import.meta.url)).then((r) => { if (!r.ok) throw new Error(`levels/${id}.json ${r.status}`); return r.json(); }));
+  if (!levels.has(id)) levels.set(id, fetch(new URL(`../levels/${id}.json?v=79`, import.meta.url)).then((r) => { if (!r.ok) throw new Error(`levels/${id}.json ${r.status}`); return r.json(); }));
   return levels.get(id);
 }
 // the list the room screen draws: worlds, their rooms, open or not, best grades
@@ -820,7 +825,7 @@ const debug = {
   get arena() { return arenaBox(); }, splats,
   frames: 0, ready: false, counts: {},
   announcer, music, get world() { return world; }, get state() { return state; }, get turn() { return turn; }, get lastDash() { return lastDash; },
-  floor: () => floor, get litAs() { return litAs; },   // v75: which world's light is on
+  floor: () => floor, get litAs() { return litAs; }, get glow() { return glowOn(); },   // v75: which world's light is on; v79: the glow pass on
   get following() { return !!following; }, get viewWorld() { return viewWorld; }, get floorStyle() { return floor?.style; }, camAt, scenery, transit,
   arenaFor: (n, shape) => worldsSim.arenaFor(n, shape),
   // the run straight to its world's boss wave, the floor emptied (the smoke's
@@ -996,7 +1001,7 @@ function frame(now, dtFixed) {
   ui.drawSticks(input, following && world && state === 'play' ? offscreen() : null);
   actors.light.render(renderer);   // the arena's light map, which the floor reads
   if (actors.goo) { actors.goo.render(renderer); floor.setFilm(actors.goo.film); }   // the goo's film steps (render/goo.js), and the floor reads where it now is
-  renderer.render(scene, state === 'intro' ? intro.cam : camera);
+  if (glowOn()) glow.render(state === 'intro' ? intro.cam : camera); else renderer.render(scene, state === 'intro' ? intro.cam : camera);   // v79: through the glow pass when it is on
   if (state === 'paused' || state === 'over') specimen.render(renderer, time); else specimen.hide();   // the GOT YOU card's gel, over its box
   readout.frame(now, state, world);
   if (warming && (state === 'menu' || state === 'intro')) warming = actors.warmStep(warmExtra);   // v74: one kind a frame, on the title only

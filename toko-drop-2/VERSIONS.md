@@ -19,6 +19,16 @@
     Never `--no-verify`.
 -->
 
+## v79 — 2026-10-31
+**GLOW in OPTIONS, off by default: bright things bleed light**
+- The owner's fourth visual pick, last and off by default on their word ("bloom last and not on by default"). A bloom pass (render/glow.js): the scene drawn into a pass whose render target carries mipmaps, and the output adding the frame's bright part sampled bicubically at four mip levels — a mip-chain bloom, the idea of three's BloomNode, which is an addon the vendored build does not carry — cut with a soft knee round a threshold in linear light, before the tone mapping and colour space PostProcessing applies to its own output. The DOM (HUD, banners) is untouched. Every number TUNING.glow.
+- OPTIONS → GLOW ON/OFF (`toko2.glow`; `?glow=1` / `?glow=0` for a link); the PLAY RECORD's device line says `glow` when a run was played with it on, so a phone's frame times with it can be told from those without.
+- What it costs: under SwiftShader a frame goes from 448 to 848 ms in world 1 and 605 to 1100 in world 4 at 2× scale — about 1.9×, the scene drawn to a 4-sample target plus a full-screen pass, which a software rasteriser pays for in full. A phone's GPU pays far less; the record will say how much.
+- The smoke runs a `glow` scenario (the frame through the pass, the same checks as the plain one).
+- Cache tokens `?v=78` → `?v=79`; HUD label → `2.0 · v79`
+
+---
+
 ## v78 — 2026-10-31
 **The waters differ: puddles on the sewer's flagstones and oil under the boiler's pipes, a murky channel, a river that flows; only the cistern keeps its sheet of water**
 - The owner, 2026-10-31: "all the water in the levels looks the same. Some can have puddles, one this look but after that we need to differentiate." The sewer's channel, the cistern's floor and the river all drew their water the same way — a sine of a noise field, which makes the wavy caustic net — so three worlds and two campaign worlds (THE WELL, THE VEIN) read as one. Now (render/floor.js):

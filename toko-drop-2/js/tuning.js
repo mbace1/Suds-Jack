@@ -7,10 +7,10 @@
 // things that work"). The arena is 1.x's, so every 1.x number ports as it is
 // instead of through a rescale. Axes: x across the screen (right +), y up,
 // z toward the bottom of the screen. The arena is centred on the origin.
-import { SPECIES } from './tuning/species/index.js?v=78';
-import WAVES from './tuning/waves.js?v=78';
-import PICKUPS from './tuning/pickups.js?v=78';
-import MUSIC from './tuning/music.js?v=78';
+import { SPECIES } from './tuning/species/index.js?v=79';
+import WAVES from './tuning/waves.js?v=79';
+import PICKUPS from './tuning/pickups.js?v=79';
+import MUSIC from './tuning/music.js?v=79';
 
 export const TUNING = {
   render: {
@@ -370,6 +370,11 @@ export const TUNING = {
               props: [{ shape: 'tower', every: 3.6, out: [1.6, 5.0], h: [1.4, 5.2], w: [0.6, 1.4], color: 0x120818, glow: 0xff44dd, glowI: 1.8, stripes: 3, rough: 0.4, metal: 0.5 }] },
     },
   },
+
+  // v79: the GLOW option (render/glow.js), off by default (owner): the bright
+  // part of the frame past `threshold` (eased in over `knee`) added back blurred,
+  // sampled at mip `levels` with `weights`, × `strength`; `samples` the pass's MSAA
+  glow: { threshold: 0.7, knee: 0.25, levels: [2, 3, 4, 5], weights: [0.35, 0.3, 0.25, 0.2], strength: 1.2, samples: 4 },
 
   // One fixed view of the whole arena, refitted on every resize and rotation.
   camera: {

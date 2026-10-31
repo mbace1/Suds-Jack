@@ -56,9 +56,9 @@ export class Meter {
 // what the phone is, in a few words for the record: its kind, the canvas in
 // device pixels and the ratio, the renderer, and the two settings that cost
 // the most to draw (the gel style and the goo)
-export function device({ ua = '', touchPoints = 0, width, height, ratio, backend, gels, goo }) {
+export function device({ ua = '', touchPoints = 0, width, height, ratio, backend, gels, goo, glow = false }) {
   const kind = /iPhone|iPad|iPod/.test(ua) || (/Macintosh/.test(ua) && touchPoints > 1) ? 'ios'
     : /Android/.test(ua) ? 'android' : /CrOS/.test(ua) ? 'chromeos' : /Macintosh/.test(ua) ? 'mac'
       : /Windows/.test(ua) ? 'windows' : /Linux/.test(ua) ? 'linux' : '?';
-  return `${kind} ${width}x${height}@${+Number(ratio).toFixed(2)} ${backend} ${gels}${goo ? ' goo' : ''}`;
+  return `${kind} ${width}x${height}@${+Number(ratio).toFixed(2)} ${backend} ${gels}${goo ? ' goo' : ''}${glow ? ' glow' : ''}`;   // v79: a frame through the glow pass says so
 }
