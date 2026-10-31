@@ -7,34 +7,34 @@
 // The rules live in sim/ and run on a fixed step; this file feeds them input,
 // hands their events to the view and the sound, and draws in between steps.
 import * as THREE from 'three/webgpu';
-import { TUNING } from './tuning.js?v=74';
-import { buildFloor } from './render/floor.js?v=74';
-import { fitCamera, screenToWorld, screenDown } from './render/view.js?v=74';
-import * as worldsSim from './sim/worlds.js?v=74';
-import { shapeAt as shiftShape } from './sim/floorshift.js?v=74';
-import * as reshapeSim from './sim/reshape.js?v=74';
-import { Scenery } from './render/scenery.js?v=74';
-import { DRIFT } from './render/kit.js?v=74';
-import { Transit } from './render/transit.js?v=74';
-import { Splats } from './render/splats.js?v=74';
-import { Actors } from './render/actors.js?v=74';
-import { GEL_TIME } from './render/gel.js?v=74';
-import { studioEnvironment } from './render/env.js?v=74';
-import { Specimen } from './render/specimen.js?v=74';
-import { createWorld, step, api as simApi } from './sim/world.js?v=74';
-import { stage as stagePk } from './sim/pickups.js?v=74';
-import { Input } from './input.js?v=74';
-import { UI, t, timeText, LANGS, getLang, setLang, goalText, bossName } from './ui.js?v=74';
-import { Announcer } from './announcer.js?v=74';
-import { rooms as campaignRooms, isOpen as roomOpen, better as betterGrade } from './sim/director/campaign.js?v=74';
-import { levelShape, slots as regionSlots } from './sim/shape.js?v=74';
-import { Sound } from './audio.js?v=74';
-import { Music, worldWant, cueFor, renderMusicWav } from './music.js?v=74';
-import { Intro, CUES as INTRO } from './intro/intro.js?v=74';
-import { scheduleIntroSfx, renderIntroSfxWav } from './intro/sfx.js?v=74';
-import { Readout } from './readout.js?v=74';
-import { Meter, device } from './meter.js?v=74';
-import * as record from './record.js?v=74';
+import { TUNING } from './tuning.js?v=75';
+import { buildFloor } from './render/floor.js?v=75';
+import { fitCamera, screenToWorld, screenDown } from './render/view.js?v=75';
+import * as worldsSim from './sim/worlds.js?v=75';
+import { shapeAt as shiftShape } from './sim/floorshift.js?v=75';
+import * as reshapeSim from './sim/reshape.js?v=75';
+import { Scenery } from './render/scenery.js?v=75';
+import { DRIFT } from './render/kit.js?v=75';
+import { Transit } from './render/transit.js?v=75';
+import { Splats } from './render/splats.js?v=75';
+import { Actors } from './render/actors.js?v=75';
+import { GEL_TIME } from './render/gel.js?v=75';
+import { studioEnvironment } from './render/env.js?v=75';
+import { Specimen } from './render/specimen.js?v=75';
+import { createWorld, step, api as simApi } from './sim/world.js?v=75';
+import { stage as stagePk } from './sim/pickups.js?v=75';
+import { Input } from './input.js?v=75';
+import { UI, t, timeText, LANGS, getLang, setLang, goalText, bossName } from './ui.js?v=75';
+import { Announcer } from './announcer.js?v=75';
+import { rooms as campaignRooms, isOpen as roomOpen, better as betterGrade } from './sim/director/campaign.js?v=75';
+import { levelShape, slots as regionSlots } from './sim/shape.js?v=75';
+import { Sound } from './audio.js?v=75';
+import { Music, worldWant, cueFor, renderMusicWav } from './music.js?v=75';
+import { Intro, CUES as INTRO } from './intro/intro.js?v=75';
+import { scheduleIntroSfx, renderIntroSfxWav } from './intro/sfx.js?v=75';
+import { Readout } from './readout.js?v=75';
+import { Meter, device } from './meter.js?v=75';
+import * as record from './record.js?v=75';
 
 const T = TUNING;
 const params = new URLSearchParams(location.search);
@@ -67,12 +67,23 @@ document.getElementById('backend').textContent = ` · ${backend}`;
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(T.render.clearColor);
 // 1.x's light: white ambient and one sun. The gels are the only lit things.
-scene.add(new THREE.AmbientLight(0xffffff, T.light.ambient));
+const ambient = new THREE.AmbientLight(0xffffff, T.light.ambient);
+scene.add(ambient);
 const sun = new THREE.DirectionalLight(0xffffff, T.light.sun.intensity);
 sun.position.set(...T.light.sun.position);
 scene.add(sun);
 // what the jelly reflects (render/env.js): 2.0's, 1.x had nothing to reflect
 if (T.env.on) { scene.environment = studioEnvironment(); scene.environmentIntensity = T.env.intensity; }
+// v75: each world lit in its own light (TUNING.worlds.light): the sun's colour, strength
+// and place, the ambient's, and how much the jelly reflects. Set as a floor is built, which
+// for a world change is under the dark
+let litAs = null;
+function applyLight(id) {
+  const L = T.worlds.light[id] ?? T.worlds.light.grid; litAs = T.worlds.light[id] ? id : 'grid';
+  sun.color.setHex(L.sun); sun.intensity = L.sunI; sun.position.set(...L.at);
+  ambient.color.setHex(L.ambient); ambient.intensity = L.ambientI;
+  if (T.env.on) scene.environmentIntensity = T.env.intensity * L.env;
+}
 
 const splats = new Splats(scene);
 const store = {
@@ -157,6 +168,7 @@ function useWorld(n, hx, hz) {
   scene.background.copy(floor.reveal.void.value);   // the void past the floor: the night, or world 2's summer haze (v66)
   // STREET's driveway and sewer stand their lawn and walls; every other floor, NEON's too, a surround (v43)
   scenery.build(n, hx, hz, { look: worldsLook() });
+  applyLight(worldsLook() === 'street' || n > 3 ? WD?.id ?? 'grid' : 'grid');   // v75: NEON's abstract floors keep 1.x's light
   // (v74: the set's shaders are compiled on its first draw, which transit.js puts under the
   // dark of the world change — the one frame where a dozen new pipelines cost nothing to see)
   DRIFT.value.set(0, 0);   // a new place: the river's pads at rest (and the sum never grows past what a float holds)
@@ -171,6 +183,7 @@ function useSurvival() {
   survivalMax = reshapeSim.maxSize(arenaName);
   const { hx, hz } = survivalMax;
   viewWorld = 1; boundsFloor = true; roomFloor = false; shiftOpen = null;
+  applyLight('grid');
   if (floor) { scene.remove(floor.group); floor.dispose(); }
   actors.setArena(hx, hz);
   floor = buildFloor(T, hx, hz, actors.light.texture, { style: 'grid', bounds: true, film: actors.gooKit.film });
@@ -518,7 +531,7 @@ const campaignProgress = (hard = false) => { try { return JSON.parse(store.str(h
 let lastRoom = null;   // AGAIN replays it
 const levels = new Map();
 async function loadLevel(id) {
-  if (!levels.has(id)) levels.set(id, fetch(new URL(`../levels/${id}.json?v=74`, import.meta.url)).then((r) => { if (!r.ok) throw new Error(`levels/${id}.json ${r.status}`); return r.json(); }));
+  if (!levels.has(id)) levels.set(id, fetch(new URL(`../levels/${id}.json?v=75`, import.meta.url)).then((r) => { if (!r.ok) throw new Error(`levels/${id}.json ${r.status}`); return r.json(); }));
   return levels.get(id);
 }
 // the list the room screen draws: worlds, their rooms, open or not, best grades
@@ -575,6 +588,7 @@ function useRoom(w) {
   scene.add(floor.group);
   scene.background.copy(floor.reveal.void.value);
   scenery.build(L.n, hx, hz, { look: 'street' });
+  applyLight(WD?.look ?? 'grid');   // v75: the light of the world its look comes from
   DRIFT.value.set(0, 0);
   camAt.set(0, 0, 0);
   resize();
@@ -805,7 +819,7 @@ const debug = {
   get arena() { return arenaBox(); }, splats,
   frames: 0, ready: false, counts: {},
   announcer, music, get world() { return world; }, get state() { return state; }, get turn() { return turn; }, get lastDash() { return lastDash; },
-  floor: () => floor,
+  floor: () => floor, get litAs() { return litAs; },   // v75: which world's light is on
   get following() { return !!following; }, get viewWorld() { return viewWorld; }, get floorStyle() { return floor?.style; }, camAt, scenery, transit,
   arenaFor: (n, shape) => worldsSim.arenaFor(n, shape),
   // the run straight to its world's boss wave, the floor emptied (the smoke's

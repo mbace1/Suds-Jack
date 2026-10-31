@@ -18,8 +18,8 @@
 // While a transition runs the run is held: no director, no bodies, no gun;
 // the hero is the transition's and cannot be hurt. Every number is
 // TUNING.worlds.
-import { TUNING } from '../tuning.js?v=74';
-import * as rules from './rules.js?v=74';
+import { TUNING } from '../tuning.js?v=75';
+import * as rules from './rules.js?v=75';
 
 const T = TUNING, WD = T.worlds;
 

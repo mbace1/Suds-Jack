@@ -7,10 +7,10 @@
 // things that work"). The arena is 1.x's, so every 1.x number ports as it is
 // instead of through a rescale. Axes: x across the screen (right +), y up,
 // z toward the bottom of the screen. The arena is centred on the origin.
-import { SPECIES } from './tuning/species/index.js?v=74';
-import WAVES from './tuning/waves.js?v=74';
-import PICKUPS from './tuning/pickups.js?v=74';
-import MUSIC from './tuning/music.js?v=74';
+import { SPECIES } from './tuning/species/index.js?v=75';
+import WAVES from './tuning/waves.js?v=75';
+import PICKUPS from './tuning/pickups.js?v=75';
+import MUSIC from './tuning/music.js?v=75';
 
 export const TUNING = {
   render: {
@@ -104,6 +104,26 @@ export const TUNING = {
     // runs out of it over `reveal` s; the vortex's hole and the drain's swirl
     // and hole, in m; the drain rises out of the slab over `drainRise` s
     view: { fallH: 14, splashRing: 4.5, banner: 2.4, vortexHole: 1.9, drainSwirl: 5.5, drainHole: 0.55, drainRise: 0.35, lightUp: 0.45, reveal: 1.3, sceneryAt: 0.45 },
+    // v75 (owner, 2026-10-31: "upgrade visuals and vfx"; per-world light first):
+    // each world lit in its own light. 1.x lit every world with one white sun
+    // and a white ambient; now the sun's colour, strength and where it stands,
+    // the ambient's colour and strength and how much the jelly reflects
+    // (`env`, × TUNING.env.intensity) are the world's — firelight low from the
+    // far side in the boiler room, a cold moon on the ice, the surface's blue
+    // from straight above in the deep. The gels and the sets take it; the
+    // floors are pictures and carry their own. `grid` is 1.x's light, and the
+    // title's; a campaign room takes its world's look's (main.js roomLook)
+    light: {
+      grid:     { sun: 0xffffff, sunI: 1.3, at: [8, 20, 10],    ambient: 0xffffff, ambientI: 0.45, env: 1.0 },
+      driveway: { sun: 0xfff1d8, sunI: 1.5, at: [10, 26, 6],    ambient: 0xdce8ff, ambientI: 0.55, env: 1.05 },
+      sewer:    { sun: 0xd4ecdc, sunI: 1.0, at: [3, 22, 4],     ambient: 0x9cc6c0, ambientI: 0.42, env: 0.85 },
+      cistern:  { sun: 0xffc98e, sunI: 1.0, at: [-6, 10, -14],  ambient: 0x7fa2aa, ambientI: 0.40, env: 0.9 },
+      boiler:   { sun: 0xffbd7a, sunI: 1.3, at: [4, 9, -16],    ambient: 0xb49070, ambientI: 0.38, env: 0.8 },
+      river:    { sun: 0xffd2a4, sunI: 0.9, at: [18, 8, 4],     ambient: 0x8aaaba, ambientI: 0.46, env: 0.9 },
+      ice:      { sun: 0xd2e6ff, sunI: 1.1, at: [-14, 14, 8],   ambient: 0x8ea2ca, ambientI: 0.42, env: 1.05 },
+      deep:     { sun: 0x6a8cff, sunI: 1.0, at: [0, 20, 2],     ambient: 0x4a5c8c, ambientI: 0.50, env: 0.7 },
+      core:     { sun: 0xff6ae0, sunI: 1.0, at: [-10, 18, -10], ambient: 0x6c48a8, ambientI: 0.42, env: 1.1 },
+    },
     // the floors (render/floor.js `style`), linear rgb. The swirl winds the
     // floor `twist` rad at the drain, falling off as (1 − r/R)^falloff, and
     // draws it `pull` × in toward it

@@ -19,6 +19,15 @@
     Never `--no-verify`.
 -->
 
+## v75 — 2026-10-31
+**Each world lit in its own light**
+- The owner, 2026-10-31: "upgrade visuals and vfx" — the first of four picks (then gel caustics and dash ghosts, world particles, and bloom last, off by default). 1.x lit every world with one white sun and a white ambient; now the sun's colour, strength and place, the ambient's, and how much the jelly reflects are the world's (`TUNING.worlds.light`): the driveway's summer sun high and warm-white, the sewer's cool green from the grates above, the cistern's lamp-warm light low from the far side, firelight low from the boiler room's far side, the river's dusk from the side, a cold moon on the ice, the surface's blue from straight above in the deep, the core's magenta. The gels and the sets take it; the floors are pictures and keep their own. A campaign room is lit as the world its look comes from; the grid, NEON's abstract floors and SURVIVAL keep 1.x's light. Set as the floor is built, which for a world change is under the dark.
+- Kept moderate on purpose: a species' colour has to survive the light. The boiler room's firelight was pulled back from orange to amber after a render turned the green gels olive, and the deep was lifted a step after its boulders vanished.
+- The smoke checks each world is lit as itself (`litAs`).
+- Cache tokens `?v=74` → `?v=75`; HUD label → `2.0 · v75`
+
+---
+
 ## v74 — 2026-10-31
 **Shaders compiled where nobody is looking: a world's set under the dark of the world change, every species and the challenge pieces on the title; the river's pads at rest in a new place**
 - Dropping into worlds 5-9 in a run was proved in a browser (4 → 5 → … → 9 on one page: each landing builds its set, no faults), and the smoke now drops into world 5 as well as 2, 3 and 4 (`world4`).
