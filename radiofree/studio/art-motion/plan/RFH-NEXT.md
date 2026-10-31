@@ -333,3 +333,28 @@ All facts below come from search summaries; no article was opened.
 - **Count the Trees:** still right. **Trade Secret:** no follow-up.
 - **Finland:** no new HS candidate.
 - **No film needs a fix.**
+
+## Daily check, Sat 31 Oct 07:16 (morning; search summaries only)
+- **Global: no big development.**
+  - **Anthropic S-1 / The Round Trip:** still HOLD. EDGAR is still blocked; tried once, no personal data in the request.
+    - Google's minimum is still split: ≥ $114.5B (line-item reading of the filing) vs ~$111.1B (Reuters, from the
+      June draft). Amazon ≥ $110B.
+    - No price-range S-1/A yet. The roadshow is reported for the week of 9 Nov and the listing for the week of 16 Nov,
+      so re-check the figures when the amendment lands.
+  - **NJ NDA ban:** S4304 / A2774. The Senate committee reported it to second reading on 1 Oct (tracking sites). No floor
+    vote. A dated follow-up for For Your Protection if it passes.
+- **Brink 4, The Panel:** posted by Grok Bot on IG + X, 31 Oct ~00:41–00:43. YouTube is pending: the RFH Google account
+  needs signing in again. The facts are unchanged: status undisclosed, no recusal.
+- **Global 3, Short Supply (now 12:52 today): OK to post.**
+  - The motion to dismiss is confirmed (MLex, early Sept), and no ruling was found.
+  - Samsung now calls the allegations "unfounded", in addition to Micron's denial. The film's tag stays true.
+  - The 13 Nov hearing date is still from the docket summary only.
+  - Prices are still elevated, and the film's June/August medians are historical.
+- **Coxon 13, Grade Your Own Homework (now 18:52 today): OK to post.** No follow-up to The Intercept's story found.
+- **Ends in 3:** today, 31 Oct, is the digit-5 deadline. The CRT says no further extension, with suspension 72 h after
+  (about 3 Nov). The posted copy ("5s are due 31 Oct") stays true. Re-check 1–3 Nov for the suspension numbers.
+- **Break Glass:** keep held. No plenary result was found for the extension to end-2028. The constitutional law committee
+  had cleared it as an exceptive law needing a 5/6 majority. The current act runs to 31 Dec 2026.
+- **Count the Trees:** still right. **Trade Secret:** no follow-up.
+- **Finland:** no new HS candidate.
+- **No film needs a fix.**

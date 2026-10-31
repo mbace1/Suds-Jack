@@ -733,3 +733,62 @@ Everything below comes from search summaries. No article was opened.
   the allegations unproven.
 - **AI Whistleblower Protection Act:** no vote; the Senate returns 9 Nov.
 - **Big development:** none.
+
+### Check Sat 31 Oct 07:16 (search summaries only; EDGAR still fails with a proxy CONNECT 403, tried once with a generic User-Agent and no personal data, so nothing was opened)
+- **12 The Supplier Invested (Anthropic's S-1, now the film The Round Trip): still NOT verified from the primary.**
+  - **Google's figure is still split:** Tunguz's line-item reading of the filing gives ≥ $114.5B. Reuters-based coverage
+    gives ~$111.1B (from the June confidential draft). Amazon ≥ $110B is consistent.
+  - **Payment terms:** the filing is quoted as "If our actual spend falls short, we must pay Google the difference",
+    with similar terms for Amazon.
+  - **No total:** the circulating totals ($450B / $637B / 750 Md$) count different things. The filing gives no
+    aggregate.
+  - **Not filed yet:** no S-1/A with a price range or share count. The roadshow is reported for the week of 9 Nov and the
+    listing for the week of 16 Nov. One undated page claims a $135 pricing, which contradicts every other source:
+    unverified, ignore.
+  - **Verdict unchanged:** HOLD until the filing is read; the disclosure rule applies.
+  - [Tunguz](https://tomtunguz.com/anthropics-s1-grew-eleven-fold/index.md),
+    [BusinessDay/Reuters](https://www.businessday.co.za/world/international-companies/2026-09-29-anthropic-plans-518bn-ai-infrastructure-spend-80-non-cancellable/),
+    [Free Press Journal](https://www.freepressjournal.in/tech/anthropic-files-s-1-with-sec-for-proposed-ipo-plans-nasdaq-listing-under-ant)
+- **1 The Panel / Project Meridian (film POSTED 31 Oct ~00:41 IG + X):**
+  - No change since NPR, 6 Oct: SGE or contractor status is still undisclosed, and no recusal was found.
+  - The DoD's only line is still that MITRE does the analysis, with conflict-of-interest safeguards.
+  - A GAO official (NPR) says there are safeguards they are supposed to sign to keep them away from procurement.
+  - [OPB/NPR](https://www.opb.org/article/2026/10/06/pentagon-taps-elon-musk-and-palmer-luckey-for-strategy-study/)
+- **3 For Your Protection / NDA bans: the NJ bill now has a record beyond the Sierra Club.**
+  - **The bill:** S4304 (Greenstein, Stack; cosponsor McKnight), paired with A2774 (introduced 13 Jan 2026). It
+    prohibits agreements meant to conceal data-centre development under the Municipal Land Use Law.
+  - **Status:** tracking sites (policyrisk, legiplex) show it reported from the Senate committee to second reading on
+    1 Oct 2026. No floor vote in either chamber.
+  - **Still to do:** the legislature's own page (njleg.gov) was not opened.
+  - **Verdict:** a dated follow-up for For Your Protection, but the bill hasn't passed. Watch for a floor vote.
+  - [policyrisk S4304](https://policyrisk.com/state-bill/NJ-S4304-2026-2027),
+    [legiplex A2774](https://app.azure.legiplex.com/nj/legislature/2026/2026-r/bills/a2774),
+    [Sierra Club NJ](https://www.sierraclub.org/new-jersey/blog/2026/10/data-center-transparency-bill-eliminating-ndas-municipalities-passes-senate)
+- **5 Short Supply (DRAM class action; film posts today 12:52):**
+  - **Motion to dismiss:** confirmed. All three makers moved to dismiss in early September (MLex), arguing it fails for
+    the same reasons as the earlier suit.
+  - **Samsung (new in the record):** told Korea JoongAng Daily the allegations are "unfounded".
+  - **Micron:** denies, as before. **SK hynix:** "reviewing" the complaint.
+  - **13 Nov hearing:** still from the earlier docket summary only. No date was found in today's results.
+  - **No ruling found.**
+  - **Prices:** still elevated (one US tracker, 22 Oct: current low ~$766, 12-month median $540). The film's June $570 /
+    August $805 medians are historical and stay true.
+  - **Verdict: film OK to post.** The tag "MICRON DENIES THE CLAIMS" stays true; Samsung's denial could go in a reply,
+    not needed.
+  - [MLex](https://www.mlex.com/mlex/articles/2521308),
+    [Korea JoongAng Daily](https://www.koreajoongangdaily.com/business/exclusive-samsung-refutes-us-pricefixing-allegations-as-unfounded/12747924),
+    [GPU tracker](https://gpupoet.com/gpu/learn/price/october-2026/nvidia-geforce-rtx-5060-ti)
+- **2 Grade Your Own Homework (film posts today 18:52):**
+  - No October follow-up to The Intercept's 8 Sep FOIA story was found. Wording still per the story: the contracts
+    have the companies provide "risk forecasting, and threat ideation exercises" on their own products.
+  - Unchanged: the DoD/OpenAI "draft" dispute is left out of the film. Separately, a judge ruled the Pentagon's
+    supply-chain-risk label on Anthropic unlawful, and a Pentagon official said in Sept it still regards Anthropic as a
+    risk. Not in the film; four treated alike.
+  - **Verdict: film OK to post.**
+  - [The Intercept](https://theintercept.com/2026/09/08/military-ai-weapons-contracts-openai-anthropic-google/)
+- **Meta / Grassley:** still no published Meta reply to the 1 Jul / 22 Jul 2026 letters (deadline 4 Aug). The
+  Wynn-Williams suit (filed Jun 2026) is pending.
+  [Grassley letter](https://www.grassley.senate.gov/imo/media/doc/grassley_to_meta_-_wb_retaliation_cont.pdf)
+- **Pentagon lab contracts / AI money / GPU probes:** nothing new dated 30–31 Oct. **AI Whistleblower Protection Act:**
+  no vote; the Senate returns 9 Nov.
+- **Big development:** none.

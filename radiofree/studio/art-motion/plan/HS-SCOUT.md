@@ -540,3 +540,23 @@ Everything below comes from search summaries. No article was opened.
 - **Reactions:** no visible comment counts through search for any thread.
 - **Pattern note:** still the quiet second week. The next dated steps are LVV's water plan (5 Nov) and the Ombudsman
   on Humppila.
+
+### Check Sat 31 Oct 07:16 (search summaries only; nothing opened)
+- **HS, last ~2 days:** no new candidate.
+  - Searches on HS + datakeskus / salattu / liikesalaisuus found nothing dated 30–31 Oct.
+  - One older HS item resurfaced via an undated Yle press roundup that looks like June 2026: Hyperco (UAE-linked
+    owner) planning a data centre in Espoo, with the Ministry of Defence's purchase permission.
+  - Not new, and no secrecy angle found. Not added as a candidate.
+  - [Yle roundup](https://yle.fi/a/74-20164832), [DCD](https://www.datacenterdynamics.com/en/news/damacs-hyperco-targets-data-center-development-in-espoo-finland/)
+- **Muhos / Count the Trees: no new fact.**
+  - The police esiselvitys (IL, via Kaleva) and LVV's own investigation request are both still open, with no outcome.
+  - LVV's 6 Oct halt order stands until the YVA is done.
+  - LVV's water plan is due 5 Nov.
+  - **"Two requests filed with the police" stays right.**
+  - [Kaleva LVV](https://kaleva.fi/lvv-on-tehnyt-poliisille-tutkintapyynnon-googlen-m/13720712),
+    [Kaleva IL](https://www.kaleva.fi/il-poliisi-on-aloittanut-esiselvityksen-googlen-mu/13700493)
+- **Hamina / Trade Secret:** no follow-up found.
+- **"Ground Broken" (Vaasa–Mustasaari, Microsoft) · *Yle*:** nothing new; still Med-low.
+- **#1–#7:** nothing new found.
+- **Reactions:** no visible comment counts through search for any thread.
+- **Pattern note:** still the quiet second week; the next dated Finnish step is LVV's water plan (5 Nov).
