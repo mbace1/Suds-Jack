@@ -1,3 +1,72 @@
+## v4.90 — 2026-10-31
+
+**Blows can miss.** Owner, asked whether a fight should have chance in it: *"Blows can miss, of course."*
+
+- **In an Act I fight, a bat or a knife lands 70%** (`RULES.accuracy`). The handgun keeps its 90%, and the lab its own numbers.
+  - The table rides on the battle (`b.accuracy`), and `forecast()` reads it. The number the board quotes ("R1 → Lan · 70%") is the number rolled.
+- **Each outing's dice are its own,** seeded from its id. A reload replays the same rolls, and no two outings roll the same fight. Until now every fight started from the same dice.
+- **Before and after**, Act I's 15 fights × 12 seeds (rows 1–7 at heat 0 and 2):
+
+| # | Measure | v4.89 | v4.90 | Target |
+|---|---|---|---|---|
+| 1 | Fight jobs, careless: won | 100% | **75%** ✓ | 60–75% |
+| 2 | … rounds | 2.4 | 2.8 | 4–6 |
+| 3 | … crew HP lost | 2.9 | **3.8** ✓ | 2–4 |
+| 4 | … someone goes down | 27% | 37% | 20–30% |
+| 5 | Careful over careless | +0 pts | +5 pts | +15 pts |
+| 6 | Getaways, straight out | 88% | 76% | under 50% |
+| 7 | Getaways, escort | 100% | **100%** ✓ | 70%+ |
+| 8 | Police arrive, heat 0 | 0% | **9%** ✓ | under 20% |
+| 9 | Police arrive, heat 3 | 40% | 32% | over 50% |
+
+- **Reading:**
+  - **A fight is no longer the same fight every time.** 19 of the 22 fight-and-heat combinations now end differently on different seeds; before, every one was won by every seed or by none.
+  - **Heat bites:** the boiler hall is won 50% at heat 0 and 25% at heat 2; the courtyard's last call 83% and 50%.
+  - **Careless play loses a quarter of its fights**, and someone goes down in a bit more than one fight in three, a little over the target.
+- **Tried and cut:** a brace that also made the fighter harder to hit (−20 and −30 points).
+  - With careful play bracing when the plans would leave a fighter on 2 HP or less, careful play lost about 20 points against careless play, and the dodge won back 3.
+  - Bracing spends a round, and rounds bring the police.
+- **Gates:**
+  - `c19-outing`:
+    - a bat swing in an outing is quoted at `RULES.accuracy`, below the lab's 100;
+    - two outings do not share their dice, and neither uses the lab's fixed seed.
+  - `outing-browser`:
+    - pins the clock for the tap that writes the outing, because the outing id carries the clock and the dice now follow the id;
+    - its win is a line recorded in bare node with that very id. Aatami's first swing misses, and the tough one takes a third.
+- **Owner played: pending.** Godot paused.
+
+## v4.89 — 2026-10-31
+
+**A getaway is out *with* something (G1, roadmap milestone 2, lever 4).** Getaways were won by every crew walking straight to the exit, 100% of the time. The design's job for them is *"get out with what you came for"*, and nothing was being carried.
+
+- **One of the crew carries the take,** and carrying slows them: **3 tiles a move**, the others 4 (`RULES.carryReach`). It is always the first of the crew who is not the protagonist, so Aatami never carries it.
+  - It is one field on the unit (`reach`), read by `routes()`. The move tiles, the move preview and the rivals' plans all see the same number.
+- **The game says so:**
+  - the brief has a **Carrying** line, e.g. *"Reijo Virtanen carries it: 3 tiles a move, the others 4. Keep them off Reijo Virtanen."*;
+  - the status line reads *"0/3 OUT · REIJO CARRIES IT"*;
+  - the crew card adds *"CARRIES IT (3)"*.
+- **The measuring tool has a fourth way of playing: escort.** The carrier goes first, by the cells the plans hurt least, and the others go for whichever rival's plan still hits the carrier.
+- **Before and after**, the 4 getaways × 12 seeds:
+
+| | v4.88 | v4.89 |
+|---|---|---|
+| Walk straight out, heat 0–2 | 100% | 88% |
+| Walk straight out, all heats | 100% | **75%** (the yard van at heat 2–3 and the quay at heat 3 fall to the police) |
+| Escort the carrier, all heats | 100% | **100%**, nobody hurt |
+| The fight jobs | — | identical, the control |
+| Police arrive, heat 3 | 5 of 15 | 6 of 15 |
+
+- **Reading:**
+  - **Thinking pays in a getaway now.** Screening the carrier beats walking out by 25 points across the heats, at no cost in HP.
+  - **ROADMAP §5 row 6 (walking out under 50%) is still missed.** Two tried and measured variants did not ship:
+    - **The carrier at reach 2:** walking out falls to 63%, but escort falls with it and the yard van is lost at every heat.
+    - **Rival lanes moved over the crew's own columns:** walking out falls to 75% and costs the carrier 2 HP. But no way of playing wins the quay, and a getaway nobody can win is a bug.
+  - The fish stall and the back door are still a two-round walk: two rivals, and both stand on the side away from the carrier.
+- **Gates:**
+  - `c19-outing`: exactly one of the crew carries it in a getaway, the first who is not Aatami; the carrier moves `carryReach` tiles and the others 4; nobody carries anything in a fight job. The check fails with the rule set back to 4.
+  - The getaway brief and board were looked at on a phone through the `?play=g0-getaway` link.
+- **Owner played: pending.** Godot paused.
+
 ## v4.88 — 2026-10-31
 
 **Fights cost something (G1, roadmap milestone 2, levers 2 and 3).** The roadmap's headline (§2) was that a careless player won every fight in two rounds for a tenth of a point of HP.
