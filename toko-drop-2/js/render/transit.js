@@ -27,6 +27,7 @@ export class Transit {
     this.T = T; this.scenery = scenery; this.juice = juice; this.ui = ui; this.t = t;
     this.kind = null; this.at = { x: 0, z: 0 };
     this.landAt = -1;    // the sim's time at the landing, while the floor runs out
+    this.dim = 0;        // frames the next world's set is drawn under the dark before it is hidden (v74)
     const el = (this.fade = document.createElement('div'));
     el.style.cssText = 'position:fixed;inset:0;background:#000;opacity:0;pointer-events:none;z-index:3';
     document.body.appendChild(el);
@@ -41,7 +42,13 @@ export class Transit {
       // the new floor (main.js has just built it) is not there until the droplet lands on it
       floor.reveal.r.value = 0; floor.reveal.front.value = 0; floor.reveal.at.value.set(e.x, e.z);
       this.scenery.showDrain(0, 0, 0);
-      this.scenery.group.visible = false;   // and nothing round it: the lawn and the walls come with the floor
+      // and nothing round it: the lawn and the walls come with the floor — but
+      // not before the set has been DRAWN once, under the dark (v74): a set is
+      // a dozen new materials, and three compiles each on its first draw, so
+      // that draw goes in the black frame where it costs nothing to see rather
+      // than on the frame the floor's reveal shows it (measured: 0.4-2.4 s
+      // under SwiftShader, once per landing). `dim` counts the frames to wait
+      this.dim = 2;
     } else if (e.type === 'worldLand') {
       this.landAt = w.time;
       floor.reveal.front.value = 1;
@@ -56,6 +63,7 @@ export class Transit {
   // once a frame, off the sim's clock
   frame(w, floor) {
     const V = this.T.worlds.view, P = this.T.worlds.trans, tr = w?.trans;
+    if (this.dim > 0 && --this.dim === 0) this.scenery.group.visible = false;   // v74: drawn once under the dark, then hidden until the reveal
     let dark = 0;
     if (tr && !tr.swapped) {
       const t = tr.t, drain = tr.kind === 'drain';
@@ -81,7 +89,7 @@ export class Transit {
 
   // a run ended or restarted: nothing of a transition left on screen
   reset(floor) {
-    this.landAt = -1; this.kind = null;
+    this.landAt = -1; this.kind = null; this.dim = 0;
     this.fade.style.opacity = '0';
     if (floor) { floor.swirl.k.value = 0; floor.swirl.hole.value = 0; floor.reveal.r.value = 1e4; floor.reveal.front.value = 0; }
     this.scenery.showDrain(0, 0, 0);

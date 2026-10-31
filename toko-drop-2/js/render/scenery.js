@@ -46,20 +46,20 @@
 // TUNING.scenery.
 import * as THREE from 'three/webgpu';
 import { Fn, float, vec2, vec3, fract, sin, dot, floor as tfloor, mix, smoothstep, abs, positionWorld, positionLocal, normalWorld, normalView, clamp, max, min, length, step, fwidth, uv, attribute } from 'three/tsl';
-import { GEL_TIME } from './gel.js?v=73';
-import { hash, noise, seeded } from './kit.js?v=73';
-import { boiler } from './sets/boiler.js?v=73';
-import { river } from './sets/river.js?v=73';
-import { ice } from './sets/ice.js?v=73';
-import { deep } from './sets/deep.js?v=73';
-import { core } from './sets/core.js?v=73';
+import { GEL_TIME } from './gel.js?v=74';
+import { hash, noise, seeded } from './kit.js?v=74';
+import { boiler } from './sets/boiler.js?v=74';
+import { river } from './sets/river.js?v=74';
+import { ice } from './sets/ice.js?v=74';
+import { deep } from './sets/deep.js?v=74';
+import { core } from './sets/core.js?v=74';
 
 // worlds 5-9 (v72): a set of their own each, built to its brief (render/sets/)
 const SETS = { boiler, river, ice, deep, core };
 
 // the noise, the cracks and the seeded numbers are the kit's (v72: render/kit.js),
 // and the floor still takes them from here
-export { noise, cells } from './kit.js?v=73';
+export { noise, cells } from './kit.js?v=74';
 
 // the storm drain's grate (v65, the owner's world-2 sheet), in its own units
 // (q, its frame's radius 1): x the grate, y a slot, z the frame. Rows of
@@ -551,6 +551,15 @@ export class Scenery {
     const disc = new THREE.Mesh(new THREE.CylinderGeometry(D.r, D.r * 1.04, 0.05, 48), mat);
     g.add(disc);
     return g;
+  }
+
+  // v74: the drain drawn once, tiny and far under the floor, on the title
+  // (actors.warmStep), so its shader is not compiled on the frame it first
+  // rises out of world 2's slab
+  warmDrain(on) {
+    this.drain.visible = on;
+    this.drain.position.set(0, on ? -50 : 0, 0); this.drain.scale.setScalar(on ? 1e-4 : 1);
+    this.drain.traverse((c) => { c.frustumCulled = !on; });
   }
 
   // the drain at (x, z), `k` 0 → 1 as it rises out of the slab

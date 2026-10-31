@@ -15,18 +15,18 @@
 // that springs in and fades (splats.js). Views are pooled per species, so a
 // gel's material is built once and reused, never compiled mid-fight.
 import * as THREE from 'three/webgpu';
-import { TUNING } from '../tuning.js?v=73';
+import { TUNING } from '../tuning.js?v=74';
 import * as TSL from 'three/tsl';
-import { gelMaterial, domeGeometry, cubeGeometry, heroGeometry, GEL_TIME } from './gel.js?v=73';
-import { LOOKS } from './looks/index.js?v=73';
-import { JellyBody } from './jelly.js?v=73';
-import { Juice } from './juice.js?v=73';
-import { ArenaLight } from './light.js?v=73';
-import { toSdf } from './sdf.js?v=73';
-import { PickupView } from './pickups.js?v=73';
-import { ChallengeView } from './challenge.js?v=73';
-import { Goo } from './goo.js?v=73';
-import { mult as heatMult } from '../sim/heat.js?v=73';
+import { gelMaterial, domeGeometry, cubeGeometry, heroGeometry, GEL_TIME } from './gel.js?v=74';
+import { LOOKS } from './looks/index.js?v=74';
+import { JellyBody } from './jelly.js?v=74';
+import { Juice } from './juice.js?v=74';
+import { ArenaLight } from './light.js?v=74';
+import { toSdf } from './sdf.js?v=74';
+import { PickupView } from './pickups.js?v=74';
+import { ChallengeView } from './challenge.js?v=74';
+import { Goo } from './goo.js?v=74';
+import { mult as heatMult } from '../sim/heat.js?v=74';
 
 const T = TUNING;
 const B = T.blob, D = T.death;
@@ -230,6 +230,37 @@ export class Actors {
   }
 
   _release(v) { this.scene.remove(v.root); v.root.scale.setScalar(1); ((v.style === 'sdf' ? this.poolSdf : this.pool)[v.kind] ||= []).push(v); }
+
+  // v74: every species' shaders compiled on the title, not on the frame its
+  // first body is drawn mid-run. One kind a frame (a take is a build, and
+  // forty at once would hold a frame): taken as a spawn takes it, drawn once
+  // tiny and far under the floor — the pickups' and the jelly's older trick,
+  // which compiles the pipeline in that frame's own draw (an async compile
+  // would leave a pipeline three draws with before it resolves) — and put
+  // back in its pool the frame after, where a run's first body of that kind
+  // finds it with its materials, which is what keeps the pipeline cached.
+  // After the species, the challenge's pieces and whatever `extra` steps the
+  // game adds ({ on, off }: the drain). True while there is more to do
+  warmStep(extra = []) {
+    const held = this.warmHeld;
+    if (held) {
+      this.warmHeld = null;
+      if (held.v) { held.v.root.traverse((o) => { if (o.userData.warmCull !== undefined) { o.frustumCulled = o.userData.warmCull; delete o.userData.warmCull; } }); this._release(held.v); }
+      else held.off();
+    }
+    if (!this.warmQueue) this.warmQueue = [...Object.keys(T.species).map((kind) => ({ kind })), { on: () => this.challenge.warm(true), off: () => this.challenge.warm(false) }, ...extra];
+    const step = this.warmQueue.shift();
+    if (!step) return false;
+    try {
+      if (step.kind) {
+        const v = this._take(step.kind);
+        v.root.position.set(0, -50, 0); v.root.scale.setScalar(1e-4);
+        v.root.traverse((o) => { o.userData.warmCull = o.frustumCulled; o.frustumCulled = false; });
+        this.warmHeld = { v };
+      } else { step.on(); this.warmHeld = step; }
+    } catch (e) { console.warn('warm-up step skipped:', e); this.warmHeld = null; }
+    return true;
+  }
 
   // The title's GELS switch: every view on the floor goes back to its pool and
   // the next sync takes them again in the new style. Pools are kept, never

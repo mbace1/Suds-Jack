@@ -4,7 +4,7 @@
 // that says it is the one that can be hurt. Reads w.ch and nothing else; the
 // gates are pickups.js's, a moving floor is floor.js's.
 import * as THREE from 'three/webgpu';
-import { TUNING } from '../tuning.js?v=73';
+import { TUNING } from '../tuning.js?v=74';
 
 const V = TUNING.campaign.view;
 const flat = (g) => g.rotateX(-Math.PI / 2);
@@ -33,6 +33,19 @@ export class ChallengeView {
     this.orbs = [];
     this.group.add(this.zoneRing, this.zoneFill, this.heart, this.heartArc, this.lit);
     this.reset();
+  }
+
+  // v74: every piece drawn once, tiny and far under the floor, on the title
+  // (actors.warmStep), so the heart's clearcoat shader is not compiled on the
+  // frame a PROTECT wave first draws it. An orb is made for it and kept,
+  // hidden: a disposed material takes its pipeline out of the cache with it
+  warm(on) {
+    if (!this.warmOrb) {
+      const o = new THREE.Group(), core = new THREE.Mesh(this.orbGeo, this.orbMat), halo = new THREE.Mesh(flat(this.orbHalo.clone()), glow(V.orb.color, 0.6));
+      o.add(halo, core); this.group.add(o); this.warmOrb = o;
+    }
+    for (const o of this.group.children) { o.visible = on; o.traverse((c) => { c.frustumCulled = !on; }); }
+    if (on) { this.group.position.set(0, -50, 0); this.group.scale.setScalar(1e-4); } else { this.group.position.set(0, 0, 0); this.group.scale.setScalar(1); }
   }
 
   reset() {
