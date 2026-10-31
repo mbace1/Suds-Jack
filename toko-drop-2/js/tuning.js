@@ -7,10 +7,10 @@
 // things that work"). The arena is 1.x's, so every 1.x number ports as it is
 // instead of through a rescale. Axes: x across the screen (right +), y up,
 // z toward the bottom of the screen. The arena is centred on the origin.
-import { SPECIES } from './tuning/species/index.js?v=70';
-import WAVES from './tuning/waves.js?v=70';
-import PICKUPS from './tuning/pickups.js?v=70';
-import MUSIC from './tuning/music.js?v=70';
+import { SPECIES } from './tuning/species/index.js?v=71';
+import WAVES from './tuning/waves.js?v=71';
+import PICKUPS from './tuning/pickups.js?v=71';
+import MUSIC from './tuning/music.js?v=71';
 
 export const TUNING = {
   render: {
@@ -137,7 +137,12 @@ export const TUNING = {
               lineCol: [0.15, 0.85, 0.8], gridCol: [0.03, 0.06, 0.12] },
       // worlds 4-9 (v28): linear rgb
       cistern: { slab: 2.4, grout: 0.04, stone: [0.03, 0.042, 0.048], water: [0.003, 0.02, 0.028], depth: 0.6, caustic: [0.25, 0.75, 0.8],
-                 column: 8, plinth: 0.75, rim: [0.2, 0.6, 0.7] },
+                 column: 8, plinth: 0.75, rim: [0.2, 0.6, 0.7],
+                 // v71: the cut top of a fallen column in each plinth (`stump` × its
+                 // half size), and drip rings: in every `drip.cell` m a drip from the
+                 // vault every `period` s, its rings spreading to `reach` m
+                 stump: 0.82, stumpTone: [0.075, 0.08, 0.078],
+                 drip: { cell: 6, period: 3.6, reach: 1.5, width: 0.035, gain: 0.32 } },
       boiler: { plate: [3.2, 2.1], seam: 0.035, steel: [0.05, 0.04, 0.035], rivet: [0.16, 0.12, 0.09], grate: 6.4, grateW: [1.4, 0.5],
                 glow: [1.0, 0.35, 0.06], scorch: [0.012, 0.008, 0.006], pulse: 1.6 },
       river: { water: [0.004, 0.025, 0.03], waterHi: [0.08, 0.35, 0.3], flow: 1.6, bank: 0.78, pebble: [0.05, 0.05, 0.045], foam: [0.5, 0.75, 0.7] },
@@ -184,6 +189,21 @@ export const TUNING = {
              bar: 0x34383e, barR: 0.05, barGap: 0.42, barHeight: 1.7, gate: { every: 3.7, post: 0.2, rail: 0.1 },
              pipe: { every: 10, r: 0.34, wall: 0.06, y: 0.62, out: 0.2, color: 0x4b5053, trickle: [0.3, 0.85, 0.55], trickleW: 0.16, rivulet: 0.34, reach: 4.5, flow: 0.9 },
              sun: { every: 12, c: 5.5, r: 1.1, color: [1.0, 0.82, 0.55], gain: 0.5, halo: 2.4, haloGain: 0.07, shaft: 7, shaftR: 0.95, shaftAlpha: 0.03, tilt: 0.05 } },
+    // v71 (owner, 2026-10-31: "continue", after world 3; from the World 4 brief,
+    // art-ref/briefs/world-4-cistern.md): THE CISTERN, a forest of stone columns
+    // standing in still dark water, lamps at their feet. Columns every `every`
+    // m along the far side and both long sides, in rows `rows` m out from the
+    // platform's edge, `h` m tall, `r` m round the shaft on a `base` block
+    // (m across, m tall), the rows' stone `tint`; a lamp at every `lampEvery`th
+    // column of the inner row, its pool of light `pool` m on the water; rings
+    // spreading round every column's foot; a stone kerb round the platform; the
+    // water `out` m round it, going dark over `fade` m. Never along the near side
+    cistern: { every: 4.4, rows: [2.0, 6.3], h: 5.5, r: 0.62, base: [1.45, 0.45], abacus: 0.28, tint: [[1, 1, 1], [0.68, 0.68, 0.7]],
+               stone: [0.29, 0.26, 0.21], lampEvery: 2,
+               lamp: { y: 0.6, r: 0.12, post: 0.035, color: [1.0, 0.68, 0.36], glow: 1.5, halo: 3.4, haloGain: 0.55, pool: 3.0, poolGain: 0.6, warm: [1.18, 1.0, 0.82] },
+               ripple: { r: 1.25, period: 3.4, color: [0.45, 0.75, 0.78], gain: 0.22 },
+               kerb: { w: 0.5, h: 0.18, color: [0.1, 0.11, 0.11] }, edge: { color: 0x3fb8d0, glow: 1.6, width: 0.12, height: 0.05 },
+               water: { out: 24, fade: 15, lo: [0.003, 0.013, 0.019], hi: [0.012, 0.048, 0.06], scale: 0.32 } },
     drain: { r: 0.95, iron: 0x2a2d32, frame: 0x484b52, slot: 0x020306 },
     // v43: round every other world's floor (render/scenery.js _surround). A
     // ground `out` m past the floor fading out over `fade` m (`line`/`cell`

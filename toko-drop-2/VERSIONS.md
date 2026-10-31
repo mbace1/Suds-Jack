@@ -19,6 +19,22 @@
     Never `--no-verify`.
 -->
 
+## v71 — 2026-10-31
+**World 4, the cistern: stone columns standing in dark water, lamps at their feet, column stumps and drip rings on the floor**
+- The owner, 2026-10-31: "continue", after world 3. Built the same way, from a brief written for Grok in the World 2 sheet's format (art-ref/briefs/world-4-cistern.md, eight modules), in the game's own look:
+  1. **Columns**: a square base block, a lathed shaft (a moulding at its foot, a slight taper, a flared capital) and a square slab on top, 5.5 m; two rows along the far side and both long sides, as the plain cylinders stood. Dark and wet at the waterline.
+  2. **Column feet**: rings spreading on the water round each foot, each on its own beat.
+  3. **Lamps**: at every other column of the inner row, a warm bulb on a thin iron post with a soft halo, its pool of warm light on the water, and the column it stands at warmed by it. None is a real light (a dozen lights would cost every lit thing a dozen times); the tint and the pools say it.
+  4. **Platform edge**: a low stone kerb round the platform outside its glowing edge.
+  5. **Flooded floor**: as it was, slabs under a sheet of water with caustics.
+  6. **Column stumps**: in each square plinth on the floor, the round cut top of a fallen column with a groove round it.
+  7. **Drip rings**: a drip from the vault every few seconds somewhere in every 6 m of floor, two rings spreading from it as they fade.
+  8. **Layout**: the platform in dark water that goes into the dark, the columns round three sides, nothing along the near side.
+- World 4's surround is built by `_cistern` (scenery.js), still reported as `surround:cistern`; its numbers are TUNING.scenery.cistern and the floor's TUNING.worlds.floor.cistern.
+- Cache tokens `?v=70` → `?v=71`; HUD label → `2.0 · v71`
+
+---
+
 ## v70 — 2026-10-31
 **World 3, the sewer, built to its brief: wall pieces, corner piers, framed gates, pipe mouths, sunlight through the grates**
 - The owner, 2026-10-31: "continue with world 3", from the World 3 brief (art-ref/briefs/world-3-sewer.md, the eight modules asked of Grok in the approved World 2 sheet's format). Built in the game's own look, as world 2 was:

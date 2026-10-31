@@ -24,8 +24,8 @@
 // `swirlAt`, out to `swirlR`, and opens a hole of `hole` m in the middle).
 import * as THREE from 'three/webgpu';
 import { Fn, If, uv, uniform, float, abs, fract, min, max, sin, cos, length, smoothstep, mix, fwidth, texture, clamp, vec2, vec3, pow, floor as tfloor, round, select, mod, dFdx, dFdy, exp, normalize, dot, cameraPosition, positionWorld } from 'three/tsl';
-import { GEL_TIME } from './gel.js?v=70';
-import { noise, grate, cells, sewerSpots } from './scenery.js?v=70';
+import { GEL_TIME } from './gel.js?v=71';
+import { noise, grate, cells, sewerSpots } from './scenery.js?v=71';
 
 const _white = new THREE.Color(0xffffff);
 
@@ -336,7 +336,22 @@ export function buildFloor(T, hx, hz, light, { style = 'grid', bounds: hasBounds
     const rim = float(1).sub(smoothstep(0, 0.07, abs(dq.sub(C.plinth))));
     let col = mix(stone, v3(C.water), C.depth).add(v3(C.caustic).mul(caustic.mul(0.1)));
     col = mix(col, v3(C.stone).mul(0.35), plinth).add(v3(C.rim).mul(rim.mul(0.5)));
-    return { col, mask: caustic.mul(0.6).add(grout.mul(0.3)).add(rim), lineCol: v3(C.caustic), wet: float(0.8) };
+    // v71: in each plinth the cut top of a fallen column, a round stone disc
+    // with a groove round it, under the same water
+    const dr = length(q), sr = C.plinth * C.stump, saa = max(fwidth(dr), 1e-4);
+    const stump = float(1).sub(smoothstep(float(sr).sub(saa), float(sr).add(saa), dr));
+    const sgroove = float(1).sub(smoothstep(0, 0.045, abs(dr.sub(sr * 0.7))));
+    col = mix(col, v3(C.stumpTone).mul(noise(w.mul(4.3)).mul(0.35).add(0.75)).mul(float(1).sub(sgroove.mul(0.45))), stump.mul(0.85));
+    // v71: drip rings: in every `drip.cell` m a drip from the vault every
+    // `period` s, somewhere of its own, its rings spreading as they fade
+    const D = C.drip, cell = tfloor(w.div(D.cell));
+    const dph = noise(cell), dpos = cell.add(vec2(noise(cell.add(vec2(17, 3))), noise(cell.add(vec2(5, 29)))).mul(0.6).add(0.2)).mul(D.cell);
+    const dk = fract(t.div(D.period).add(dph)), dd = length(w.sub(dpos)), daa = max(fwidth(dd), 1e-4);
+    const drip = float(1).sub(smoothstep(float(D.width).sub(daa), float(D.width).add(daa), abs(dd.sub(dk.mul(D.reach)))))
+      .add(float(1).sub(smoothstep(float(D.width).sub(daa), float(D.width).add(daa), abs(dd.sub(dk.mul(D.reach * 0.55))))).mul(0.6))
+      .mul(float(1).sub(dk).pow(2));
+    col = col.add(v3(C.caustic).mul(drip.mul(D.gain)));
+    return { col, mask: caustic.mul(0.6).add(grout.mul(0.3)).add(rim).add(drip), lineCol: v3(C.caustic), wet: float(0.8) };
   };
   // THE BOILER ROOM: riveted steel plates, scorched, and grates the fire glows through
   const boiler = (p, w) => {

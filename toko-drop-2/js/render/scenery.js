@@ -39,8 +39,8 @@
 // bars stand up, so they are lit by the scene's lights. Every number is
 // TUNING.scenery.
 import * as THREE from 'three/webgpu';
-import { Fn, float, vec2, vec3, fract, sin, dot, floor as tfloor, mix, smoothstep, abs, positionWorld, positionLocal, normalWorld, clamp, max, min, length, step, fwidth, uv, attribute } from 'three/tsl';
-import { GEL_TIME } from './gel.js?v=70';
+import { Fn, float, vec2, vec3, fract, sin, dot, floor as tfloor, mix, smoothstep, abs, positionWorld, positionLocal, normalWorld, normalView, clamp, max, min, length, step, fwidth, uv, attribute } from 'three/tsl';
+import { GEL_TIME } from './gel.js?v=71';
 
 // a hash and value noise on the world plane, cheap enough for a picture
 const hash = (p) => fract(sin(dot(p, vec2(127.1, 311.7))).mul(43758.5453));
@@ -358,6 +358,7 @@ export class Scenery {
 
   // ── every other world: a ground past the floor, its edge, props round it ──
   _surround(id, hx, hz) {
+    if (id === 'cistern') { this._cistern(hx, hz); return; }   // v71: built to its brief, as worlds 2 and 3
     const S = this.T.scenery.surround[id];
     const G = S.ground, out = G.out;
     // the ground: two tones of noise, a grid or traces if the world has one,
@@ -433,6 +434,99 @@ export class Scenery {
         inst.setMatrixAt(i, m);
       });
     }
+  }
+
+  // ── world 4: the cistern (v71, the World 4 brief): stone columns in two
+  // rows standing in still dark water round the platform, rings round their
+  // feet, warm lamps at the inner row's feet and their light on the water, a
+  // stone kerb round the platform and its glowing edge. Never along the near side ──
+  _cistern(hx, hz) {
+    const C = this.T.scenery.cistern, W = C.water;
+    // the water: dark, rippling slowly, going into the dark with distance
+    const waterMat = new THREE.MeshBasicNodeMaterial();
+    waterMat.colorNode = Fn(() => {
+      const p = positionWorld.xz, t = GEL_TIME;
+      const n1 = noise(p.mul(W.scale).add(vec2(t.mul(0.05), t.mul(0.03)))), n2 = noise(p.mul(W.scale * 3.3).sub(vec2(t.mul(0.08), 0)));
+      const sheen = smoothstep(0.6, 0.92, sin(n1.mul(8).add(n2.mul(3))).mul(0.5).add(0.5));
+      const dx = max(abs(p.x).sub(hx), 0), dz = max(abs(p.y).sub(hz), 0);
+      const far = clamp(length(vec2(dx, dz)).div(W.fade), 0, 1);
+      return mix(vec3(...W.lo), vec3(...W.hi), n1.mul(0.6).add(sheen.mul(0.4))).mul(float(1).sub(far.mul(far).mul(0.92)));
+    })();
+    const water = this._add(new THREE.Mesh(new THREE.PlaneGeometry(2 * (hx + W.out), 2 * (hz + W.out)).rotateX(-Math.PI / 2), waterMat));
+    water.position.y = -0.03; water.renderOrder = 1;   // after the floor, as every ground (v68)
+    // the platform's glowing edge, and a stone kerb round it
+    const E = C.edge, K = C.kerb, edgeMat = new THREE.MeshBasicNodeMaterial({ color: new THREE.Color(E.color).multiplyScalar(E.glow) });
+    const kerbMat = new THREE.MeshStandardNodeMaterial({ roughness: 0.9, metalness: 0 });
+    kerbMat.colorNode = Fn(() => vec3(...K.color).mul(noise(positionWorld.xz.mul(6)).mul(0.3).add(0.8)))();
+    const ew = E.width, kw = K.w, ko = ew + kw / 2;
+    for (const [sx, sz, x, z] of [[2 * hx + 2 * ew, ew, 0, -(hz + ew / 2)], [2 * hx + 2 * ew, ew, 0, hz + ew / 2], [ew, 2 * hz, -(hx + ew / 2), 0], [ew, 2 * hz, hx + ew / 2, 0]]) {
+      this._add(new THREE.Mesh(new THREE.BoxGeometry(sx, E.height, sz), edgeMat.clone())).position.set(x, E.height / 2, z);
+    }
+    for (const [sx, sz, x, z] of [[2 * (hx + ew + kw), kw, 0, -(hz + ko)], [2 * (hx + ew + kw), kw, 0, hz + ko], [kw, 2 * (hz + ew), -(hx + ko), 0], [kw, 2 * (hz + ew), hx + ko, 0]]) {
+      this._add(new THREE.Mesh(new THREE.BoxGeometry(sx, K.h, sz), kerbMat.clone())).position.set(x, K.h / 2 - 0.02, z);
+    }
+    // where the columns stand: along the far side and both long sides, each
+    // row `out` m from the edge; [x, z, row, the way to the platform]
+    const spots = [];
+    C.rows.forEach((out, row) => {
+      const fl = 2 * (hx + out), fn = Math.max(1, Math.round(fl / C.every));
+      for (let i = 0; i <= fn; i++) spots.push([-(hx + out) + (i * fl) / fn, -(hz + out), row, [0, 1]]);
+      const sl = 2 * hz + out, sn = Math.max(1, Math.round(sl / C.every));
+      for (const sd of [-1, 1]) for (let i = 1; i <= sn; i++) spots.push([sd * (hx + out), -(hz + out) + (i * sl) / sn, row, [-sd, 0]]);
+    });
+    // a column: its base block, a lathed shaft (a moulding at its foot, a slight
+    // taper, a flared capital) and the square slab over it, all stone that is
+    // dark and wet at the waterline
+    const [bw, bh] = C.base, H1 = C.h - bh - C.abacus, r = C.r;
+    const prof = [[0.001, 0], [r * 1.16, 0], [r * 1.16, 0.1], [r * 1.05, 0.2], [r, 0.3], [r * 0.9, H1 * 0.86], [r * 0.95, H1 * 0.88], [r * 1.15, H1 * 0.94], [r * 1.42, H1], [0.001, H1]].map(([x, y]) => new THREE.Vector2(x, y));
+    const stone = new THREE.MeshStandardNodeMaterial({ roughness: 0.92, metalness: 0 });
+    stone.colorNode = Fn(() => {
+      const p = positionWorld, grit = noise(vec2(p.x.add(p.z), p.y).mul(6)).mul(0.18).add(0.85);
+      const wet = float(1).sub(smoothstep(0.25, 1.1, p.y));
+      return vec3(...C.stone).mul(grit).mul(float(1).sub(wet.mul(0.5))).add(vec3(0, 0.02, 0.025).mul(wet));
+    })();
+    const N = spots.length, m = new THREE.Matrix4(), q = new THREE.Quaternion(), sc = new THREE.Vector3(), t = new THREE.Vector3(), c = new THREE.Color();
+    const shafts = this._add(new THREE.InstancedMesh(new THREE.LatheGeometry(prof, 20), stone, N));
+    const blocks = this._add(new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), stone.clone(), 2 * N));
+    // the columns a lamp stands at: warmed by it (v71: no lamp is a real light; the tint says it)
+    const lit = new Set(spots.map((sp, i) => (sp[2] === 0 && i % C.lampEvery === 0 ? i : -1)));
+    spots.forEach(([x, z, row], i) => {
+      c.setRGB(...C.tint[row]);
+      if (lit.has(i)) c.multiply(new THREE.Color(...C.lamp.warm));
+      shafts.setMatrixAt(i, m.compose(t.set(x, bh, z), q.identity(), sc.set(1, 1, 1))); shafts.setColorAt(i, c);
+      blocks.setMatrixAt(2 * i, m.compose(t.set(x, bh / 2 - 0.1, z), q, sc.set(bw, bh + 0.2, bw))); blocks.setColorAt(2 * i, c);
+      blocks.setMatrixAt(2 * i + 1, m.compose(t.set(x, C.h - C.abacus / 2, z), q, sc.set(r * 3.1, C.abacus, r * 3.1))); blocks.setColorAt(2 * i + 1, c);
+    });
+    // rings spreading round every column's foot, each on its own beat
+    const R = C.ripple, ringMat = new THREE.MeshBasicNodeMaterial({ transparent: true, depthWrite: false, blending: THREE.AdditiveBlending });
+    ringMat.colorNode = vec3(...R.color);
+    ringMat.opacityNode = Fn(() => {
+      const d = length(uv().sub(0.5)).mul(2), ph = hash(tfloor(positionWorld.xz.mul(0.37)));
+      const k = fract(GEL_TIME.div(R.period).add(ph)), rad = mix(float(bw / 2 / R.r * 1.3), float(1), k);
+      return float(1).sub(smoothstep(0, 0.05, abs(d.sub(rad)))).mul(float(1).sub(k)).mul(R.gain);
+    })();
+    const rings = this._add(new THREE.InstancedMesh(new THREE.PlaneGeometry(2 * R.r, 2 * R.r).rotateX(-Math.PI / 2), ringMat, N));
+    spots.forEach(([x, z], i) => rings.setMatrixAt(i, m.makeTranslation(x, -0.015, z)));
+    // the lamps: at every `lampEvery`th column of the inner row, on its platform
+    // side, a warm bulb on a thin iron post, and its pool of light on the water
+    const Lp = C.lamp, lamps = spots.filter(([, , row], i) => row === 0 && i % C.lampEvery === 0).map(([x, z, , d]) => [x + d[0] * (bw / 2 + 0.25), z + d[1] * (bw / 2 + 0.25)]);
+    const bulbMat = new THREE.MeshBasicNodeMaterial({ color: new THREE.Color(...Lp.color).multiplyScalar(Lp.glow) });
+    const bulbs = this._add(new THREE.InstancedMesh(new THREE.SphereGeometry(Lp.r, 12, 8), bulbMat, lamps.length));
+    const posts = this._add(new THREE.InstancedMesh(new THREE.CylinderGeometry(Lp.post, Lp.post, Lp.y, 6), new THREE.MeshStandardNodeMaterial({ color: 0x2a2d32, roughness: 0.5, metalness: 0.6 }), lamps.length));
+    const poolMat = new THREE.MeshBasicNodeMaterial({ transparent: true, depthWrite: false, blending: THREE.AdditiveBlending });
+    poolMat.colorNode = vec3(...Lp.color);
+    poolMat.opacityNode = Fn(() => { const d = length(uv().sub(0.5)).mul(2); return float(1).sub(smoothstep(0, 1, d)).pow(2).mul(Lp.poolGain).mul(sin(GEL_TIME.mul(7.3).add(positionWorld.x)).mul(0.05).add(0.95)); })();
+    const pools = this._add(new THREE.InstancedMesh(new THREE.PlaneGeometry(2 * Lp.pool, 2 * Lp.pool).rotateX(-Math.PI / 2), poolMat, lamps.length));
+    // and a soft halo round each bulb
+    const haloMat = new THREE.MeshBasicNodeMaterial({ transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, color: new THREE.Color(...Lp.color) });
+    haloMat.opacityNode = normalView.z.max(0).pow(3).mul(Lp.haloGain);   // bright in the middle, gone at the rim
+    const halos = this._add(new THREE.InstancedMesh(new THREE.SphereGeometry(Lp.r * Lp.halo, 12, 8), haloMat, lamps.length));
+    lamps.forEach(([x, z], i) => {
+      halos.setMatrixAt(i, m.makeTranslation(x, Lp.y + Lp.r * 0.6, z));
+      bulbs.setMatrixAt(i, m.makeTranslation(x, Lp.y + Lp.r * 0.6, z));
+      posts.setMatrixAt(i, m.makeTranslation(x, Lp.y / 2, z));
+      pools.setMatrixAt(i, m.makeTranslation(x, -0.01, z));
+    });
   }
 
   // the boiler's pipes: one long run down each side, banded every few metres
