@@ -10,4 +10,6 @@ Mesh NOW (APPROVED only):
 
 - World 5: `world-5/05-boiler-modules-APPROVED.png` — ~46×28 m; steel plate 3.2×2.1; orange rim/grates.
 
+- World 6: `world-6/06-river-modules-APPROVED.png` — ~68×24 m; teal water/banks/foam.
+
 Do not mesh `elements/`, `modules/`, `pending/`, or `*-more-*` / arena complete pieces until APPROVED.

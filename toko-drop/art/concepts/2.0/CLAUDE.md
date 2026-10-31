@@ -10,6 +10,7 @@
 - `world-3/03-sewer-modules-APPROVED.png` (+ v3.jpg)
 - `world-4/04-cistern-modules-APPROVED.png` (+ arena complete)
 - `world-5/05-boiler-modules-APPROVED.png` (+ arena complete)
+- `world-6/06-river-modules-APPROVED.png` (+ arena complete)
 
 Shape from art; style from LOOK.md picker.
 
