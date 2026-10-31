@@ -8,8 +8,8 @@
 // side. Every number TUNING.scenery.river; the water's own TUNING.worlds.floor.river
 import * as THREE from 'three/webgpu';
 import { Fn, float, vec2, vec3, fract, sin, abs, max, mix, smoothstep, length, atan, uv, clamp, positionWorld, positionGeometry, normalGeometry, normalWorld } from 'three/tsl';
-import { GEL_TIME } from '../gel.js?v=76';
-import { noise, hash, seeded, put, groundPlane, edgeLine, stoneGeometry, bladeClump, lilyPads, DRIFT } from '../kit.js?v=76';
+import { GEL_TIME } from '../gel.js?v=77';
+import { noise, hash, seeded, put, groundPlane, edgeLine, stoneGeometry, bladeClump, lilyPads, DRIFT, motes } from '../kit.js?v=77';
 
 const v3 = (a) => vec3(...a);
 
@@ -98,6 +98,10 @@ export function river(sc, hx, hz) {
   })();
   const lm = sc._add(new THREE.InstancedMesh(new THREE.CylinderGeometry(1, 1, 1, 14).rotateZ(Math.PI / 2), logMat, logs.length));
   logs.forEach(([a, c, len, r], i) => { const [x, z] = xz(a, c); put(lm, i, x, r * 0.8, z, len, r, r, 0, (alongX ? 0 : Math.PI / 2) + (rnd() - 0.5) * 0.5, 0); });
+
+  // v77: fireflies over the banks at dusk
+  const Mo = V.motes;
+  motes(sc, banks.map((s) => { const [x, z] = xz(0, s * (Wd + Mo.out + Mo.deep / 2)); return alongX ? [x, z, 2 * (L + 4), Mo.deep, 0.3] : [x, z, Mo.deep, 2 * (L + 4), 0.3]; }), Mo);
 
   // old piles standing across the river past each end, the water foaming round them
   const Pl = V.pile, piles = [];

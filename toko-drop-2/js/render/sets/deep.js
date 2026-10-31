@@ -7,8 +7,8 @@
 // side. Every number TUNING.scenery.deep
 import * as THREE from 'three/webgpu';
 import { Fn, float, vec2, vec3, sin, cos, abs, max, mix, smoothstep, length, clamp, fract, uv, positionWorld, positionLocal, positionGeometry, normalWorld } from 'three/tsl';
-import { GEL_TIME } from '../gel.js?v=76';
-import { noise, seeded, phase, put, stations, groundPlane, edgeLine, stoneGeometry, risers, merge } from '../kit.js?v=76';
+import { GEL_TIME } from '../gel.js?v=77';
+import { noise, seeded, phase, put, stations, groundPlane, edgeLine, stoneGeometry, risers, merge, motes } from '../kit.js?v=77';
 
 const v3 = (a) => vec3(...a);
 
@@ -32,6 +32,9 @@ export function deep(sc, hx, hz) {
     return col.mul(float(1).sub(far.mul(far).mul(0.96)));
   })());
   edgeLine(sc, hx, hz, D.edge);
+
+  // v77: marine snow sinking through the whole view
+  motes(sc, [[0, 0, 2 * (hx + D.motes.out), 2 * (hz + D.motes.out), 0]], D.motes);
 
   // kelp: ribbons a metre tall twisting up their length, in clumps, swaying
   const K = D.kelp, clumps = stations(hx, hz, rnd, { every: K.every, out: K.out, jitter: 0.8 }), blades = [];

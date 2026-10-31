@@ -4,7 +4,7 @@
 // round a floor props stand on, and the few shapes more than one set makes
 import * as THREE from 'three/webgpu';
 import { Fn, float, vec2, vec3, fract, sin, cos, dot, floor as tfloor, mix, length, min, max, abs, atan, fwidth, smoothstep, step, uniform, instanceIndex, normalView, positionLocal, positionGeometry } from 'three/tsl';
-import { GEL_TIME } from './gel.js?v=76';
+import { GEL_TIME } from './gel.js?v=77';
 
 // a hash and value noise on the world plane, cheap enough for a picture
 export const hash = (p) => fract(sin(dot(p, vec2(127.1, 311.7))).mul(43758.5453));
@@ -189,4 +189,27 @@ export function merge(geos) {
   out.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
   out.setIndex(idx);
   return out;
+}
+
+// motes afloat in a volume (v77, the world particles: embers, snow, dust in a
+// sun shaft, lamp motes, fireflies, marine snow). `n` specks in each of
+// `boxes` ([x, z, w, d, y0]: a box's middle, its size along x and z, its
+// floor), each on a loop of its own `h` m up (or down: `vy` < 0) the box at
+// `vy` m/s, swaying `sway` m at `wobble` rad/s, `r` m across, lit `gain` in
+// `color`, fading in at the foot of its loop and out at the top; `blink`
+// [rate, depth] makes them flicker (fireflies). One instanced draw
+export function motes(sc, boxes, P) {
+  const mat = new THREE.MeshBasicNodeMaterial({ transparent: true, depthWrite: false, blending: P.add === false ? THREE.NormalBlending : THREE.AdditiveBlending });
+  const ph = phase(), ph2 = fract(ph.mul(7.31)), up = P.vy >= 0;
+  const u = fract(GEL_TIME.mul(Math.abs(P.vy) / P.h).add(ph)), lift = (up ? u : float(1).sub(u)).mul(P.h);
+  let a = sin(u.mul(3.1416)).mul(P.gain).mul(normalView.z.max(0).pow(1.5));
+  if (P.blink) a = a.mul(sin(GEL_TIME.mul(P.blink[0]).add(ph2.mul(6.283))).mul(0.5).add(0.5).mul(P.blink[1]).add(1 - P.blink[1]));
+  mat.colorNode = vec3(...P.color);
+  mat.opacityNode = a;
+  mat.positionNode = positionLocal.add(vec3(sin(GEL_TIME.mul(P.wobble).add(ph2.mul(6.283))).mul(P.sway), lift, cos(GEL_TIME.mul(P.wobble * 0.8).add(ph.mul(6.283))).mul(P.sway * 0.7)));
+  const rnd = seeded(P.seed ?? 77), inst = sc._add(new THREE.InstancedMesh(new THREE.SphereGeometry(1, 6, 4), mat, boxes.length * P.n));
+  inst.frustumCulled = false;
+  let i = 0;
+  for (const [x, z, w, d, y0] of boxes) for (let k = 0; k < P.n; k++) { const r = P.r * (0.7 + rnd() * 0.6); put(inst, i++, x + (rnd() - 0.5) * w, y0, z + (rnd() - 0.5) * d, r, r, r); }
+  return inst;
 }

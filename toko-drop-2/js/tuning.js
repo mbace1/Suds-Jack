@@ -7,10 +7,10 @@
 // things that work"). The arena is 1.x's, so every 1.x number ports as it is
 // instead of through a rescale. Axes: x across the screen (right +), y up,
 // z toward the bottom of the screen. The arena is centred on the origin.
-import { SPECIES } from './tuning/species/index.js?v=76';
-import WAVES from './tuning/waves.js?v=76';
-import PICKUPS from './tuning/pickups.js?v=76';
-import MUSIC from './tuning/music.js?v=76';
+import { SPECIES } from './tuning/species/index.js?v=77';
+import WAVES from './tuning/waves.js?v=77';
+import PICKUPS from './tuning/pickups.js?v=77';
+import MUSIC from './tuning/music.js?v=77';
 
 export const TUNING = {
   render: {
@@ -211,7 +211,9 @@ export const TUNING = {
              pier: { w: 0.95, h: 1.55, cap: 0.16 },
              bar: 0x34383e, barR: 0.05, barGap: 0.42, barHeight: 1.7, gate: { every: 3.7, post: 0.2, rail: 0.1 },
              pipe: { every: 10, r: 0.34, wall: 0.06, y: 0.62, out: 0.2, color: 0x4b5053, trickle: [0.3, 0.85, 0.55], trickleW: 0.16, rivulet: 0.34, reach: 4.5, flow: 0.9 },
-             sun: { every: 12, c: 5.5, r: 1.1, color: [1.0, 0.82, 0.55], gain: 0.5, halo: 2.4, haloGain: 0.07, shaft: 7, shaftR: 0.95, shaftAlpha: 0.03, tilt: 0.05 } },
+             sun: { every: 12, c: 5.5, r: 1.1, color: [1.0, 0.82, 0.55], gain: 0.5, halo: 2.4, haloGain: 0.07, shaft: 7, shaftR: 0.95, shaftAlpha: 0.03, tilt: 0.05 },
+             // v77: dust drifting down in each sun shaft
+             motes: { n: 18, h: 6, vy: -0.15, sway: 0.2, wobble: 0.6, r: 0.02, gain: 1.0, color: [1.0, 0.9, 0.7], box: 1.8 } },
     // v71 (owner, 2026-10-31: "continue", after world 3; from the World 4 brief,
     // art-ref/briefs/world-4-cistern.md): THE CISTERN, a forest of stone columns
     // standing in still dark water, lamps at their feet. Columns every `every`
@@ -226,7 +228,9 @@ export const TUNING = {
                lamp: { y: 0.6, r: 0.12, post: 0.035, color: [1.0, 0.68, 0.36], glow: 1.5, halo: 3.4, haloGain: 0.55, pool: 3.0, poolGain: 0.6, warm: [1.18, 1.0, 0.82] },
                ripple: { r: 1.25, period: 3.4, color: [0.45, 0.75, 0.78], gain: 0.22 },
                kerb: { w: 0.5, h: 0.18, color: [0.1, 0.11, 0.11] }, edge: { color: 0x3fb8d0, glow: 1.6, width: 0.12, height: 0.05 },
-               water: { out: 24, fade: 15, lo: [0.003, 0.013, 0.019], hi: [0.012, 0.048, 0.06], scale: 0.32 } },
+               water: { out: 24, fade: 15, lo: [0.003, 0.013, 0.019], hi: [0.012, 0.048, 0.06], scale: 0.32 },
+               // v77: motes hanging in each lamp's light
+               motes: { n: 10, h: 1.4, vy: 0.08, sway: 0.15, wobble: 0.5, r: 0.03, gain: 2.0, color: [1.0, 0.8, 0.5], box: 1.6 } },
     // v72 (owner, 2026-10-31: "you can build all levels/worlds now"; from the
     // World 5 brief, art-ref/briefs/world-5-boiler.md): THE BOILER ROOM. Boilers
     // along the far side, `every` m apart and `side` m past its corners, `out` m
@@ -248,7 +252,9 @@ export const TUNING = {
               pipe: { out: 1.1, r: [0.42, 0.3], y: [0.5, 1.3], every: 3.2, back: 7, front: 14, color: [0.1, 0.085, 0.075], flange: [0.17, 0.14, 0.11] },
               valve: { every: 7, h: 0.55, r: 0.26, color: [0.36, 0.035, 0.02] },
               vent: { per: 4, period: 2.2, rise: 1.6, r: [0.12, 0.5], sway: 0.2, gain: 0.3, color: [0.6, 0.6, 0.58], duty: 0.55, dutyRate: 0.45 },
-              tank: { every: 6, out: 3.6, r: 0.8, h: 2.0, dome: 0.5, bands: [0.5, 1.3] } },
+              tank: { every: 6, out: 3.6, r: 0.8, h: 2.0, dome: 0.5, bands: [0.5, 1.3] },
+              // v77: embers rising off the boilers and over the pipe runs, never over the floor
+              motes: { n: 40, h: 6, vy: 0.6, sway: 0.4, wobble: 1.3, r: 0.06, gain: 3.0, color: [1.0, 0.5, 0.15], far: 6, side: 3 } },
     // v72 (from the World 6 brief, art-ref/briefs/world-6-river.md): THE RIVER
     // runs on past both ends of the floor (`ground`: past the banks `mudW` m of
     // mud, then grass), `pile`s across it at `at` m past each end with `foam`
@@ -265,7 +271,9 @@ export const TUNING = {
                      lo: [0.03, 0.06, 0.02], hi: [0.12, 0.17, 0.05], head: [0.08, 0.04, 0.018] },
              log: { per: 2, out: [2.4, 3.6], len: [2.8, 4.6], r: [0.3, 0.45], bark: [0.05, 0.035, 0.022], barkHi: [0.09, 0.07, 0.05], wood: [0.28, 0.2, 0.12] },
              pile: { at: [1.6, 4.5], every: 1.5, skip: 0.3, h: [0.6, 1.6], r: [0.13, 0.2], wood: [0.13, 0.095, 0.06], wet: [0.03, 0.03, 0.025] },
-             foam: { r: 1.6, period: 2.2, gain: 0.35, color: [0.55, 0.75, 0.72] } },
+             foam: { r: 1.6, period: 2.2, gain: 0.35, color: [0.55, 0.75, 0.72] },
+             // v77: fireflies over the banks at dusk
+             motes: { n: 24, h: 1.8, vy: 0.05, sway: 0.5, wobble: 0.7, r: 0.04, gain: 2.5, color: [0.8, 1.0, 0.4], blink: [3, 0.7], out: 2, deep: 3 } },
     // v72 (from the World 7 brief, art-ref/briefs/world-7-ice.md): THE ICE. A
     // snowfield (`ground`: ribbed by the wind, snow blowing over it at `wind`
     // m/s) round the floor; ice `crystal` clusters along the far side and
@@ -278,7 +286,9 @@ export const TUNING = {
            crystal: { every: 4.2, out: [2.0, 5.0], n: [3, 6], h: [1.6, 3.6], lean: [0.25, 0.7], spread: 0.6, thick: [0.12, 0.2],
                       deep: [0.08, 0.16, 0.28], pale: [0.45, 0.62, 0.78], glow: [0.35, 0.65, 1.0], rim: 0.5, inner: 0.12 },
            drift: { chance: 0.75, len: [1.4, 2.6], w: 0.35, h: 0.55, lo: [0.32, 0.38, 0.46], hi: [0.6, 0.66, 0.74] },
-           rock: { every: 5.5, out: [1.6, 5.5], r: [0.4, 1.0], lo: [0.06, 0.065, 0.075], snow: [0.55, 0.6, 0.68] } },
+           rock: { every: 5.5, out: [1.6, 5.5], r: [0.4, 1.0], lo: [0.06, 0.065, 0.075], snow: [0.55, 0.6, 0.68] },
+           // v77: snow falling over the whole view
+           motes: { n: 160, h: 7, vy: -0.5, sway: 0.5, wobble: 0.9, r: 0.03, gain: 1.2, color: [0.9, 0.95, 1.0], out: 10 } },
     // v72 (from the World 8 brief, art-ref/briefs/world-8-deep.md): THE DEEP. The
     // seabed (`ground`) round the floor; `kelp` in clumps every `every` m (`n`
     // ribbons `h` m tall, twisting `twist` rad up their length, swaying `sway`
@@ -292,7 +302,9 @@ export const TUNING = {
             boulder: { every: 5, out: [1.6, 5.5], r: [0.7, 1.5], barnacles: 5, lo: [0.03, 0.035, 0.05], hi: [0.07, 0.08, 0.1], barnacle: [0.22, 0.22, 0.2], anemone: 0.6 },
             anemone: { n: 12, r: 0.06, h: [0.8, 1.3], sway: 0.08, speed: 1.3, lo: [0.12, 0.03, 0.08], hi: [0.3, 0.08, 0.2], glow: [1.0, 0.3, 0.7], glow2: [0.3, 0.9, 1.0], glowI: 2.2 },
             vent: { every: 9, out: [1.2, 3.5], color: [0.02, 0.025, 0.035] },
-            bubbles: { per: 8, period: 3.6, rise: 4.5, r: [0.08, 0.17], sway: 0.12, wobble: 9, gain: 1.0, color: [0.35, 0.65, 1.0], rim: true, add: true, fade: 0.8 } },
+            bubbles: { per: 8, period: 3.6, rise: 4.5, r: [0.08, 0.17], sway: 0.12, wobble: 9, gain: 1.0, color: [0.35, 0.65, 1.0], rim: true, add: true, fade: 0.8 },
+            // v77: marine snow sinking through the whole view
+            motes: { n: 120, h: 6, vy: -0.12, sway: 0.1, wobble: 0.4, r: 0.02, gain: 0.8, color: [0.5, 0.7, 1.0], out: 8 } },
     // v72 (from the World 9 brief, art-ref/briefs/world-9-core.md): THE CORE. A
     // traced deck (`ground`: a grid every `cell` m, power running in toward the
     // floor in rings `pulseEvery` m apart); `tower`s along the far side and the

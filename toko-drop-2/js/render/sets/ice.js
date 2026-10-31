@@ -7,8 +7,8 @@
 // Every number TUNING.scenery.ice; the floor's frost and bubbles are floor.js
 import * as THREE from 'three/webgpu';
 import { Fn, float, vec2, vec3, sin, abs, max, mix, smoothstep, length, clamp, positionWorld, positionGeometry, normalView, normalWorld } from 'three/tsl';
-import { GEL_TIME } from '../gel.js?v=76';
-import { noise, seeded, put, stations, groundPlane, edgeLine, stoneGeometry } from '../kit.js?v=76';
+import { GEL_TIME } from '../gel.js?v=77';
+import { noise, seeded, put, stations, groundPlane, edgeLine, stoneGeometry, motes } from '../kit.js?v=77';
 
 const v3 = (a) => vec3(...a);
 
@@ -26,6 +26,9 @@ export function ice(sc, hx, hz) {
     return col.mul(float(1).sub(far.mul(far).mul(0.94)));
   })());
   edgeLine(sc, hx, hz, I.edge);
+
+  // v77: snow falling over the whole view
+  motes(sc, [[0, 0, 2 * (hx + I.motes.out), 2 * (hz + I.motes.out), 0]], I.motes);
 
   // the crystal clusters: a tall one near upright, the rest shorter and leaning out
   const C = I.crystal, roots = stations(hx, hz, rnd, { every: C.every, out: C.out, jitter: 0.7 }), crystals = [];

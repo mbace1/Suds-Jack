@@ -8,8 +8,8 @@
 // into the dark. Never along the near side. Every number TUNING.scenery.boiler
 import * as THREE from 'three/webgpu';
 import { Fn, float, vec2, vec3, fract, sin, abs, min, max, mix, smoothstep, length, atan, uv, clamp, fwidth, floor as tfloor, positionWorld, positionGeometry } from 'three/tsl';
-import { GEL_TIME } from '../gel.js?v=76';
-import { noise, seeded, phase, put, groundPlane, edgeLine, frameGeometry, risers } from '../kit.js?v=76';
+import { GEL_TIME } from '../gel.js?v=77';
+import { noise, seeded, phase, put, groundPlane, edgeLine, frameGeometry, risers, motes } from '../kit.js?v=77';
 
 const v3 = (a) => vec3(...a);
 
@@ -108,6 +108,9 @@ export function boiler(sc, hx, hz) {
 
   // the pipe run down each side: two pipes, flanged, standing off the floor
   const P = B.pipe, z0 = -(hz + P.back), z1 = hz + P.front, len = z1 - z0, zc = (z0 + z1) / 2;
+  // v77: embers rising off the boilers and over the pipe runs, never over the floor
+  const Mo = B.motes;
+  motes(sc, [[0, zb, 2 * (hx + R.side), Mo.far, 0.5], [-(hx + P.out), 0, Mo.side, 2 * hz, 0.8], [hx + P.out, 0, Mo.side, 2 * hz, 0.8]], Mo);
   const pipeMat = new THREE.MeshStandardNodeMaterial({ color: new THREE.Color(...P.color), roughness: 0.45, metalness: 0.7 });
   const flangeMat = new THREE.MeshStandardNodeMaterial({ color: new THREE.Color(...P.flange), roughness: 0.4, metalness: 0.75 });
   const nf = Math.floor(len / P.every);

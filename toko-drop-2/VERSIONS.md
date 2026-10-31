@@ -19,6 +19,15 @@
     Never `--no-verify`.
 -->
 
+## v77 — 2026-10-31
+**World particles: embers over the boilers, snow on the ice, dust in the sewer's sun shafts, motes in the cistern's lamps, fireflies over the river, marine snow in the deep**
+- The owner's third visual pick. One helper (kit.js `motes`): specks afloat in boxes of a world's own, each on a loop of its own up or down the box (embers and fireflies rise, snow, dust and marine snow fall), swaying, fading in at the foot of the loop and out at the top, lit in the world's colour; one instanced draw a world, 24 to 160 specks. Where they are is the point: the embers rise off the boilers along the far side and over the pipe runs down the sides and never over the floor; the dust falls only inside the sun shafts; the lamp motes hang in each lamp's light; the fireflies blink over the banks. The snow and the marine snow fall over the whole view, since that is what they do. Every number TUNING.scenery.<world>.motes.
+- Tuned on renders: the embers and the lamp motes were first drawn at the snow's size and vanished at the game's distance; embers are 6 cm now, lamp motes 3 cm.
+- The grid, the driveway and the core have none: the driveway is a summer day and the core is busy enough.
+- Cache tokens `?v=76` → `?v=77`; HUD label → `2.0 · v77`
+
+---
+
 ## v76 — 2026-10-31
 **Caustics under every gel, and the dash's ghosts lit at the rim and leaving light on the floor**
 - The owner's second visual pick ("gel caustics + dash ghosts"). **Caustics**: light focused through the jelly onto the floor round each body's foot, in the body's own colour — a core under it, a ring of three shimmering arcs at its edge and a faint glow out to 1.7 × its radius, slid a little away from the world's sun (v75's), spreading with the body's squash, a boss's brighter and a heavy body's dimmer (`TUNING.light.arena.caustic`; render/actors.js, one additive instanced decal). It was built in the arena light map first, where it belonged by nature, and could not be seen: the body covers the spot and the floor shows the map's light on its lines, so a render with it on and off differed by one outline. On the floor as its own decal it reads as a coloured pool of light under every body, kept modest so a crowd stays readable.

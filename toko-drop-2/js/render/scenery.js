@@ -46,20 +46,20 @@
 // TUNING.scenery.
 import * as THREE from 'three/webgpu';
 import { Fn, float, vec2, vec3, fract, sin, dot, floor as tfloor, mix, smoothstep, abs, positionWorld, positionLocal, normalWorld, normalView, clamp, max, min, length, step, fwidth, uv, attribute } from 'three/tsl';
-import { GEL_TIME } from './gel.js?v=76';
-import { hash, noise, seeded } from './kit.js?v=76';
-import { boiler } from './sets/boiler.js?v=76';
-import { river } from './sets/river.js?v=76';
-import { ice } from './sets/ice.js?v=76';
-import { deep } from './sets/deep.js?v=76';
-import { core } from './sets/core.js?v=76';
+import { GEL_TIME } from './gel.js?v=77';
+import { hash, noise, seeded, motes } from './kit.js?v=77';
+import { boiler } from './sets/boiler.js?v=77';
+import { river } from './sets/river.js?v=77';
+import { ice } from './sets/ice.js?v=77';
+import { deep } from './sets/deep.js?v=77';
+import { core } from './sets/core.js?v=77';
 
 // worlds 5-9 (v72): a set of their own each, built to its brief (render/sets/)
 const SETS = { boiler, river, ice, deep, core };
 
 // the noise, the cracks and the seeded numbers are the kit's (v72: render/kit.js),
 // and the floor still takes them from here
-export { noise, cells } from './kit.js?v=76';
+export { noise, cells } from './kit.js?v=77';
 
 // the storm drain's grate (v65, the owner's world-2 sheet), in its own units
 // (q, its frame's radius 1): x the grate, y a slot, z the frame. Rows of
@@ -345,6 +345,8 @@ export class Scenery {
     q.setFromEuler(new THREE.Euler(U.tilt, 0, -U.tilt));
     const lift = new THREE.Vector3(0, U.shaft / 2, 0).applyQuaternion(q);
     sp.pools.forEach(({ a, c }, k) => { t.set(...at(a, c, 0)).add(lift); shafts.setMatrixAt(k, m.compose(t, q, sc.set(1, 1, 1))); });
+    // v77: dust drifting down in each shaft
+    motes(this, sp.pools.map(({ a, c }) => { const [x, , z] = at(a, c, 0); return [x, z, S.motes.box, S.motes.box, 0.2]; }), S.motes);
   }
 
   // ── every other world: a ground past the floor, its edge, props round it ──
@@ -513,6 +515,8 @@ export class Scenery {
     const haloMat = new THREE.MeshBasicNodeMaterial({ transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, color: new THREE.Color(...Lp.color) });
     haloMat.opacityNode = normalView.z.max(0).pow(3).mul(Lp.haloGain);   // bright in the middle, gone at the rim
     const halos = this._add(new THREE.InstancedMesh(new THREE.SphereGeometry(Lp.r * Lp.halo, 12, 8), haloMat, lamps.length));
+    // v77: motes hanging in each lamp's light
+    motes(this, lamps.map(([x, z]) => [x, z, C.motes.box, C.motes.box, 0.1]), C.motes);
     lamps.forEach(([x, z], i) => {
       halos.setMatrixAt(i, m.makeTranslation(x, Lp.y + Lp.r * 0.6, z));
       bulbs.setMatrixAt(i, m.makeTranslation(x, Lp.y + Lp.r * 0.6, z));
