@@ -9,7 +9,8 @@
 // What it does, and why each step:
 //   · copies the files GIT TRACKS under toko-move/ and flow-core/ — never the
 //     working tree, so a test's output or a scratch file cannot reach a store;
-//   · leaves out tests, tools, scripts, the store kit and every .md (design
+//   · leaves out tests, tools, scripts, the store kit, the art pack (art/ is
+//     source material, 57 MB of plates and stills) and every .md (design
 //     notes are not the product; VERSIONS.md is the changelog on the page);
 //   · keeps the two folders SIDE BY SIDE (toko-move/ beside flow-core/), so
 //     every import path the arcade build uses still resolves unchanged — no
@@ -41,7 +42,7 @@ const PAGE = arg('--page', '');
 const DIR = arg('--dir') ? resolve(arg('--dir')) : mkdtempSync(join(tmpdir(), 'toko-itch-'));
 
 export const SHARED = ['toko/js/master.js'];
-const SKIP = [/(^|\/)test\//, /(^|\/)tools\//, /(^|\/)scripts\//, /(^|\/)store\//, /\.md$/i];
+const SKIP = [/(^|\/)art\//, /(^|\/)test\//, /(^|\/)tools\//, /(^|\/)scripts\//, /(^|\/)store\//, /\.md$/i];
 export function packaged(path) { return !SKIP.some(r => r.test(path)); }
 
 export function buildPackage({ dir = DIR, page = PAGE } = {}) {

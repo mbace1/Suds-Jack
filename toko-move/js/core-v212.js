@@ -6,11 +6,11 @@ import {tr} from './lang.js?v=3';
 const trLines=t=>String(t).split('\n').map(l=>tr(l)).join('\n');
 import {shareUrl,STORE} from './platform.js?v=1';
 import {DeliveryChallenge,DELIVERY_TARGET} from './deliveries.js?v=27';
-import {TransitLayers} from './transit-layers.js?v=10';
+import {TransitLayers} from './transit-layers.js?v=11';
 import {buildRealHelsinki} from './real-helsinki.js?v=5';
 import {boardBox,boardFit,roadPaths,lineFamily,ROAD_INK,ROAD_INK_MAJOR,ROAD_INK_MID,ROAD_INK_MINOR,HUB_INK,NIGHT} from './board.js?v=8';
 import {TRANSFER_HUBS} from './hubs-walking.js?v=4';
-import {SHIFT} from './live-network.js?v=16';
+import {SHIFT} from './live-network.js?v=17';
 import {Camera,SCALES,FLEET_RADIUS_M,metresBetween} from './camera.js?v=1';
 import {loadGround,STREET_TIERS} from './ground.js?v=12';
 import {dots,minutes} from './ui.js?v=2';
@@ -20,13 +20,14 @@ import {dailyName,resolveShift,todayRecord,recordDaily,streak,shareText,grid as 
 import * as Week from './week.js?v=4';
 import * as Kit from './kit.js?v=1';
 import {drawWeather} from './weather.js?v=1';
+import {skinFor,applySkin,CORAL as SK_CORAL} from './skin.js?v=1';
 import {drawPoster} from './poster.js?v=4';
 import * as WalkPath from './walkpath.js?v=1';
 import * as Rush from './rush.js?v=1';
 import {colourOf,parcelHtml,bagHtml} from './parcels.js?v=1';
 
 const $=id=>document.getElementById(id);
-const BUILD_VERSION='2.68';
+const BUILD_VERSION='2.69';
 const MAP_THEME={...THEME,latent:THEME.paper,hideQueues:true,hideLoadMarks:true,hideCarriers:true,modeColours:{metro:'rgba(0,0,0,0)',tram:'rgba(0,0,0,0)',car:'rgba(0,0,0,0)'}};
 const cargoColour=colourOf;   // ONE palette: this file and the job board drew the same parcel in two different colours until v2.43
 const esc=s=>String(s??'').replace(/[&<>\"]/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[ch]||ch));
@@ -74,13 +75,17 @@ const KIT_FX=Kit.effects(KIT_IDS);
 // v2.49: WEATHER (weather.js) — a look and a lever per morning, drawn from the
 // shift. `?weather=` pins it; the harness's `?day=none` control means clear.
 const WEATHER=drawWeather(shiftSeed,LIVE?'clear':params.get('weather'),params.get('day'));
+// v2.69: THE SKIN (skin.js; art bible §1). Day paper is the default board and
+// the owner's grey night map is the Night skin; a run's mutator decides, and
+// `?skin=` pins one for a link. Everything on the board reads SK, never NIGHT.
+const SK=skinFor({skin:params.get('skin'),mutator:params.get('mutator'),weather:WEATHER});document.body?.classList.add(`skin-${SK.id}`);
 // v2.52: THE RUSH (rush.js). `?rush=off`, and the harness's `?day=none`
 // control, turn it off; `?rush=on` keeps it on under that control.
 const RUSH_ON=!LIVE&&(params.get('rush')==='on'||(params.get('rush')!=='off'&&params.get('day')!=='none'));
 const rushLoad=()=>RUSH_ON&&flow?Rush.load(flow.clock.dayProgress):0;
 const say=s=>{if(msgs[0]===s)return;msgs.unshift(s);msgs.length=Math.min(8,msgs.length);paintFeed();};  // a line repeated back to back is a double call, not news
 
-function publish(){window.__tm={...(window.__tm||{}),walkLine,walkProgress,live:LIVE,version:BUILD_VERSION,shiftSeed,shiftInfo:SHIFT_INFO,cityDay,kit:KIT_IDS,kitFx:KIT_FX,weather:WEATHER,rushOn:RUSH_ON,rushLoad,isFull:v=>RUSH_ON&&!!flow&&Rush.isFull(v,flow.clock.tick,rushLoad()),flow,challenge,renderer,transit,city,water,board:box,project:fitLatLon,projection,camera,ground,landmarkPoints:()=>_lmPoints,fleetFilter,courierLatLon,drawStopLabels,shift:SHIFT,say,paintHud,paintSheet,sheetSlot};}
+function publish(){window.__tm={...(window.__tm||{}),skin:SK.id,walkLine,walkProgress,live:LIVE,version:BUILD_VERSION,shiftSeed,shiftInfo:SHIFT_INFO,cityDay,kit:KIT_IDS,kitFx:KIT_FX,weather:WEATHER,rushOn:RUSH_ON,rushLoad,isFull:v=>RUSH_ON&&!!flow&&Rush.isFull(v,flow.clock.tick,rushLoad()),flow,challenge,renderer,transit,city,water,board:box,project:fitLatLon,projection,camera,ground,landmarkPoints:()=>_lmPoints,fleetFilter,courierLatLon,drawStopLabels,shift:SHIFT,say,paintHud,paintSheet,sheetSlot};}
 
 // THE one projection. It used to go lat/lon -> graph space -> flow.graph.fit(),
 // and fit() letterboxes with Math.min: the board is portrait (about 4km across
@@ -150,11 +155,11 @@ function drawWater(ctx=$('map').getContext('2d'),alpha=.92){const src=ground?.wa
   // the data itself says is water. Three offset passes, fading out, which reads
   // as sea at a glance and is derived rather than drawn: flip the winding and
   // the shading goes inland, which is exactly the error it would be.
-  ctx.strokeStyle=NIGHT.water;ctx.fillStyle=NIGHT.waterFill;ctx.lineWidth=1.2*d;
+  ctx.strokeStyle=SK.water;ctx.fillStyle=SK.waterFill;ctx.lineWidth=1.2*d;
   for(const area of src.areas||[]){if(!area.shape?.length)continue;ctx.beginPath();area.shape.forEach(([lat,lon],i)=>{const p=fitLatLon(lat,lon);i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y);});ctx.closePath();ctx.fill();ctx.stroke();}
   ctx.lineJoin='round';ctx.lineCap='round';
   for(const[off,w,a]of[[13,17,.30],[6,11,.42],[1.6,5,.60]]){
-    ctx.strokeStyle=NIGHT.waterFill;ctx.globalAlpha=alpha*a;ctx.lineWidth=w*d;
+    ctx.strokeStyle=SK.waterFill;ctx.globalAlpha=alpha*a;ctx.lineWidth=w*d;
     for(const edge of src.edges||[]){const pts=(edge.shape||[]).map(([lat,lon])=>fitLatLon(lat,lon));if(pts.length<2)continue;
       ctx.beginPath();
       for(let i=0;i<pts.length;i++){
@@ -164,7 +169,7 @@ function drawWater(ctx=$('map').getContext('2d'),alpha=.92){const src=ground?.wa
         const x=pts[i].x+(dy/len)*off*d,y=pts[i].y-(dx/len)*off*d;
         i?ctx.lineTo(x,y):ctx.moveTo(x,y);}
       ctx.stroke();}}
-  ctx.globalAlpha=alpha;ctx.strokeStyle=NIGHT.waterEdge;ctx.lineWidth=1.6*d;
+  ctx.globalAlpha=alpha;ctx.strokeStyle=SK.waterEdge;ctx.lineWidth=1.6*d;
   for(const edge of src.edges||[]){if(!edge.shape?.length)continue;ctx.beginPath();edge.shape.forEach(([lat,lon],i)=>{const p=fitLatLon(lat,lon);i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y);});ctx.stroke();}
   ctx.restore();}
 
@@ -174,7 +179,8 @@ function drawWater(ctx=$('map').getContext('2d'),alpha=.92){const src=ground?.wa
 // the badges already rank by (main-v212's relevantLines), so the line and its
 // vehicles agree about what matters.
 function drawTransit(){const rel=window.__tm?.focusLines?.();const focus=rel&&rel.size?(l=>rel.has(l.id)||rel.has(l.name)):null;
-  transit?.draw($('map').getContext('2d'),$('map').width,$('map').height,{fit:fitLatLon,alpha:.92,lineWidth:2.4*(renderer?.dpr||1),focus});}
+  const holds=window.__tm?.events?.activeHolds?.()||[],halted=holds.length?(l=>holds.some(h=>h.line===l.name)):null;
+  transit?.draw($('map').getContext('2d'),$('map').width,$('map').height,{fit:fitLatLon,alpha:.92,lineWidth:2.4*(renderer?.dpr||1),focus,casing:SK.paper,halted});}
 
 // Main roads: GROUND, and they have to stay ground. They are drawn first, in
 // one flat grey with no rounded caps, so they read as the surface the network
@@ -203,7 +209,7 @@ function drawRoads(ctx=$('map').getContext('2d')){const d=renderer?.dpr||1,scale
   // The corridors are not a street map and the credit line says so. What they
   // are is the streets that carry service, which is the right thing for the
   // coarse layer to be: an arterial is exactly a street a bus runs on.
-  const W={minor:1.5,mid:2.6,major:4.2},INK={minor:ROAD_INK_MINOR,mid:ROAD_INK_MID,major:ROAD_INK_MAJOR};
+  const W={minor:1.5,mid:2.6,major:4.2},INK={minor:SK.road.minor,mid:SK.road.mid,major:SK.road.major};
   const tiers=STREET_TIERS[scale]||STREET_TIERS.city;
   const trace=shape=>shape.forEach(([lat,lon],i)=>{const p=fitLatLon(lat,lon);i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y);});
   ctx.save();ctx.lineJoin='round';ctx.lineCap='butt';
@@ -215,7 +221,7 @@ function drawRoads(ctx=$('map').getContext('2d')){const d=renderer?.dpr||1,scale
       for(const r of ground.byTier?.[tier]||[])trace(r.shape);
       for(const r of ground.corridorRuns||[])if(r.tier===tier)trace(r.shape);
       ctx.stroke();}}
-  else if(roads?.length){ctx.strokeStyle=ROAD_INK_MINOR;ctx.lineWidth=2.2*d;ctx.globalAlpha=.85;
+  else if(roads?.length){ctx.strokeStyle=SK.road.minor;ctx.lineWidth=2.2*d;ctx.globalAlpha=.85;
     for(const road of roads){ctx.beginPath();trace(road.path);ctx.stroke();}}
   ctx.restore();}
 
@@ -377,7 +383,7 @@ function creditHeight(){const ctx=$('map').getContext('2d'),d=renderer?.dpr||1,r
   return n?(n*9+4):0;}
 function drawCredit(){if(!ground)return;const ctx=$('map').getContext('2d'),d=renderer?.dpr||1,r=viewRect();
   ctx.save();ctx.font=creditFont(d);ctx.textAlign='left';ctx.textBaseline='bottom';
-  ctx.globalAlpha=.72;ctx.fillStyle=NIGHT.credit;
+  ctx.globalAlpha=.72;ctx.fillStyle=SK.credit;
   const lines=creditLines(ctx,r.w-12*d);
   lines.forEach((l,i)=>ctx.fillText(l,r.x+6*d,r.y+r.h-4*d-(lines.length-1-i)*9*d));
   ctx.restore();}
@@ -398,7 +404,7 @@ function drawCredit(){if(!ground)return;const ctx=$('map').getContext('2d'),d=re
 function paintWeather(ctx){const w=WEATHER;if(!w||w.id==='clear'||!flow)return;const c=$('map'),W=c.width,H=c.height,t=flow.clock.tick,d=renderer?.dpr||window.devicePixelRatio||1;ctx.save();
   if(w.id==='rain'){ctx.fillStyle='rgba(10,24,40,0.16)';ctx.fillRect(0,0,W,H);ctx.strokeStyle='rgba(170,205,230,0.38)';ctx.lineWidth=1*d;ctx.beginPath();
     for(let i=0;i<150;i++){const x=(((i*97.31+t*2.2*d)%(W+40))+W+40)%(W+40)-20,y=(((i*53.77+t*8*d)%(H+40))+H+40)%(H+40)-20;ctx.moveTo(x,y);ctx.lineTo(x-3*d,y+12*d);}ctx.stroke();}
-  else if(w.id==='snow'){ctx.globalCompositeOperation='screen';ctx.fillStyle='rgba(190,200,212,0.20)';ctx.fillRect(0,0,W,H);ctx.globalCompositeOperation='source-over';ctx.fillStyle='rgba(246,249,252,0.85)';
+  else if(w.id==='snow'){if(SK.id==='night'){ctx.globalCompositeOperation='screen';ctx.fillStyle='rgba(190,200,212,0.20)';ctx.fillRect(0,0,W,H);ctx.globalCompositeOperation='source-over';}ctx.fillStyle=SK.flake;
     for(let i=0;i<120;i++){const x=((i*131.7+Math.sin((t+i*13)/40)*18*d)%W+W)%W,y=(((i*71.3+t*1.5*d)%(H+20))+H+20)%(H+20)-10;ctx.beginPath();ctx.arc(x,y,(1+(i%3)*0.6)*d,0,Math.PI*2);ctx.fill();}}
   else if(w.id==='frost'){const g=ctx.createRadialGradient(W/2,H/2,Math.min(W,H)*0.3,W/2,H/2,Math.max(W,H)*0.75);g.addColorStop(0,'rgba(200,225,245,0)');g.addColorStop(1,'rgba(200,225,245,0.24)');ctx.fillStyle=g;ctx.fillRect(0,0,W,H);}
   else if(w.id==='fog'){const ll=courierLatLon();if(ll){const p=fitLatLon(ll.lat,ll.lon),q=fitLatLon(ll.lat+w.fogM/111320,ll.lon),r=Math.max(18*d,Math.hypot(q.x-p.x,q.y-p.y));
@@ -410,7 +416,7 @@ function paintDawn(ctx){if(!flow)return;const pr=Math.min(1,flow.clock.dayProgre
   // and swinging south as the shift runs, its warm pool going with it.
   {const sx=r.w*(1.05-0.35*pr),sy=r.h*(0.62-0.4*pr),g=ctx.createRadialGradient(sx,sy,0,sx,sy,Math.max(r.w,r.h)*0.9);g.addColorStop(0,`rgba(255,196,120,${(a*2.2).toFixed(3)})`);g.addColorStop(1,'rgba(255,196,120,0)');ctx.fillStyle=g;ctx.fillRect(r.x,r.y,r.w,r.h);}
   ctx.fillStyle=`rgba(255,190,130,${a.toFixed(3)})`;ctx.fillRect(r.x,r.y,r.w,r.h);ctx.globalCompositeOperation='lighter';ctx.fillStyle=`rgba(90,50,25,${(a*0.2).toFixed(3)})`;ctx.fillRect(r.x,r.y,r.w,r.h);ctx.restore();}
-function drawBoardFrame(){const ctx=$('map').getContext('2d'),d=renderer?.dpr||1,r=boardRect();ctx.save();ctx.strokeStyle=NIGHT.frame;ctx.lineWidth=1*d;ctx.strokeRect(r.x+.5,r.y+.5,r.w-1,r.h-1);ctx.restore();}
+function drawBoardFrame(){const ctx=$('map').getContext('2d'),d=renderer?.dpr||1,r=boardRect();ctx.save();ctx.strokeStyle=SK.frame;ctx.lineWidth=1*d;ctx.strokeRect(r.x+.5,r.y+.5,r.w-1,r.h-1);ctx.restore();}
 
 // Stops and transfer spots. A transfer spot is the decision point of the whole
 // game — it is where waiting, catching and changing lines happen — so it is
@@ -419,8 +425,8 @@ function drawBoardFrame(){const ctx=$('map').getContext('2d'),d=renderer?.dpr||1
 // left to the lines, which own it.
 function drawStops(){if(!flow||!city)return;const ctx=$('map').getContext('2d'),d=renderer?.dpr||1;ctx.save();ctx.textAlign='center';ctx.textBaseline='middle';
   for(const node of city.nodes){const p=fitLatLon(node.lat,node.lon),hub=TRANSFER_HUBS.includes(node.id);
-    if(hub){ctx.beginPath();ctx.arc(p.x,p.y,7*d,0,Math.PI*2);ctx.fillStyle=NIGHT.hub;ctx.fill();ctx.lineWidth=2.8*d;ctx.strokeStyle=NIGHT.hubRing;ctx.stroke();}
-    else{ctx.beginPath();ctx.arc(p.x,p.y,3.6*d,0,Math.PI*2);ctx.fillStyle=NIGHT.stop;ctx.fill();ctx.lineWidth=1.8*d;ctx.strokeStyle=NIGHT.stopRing;ctx.stroke();}}
+    if(hub){ctx.beginPath();ctx.arc(p.x,p.y,7*d,0,Math.PI*2);ctx.fillStyle=SK.hub;ctx.fill();ctx.lineWidth=2.8*d;ctx.strokeStyle=SK.hubRing;ctx.stroke();}
+    else{ctx.beginPath();ctx.arc(p.x,p.y,3.6*d,0,Math.PI*2);ctx.fillStyle=SK.stop;ctx.fill();ctx.lineWidth=1.8*d;ctx.strokeStyle=SK.stopRing;ctx.stroke();}}
   ctx.restore();}
 
 // Labels are drawn LAST — after main-v212.js has put the moving vehicles down —
@@ -460,16 +466,16 @@ function drawStopLabels(avoid=[]){if(!flow||!city)return;const ctx=$('map').getC
     const spots=[[p.x-w/2,p.y-gap-h],[p.x-w/2,p.y+gap],[p.x+gap,p.y-h/2],[p.x-gap-w,p.y-h/2]].map(([x,y])=>({x,y,w,h}));
     hubNow=hub;const at=spots.find(free);if(!at)continue;placed.push(at);
     const tx=at.x+w/2,ty=at.y+h/2;
-    ctx.lineWidth=3.2*d;ctx.strokeStyle=NIGHT.halo;ctx.strokeText(node.name,tx,ty);
-    ctx.fillStyle=hub?NIGHT.label:NIGHT.labelDim;ctx.fillText(node.name,tx,ty);}
+    ctx.lineWidth=3.2*d;ctx.strokeStyle=SK.halo;ctx.strokeText(node.name,tx,ty);
+    ctx.fillStyle=hub?SK.label:SK.labelDim;ctx.fillText(node.name,tx,ty);}
   ctx.restore();}
 
-function drawTransitInspector(){const c=$('map'),ctx=c.getContext('2d');ctx.fillStyle=NIGHT.paper;ctx.fillRect(0,0,c.width,c.height);drawWater($('map').getContext('2d'),1);transit?.draw(ctx,c.width,c.height,{alpha:.96,lineWidth:2.6*(renderer?.dpr||1)});}
+function drawTransitInspector(){const c=$('map'),ctx=c.getContext('2d');ctx.fillStyle=SK.paper;ctx.fillRect(0,0,c.width,c.height);drawWater($('map').getContext('2d'),1);transit?.draw(ctx,c.width,c.height,{alpha:.96,lineWidth:2.6*(renderer?.dpr||1)});}
 // The district names were drawn on top of the stop names at the same size, so
 // KÄPYLÄ and Käpylä sat on each other. They are the coarser layer, so they go
 // UNDER the network as a wide watermark rather than competing with the labels.
 function drawDistricts(ctx=$('map').getContext('2d')){if(!city)return;const d=renderer?.dpr||1,scale=camera?.nearestScale()||'city';
-  ctx.save();ctx.globalAlpha=.4;ctx.fillStyle=NIGHT.district;ctx.font=`${Math.round(11*d)}px ui-monospace,monospace`;ctx.textAlign='center';ctx.letterSpacing=`${2*d}px`;
+  ctx.save();ctx.globalAlpha=.4;ctx.fillStyle=SK.district;ctx.font=`${Math.round(11*d)}px ui-monospace,monospace`;ctx.textAlign='center';ctx.letterSpacing=`${2*d}px`;
   // Forty-one real sub-district label points from the city's own osa-aluejako,
   // ordered by how much of the extent each covers — which is the only ordering
   // in that pack that means anything on a map, because the big quarters are the
@@ -483,7 +489,7 @@ function drawDistricts(ctx=$('map').getContext('2d')){if(!city)return;const d=re
 // The active job's two ends, over everything: where you are and where the box
 // has to go. Nothing between them is drawn — no route is the answer.
 function drawJobEnds(){if(!challenge?.active||!city)return;const ctx=$('map').getContext('2d'),d=renderer?.dpr||1;ctx.save();
-  for(const[id,col]of[[challenge.currentFrom(),'#2f9fb8'],[challenge.currentTo(),cargoColour(challenge.active.cargo)]]){const n=city.resolved?.[id];if(!n)continue;const p=fitLatLon(n.lat,n.lon);ctx.strokeStyle=col;ctx.lineWidth=3.4*d;ctx.beginPath();ctx.arc(p.x,p.y,14*d,0,Math.PI*2);ctx.stroke();}
+  for(const[id,col]of[[challenge.currentFrom(),SK.hubRing],[challenge.currentTo(),cargoColour(challenge.active.cargo)]]){const n=city.resolved?.[id];if(!n)continue;const p=fitLatLon(n.lat,n.lon);ctx.strokeStyle=col;ctx.lineWidth=3.4*d;ctx.beginPath();ctx.arc(p.x,p.y,14*d,0,Math.PI*2);ctx.stroke();}
   // WHERE THIS JOB ENDS gets a flag, not a second ring. Two rings in two
   // colours said "two places matter" and nothing about which is which; the
   // one you are going to now carries a pennant in the cargo's colour on a pole
@@ -503,7 +509,9 @@ function drawJobEnds(){if(!challenge?.active||!city)return;const ctx=$('map').ge
 // as its cargo glyph inside a ring that empties with the deadline — no
 // "deliveries" / "deadline" labels and no ticks (owner: Mini Metro succinct).
 let _hudBucket=-1,_hudLive=null;
-function paintHud(){if(!challenge||!flow)return;const c=challenge.active?challenge.cargoRule():null;$('done').innerHTML=dots(challenge.index,challenge.target,challenge.drops);{const b=$('bagHud');if(b)b.innerHTML=challenge.active?bagHtml(challenge.carrying?.()||[],challenge.capacity?.()):'';}$('reach').textContent=challenge.active?`${challenge.name(challenge.currentFrom())} → ${challenge.name(challenge.currentTo())}`:'dispatch';$('emit').textContent=challenge.active?(challenge.remaining()<20?'due':minutes(challenge.remaining())):'';$('score').textContent=challenge.score?String(challenge.score):'';{const m=challenge.streakMult?.()||1,el=$('mult');if(el){el.textContent=m>1?`×${m}`:'';el.style.opacity=m>=2?'1':'.8';}}{const ring=$('cargoHud'),g=$('cargoGlyph');if(g)g.innerHTML=challenge.active?parcelHtml(challenge.active.cargo,{max:16}):'<span class="pcl pcl-none"></span>';ring.title=c?`${challenge.active.cargo} · ${c.rule}`:'no job';const p=challenge.active?Math.max(0,Math.min(100,100*challenge.remaining()/challenge.active.limit)):0;ring.style.setProperty('--p',p.toFixed(1));ring.style.setProperty('--ring',challenge.active?cargoColour(challenge.active.cargo):'#e2e6e1');}{const m=(LIVE?LIVE_START:SHIFT.startHour*60)+Math.floor(flow.clock.dayProgress*SHIFT.hours*60);$('clock').textContent=hhmm(m);{const l=rushLoad(),w=Rush.label(l),el=$('rush');if(el&&LIVE){const f=window.__tm?.liveFeed;el.textContent=f?.label||'LIVE';el.className=`rush lvl-live${f?.state==='live'?'':' lvl-wait'}`;}else if(el){el.textContent=w?`${w} ×${Rush.surge(l).toFixed(1)}`:'';el.className=w?`rush lvl-${w.toLowerCase()}`:"rush";}}}{const net=window.__tm?.liveNetwork,sc=SCALES.find(x=>x.id===camera?.nearestScale())?.label||'CITY';$('lines').textContent=net&&Number.isFinite(net.lastShown)?`${sc} \u00b7 ${net.lastShown}/${net.vehicles.length} near`:'HSL network';}}
+// The deadline ring (art bible §4) turns coral under this share of the job's time.
+const RING_LATE=30;
+function paintHud(){if(!challenge||!flow)return;const c=challenge.active?challenge.cargoRule():null;$('done').innerHTML=dots(challenge.index,challenge.target,challenge.drops);{const b=$('bagHud');if(b)b.innerHTML=challenge.active?bagHtml(challenge.carrying?.()||[],challenge.capacity?.()):'';}$('reach').textContent=challenge.active?`${challenge.name(challenge.currentFrom())} → ${challenge.name(challenge.currentTo())}`:'dispatch';$('emit').textContent=challenge.active?(challenge.remaining()<20?'due':minutes(challenge.remaining())):'';$('score').textContent=challenge.score?String(challenge.score):'';{const m=challenge.streakMult?.()||1,el=$('mult');if(el){el.textContent=m>1?`×${m}`:'';el.style.opacity=m>=2?'1':'.8';}}{const ring=$('cargoHud'),g=$('cargoGlyph');if(g)g.innerHTML=challenge.active?parcelHtml(challenge.active.cargo,{max:16}):'<span class="pcl pcl-none"></span>';ring.title=c?`${challenge.active.cargo} · ${c.rule} · ${challenge.remaining()<20?'due':minutes(challenge.remaining())}`:'no job';const p=challenge.active?Math.max(0,Math.min(100,100*challenge.remaining()/challenge.active.limit)):0;ring.style.setProperty('--p',p.toFixed(1));ring.style.setProperty('--ring',challenge.active?(p<RING_LATE?SK_CORAL:SK.ring):'#e2e6e1');ring.classList.toggle('late',!!challenge.active&&p<RING_LATE);}{const m=(LIVE?LIVE_START:SHIFT.startHour*60)+Math.floor(flow.clock.dayProgress*SHIFT.hours*60);$('clock').textContent=hhmm(m);{const l=rushLoad(),w=Rush.label(l),el=$('rush');if(el&&LIVE){const f=window.__tm?.liveFeed;el.textContent=f?.label||'LIVE';el.className=`rush lvl-live${f?.state==='live'?'':' lvl-wait'}`;}else if(el){el.textContent=w?`${w} ×${Rush.surge(l).toFixed(1)}`:'';el.className=w?`rush lvl-${w.toLowerCase()}`:"rush";}}}{const net=window.__tm?.liveNetwork,sc=SCALES.find(x=>x.id===camera?.nearestScale())?.label||'CITY';$('lines').textContent=net&&Number.isFinite(net.lastShown)?`${sc} \u00b7 ${net.lastShown}/${net.vehicles.length} near`:'HSL network';}}
 // THE JOB SHEET HAS THREE WRITERS AND HAD NO OWNER.
 // paintSheet (this file), the dispatch board (job-board-v212.js) and the catch
 // panel (route-choice.js) all wrote into #sheet on their own timers, and each
@@ -631,7 +639,7 @@ function paintGround(dest){const c=$('map');
   if(key!==_groundKey){_groundKey=key;const g=_ground.getContext('2d');
     g.clearRect(0,0,_ground.width,_ground.height);
     g.save();const r=boardRect();g.beginPath();g.rect(r.x,r.y,r.w,r.h);g.clip();
-    g.fillStyle=NIGHT.paper;g.fillRect(r.x,r.y,r.w,r.h);
+    g.fillStyle=SK.paper;g.fillRect(r.x,r.y,r.w,r.h);
     drawWater(g);drawDistricts(g);drawRoads(g);drawLandmarkLayer(g);g.restore();}
   dest.drawImage(_ground,0,0);}
 
@@ -644,7 +652,7 @@ function frame(now){const dt=last?Math.min(120,now-last):0;last=now;
   if(flow){flow.update(dt);
     if(camera&&!transitView){const c=$('map');camera.step(dt,baseProjection(),c.width,c.height,courierLatLon());placeRail();paintRail();}
     if(transitView)drawTransitInspector();
-    else{const c=$('map'),ctx=c.getContext('2d');ctx.fillStyle=NIGHT.surround;ctx.fillRect(0,0,c.width,c.height);
+    else{const c=$('map'),ctx=c.getContext('2d');ctx.fillStyle=SK.surround;ctx.fillRect(0,0,c.width,c.height);
       paintGround(ctx);paintDawn(ctx);
       ctx.save();clipToBoard(ctx);
       drawTransit();drawStops();drawJobEnds();paintWeather(ctx);drawLegend();drawCredit();ctx.restore();drawBoardFrame();}
@@ -659,7 +667,7 @@ function frame(now){const dt=last?Math.min(120,now-last):0;last=now;
 
 async function init(){
   $('play').disabled=true;$('play').textContent='LOADING HELSINKI…';
-  try{const [r,g]=await Promise.all([fetch('./cities/helsinki.json',{cache:'no-store'}),loadGround()]);ground=g;water=g?.water||null;if(!r.ok)throw new Error(`HSL pack ${r.status}`);source=await r.json();transit=new TransitLayers(source);transit.showAll();city=buildRealHelsinki(source);box=boardBox(city.resolved);roads=roadPaths(city.resolved);camera=new Camera(box);openingScale();{const kx=Math.cos(((box.n+box.s)*.5)*Math.PI/180);$('map').style.aspectRatio=`${(box.e-box.w)*kx} / ${box.n-box.s}`;renderer?.resize?.();}paintTransitPanel();boot();$('play').disabled=false;$('play').textContent=WEEK?`START ${SHIFT_INFO.name}`:'START SHIFT';paintDayCard();requestAnimationFrame(frame);}catch(err){$('play').textContent='MAP LOAD FAILED';$('transitMeta').textContent=err.message;console.error(err);}
+  try{const [r,g]=await Promise.all([fetch('./cities/helsinki.json',{cache:'no-store'}),loadGround()]);ground=g;water=g?.water||null;if(!r.ok)throw new Error(`HSL pack ${r.status}`);source=await r.json();transit=new TransitLayers(source);applySkin(transit,SK);transit.showAll();city=buildRealHelsinki(source);box=boardBox(city.resolved);roads=roadPaths(city.resolved);camera=new Camera(box);openingScale();{const kx=Math.cos(((box.n+box.s)*.5)*Math.PI/180);$('map').style.aspectRatio=`${(box.e-box.w)*kx} / ${box.n-box.s}`;renderer?.resize?.();}paintTransitPanel();boot();$('play').disabled=false;$('play').textContent=WEEK?`START ${SHIFT_INFO.name}`:'START SHIFT';paintDayCard();requestAnimationFrame(frame);}catch(err){$('play').textContent='MAP LOAD FAILED';$('transitMeta').textContent=err.message;console.error(err);}
 }
 
 // Tapping the board. The whole verb set is READ the network and time it, and
