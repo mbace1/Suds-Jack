@@ -2,7 +2,7 @@
 import {createFlow} from '../../flow-core/sim.js?v=2';
 import {FlowRenderer} from '../../flow-core/render.js?v=3';
 import {THEME} from './palette.js?v=1';
-import {tr} from './lang.js?v=4';
+import {tr} from './lang.js?v=5';
 const trLines=t=>String(t).split('\n').map(l=>tr(l)).join('\n');
 import {shareUrl,STORE} from './platform.js?v=1';
 import {DeliveryChallenge,DELIVERY_TARGET} from './deliveries.js?v=27';
@@ -22,13 +22,14 @@ import * as Kit from './kit.js?v=1';
 import {drawWeather} from './weather.js?v=1';
 import {skinFor,applySkin,CORAL as SK_CORAL} from './skin.js?v=1';
 import {MUTATORS,resolveMutator,mutateShift,rushWith,startMinute} from './mutators.js?v=1';
-import {drawPoster} from './poster.js?v=5';
+import {loadNotebook} from './sealed.js?v=1';
+import {drawPoster} from './poster.js?v=6';
 import * as WalkPath from './walkpath.js?v=1';
 import * as Rush from './rush.js?v=1';
 import {colourOf,parcelHtml,bagHtml} from './parcels.js?v=1';
 
 const $=id=>document.getElementById(id);
-const BUILD_VERSION='2.70';
+const BUILD_VERSION='2.71';
 const MAP_THEME={...THEME,latent:THEME.paper,hideQueues:true,hideLoadMarks:true,hideCarriers:true,modeColours:{metro:'rgba(0,0,0,0)',tram:'rgba(0,0,0,0)',car:'rgba(0,0,0,0)'}};
 const cargoColour=colourOf;   // ONE palette: this file and the job board drew the same parcel in two different colours until v2.43
 const esc=s=>String(s??'').replace(/[&<>\"]/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[ch]||ch));
@@ -466,7 +467,7 @@ function drawStopLabels(avoid=[]){if(!flow||!city)return;const ctx=$('map').getC
   // board keeps the names that are decisions: the transfer spots, and the two
   // ends of the job in hand. The dots stay drawn either way, so nothing is
   // hidden — only unlabelled, and one zoom step brings the name back.
-  const wide=camera?.nearestScale()==='city',ends=[challenge?.currentFrom(),challenge?.currentTo()].filter(Boolean);
+  const wide=camera?.nearestScale()==='city',ends=[challenge?.currentFrom(),challenge?.currentTo()].filter(x=>x&&x!==hiddenStop());
   const shown=city.nodes.filter(n=>!wide||TRANSFER_HUBS.includes(n.id)||ends.includes(n.id));
   const ordered=[...shown].sort((a,b)=>Number(TRANSFER_HUBS.includes(b.id))-Number(TRANSFER_HUBS.includes(a.id)));
   for(const node of ordered){const p=fitLatLon(node.lat,node.lon),hub=TRANSFER_HUBS.includes(node.id),size=hub?9.5:8,gap=(hub?13:10)*d;
@@ -498,14 +499,16 @@ function drawDistricts(ctx=$('map').getContext('2d')){if(!city)return;const d=re
 
 // The active job's two ends, over everything: where you are and where the box
 // has to go. Nothing between them is drawn — no route is the answer.
-function drawJobEnds(){if(!challenge?.active||!city)return;const ctx=$('map').getContext('2d'),d=renderer?.dpr||1;ctx.save();
-  for(const[id,col]of[[challenge.currentFrom(),SK.hubRing],[challenge.currentTo(),cargoColour(challenge.active.cargo)]]){const n=city.resolved?.[id];if(!n)continue;const p=fitLatLon(n.lat,n.lon);ctx.strokeStyle=col;ctx.lineWidth=3.4*d;ctx.beginPath();ctx.arc(p.x,p.y,14*d,0,Math.PI*2);ctx.stroke();}
+// v2.71: a sealed parcel's stop is not on the board until it opens (sealed.js)
+const hiddenStop=()=>{const j=challenge?.active;return j?.sealed&&!j.sealed.revealed?(j.originalStops?.[1]||j.stops[j.stops.length-1]):null;};
+function drawJobEnds(){if(!challenge?.active||!city)return;const ctx=$('map').getContext('2d'),d=renderer?.dpr||1,hid=hiddenStop();ctx.save();
+  for(const[id,col]of[[challenge.currentFrom(),SK.hubRing],[challenge.currentTo(),cargoColour(challenge.active.cargo)]]){if(id===hid)continue;const n=city.resolved?.[id];if(!n)continue;const p=fitLatLon(n.lat,n.lon);ctx.strokeStyle=col;ctx.lineWidth=3.4*d;ctx.beginPath();ctx.arc(p.x,p.y,14*d,0,Math.PI*2);ctx.stroke();}
   // WHERE THIS JOB ENDS gets a flag, not a second ring. Two rings in two
   // colours said "two places matter" and nothing about which is which; the
   // one you are going to now carries a pennant in the cargo's colour on a pole
   // with the stop's name on it, so the destination reads from across the board
   // at any scale, before the stop labels have decided whether it earns one.
-  {const to=challenge.currentTo(),n=city.resolved?.[to];if(n){const p=fitLatLon(n.lat,n.lon),col=cargoColour(challenge.active.cargo),ink='#0f1418';
+  {const to=challenge.currentTo(),n=to===hid?null:city.resolved?.[to];if(n){const p=fitLatLon(n.lat,n.lon),col=cargoColour(challenge.active.cargo),ink='#0f1418';
     ctx.lineJoin='round';ctx.lineCap='round';
     const pole=()=>{ctx.beginPath();ctx.moveTo(p.x,p.y-4*d);ctx.lineTo(p.x,p.y-30*d);};
     const flag=()=>{ctx.beginPath();ctx.moveTo(p.x,p.y-30*d);ctx.lineTo(p.x+16*d,p.y-25*d);ctx.lineTo(p.x,p.y-20*d);ctx.closePath();};
@@ -632,7 +635,7 @@ function paintWeek(box,again){const w=WEEK;
     try{await navigator.clipboard.writeText(text);btn.textContent='COPIED';return;}catch{}
     const pre=$('shareText');if(pre){pre.textContent=text;pre.hidden=false;}btn.textContent='COPY THIS';};}}
 
-function finish(){if(done)return;done=true;flow.clock.setPaused(true);$('endTitle').textContent=challenge.complete?'ALL DELIVERED':'DAY OVER';$('endStats').innerHTML=`<p>deliveries <b>${challenge.index}/${challenge.target}</b></p>${challenge.drops?`<p>drops on the way <b>${challenge.drops}</b></p>`:''}<p>score <b>${challenge.score}</b></p><p>best streak <b>×${(1+challenge.streakStep()*Math.max(0,Math.min(4,challenge.bestStreak-1))).toFixed(2).replace(/0+$/,'').replace(/\.$/,'')} (${challenge.bestStreak})</b></p>${challenge.tips?`<p>tips from regulars <b>${challenge.tips}</b></p>`:''}${challenge.goodwill?`<p>goodwill <b>${challenge.goodwill>0?'+':''}${challenge.goodwill}</b></p>`:''}${window.__tm?.rival?`<p>${window.__tm.rival.name} delivered <b>${window.__tm.rival.delivered}</b>${window.__tm.rival.taken.length?` · took ${window.__tm.rival.taken.join(', ')}`:''}</p>`:''}${window.__tm?.visited?`<p>stops you have been to <b>${window.__tm.visited.size}</b></p>`:''}<p>cargo bonuses <b>${challenge.bonuses}</b></p><p>late jobs <b>${challenge.late}</b></p><p class="hint">${cityDay?esc(cityDay.name)+' · ':''}${esc(shiftLabel())}</p>`;$('endNote').textContent=challenge.complete?'Every job delivered.':'The shift ended.';{const log=window.__tm?.shiftLog;log?.poll?.();log?.finish?.();const r=$('replay');if(r)r.remove();const html=log?.html?.()||'';if(html)$('endStats').insertAdjacentHTML('afterend',html);}paintDaily();$('end').hidden=false;}
+function finish(){if(done)return;done=true;flow.clock.setPaused(true);$('endTitle').textContent=challenge.complete?'ALL DELIVERED':'DAY OVER';const sealedNote=window.__tm?.sealed?.state?.note;$('endStats').innerHTML=`${sealedNote?`<p class="noteLine">✉ NOTEBOOK · ${esc(sealedNote)}</p>`:''}<p>deliveries <b>${challenge.index}/${challenge.target}</b></p>${challenge.drops?`<p>drops on the way <b>${challenge.drops}</b></p>`:''}<p>score <b>${challenge.score}</b></p><p>best streak <b>×${(1+challenge.streakStep()*Math.max(0,Math.min(4,challenge.bestStreak-1))).toFixed(2).replace(/0+$/,'').replace(/\.$/,'')} (${challenge.bestStreak})</b></p>${challenge.tips?`<p>tips from regulars <b>${challenge.tips}</b></p>`:''}${challenge.goodwill?`<p>goodwill <b>${challenge.goodwill>0?'+':''}${challenge.goodwill}</b></p>`:''}${window.__tm?.rival?`<p>${window.__tm.rival.name} delivered <b>${window.__tm.rival.delivered}</b>${window.__tm.rival.taken.length?` · took ${window.__tm.rival.taken.join(', ')}`:''}</p>`:''}${window.__tm?.visited?`<p>stops you have been to <b>${window.__tm.visited.size}</b></p>`:''}<p>cargo bonuses <b>${challenge.bonuses}</b></p><p>late jobs <b>${challenge.late}</b></p><p class="hint">${cityDay?esc(cityDay.name)+' · ':''}${esc(shiftLabel())}</p>`;$('endNote').textContent=challenge.complete?'Every job delivered.':'The shift ended.';{const log=window.__tm?.shiftLog;log?.poll?.();log?.finish?.();const r=$('replay');if(r)r.remove();const html=log?.html?.()||'';if(html)$('endStats').insertAdjacentHTML('afterend',html);}paintDaily();$('end').hidden=false;}
 
 // THE GROUND IS CACHED. Water, streets and place names are three of the four
 // most expensive layers on the board and NONE of them moves: they change when
@@ -767,10 +770,12 @@ function paintDayCard(){const el=$('dayCard');if(!el)return;
   paintMutators();
   const wx=WEATHER&&WEATHER.id!=='clear'&&!MUT?.weather?`<div class="dayCard wxCard"><span class="dayGlyph">${WEATHER.glyph}</span><div><b>${esc(WEATHER.name)}</b><p>${esc(WEATHER.blurb)}</p></div></div>`:'';
   const live=LIVE?`<div class="dayCard"><span class="dayGlyph">●</span><div><b>LIVE · THE REAL MORNING</b><p>Every tram and metro train on the board is where HSL says it is right now. Real time: seventy-five minutes is seventy-five minutes. Nothing is recorded.</p></div></div>`:'';
-  if(!cityDay){el.innerHTML=live+wx;return;}
+  // v2.71: THE NOTEBOOK (sealed.js) — a line for every sealed parcel delivered, on this device; it never explains itself
+  const nb=loadNotebook(),note=nb.length?`<details class="notebook"><summary>✉ NOTEBOOK · ${nb.length}</summary><ol>${nb.map(l=>`<li>${esc(l)}</li>`).join('')}</ol></details>`:'';
+  if(!cityDay){el.innerHTML=live+wx+note;return;}
   const fams=(cityDay.crowds?.families||[]).map(f=>{const l=(transit?.layers||[]).find(x=>dayFamily(x.name)===f);
     return `<span class="lb" style="background:${esc(l?.colour||'#52676d')}">${esc(f)}</span>`;}).join(' ');
-  el.innerHTML=`<div class="dayCard"><span class="dayGlyph">${cityDay.glyph}</span><div><b>${esc(cityDay.name)}</b><p>${esc(cityDay.blurb)}</p>${fams?`<p class="dayChips">${fams} crowded all morning</p>`:''}</div></div>${wx}`;}
+  el.innerHTML=`<div class="dayCard"><span class="dayGlyph">${cityDay.glyph}</span><div><b>${esc(cityDay.name)}</b><p>${esc(cityDay.blurb)}</p>${fams?`<p class="dayChips">${fams} crowded all morning</p>`:''}</div></div>${wx}${note}`;}
 
 // size is decided by aspect-ratio and max-height, so there is no element in the
 // document whose box is the picture.

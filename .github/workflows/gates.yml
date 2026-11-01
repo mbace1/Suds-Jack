@@ -372,6 +372,9 @@ jobs:
       - name: the mutators — the table against the bible, each lever, the halt, the deck
         run: node toko-move/test/mutators.mjs
 
+      - name: the sealed parcel — which offer, the notebook, its store, the Finnish
+        run: node toko-move/test/sealed.mjs
+
       - name: the camera — three scales, the 2 km circle, zoom about a point
         run: node toko-move/test/camera.mjs
 
@@ -495,6 +498,9 @@ jobs:
 
       - name: every mutator chosen on the title card and played out by tapping
         run: NODE_PATH=$(npm root -g) node toko-move/test/mutators.cjs
+
+      - name: the sealed parcel taken, ridden to and written in the notebook, by tapping
+        run: NODE_PATH=$(npm root -g) node toko-move/test/sealed.cjs
 
       - name: the game in Finnish — played, and nothing left in English
         run: NODE_PATH=$(npm root -g) node toko-move/test/lang.cjs

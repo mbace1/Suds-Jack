@@ -1,5 +1,43 @@
 # Toko Move — versions
 
+## v2.71 — 2026-11-01
+
+**THE SEALED PARCEL, AND A NOTEBOOK THAT NEVER EXPLAINS ITSELF**
+(NARRATIVE-TWISTS.md §1, the first run-modifier; owner: *"Now, make the
+game"*). *"Every run deals one parcel with no address, only a Toko sticker,
+and you learn where it goes by riding."* `js/sealed.js`:
+
+- **The second dispatch deals one sealed offer** — never the first job (it
+  teaches, and stays exactly as it was), never the first offer listed, seeded
+  by the shift, and only an offer whose quickest plan ends on a **tram
+  family**, because the offer says nothing but `✉ SEALED · ride the 2`.
+- **Taken, its stop is SEALED** wherever the game names a stop: the panel, the
+  plan rows, the feed, and the board, which draws no ring, no flag and no
+  forced label for it. Two seams carry that rather than a check at every place
+  a stop is named — the challenge's `name()` and the city's `nameOverride`,
+  which the job board and the plan rows read.
+- **The card** is the bible's, on an info face: *"The label says: you'll know
+  the stop."* — `Ride the 2 and watch · +0 s` or `Ask at the kiosk · +40 s`.
+- **It opens aboard the family the label named**: the stop is named in the
+  feed and its flag lights ahead of you. The kiosk opens it at once.
+- **Delivered, the notebook gains a line** — the stop and one sentence from a
+  list that never explains itself (*"The sticker was warm."*). It is kept on
+  this device, shown on the end card, and on the title card under
+  `✉ NOTEBOOK · n` the next time the game is opened. Nothing in it names a
+  place the game does not have: Toko Move carries nothing of Piritori (the
+  bible's "East of Piritori" door is deliberately not built).
+
+A run-modifier never re-skins (MUTATORS.md), and this one rides on every
+kind of run but LIVE — the daily included, since the parcel is part of the
+day everybody plays.
+
+Gates: `test/sealed.mjs` (bare node — which offer, the notebook and its
+store, blocked and mangled storage, the card's prices, Finnish for every
+line) and `test/sealed.cjs` (a browser — the sealed offer taken by tapping
+it, SEALED in every name and never in the panel, opened aboard the right
+family, the notebook line on the end card and the title card, and the kiosk
+path).
+
 ## v2.70 — 2026-11-01
 
 **FOUR MUTATORS, FROM THE FIRST RUN** (MUTATORS.md, itch v1's core set;
