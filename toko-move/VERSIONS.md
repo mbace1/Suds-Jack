@@ -1,5 +1,44 @@
 # Toko Move — versions
 
+## v2.69 — 2026-11-01
+
+**THE BOARD IS PAPER, AND THE HUD IS ONE PILL** (art bible §1/§3/§4, the
+second slice of the minimal-metro look; owner: *"Now, make the game"*). The
+bible made **Day paper the default** board and Night a mutator — *"Default (no
+mutator) is the Day skin"* — so `js/skin.js` holds three skins as colour only:
+**Day** (`#f4f1e8` paper, the bible's day tram inks), **Night** (the owner's
+grey night board from `board.js`, kept whole, metro lifted to `#ff6a3d`) and
+**Snow** (Day with the paper about 6% lighter and grey-blue water). A skin
+never moves geometry. Which one a run wears is `skinFor`: a mutator decides,
+`?skin=` wins for a link, and a city day that snows already IS the Snow Day the
+bible describes. Every line, chip and pill reads `layer.colour`, so
+`applySkin` recolours the pack once and the whole board follows.
+
+- **The courier is a disc**: Toko cyan, a white ring, a white parcel, an ink
+  edge and a soft shadow — the only cyan-filled thing on the board, told apart
+  by shape as well as colour, because tram 2 is a teal too. The walk callout
+  used to sit on it (the hub you would walk to is usually a minute away); it
+  now lifts clear, since the courier is the one thing always on top.
+- **The metro is drawn last, 1.6× wide, on a casing in the ground colour**, so
+  every tram reads as crossing it.
+- **A held line is grey dashes** (`#b8c2c6`) on its own geometry, and its trams
+  go grey with it — a disruption now shows on the board, not only on the card.
+- **The HUD is clock · ●●○ · the deadline ring in one pill.** The ring is navy
+  while there is time (mint on night) and **coral under 30%** — it was the
+  cargo's colour, which said what you carry (the glyph inside already does)
+  and nothing about time. The minutes-left number and the next-stop label left
+  the bar: the ring is the deadline and the sheet names the stop. The minutes
+  are still on the ring's title. Score and the streak stay beside the pill,
+  because a delivery still pops them.
+- **Night darkens the bar** (`body.skin-night`); the sheet stays paper for now
+  — the night cards are the mutator slice's.
+
+Gate: `test/skin.mjs` (153 checks) holds the bible's own floors — every day ink
+3:1 on paper, no two day lines closer than dE 18 (the worst pair, 2 and 12, is
+18.3), none within dE 18 of the courier's cyan, water never reading as the
+courier — and scans `core-v212.js` for every `SK.` key so no skin can be
+missing one the board draws.
+
 ## v2.68 — 2026-11-01
 
 **THE EVENT CARDS WEAR TOKO'S FACE** (PR #631, the first slice of the

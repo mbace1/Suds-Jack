@@ -366,6 +366,9 @@ jobs:
       - name: the board's own geometry — box, line ink, night palette
         run: node toko-move/test/board.mjs
 
+      - name: the skins — day inks on paper, cyan kept for the courier, every key on every skin
+        run: node toko-move/test/skin.mjs
+
       - name: the camera — three scales, the 2 km circle, zoom about a point
         run: node toko-move/test/camera.mjs
 
