@@ -24,11 +24,11 @@
 // `swirlAt`, out to `swirlR`, and opens a hole of `hole` m in the middle).
 import * as THREE from 'three/webgpu';
 import { Fn, If, uv, uniform, float, abs, fract, min, max, sin, cos, length, smoothstep, step, mix, fwidth, texture, clamp, vec2, vec3, pow, floor as tfloor, round, select, mod, dFdx, dFdy, exp, normalize, dot, cameraPosition, positionWorld, vec4 } from 'three/tsl';
-import { pickStyle, grainAt } from './style.js?v=96';
-import { SUN_AT } from './sun.js?v=96';
-import { GEL_TIME } from './gel.js?v=96';
-import { noise, grate, cells, sewerSpots } from './scenery.js?v=96';
-import { lilyPads, DRIFT } from './kit.js?v=96';
+import { pickStyle, grainAt } from './style.js?v=97';
+import { SUN_AT } from './sun.js?v=97';
+import { GEL_TIME } from './gel.js?v=97';
+import { noise, grate, cells, sewerSpots } from './scenery.js?v=97';
+import { lilyPads, DRIFT } from './kit.js?v=97';
 
 const _white = new THREE.Color(0xffffff);
 
@@ -382,20 +382,31 @@ export function buildFloor(T, hx, hz, light, { style = 'grid', bounds: hasBounds
     let stone = v3(C.stone).mul(tone);
     stone = mix(stone, stone.mul(0.45), grout);
     const t = GEL_TIME;
-    const ca = sin(noise(w.mul(0.45).add(vec2(t.mul(0.11), t.mul(0.07)))).mul(9).add(noise(w.mul(1.2).sub(vec2(t.mul(0.09), 0))).mul(4))).mul(0.5).add(0.5);
-    const caustic = smoothstep(0.93, 1.0, ca);
+    // v97: the caustic NETWORK the approved picture shows — light focused by the moving surface into thin bright
+    // cells over the slabs — from a domain-warped field (four warps of sines, the classic water caustic), brightest
+    // in the roof shaft's pool and fainter elsewhere; v71's contour squiggles read as noise over everything
+    const N = C.net, q0 = w.mul(N.scale * 6.283);
+    let ip = q0, acc = float(0);
+    for (let k = 0; k < 4; k++) {
+      const tk = t.mul(N.speed * (1 - 3.5 / (k + 1)));
+      ip = q0.add(vec2(cos(tk.sub(ip.x)).add(sin(tk.add(ip.y))), sin(tk.sub(ip.y)).add(cos(tk.add(ip.x)))));
+      const sx = sin(ip.x.add(tk)), cy = cos(ip.y.add(tk));
+      acc = acc.add(abs(sx.mul(cy)).div(length(vec2(sx, cy)).mul(1.25).add(1e-3)));   // small where either is near zero: the lines
+    }
+    const caustic = clamp(pow(max(float(1.17).sub(pow(acc.div(4), float(1.4))), 0), float(N.sharp)).sub(0.45).div(2.6), 0, 1);
+    const key = T.worlds.lit?.cistern?.lights?.[0], pool = key ? float(1).div(float(1).add(dot(w.sub(vec2(key.frac[0] * hx, key.frac[1] * hz)), w.sub(vec2(key.frac[0] * hx, key.frac[1] * hz))).div(key.r * key.r))) : float(1);
     // the column bases: a square plinth every `column` m, its edge catching the light
     const q = fract(w.div(C.column).add(0.5)).sub(0.5).mul(C.column), dq = max(abs(q.x), abs(q.y));
     const plinth = float(1).sub(smoothstep(C.plinth - 0.03, C.plinth + 0.03, dq));
     const rim = float(1).sub(smoothstep(0, 0.07, abs(dq.sub(C.plinth))));
-    let col = mix(stone, v3(C.water), C.depth).add(v3(C.caustic).mul(caustic.mul(0.1)));
-    col = mix(col, v3(C.stone).mul(0.35), plinth).add(v3(C.rim).mul(rim.mul(0.5)));
+    let col = mix(stone, v3(C.water), C.depth).add(v3(C.caustic).mul(caustic.mul(N.gain).mul(mix(float(N.inPool), float(1), pool))));
+    col = mix(col, v3(C.stone).mul(0.35), plinth.mul(C.plinthK ?? 1)).add(v3(C.rim).mul(rim.mul(0.5 * (C.plinthK ?? 1))));
     // v71: in each plinth the cut top of a fallen column, a round stone disc
     // with a groove round it, under the same water
     const dr = length(q), sr = C.plinth * C.stump, saa = max(fwidth(dr), 1e-4);
     const stump = float(1).sub(smoothstep(float(sr).sub(saa), float(sr).add(saa), dr));
     const sgroove = float(1).sub(smoothstep(0, 0.045, abs(dr.sub(sr * 0.7))));
-    col = mix(col, v3(C.stumpTone).mul(noise(w.mul(4.3)).mul(0.35).add(0.75)).mul(float(1).sub(sgroove.mul(0.45))), stump.mul(0.85));
+    col = mix(col, v3(C.stumpTone).mul(noise(w.mul(4.3)).mul(0.35).add(0.75)).mul(float(1).sub(sgroove.mul(0.45))), stump.mul(0.85 * (C.plinthK ?? 1)));
     // v71: drip rings: in every `drip.cell` m a drip from the vault every
     // `period` s, somewhere of its own, its rings spreading as they fade
     const D = C.drip, cell = tfloor(w.div(D.cell));
@@ -405,7 +416,7 @@ export function buildFloor(T, hx, hz, light, { style = 'grid', bounds: hasBounds
       .add(float(1).sub(smoothstep(float(D.width).sub(daa), float(D.width).add(daa), abs(dd.sub(dk.mul(D.reach * 0.55))))).mul(0.6))
       .mul(float(1).sub(dk).pow(2));
     col = col.add(v3(C.caustic).mul(drip.mul(D.gain)));
-    return { col, mask: caustic.mul(0.6).add(grout.mul(0.3)).add(rim).add(drip), lineCol: v3(C.caustic), wet: float(0.8) };
+    return { col, mask: min(caustic, 1).mul(0.6).add(grout.mul(0.3)).add(rim.mul(C.plinthK ?? 1)).add(drip), lineCol: v3(C.caustic), wet: float(0.8) };
   };
   // THE BOILER ROOM: riveted steel plates, scorched, and grates the fire glows through
   const boiler = (p, w) => {

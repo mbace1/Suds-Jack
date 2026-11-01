@@ -20,9 +20,9 @@
 // here from the same parts as the logotype's d (a flat-sided bowl, one stem
 // weight), mirrored, with the stem run down below the baseline.
 import * as THREE from 'three/webgpu';
-import { fillMaster, masterBounds } from './master.js?v=96';
-import { GLYPHS, M } from './wordmark.js?v=96';
-import { CUES } from './sfx.js?v=96';
+import { fillMaster, masterBounds } from './master.js?v=97';
+import { GLYPHS, M } from './wordmark.js?v=97';
+import { CUES } from './sfx.js?v=97';
 
 export { CUES };
 

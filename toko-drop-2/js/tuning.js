@@ -7,10 +7,10 @@
 // things that work"). The arena is 1.x's, so every 1.x number ports as it is
 // instead of through a rescale. Axes: x across the screen (right +), y up,
 // z toward the bottom of the screen. The arena is centred on the origin.
-import { SPECIES } from './tuning/species/index.js?v=96';
-import WAVES from './tuning/waves.js?v=96';
-import PICKUPS from './tuning/pickups.js?v=96';
-import MUSIC from './tuning/music.js?v=96';
+import { SPECIES } from './tuning/species/index.js?v=97';
+import WAVES from './tuning/waves.js?v=97';
+import PICKUPS from './tuning/pickups.js?v=97';
+import MUSIC from './tuning/music.js?v=97';
 
 export const TUNING = {
   render: {
@@ -212,7 +212,11 @@ export const TUNING = {
       tide: { scale: 0.11, flow: 0.12, bands: 7, line: 0.06, grid: 2.2, lo: [0.004, 0.01, 0.02], hi: [0.01, 0.04, 0.06],
               lineCol: [0.15, 0.85, 0.8], gridCol: [0.03, 0.06, 0.12] },
       // worlds 4-9 (v28): linear rgb
-      cistern: { slab: 2.4, grout: 0.04, stone: [0.03, 0.042, 0.048], water: [0.003, 0.02, 0.028], depth: 0.6, caustic: [0.25, 0.75, 0.8],
+      // v97: to the approved arena picture — clear shallow water over pale slabs, a NETWORK of caustic light on them
+      // (`net`: scale, iterations' strength, sharpness, gain; brightest in the roof shaft's pool, `inPool` of it
+      // elsewhere), and no column stumps in the pool (the picture's columns stand at the back): `plinthK` 0
+      cistern: { slab: 2.4, grout: 0.04, stone: [0.075, 0.11, 0.115], water: [0.012, 0.085, 0.1], depth: 0.42, caustic: [0.55, 0.95, 1.0],
+                 net: { scale: 0.27, sharp: 13, gain: 0.2, inPool: 0.3, speed: 0.22 }, plinthK: 0,
                  column: 8, plinth: 0.75, rim: [0.2, 0.6, 0.7],
                  // v71: the cut top of a fallen column in each plinth (`stump` × its
                  // half size), and drip rings: in every `drip.cell` m a drip from the

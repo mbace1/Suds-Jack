@@ -46,21 +46,21 @@
 // TUNING.scenery.
 import * as THREE from 'three/webgpu';
 import { Fn, float, vec2, vec3, fract, sin, dot, floor as tfloor, mix, smoothstep, abs, positionWorld, positionLocal, normalWorld, normalView, clamp, max, min, length, step, fwidth, uv, attribute } from 'three/tsl';
-import { GEL_TIME } from './gel.js?v=96';
-import { hash, noise, seeded, motes } from './kit.js?v=96';
-import { SUN_AT } from './sun.js?v=96';
-import { boiler } from './sets/boiler.js?v=96';
-import { river } from './sets/river.js?v=96';
-import { ice } from './sets/ice.js?v=96';
-import { deep } from './sets/deep.js?v=96';
-import { core } from './sets/core.js?v=96';
+import { GEL_TIME } from './gel.js?v=97';
+import { hash, noise, seeded, motes } from './kit.js?v=97';
+import { SUN_AT } from './sun.js?v=97';
+import { boiler } from './sets/boiler.js?v=97';
+import { river } from './sets/river.js?v=97';
+import { ice } from './sets/ice.js?v=97';
+import { deep } from './sets/deep.js?v=97';
+import { core } from './sets/core.js?v=97';
 
 // worlds 5-9 (v72): a set of their own each, built to its brief (render/sets/)
 const SETS = { boiler, river, ice, deep, core };
 
 // the noise, the cracks and the seeded numbers are the kit's (v72: render/kit.js),
 // and the floor still takes them from here
-export { noise, cells } from './kit.js?v=96';
+export { noise, cells } from './kit.js?v=97';
 
 // the storm drain's grate (v65, the owner's world-2 sheet), in its own units
 // (q, its frame's radius 1): x the grate, y a slot, z the frame. Rows of

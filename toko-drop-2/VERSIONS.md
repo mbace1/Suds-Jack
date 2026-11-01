@@ -19,6 +19,14 @@
     Never `--no-verify`.
 -->
 
+## v97 — 2026-11-01
+**The cistern to its approved picture: clear water over pale slabs, and a web of caustic light on them**
+- The owner's approved arena picture for world 4 is clear shallow water over big pale slabs with a bright web of caustic light on them, under a roof shaft, its columns at the back. The floor was dark water with contour squiggles over everything and a square plinth with a cut column every 8 m. Now the slabs show pale through clearer, lighter teal water (the water's depth 0.6 → 0.42), the caustics are a NETWORK — the classic water caustic, four warps of sines whose lines fall where the field crosses zero — thin and slowly moving, brightest in the roof shaft's pool and at `inPool` of that elsewhere (TUNING.worlds.floor.cistern.net), and the stumps are gone from the pool (`plinthK` 0: the picture's columns stand at the back). The drip rings stay.
+- The smoke's harness, found running v93–v96: the film check's wait for frames is capped at 9 s (an iPad-sized frame under SwiftShader takes seconds, and the call has 60 — it stalled the iPad scenario), and the squash check holds its two gels against the hero through every step (world 9 cycles every world's rule, and a current carried one off him).
+- Cache tokens `?v=96` → `?v=97`; HUD label → `2.0 · v97`
+
+---
+
 ## v96 — 2026-11-01
 **The hero's eyes from the owner's style sheet: a big highlight above, a small dot below**
 - The style sheet on the concept-handoff branch (STYLE_INSTRUCTIONS, 3: HERO EYES; "hero eyes more defined going forward") draws them as tall black ovals with a big white highlight in their upper part and a small white dot lower right. The ovals were already that shape; the single small glint is now the big oval highlight (TUNING.heroLook.eye.hi) and the dot is added under it (`dot`), both kept inside the black from the angles the game sees him at.
