@@ -56,6 +56,19 @@ server.listen(0, '127.0.0.1', async () => {
     const harvest = async (page, where) => { for (const m of await page.evaluate(() => [...(window.__tmLang?.misses || [])])) if (!allMisses.has(m)) allMisses.set(m, where); };
     const fresh = () => browser.newContext({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true, locale: 'en-US' });
 
+    // ── every event card, drawn or not (v2.68) ───────────────────────────
+    // Four played shifts meet only the cards their seeds draw; new cards
+    // landed in October with no Finnish and no run happened to draw them. The
+    // deck is data, so every card's words are checked here directly.
+    {
+      globalThis.location = new URL('http://x/?lang=fi');
+      const { tr, misses } = await import(path.join(__dirname, '..', 'js', 'lang.js'));
+      const { ENCOUNTERS, DISRUPTIONS } = await import(path.join(__dirname, '..', 'js', 'events.js'));
+      const words = [...ENCOUNTERS.flatMap(c => [c.text, ...c.options.flatMap(o => [o.label, o.note].filter(Boolean))]), ...DISRUPTIONS.map(d => d.text('4'))];
+      const left = words.filter(w => tr(w) === w && misses.has(w.replace(/\d+/g, '#')));
+      ok(`every event card speaks Finnish, drawn or not (${words.length} lines)`, !left.length, left.slice(0, 4).join(' | '));
+      delete globalThis.location;
+    }
     // ── English is the source and stays untouched ────────────────────────
     {
       const ctx = await fresh(); const { page } = await boot(ctx, '?shift=1&day=none');

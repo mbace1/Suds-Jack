@@ -136,6 +136,13 @@ export const FI = new Map(Object.entries({
   'Lift it aboard': 'Nosta kyytiin', 'Look at your phone': 'Katso puhelintasi',
   'Someone from school gets on. It has been years.': 'Koulukaveri nousee kyytiin. Siitä on vuosia.',
   'Catch up': 'Vaihda kuulumiset', 'you nearly miss your stop': 'melkein ohitat pysäkkisi', 'Nod and look away': 'Nyökkää ja katso muualle',
+  'A local points at a side street. It is shorter if you know it.': 'Paikallinen osoittaa sivukatua. Se on lyhyempi, jos sen tuntee.',
+  'Take the tip': 'Ota vinkki', 'Stay on the main street': 'Pysy pääkadulla',
+  'Someone is walking the other way with a small package. They will trade stops.': 'Joku kävelee vastaan pienen paketin kanssa. Hän vaihtaa pysäkkejä kanssasi.',
+  'Swap packages': 'Vaihda paketit', 'Keep walking': 'Jatka kävelyä',
+  'The fragile parcel is shifting. You can pad it or leave it.': 'Särkyvä paketti liikkuu laukussa. Voit pehmustaa sen tai jättää sen.',
+  'Pad it properly': 'Pehmustä kunnolla', 'Helping…': 'Autat…',
+  'Tap a job below. Then tap the lit tram to board.': 'Napauta keikkaa alta. Nouse sitten kyytiin napauttamalla valaistua ratikkaa.',
   'nothing to answer': 'ei mitään vastattavaa', 'no such option': 'ei sellaista vaihtoehtoa',
   // city days and weather
   'MATCH DAY': 'OTTELUPÄIVÄ', 'The stadium fills from nine and the Töölö trams crawl all morning.': 'Stadion täyttyy yhdeksästä alkaen, ja Töölön ratikat matelevat koko aamun.',

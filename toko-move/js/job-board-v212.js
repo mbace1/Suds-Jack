@@ -4,7 +4,7 @@ import {badge,inMinutes,about,cargoGlyph,minutes} from './ui.js?v=2';
 import {regularAt,standingOf,standingPips} from './regulars.js?v=4';
 import {parcelHtml,bagHtml,colourOf,unitsOf} from './parcels.js?v=1';
 import {planEstimate,nextDeparture,layerFor} from './timetable.js?v=2';
-const esc=s=>String(s??'').replace(/[&<>\"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[c]||c));
+const esc=s=>String(s??'').replace(/[&<>\"]/g,c=>({'&':'&','<':'<','>':'>','\"':'"'}[c]||c));
 const nodeName=(tm,id)=>tm.city?.nodes?.find(n=>n.id===id)?.name||id;
 // layerFor and nearestPathIndex used to be declared here as well. The local
 // nearestPathIndex did not scale longitude by cos(lat), so it measured a stop
@@ -110,5 +110,8 @@ export function mountJobBoard(tm){let last='',lastHtml='';const render=()=>{cons
  // or not a character had moved. A tap that lands between two replacements
  // lands on nothing; CI caught it first (a click resolved to a row that was
  // gone by the time it was pressed), a thumb would have caught it next.
- const html=`<div><h2>DISPATCH · ${esc(nodeName(tm,ch.location))}</h2>${ch.index?'':'<p class="hint">Pick a job. The badge is the tram that takes you.</p>'}${rows.map(({offer,info})=>offerButton(tm,offer,info)).join('')}</div>`;
- if(html===lastHtml&&slot.innerHTML)return;lastHtml=html;slot.innerHTML=html;tm.paintSheet?.();sheet.querySelectorAll('.jobOffer:not([disabled])').forEach(btn=>btn.onclick=()=>{const r=ch.acceptOffer(btn.dataset.id);if(r?.error)sheet.insertAdjacentHTML('beforeend',`<p class="hint">${esc(r.error)}</p>`);last='';lastHtml='';render();});};setInterval(render,300);render();}
+ const firstHint=ch.index?'':'<p class="hint firstHint">Tap a job below. Then tap the lit tram to board.</p>';
+ const html=`<div><h2>DISPATCH · ${esc(nodeName(tm,ch.location))}</h2>${firstHint}${rows.map(({offer,info})=>offerButton(tm,offer,info)).join('')}</div>`;
+ if(html===lastHtml&&slot.innerHTML)return;lastHtml=html;slot.innerHTML=html;tm.paintSheet?.();
+ if(!ch.index){const first=slot.querySelector('.jobOffer:not([disabled])');if(first)first.classList.add('primary');}
+ sheet.querySelectorAll('.jobOffer:not([disabled])').forEach(btn=>btn.onclick=()=>{const r=ch.acceptOffer(btn.dataset.id);if(r?.error)sheet.insertAdjacentHTML('beforeend',`<p class="hint">${esc(r.error)}</p>`);last='';lastHtml='';render();});};setInterval(render,300);render();}

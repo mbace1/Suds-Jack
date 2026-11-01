@@ -40,12 +40,16 @@ const OUT = resolve(positional[0] || join(ROOT, 'toko-move-itch.zip'));
 const PAGE = arg('--page', '');
 const DIR = arg('--dir') ? resolve(arg('--dir')) : mkdtempSync(join(tmpdir(), 'toko-itch-'));
 
+export const SHARED = ['toko/js/master.js'];
 const SKIP = [/(^|\/)test\//, /(^|\/)tools\//, /(^|\/)scripts\//, /(^|\/)store\//, /\.md$/i];
 export function packaged(path) { return !SKIP.some(r => r.test(path)); }
 
 export function buildPackage({ dir = DIR, page = PAGE } = {}) {
   rmSync(dir, { recursive: true, force: true }); mkdirSync(dir, { recursive: true });
-  const tracked = execFileSync('git', ['ls-files', 'toko-move', 'flow-core'], { cwd: ROOT, encoding: 'utf8' }).split('\n').filter(Boolean);
+  // Besides the game and its engine, the few shared files the game imports from
+  // elsewhere in the repo, kept at the same relative place so no import is
+  // rewritten (v2.68: the event cards draw Toko's traced face, toko/js/master.js).
+  const tracked = execFileSync('git', ['ls-files', 'toko-move', 'flow-core', ...SHARED], { cwd: ROOT, encoding: 'utf8' }).split('\n').filter(Boolean);
   const files = tracked.filter(f => packaged(f.replace(/^[^/]+\//, '')) && existsSync(join(ROOT, f)));
   for (const f of files) { mkdirSync(dirname(join(dir, f)), { recursive: true }); copyFileSync(join(ROOT, f), join(dir, f)); }
 

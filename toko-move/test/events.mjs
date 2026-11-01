@@ -4,11 +4,19 @@
 // hold, never more, never through it.
 import assert from 'node:assert';
 import fs from 'node:fs';
-import {ENCOUNTERS,DISRUPTIONS,BUDGET,drawSchedule,EventDirector} from '../js/events.js';
+import {ENCOUNTERS,DISRUPTIONS,BUDGET,MOODS,drawSchedule,EventDirector,priceSeconds} from '../js/events.js';
 import {LiveNetwork,HEADWAY_MIN} from '../js/live-network.js';
 import {TransitLayers} from '../js/transit-layers.js';
 let n=0;const ok=(c,m)=>{assert.ok(c,m);n++;};
 for(const c of ENCOUNTERS){ok(c.options.some(o=>!o.cost),`${c.id} has a free option`);ok(c.options.length>=2,`${c.id} is a choice`);ok(['stop','aboard','walking'].includes(c.where),`${c.id} says where`);ok(c.glyph&&c.text,`${c.id} has a face and a line`);}
+// the card's face (art bible §4): every card names a mood the bible has, no
+// mood is magenta, a held line is a warning, and every button is priced +N s
+ok(['info','opportunity','warning','notice'].every(m=>MOODS[m]),'the four bible moods exist');
+ok(Object.values(MOODS).every(m=>!/^#f0027f$/i.test(m.disc)),'no Toko face is magenta');
+for(const c of [...ENCOUNTERS,...DISRUPTIONS])ok(MOODS[c.mood],`${c.id} has a mood`);
+for(const d of DISRUPTIONS)ok(d.mood==='warning',`${d.id} is a coral warning`);
+ok(ENCOUNTERS.find(c=>c.id==='inspector').mood==='notice','the inspector is a service notice');
+for(const c of ENCOUNTERS)for(const o of c.options)ok(/^\+\d+ s$/.test(priceSeconds(o)),`${c.id}: ${o.label} is priced in seconds`);
 for(const d of DISRUPTIONS)ok(d.minutes>0&&d.minutes<=8,`${d.id} holds for minutes, not the shift`);
 const a=drawSchedule(7,3000,['1','6']),b=drawSchedule(7,3000,['1','6']),c=drawSchedule(8,3000,['1','6']);
 ok(JSON.stringify(a)===JSON.stringify(b),'the schedule is a function of the seed');
