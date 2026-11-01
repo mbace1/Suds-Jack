@@ -1,7 +1,7 @@
 import {hireling,nameFrom} from '../people/roster.mjs?v=1';
 import {createSession} from '../fight-module/session.js?v=23';
 import {createTacticalSession,weapon} from '../fight-module/tactics.js?v=11';
-import {readCampaignSave,campaignRun,campaignOuting,outingRun,applyCampaignReceipt,CAMPAIGN_SAVE_KEY} from './campaign-adapter.js?v=12';
+import {readCampaignSave,campaignRun,campaignOuting,outingRun,applyCampaignReceipt,CAMPAIGN_SAVE_KEY} from './campaign-adapter.js?v=13';
 
 // Connected C pilot. C.17 can opt into the authored campaign through the
 // narrow receipt adapter; the ordinary Night Shift save remains independent.
@@ -59,7 +59,11 @@ function tacticalPerson(p,base,extra={}){
 // `accuracy` is each weapon's chance to land in an Act I fight (owner,
 // 2026-10-31: "Blows can miss, of course"): a bat or a knife lands 70%; a
 // weapon not named keeps its own (the handgun's 90).
-export const RULES={policeAt:6,rout:2/3,rivalHarm:1,rivalHp:0,carryReach:3,accuracy:{'baseball-bat':70,'folding-knife':70}};
+// Where a fight's pressure starts, by how hot Act I's place already is (0-3).
+// v4.94: a place at its hottest starts at 5 of 6, so the police are a round away
+// (ROADMAP §5 row 9: over half the fights at heat 3 should bring them).
+export const startHeat=heat=>RULES.heatStart[Math.max(0,Math.min(3,Number(heat)||0))];
+export const RULES={policeAt:6,heatStart:[0,1,2,5],rout:2/3,rivalHarm:1,rivalHp:0,carryReach:3,accuracy:{'baseball-bat':70,'folding-knife':70}};
 export const POLICE_AT=RULES.policeAt;
 /** Who carries the take in a getaway: the first fighter who is not the
  *  protagonist. One rule, so the brief names the one the board slows. */
@@ -109,7 +113,7 @@ function makeOuting(content,config){
  // The dice are the outing's own: seeded from its id, so a reload replays the
  // same rolls and two outings do not roll the same fight.
  prepare(b){b.rng=seedOf(config.id)||104729;if(RULES.accuracy)b.accuracy={...RULES.accuracy};b.mission={id:config.id,objective:config.objective,goal,protagonist:content.protagonist?.id||null,targetId:null,targetCell:null,recovered:false,carrierId:null,
-  heat:Math.max(0,Math.min(3,Number(outing.heat)||0)),police:{at:RULES.policeAt,afterRound:null,y:null,cells:[],arrived:false,resolved:false,posture:null,taken:[],saved:[]},routed:false,end:null,
+  heat:startHeat(outing.heat),police:{at:RULES.policeAt,afterRound:null,y:null,cells:[],arrived:false,resolved:false,posture:null,taken:[],saved:[]},routed:false,end:null,
   place:outing.place||null,wayOut:outing.wayOut||null,side:outing.side||null};},
  finish(b){if(b.status!=='active')return;const m=b.mission;
   if(m.goal==='fight'&&!b.enemies.some(e=>e.rival&&e.alive)){b.status='complete';b.result='win';m.end='win';for(const p of b.players)if(!p.evacuated){p.home=true;p.wasDown=!p.alive;}b.log.unshift(m.routed?'They are gone. The place is yours.':'None of them is standing. The place is yours.');return;}
@@ -230,7 +234,9 @@ export function settle(state,session){
   changes=outingChanges(state,b,session.data.content.protagonist?.id);
   const end=m.end||b.result,title=OUTING_TITLES[end]||(m.goal==='getaway'?'Everyone got out':m.routed?'They ran':'They are down');
   const count=effect=>changes.filter(c=>c.campaignEffect===effect).length;
+  // `down` is who was put down, not who ran: Act I loots only them (v4.93).
   receipt={id:config.id,bridgeReceiptId:config.bridgeReceiptId,outingId:config.outing.id,goal:m.goal,result:b.result,end,routed:m.routed,deployedIds:config.crew.map(p=>p.id),title,success:b.result==='win',rounds:b.round,heat:m.heat,
+   down:b.enemies.filter(e=>e.rival&&!e.alive&&!e.fled).map(e=>e.id),
    police:{posture:m.police.posture,taken:m.police.taken.map(id=>b.players.find(p=>p.id===id)?.name||id)},changes,
    text:[`${changes.length-count('missing')-count('arrested')} home`,count('missing')&&`${count('missing')} missing`,count('arrested')&&`${count('arrested')} taken by the police`].filter(Boolean).join(' · ')+'.'};
  }else{

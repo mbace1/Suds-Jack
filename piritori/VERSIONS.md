@@ -1,3 +1,69 @@
+## v4.95 — 2026-11-01
+
+**The yard is not the edge of the city (visuals, ROADMAP milestone 3).** The open item from v4.91 was "the yard is dark from the front". Measured first: the yard's board is as bright as the courtyard's (27.4 against 28.3 in the middle of the frame from the front). What reads as dark is outside it. Past the new yard wall, on the left and in front of the gate, there was nothing but unlit ground, where the courtyard has buildings on every side.
+
+- **Across a lane on the left,** the next block faces the yard: six bays, with the building behind them and a wall lamp lighting the lane. From the yard's opening camera, the left of the frame is lit windows where it was black.
+- **Cost:** 66k triangles (a façade bay is 10,966, counted from the kit) and three draw calls (152 to 155; the bays are instanced). The yard's buildings go from about 125k to about 191k (counted the same way), below the courtyard (~209k) and the street (~232k).
+- **Tried and cut:** a row across the street in front of the gate. From the usual camera the cutaway lifts it, and its plinths fall below the frame, so it bought one corner of the reversed view for another 55k triangles.
+- **Still dark:** the ground in front of the gate, from the usual camera. It is the near edge of the frame, and the courtyard and the street have the same edge.
+- **The picture:** `design/YARD_LANE.jpg`, before and after at the same camera angles.
+- **Gates:**
+  - `level-layout`: 1797 checks (was 1693). The row is continuous, stands on its own, and is off the board, out of the props and out of the yard.
+  - `night-places-browser`: a lifted wall leaves its plinth, in every place at every camera preset.
+- **Cache:** layouts v7, locations v11, ui v33, startup v29, fight main v55, app v62. The label is v4.95.
+- **Owner played: pending.** Godot paused.
+
+## v4.94 — 2026-11-01
+
+**A place at its hottest is a round from the police (combat, ROADMAP G1 row 9).** Owner: *"Continue"*, on the pitch to make fights longer and reward careful play. Measured first: no existing number does that without breaking another row, so this version moves the one row that has a clean lever and leaves the others to a design change.
+
+- **The rule:** a fight's pressure starts where Act I's place already is (0, 1 or 2). **A place at 3, its hottest, now starts the fight at 5 of 6** (`RULES.heatStart`), not 3. The police are one step away: standing still for a round brings them, and the brief says so ("Here it starts at 5").
+- **Measured,** `web/tools/fight-balance.mjs`, Act I's 15 fights × 12 seeds:
+  - the police come in **53%** of fights at a heat-3 place (was 32%; target over 50%);
+  - rows 1–8 are **identical**, because they are measured at heat 0 and 2, which do not move;
+  - starting a hot place at 4 instead moved the police to 35%, so 5 it is;
+  - the table `[0, 1, 2, 3]` reproduces the old numbers exactly, which is the control.
+- **Tried and not shipped:**
+
+  | Lever | Rounds | Careless wins | Careful vs careless | Police, heat 3 |
+  |---|---|---|---|---|
+  | today | 2.8 | 75% | +5 | 32% |
+  | they break at 3/4 | 3.5 | 54% | **−7** | 73% |
+  | rivals +1 HP | 2.8 | 75% | +5 | 32% |
+  | rivals +2 HP | 2.9 | 66% | 0 | 30% |
+  | rivals +2 HP, blows −1 | 3.0 | 74% | +1 | 30% |
+
+  - +1 HP changes nothing: a rival needs two hits at 4 HP and still two at 5.
+  - Longer fights hurt careful play more than careless play: careful play spends rounds, and rounds bring the police.
+  - So row 5 (careful play paying) needs something a careful player can do that a careless one cannot. A number will not do it.
+- **Gates:**
+  - `c19-outing`: heat 0–2 start where they are, and heat 3 starts at 5, one step from the police.
+  - `outing-browser`'s police scenario is the hot place. It now starts at 5, and two rounds of standing there bring the police with the muscle down, so the two-answer question still shows. The route was found in bare node on the browser's own outing id.
+- **Cache:** Night Shift run v23, ui v32, startup v28, fight main v54, app v61. The label is v4.94.
+- **Owner played: pending.** Godot paused.
+
+## v4.93 — 2026-11-01
+
+**A won fight takes the fallen's weapons (story, ROADMAP G2).** Owner: *"Continue"*, on the pitch that put this first. Since fights moved to Night Shift (v4.74), a fight paid its stakes and nothing else. The old board's rule (COMBAT.md §8) is back: gear is carried by a person, so it comes off a rival who went down.
+
+- **What you take:** the weapon of every rival you put down, in a fight you win.
+  - Whoever broke and ran keeps theirs, and a phone is not a weapon.
+  - Pulling out, the police or losing takes nothing.
+  - At the fence: the courtyard's three carry a tire iron (€18), a phone and a baton (€15); the park's two a pipe and a baton (€25 together); the boiler hall's a lifted handgun and a chain (€100) and a phone. A fight job won by making them break always puts the tough one down.
+- **Where it goes:** into the stash. The fence on Piritori buys it, and the strip after the fight says so ("Took a tire iron off them. The fence on Piritori buys.").
+- **Why it matters:** fence money is the only money the chapter's goal counts (€400 by day 10, or the boat sails without you).
+  - What the story hands you fences for €155 at most (a bat, a pipe and a handgun, if you sell your own weapons).
+  - So since v4.74 the shipment has been out of reach in ordinary play. A won fight now adds €25–100.
+  - Whether €400 is the right gate is part of the finale question (ROADMAP §10).
+- **How:** each rival on an outing keeps their own Act I weapon (`carries`) beside Night Shift's stand-in; Night Shift's receipt names who went down (`down`); Act I takes their weapons with the board's own `takeLoot` (`outingSpoils` in `outing.js`).
+  - An outing opened before v4.93 has nothing to take.
+- **Not done:** losing your own kit when someone goes down. Your crew's weapons are their own and not in the stash, so the board's version of that rule never removed anything either.
+- **Gates:**
+  - `c19-outing`: a win takes the tough one's tire iron but not the phone or the runner's baton; a withdrawal, a loss and an old outing take nothing.
+  - `outing-browser`: after a win the tire iron is in the stash and on the strip; after the police, nothing.
+- **Cache:** outing v7, Night Shift run v22, campaign-adapter v13, app v60, and everything that imports them. The label is v4.93.
+- **Owner played: pending.** Godot paused.
+
 ## v4.92 — 2026-10-31
 
 **A way home (story, ROADMAP G2).** Until now, anyone left on the ground was missing for good, and anyone the police took was gone from the roster for good. Every Withdraw and every *Back off* cost a person permanently, and nothing in Act I could bring them back.
