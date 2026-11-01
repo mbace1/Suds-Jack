@@ -106,6 +106,7 @@ export class EventDirector{
  choose(i){const p=this.pending;if(!p)return{error:'nothing to answer'};const opts=this.options(),o=opts[i];if(!o)return{error:'no such option'};const ch=this.tm.challenge,tick=this.tm.flow.clock.tick;
   if(o.cost)this.busyUntil=tick+o.cost;ch.goodwill=(ch.goodwill||0)+(o.goodwill||0)*this.goodwillFactor;if(o.score){ch.score+=o.score;}
   if(o.teaches)this.tm.teachStreet?.(this.seed+tick);
+  if(o.reveal)ch.revealSealed?.();   // the sealed parcel's kiosk (sealed.js)
   this.seen.push({id:p.card.id,option:o.label,cost:o.cost||0,tick});this.pending=null;
   ch.say?.(`${o.label}${o.cost?` · ${Math.round(o.cost/10)} s`:''}${o.score?` · +${o.score}`:''}`);return{ok:true,cost:o.cost||0};}
  busy(){return this.tm.flow.clock.tick<this.busyUntil;}

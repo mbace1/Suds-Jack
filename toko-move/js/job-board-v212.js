@@ -5,7 +5,7 @@ import {regularAt,standingOf,standingPips} from './regulars.js?v=4';
 import {parcelHtml,bagHtml,colourOf,unitsOf} from './parcels.js?v=1';
 import {planEstimate,nextDeparture,layerFor} from './timetable.js?v=2';
 const esc=s=>String(s??'').replace(/[&<>\"]/g,c=>({'&':'&','<':'<','>':'>','\"':'"'}[c]||c));
-const nodeName=(tm,id)=>tm.city?.nodes?.find(n=>n.id===id)?.name||id;
+const nodeName=(tm,id)=>tm.city?.nameOverride?.(id)||tm.city?.nodes?.find(n=>n.id===id)?.name||id;   // v2.71: a sealed stop reads SEALED (sealed.js)
 // layerFor and nearestPathIndex used to be declared here as well. The local
 // nearestPathIndex did not scale longitude by cos(lat), so it measured a stop
 // as about twice as far north-south as east-west — a third copy of a function
@@ -64,8 +64,9 @@ function offerButton(tm,offer,info,label='TAKE JOB'){const seen=new Set(),live=(
  const pips=reg?(()=>{const p=standingPips(st);return `<span class="pips" title="you have delivered here before">${'<i class="on"></i>'.repeat(p.filled)}${'<i></i>'.repeat(p.total-p.filled)}</span>`;})():'';
  const hand=offer.handoff&&tm.flow.clock.tick<=offer.bonusUntil,left=hand?Math.max(1,Math.ceil((offer.bonusUntil-tm.flow.clock.tick)/10)):0;
  const claimed=tm.rival?.pressure?.(offer.id),rivalLeft=claimed!=null?Math.max(0,Math.ceil(claimed/10)):null;
- const who=`${esc(nodeName(tm,offer.stops[1]))}${pips}`;
- const sub=via;
+ // v2.71: THE SEALED PARCEL (sealed.js) — no stop and no regulars' pips, only the family to ride
+ const who=offer.sealed?`✉ SEALED`:`${esc(nodeName(tm,offer.stops[1]))}${pips}`;
+ const sub=offer.sealed?`ride the ${esc(offer.sealed.family)}`:via;
  // A PARCEL THAT WILL NOT FIT IS NOT AN OFFER. The bag went from a count to a
  // space in v2.43, and the first build still listed every drop and every second
  // job at full strength and then refused the tap with "the bag is full" — which
