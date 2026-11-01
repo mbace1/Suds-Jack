@@ -108,6 +108,10 @@ export function moodFace(mood,px=88){const m=MOODS[mood]||MOODS.info,key=`${mood
    drawMasterBadge(ctx,r,r,r-ring,{ground:m.disc,ink:'#ffffff',squash:m.squash,grin:m.grin});url=c.toDataURL('image/png');}}catch(e){url='';}
  return faceCache[key]=url;}
 const face=(mood,cls='')=>{const url=moodFace(mood),disc=(MOODS[mood]||MOODS.info).disc;return url?`<img class="evFace ${cls}" src="${url}" alt="" width="44" height="44">`:`<i class="evFace ${cls}" style="background:${disc}"></i>`;};
+// Two pills share a row only while their words fit one or two lines at phone
+// width; past this the options stack full width (playtest, v2.68: "Papers,
+// please — waved through" wrapped to four lines in a half-width pill).
+const STACK_AT=18;
 // Every button reads as a time cost, "+N s", the free way past included.
 export const priceSeconds=o=>`+${Math.round((o?.cost||0)/10)} s`;
 export function mountEvents(tm,seed=7,opts={}){const dir=new EventDirector(tm,seed,opts);tm.events=dir;
@@ -115,7 +119,7 @@ export function mountEvents(tm,seed=7,opts={}){const dir=new EventDirector(tm,se
  let last='';const render=()=>{const slot=tm.sheetSlot?.('eventCard');if(!slot)return;const p=dir.pending,holds=dir.activeHolds(),tick=tm.flow.clock.tick,busy=dir.busy();
   const key=`${p?.card.id||''}:${holds.map(h=>h.line+h.until).join(',')}:${busy?Math.floor((dir.busyUntil-tick)/10):''}`;if(key===last)return;last=key;
   let html='';
-  if(p){const opts=dir.options(),mood=p.card.mood||'info';html+=`<section class="eventCard mood-${esc(mood)}"><div class="evHead">${face(mood)}<b class="evLine">${esc(p.card.text)}</b></div><div class="evOpts">${opts.map((o,i)=>{const extra=[o.note,o.score?`+${o.score}`:''].filter(Boolean).join(' · ');return `<button class="evBtn ${i===0?'evPrimary':'evGhost'} eventOpt" data-i="${i}"${extra?` title="${esc(extra)}"`:''}><span class="evLb">${esc(o.label)}</span><span class="evCost">${priceSeconds(o)}</span></button>`;}).join('')}</div></section>`;}
+  if(p){const opts=dir.options(),mood=p.card.mood||'info';html+=`<section class="eventCard mood-${esc(mood)}"><div class="evHead">${face(mood)}<b class="evLine">${esc(p.card.text)}</b></div><div class="evOpts${opts.some(o=>String(o.label).length>STACK_AT)?' evStack':''}">${opts.map((o,i)=>{const extra=[o.note,o.score?`+${o.score}`:''].filter(Boolean).join(' · ');return `<button class="evBtn ${i===0?'evPrimary':'evGhost'} eventOpt" data-i="${i}"${extra?` title="${esc(extra)}"`:''}><span class="evLb">${esc(o.label)}</span><span class="evCost">${priceSeconds(o)}</span></button>`;}).join('')}</div></section>`;}
   else if(busy){html+=`<div class="row dim"><span class="to">Helping…<small>${Math.max(1,Math.ceil((dir.busyUntil-tick)/10))} s</small></span></div>`;}
   for(const h of holds){const perMin=tm.flow.clock.ticksPerDay/((tm.shift?.hours||1.25)*60),mood=h.card.mood||'warning';html+=`<section class="eventCard evHold mood-${esc(mood)}" title="${esc(h.card.text(h.line))}"><div class="evHead">${face(mood)}<b class="evLine"><span class="lb" style="background:${esc(tm.transit?.layers?.find(l=>l.name===h.line)?.colour||'#52676d')}">${esc(h.line)}</span> is held · ${Math.max(1,Math.round((h.until-tick)/perMin))} min</b></div></section>`;}
   slot.innerHTML=html;slot.querySelectorAll('.eventOpt').forEach(b=>b.onclick=()=>{dir.choose(Number(b.dataset.i));last='';render();tm.paintHud?.();});};

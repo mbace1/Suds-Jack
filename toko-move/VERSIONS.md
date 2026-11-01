@@ -1,5 +1,43 @@
 # Toko Move — versions
 
+## v2.68 — 2026-11-01
+
+**THE EVENT CARDS WEAR TOKO'S FACE** (PR #631, the first slice of the
+minimal-metro look, art bible §4; owner: *"Playtest PR #631 … so the faces and
++N s buttons feel right on phone"*). The card's face is the traced master on a
+mood disc — yellow for a favour, cyan for a fact, coral for a risk and every
+held line, deep teal for an inspector — with one line of text and big pill
+buttons that each say what they cost: `+N s`, the free way past `+0 s`. Held
+lines are the same card, coral, no buttons: `1 is held · 6 min`.
+
+Landed with what stopped the PR shipping, found by running the gates its
+branch could not:
+- **The store build refused it.** `events.js` imports `toko/js/master.js`
+  from outside the game folder and the itch packager (rightly) refused a zip
+  that reaches outside itself. `package-itch.mjs` now carries a short SHARED
+  list — that one file, at the same relative place, so no import is
+  rewritten.
+- **The token gate.** `main-v212.js` changed under the same `?v=`, so a
+  returning player could keep `events.js?v=5` from cache and never see the new
+  cards; and `job-board-v212.js` had drifted on main the same way
+  (`f4869b1f`). Both moved.
+- **Finnish.** Main's new first-job hint ("Tap a job below. Then tap the lit
+  tram to board.") and October's walking and cargo cards had no Finnish — the
+  played-shift gate only meets the cards its seeds draw. `test/lang.cjs` now
+  also checks every card's words directly, drawn or not (36 lines).
+
+**Playtested on a 390px phone viewport**, every card presented, measured and
+answered with a real tap, in both languages: faces render, nothing overflows,
+every card fits on screen. One change from it: a long label in a half-width
+pill wrapped to four lines ("Papers, please — waved through" made an 82px
+pill), so a card whose options run past 18 characters stacks them full width —
+every pill is 52px now. Two things the bible's one-line card gives up on a
+phone, left as the bible has them and noted for the owner: a held line's cause
+and an option's score/note live in a tooltip, and touch has no hover.
+
+The PR also fixed `esc()` in events.js, which mapped every character to
+itself.
+
 ## v2.67 — 2026-10-24
 
 **THE SHIP BAR** (owner: *"We need a shippable Toko Move before considering
