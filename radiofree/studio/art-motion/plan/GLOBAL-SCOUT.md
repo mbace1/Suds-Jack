@@ -892,3 +892,34 @@ Everything below comes from search summaries. No article was opened.
   asked by 4 Aug 2026) and the March 2026 follow-up.
   [Senate Judiciary](https://www.judiciary.senate.gov/press/rep/releases/grassley-probes-meta-on-disclosures-alleging-company-disregarded-child-safety-risks-and-retaliated-against-whistleblowers)
 - **Big development:** none.
+
+### Check Sun 1 Nov 17:16 (search summaries only; EDGAR tried once with a generic user agent and no personal data, no connection through the proxy, so nothing was opened)
+- **Big development:** none.
+- **5 Short Supply (posted; on-screen tag "HEARING 13 NOV 2026"):**
+  - Still no second source for the 13 Nov hearing. Search shows only the 3 Sep MLex report of the defendants' joint
+    motion to dismiss, which argues the claims recycle the 2018 case that the Ninth Circuit dismissal upheld. No ruling.
+  - Sources even disagree on the judge (Noel Wise vs Nathanael Cousins).
+  - **The date needs the docket** (CourtListener/PACER, N.D. Cal. 3:26-cv-06345) before 13 Nov.
+  - [MLex 3 Sep](https://www.mlex.com/mlex/articles/2521308), [GCR on the 2020 dismissal](https://globalcompetitionreview.com/gcr-usa/article/judge-throws-out-complaint-against-dram-makers)
+- **Coxon 13 (Grade Your Own Homework, HOLD):** nothing new on the other three July 2025 deals.
+  - Search returns only the original award coverage: two-year prototype agreements, up to $200M each.
+  - One secondary blog gives OpenAI's estimated completion as July 2026. Single source and unverified, but if true,
+    OpenAI's deal may also have run its course. One more reason for past tense in any fix.
+  - [GovConWire](https://www.govconwire.com/articles/cdao-frontier-ai-contract-awards-national-security), [The Decoder](https://the-decoder.com/anthropic-openai-google-and-xai-have-landed-pentagon-contracts-worth-up-to-200-million/)
+- **12 The Round Trip (Anthropic S-1): still HOLD.**
+  - No S-1/A with a price range in search. The 26 Oct S-1 still leaves share count, price range and Q3 results blank.
+  - Reuters' reported raise of up to $100B is an outside estimate, not a filing figure.
+  - [startuphub](https://www.startuphub.ai/ai-news/public-companies/2026/anthropic-files-for-ipo-but-leaves-price-blank), [allocations.com](https://www.allocations.com/insights/anthropic-s-1-cap-table-shares-outstanding-and-what-to-watch-before-the-ipo)
+- **1 The Panel (Project Meridian):** no new record after NPR 6 Oct.
+  - Musk's and Luckey's SGE-or-contractor status is still undisclosed, and there is no recusal.
+  - Some NPR syndications describe the study's focus as automated and AI-powered weaponry. Our film says "the future
+    of war", which still holds.
+  - [OPB/NPR](https://www.opb.org/article/2026/10/06/pentagon-taps-elon-musk-and-palmer-luckey-for-strategy-study/)
+- **3 For Your Protection follow-up (NJ S4304/A2774):** unchanged.
+  - Reported from Senate committee on 1 Oct, second reading; no roll call. A2774 has been in Assembly committee since 13 Jan.
+  - Same push elsewhere: Minnesota's NDA-ban bill awaits a Senate floor vote.
+  - [Sierra Club NJ](https://www.sierraclub.org/new-jersey/blog/2026/10/data-center-transparency-bill-eliminating-ndas-municipalities-passes-senate), [FastDemocracy](https://fastdemocracy.com/bill/nj/2026-2027/bills/NJB00075280/), [PolicyRisk](https://policyrisk.com/state-bill/NJ-S4304-2026-2027)
+- **10 Meta / Grassley:** no Meta reply found. The record still ends with the 22 Jul 2026 letter (two terminated
+  whistleblowers, since public: Joshua DeFriez, William Sevedge; reply asked by 4 Aug). These are Grassley's
+  allegations; Meta's response is not on record.
+  [Senate Judiciary](https://www.judiciary.senate.gov/press/rep/releases/grassley-probes-meta-on-disclosures-alleging-company-disregarded-child-safety-risks-and-retaliated-against-whistleblowers)

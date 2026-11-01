@@ -409,3 +409,24 @@ All facts below come from search summaries; no article was opened.
 - **Count the Trees:** still right; the next step is the water plan on 5 Nov. **Trade Secret:** no follow-up.
 - **Finland:** no new HS candidate. Secondary watch: Salo data centre, hidden end user (SSS).
 - **Reactions to our posts:** not visible through search.
+
+## Daily check, Sun 1 Nov 17:16 (evening; search summaries only)
+- **Big development:** none.
+- **Global 3, Short Supply (posted):**
+  - **"HEARING 13 NOV 2026" is still single-source.** Search finds only the 3 Sep motion to dismiss, no hearing date,
+    and outlets disagree on the judge.
+  - Needs the N.D. Cal. docket before 13 Nov. If the date is wrong, the posted film carries a wrong tag. Fix options
+    then: a pinned correction, or a re-cut tag.
+- **Coxon 13, Grade Your Own Homework (HOLD):** nothing new on the other three deals. One unverified source puts
+  OpenAI's estimated completion at July 2026. The past-tense fix (option a) gets stronger. Keep the hold until the
+  owner answers.
+- **Brink 4, The Panel (posted):** still true. Status undisclosed, no recusal.
+- **The Round Trip:** HOLD (no S-1/A; EDGAR unreachable).
+- **Ends in 3:** the 31 Oct digit-5 deadline passed with no extension found. Suspension follows within 72 h (the DOF
+  rules). The posted copy stays true.
+- **Break Glass:** keep held. No 2026 plenary vote on the extension to end-2028; 168–29 is the 2025 vote.
+- **Count the Trees:** still right; the water plan is due 5 Nov, and the zoning appeal is pending. **Trade Secret:** no
+  follow-up.
+- **Finland:** no new HS candidate. Secondary watch: Helsinki's own data-centre siting (Verkkouutiset; city board about
+  2 Nov). Salo: atNorth confirmed as the end user (5 Oct).
+- **Reactions to our posts:** not visible through search.

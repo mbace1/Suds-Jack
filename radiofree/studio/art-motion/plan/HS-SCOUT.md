@@ -593,3 +593,27 @@ Everything below comes from search summaries. No article was opened.
 - **#1–#7, Vaasa–Mustasaari:** nothing new.
 - **Reactions:** no comment counts visible through search.
 - **Pattern note:** unchanged. The 5 Nov water-plan deadline is the next dated Finnish step.
+
+### Check Sun 1 Nov 17:16 (search summaries only; nothing opened)
+- **HS:** no new candidate in the last two days.
+- **Secondary, *Verkkouutiset* · watch, LOW-MED: Helsinki's own data-centre sites.**
+  - A proposal to the city board names five possible areas: Myllypuro, Salmisaari, Heikinlaakso, Malmi, Östersundom.
+  - The board took it up on 19 Oct and postponed it two weeks, so it may return about 2 Nov.
+  - The city's own plan, in the open, unlike Muhos and Salo. Useful as a contrast, not yet a story. Watch the Ahjo
+    minutes.
+  - [Verkkouutiset](https://www.verkkouutiset.fi/a/naille-viidelle-helsingin-alueelle-voi-tulla-datakeskus/)
+- **Salo / atNorth (SSS lead):** nothing dated November.
+  - atNorth's own 5 Oct release confirms itself as the end user: FIN05, Kärkkä, 28.6 ha, 75 MW, about €2bn. That
+    settles who it is. What stays notable is that the developer kept it unnamed until then.
+  - [DCD](https://datacenterdynamics.com/en/news/atnorth-to-build-75mw-data-center-in-salo-finland), [IT Brief](https://itbrief.co.uk/story/atnorth-plans-eur-2-billion-salo-data-centre-in-salo)
+- **Muhos / Count the Trees:** no new fact.
+  - The water plan is still due to LVV on 5 Nov.
+  - The zoning plan approved in March is under appeal at the administrative court. No ruling or date found; the date of
+    the item is unclear.
+  - LVV's police request and stop order stand. "Two requests filed with the police" stays right.
+  - [Kaleva topic page](https://www.kaleva.fi/aihe/google/1594), [Kaleva, LVV request](https://kaleva.fi/lvv-on-tehnyt-poliisille-tutkintapyynnon-googlen-m/13720712)
+- **Hamina / Trade Secret:** no follow-up found.
+- **#1–#7, Vaasa–Mustasaari:** nothing new.
+- **Reactions:** no comment counts visible through search, for the candidates or for our posted Panel and Short Supply.
+- **Pattern note:** unchanged. The next dated Finnish steps: Muhos water plan 5 Nov; Helsinki board, data-centre siting
+  (about 2 Nov).
