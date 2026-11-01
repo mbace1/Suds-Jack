@@ -1,0 +1,3 @@
+# Disruption · close platform crop — motion
+
+Pass 3. This is the same isometric Ooppera stop as `disruption/`, drawn by the same code, but the camera is at 2.15× (16:9) or 2.0× (9:16) and centred on the courier at the halted nose. It is the "closer platform crop" that the MP4 cuts to from the wide shot just before the coral card. The layers (01-backdrop … 09-card) and their motion are as in `../disruption/MOTION.md`. The OOPPERA plate is off frame here, so the halt reads from the coral pause on the tram's front chip and the grey line band. Render with `illus.render('disruption-close', W, H, tint=0…1)`.
