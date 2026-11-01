@@ -46,21 +46,21 @@
 // TUNING.scenery.
 import * as THREE from 'three/webgpu';
 import { Fn, float, vec2, vec3, fract, sin, dot, floor as tfloor, mix, smoothstep, abs, positionWorld, positionLocal, normalWorld, normalView, clamp, max, min, length, step, fwidth, uv, attribute } from 'three/tsl';
-import { GEL_TIME } from './gel.js?v=97';
-import { hash, noise, seeded, motes } from './kit.js?v=97';
-import { SUN_AT } from './sun.js?v=97';
-import { boiler } from './sets/boiler.js?v=97';
-import { river } from './sets/river.js?v=97';
-import { ice } from './sets/ice.js?v=97';
-import { deep } from './sets/deep.js?v=97';
-import { core } from './sets/core.js?v=97';
+import { GEL_TIME } from './gel.js?v=98';
+import { hash, noise, seeded, motes, phase } from './kit.js?v=98';
+import { SUN_AT } from './sun.js?v=98';
+import { boiler } from './sets/boiler.js?v=98';
+import { river } from './sets/river.js?v=98';
+import { ice } from './sets/ice.js?v=98';
+import { deep } from './sets/deep.js?v=98';
+import { core } from './sets/core.js?v=98';
 
 // worlds 5-9 (v72): a set of their own each, built to its brief (render/sets/)
 const SETS = { boiler, river, ice, deep, core };
 
 // the noise, the cracks and the seeded numbers are the kit's (v72: render/kit.js),
 // and the floor still takes them from here
-export { noise, cells } from './kit.js?v=97';
+export { noise, cells } from './kit.js?v=98';
 
 // the storm drain's grate (v65, the owner's world-2 sheet), in its own units
 // (q, its frame's radius 1): x the grate, y a slot, z the frame. Rows of
@@ -528,6 +528,55 @@ export class Scenery {
       posts.setMatrixAt(i, m.makeTranslation(x, Lp.y / 2, z));
       pools.setMatrixAt(i, m.makeTranslation(x, -0.01, z));
     });
+    // v98: the light through the roof, falling onto the floor's key pool
+    const lt = this.T.worlds.lit?.cistern?.lights ?? [];
+    if (C.rays) this._rays(C.rays, lt.find((l) => l.shafts) ?? lt[0], hx, hz);
+  }
+
+  // v98: shafts of light through an opening in the roof, falling along `dir`
+  // onto a pool of the floor's light `key` (its `frac` of the half sizes). The
+  // light spreads as it falls, so the shafts FAN: their feet `spread` m across
+  // the pool, their tops gathered to `mouth` of that at the opening `len` m up
+  // the fall, each an open cone `r` m round at its foot and `top`× that at the
+  // roof (the first try had them widening upward and they read as searchlights
+  // shining up off the floor). Seen as a volume: brightest where the eye looks
+  // through the most of it (|n·v|), fading in from the floor over `foot` of the
+  // way and out into the roof over the last `roof`, `lift`× brighter where it
+  // is narrow, breathing `breathe` as the sky over the roof moves. Dust turns
+  // in boxes stacked up each shaft, so it stays in the light it lies in
+  _rays(Ry, key, hx, hz) {
+    const px = (key?.frac?.[0] ?? -0.4) * hx, pz = (key?.frac?.[1] ?? -0.45) * hz;
+    const d = new THREE.Vector3(...Ry.dir).normalize(), up = new THREE.Vector3(0, 1, 0);
+    const across = new THREE.Vector3(-d.z, 0, d.x).normalize();   // the way the feet fan out
+    const mouth = new THREE.Vector3(px, 0, pz).addScaledVector(d, -Ry.len);   // the opening in the roof
+    const mat = new THREE.MeshBasicNodeMaterial({ transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide });
+    mat.colorNode = vec3(...Ry.color);
+    mat.opacityNode = Fn(() => {
+      const y = uv().y, ph = phase();
+      const ends = smoothstep(0, Ry.foot, y).mul(float(1).sub(smoothstep(float(1 - Ry.roof), 1, y)));
+      const sky = sin(GEL_TIME.mul(0.29).add(ph.mul(6.283))).mul(sin(GEL_TIME.mul(0.11).add(ph.mul(3.7)))).mul(0.5).add(0.5);
+      return float(Ry.alpha).mul(abs(normalView.z).pow(1.6)).mul(ends).mul(mix(float(1), float(Ry.lift), y)).mul(float(1).sub(sky.mul(Ry.breathe)));
+    })();
+    const rnd = seeded(98), inst = this._add(new THREE.InstancedMesh(new THREE.CylinderGeometry(Ry.r * Ry.top, Ry.r, 1, 20, 1, true), mat, Ry.n));
+    inst.frustumCulled = false;
+    const q = new THREE.Quaternion(), m = new THREE.Matrix4(), c = new THREE.Color(), s = new THREE.Vector3();
+    const feet = [], dust = [], Dm = Ry.dust;
+    for (let i = 0; i < Ry.n; i++) {
+      const k = Ry.n > 1 ? i / (Ry.n - 1) - 0.5 : 0, w = 0.75 + rnd() * 0.5;
+      const foot = new THREE.Vector3(px, 0, pz).addScaledVector(across, k * Ry.spread + (rnd() - 0.5) * 0.6).addScaledVector(d, (rnd() - 0.5) * 1.4);
+      const top = mouth.clone().addScaledVector(across, k * Ry.spread * Ry.mouth);
+      const axis = top.clone().sub(foot), L = axis.length(); axis.divideScalar(L);
+      feet.push(foot);
+      inst.setMatrixAt(i, m.compose(foot.clone().add(top).multiplyScalar(0.5), q.setFromUnitVectors(up, axis), s.set(w, L, w)));
+      inst.setColorAt(i, c.setScalar(1 - Ry.vary * rnd()));
+      // dust in boxes stacked up the lit part of the shaft, each as tall as its loop and as wide as the light there
+      if (Dm) for (let y0 = 0.25; y0 < top.y * (1 - Ry.roof) * 0.75; y0 += Dm.h) {
+        const f = y0 / top.y, at = foot.clone().addScaledVector(axis, y0 / axis.y), wd = Ry.r * w * (1 + (Ry.top - 1) * f) * 1.1;
+        dust.push([at.x, at.z, wd, wd, at.y]);
+      }
+    }
+    if (Dm && dust.length) motes(this, dust, Dm);
+    return feet;
   }
 
   // the boiler's pipes: one long run down each side, banded every few metres

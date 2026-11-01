@@ -19,6 +19,15 @@
     Never `--no-verify`.
 -->
 
+## v98 — 2026-11-01
+**The cistern's light through the roof: shafts falling onto a warm patch of daylight, dust turning in them**
+- The brightest thing in the owner's approved world 4 picture is the light coming through the roof in shafts and landing on the floor; the game had the shaft's pool only as a broad cyan key over the whole floor, and nothing falling. Now six shafts fall from an opening in the roof onto the floor's far-left (TUNING.scenery.cistern.rays), FANNING as they fall — their tops gathered at the opening, their feet spread across the pool — because light through a hole spreads: the first try had them widening upward and they read as searchlights shining up off the floor. Each is seen as a volume (brightest where the eye looks through most of it), fading in from the floor and out into the roof, breathing as the sky over the roof moves, with dust turning in boxes stacked up each one so it stays in its light.
+- Where they land, a warm patch of daylight on the floor (a second light in TUNING.worlds.lit.cistern, warm because the picture's is: its pool reads +72/+65/+46 over the floor round it, pale warm white on a teal room), and the caustic web gathers there. It has no sheen of its own — that low and that near, a glint is the white fog blob v93 took out.
+- The smoke's world 3 goo check, flaky since v93 (it read a dozen texels, then none, where the gel died) was not slowness, as v93–v97 took it to be: WebGL reads a target's rows from the bottom and WebGPU from the top, and the film's probe counted from the top on both, so on WebGL it read the MIRROR of where the gel died across the middle row — nothing when the gel died 3–5 m off the middle (0 texels against 513–641 on the mirror, eight runs), something only when it died near it. The probe counts from the bottom on WebGL now (js/render/goo.js), and both backends read the same 650-odd texels. It is a test reader; the game's film was always drawn in the right place.
+- Cache tokens `?v=97` → `?v=98`; HUD label → `2.0 · v98`
+
+---
+
 ## v97 — 2026-11-01
 **The cistern to its approved picture: clear water over pale slabs, and a web of caustic light on them**
 - The owner's approved arena picture for world 4 is clear shallow water over big pale slabs with a bright web of caustic light on them, under a roof shaft, its columns at the back. The floor was dark water with contour squiggles over everything and a square plinth with a cut column every 8 m. Now the slabs show pale through clearer, lighter teal water (the water's depth 0.6 → 0.42), the caustics are a NETWORK — the classic water caustic, four warps of sines whose lines fall where the field crosses zero — thin and slowly moving, brightest in the roof shaft's pool and at `inPool` of that elsewhere (TUNING.worlds.floor.cistern.net), and the stumps are gone from the pool (`plinthK` 0: the picture's columns stand at the back). The drip rings stay.

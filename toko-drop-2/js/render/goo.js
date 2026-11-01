@@ -50,9 +50,9 @@ import {
   Fn, uniform, attribute, texture, uv, vec2, vec3, vec4, float, normalize, dot, length, max, min, clamp, pow, sqrt,
   mix, cameraViewMatrix, varying, select, positionGeometry, step, smoothstep, mrt, fwidth, dFdx, dFdy, exp, abs, normalLocal, cameraPosition, positionWorld,
 } from 'three/tsl';
-import { TUNING } from '../tuning.js?v=97';
-import { GooSim, BODY, STAMP, wallLen, WALL_N, WALL_T } from './goo-sim.js?v=97';
-import { pickStyle, grainAt } from './style.js?v=97';
+import { TUNING } from '../tuning.js?v=98';
+import { GooSim, BODY, STAMP, wallLen, WALL_N, WALL_T } from './goo-sim.js?v=98';
+import { pickStyle, grainAt } from './style.js?v=98';
 
 const T = TUNING, G = T.goo;
 const MAX_BODIES = 256;
@@ -559,10 +559,12 @@ class Film {
   }
 
   // The smoke and the look checks: how much goo lies round (x, z), read back
-  // from the film — depth summed over a 64-texel square (4 m), wet and dry,
-  // and how many of those reads hold any. The square sits on (x, z) on one
-  // backend and on its mirror across the middle row on the other (their rows
-  // run opposite ways), so a probe means most near the middle of the arena.
+  // from the film — depth summed over a 64-texel square (4 m) on (x, z), wet
+  // and dry, and how many of those reads hold any. WebGL reads its rows from
+  // the BOTTOM of a target and WebGPU from the top, so on WebGL the square is
+  // counted from the other edge (v98: until then a WebGL probe read the
+  // mirror of (x, z) across the middle row, and world 3's smoke, its gel dying
+  // 3–5 m off the middle, read nothing where 500–700 texels of goo lay)
   async probe(renderer, x, z, n = 64) {
     const out = { wet: 0, dry: 0, covered: 0 };
     const W = this.rt[0].width, H = this.rt[0].height;
@@ -571,6 +573,7 @@ class Film {
     if (this.wall) { nx = W; ny = H; } else {
       const S = this.uSize.value, cx = Math.round((x / S.x + 0.5) * W), cy = Math.round((z / S.y + 0.5) * H);
       x0 = Math.max(0, Math.min(W - nx, cx - nx / 2)); y0 = Math.max(0, Math.min(H - ny, cy - ny / 2));
+      if (renderer.backend?.isWebGLBackend) y0 = H - ny - y0;
     }
     for (const [i, key] of [[0, 'wet'], [1, 'dry']]) {
       const px = await renderer.readRenderTargetPixelsAsync(this.rt[this.cur], x0, y0, nx, ny, i);

@@ -24,11 +24,11 @@
 // `swirlAt`, out to `swirlR`, and opens a hole of `hole` m in the middle).
 import * as THREE from 'three/webgpu';
 import { Fn, If, uv, uniform, float, abs, fract, min, max, sin, cos, length, smoothstep, step, mix, fwidth, texture, clamp, vec2, vec3, pow, floor as tfloor, round, select, mod, dFdx, dFdy, exp, normalize, dot, cameraPosition, positionWorld, vec4 } from 'three/tsl';
-import { pickStyle, grainAt } from './style.js?v=97';
-import { SUN_AT } from './sun.js?v=97';
-import { GEL_TIME } from './gel.js?v=97';
-import { noise, grate, cells, sewerSpots } from './scenery.js?v=97';
-import { lilyPads, DRIFT } from './kit.js?v=97';
+import { pickStyle, grainAt } from './style.js?v=98';
+import { SUN_AT } from './sun.js?v=98';
+import { GEL_TIME } from './gel.js?v=98';
+import { noise, grate, cells, sewerSpots } from './scenery.js?v=98';
+import { lilyPads, DRIFT } from './kit.js?v=98';
 
 const _white = new THREE.Color(0xffffff);
 
@@ -394,7 +394,7 @@ export function buildFloor(T, hx, hz, light, { style = 'grid', bounds: hasBounds
       acc = acc.add(abs(sx.mul(cy)).div(length(vec2(sx, cy)).mul(1.25).add(1e-3)));   // small where either is near zero: the lines
     }
     const caustic = clamp(pow(max(float(1.17).sub(pow(acc.div(4), float(1.4))), 0), float(N.sharp)).sub(0.45).div(2.6), 0, 1);
-    const key = T.worlds.lit?.cistern?.lights?.[0], pool = key ? float(1).div(float(1).add(dot(w.sub(vec2(key.frac[0] * hx, key.frac[1] * hz)), w.sub(vec2(key.frac[0] * hx, key.frac[1] * hz))).div(key.r * key.r))) : float(1);
+    const lt = T.worlds.lit?.cistern?.lights ?? [], key = lt.find((l) => l.caustics) ?? lt[0], pool = key ? float(1).div(float(1).add(dot(w.sub(vec2(key.frac[0] * hx, key.frac[1] * hz)), w.sub(vec2(key.frac[0] * hx, key.frac[1] * hz))).div(key.r * key.r))) : float(1);
     // the column bases: a square plinth every `column` m, its edge catching the light
     const q = fract(w.div(C.column).add(0.5)).sub(0.5).mul(C.column), dq = max(abs(q.x), abs(q.y));
     const plinth = float(1).sub(smoothstep(C.plinth - 0.03, C.plinth + 0.03, dq));
@@ -547,7 +547,7 @@ export function buildFloor(T, hx, hz, light, { style = 'grid', bounds: hasBounds
       const fall = float(1).div(float(1).add(dot(d, d).div(L.r * L.r))).mul(float(1).sub(smoothstep(L.r * 1.6, L.r * 2.8, dist)));
       E = E.add(v3(L.color).mul(Ld.y.mul(fall).mul(L.k).mul(fl)));
       if (L.glow) glow = glow.add(v3(L.color).mul(fall.mul(L.k * L.glow).mul(fl)));
-      if (sh) spec = spec.add(v3(L.color).mul(pow(max(normalize(Ld.add(V)).y, 0), float(sh.shine)).mul(fall).mul(L.k * sh.k).mul(fl)));
+      if (sh && L.sheen !== false) spec = spec.add(v3(L.color).mul(pow(max(normalize(Ld.add(V)).y, 0), float(sh.shine)).mul(fall).mul(L.k * sh.k).mul(fl)));
     };
     const flick = (L, seed) => (L.flicker ? float(1).add(sin(GEL_TIME.mul(L.flicker[0]).add(seed ?? 0)).mul(L.flicker[1])) : float(1));
     worldSources().forEach((L, i) => point(L.x, L.z, L, flick(L, L.seed ?? i * 2.3)));

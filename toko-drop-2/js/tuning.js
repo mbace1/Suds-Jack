@@ -7,10 +7,10 @@
 // things that work"). The arena is 1.x's, so every 1.x number ports as it is
 // instead of through a rescale. Axes: x across the screen (right +), y up,
 // z toward the bottom of the screen. The arena is centred on the origin.
-import { SPECIES } from './tuning/species/index.js?v=97';
-import WAVES from './tuning/waves.js?v=97';
-import PICKUPS from './tuning/pickups.js?v=97';
-import MUSIC from './tuning/music.js?v=97';
+import { SPECIES } from './tuning/species/index.js?v=98';
+import WAVES from './tuning/waves.js?v=98';
+import PICKUPS from './tuning/pickups.js?v=98';
+import MUSIC from './tuning/music.js?v=98';
 
 export const TUNING = {
   render: {
@@ -143,7 +143,11 @@ export const TUNING = {
       sewer:   { ambient: 0.72, pools: { h: 7, r: 4.4, k: 0.85, color: [1, 0.84, 0.6] }, sheen: { k: 0.4, shine: 34 } },
       // the cistern: the shaft through the roof is a broad, soft key on the far-left half (the approved picture's
       // god rays), not a lamp — at 0.9 with a sharp sheen it read as a white fog blob; the lamps warm the back rim
-      cistern: { ambient: 0.6, lights: [{ frac: [-0.4, -0.45], h: 16, r: 14, k: 0.5, color: [0.62, 0.9, 1] }],
+      // v98: and where the shafts land (scenery.cistern.rays), a warm patch of daylight — the approved picture's
+      // light is pale warm white on a teal room (its pool reads +72/+65/+46 over the floor round it) — that the
+      // caustic web gathers in; no sheen from it, as low and near as it is (a glint there is the fog blob again)
+      cistern: { ambient: 0.6, lights: [{ frac: [-0.4, -0.45], h: 16, r: 14, k: 0.5, color: [0.62, 0.9, 1] },
+                                        { frac: [-0.4, -0.45], h: 5, r: 5, k: 0.6, color: [1, 0.9, 0.64], sheen: false, caustics: true, shafts: true }],
                  rim: { w: 3.4, k: 0.7, color: [1, 0.68, 0.38], sides: 'back', every: 8.8, depth: 0.55 }, sheen: { k: 0.35, shine: 40 } },
       boiler:  { ambient: 0.58, grates: { h: 1.4, r: 2.8, k: 1.05, color: [1, 0.42, 0.1], flicker: [1.6, 0.3] },
                  rim: { w: 1.5, k: 0.75, glow: 0.03, color: [1, 0.42, 0.1], sides: 'all' }, sheen: { k: 0.3, shine: 20 } },
@@ -302,7 +306,17 @@ export const TUNING = {
                kerb: { w: 0.5, h: 0.18, color: [0.1, 0.11, 0.11] }, edge: { color: 0x3fb8d0, glow: 1.6, width: 0.12, height: 0.05 },
                water: { out: 24, fade: 15, lo: [0.003, 0.013, 0.019], hi: [0.012, 0.048, 0.06], scale: 0.32 },
                // v77: motes hanging in each lamp's light
-               motes: { n: 10, h: 1.4, vy: 0.08, sway: 0.15, wobble: 0.5, r: 0.03, gain: 2.0, color: [1.0, 0.8, 0.5], box: 1.6 } },
+               motes: { n: 10, h: 1.4, vy: 0.08, sway: 0.15, wobble: 0.5, r: 0.03, gain: 2.0, color: [1.0, 0.8, 0.5], box: 1.6 },
+               // v98 (the approved picture's brightest feature): the light through an opening in the roof
+               // `len` m up the fall along `dir`, landing on the floor's key pool (worlds.lit.cistern.lights[0]):
+               // `n` shafts FANNING as they fall, their feet `spread` m across the pool and their tops gathered
+               // to `mouth` of that, `r` m round at the foot and `top`× that at the roof, `alpha` at their
+               // brightest (each a little different, `vary`), `lift`× brighter where narrow, in from the floor
+               // over `foot` of the way and out over the last `roof`, breathing `breathe` as the sky over the
+               // roof moves; dust turning in them (`dust`)
+               rays: { n: 6, len: 17, dir: [0.42, -1, 0.5], spread: 5.5, mouth: 0.22, r: 0.85, top: 0.4, alpha: 0.075, vary: 0.45, lift: 1.6,
+                       foot: 0.12, roof: 0.25, breathe: 0.35, color: [1.0, 0.92, 0.68],
+                       dust: { n: 4, h: 1.2, vy: -0.1, sway: 0.18, wobble: 0.45, r: 0.03, gain: 1.6, color: [1.0, 0.95, 0.8], box: 1.4, seed: 98 } } },
     // v72 (owner, 2026-10-31: "you can build all levels/worlds now"; from the
     // World 5 brief, art-ref/briefs/world-5-boiler.md): THE BOILER ROOM. Boilers
     // along the far side, `every` m apart and `side` m past its corners, `out` m
