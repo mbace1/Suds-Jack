@@ -9,8 +9,10 @@
 //
 //   NODE_PATH=$(npm root -g) node toko-move/tools/stills.cjs [outDir]
 //
-// Writes 01-dispatch, 02-catch, 03-crown-bridge, 04-event, 05-week, 06-daily
-// (1080×1920) and cover.png (630×500) + cover@2x.png (1260×1000).
+// Writes 01-dispatch, 02-catch, 03-crown-bridge, 04-event, 05-week, 06-daily,
+// and one still per core mutator — 07-night, 08-disruption, 09-rush-hour,
+// 10-snow-day (v2.72; MUTATORS.md: "one still each") — all 1080×1920, and
+// cover.png (630×500) + cover@2x.png (1260×1000).
 // The game is rendered from the STORE BUILD (tools/package-itch.mjs, unzipped
 // into a temp folder), because these are the store page's pictures: no arcade
 // HOME button, no LIVE on the title. The cover's lettering reads the brand's
@@ -26,31 +28,40 @@ const OUT = path.resolve(process.argv[2] || 'toko-move-stills');
 const W = 405, H = 720, SCALE = 1080 / 405;
 const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.svg': 'image/svg+xml', '.png': 'image/png' };
 
+// The cover (art bible §7): a day crop of the board with the HUD pill and the
+// wordmark, on the bible's paper — v2.72; the first cover put a dark band
+// under a board that has since become paper.
 const COVER = () => `<!doctype html><html><head><meta charset="utf-8"><style>
-  html,body{margin:0;background:#22282d}canvas{display:block}</style></head><body><canvas id="c"></canvas>
+  html,body{margin:0;background:#f4f1e8}canvas{display:block}</style></head><body><canvas id="c"></canvas>
 <script type="module">
-import { TOKO } from '/toko/js/palette.js';
 const c = document.getElementById('c'), d = 2, w = 630 * d, h = 500 * d; c.width = w; c.height = h;
 const x = c.getContext('2d');
-const img = new Image(); img.src = '/__map.png'; await img.decode();
+const load = async src => { const i = new Image(); i.src = src; await i.decode(); return i; };
+const img = await load('/__map.png'), pill = ${pillPng ? 'true' : 'false'} ? await load('/__pill.png') : null;
 // the map, cut to the cover's shape around the crossing
 const ar = w / h, sw = Math.min(img.width, img.height * ar), sh = sw / ar;
 const sx = (img.width - sw) / 2, sy = Math.max(0, Math.min(img.height - sh, img.height * 0.5 - sh / 2));
 x.drawImage(img, sx, sy, sw, sh, 0, 0, w, h);
-// a dark band at the foot for the name, graded so the map runs into it
-const g = x.createLinearGradient(0, h * 0.52, 0, h); g.addColorStop(0, 'rgba(26,32,36,0)'); g.addColorStop(0.55, 'rgba(26,32,36,.86)'); g.addColorStop(1, 'rgba(26,32,36,.96)');
-x.fillStyle = g; x.fillRect(0, h * 0.52, w, h * 0.48);
+// the HUD pill, top left, as the game shows it (clock, jobs, the deadline ring)
+if (pill) { const ph = 44 * d, pw = pill.width * ph / pill.height; x.drawImage(pill, 22 * d, 22 * d, pw, ph); }
+// a paper band at the foot for the name, graded so the map runs into it
+const g = x.createLinearGradient(0, h * 0.56, 0, h); g.addColorStop(0, 'rgba(244,241,232,0)'); g.addColorStop(0.5, 'rgba(244,241,232,.9)'); g.addColorStop(1, 'rgba(244,241,232,.98)');
+x.fillStyle = g; x.fillRect(0, h * 0.56, w, h * 0.44);
 const T = (s, px, y, col, weight = 900, ls = 0) => { x.font = weight + ' ' + px * d + 'px ui-monospace, monospace'; x.fillStyle = col; x.textAlign = 'left'; x.letterSpacing = ls * d + 'px'; x.fillText(s, 28 * d, y * d); };
-T('TOKO MOVE', 58, 430, TOKO.PAPER, 900, 2);
-T('A courier on the real Helsinki trams', 17, 466, '#c9d3d6', 600);
+T('TOKO MOVE', 58, 432, '#15262b', 900, 2);
+T('A courier on the real Helsinki trams', 17, 466, '#3a474c', 600);
+// the courier's own cyan, once, as the full stop of the wordmark
+x.font = '900 ' + 58 * d + 'px ui-monospace, monospace'; x.letterSpacing = 2 * d + 'px'; const tw = x.measureText('TOKO MOVE').width;
+x.fillStyle = '#33b2d2'; x.beginPath(); x.arc(28 * d + tw + 9 * d, 425 * d, 7 * d, 0, Math.PI * 2); x.fill();
 window.__ready = true;
 </script></body></html>`;
 
-let mapPng = null;
+let mapPng = null, pillPng = null;
 const server = http.createServer((req, res) => {
   const u = req.url.split('?')[0];
   if (u === '/__cover') { res.writeHead(200, { 'Content-Type': 'text/html' }); return res.end(COVER()); }
   if (u === '/__map.png') { res.writeHead(200, { 'Content-Type': 'image/png' }); return res.end(mapPng); }
+  if (u === '/__pill.png' && pillPng) { res.writeHead(200, { 'Content-Type': 'image/png' }); return res.end(pillPng); }
   let p = u.startsWith('/toko/') ? path.join(REPO, decodeURIComponent(u)) : path.join(ROOT, 'site', decodeURIComponent(u));
   if (fs.existsSync(p) && fs.statSync(p).isDirectory()) p = path.join(p, 'index.html');
   if (!fs.existsSync(p)) { res.writeHead(404); return res.end('no'); }
@@ -146,7 +157,9 @@ server.listen(0, '127.0.0.1', async () => {
     if (!over) throw new Error('the tram never reached the bridge');
     await page.waitForTimeout(600);
     await shoot(page, '03-crown-bridge');
-    // the cover's map: the same moment, without the panels or the zoom rail
+    // the cover's pill and map: the same moment, the pill as the HUD draws it,
+    // then the map without the panels or the zoom rail
+    pillPng = await page.locator('#hudPill').screenshot().catch(() => null);
     await page.addStyleTag({ content: '#zoomRail,#recentre,#hud{visibility:hidden!important}' });
     await settle(page); await page.waitForTimeout(300);
     mapPng = await page.locator('#map').screenshot();
@@ -169,6 +182,32 @@ server.listen(0, '127.0.0.1', async () => {
     await page.tap('#play'); await page.waitForTimeout(400);
     await play(page, { end: '06-daily' });
     await page.context().close();
+
+    // 07–10 one still per core mutator (MUTATORS.md), chosen the way a player
+    // chooses one — by its chip on the title card — and played by tapping what
+    // lights until the screen shows what that mutator is: a lit catch on the
+    // night board, the held line's card with a catch around it, the RUSH chip,
+    // the snow. A frame is taken once the shift has run a few minutes, so the
+    // board has trams on it and the clock says something.
+    for (const [id, name, q] of [['night', '07-night', '?shift=3'], ['disruption', '08-disruption', '?shift=2'], ['rush', '09-rush-hour', '?shift=3'], ['snow', '10-snow-day', '?shift=1']]) {
+      page = await fresh(q);
+      await Promise.all([page.waitForNavigation(), page.tap(`#mutRow .mut[data-mut="${id}"]`)]);
+      await page.waitForFunction(() => window.__tm?.flow && !document.getElementById('play').disabled, null, { timeout: 30000 });
+      await page.evaluate(() => window.__tm.flow.clock.setPaused(true));
+      await page.tap('#play'); await page.waitForTimeout(400);
+      let shot = false, held = 0;
+      for (let i = 0; i < 5000 && !shot; i++) {
+        const s = await look(page);
+        if (s.phase === 'end') break;
+        const ready = await page.evaluate(want => { const tm = window.__tm; return tm.flow.clock.tick > 160 && (want !== 'disruption' || (tm.events?.activeHolds?.() || []).length > 0); }, id);
+        if (ready && s.phase === 'catch') { await shoot(page, name); shot = true; break; }
+        if (s.sel) { await page.tap(s.sel, { timeout: 1500 }).catch(() => {}); await page.waitForTimeout(60); continue; }
+        if (s.due && held++ < 8) { await page.waitForTimeout(80); continue; }
+        held = 0; await page.evaluate(() => window.__tm.flow.runTicks(3));
+      }
+      if (!shot) throw new Error(`no ${id} still: the shift never showed a lit catch`);
+      await page.context().close();
+    }
 
     // the cover
     page = await (await browser.newContext({ viewport: { width: 630, height: 500 }, deviceScaleFactor: 1 })).newPage();

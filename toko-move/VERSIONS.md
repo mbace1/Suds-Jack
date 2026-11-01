@@ -1,5 +1,45 @@
 # Toko Move — versions
 
+## v2.72 — 2026-11-01
+
+**A STRANGER MEETS THE CARDS, AND THE STORE PAGE SHOWS THE GAME IT SELLS**
+(the itch package slice; owner: *"Itch package — cover + stills … once the
+in-game UI matches"*).
+
+**The event director dealt from the head of its queue only**, so a card
+waiting for the courier to be somewhere held back every card behind it.
+Shift 1 deals a *walking* card first, and a player who only taps CATCH never
+walks — so they met **none** of the shift's four cards. That was true on
+v2.68 as well (checked on its tree); it came to light because the store
+stills could no longer find an event card to photograph. The director now
+deals the first **due** card whose place this is; a held line keeps its own
+time and never waits behind a card at all (v2.70 had made that true only for
+a Disruption run's halt). And a card is now due **at its time or by its job,
+whichever is first** — the n-th card once n deliveries are done — because the
+times assume all seventy-five minutes, and a quick courier who finished three
+jobs by half-time left two of the three undealt. Job one is never interrupted
+early. `test/stranger.cjs` now fails if a stranger who never walks meets no
+card (all three of its runs meet one now), and `events.mjs` holds both rules
+in bare node.
+
+Two things fell out of cards actually firing: the **sealed parcel's label**
+was dropped whenever another card was already open — it now waits at the
+front of the deal, and since a label has no place it opens wherever the
+courier is (`where: 'any'`); and the **itch gate's** scripted player caught
+the nearest tram in *either* direction, so once a card moved the timing it
+boarded one going away from the drop and rode past its budget — it now takes
+the leg's own direction, and delivers by tick 861.
+
+**The stills come from the new look.** `tools/stills.cjs` renders ten
+phone stills from the store build — the six it had, plus one per core
+mutator, each chosen by its chip on the title card and played by tapping
+(`07-night`, `08-disruption`, `09-rush-hour`, `10-snow-day`; MUTATORS.md:
+*"one still each"*) — and the cover the bible asks for: the day board with
+tram 12 over the water, the HUD pill in the corner, and the name on paper
+with the courier's cyan as its full stop (the first cover put a dark band
+under a board that has since become paper). `store/ITCH.md` describes the
+mutators and the sealed parcel and lists the new stills.
+
 ## v2.71 — 2026-11-01
 
 **THE SEALED PARCEL, AND A NOTEBOOK THAT NEVER EXPLAINS ITSELF**

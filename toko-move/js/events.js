@@ -75,27 +75,36 @@ export const HALTED={id:'halted',mood:'warning',glyph:'⛔',text:l=>`${l} is hal
 export function drawSchedule(seed,ticksPerDay=3000,lines=[],encounters=null,moods=null,halt=null){const h=hash(`events:${seed}`),out=[];
  const n=Math.min(encounters||BUDGET.encounters,ENCOUNTERS.length),used=new Set;
  for(let i=0;i<n;i++){const k=(h>>>(i*4))&0xffff;let card=pickWeighted(ENCOUNTERS,k,moods);let guard=0;while(used.has(card.id)&&guard++<ENCOUNTERS.length)card=ENCOUNTERS[(k+guard)%ENCOUNTERS.length];used.add(card.id);
-  const at=Math.round(ticksPerDay*(0.12+0.24*i)+(k%400));out.push({kind:'encounter',card,at});}
+  const at=Math.round(ticksPerDay*(0.12+0.24*i)+(k%400));out.push({kind:'encounter',card,at,job:i+1});}
  if(halt){out.push({kind:'disruption',card:{...HALTED,minutes:halt.minutes},line:halt.line,lines:halt.lines,at:halt.atTick,recoverJobs:halt.recoverJobs});}
  else if(BUDGET.disruptions&&lines.length){const k=(h>>>13)&0xffff,d=DISRUPTIONS[k%DISRUPTIONS.length],line=lines[(k>>3)%lines.length];out.push({kind:'disruption',card:d,line,at:Math.round(ticksPerDay*0.3+(k%(ticksPerDay*0.35)))});}
  return out.sort((a,b)=>a.at-b.at);}
 
 export class EventDirector{
  constructor(tm,seed=7,opts={}){this.tm=tm;this.seed=seed;this.goodwillFactor=opts.goodwill||1;const lines=(tm.transit?.layers||[]).filter(l=>l.visible).map(l=>l.name);this.queue=drawSchedule(seed,tm.flow.clock.ticksPerDay,lines,opts.encounters||null,opts.moods||null,opts.halt||null);this.pending=null;this.seen=[];this.busyUntil=0;this.holds=[];}
- // Called every tick after mobility. An encounter fires at the first moment
- // after its scheduled tick that the courier is where the card says.
+ // Called every tick after mobility. A card fires at the first moment after its
+ // scheduled tick that the courier is where the card says.
  step(){const tm=this.tm,ch=tm.challenge,tick=tm.flow.clock.tick;
   // a held family that two jobs lift (a Disruption run): the hole closes when
   // the courier has worked round it twice, not only when its time is up
   let lifted=false;for(const h of this.holds)if(h.recoverJobs&&tick<h.until&&(ch?.index||0)>=h.startIndex+h.recoverJobs){this.lift(h,tick);lifted=true;}
-  // a Disruption run's halt keeps its own time: it is not a card waiting for the
-  // courier to be somewhere, so a card that is waiting must not hold it back
-  {const hi=this.queue.findIndex(e=>e.recoverJobs&&tick>=e.at);if(hi>=0){const [ev]=this.queue.splice(hi,1);this.startHold(ev);return true;}}
-  if(this.pending)return lifted;const st=tm.mobility?.status?.();const here=st?.kind==='waiting'?'stop':st?.kind==='riding'?'aboard':st?.kind==='walking'?'walking':null;
-  const next=this.queue[0];if(!next||tick<next.at)return lifted;
-  if(next.kind==='disruption'){this.queue.shift();this.startHold(next);return true;}
-  if(!ch?.active||here!==next.card.where)return false;
-  this.queue.shift();this.pending={...next,since:tick};ch.say?.(`${next.card.glyph} ${next.card.text}`);return true;}
+  // a held line keeps its own time: it is not a card waiting for the courier to
+  // be somewhere, so nothing waiting holds it back, and it may start while a
+  // card is open (the hold is drawn under it)
+  {const hi=this.queue.findIndex(e=>e.kind==='disruption'&&tick>=e.at);if(hi>=0){const [ev]=this.queue.splice(hi,1);this.startHold(ev);return true;}}
+  if(this.pending||!ch?.active)return lifted;const st=tm.mobility?.status?.();const here=st?.kind==='waiting'?'stop':st?.kind==='riding'?'aboard':st?.kind==='walking'?'walking':null;
+  // v2.72: the first DUE card whose place this is — not the head of the queue.
+  // A card waiting for the courier to be somewhere used to hold every card
+  // behind it, so a player who never walked never met a card at all: shift 1
+  // deals a "walking" card first, and a stranger who only catches trams saw
+  // none of the four (test/stranger.cjs now asserts a card is met).
+  // A card is due at its time OR once the shift has reached its job (the n-th
+  // card by the n-th delivery), whichever is first: the times assume all
+  // seventy-five minutes, and a quick courier who finished three jobs by
+  // half-time used to leave two of the three cards undealt. Job one is never
+  // interrupted early — the first card waits for its time or the first drop.
+  const i=this.queue.findIndex(e=>e.kind==='encounter'&&(tick>=e.at||(e.job!=null&&(ch.index||0)>=e.job))&&here&&(e.card.where==='any'||here===e.card.where));if(i<0)return lifted;   // 'any': a card with no place (the sealed parcel's label)
+  const [next]=this.queue.splice(i,1);this.pending={...next,since:tick};ch.say?.(`${next.card.glyph} ${next.card.text}`);return true;}
  startHold(ev){if(this.tm.live)return;/* LIVE: the real city brings its own disruptions */const net=this.tm.liveNetwork,names=ev.lines||[ev.line],layers=(net?.transit?.layers||[]).filter(l=>names.includes(l.name));if(!net||!layers.length)return;const perMin=this.tm.flow.clock.ticksPerDay/((this.tm.shift?.hours||1.25)*60),from=this.tm.flow.clock.tick,until=from+Math.round(ev.card.minutes*perMin);for(const layer of layers)net.hold?.(layer,from,until);this.holds.push({...ev,from,until,startIndex:this.tm.challenge?.index||0});this.tm.challenge?.say?.(`${ev.card.glyph} ${ev.card.text(ev.line)}`);}
  lift(h,tick){const net=this.tm.liveNetwork,ids=new Set((net?.transit?.layers||[]).filter(l=>(h.lines||[h.line]).includes(l.name)).map(l=>l.id));for(const x of net?.holds||[])if(ids.has(x.layerId)&&x.from===h.from&&x.until===h.until)x.until=tick;h.until=tick;h.lifted=true;this.tm.challenge?.say?.(`${h.line} is running again.`);}
  // Is this layer standing still right now? (the board's grey dash and its trams)

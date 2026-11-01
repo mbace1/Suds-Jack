@@ -55,4 +55,21 @@ fakeTm.mobility.status=()=>({kind:'riding'});dir.step();ok(first.card.where==='a
 fakeTm.mobility.status=()=>({kind:first.card.where==='aboard'?'riding':first.card.where==='walking'?'walking':'waiting'});dir.step();ok(!!dir.pending,'and fires there');
 const opts=dir.options();ok(opts.every(o=>!o.needs||o.needs==='documents'),'options you cannot meet are not offered');
 const r=dir.choose(0);ok(r.ok&&!dir.pending,'choosing clears the card');
+// v2.72: a card waiting for its place never holds back a card that is ready.
+// Shift 1 deals a "walking" card first; a courier who only catches trams used
+// to meet none of the four, because the director only ever looked at the head.
+{const walk=ENCOUNTERS.find(c=>c.where==='walking'),stop=ENCOUNTERS.find(c=>c.where==='stop');
+ const t={flow:{clock:{tick:0,ticksPerDay:3000}},shift:{hours:1.25},transit:{layers:[]},challenge:{active:{cargo:'documents'},index:0,say(){}},mobility:{status:()=>({kind:'waiting'})}};
+ const d=new EventDirector(t,1);d.queue=[{kind:'encounter',card:walk,at:100},{kind:'encounter',card:stop,at:200}];
+ t.flow.clock.tick=150;d.step();ok(!d.pending,'nothing is due at the stop yet');
+ t.flow.clock.tick=250;d.step();ok(d.pending?.card.id===stop.id,'the stop card fires at the stop although a walking card is ahead of it');
+ ok(d.queue.length===1&&d.queue[0].card.id===walk.id,'and the walking card still waits for a walk');
+ d.choose(0);t.mobility.status=()=>({kind:'walking'});d.step();ok(d.pending?.card.id===walk.id,'then fires on the first walk');}
+// v2.72: a card is due at its time or by its job, whichever is first
+{const stop=ENCOUNTERS.find(c=>c.where==='stop');
+ const t={flow:{clock:{tick:0,ticksPerDay:3000}},shift:{hours:1.25},transit:{layers:[]},challenge:{active:{cargo:'documents'},index:0,say(){}},mobility:{status:()=>({kind:'waiting'})}};
+ const d=new EventDirector(t,1);d.queue=[{kind:'encounter',card:stop,at:2000,job:2}];
+ t.flow.clock.tick=500;t.challenge.index=1;d.step();ok(!d.pending,'before its time and its job, a card waits');
+ t.challenge.index=2;d.step();ok(d.pending?.card.id===stop.id,'by its job it is due, an hour before its time');
+ ok(drawSchedule(5,3000,[]).filter(e=>e.kind==='encounter').every((e,i)=>e.job===i+1),'the n-th card belongs to the n-th delivery — job one is never interrupted early');}
 console.log(`events: ${n} checks passed`);

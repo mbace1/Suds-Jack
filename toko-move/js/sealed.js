@@ -98,10 +98,15 @@ export function mountSealed(tm, { familyOf, familyOfLayer }) {
   const accept = ch.acceptOffer.bind(ch);
   ch.acceptOffer = id => {
     const offer = (ch.offers || []).find(o => o.id === id), r = accept(id);
-    if (!r?.error && offer?.sealed && tm.events && !tm.events.pending) {
-      const fam = offer.sealed.family;
-      tm.events.pending = { kind: 'encounter', since: tm.flow.clock.tick, card: { id: 'sealed', mood: 'info', where: 'stop', glyph: '✉', text: "The label says: you'll know the stop.",
-        options: [{ label: `Ride the ${fam} and watch`, cost: 0 }, { label: 'Ask at the kiosk', cost: KIOSK_COST, reveal: true }] } };
+    if (!r?.error && offer?.sealed && tm.events) {
+      const fam = offer.sealed.family, tick = tm.flow.clock.tick;
+      const card = { id: 'sealed', mood: 'info', where: 'any', glyph: '✉', text: "The label says: you'll know the stop.",
+        options: [{ label: `Ride the ${fam} and watch`, cost: 0 }, { label: 'Ask at the kiosk', cost: KIOSK_COST, reveal: true }] };
+      // another card may already be open (cards fire by job since v2.72): the
+      // label waits at the front of the deal and opens as soon as that one is
+      // answered, rather than being lost
+      if (tm.events.pending) tm.events.queue.unshift({ kind: 'encounter', card, at: tick });
+      else tm.events.pending = { kind: 'encounter', since: tick, card };
       ch.say?.(`✉ SEALED · ride the ${fam} and watch`);
     }
     return r;

@@ -1,14 +1,14 @@
 // Toko Move v2.12.2 runtime — clean HSL core + transfer hubs + walking/interception + two-job carry.
 // first, so every word the modules below draw passes through it (v2.66)
 import {tr} from './lang.js?v=5';
-import './core-v212.js?v=72';
+import './core-v212.js?v=73';
 import './route-choice.js?v=28';
 import {LiveNetwork,HEADWAY_MIN,MODE_KMH} from './live-network.js?v=17';
 import {hidden as fogHides} from './weather.js?v=1';
 import {mountCity,headwayFor,walkFactor,encounterCount,goodwillFactor,marketOf} from './city-events.js?v=1';
 import {headwayWith,haltFamily,haltMinutes} from './mutators.js?v=1';
 import {lineFamily} from './board.js?v=8';
-import {mountSealed} from './sealed.js?v=1';
+import {mountSealed} from './sealed.js?v=2';
 // The family of an offer's quickest plan's LAST ride — what a sealed parcel
 // tells you to ride. The metro is never one ("ride the M1" names no stop).
 const lastFamily=(tm,o)=>{const cs=globalThis.__tmRouteChoiceCore?.routeChoices?.(tm.city,o.stops[0],o.stops[1],6)||[],leg=cs[0]?.legs?.[cs[0].legs.length-1];return leg&&!/subway|metro/i.test(String(leg.line?.mode))?lineFamily(leg.line.label):null;};
@@ -20,7 +20,7 @@ import {TRANSFER_HUBS,WALK_STREETS,walksFrom} from './hubs-walking.js?v=4';
 import {MobilityController} from './mobility-v212.js?v=11';
 import {interceptionOptions,bestInterception} from './interception-v212.js?v=2';
 import {mountJobBoard,reachableSoon,planCost,alongOffersFor} from './job-board-v212.js?v=30';
-import {mountEvents} from './events.js?v=8';
+import {mountEvents} from './events.js?v=9';
 import {mountRival} from './rival.js?v=4';
 import {loadVisited,saveVisited,visit,teach,progress,streetsAt} from './knowledge.js?v=4';
 import {planEstimate} from './timetable.js?v=2';
@@ -33,7 +33,7 @@ import {mountAudio} from './audio.js?v=1';
 import {mountTestCard} from './testcard.js?v=3';
 import {mountRecovery} from './recovery-v212.js?v=3';
 import {about,inMinutes} from './ui.js?v=2';
-const BUILD_VERSION='2.71';
+const BUILD_VERSION='2.72';
 function mount(){const tm=window.__tm;if(!tm?.transit||!tm?.flow||!tm?.city){setTimeout(mount,50);return;}tm.version=BUILD_VERSION;// THE DAY IS DRAWN BEFORE THE FLEET, because one of the four is a timetable:
 // QUIET SUNDAY provisions fewer trams, and a fleet cannot be re-provisioned
 // after its vehicles exist without every phase in it moving under the player.

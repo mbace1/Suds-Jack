@@ -64,9 +64,12 @@ server.listen(0, '127.0.0.1', async () => {
         if (st?.kind === 'getoff') mob.getOff();
         else if (st?.kind === 'waiting') for (const c of routeChoices(tm.city, ch.currentFrom(), ch.currentTo(), 3, allowFor(ch.cargoRule?.()), mob.passed?.())) {
           const layer = tm.transit.layers.find(x => x.id === c.legs[0].line.sourceId); if (!layer) continue;
-          const n = tm.city.resolved[c.legs[0].from]; let bi = 0, bd = 1e9;
-          layer.path.forEach((q, i) => { const d = (q[0] - n.lat) ** 2 + (q[1] - n.lon) ** 2; if (d < bd) { bd = d; bi = i; } });
-          const near = tm.liveNetwork.nearestTo(layer, bi, tm.flow.clock.tick, 2.2, null);
+          // the way the leg runs along its line: catching the nearest tram in
+          // EITHER direction rode one away from the drop for a thousand ticks
+          // once an event card shifted the timing (v2.72)
+          const at = id => { const n = tm.city.resolved[id]; let bi = 0, bd = 1e9; layer.path.forEach((q, i) => { const d = (q[0] - n.lat) ** 2 + (q[1] - n.lon) ** 2; if (d < bd) { bd = d; bi = i; } }); return bi; };
+          const bi = at(c.legs[0].from), dir = at(c.legs[0].to) > bi ? 1 : -1;
+          const near = tm.liveNetwork.nearestTo(layer, bi, tm.flow.clock.tick, 2.2, dir);
           if (near && !mob.catchChoice(c, near.vehicle)?.error) break;
         }
         tm.flow.runTicks(1);
