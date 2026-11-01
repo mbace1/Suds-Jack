@@ -51,6 +51,15 @@ street when walking is faster, and get the parcel there before it is late.
 - **The city happens to you.** Rain, fog and the first snow; a stroller and
   three bags at the tram steps; a regular who tips; another courier, Vesa,
   racing you for the job you are still thinking about.
+- **Four ways to bend the day.** Before a shift, pick a mutator: **Night**
+  (the same city at 23:00, fewer trams, the lines lit like neon),
+  **Disruption** (one line halted — route around the hole), **Rush Hour**
+  (everything runs often and everything is full) or **Snow Day** (slower
+  feet, slower trams, kinder people).
+- **A parcel with no address.** Once a shift the board deals a sealed parcel:
+  no stop on it, only the line to ride. You learn where it goes by riding it,
+  and every one you deliver writes a line in a notebook that never explains
+  itself.
 - **A new shift every day.** The daily shift is the same city day, the same
   jobs and the same rival for everyone — share your result.
 
@@ -61,7 +70,9 @@ Made in Helsinki by Toko Midori Games.
 Kuriiripeli oikealla Helsingin raitiovaunu- ja metroverkolla: valitse keikka,
 nappaa saapuva vuoro, vaihda oikealla pysäkillä, kävele kun se on nopeampaa —
 ja toimita ajoissa. Viiden vuoron viikko, vuokra perjantaina, ja joka päivä
-uusi päivän vuoro.
+uusi päivän vuoro. Neljä muunninta — yö, häiriö, ruuhka-aika ja lumipäivä —
+ja kerran vuorossa sinetöity paketti, jonka pysäkin saat selville vain
+ajamalla.
 
 ## Controls
 
@@ -78,9 +89,12 @@ beats waiting. STOP / ROUTE / CITY change the zoom; pinch and drag on a phone.
   on a phone —
   `NODE_PATH=$(npm root -g) node toko-move/tools/stills.cjs out/`
   writes `cover.png` (630 × 500, plus `cover@2x.png`) — tram 12 crossing the
-  water to Kruunuvuori under the name — and six 1080 × 1920 stills:
-  `01-dispatch`, `02-catch`, `03-crown-bridge`, `04-event`, `05-week`,
-  `06-daily`. Upload the cover and any five; `03` and `05` say the most.
+  water to Kruunuvuori on the day board, the HUD pill in the corner and the
+  name on paper (art bible §7) — and ten 1080 × 1920 stills: `01-dispatch`,
+  `02-catch`, `03-crown-bridge`, `04-event`, `05-week`, `06-daily`, and one
+  per mutator, each chosen by its chip on the title card: `07-night`,
+  `08-disruption`, `09-rush-hour`, `10-snow-day` (MUTATORS.md: "one still
+  each"). Upload the cover and any five; `03`, `05` and `07` say the most.
 
 ## Credits (must appear on the page)
 

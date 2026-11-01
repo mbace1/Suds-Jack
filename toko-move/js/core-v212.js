@@ -22,14 +22,14 @@ import * as Kit from './kit.js?v=1';
 import {drawWeather} from './weather.js?v=1';
 import {skinFor,applySkin,CORAL as SK_CORAL} from './skin.js?v=1';
 import {MUTATORS,resolveMutator,mutateShift,rushWith,startMinute} from './mutators.js?v=1';
-import {loadNotebook} from './sealed.js?v=1';
+import {loadNotebook} from './sealed.js?v=2';
 import {drawPoster} from './poster.js?v=6';
 import * as WalkPath from './walkpath.js?v=1';
 import * as Rush from './rush.js?v=1';
 import {colourOf,parcelHtml,bagHtml} from './parcels.js?v=1';
 
 const $=id=>document.getElementById(id);
-const BUILD_VERSION='2.71';
+const BUILD_VERSION='2.72';
 const MAP_THEME={...THEME,latent:THEME.paper,hideQueues:true,hideLoadMarks:true,hideCarriers:true,modeColours:{metro:'rgba(0,0,0,0)',tram:'rgba(0,0,0,0)',car:'rgba(0,0,0,0)'}};
 const cargoColour=colourOf;   // ONE palette: this file and the job board drew the same parcel in two different colours until v2.43
 const esc=s=>String(s??'').replace(/[&<>\"]/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[ch]||ch));

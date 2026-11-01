@@ -38,7 +38,11 @@ const look = () => {
   const j = [ch.active, ch.queued].find(x => x?.sealed) || null, dest = j ? (j.originalStops?.[1] || j.stops[j.stops.length - 1]) : null;
   const real = dest ? tm.city.nodes.find(n => n.id === dest)?.name : null;
   const st = tm.mobility.status(), layer = st?.kind === 'riding' ? tm.liveNetwork?.vehicle?.(st.ride?.vehicleId)?.layer?.name : null;
-  const out = { tick: tm.flow.clock.tick, index: ch.index, target: ch.target, sealed: j ? { family: j.sealed.family, revealed: j.sealed.revealed, real, named: ch.name(dest), city: tm.city.nameOverride?.(dest) || null, sheetLeak: !j.sealed.revealed && !!real && document.getElementById('sheet').innerText.includes(real), riding: layer } : null, notes: tm.sealed?.notebook?.().length || 0 };
+  const out = { tick: tm.flow.clock.tick, index: ch.index, target: ch.target, sealed: j ? { family: j.sealed.family, revealed: j.sealed.revealed, real, named: ch.name(dest), city: tm.city.nameOverride?.(dest) || null, sheetLeak: !j.sealed.revealed && !!real && document.getElementById('sheet').innerText.includes(real), riding: layer } : null, notes: tm.sealed?.notebook?.().length || 0,
+    // the card as the game deals it — a CATCH tapped before the panel repaints
+    // answers an open card with its free way (the game's own rule), so the
+    // dealt card is read off the director, not only off the screen
+    pend: tm.events?.pending?.card?.id === 'sealed' ? { text: tm.events.pending.card.text, opts: tm.events.options().map(o => `${o.label} +${Math.round((o.cost || 0) / 10)} s`) } : null };
   const endVeil = document.getElementById('end'); if (endVeil && !endVeil.hidden) return { ...out, phase: 'end', title: document.getElementById('endTitle').textContent, endText: document.getElementById('endStats').innerText };
   const t = document.getElementById('title');
   if (t && !t.hidden && getComputedStyle(t).display !== 'none' && vis(document.getElementById('play'))) return { ...out, phase: 'title', sel: '#play' };
@@ -63,6 +67,7 @@ async function play(page, { kiosk = false } = {}) {
       if (!s.sealed.revealed) log.named.push(`${s.sealed.named}|${s.sealed.city}`);
       if (s.sealed.revealed && !log.opened) log.opened = { tick: s.tick, riding: s.sealed.riding, family: s.sealed.family, index: s.index };
     }
+    if (s.pend && !log.card) { log.card = s.pend.text; log.buttons = s.pend.opts; }
     if (s.phase === 'end') { log.end = s; break; }
     if (s.phase === 'sealedOffer') { log.offered = s.offerText; log.took = true; }
     if (s.phase === 'event') {

@@ -91,6 +91,9 @@ server.listen(0, '127.0.0.1', async () => {
       const tpm = await page.evaluate(() => { const c = window.__tm.flow.clock, sh = window.__tm.shift; return c && sh ? c.ticksPerDay / (sh.hours * 60) : 40; });
       const mins = firstDelivery == null ? null : firstDelivery / tpm;
       ok(`${label}: a stranger reaches the board, a catch and a get-off by tapping only (${[...phases].join(' ')})`, ['jobs', 'catch', 'getoff'].every(p => phases.has(p)));
+      // v2.72: a card waiting to be walked to used to block every card behind
+      // it, so someone who only taps CATCH never met one; a stranger meets a card
+      ok(`${label}: a stranger who never walks still meets an event card`, phases.has('event'));
       ok(`${label}: first delivery ${mins == null ? 'never' : `${mins.toFixed(1)} game min`} after taking a job (≤ ${FIRST_DELIVERY_MAX_MIN})`, mins != null && mins <= FIRST_DELIVERY_MAX_MIN);
       ok(`${label}: the shift ends by tapping what lights (${end ? `${end.title}, ${end.index}/${end.target}` : 'never ended'}, ${taps} taps)`, !!end && end.index >= 1);
       ok(`${label}: the catch hint never says "nothing to catch" over a lit CATCH`, !lies.length, lies.slice(0, 2).join(' | '));
