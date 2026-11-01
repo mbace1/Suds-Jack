@@ -7,10 +7,10 @@
 // things that work"). The arena is 1.x's, so every 1.x number ports as it is
 // instead of through a rescale. Axes: x across the screen (right +), y up,
 // z toward the bottom of the screen. The arena is centred on the origin.
-import { SPECIES } from './tuning/species/index.js?v=98';
-import WAVES from './tuning/waves.js?v=98';
-import PICKUPS from './tuning/pickups.js?v=98';
-import MUSIC from './tuning/music.js?v=98';
+import { SPECIES } from './tuning/species/index.js?v=100';
+import WAVES from './tuning/waves.js?v=100';
+import PICKUPS from './tuning/pickups.js?v=100';
+import MUSIC from './tuning/music.js?v=100';
 
 export const TUNING = {
   render: {
@@ -152,7 +152,9 @@ export const TUNING = {
       boiler:  { ambient: 0.58, grates: { h: 1.4, r: 2.8, k: 1.05, color: [1, 0.42, 0.1], flicker: [1.6, 0.3] },
                  rim: { w: 1.5, k: 0.75, glow: 0.03, color: [1, 0.42, 0.1], sides: 'all' }, sheen: { k: 0.3, shine: 20 } },
       // the sun on water and ice is a glint, not a haze: broad and white it read as fog (shine 14 / 30)
-      river:   { ambient: 1.0, sun: { k: 0.2, shine: 70, color: [1, 1, 0.95] } },
+      // v99: and the GLITTER the approved picture is covered in — the sun off the ripples (floor.js river hands
+      // their slope over): a lobe `shine` tight, `k` bright, never past `max`
+      river:   { ambient: 1.0, sun: { k: 0.2, shine: 70, color: [1, 1, 0.95], glitter: { shine: 600, k: 1.2, max: 0.75 } } },
       ice:     { ambient: 1.0, sun: { k: 0.24, shine: 90, color: [1, 1, 1] } },
       // a glowing source also shows on a floor too dark to light (`glow`: the share it adds as if the floor were
       // mid grey) — the deep's silt and the core's black are near black, and light that only multiplies left them so
@@ -235,14 +237,29 @@ export const TUNING = {
       // v95: in DAYLIGHT, to the owner's approved arena picture (the concept handoff): clear turquoise over sand and
       // pebbles, deep teal down the middle, foam at the banks; `flecks` the share of v78's white dashes kept (they
       // fought the bullets, and the picture has none)
-      river: { water: [0.03, 0.36, 0.36], waterHi: [0.36, 0.8, 0.74], flow: 1.6, bank: 0.78, pebble: [0.34, 0.29, 0.2], foam: [0.85, 0.95, 0.95], sky: [0.1, 0.16, 0.08], flecks: 0.12,
+      river: { water: [0.03, 0.36, 0.36], waterHi: [0.36, 0.8, 0.74], flow: 1.6, bank: 0.78, pebble: [0.34, 0.29, 0.2], foam: [0.85, 0.95, 0.95], sky: [0.1, 0.16, 0.08], flecks: 0,
                // v78: a river that RUNS — streaks `stretch`:1 along the flow at `scale`, lifting the water
                // `lift` toward waterHi; `deep` down the middle (`deepK` of the way), the bed showing
                // through the shallows from `shallow` of the half width to the bank, tinted `shallowTint`
-               run: { stretch: 11, scale: 1.2, lift: 0.35, shallow: 0.55, deep: [0.008, 0.19, 0.23], deepK: 0.6, shallowTint: 0.55 } },
+               run: { stretch: 11, scale: 1.2, lift: 0.35, shallow: 0.55, deep: [0.008, 0.19, 0.23], deepK: 0.6, shallowTint: 0.55 },
+               // v99 (to the approved picture): the shore wanders `amp` of the half width over `scale` cycles a metre;
+               // the bed is pebbles `cell` m across (`round` the crown's width, `tones` and the dark `joint`), the bank's
+               // drier (`dry`), with the caustic web (`net`, `caustic`) running over them `drift` of the current's
+               // pace; the ripples the sun glitters off: `scale` [along, across], `amp` slope, `calm` down the middle
+               shore: { amp: 0.1, scale: 0.06 },
+               bed: { cell: 0.42, gap: 0.16, crown: 0.4, tones: [[0.36, 0.31, 0.22], [0.3, 0.29, 0.27], [0.5, 0.46, 0.38]], joint: [0.07, 0.06, 0.045], dry: 1.12,
+                      drift: 0.25, caustic: [0.75, 1.0, 0.92], net: { scale: 0.42, sharp: 11, gain: 0.6, speed: 0.55 } },
+               glitter: { scale: [0.55, 2.2], amp: 0.32, calm: 0.7, with: 1.1 } },
       // v95: in DAYLIGHT, to the approved arena picture: pale blue ice with white cracks and frost — kept mid blue, not
       // white, so the white hero and the pale gels still stand out on it
       ice: { base: [0.26, 0.46, 0.66], deep: [0.11, 0.26, 0.48], crack: [0.92, 0.97, 1.0], lines: 0.45, scale: 0.35, frost: [0.85, 0.92, 1.0],
+             ledgeShadow: { depth: 0.35, soft: 0.25, cotMax: 2.2 },   // v100: the ledge's sun shadow on the ice (scenery.ice.ledge)
+             // v100: the FRACTURES — plates `cell[0]` m across with cracks `width[0]` m wide between them (half widths),
+             // finer cracks across the plates (`cell[1]`, `width[1]`, `minor` as bright), the field warped `warp` m over
+             // `warpScale` cycles a metre; frost `frost` m along the big cracks; each plate `plates` lighter or darker;
+             // stretches of the big cracks gone where a noise at `gapScale` is under `gaps`, the fine ones in `minorKeep` of the plates
+             fracture: { cell: [5.6, 1.5], width: [0.032, 0.015], minor: 0.5, warp: 0.7, warpScale: 0.4, frost: 0.35, plates: 0.07,
+                         gaps: [0.36, 0.5], gapScale: 0.28, minorKeep: 0.45 },
              // v72: frost in from the floor's edge over `edgeFrost` m, and air caught in the ice: in one
              // `bubble.cell` m cell in `keep` a bubble `r` m round; the dark past the snowfield
              edgeFrost: 1.6, edgeFrostGain: 0.22, bubble: { cell: 2.2, keep: 0.35, r: [0.12, 0.3], gain: 0.22 }, sky: [0.55, 0.65, 0.78] },
@@ -371,10 +388,19 @@ export const TUNING = {
     // v95: a snowfield by DAY, to the approved picture: white snow, pale crystals, blue shadows in the drifts
     ice: { ground: { out: 16, fade: 10, lo: [0.58, 0.66, 0.76], hi: [0.85, 0.9, 0.96], wind: 1.1, wisp: [0.95, 0.97, 1.0], wispGain: 0.12 },
            edge: { color: 0xbfe6ff, glow: 1.2, width: 0.1, height: 0.04 },
-           crystal: { every: 4.2, out: [2.0, 5.0], n: [3, 6], h: [1.6, 3.6], lean: [0.25, 0.7], spread: 0.6, thick: [0.12, 0.2],
+           // v100 (the approved picture's banks): the LEDGE of ice round the floor, never along the near side —
+           // blocks `len` m along, `deep` m back, `h` m tall, `gap` m off the floor's edge, turned `tilt` rad at
+           // most; a lower step in front of some (`step`: how often, its height × the block's, its depth); the face
+           // from `foot` to `face` blue, streaked `melt`, its `lip` pale (`rim`), lit from inside at its foot
+           // (`glow`, `footGlow`), snow on top. Its sun shadow on the floor: TUNING.worlds.floor.ice.ledgeShadow.
+           // The crystals and rocks stand behind it now (their `out` past its depth)
+           ledge: { len: [1.1, 2.4], deep: [1.4, 2.4], h: [0.75, 1.35], gap: 0.06, tilt: 0.05, step: { chance: 0.3, h: 0.5, deep: 0.55 },
+                    foot: [0.03, 0.22, 0.5], face: [0.16, 0.56, 0.86], lip: [0.8, 0.94, 1.0], snow: [0.93, 0.96, 1.0], melt: 0.3, rim: 0.8,
+                    glow: [0.2, 0.62, 1.0], footGlow: 0.22, through: 0.16, rough: 0.55 },
+           crystal: { every: 4.2, out: [2.8, 5.8], n: [3, 6], h: [1.6, 3.6], lean: [0.25, 0.7], spread: 0.6, thick: [0.12, 0.2],
                       deep: [0.25, 0.5, 0.75], pale: [0.75, 0.88, 0.98], glow: [0.5, 0.8, 1.0], rim: 0.5, inner: 0.06 },
            drift: { chance: 0.75, len: [1.4, 2.6], w: 0.35, h: 0.55, lo: [0.62, 0.72, 0.84], hi: [0.94, 0.96, 1.0] },
-           rock: { every: 5.5, out: [1.6, 5.5], r: [0.4, 1.0], lo: [0.2, 0.22, 0.26], snow: [0.92, 0.95, 1.0] },
+           rock: { every: 5.5, out: [2.9, 6.4], r: [0.4, 1.0], lo: [0.2, 0.22, 0.26], snow: [0.92, 0.95, 1.0] },
            // v77: snow falling over the whole view
            motes: { n: 160, h: 7, vy: -0.5, sway: 0.5, wobble: 0.9, r: 0.03, gain: 0.8, color: [0.95, 0.97, 1.0], out: 10 } },
     // v72 (from the World 8 brief, art-ref/briefs/world-8-deep.md): THE DEEP. The

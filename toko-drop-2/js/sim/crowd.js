@@ -7,8 +7,8 @@
 // flock, solo hunters weave, and the whole wave rides one current. The crowd
 // solver runs after the bodies have moved: bodies keep a pad apart, and one
 // closing on you from behind another is held back and slid aside.
-import { TUNING } from '../tuning.js?v=98';
-import { press } from './press.js?v=98';
+import { TUNING } from '../tuning.js?v=100';
+import { press } from './press.js?v=100';
 
 const MV = TUNING.movement, C = TUNING.crowd;
 const ARCHS = ['stream', 'ring', 'pincer'];

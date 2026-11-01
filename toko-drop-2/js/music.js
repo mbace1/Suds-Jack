@@ -19,9 +19,9 @@
 // Every voice goes through the music's own bus into the sound's master, so
 // mute really mutes and OPTIONS' MUSIC scales the music alone. Nothing here
 // reads Math.random(): a song at a level plays the same notes every time.
-import { TUNING } from './tuning.js?v=98';
-import { wavBytes } from './intro/sfx.js?v=98';
-import { mult as heatMult, lull as heatLull } from './sim/heat.js?v=98';
+import { TUNING } from './tuning.js?v=100';
+import { wavBytes } from './intro/sfx.js?v=100';
+import { mult as heatMult, lull as heatLull } from './sim/heat.js?v=100';
 
 const M = TUNING.music;
 

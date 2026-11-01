@@ -7,8 +7,8 @@
 // Every number TUNING.scenery.ice; the floor's frost and bubbles are floor.js
 import * as THREE from 'three/webgpu';
 import { Fn, float, vec2, vec3, sin, abs, max, mix, smoothstep, length, clamp, positionWorld, positionGeometry, normalView, normalWorld } from 'three/tsl';
-import { GEL_TIME } from '../gel.js?v=98';
-import { noise, seeded, put, stations, groundPlane, edgeLine, stoneGeometry, motes } from '../kit.js?v=98';
+import { GEL_TIME } from '../gel.js?v=100';
+import { noise, seeded, put, stations, groundPlane, edgeLine, stoneGeometry, motes } from '../kit.js?v=100';
 
 const v3 = (a) => vec3(...a);
 
@@ -23,9 +23,53 @@ export function ice(sc, hx, hz) {
     const wisp = smoothstep(0.6, 0.92, noise(vec2(p.x.mul(0.22).sub(GEL_TIME.mul(G.wind)), p.y.mul(1.4)))).mul(noise(p.mul(0.4).add(GEL_TIME.mul(0.08))));
     col = col.add(v3(G.wisp).mul(wisp.mul(G.wispGain)));
     const dx = max(abs(p.x).sub(hx), 0), dz = max(abs(p.y).sub(hz), 0), far = clamp(length(vec2(dx, dz)).div(G.fade), 0, 1);
-    return col.mul(float(1).sub(far.mul(far).mul(0.94)));
+    // v100: into the day's haze (the world's sky), not into the dark: the night was taken off the ice in v95, and
+    // fading to black left a dark band across the top of a portrait view between the snowfield and the sky
+    return mix(col, v3(sc.T.worlds.floor.ice.sky), far.mul(far).mul(0.94));
   })());
   edgeLine(sc, hx, hz, I.edge);
+
+  // v100: the LEDGE — the approved picture's frozen river runs between raised banks of ice, cut straight down
+  // where they meet it. Blocks along the far side and both long sides (never the near side), each its own
+  // length, depth and height so the top steps, now and then a lower step in front; their face clear blue from
+  // its foot to a pale lip, streaked where melt ran down it and lit from inside at the foot; snow on top
+  const Lg = I.ledge;
+  if (Lg) {
+    const lr = seeded(100), rr = (a) => a[0] + lr() * (a[1] - a[0]), blocks = [];
+    // a run from s0 to s1 along a, set back along n (away from the floor) from the edge point o
+    const run = (ox, oz, ax, az, nx, nz, s0, s1) => {
+      for (let s = s0; s < s1 - 0.25;) {
+        const l = Math.min(rr(Lg.len), s1 - s), d = rr(Lg.deep), h = rr(Lg.h), mid = s + l / 2, ry = -Math.atan2(az, ax) + (lr() - 0.5) * Lg.tilt;
+        const at = (back, dd) => [ox + ax * mid + nx * (Lg.gap + back + dd / 2), oz + az * mid + nz * (Lg.gap + back + dd / 2)];
+        if (lr() < Lg.step.chance) {
+          const sd = Lg.step.deep;
+          blocks.push([...at(0, sd), l, sd, h * Lg.step.h, ry]);
+          blocks.push([...at(sd, d - sd), l, d - sd, h, ry]);
+        } else blocks.push([...at(0, d), l, d, h, ry]);
+        s += l;
+      }
+    };
+    const D = Lg.deep[1] + Lg.gap;   // the far run spans the corners, the sides start behind it
+    run(-hx - D, -hz, 1, 0, 0, -1, 0, 2 * (hx + D));
+    run(-hx, -hz, 0, 1, -1, 0, 0, 2 * hz);
+    run(hx, -hz, 0, 1, 1, 0, 0, 2 * hz);
+    const lm = new THREE.MeshStandardNodeMaterial({ roughness: Lg.rough, metalness: 0 });   // glossy, it mirrored the pale sky and read grey
+    lm.colorNode = Fn(() => {
+      const p = positionWorld, hgt = positionGeometry.y, top = smoothstep(0.55, 0.85, normalWorld.y);
+      const melt = noise(vec2(p.x.add(p.z).mul(5.3), p.y.mul(0.9))).mul(Lg.melt).add(1 - Lg.melt * 0.5);
+      const face = mix(v3(Lg.foot), v3(Lg.face), smoothstep(0, 0.75, hgt)).mul(melt);
+      const lip = smoothstep(0.84, 1, hgt).mul(float(1).sub(top)).mul(Lg.rim);
+      const snow = v3(Lg.snow).mul(noise(p.xz.mul(3.1)).mul(0.08).add(0.94));
+      return mix(mix(face, v3(Lg.lip), lip), snow, top);
+    })();
+    // the face is lit from inside: daylight through the ice (`through`, all up it) and glowing at its foot (`footGlow`)
+    lm.emissiveNode = Fn(() => {
+      const hgt = positionGeometry.y, side = float(1).sub(smoothstep(0.55, 0.85, normalWorld.y));
+      return v3(Lg.glow).mul(float(1).sub(smoothstep(0, 0.45, hgt)).mul(Lg.footGlow).add(Lg.through)).mul(side);
+    })();
+    const bm = sc._add(new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1).translate(0, 0.5, 0), lm, blocks.length));
+    blocks.forEach(([x, z, l, d, h, ry], i) => put(bm, i, x, -0.02, z, l, h + 0.02, d, 0, ry, 0));
+  }
 
   // v77: snow falling over the whole view
   motes(sc, [[0, 0, 2 * (hx + I.motes.out), 2 * (hz + I.motes.out), 0]], I.motes);

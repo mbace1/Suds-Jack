@@ -19,85 +19,12 @@
     Never `--no-verify`.
 -->
 
-## v98 — 2026-11-01
-**The cistern's light through the roof: shafts falling onto a warm patch of daylight, dust turning in them**
-- The brightest thing in the owner's approved world 4 picture is the light coming through the roof in shafts and landing on the floor; the game had the shaft's pool only as a broad cyan key over the whole floor, and nothing falling. Now six shafts fall from an opening in the roof onto the floor's far-left (TUNING.scenery.cistern.rays), FANNING as they fall — their tops gathered at the opening, their feet spread across the pool — because light through a hole spreads: the first try had them widening upward and they read as searchlights shining up off the floor. Each is seen as a volume (brightest where the eye looks through most of it), fading in from the floor and out into the roof, breathing as the sky over the roof moves, with dust turning in boxes stacked up each one so it stays in its light.
-- Where they land, a warm patch of daylight on the floor (a second light in TUNING.worlds.lit.cistern, warm because the picture's is: its pool reads +72/+65/+46 over the floor round it, pale warm white on a teal room), and the caustic web gathers there. It has no sheen of its own — that low and that near, a glint is the white fog blob v93 took out.
-- The smoke's world 3 goo check, flaky since v93 (it read a dozen texels, then none, where the gel died) was not slowness, as v93–v97 took it to be: WebGL reads a target's rows from the bottom and WebGPU from the top, and the film's probe counted from the top on both, so on WebGL it read the MIRROR of where the gel died across the middle row — nothing when the gel died 3–5 m off the middle (0 texels against 513–641 on the mirror, eight runs), something only when it died near it. The probe counts from the bottom on WebGL now (js/render/goo.js), and both backends read the same 650-odd texels. It is a test reader; the game's film was always drawn in the right place.
-- Cache tokens `?v=97` → `?v=98`; HUD label → `2.0 · v98`
-
----
-
-## v97 — 2026-11-01
-**The cistern to its approved picture: clear water over pale slabs, and a web of caustic light on them**
-- The owner's approved arena picture for world 4 is clear shallow water over big pale slabs with a bright web of caustic light on them, under a roof shaft, its columns at the back. The floor was dark water with contour squiggles over everything and a square plinth with a cut column every 8 m. Now the slabs show pale through clearer, lighter teal water (the water's depth 0.6 → 0.42), the caustics are a NETWORK — the classic water caustic, four warps of sines whose lines fall where the field crosses zero — thin and slowly moving, brightest in the roof shaft's pool and at `inPool` of that elsewhere (TUNING.worlds.floor.cistern.net), and the stumps are gone from the pool (`plinthK` 0: the picture's columns stand at the back). The drip rings stay.
-- The smoke's harness, found running v93–v96: the film check's wait for frames is capped at 9 s (an iPad-sized frame under SwiftShader takes seconds, and the call has 60 — it stalled the iPad scenario), and the squash check holds its two gels against the hero through every step (world 9 cycles every world's rule, and a current carried one off him).
-- Cache tokens `?v=96` → `?v=97`; HUD label → `2.0 · v97`
-
----
-
-## v96 — 2026-11-01
-**The hero's eyes from the owner's style sheet: a big highlight above, a small dot below**
-- The style sheet on the concept-handoff branch (STYLE_INSTRUCTIONS, 3: HERO EYES; "hero eyes more defined going forward") draws them as tall black ovals with a big white highlight in their upper part and a small white dot lower right. The ovals were already that shape; the single small glint is now the big oval highlight (TUNING.heroLook.eye.hi) and the dot is added under it (`dot`), both kept inside the black from the angles the game sees him at.
-- Cache tokens `?v=95` → `?v=96`; HUD label → `2.0 · v96`
-
----
-
-## v95 — 2026-11-01
-**The river and the ice in daylight, to the owner's approved pictures (the concept handoff)**
-- The approved arena pictures for worlds 6 and 7 are bright day; the game had them at dusk and at night (their briefs said so, and the approved pictures win). THE RIVER: clear turquoise down a deep teal middle, the sand and pebbles showing through the shallows, foam at the banks only — v78's white flecks kept at an eighth (they fought the bullets, and the picture has none) — on banks of sand, pebbles, green reeds and grass, the lily pads green with pale flowers, the logs and piles sun-bleached, and dandelion fluff drifting where the fireflies were (by day nothing glows). THE ICE: pale blue with white cracks and frost creeping in from the edge, kept mid blue rather than white so the white hero and the pale gels still stand out on it, in a white snowfield with pale crystals and blue shadows in the drifts, under a bright cold sun. Both worlds' light rigs moved to day (a high sun, a sky ambient), their sun glints narrowed, and the campaign rooms that wear these looks take the same daylight.
-- Still to come from the pictures: the river's sparkle and visible shallows at the bank, the ice's raised ledges.
-- Cache tokens `?v=94` → `?v=95`; HUD label → `2.0 · v95`
-
----
-
-## v94 — 2026-11-01
-**LENS: TILT-SHIFT in OPTIONS — the run as a miniature, sharp where you play (owner: "look into the tilt-shift look, detailed central area, maybe it works with small objects too if there are enough details")**
-- A miniature is read by its depth of field: a lens close to something small holds only a thin slice of it sharp. OPTIONS → LENS (beside STYLE), kept (`toko2.lens`); `?lens=tilt` for a link; the HUD label says ` · tilt`. The scene is drawn into a pass whose target carries mipmaps (as v79's glow did: the vendored three carries no depth-of-field addon) and each pixel is read back bicubically at the mip level its circle of confusion asks for — a thin lens's |z − f| / z, f the HERO's depth, so what you play stays in the sharp slice — sharp inside `band`, opening over `ramp`; nearer than the focus it softens at half the rate (the near side is where the next threat comes from: at full rate a gate at the bottom of the screen was a smear); and a little more saturation, the toy colours a miniature photograph shows (TUNING.lens).
-- It works with the small things because they have the detail to carry it: the curb's seams and the lawn's tufts go soft past the far edge while the jelly, its caustics and the cracks under it stay crisp. A first, narrower band read more strongly as a model and cost readability at the top and bottom of the screen; the shipped one keeps the whole play area sharp and softens the surround (scratchpad v94/ holds both).
-- It costs the scene drawn into a target, its mipmaps and a full-screen pass: under SwiftShader a frame took about 15–25% longer. Off unless asked for. The smoke plays a run through it (`lens-tilt`).
-- Cache tokens `?v=93` → `?v=94`; HUD label → `2.0 · v94`
-
----
-
-## v93 — 2026-11-01
-**The worlds' own light: each floor lit by what stands in it, and every shadow thrown by the sun (owner: "better lights. Actual things that make sense, not just some random stuff")**
-- The target came from GitHub: the branch art/toko-drop-2-0-concept-handoff holds the owner's approved module sheets for worlds 2–8 and complete-arena pictures for worlds 4–8, and those pictures are read by their light — the boiler's deck by its fire, the cistern by its roof shaft, the deep by what lives there. docs/ENVIRONMENTS.md names each world's faults against them and the plan.
-- The floors stay pictures (the matte rule), so each world's light is worked out in its floor's own shader from the sources that stand there (TUNING.worlds.lit, render/floor.js worldLight): the light falling on a point multiplies its picture (Lambert on a flat floor, falling off with distance), a floor that is wet stone, water or steel mirrors its lights (Blinn on a flat floor), and a glowing source shows even on near-black silt. The sewer's sunlight through its street grates lights the flagstones round each shaft and the rest sits darker; the fire under every boiler grate lights the plates round it, breathing with it, and the deck's seam glows along its edge; the cistern's roof shaft lays a soft pool on the far-left water and its lamps warm the back; the deep's living things throw green pools and its edge glows blue; the core's neon lights the floor at its rim. The river and the ice keep a narrow sun glint only: their approved pictures are bright daylight, and that is a floor-art job, next.
-- Every body's shadow is the one the world's sun throws: an ellipse away from the sun, 1/sin θ long, starting under the body (straight overhead it is the disc it was). The driveway's curbs throw their sun shadows onto the slab and the lawn (render/sun.js), its sun stands lower on the near left, and the slab is a stop darker and warmer.
-- The jelly in the goo film scatters the world's light rather than its own, so a pool in a dark corner is dark.
-- Measured: the nine worlds shot before and after; test/view.mjs on the sun's shadow (overhead: the disc; 38° up from the near left: 1/sin θ long, its middle on from the foot, and back). The smoke's film check now lets the film spread over real frames before reading it: the film is stepped by frames, not by the sim, and world 3 under WebGL 2 read 12 texels without them and 199 with.
-- Cache tokens `?v=92` → `?v=93`; HUD label → `2.0 · v93`
-
----
-
-## v92 — 2026-10-31
-**STYLE: PHYSICAL, CEL-SHADED or WATERCOLOR (owner: "Do you have the 3 visual options, watercolor, cell shaded, physical 3d?"; "Test the 'splatter' in multiple styles, as now it's the most washed out watercolor look")**
-- OPTIONS → STYLE, kept (`toko2.style`); `?style=cel|watercolor` for a link. PHYSICAL is the game as it was. The two painted looks are drawn from the same bodies, the same displacement and the same goo sims (js/render/style.js): a style changes how a thing is painted, never what it does, so every number the smoke reads is the same in every style. **CEL-SHADED**: three flat tones cut at the terminator, a hard highlight dot, an ink line where a body turns away; the film a flat wash with a crisp contour and an ink band, the drops two tones and a rim. **WATERCOLOR**: pigment (the colour deepened), a soft, part-banded shade, DARK AT THE EDGES where the wash pools — the mark of the medium, and what the washed-out look lacked — grained, over a little paper; the film pools dark at its border, bleeds a little past it and dries to a ring. Tones are factors on the body's own colour (TUNING.style), so a species' colour survives the switch as it survives any light.
-- A gel body is built in its style (gelMaterial `style`): a stylised body paints itself with a fragmentNode, skipping the physical lighting and the transmission pass — cheaper than PHYSICAL, not dearer — so the switch rebuilds the views, the hero, the chunks and the strands (actors.setStyle, as the GELS switch does) and runs the title's warm-up again, so the new shaders compile on the title (v74's rule). The floor's film, the wall's and the drops read the style live. Species whose looks build their own materials (the boss auras, CURBKING, MAW) and the SDF gels keep the physical paint.
-- Measured: a contact sheet of the splatter in each style (scratchpad v92/), the smoke's style-cel and style-watercolor scenarios (the ordinary run, its kill and its film under each paint), test/view.mjs on the materials and the switch.
-- The smoke's film check counts the wall's goo with the floor's: since v81 a gel that dies at the rail throws most of its goo up the wall, and world 3 once read 7 floor texels against 684 on the wall; and its FROM WORLD check knows that one profile serves every scenario, so under a pinned `?world=` the from-key may already hold an earlier run's score.
-- Cache tokens `?v=91` → `?v=92`; HUD label → `2.0 · v92`
-
----
-
-## v91 — 2026-10-31
-**Flick to dash at 1.x parity (owner: "get flick to dash to 1.x parity")**
-- 1.x dashed on every lift of the aim stick: 4.77 u at 26 u/s, eleven steps, whatever the thumb did before it left the glass. v18 made the dash a FLICK (owner, 2026-10-23: no dash on a plain let-go), and its reader asked the thumb to be still moving AT the lift, above a release speed — but a thumb lands its flick, slowing to a stop before it leaves the glass, and at 60 Hz not one decelerating stroke in the gesture set dashed, however briefly it had stopped. And the dash it bought ran 2.4–11 u at 18–46 u/s, so an ordinary 7 mm flick was 4.1 u at 18 u/s: shorter and slower than the dash a 1.x thumb knew.
-- js/flick.js finds the STROKE first — a run of samples faster than `strokeFloor`, one general direction, long and fast enough somewhere — behind whatever landing followed it, and the stroke counts while the landing was shorter than `landMs` (160 ms). A thumb at rest for longer, a slow aim sweep and a 2 mm aim correction are still the plain let-go the owner asked to keep as none. `stopMs` and `releaseFloor` are gone; `peakFloor` 5 → 3, `lengthFloor` 0.3 → 0.25, `strokeFloor` 2 → 1.5 (TUNING.input.flick).
-- The lightest flick is 1.x's own dash — hero.flick `d` 2.4 → 4.77 u, `v` 18 → 26 u/s, and the length ramp starts at 0.75 of the stick, so an ordinary 7 mm flick buys exactly 4.77 u at 26 u/s in eleven steps and a longer, faster one still goes further (to 11 u) and faster (to 46 u/s). The CUT's slowest flick now cuts 1.x's two, as the button does.
-- Measured two ways against the physical gesture set (scratchpad dashlab/gestures.mjs, plus decelerating strokes): in bare node at 60 and 120 Hz, and through real CDP touch events at 60 Hz. Every flick family dashes — 4 mm in 60 ms, 7 mm in 160 ms, 7 mm then stopped 60–80 ms, 24 mm in 80 ms (11 u at 46 u/s) — and the tap, the resting thumb (604 ms; a flick rested 250 ms), the slow sweep and the nudge do not. test/hero.mjs: a throw stopped 80 ms before the lift dashes, one rested 300 ms does not.
-- The smoke's v50 title-geometry checks read the v89 stack now (ARCADE above the HARD switch above CAMPAIGN, MENU below).
-- Cache tokens `?v=90` → `?v=91`; HUD label → `2.0 · v91`
-
----
-
-## v90 — 2026-10-31
-**The squeeze: a body pressed from both sides squashes (v82 summed the pushes as one vector, and opposite pushes cancelled)**
-- v82 read what pressed on a body as one vector, so a gel pressed from both sides — the middle of every crowd, the hero with a gel either side — read as unpressed and stood round while its neighbours flattened. The sim keeps the pushes three ways now (js/sim/press.js): the vector (the direction), the total (never cancels) and a folded axis (two opposite pushes make an axis, not nothing). The view gives the side facing the push the vector's share plus the balance and the far side the balance alone, so one body against you flattens one side and two either side flatten both; the gel shader cuts the far plane too (`contact` is a vec4: direction, near depth, far depth; the SDF look follows), and the smoke's squash check reads both sides.
-- Found by the smoke: under WebGL 2 the hero with a gel either side read 0.005 of squash against the gels' 0.42 each. test/sim.mjs: a squeezed hero has next to no net press, a total and an axis; press() adds every push and folds the opposite ones.
-- The smoke's FROM WORLD check (v85) expects the URL's `?world=` to win where a scenario pins a world — that is what the parameter is for — and tests the title's setting in the scenarios that pin none; it had asked a run pinned to world 2 to start at 3.
-- Cache tokens `?v=89` → `?v=90`; HUD label → `2.0 · v90`
+## v100 — 2026-11-01
+**The ice to its approved picture: fractured, between banks of ice raised round the floor and cut straight down at it — and the snowfield into the day's haze**
+- The owner's approved world 7 picture is a frozen river sunk between raised banks of ice: snow on top, a cut face of clear cyan ice where they meet the river, stepping as the bank wanders, crystals standing back on it. The ice floor (v95) had the river's colours but nothing raised round it: the crystals and rocks stood on a flat snowfield level with the play. Now a LEDGE of ice blocks stands along the far side and both long sides (TUNING.scenery.ice.ledge; never along the near side, as every world's set), each block its own length, depth and height so the top steps, a lower step in front of some; its face cyan from a deep foot to a pale lip, streaked where melt ran down it and lit from inside (daylight through the ice, brighter at the foot), snow on top. The crystals and rocks stand behind it now. Its sun shadow falls on the ice where the sun stands behind it (TUNING.worlds.floor.ice.ledgeShadow, as the driveway curb's).
+- The ice itself is FRACTURED now, as the picture's is: plates with long straight cracks between them, finer cracks crazing some of the plates, clear ice between (TUNING.worlds.floor.ice.fracture). v72's cracks were the contours of a noise — wavy loops that read as squiggles. A cellular field read as the difference of its nearest two distances is zero on the line between two points (the river's pebbles read the same field as a ratio: one helper), warped so no crack runs ruler-straight. A first cut closed every plate and crazed every plate and read as a crackle glaze; stretches of the big cracks fade out now and the fine ones keep to some plates. The cracks stay a texture under the fight (v48), as bright as before.
+- Two things the first renders showed: a glossy face mirrored the pale sky and read as grey stone (rougher now, and lit from inside), and too low a ledge showed the play camera only its top. And the snowfield faded to BLACK past the set — the night v95 took off the ice — which drew a dark band across the top of a portrait view between the snow and the sky; it fades into the day's haze (the world's sky) now.
+- Cache tokens `?v=99` → `?v=100`; HUD label → `2.0 · v100`
 
 ---
 
@@ -105,6 +32,16 @@
 
 One line per version; the full entries are in git history (`git log -p VERSIONS.md`).
 
+- **v99** (2026-11-01) — The river to its approved picture: a pebble bed in the shallows with the caustic web on it, the sun glittering off the ripples, a shore that wanders
+- **v98** (2026-11-01) — The cistern's light through the roof: shafts falling onto a warm patch of daylight, dust turning in them
+- **v97** (2026-11-01) — The cistern to its approved picture: clear water over pale slabs, and a web of caustic light on them
+- **v96** (2026-11-01) — The hero's eyes from the owner's style sheet: a big highlight above, a small dot below
+- **v95** (2026-11-01) — The river and the ice in daylight, to the owner's approved pictures (the concept handoff)
+- **v94** (2026-11-01) — LENS: TILT-SHIFT in OPTIONS — the run as a miniature, sharp where you play (owner: "look into the tilt-shift look, detailed central area, maybe it works with small objects too if there are enough details")
+- **v93** (2026-11-01) — The worlds' own light: each floor lit by what stands in it, and every shadow thrown by the sun (owner: "better lights. Actual things that make sense, not just some random stuff")
+- **v92** (2026-10-31) — STYLE: PHYSICAL, CEL-SHADED or WATERCOLOR (owner: "Do you have the 3 visual options, watercolor, cell shaded, physical 3d?"; "Test the 'splatter' in multiple styles, as now it's the most washed out watercolor look")
+- **v91** (2026-10-31) — Flick to dash at 1.x parity (owner: "get flick to dash to 1.x parity")
+- **v90** (2026-10-31) — The squeeze: a body pressed from both sides squashes (v82 summed the pushes as one vector, and opposite pushes cancelled)
 - **v89** (2026-10-31) — The title: the icon's logo, and ARCADE, the HARD switch and CAMPAIGN in a stack
 - **v88** (2026-10-31) — The glow is out
 - **v87** (2026-10-31) — RECORDS: one page in OPTIONS with your bests, your campaigns and your last runs

@@ -8,8 +8,8 @@
 // side. Every number TUNING.scenery.river; the water's own TUNING.worlds.floor.river
 import * as THREE from 'three/webgpu';
 import { Fn, float, vec2, vec3, fract, sin, abs, max, mix, smoothstep, length, atan, uv, clamp, positionWorld, positionGeometry, normalGeometry, normalWorld } from 'three/tsl';
-import { GEL_TIME } from '../gel.js?v=98';
-import { noise, hash, seeded, put, groundPlane, edgeLine, stoneGeometry, bladeClump, lilyPads, DRIFT, motes } from '../kit.js?v=98';
+import { GEL_TIME } from '../gel.js?v=100';
+import { noise, hash, seeded, put, groundPlane, edgeLine, stoneGeometry, bladeClump, lilyPads, DRIFT, motes } from '../kit.js?v=100';
 
 const v3 = (a) => vec3(...a);
 
@@ -31,7 +31,9 @@ export function river(sc, hx, hz) {
     const lp = lilyPads(p.sub(DRIFT), Pd.cell, Pd.keep);
     water = mix(water, mix(v3(Pd.lo), v3(Pd.hi), lp.y), lp.x).add(v3(Pd.flower).mul(lp.z));
     const peb = v3(F.pebble).mul(noise(p.mul(2.8)).mul(0.5).add(noise(p.mul(7.1)).mul(0.3)).add(0.45));
-    const inRiver = smoothstep(Wd + 0.05, Wd - 0.05, ac), inWater = smoothstep(wet + 0.15, wet - 0.15, ac);
+    // v99: the shore wanders as the floor's does (floor.js river), so the two meet at the floor's ends
+    const wob = F.shore ? noise(vec2(a.mul(F.shore.scale), 3.7)).sub(0.5).mul(2 * F.shore.amp) : float(0), wetAt = wob.add(F.bank).mul(Wd);
+    const inRiver = smoothstep(Wd + 0.05, Wd - 0.05, ac), inWater = smoothstep(wetAt.add(0.15), wetAt.sub(0.15), ac);
     const grass = mix(v3(G.grassLo), v3(G.grassHi), noise(p.mul(1.3)).mul(0.6).add(noise(p.mul(4.7)).mul(0.4)));
     const bank = mix(grass, v3(G.mud).mul(noise(p.mul(3.3)).mul(0.4).add(0.8)), smoothstep(Wd + G.mudW, Wd, ac));
     const col = mix(bank, mix(peb, water, inWater), inRiver);
