@@ -45,7 +45,11 @@ server.listen(0, '127.0.0.1', async () => {
     ok('a pinned shift takes it: the bag holds 6, a drop of 100 pays 150', pk.cap === 6 && pk.drop === 150, JSON.stringify(pk));
 
     // ── in from the daily ────────────────────────────────────────────────
-    await boot('');
+    // v2.73: the week is NIGHT's reward (the ladder first), so a player who
+    // reaches it has cleared the runs; the daily is ?daily
+    await boot('?daily');
+    await page.evaluate(() => localStorage.setItem('tokoMoveRuns', JSON.stringify({ easy: { done: true }, medium: { done: true }, hard: { done: true }, night: { done: true } })));
+    await boot('?daily');
     await page.evaluate(() => localStorage.setItem('tokoMoveRegulars', JSON.stringify({ kiosk: 5, bakery: 4 })));
     const link = await page.locator('#weekLink');
     ok('the daily\'s title card offers the week', await link.isVisible() && /WEEK/.test(await link.textContent()), await link.textContent());

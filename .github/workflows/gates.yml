@@ -369,8 +369,8 @@ jobs:
       - name: the skins — day inks on paper, cyan kept for the courier, every key on every skin
         run: node toko-move/test/skin.mjs
 
-      - name: the mutators — the table against the bible, each lever, the halt, the deck
-        run: node toko-move/test/mutators.mjs
+      - name: the runs — the ladder, what opens what, the stars, the save, the levers
+        run: node toko-move/test/runs.mjs
 
       - name: the sealed parcel — which offer, the notebook, its store, the Finnish
         run: node toko-move/test/sealed.mjs
@@ -496,8 +496,8 @@ jobs:
       - name: a stranger who only taps what lights finishes a shift — and is never told two things at once
         run: NODE_PATH=$(npm root -g) node toko-move/test/stranger.cjs
 
-      - name: every mutator chosen on the title card and played out by tapping
-        run: NODE_PATH=$(npm root -g) node toko-move/test/mutators.cjs
+      - name: the ladder — EASY played out by tapping opens MEDIUM; HARD, NIGHT and what clearing NIGHT opens
+        run: NODE_PATH=$(npm root -g) node toko-move/test/runs.cjs
 
       - name: the sealed parcel taken, ridden to and written in the notebook, by tapping
         run: NODE_PATH=$(npm root -g) node toko-move/test/sealed.cjs

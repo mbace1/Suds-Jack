@@ -148,7 +148,7 @@ server.listen(0, '127.0.0.1', async () => {
   const WALK = process.env.WALK || 'smart';   // 'no' reproduces every number printed before v2.42
   // `shift` and `day` on a policy override both (v2.45): the dailies play the
   // real date seeds with their DRAWN day, which is what a player meets.
-  const boot = async (policy = {}) => { await page.goto(`${base}/toko-move/?shift=${policy.shift ?? policy.seed ?? 1}&day=${policy.day ?? DAY}${policy.kit?.length ? `&kit=${policy.kit.join(',')}` : ''}${policy.weather ? `&weather=${policy.weather}` : ''}${policy.rush ? `&rush=${policy.rush}` : ''}`, { waitUntil: 'load' });
+  const boot = async (policy = {}) => { await page.goto(`${base}/toko-move/?shift=${policy.shift ?? policy.seed ?? 1}&day=${policy.day ?? DAY}${policy.run ? `&run=${policy.run}` : ''}${policy.kit?.length ? `&kit=${policy.kit.join(',')}` : ''}${policy.weather ? `&weather=${policy.weather}` : ''}${policy.rush ? `&rush=${policy.rush}` : ''}`, { waitUntil: 'load' });
     await page.waitForFunction(() => window.__tm?.mobility && window.__tm?.liveNetwork && globalThis.__tmRouteChoiceCore, null, { timeout: 30000 });
     if (FLEET) await page.evaluate(async ({ FLEET, token }) => {
       const { LiveNetwork } = await import(`./js/live-network.js?v=${token}`);
@@ -176,6 +176,35 @@ server.listen(0, '127.0.0.1', async () => {
   // where the cheapest job is the wrong one to take.
   const ON_SHIFT = process.env.ON_SHIFT ? Number(process.env.ON_SHIFT) : null;
   const run = async (policy, label) => { if (ON_SHIFT && policy.shift == null) policy = { ...policy, shift: ON_SHIFT, day: 'draw' }; await boot(policy); const r = await playShift(page, policy); results.push({ label, policy, ...r }); return r; };
+  // THE RUNS (v2.73, runs.js). `--runs=N` plays N fresh shifts of each run —
+  // EASY, MEDIUM, HARD, NIGHT — with a sensible player and a naive one, on the
+  // run's own rules (its city day and weather drawn where the run draws them),
+  // every run opened in the save first so the bot is never sent back to EASY by
+  // a lock. Prints how often each run is COMPLETED (every job delivered), how
+  // often on time, and the spread of completed scores the par is set from.
+  const RUNS_N = Number((process.argv.find(a => a.startsWith('--runs=')) || '').split('=')[1] || 0);
+  if (RUNS_N) {
+    await page.goto(`${base}/toko-move/js/runs.js`);
+    await page.evaluate(() => localStorage.setItem('tokoMoveRuns', JSON.stringify({ easy: { done: true }, medium: { done: true }, hard: { done: true }, night: { done: true } })));
+    const players = [
+      { name: 'sensible', job: 'cheapest', plan: 'total', along: 'yes', walk: 'smart', events: 'skip' },
+      { name: 'naive', job: 'first', plan: 'soonest', walk: 'no', events: 'help' },
+    ];
+    const rows = [];
+    for (const id of ['easy', 'medium', 'hard', 'night']) for (const pl of players) {
+      const got = [];
+      for (let k = 1; k <= RUNS_N; k++) {
+        const r = await run({ ...pl, seed: k, shift: 100 + k * 37, day: 'draw', run: id }, `${id} ${pl.name} ${k}`);
+        const target = await page.evaluate(() => window.__tm.challenge.target);
+        got.push({ won: r.delivered >= target, delivered: r.delivered, target, late: r.late, score: r.score });
+      }
+      const won = got.filter(g => g.won), onTime = won.filter(g => !g.late), sc = won.map(g => g.score).sort((a, b) => a - b), q = f => sc.length ? sc[Math.min(sc.length - 1, Math.floor(f * sc.length))] : 0;
+      rows.push({ id, player: pl.name, won: won.length, onTime: onTime.length, n: got.length, p50: q(0.5), p70: q(0.7) });
+      console.log(`  ${id.padEnd(6)} ${pl.name.padEnd(8)} completed ${String(won.length).padStart(2)}/${got.length} · on time ${onTime.length} · completed scores p50 ${q(0.5)} p70 ${q(0.7)} · delivered ${got.map(g => g.delivered).join('')}`);
+    }
+    globalThis.__runRows = rows;
+    await browser.close(); server.close(); return;   // --runs measures the ladder and nothing else
+  }
   // THE DAILIES (v2.45). A daily is one board for everybody, so a daily a
   // sensible player cannot win is broken for everybody at once. This plays the
   // NEXT N calendar days on their real seeds and drawn city days with the

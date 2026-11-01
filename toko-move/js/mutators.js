@@ -1,56 +1,18 @@
-// Toko Move — MUTATORS (v2.70; toko-move/art/itch-bible/MUTATORS.md).
+// Toko Move — THE LEVERS A RUN TURNS (v2.70 as the mutators; v2.73 the runs).
 //
-// A mutator is a whole-run rule or skin over the real HSL board, and a run
-// wears ONE. The bible's own limits are kept here as the shape of the table:
-// a mutator never changes the verbs (wait, catch, ride, transfer, walk), never
-// adds a currency and never draws a route line — so every entry below is a
-// setting on a lever the game already has: the skin (skin.js), the start of the
-// clock, the headway every line is provisioned to (live-network.js), the rush
-// (rush.js), the weather (weather.js), a held line (events.js), and which mood
-// of card the director deals.
+// v2.70 shipped four mutators as chips on the title card; v2.73 folded them
+// into the ladder (runs.js — owner: "Easy, medium, hard and night runs"), so
+// Night is a run and the rush and the held line are Medium's and Hard's. What
+// stays here is the part both shapes share: each helper reads one field of a
+// run (`headway`, `rush`, `startHour`, `halt`, `moods`) and turns a lever the
+// game already had — the timetable (live-network.js), the rush (rush.js), the
+// clock, a held family (events.js) and the card deck. A run with no such field
+// leaves that lever exactly where it was, which is what keeps a classic shift
+// (a pinned ?shift=, the daily, the week) playing the game it always played.
 //
-// Itch v1 ships the four core mutators, available from the first run. The six
-// unlocks stay in the bible until there is a meta to unlock them with.
-//
-// Pure: no DOM, no clock — test/mutators.mjs holds it in bare node.
+// Pure: no DOM, no clock — test/runs.mjs holds it in bare node.
 
-// moods: a weight per card mood (events.js MOODS); 1 is the ordinary draw, a
-// mood missing from the table is 1. The bible's "up" is 2, its "down" is 0.5.
-export const MUTATORS = [
-  { id: 'night', name: 'NIGHT', glyph: '☾', blurb: 'The same city at 23:00, with fewer trams and the lines lit like neon.',
-    skin: 'night', startHour: 23, headway: 2, rush: 'off',
-    moods: { info: 2, notice: 2, opportunity: 0.5 } },
-  { id: 'disruption', name: 'DISRUPTION', glyph: '⊘', blurb: 'One line is halted, and the network routes around the hole.',
-    halt: { atMin: 10, recoverJobs: 2, minutes: [28, 44] },
-    moods: { warning: 2, notice: 2 } },
-  { id: 'rush', name: 'RUSH HOUR', glyph: '⇶', blurb: 'Everything runs often, everything is full, and everyone is in your way.',
-    headway: 0.6, rush: 'max',
-    moods: { warning: 2, notice: 2 } },
-  { id: 'snow', name: 'SNOW DAY', glyph: '❄', blurb: 'First snow: slower feet, slower trams, kinder people.',
-    skin: 'snow', weather: 'snow',
-    moods: { opportunity: 2, info: 2 } },
-];
-export const BY_ID = Object.fromEntries(MUTATORS.map(m => [m.id, m]));
-
-// Which mutator this visit wears. `?mutator=` names one; nothing else turns one
-// on. LIVE is the real city and brings its own (and a mutator that moved the
-// clock would contradict the clock on the wall); a WEEK is its own run with its
-// own five mornings. Unknown ids are no mutator, never an error.
-export function resolveMutator(params, { live = false, week = false } = {}) {
-  if (live || week) return null;
-  return BY_ID[params?.get?.('mutator')] || null;
-}
-
-// The run's shift: a mutator on today's address is today's CITY (the daily's
-// seed) but not the daily — the daily is the one result everybody compares, so
-// a run under a mutator is never recorded as it. A pinned or random shift
-// keeps its kind; the mutator rides along on it.
-export function mutateShift(info, mut) {
-  if (!mut || info?.kind !== 'daily') return info;
-  return { ...info, kind: 'mutator', mutator: mut.id };
-}
-
-// Headways a mutator provisions every line to (minutes, per mode).
+// Headways a run provisions every line to (minutes, per mode).
 export function headwayWith(mut, base) {
   if (!mut?.headway || mut.headway === 1) return base;
   const out = {}; for (const k of Object.keys(base)) out[k] = base[k] * mut.headway; return out;

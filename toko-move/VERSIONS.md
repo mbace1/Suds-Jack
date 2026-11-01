@@ -1,5 +1,82 @@
 # Toko Move — versions
 
+## v2.73 — 2026-11-01
+
+**THE LADDER: EASY, MEDIUM, HARD, NIGHT** (owner: *"make it a much more of a
+structured experience. Easy, medium, hard and night runs. Each unlocked after
+the easier is completed … redesign a lot of the basics around the new
+direction"*). Signed off in three answers: the ladder first and the rest after
+it; a **new shift every attempt**; a run is **completed by delivering every
+job**, with stars on top that gate nothing.
+
+The game is now four runs (`js/runs.js`). The bare address IS the ladder: a
+new player sees EASY open and three runs locked, and each locked row says
+what opens it. Every attempt is a fresh shift. Delivering every job completes
+the run (late is allowed and costs score) and opens the next. The end card
+gives **★** for done, **★★** for every job on time and **★★★** for on time at
+par, says what opened, and its loud button is **NEXT · MEDIUM**. Clearing
+NIGHT opens **the daily and the week**, which keep the classic rules; LIVE
+waits there as well.
+
+| run | jobs | the rules |
+|---|---|---|
+| EASY · First shift | 3 | a short board (the three cheapest jobs that fit, no hand-offs), deadlines ×1.5, plain parcels only, one kind card at a stop or aboard, clear sky, no rival, no sealed parcel, no held lines |
+| MEDIUM · A morning | 4 | the classic game: every parcel, the morning rush, the city day and weather drawn, the rival, the sealed parcel |
+| HARD · Rush hour, one line down | 5 | the rush at its peak, 0.6× headway, a tram family halted from ten minutes in, warning cards |
+| NIGHT · Last service | 5 | the night board from 23:00, twice the headway, deadlines ×0.9, night cards |
+
+**Measured, not guessed** (`node test/shifts.cjs --runs=12` — a new mode: twelve
+fresh shifts of each run, sensible and naive bots, completed sensible/naive):
+EASY 12/12 · 12/12, MEDIUM 12/12 · 10/12, HARD 12/12 · 6/12, NIGHT 12/12 ·
+5/12. A player who reads the board can clear the ladder; one who taps the
+first thing on it is stopped higher on each rung. Three first guesses were
+wrong and the measurement says why: MEDIUM at three jobs was flat against
+EASY (12/12 both), HARD's ×0.9 deadline left 3 of 12 on time (two stars a
+rumour), and NIGHT at four jobs was easier than HARD for the naive player.
+Par is about the sensible bot's 70th percentile of completed scores.
+
+**EASY had to be unlosable for someone who taps what lights**, and the bots
+could not see why it was not: the ladder gate's tapping player lost one fresh
+EASY shift 2/3. After every delivery the first thing on the board was a
+**hand-off** of unknown length (the board also listed one job that took most
+of the shift), and a player who takes the first thing listed took it. EASY
+now has a **short board** — the three cheapest jobs that fit, no hand-off —
+and its one card always happens at a stop or aboard, because on some shifts
+it was a walking card that a player who never walks never meets. Measured
+with the tapping player on ten fresh EASY shifts: 10/10 complete.
+
+**The basics that moved with it.**
+- **The mutator chips are gone** (v2.70's row): NIGHT is a run, and the rush
+  and the held line are HARD's. `mutators.js` keeps only the shared levers.
+- **Any tester parameter keeps the classic rules** (`?shift=`, `?daily`,
+  `?day=`, `?weather=`, `?rush=`, `?kit=`), so the gates written against them
+  still measure what they measured. `?shift=N&run=X` plays a run on a pinned
+  shift.
+- **The title card** carries the ladder beside START SHIFT, and the shift
+  label is not repeated above it. The goal line counts the run's jobs (*Five
+  deliveries before 00:15*).
+- **A run decides** the jobs (`targetOverride`), the parcels (`cargoPool`,
+  which also feeds the drops and hand-offs), the deadlines (through the same
+  `limit` the kit uses), and whether the rival, the sealed parcel, a city day
+  or a held line are in it at all.
+- **LIVE's link ignored `hidden`**: `#liveLink` is styled `display:block`, which
+  beats the attribute, so "OR LIVE" showed wherever it was meant to be hidden.
+  It now waits behind NIGHT with the daily and the week (`live.cjs` checks both
+  sides of that).
+- **A phone held sideways** is 390px tall, and four ladder rows pushed START
+  off it (`ship.cjs` S4 caught it): on a short screen the ladder is one row of
+  four names.
+
+Gates: `test/runs.mjs` (bare node: the table, what opens what, stars, a broken
+or forged save, which visit plays which run, and the levers the v2.70
+mutators' checks held) and `test/runs.cjs`, a browser gate: a new player's
+ladder; EASY played out by tapping only, ending complete and opening MEDIUM,
+with NEXT going there; a fresh shift every attempt; HARD's rush and held line;
+NIGHT's board and clock; what clearing NIGHT opens; and the Finnish. They
+replace `mutators.mjs` and `mutators.cjs`. `daily.cjs` and `week.cjs` now
+reach the daily at `?daily`. The stills add the ladder and the EASY-complete
+card; the store copy describes the four runs.
+
 ## v2.72 — 2026-11-01
 
 **A STRANGER MEETS THE CARDS, AND THE STORE PAGE SHOWS THE GAME IT SELLS**

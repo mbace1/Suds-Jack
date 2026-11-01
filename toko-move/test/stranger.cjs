@@ -32,8 +32,8 @@ const server = http.createServer((req, res) => {
 let pass = 0, fail = 0;
 const ok = (name, cond, extra = '') => { if (cond) { pass++; console.log(`  ok   ${name}`); } else { fail++; console.log(`  FAIL ${name}${extra ? ' — ' + extra : ''}`); } };
 
-// The default address (today's daily — what a stranger actually gets) and two
-// fixed shifts, so the gate does not depend on what day it is run.
+// The default address (since v2.73 the ladder: EASY on a fresh shift — what a
+// stranger actually gets) and two fixed classic shifts.
 const RUNS = ['', '?shift=1', '?shift=2'];
 const FIRST_DELIVERY_MAX_MIN = 20; // game minutes from START SHIFT
 
@@ -48,7 +48,7 @@ server.listen(0, '127.0.0.1', async () => {
       await page.goto(`${base}/toko-move/${q}`, { waitUntil: 'load' });
       await page.waitForFunction(() => window.__tm?.flow && !document.getElementById('play').disabled, null, { timeout: 30000 });
       await page.evaluate(() => window.__tm.flow.clock.setPaused(true));
-      const label = q || '(today)';
+      const label = q || '(the ladder)';
       let start = null, firstDelivery = null, taps = 0, lies = [], selfExits = [], phases = new Set(), end = null;
       let held = 0;  // see below: waiting for the panel to show what the game says is there
       for (let i = 0; i < 6000; i++) {

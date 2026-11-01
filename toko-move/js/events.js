@@ -16,7 +16,7 @@
 // one disruption a shift, and the ticks they can cost add to under a tenth of
 // the day, measured with test/shifts.cjs so a run of bad luck stays winnable.
 import {drawMasterBadge} from '../../toko/js/master.js';
-import {pickWeighted} from './mutators.js?v=1';
+import {pickWeighted} from './mutators.js?v=2';
 const hash=s=>{let h=2166136261;for(const c of String(s)){h^=c.charCodeAt(0);h=Math.imul(h,16777619);}return h>>>0;};
 
 // Costs are in TICKS (ten a second at ×1). 100 ticks is the owner's ten seconds.
@@ -72,16 +72,21 @@ export const HALTED={id:'halted',mood:'warning',glyph:'⛔',text:l=>`${l} is hal
 // v2.70: `moods` weights the deal by card mood (a mutator's bias, mutators.js)
 // and `halt` replaces the shift's chance disruption with a Disruption run's own
 // held family. With neither, the draw is the one it always was, card for card.
-export function drawSchedule(seed,ticksPerDay=3000,lines=[],encounters=null,moods=null,halt=null){const h=hash(`events:${seed}`),out=[];
- const n=Math.min(encounters||BUDGET.encounters,ENCOUNTERS.length),used=new Set;
- for(let i=0;i<n;i++){const k=(h>>>(i*4))&0xffff;let card=pickWeighted(ENCOUNTERS,k,moods);let guard=0;while(used.has(card.id)&&guard++<ENCOUNTERS.length)card=ENCOUNTERS[(k+guard)%ENCOUNTERS.length];used.add(card.id);
+// v2.73: `places` keeps the deck to cards that happen where the run's player
+// will be — EASY's one card is never a walking card, or someone who only
+// catches trams would meet none. Unset, the deck is every card, as it was.
+export function drawSchedule(seed,ticksPerDay=3000,lines=[],encounters=null,moods=null,halt=null,places=null){const h=hash(`events:${seed}`),out=[];
+ const deck=places?ENCOUNTERS.filter(c=>places.includes(c.where)):ENCOUNTERS;
+ const n=Math.min(encounters||BUDGET.encounters,deck.length),used=new Set;
+ for(let i=0;i<n;i++){const k=(h>>>(i*4))&0xffff;let card=pickWeighted(deck,k,moods);let guard=0;while(used.has(card.id)&&guard++<deck.length)card=deck[(k+guard)%deck.length];used.add(card.id);
   const at=Math.round(ticksPerDay*(0.12+0.24*i)+(k%400));out.push({kind:'encounter',card,at,job:i+1});}
  if(halt){out.push({kind:'disruption',card:{...HALTED,minutes:halt.minutes},line:halt.line,lines:halt.lines,at:halt.atTick,recoverJobs:halt.recoverJobs});}
  else if(BUDGET.disruptions&&lines.length){const k=(h>>>13)&0xffff,d=DISRUPTIONS[k%DISRUPTIONS.length],line=lines[(k>>3)%lines.length];out.push({kind:'disruption',card:d,line,at:Math.round(ticksPerDay*0.3+(k%(ticksPerDay*0.35)))});}
  return out.sort((a,b)=>a.at-b.at);}
 
 export class EventDirector{
- constructor(tm,seed=7,opts={}){this.tm=tm;this.seed=seed;this.goodwillFactor=opts.goodwill||1;const lines=(tm.transit?.layers||[]).filter(l=>l.visible).map(l=>l.name);this.queue=drawSchedule(seed,tm.flow.clock.ticksPerDay,lines,opts.encounters||null,opts.moods||null,opts.halt||null);this.pending=null;this.seen=[];this.busyUntil=0;this.holds=[];}
+ constructor(tm,seed=7,opts={}){this.tm=tm;this.seed=seed;this.goodwillFactor=opts.goodwill||1;const lines=(tm.transit?.layers||[]).filter(l=>l.visible).map(l=>l.name);this.queue=drawSchedule(seed,tm.flow.clock.ticksPerDay,lines,opts.encounters||null,opts.moods||null,opts.halt||null,opts.places||null);if(opts.disruptions===0)this.queue=this.queue.filter(e=>e.kind!=='disruption');   // a run with no held lines (EASY)
+  this.pending=null;this.seen=[];this.busyUntil=0;this.holds=[];}
  // Called every tick after mobility. A card fires at the first moment after its
  // scheduled tick that the courier is where the card says.
  step(){const tm=this.tm,ch=tm.challenge,tick=tm.flow.clock.tick;
