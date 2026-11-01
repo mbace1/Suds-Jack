@@ -50,7 +50,7 @@ export const stamp = (d) => `${d.getFullYear()}-${two(d.getMonth() + 1)}-${two(d
 export function entryFor(w, mode, lost, how, quit = false) {
   const G = how.letGos, fl = G ? [G.flick, G.near, G.release, G.tap] : null;
   const base = { v: VERSION, at: stamp(how.date), i: how.input?.[0] ?? '?', or: how.screen === 'portrait' ? 'p' : 'l',
-    ...(how.frames ? { f: how.frames } : {}), ...(how.device ? { dv: how.device } : {}), ...(fl?.some((n) => n > 0) ? { fl } : {}), ...(how.cont ? { c: how.cont } : {}) };   // c (v80): taken up at that world's door
+    ...(how.frames ? { f: how.frames } : {}), ...(how.device ? { dv: how.device } : {}), ...(fl?.some((n) => n > 0) ? { fl } : {}), ...(how.cont ? { c: how.cont } : {}), ...(how.from ? { w0: how.from } : {}) };   // c (v80): taken up at that world's door; w0 (v85): started at that world, its score kept apart
   const R = w.roomResult, h = w.room?.hard ? 1 : 0;
   if (R) return { k: 'r', id: R.id, h, g: R.grade, s: R.score, o: R.outcome, y: R.why ?? null, t: R.time, x: R.hits, kl: R.kills, ...base };
   if (w.room) return { k: 'r', id: w.room.id, h, g: null, s: w.score, o: 'quit', y: null, t: Math.round((w.dir?.t ?? w.time) * 10) / 10, x: w.hits || 0, kl: w.kills, ...base };

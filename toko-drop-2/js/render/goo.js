@@ -50,8 +50,9 @@ import {
   Fn, uniform, attribute, texture, uv, vec2, vec3, vec4, float, normalize, dot, length, max, min, clamp, pow, sqrt,
   mix, cameraViewMatrix, varying, select, positionGeometry, step, smoothstep, mrt, fwidth, dFdx, dFdy, exp, abs, normalLocal, cameraPosition, positionWorld,
 } from 'three/tsl';
-import { TUNING } from '../tuning.js?v=81';
-import { GooSim, BODY, STAMP, wallLen, WALL_N, WALL_T } from './goo-sim.js?v=81';
+import { TUNING } from '../tuning.js?v=92';
+import { GooSim, BODY, STAMP, wallLen, WALL_N, WALL_T } from './goo-sim.js?v=92';
+import { pickStyle, grainAt } from './style.js?v=92';
 
 const T = TUNING, G = T.goo;
 const MAX_BODIES = 256;
@@ -61,7 +62,7 @@ export class Goo {
     this.scene = scene;
     this.sim = new GooSim(G.cap, G);
     this.bodies = new Float32Array(MAX_BODIES * BODY); this.nb = 0;
-    this.hx = 19; this.hz = 11;
+    this.hx = 19; this.hz = 11; this.sim.setArena(19, 11);
     this.left = G.budget;        // drops this frame may still throw (a boss's death cannot stall a frame)
     this._buildDrops(G.cap);
     this.film = new Film(G.film);
@@ -72,7 +73,7 @@ export class Goo {
 
   get n() { return this.sim.n; }
 
-  setArena(hx, hz) { this.hx = hx; this.hz = hz; this.film.setArena(hx, hz); if (this.wall) { this.wall.setArena(hx, hz); this._fitWall(hx, hz); } }
+  setArena(hx, hz) { this.hx = hx; this.hz = hz; this.sim.setArena(hx, hz); this.film.setArena(hx, hz); if (this.wall) { this.wall.setArena(hx, hz); this._fitWall(hx, hz); } }
 
   // the title's SPLATTER switch: the strip draws nothing while the goo is off
   setOn(on) { if (this.strip) this.strip.visible = !!on; }
@@ -118,7 +119,24 @@ export class Goo {
       const dryCol = dHue.mul(K.dryTint);
       const a = wetA.add(dryK.mul(float(1).sub(wetA)));
       const col = wetCol.mul(wetA).add(dryCol.mul(dryK).mul(float(1).sub(wetA))).div(max(a, 1e-4));
-      return vec4(col, a);
+      // v92, the STYLE switch (render/style.js), as the floor's film has it (floor.js goo): CEL a flat wash with
+      // a crisp contour and an ink band, WATERCOLOR pigment pooling dark at its border, grained
+      const CF = T.style.cel.film, WF = T.style.watercolor.film;
+      const edgeHard = (v, at) => { const fw = fwidth(v).mul(0.3).add(1e-4); return smoothstep(float(at).sub(fw), float(at).add(fw), v); };
+      const celIn = edgeHard(h, K.edge), celBand = celIn.sub(edgeHard(h, K.edge * CF.inkBand)), celDeep = edgeHard(h, K.edge * CF.inner);
+      let celCol = hue.mul(CF.tone).mul(float(1).add(celDeep.mul(CF.innerLift)));
+      celCol = mix(celCol, celCol.mul(1 - CF.ink), celBand);
+      const celDryK = edgeHard(d, K.dryEdge).mul(K.dryAlpha), celA = celIn.add(celDryK.mul(float(1).sub(celIn)));
+      const celOut = vec4(celCol.mul(celIn).add(dHue.mul(K.dryTint * CF.dryTone).mul(celDryK).mul(float(1).sub(celIn))).div(max(celA, 1e-4)), celA);
+      const wIn = edgeOf(h, K.edge), wBleed = edgeOf(h, K.edge * WF.bleed);
+      const wRim = float(1).sub(smoothstep(float(K.edge), float(K.edge * WF.rimTo), h));
+      const wCol = hue.pow(vec3(WF.gamma)).mul(float(1).sub(wRim.mul(WF.rim))).mul(grainAt(st.mul(this.wDims), WF.grainScale, WF.grain));
+      const wWet = wIn.mul(WF.alpha).add(wBleed.sub(wIn).mul(WF.alpha * 0.5));
+      const dryRing = edgeOf(d, K.dryEdge).sub(edgeOf(d, K.dryEdge * 2.5));
+      const wDryK = edgeOf(d, K.dryEdge).mul(K.dryAlpha), wA = wWet.add(wDryK.mul(float(1).sub(wWet)));
+      const wDryCol = dHue.pow(vec3(WF.gamma)).mul(K.dryTint).mul(float(1).sub(dryRing.mul(WF.dryRim)));
+      const wcOut = vec4(wCol.mul(wWet).add(wDryCol.mul(wDryK).mul(float(1).sub(wWet))).div(max(wA, 1e-4)), wA);
+      return pickStyle(vec4(col, a), celOut, wcOut);
     })();
     mat.colorNode = out.rgb; mat.opacityNode = out.a;
     this.strip = new THREE.Mesh(geo, mat);
@@ -202,7 +220,8 @@ export class Goo {
   setBodies(w, alpha) {
     let k = 0;
     const b = this.bodies, h = w.hero, dt = T.sim.dt;
-    if (h.alive && !(h.dash > 0)) { b.set([h.px + (h.x - h.px) * alpha, h.pz + (h.z - h.pz) * alpha, T.hero.radius, T.hero.radius * 2, (h.x - h.px) / dt, (h.z - h.pz) / dt, -1, 2], 0); k++; }
+    // (v84: mid-dash he is still a body for the spray and the tracks — shape 3, which nothing rides)
+    if (h.alive) { b.set([h.px + (h.x - h.px) * alpha, h.pz + (h.z - h.pz) * alpha, T.hero.radius, T.hero.radius * 2, (h.x - h.px) / dt, (h.z - h.pz) / dt, -1, h.dash > 0 ? 3 : 2], 0); k++; }
     for (const g of w.gels) {
       if (k >= MAX_BODIES) break;
       if (!g.alive || (g.state === 'appear' && g.t < 0) || g.cloak > 0.5) continue;
@@ -238,6 +257,7 @@ export class Goo {
   pour(x, z, rad, vol, hex, dx = 1, dz = 0, len = 0) {
     const c = _c.setHex(hex);
     this.film.add(x, z, dx, dz, len, rad, vol, c.r, c.g, c.b);
+    this.sim.wetAdd(x, z, vol, c.r, c.g, c.b);   // v84: the wet map knows
   }
 
   // a body's worth of goo slumping where it stood: not one disc but a few
@@ -251,6 +271,7 @@ export class Goo {
       const a = Math.random() * Math.PI * 2, d = i === 0 ? 0 : rad * P.spread * Math.sqrt(Math.random()), share = w[i] / sum;
       this.film.add(x + Math.cos(a) * d, z + Math.sin(a) * d, 1, 0, 0, rad * (P.size[0] + (P.size[1] - P.size[0]) * Math.sqrt(share * n / 2)), vol * share, c.r, c.g, c.b);
     }
+    this.sim.wetAdd(x, z, vol, c.r, c.g, c.b);   // v84: the wet map knows
   }
 
   // the frame clock: the drops move, their stamps go to the film, the bodies'
@@ -328,7 +349,14 @@ function shadeDrop(col, N) {
   const wrap = clamp(dot(N, L).mul(0.5).add(0.5), 0, 1);
   const fres = pow(float(1).sub(clamp(dot(N, Vd), 0, 1)), float(2.5));
   const spec = pow(clamp(dot(N, H), 0, 1), float(D.gloss));
-  return col.mul(wrap.mul(D.diffuse).add(D.ambient)).add(mix(col, vec3(1), 0.6).mul(fres).mul(D.rim)).add(vec3(spec.mul(D.glint))).add(col.mul(D.glow));
+  const physical = col.mul(wrap.mul(D.diffuse).add(D.ambient)).add(mix(col, vec3(1), 0.6).mul(fres).mul(D.rim)).add(vec3(spec.mul(D.glint))).add(col.mul(D.glow));
+  // v92, the STYLE switch (render/style.js): CEL two flat tones and an ink rim, WATERCOLOR pigment dark at the edge
+  const CD = T.style.cel.drop, WD = T.style.watercolor.drop;
+  const celTone = mix(float(CD.shadow), float(1), step(float(CD.lit), wrap)), celInk = step(float(CD.inkAt), float(1).sub(clamp(dot(N, Vd), 0, 1)));
+  const cel = mix(col.mul(celTone), col.mul(celTone).mul(CD.ink), celInk);
+  const wEdge = pow(float(1).sub(clamp(dot(N, Vd), 0, 1)), float(WD.edgePow)), wPig = col.pow(vec3(T.style.watercolor.gamma));
+  const wc = mix(wPig.mul(mix(float(WD.shadow), float(1), wrap)), wPig.mul(WD.edgeDark), wEdge.mul(WD.edge));
+  return pickStyle(physical, cel, wc);
 }
 
 // ── the thin film ───────────────────────────────────────────────────────

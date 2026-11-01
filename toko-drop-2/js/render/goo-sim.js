@@ -20,6 +20,10 @@
 //         wall's height sticks where it struck and runs down the wall by the
 //         same law, streaking it as it goes (a WALL stamp a step), until it
 //         reaches the foot and slides on across the floor, or runs dry
+// And the bodies in the goo (v84): a coarse WET MAP of the floor, fed by every
+// stamp and pour, tells each body what it stands in — a fast body in a pool
+// SPRAYS drops out of its foot, and a foot that stood in goo lays TRACKS of
+// it once it is out (stamps, like a sliding drop's streak).
 // A floor impact decides between SPLASH (fast and fat: a crown of finer drops
 // and an elongated stain), BOUNCE (fast and fine: surface tension wins, a
 // little mark and off again) and SLIDE (everything else). The stain of an
@@ -36,7 +40,7 @@
 // Every number is TUNING.goo.
 
 export const STAMP = 10;   // x, z, dx, dz, len, wid, amt, r, g, b
-export const BODY = 8;     // x, z, R, H, vx, vz, id, shape (0 dome, 1 box, 2 ball)
+export const BODY = 8;     // x, z, R, H, vx, vz, id, shape (0 dome, 1 box, 2 ball: the hero; 3 the hero mid-dash, which nothing rides)
 export const AIR = 1, SLIDE = 2, RIDE = 3, CLING = 4;
 const VOL = 4 / 3 * Math.PI;   // a drop of radius r holds VOL r³
 const _w = new Float32Array(16);   // a splash's shares
@@ -70,11 +74,46 @@ export class GooSim {
     this.n = 0;                                  // live drops, packed at the front
     this.stamps = new Float32Array(P.stampCap * STAMP); this.ns = 0;
     this.wstamps = new Float32Array(P.stampCap * STAMP); this.nws = 0;   // the wall's (v81)
-    this.stats = { emitted: 0, refused: 0, splashed: 0, bounced: 0, rode: 0, clung: 0, stamps: 0 };
+    this.stats = { emitted: 0, refused: 0, splashed: 0, bounced: 0, rode: 0, clung: 0, stamps: 0, sprayed: 0, tracked: 0 };
     this._bi = new Map();
+    // v84: the wet map (a cell's goo volume and its hue, weighted by volume) and each body's foot
+    this.wet = { cols: 0, rows: 0, hx: 0, hz: 0, v: null, r: null, g: null, b: null };
+    this.feet = new Map(); this.tick = 0;
   }
 
-  clear() { this.n = 0; this.ns = 0; this.nws = 0; }
+  clear() { this.n = 0; this.ns = 0; this.nws = 0; this.feet.clear(); for (const a of [this.wet.v, this.wet.r, this.wet.g, this.wet.b]) a?.fill(0); }
+
+  // the arena's half sizes: the wet map covers it at `cell` m a cell, and a
+  // new arena starts dry (step() checks too, so a sim never run through here
+  // still has a map; but goo laid before its first step needs this first)
+  setArena(hx, hz) { if (this.P.wet) this._wetGrid(hx, hz); }
+
+  _wetGrid(hx, hz) {
+    const W = this.wet, c = this.P.wet?.cell ?? 1;
+    if (W.hx === hx && W.hz === hz && W.v) return;
+    W.hx = hx; W.hz = hz; W.cols = Math.max(1, Math.ceil(2 * hx / c)); W.rows = Math.max(1, Math.ceil(2 * hz / c));
+    const n = W.cols * W.rows;
+    W.v = new Float32Array(n); W.r = new Float32Array(n); W.g = new Float32Array(n); W.b = new Float32Array(n);
+    this.feet.clear();
+  }
+
+  _cell(x, z) {
+    const W = this.wet, c = this.P.wet?.cell ?? 1;
+    const cx = Math.max(0, Math.min(W.cols - 1, Math.floor((x + W.hx) / c))), cz = Math.max(0, Math.min(W.rows - 1, Math.floor((z + W.hz) / c)));
+    return cz * W.cols + cx;
+  }
+
+  // goo laid on the floor at (x, z): `vol` m³ of this colour (every stamp of
+  // the sim's own, and the view's pours and puddles)
+  wetAdd(x, z, vol, r, g, b) {
+    const W = this.wet;
+    if (!W.v || !(vol > 0)) return;
+    const i = this._cell(x, z);
+    W.v[i] += vol; W.r[i] += r * vol; W.g[i] += g * vol; W.b[i] += b * vol;
+  }
+
+  // how wet the floor is under (x, z), 0..1
+  wetAt(x, z) { const W = this.wet; return W.v ? Math.min(1, W.v[this._cell(x, z)] * this.P.wet.gain) : 0; }
 
   // one drop; false when the pool is full (the view's budget decides how
   // much a single event may throw, so this is the last guard, not the plan)
@@ -104,6 +143,7 @@ export class GooSim {
     const o = this.ns++ * STAMP, s = this.stamps;
     s[o] = x; s[o + 1] = z; s[o + 2] = dx; s[o + 3] = dz; s[o + 4] = len; s[o + 5] = wid; s[o + 6] = amt; s[o + 7] = r; s[o + 8] = g; s[o + 9] = b;
     this.stats.stamps++;
+    this.wetAdd(x + dx * len * 0.5, z + dz * len * 0.5, amt, r, g, b);
   }
 
   // a stamp on the wall (v81): `s` along the rail, `y` up the wall
@@ -120,7 +160,8 @@ export class GooSim {
   // the wall's in `wstamps[0 … nws)`.
   step(dt, bodies, nb, hx, hz) {
     const P = this.P, G = P.gravity, A = P.air, F = P.floor, Rd = P.ride, Wl = P.wall;
-    this.ns = 0; this.nws = 0;
+    this.ns = 0; this.nws = 0; this.tick++;
+    if (P.wet) this._wetGrid(hx, hz);
     const bi = this._bi; bi.clear();
     for (let k = 0; k < nb; k++) bi.set(bodies[k * BODY + 6], k);
     // newest first: a splash's crown is appended past the end and waits a step
@@ -148,8 +189,8 @@ export class GooSim {
         let hit = -1;
         if (y < P.bodyTop) {
           for (let b = 0; b < nb; b++) {
-            const o = b * BODY, R = bodies[o + 2], H = bodies[o + 3];
-            if (y > H || (bodies[o + 7] === 2 && r > Rd.heroMaxR)) continue;   // the hero wears only fine drops
+            const o = b * BODY, R = bodies[o + 2], H = bodies[o + 3], shape = bodies[o + 7];
+            if (y > H || shape === 3 || (shape === 2 && r > Rd.heroMaxR)) continue;   // the hero wears only fine drops, and none mid-dash
             const dx = x - bodies[o], dz = z - bodies[o + 1];
             if (Math.abs(dx) > R + r || Math.abs(dz) > R + r) continue;
             const rad = radiusAt(bodies[o + 7], R, H, y);
@@ -234,6 +275,51 @@ export class GooSim {
         }
       }
     }
+    if (P.wet) this._bodies(dt, bodies, nb);
+  }
+
+  // v84: the bodies in the goo. The wet map drains; each body reads what it
+  // stands in: a fast one in a pool sprays drops out of its foot (back and to
+  // the sides, in the pool's colour), and a foot picks goo up in a wet cell
+  // and lays it down as a streak once it is out and moving
+  _bodies(dt, bodies, nb) {
+    const P = this.P, Wt = P.wet, S = Wt.spray, Tk = Wt.tracks, W = this.wet, feet = this.feet;
+    const k = Math.exp(-dt / Wt.tau);
+    for (let i = 0; i < W.v.length; i++) if (W.v[i] > 0) { W.v[i] *= k; W.r[i] *= k; W.g[i] *= k; W.b[i] *= k; if (W.v[i] < 1e-7) W.v[i] = W.r[i] = W.g[i] = W.b[i] = 0; }
+    for (let b = 0; b < nb; b++) {
+      const o = b * BODY, x = bodies[o], z = bodies[o + 1], R = bodies[o + 2], vx = bodies[o + 4], vz = bodies[o + 5], id = bodies[o + 6];
+      const sp = Math.hypot(vx, vz), ux = sp > 1e-6 ? vx / sp : 1, uz = sp > 1e-6 ? vz / sp : 0;
+      const ci = this._cell(x, z), vol = W.v[ci], wet = Math.min(1, vol * Wt.gain);
+      let f = feet.get(id);
+      if (!f) { f = { fw: 0, r: 1, g: 1, b: 1, acc: 0, seen: 0 }; feet.set(id, f); }
+      f.seen = this.tick;
+      if (wet > Tk.pickAt) {
+        // in the goo: the foot takes some on, in the pool's colour
+        const take = Math.min(Tk.cap - f.fw, Tk.pick * wet * dt);
+        if (take > 0) {
+          const hr = W.r[ci] / vol, hg = W.g[ci] / vol, hb = W.b[ci] / vol, t = f.fw + take;
+          f.r = (f.r * f.fw + hr * take) / t; f.g = (f.g * f.fw + hg * take) / t; f.b = (f.b * f.fw + hb * take) / t; f.fw = t;
+        }
+        // a fast body throws the pool out of its foot: back and to the sides
+        if (wet > S.minWet && sp > S.minSpeed) {
+          f.acc += S.rate * wet * (sp / 6) * dt;
+          const hr = W.r[ci] / vol, hg = W.g[ci] / vol, hb = W.b[ci] / vol, lo = Math.log(S.size.min), span = Math.log(S.size.max) - lo;
+          for (let n = 0; n < S.perStep && f.acc >= 1; n++) {
+            f.acc -= 1;
+            const a = Math.atan2(-uz, -ux) + (Math.random() * 2 - 1) * S.back, r = Math.exp(lo + span * Math.random() ** S.size.skew);
+            const v = S.speed[0] + Math.random() * (S.speed[1] - S.speed[0]) + sp * S.carry * Math.random();
+            if (this.emit(x + Math.cos(a) * R * 0.8, r + 0.01, z + Math.sin(a) * R * 0.8, Math.cos(a) * v, S.up[0] + Math.random() * (S.up[1] - S.up[0]), Math.sin(a) * v, r, hr, hg, hb)) this.stats.sprayed++;
+          }
+        }
+      } else if (wet < Tk.layAt && f.fw > 1e-7 && sp > Tk.minSpeed) {
+        // out of the goo and moving: the foot lays what it carries behind it
+        const dist = sp * dt, lose = Math.min(f.fw, f.fw * Tk.lay * dist);
+        this.stamp(x - ux * dist, z - uz * dist, ux, uz, dist, R * Tk.wide, lose, f.r, f.g, f.b);
+        f.fw -= lose; this.stats.tracked++;
+      }
+    }
+    // feet of bodies long gone
+    if (feet.size > 256) for (const [id, f] of feet) if (this.tick - f.seen > 600) feet.delete(id);
   }
 
   // AIR → the floor: splash, bounce or slide
@@ -327,7 +413,7 @@ GooSim.prototype._onWall = function (i, side, s, y, r, hx, hz) {
 // (the hero) sits on the floor
 export function radiusAt(shape, R, H, y) {
   if (shape === 1) return R * 0.9;
-  if (shape === 2) { const c = H * 0.5, d = (y - c) / c; return R * Math.sqrt(Math.max(0, 1 - d * d)); }
+  if (shape >= 2) { const c = H * 0.5, d = (y - c) / c; return R * Math.sqrt(Math.max(0, 1 - d * d)); }
   const Y = (y / H) * 1.7 - 0.7;
   return R * Math.sqrt(Math.max(0, 1 - Y * Y));
 }

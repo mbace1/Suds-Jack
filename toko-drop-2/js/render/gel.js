@@ -13,9 +13,9 @@
 import * as THREE from 'three/webgpu';
 import {
   uniform, positionLocal, normalLocal, normalView, positionViewDirection, cameraViewMatrix,
-  materialEmissive, modelScale, vec3, vec4, float, sin, cos, exp, dot, normalize, clamp,
-} from 'three/tsl';
-import { TUNING } from '../tuning.js?v=81';
+  materialEmissive, modelScale, vec3, vec4, float, sin, cos, exp, dot, normalize, clamp, max, abs, smoothstep, length, materialColor, materialOpacity } from 'three/tsl';
+import { TUNING } from '../tuning.js?v=92';
+import { styleName, styledBody } from './style.js?v=92';
 
 const T = TUNING;
 
@@ -45,7 +45,7 @@ function contrastLift(col) {
 // The gel bodies are jelly (the blob and cube families) unless the tuning
 // turns it off; the crystals, the wheel and the stalk keep their tuned satin
 // (their looks set their own transmission), and the hero never is.
-export function gelMaterial(hex, fam, radius, { wobble, jelly = T.material.jelly.on && JELLY_FAMILIES.has(fam) } = {}) {
+export function gelMaterial(hex, fam, radius, { wobble, jelly = T.material.jelly.on && JELLY_FAMILIES.has(fam), style = styleName() } = {}) {
   const M = T.material, ov = M.families[fam] || {}, J = { ...M.jelly, ...(ov.jelly || {}) };
   const col = new THREE.Color(hex);
   const baseLum = lumOf(col);
@@ -75,6 +75,7 @@ export function gelMaterial(hex, fam, radius, { wobble, jelly = T.material.jelly
     tear: uniform(0),                               // 1 at death onset, decays
     stretch: uniform(0),
     stretchDir: uniform(new THREE.Vector2(0, 0)),
+    contact: uniform(new THREE.Vector4(0, 0, 0, 0)),   // v82: object-space xz toward what presses on it, how deep (radii); v90: w, how deep on the far side
     sss: uniform(jelly ? J.sss : M.sss),
     sssColor: uniform(col.clone().lerp(new THREE.Color(0xffffff), 0.25)),
     lightDir: uniform(SUN_DIR.clone()),
@@ -98,6 +99,15 @@ export function gelMaterial(hex, fam, radius, { wobble, jelly = T.material.jelly
   // ── the glow and the dome's refraction depth ──
   m.emissiveNode = gelGlow(u, materialEmissive);
   m.thicknessNode = gelThickness(u, positionLocal.y);
+  // v92: a CEL-SHADED or WATERCOLOR body (render/style.js) paints itself with a fragment of its own, from the
+  // same displaced body: the physical lighting and the transmission pass are skipped; the hit flash (emissive)
+  // and the hero's blink (opacity) still read the material's own fields, and the colour is the lifted hue
+  if (style !== 'physical') {
+    m.transmission = 0;
+    m.color.copy(col);
+    m.fragmentNode = vec4(styledBody(style, materialColor, positionLocal.xz.div(u.radius), u.lightDir).add(materialEmissive), materialOpacity);
+  }
+  m.userData.style = style;
   m.gel = u;
   m.userData.jelly = jelly;
   // the real uniforms and the family, for the SDF bodies (sdf.js): a cube look
@@ -113,6 +123,22 @@ export function gelMaterial(hex, fam, radius, { wobble, jelly = T.material.jelly
 // thrash. DISP holds its amplitudes, so gelReach (the most it can move, which
 // sizes the SDF proxy) cannot fall out of step with it.
 export const DISP = { lump: 0.13, simmer: 0.028, simmerHit: 0.075, ripple: 0.11, thrash: 0.22, inflate: 0.2 };
+
+// v82's contact squash (TUNING.blob.contact): the body cut by a plane
+// `depth` radii in from its rim on the side of what presses on it, over a
+// belt from the floor to its widest, and bulging out at the sides to keep
+// its volume. In radii along the rest normal: negative where it flattens.
+function contactSquash(q, u) {
+  const C = T.blob.contact, dF = u.contact.z, dB = u.contact.w, depth = dF.add(dB);
+  const flat = length(q.xz);
+  const cd = dot(q.xz.div(max(flat, 1e-4)), u.contact.xy);                     // how squarely this point faces the contact, round the body
+  const belt = smoothstep(0.0, 0.3, q.y).mul(float(1.0).sub(smoothstep(C.belt[0], C.belt[1], q.y)));
+  // onto the plane: the rim at angle φ from the contact must come in by (cos φ − (1 − depth)) / cos φ
+  const plane = (c, d) => max(c.sub(float(1.0).sub(d)), 0.0).div(max(c, 0.5));
+  const press = plane(cd, dF).add(plane(cd.negate(), dB));                     // v90: and the far side's plane, when pressed from both sides
+  const bulge = max(float(1.0).sub(abs(cd)), 0.0).pow(2).mul(depth).mul(C.bulge);
+  return bulge.sub(press).mul(belt).mul(smoothstep(0.0, 0.02, depth));
+}
 
 // 2.0's dent: pushed in where the shot landed, springing back through an
 // overshoot (TUNING.blob.dent); the seconds since the hit come off `hit`,
@@ -144,7 +170,8 @@ export function gelDisplacement(q, u, t = GEL_TIME) {
     .add(ripple)
     .sub(focus.mul(dentSpring(u)).mul(D.depth))
     .add(te.mul(u.tear.mul(DISP.thrash)))
-    .add(oct2.mul(u.wobble.mul(float(DISP.simmer).add(u.hit.mul(DISP.simmerHit)))));
+    .add(oct2.mul(u.wobble.mul(float(DISP.simmer).add(u.hit.mul(DISP.simmerHit)))))
+    .add(contactSquash(q, u));
 }
 
 // The most gelDisplacement can move the surface, in radii: every sum of
@@ -153,7 +180,8 @@ export function gelReach(u) {
   return u.wobble.mul(float(DISP.lump + DISP.simmer).add(u.hit.mul(DISP.simmerHit)))
     .add(u.hit.mul(DISP.ripple))
     .add(dentSpring(u).abs().mul(T.blob.dent.depth))
-    .add(u.tear.mul(DISP.thrash));
+    .add(u.tear.mul(DISP.thrash))
+    .add(u.contact.z.add(u.contact.w).mul(Math.max(T.blob.contact.bulge, 1)));   // v82: the flattening is inward, the bulge out (v90: both sides)
 }
 
 // The glow: translucency (light bleeding through from behind), wrap light,

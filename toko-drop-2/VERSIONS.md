@@ -19,23 +19,33 @@
     Never `--no-verify`.
 -->
 
-## v81 — 2026-10-31
-**Goo up the walls: splatter that meets the rail clings to it, runs down and dries there**
-- The owner's first splatter pick (2026-10-31: "I meant more physical splatter and jelly like effects, not glow", and the standing rule, "anything that pushes the gelatin look and behavior is great for enemies. Environment art just needs to be better lighting and set up"). For the goo the rail is now a WALL 1.1 m tall (render/goo-sim.js, the CLING state): a drop that meets it below that height sticks where it struck — an impact stain stretched along the way it came, as on the floor; a fast fat one throws a crown back off the wall instead — and then RUNS DOWN at the speed a film its size runs (the law a drop riding a body already creeps by), its sideways slip dying out, shedding itself as a streak as it goes, until it reaches the foot and slides on across the floor or runs dry on the wall. Above the wall the rail is what it was. The floor's ledger holds through the wall: what the wall takes is what the drop loses, and `test/goo.mjs` proves no goo is made or lost between the wall and the floor.
-- The wall has a film of its own (render/goo.js: the same Film, the rail unwrapped into one strip, perimetre × 1.1 m, 16 texels a metre along it and 36 up it) with the floor's flow turned on its side: goo deeper than its yield RUNS DOWN a texel at a time, the bottom row keeps what reaches it (the bead at the wall's foot), the rest creeps sideways, evaporates and dries to a stain as the floor's does. It is drawn as a decal on a strip standing 1.2 cm inside the rail, facing in, over whatever the world's wall is — the curb, the sewer's brick, the cistern's kerb, the grid's nothing, where it reads as splatter on a pane of glass, which is what the rail was all along — shaded as the floor's goo is: the hue by depth, a crisp contact line, the slope lit by the sun with a glint where it curves, and the stain. The near wall's inside faces away from the camera, so nothing stands between you and the fight.
-- Found on the way: `renderer.clear()` on a two-texture render target cleared only the first, so the wall's stain began at a millimetre everywhere and faded from there. Both films now wipe with a pass that writes both textures; the floor's second texture had happened to come up zero.
-- The smoke kills a gel against the far wall and reads the wall's film back: goo on it, or the gate fails. `test/goo.mjs` +10 checks: the rail unwraps and back; a drop clings, runs down standing on its wall, lands and slides on; a fast fat one splashes back; above the wall it bounces; with the wall off nothing clings.
-- Every number TUNING.goo.wall. Cache tokens `?v=80` → `?v=81`; HUD label → `2.0 · v81`
+## v92 — 2026-10-31
+**STYLE: PHYSICAL, CEL-SHADED or WATERCOLOR (owner: "Do you have the 3 visual options, watercolor, cell shaded, physical 3d?"; "Test the 'splatter' in multiple styles, as now it's the most washed out watercolor look")**
+- OPTIONS → STYLE, kept (`toko2.style`); `?style=cel|watercolor` for a link. PHYSICAL is the game as it was. The two painted looks are drawn from the same bodies, the same displacement and the same goo sims (js/render/style.js): a style changes how a thing is painted, never what it does, so every number the smoke reads is the same in every style. **CEL-SHADED**: three flat tones cut at the terminator, a hard highlight dot, an ink line where a body turns away; the film a flat wash with a crisp contour and an ink band, the drops two tones and a rim. **WATERCOLOR**: pigment (the colour deepened), a soft, part-banded shade, DARK AT THE EDGES where the wash pools — the mark of the medium, and what the washed-out look lacked — grained, over a little paper; the film pools dark at its border, bleeds a little past it and dries to a ring. Tones are factors on the body's own colour (TUNING.style), so a species' colour survives the switch as it survives any light.
+- A gel body is built in its style (gelMaterial `style`): a stylised body paints itself with a fragmentNode, skipping the physical lighting and the transmission pass — cheaper than PHYSICAL, not dearer — so the switch rebuilds the views, the hero, the chunks and the strands (actors.setStyle, as the GELS switch does) and runs the title's warm-up again, so the new shaders compile on the title (v74's rule). The floor's film, the wall's and the drops read the style live. Species whose looks build their own materials (the boss auras, CURBKING, MAW) and the SDF gels keep the physical paint.
+- Measured: a contact sheet of the splatter in each style (scratchpad v92/), the smoke's style-cel and style-watercolor scenarios (the ordinary run, its kill and its film under each paint), test/view.mjs on the materials and the switch.
+- The smoke's film check counts the wall's goo with the floor's: since v81 a gel that dies at the rail throws most of its goo up the wall, and world 3 once read 7 floor texels against 684 on the wall; and its FROM WORLD check knows that one profile serves every scenario, so under a pinned `?world=` the from-key may already hold an earlier run's score.
+- Cache tokens `?v=91` → `?v=92`; HUD label → `2.0 · v92`
 
 ---
 
-## v80 — 2026-10-31
-**CONTINUE: a run is kept at each world's door, and the title takes it up again**
-- The owner's first QoL pick (2026-10-31). An ARCADE or HARDCADE run is saved as it settles on a new world's floor (`worldGo`, after the door's lives have come back: the world, the score, the kills, the heat, the lives, the weapon and the DASH level, in `toko2.continue`), and the title shows a CONTINUE button under the start row — "from the door of WORLD 3 · 12,340" — that starts a run at that door with all of it, through the intro as a fresh start does. A phone call, a flat battery or a closed tab no longer costs a twenty-minute run.
-- Kept until the run ends — a death or the win clears it — or until a fresh run of that mode is started from the title; a run left from the pause menu keeps it, which is the case it is for. The button follows the HARD switch: an ARCADE run is offered while HARD is off, a HARDCADE run while it is on. World 1 is never kept: there is nothing to take up.
-- The score it takes up is the run's own, so a continued run competes for BEST like any other, and the play record marks it (`c: <world>`), which is how a record's best can be told from a run played in one sitting. The owner's second pick, START AT A REACHED WORLD, is the one that keeps its scores apart; this is the same run.
-- The smoke drives it: through world 2's door the run is kept at world 3, the title offers CONTINUE naming world 3, and taking it up lands in world 3 with the score and lives it had.
-- Cache tokens `?v=79` → `?v=80`; HUD label → `2.0 · v80`. v70–v79 rolled into the Archive.
+## v91 — 2026-10-31
+**Flick to dash at 1.x parity (owner: "get flick to dash to 1.x parity")**
+- 1.x dashed on every lift of the aim stick: 4.77 u at 26 u/s, eleven steps, whatever the thumb did before it left the glass. v18 made the dash a FLICK (owner, 2026-10-23: no dash on a plain let-go), and its reader asked the thumb to be still moving AT the lift, above a release speed — but a thumb lands its flick, slowing to a stop before it leaves the glass, and at 60 Hz not one decelerating stroke in the gesture set dashed, however briefly it had stopped. And the dash it bought ran 2.4–11 u at 18–46 u/s, so an ordinary 7 mm flick was 4.1 u at 18 u/s: shorter and slower than the dash a 1.x thumb knew.
+- js/flick.js finds the STROKE first — a run of samples faster than `strokeFloor`, one general direction, long and fast enough somewhere — behind whatever landing followed it, and the stroke counts while the landing was shorter than `landMs` (160 ms). A thumb at rest for longer, a slow aim sweep and a 2 mm aim correction are still the plain let-go the owner asked to keep as none. `stopMs` and `releaseFloor` are gone; `peakFloor` 5 → 3, `lengthFloor` 0.3 → 0.25, `strokeFloor` 2 → 1.5 (TUNING.input.flick).
+- The lightest flick is 1.x's own dash — hero.flick `d` 2.4 → 4.77 u, `v` 18 → 26 u/s, and the length ramp starts at 0.75 of the stick, so an ordinary 7 mm flick buys exactly 4.77 u at 26 u/s in eleven steps and a longer, faster one still goes further (to 11 u) and faster (to 46 u/s). The CUT's slowest flick now cuts 1.x's two, as the button does.
+- Measured two ways against the physical gesture set (scratchpad dashlab/gestures.mjs, plus decelerating strokes): in bare node at 60 and 120 Hz, and through real CDP touch events at 60 Hz. Every flick family dashes — 4 mm in 60 ms, 7 mm in 160 ms, 7 mm then stopped 60–80 ms, 24 mm in 80 ms (11 u at 46 u/s) — and the tap, the resting thumb (604 ms; a flick rested 250 ms), the slow sweep and the nudge do not. test/hero.mjs: a throw stopped 80 ms before the lift dashes, one rested 300 ms does not.
+- The smoke's v50 title-geometry checks read the v89 stack now (ARCADE above the HARD switch above CAMPAIGN, MENU below).
+- Cache tokens `?v=90` → `?v=91`; HUD label → `2.0 · v91`
+
+---
+
+## v90 — 2026-10-31
+**The squeeze: a body pressed from both sides squashes (v82 summed the pushes as one vector, and opposite pushes cancelled)**
+- v82 read what pressed on a body as one vector, so a gel pressed from both sides — the middle of every crowd, the hero with a gel either side — read as unpressed and stood round while its neighbours flattened. The sim keeps the pushes three ways now (js/sim/press.js): the vector (the direction), the total (never cancels) and a folded axis (two opposite pushes make an axis, not nothing). The view gives the side facing the push the vector's share plus the balance and the far side the balance alone, so one body against you flattens one side and two either side flatten both; the gel shader cuts the far plane too (`contact` is a vec4: direction, near depth, far depth; the SDF look follows), and the smoke's squash check reads both sides.
+- Found by the smoke: under WebGL 2 the hero with a gel either side read 0.005 of squash against the gels' 0.42 each. test/sim.mjs: a squeezed hero has next to no net press, a total and an axis; press() adds every push and folds the opposite ones.
+- The smoke's FROM WORLD check (v85) expects the URL's `?world=` to win where a scenario pins a world — that is what the parameter is for — and tests the title's setting in the scenarios that pin none; it had asked a run pinned to world 2 to start at 3.
+- Cache tokens `?v=89` → `?v=90`; HUD label → `2.0 · v90`
 
 ---
 
@@ -43,6 +53,16 @@
 
 One line per version; the full entries are in git history (`git log -p VERSIONS.md`).
 
+- **v89** (2026-10-31) — The title: the icon's logo, and ARCADE, the HARD switch and CAMPAIGN in a stack
+- **v88** (2026-10-31) — The glow is out
+- **v87** (2026-10-31) — RECORDS: one page in OPTIONS with your bests, your campaigns and your last runs
+- **v86** (2026-10-31) — CONTROLS and AUTO QUALITY in OPTIONS: left-handed, the stick's size, the dead zone, and a picture that steps down on a slow phone
+- **v85** (2026-10-31) — START AT A REACHED WORLD: the title offers any world a run has reached, and a run from there keeps its scores apart
+- **v84** (2026-10-31) — Spray and tracks: a body running or dashing through a pool throws it out of its foot, and a foot that stood in goo leaves tracks
+- **v83** (2026-10-31) — Chunks that behave: a strand off the burst, a bounce and a jiggle where they land, and a melt into the puddle
+- **v82** (2026-10-31) — Contact squash: a gel flattens where it presses on another, on a wall or on the hero, and bulges at its sides
+- **v81** (2026-10-31) — Goo up the walls: splatter that meets the rail clings to it, runs down and dries there
+- **v80** (2026-10-31) — CONTINUE: a run is kept at each world's door, and the title takes it up again
 - **v79** (2026-10-31) — GLOW in OPTIONS, off by default: bright things bleed light
 - **v78** (2026-10-31) — The waters differ: puddles on the sewer's flagstones and oil under the boiler's pipes, a murky channel, a river that flows; only the cistern keeps its sheet of water
 - **v77** (2026-10-31) — World particles: embers over the boilers, snow on the ice, dust in the sewer's sun shafts, motes in the cistern's lamps, fireflies over the river, marine snow in the deep

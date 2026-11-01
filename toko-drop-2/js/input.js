@@ -31,8 +31,8 @@
 // world, because only it knows where the camera is. `dash` is false, true
 // (a button: 1.x's own dash) or a flick's gesture { kind: 'flick', sL, sV,
 // dirX, dirY }, its direction in screen axes too.
-import { TUNING } from './tuning.js?v=81';
-import { analyseTouch } from './flick.js?v=81';
+import { TUNING } from './tuning.js?v=92';
+import { analyseTouch } from './flick.js?v=92';
 
 const I = TUNING.input;
 // the standard Gamepad mapping, bound as 1.x bound it (input.js:135-150)
@@ -49,6 +49,9 @@ export class Input {
     this.mouse = { x: 0, y: 0, down: false, seen: false };
     this.pad = { mx: 0, my: 0, ax: 0, ay: 0 };
     this.source = 'touch';
+    // v86 (OPTIONS): the stick's size and the dead zones, and LEFT-HANDED, which
+    // swaps the halves — a touch on the left half aims, one on the right moves
+    this.stickRadius = I.stickRadius; this.aimDead = I.aimDeadzone; this.padDead = I.padDeadzone; this.swap = false;
     this._dash = false;          // edges, consumed by read()
     this._pause = false;
     this._space = false;         // Space went down during play, so its release is a dash
@@ -115,7 +118,7 @@ export class Input {
         if (!this.enabled) continue;
         // the pause strip is mapped to no stick, so its finger never moves one (trap T5)
         if (t.clientY < I.pauseStripHeight && Math.abs(t.clientX - innerWidth / 2) < I.pauseStripHalfWidth) { this._pause = true; continue; }
-        const s = t.clientX < innerWidth / 2 ? this.left : this.right;
+        const s = (t.clientX < innerWidth / 2) !== this.swap ? this.left : this.right;
         if (s.active) continue;
         Object.assign(s, { active: true, id: t.identifier, ox: t.clientX, oy: t.clientY, dx: 0, dy: 0, hist: [{ x: t.clientX, y: t.clientY, t: e.timeStamp }], wander: 0 });
       } else {
@@ -140,9 +143,9 @@ export class Input {
   _letGo(s, t, stamp) {
     const F = I.flick;
     s.hist.push({ x: t.clientX, y: t.clientY, t: stamp });
-    const g = analyseTouch(s.hist, F, I.stickRadius);
+    const g = analyseTouch(s.hist, F, this.stickRadius);
     g.wander = Math.max(g.wander, s.wander);
-    g.lenPx = g.L * I.stickRadius; g.pxPerMs = (g.V * I.stickRadius) / 1000;   // for the ?fps readout, in the units a thumb knows
+    g.lenPx = g.L * this.stickRadius; g.pxPerMs = (g.V * this.stickRadius) / 1000;   // for the ?fps readout, in the units a thumb knows
     if (g.kind === 'tap' && s.wander > F.tapPx) g.kind = 'release';
     this.lastGesture = g;
     this.letGos[g.kind === 'release' && g.V >= F.peakFloor ? 'near' : g.kind]++;
@@ -157,7 +160,7 @@ export class Input {
     const live = this.enabled && this._live;
     this._live = this.enabled;
     this._pollPad();
-    const P = this.pad, R = I.stickRadius, L = this.left, Rt = this.right;
+    const P = this.pad, R = this.stickRadius, L = this.left, Rt = this.right;
 
     // move: the pad's stick, else the touch stick, else the keys (input.js:170-191)
     if (P.mx || P.my) {
@@ -181,7 +184,7 @@ export class Input {
       out.ax = P.ax / l; out.ay = P.ay / l; out.aim = out.fire = true; out.source = 'pad';
     } else if (Rt.active) {
       const l = Math.hypot(Rt.dx, Rt.dy);
-      if (l >= I.aimDeadzone) { out.ax = Rt.dx / l; out.ay = Rt.dy / l; out.aim = out.fire = true; }
+      if (l >= this.aimDead) { out.ax = Rt.dx / l; out.ay = Rt.dy / l; out.aim = out.fire = true; }
       out.source = 'touch';
     } else if (this.mouse.seen) {
       out.source = 'keys';
@@ -210,7 +213,7 @@ export class Input {
     let p = null;
     for (const x of pads) if (x && x.connected) { p = x; break; }
     if (!p) { this._padDash = this._padPause = false; return; }
-    const dz = I.padDeadzone;
+    const dz = this.padDead;
     const lx = p.axes[0] || 0, ly = p.axes[1] || 0, rx = p.axes[2] || 0, ry = p.axes[3] || 0;
     if (Math.hypot(lx, ly) > dz) { P.mx = lx; P.my = ly; }
     if (Math.hypot(rx, ry) > dz) { P.ax = rx; P.ay = ry; }

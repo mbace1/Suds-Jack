@@ -2,13 +2,13 @@
 // crisp vector type on near-black (DIRECTION). Menus are pad-first — a d-pad
 // or arrow keys move a gold focus ring (1.x v134), A / Enter picks, B / Esc
 // backs out — and a tap or click works on every button just the same.
-import { TUNING } from './tuning.js?v=81';
-import { GEL_LINES } from './gels-said.js?v=81';
-import { goalOf, modsOf, speciesOf } from './sim/challenge.js?v=81';
-import { mult as heatMult } from './sim/heat.js?v=81';
-import { tiersFor, onCourse } from './sim/director/campaign.js?v=81';
-import { onCourse as fightCourse } from './sim/bossfight.js?v=81';
-import { roomChart, routeChart, goalGlyph, GRADE_COLORS } from './chart.js?v=81';
+import { TUNING } from './tuning.js?v=92';
+import { GEL_LINES } from './gels-said.js?v=92';
+import { goalOf, modsOf, speciesOf } from './sim/challenge.js?v=92';
+import { mult as heatMult } from './sim/heat.js?v=92';
+import { tiersFor, onCourse } from './sim/director/campaign.js?v=92';
+import { onCourse as fightCourse } from './sim/bossfight.js?v=92';
+import { roomChart, routeChart, goalGlyph, GRADE_COLORS } from './chart.js?v=92';
 
 const STR = {
   en: {
@@ -17,7 +17,7 @@ const STR = {
     arcade: '1.x waves: three lives, every kill pays × your heat.', hardcade: 'Arcade, steeper: biters\' corpses shoot back, and one life comes back a world.', survival: 'Endless. It only gets worse.', campaign: 'rooms with their own clock — cleared opens the next', goalSurvive: 'SURVIVE', goalQuota: 'KILL', goalFlawless: 'NO HITS', bossDown: 'DOWN', shift_breathe: 'THE BANKS BREATHE', shift_floe: 'THE ICE BREAKS UP', shift_twins: 'THE FLOOR SPLITS IN TWO', menuBtn: 'MENU', menuSub: 'settings, sound, language', trial: 'CHALLENGE', trial_gates: 'DASH THE GATES', trial_hold: 'HOLD THE RING', trial_collect: 'COLLECT THE ORBS', trial_combo: 'KEEP A STREAK', trial_protect: 'PROTECT THE HEART', trialMet: 'CHALLENGE MET', trialMissed: 'CHALLENGE MISSED', skills: 'asks for', sk_position: 'positioning', sk_priority: 'target priority', sk_aim: 'aim economy', sk_movement: 'movement', sk_risk: 'risk', whyDied: 'you went down', whyHit: 'a hit in a no-hits room', whyHeart: 'the heart was lost', whyClock: 'the clock ran out first', yours: 'yours', start: 'START', tierC: 'getting through', tierF: 'dying, or the clock', hitCost: 'each hit costs a grade', downShare: 'put down', yourBest: 'your best', notPlayed: 'not played yet', gDodge: 'DODGE', gClear: 'CLEAR ALL', gGates: 'GATES', gHold: 'HOLD THE RING', gProtect: 'PROTECT THE HEART', gOrder: 'IN ORDER', gHunt: 'HUNT', gStreak: 'STREAK', gCollect: 'COLLECT', gBoss: 'BOSS', gGauntlet: 'GAUNTLET', gEscort: 'ESCORT THE HEART', gHills: 'HOLD THE RINGS', whyOrbs: 'too many orbs went out', mNoGun: 'NO GUN', mDash: 'DASH ONLY', mAmmo: 'AMMO', mFaster: 'FASTER', mMoving: 'MOVING FLOOR', hits: 'hits', timeUp: 'TIME', timeUpSub: 'the clock ran out', teaches: 'teaches', roomLocked: 'LOCKED', grade: 'GRADE', rooms: 'ROOMS', worldLocked: 'clear the world before it', tierFScore: 'under C, dying, or the clock', whyScore: 'through, but under the C line', pts: 'pts', mBank: 'BANK — points wait in a pot until your heat cools; a hit loses the pot', mCold: 'COLD GUN — every shot cools your heat', mWhite: 'WHITE HEAT — the heat climbs past ×8 to ×16; keep killing, never get hit', record: 'PLAY RECORD', recordSub: 'copies your rooms and runs, to paste into a message', recordCopied: 'COPIED — paste it into a message', recordShared: 'SHARED', recordSaved: 'SAVED AS A FILE', recordEmpty: 'nothing yet: play a room or a run first', recordPhone: 'last run: {hz} Hz · {late}% frames late', recordSlow: ' · game at {sim}×', heatHint: 'kill close and fast to heat the ×; a hit cools it', banked: 'BANKED', potLost: 'POT LOST', livesBack: 'LIVES BACK', lifeBack: 'A LIFE BACK', campDone: 'CAMPAIGN CLEAR', hardDone: 'HARD PAIN CLEAR', campDoneSub: 'all thirty-six rooms through', hardDoneSub: 'all thirty-six, and every corpse shot back', campDoneNext: 'next, HARD PAIN: the same rooms, and every corpse shoots back', allS: 'every room an S', sToGo: 'rooms still short of S', total: 'total',
     best: 'BEST', hard: 'HARD', on: 'ON', off: 'OFF', hardSub: 'ARCADE becomes HARDCADE and CAMPAIGN becomes HARD PAIN: corpses shoot back', campaignHard: 'the same rooms, and every corpse shoots back — clear a room to open it here', hardTag: 'HARD', options: 'OPTIONS', optionsSub: 'dash, gels, worlds, sound, language', back: 'BACK', nextRun: 'from the next run', resume: 'RESUME', quit: 'QUIT', again: 'AGAIN', menu: 'MENU', paused: 'PAUSED',
     over: 'GAME OVER', gotyou: 'GOT YOU', lastHit: 'LAST HIT BY', lastShot: 'ITS LAST SHOT', by_curtain: 'THE CURTAIN', by_sweep: 'A SWEEPING LINE', time: 'TIME', newbest: 'NEW BEST', soon: 'SOON',
-    wave: 'WAVE', clear: 'CLEAR', curtain: 'CURTAIN!', pod: 'POD', podUp: 'POD LV2!', podDown: 'POD KNOCKED DOWN TO LV1', soundOn: 'SOUND ON', volume: 'VOLUME', music: 'MUSIC', annOn: 'ANNOUNCER ON', annOff: 'ANNOUNCER OFF', annVol: 'ANNOUNCER VOL.', motionOn: 'REDUCE MOTION ON', motionOff: 'REDUCE MOTION OFF', motionOnH: 'no camera shake', motionOffH: 'full screen-shake', glowOn: 'GLOW ON', glowOff: 'GLOW OFF', glowH: 'bright things bleed light · costs a little', cont: 'CONTINUE', contSub: 'from the door of', langName: 'LANGUAGE · ENGLISH', gooOn: 'SPLATTER ON', gooOff: 'SPLATTER OFF', soundOff: 'SOUND OFF', score: 'SCORE', kills: 'KILLS', grazes: 'GRAZES',
+    wave: 'WAVE', clear: 'CLEAR', curtain: 'CURTAIN!', pod: 'POD', podUp: 'POD LV2!', podDown: 'POD KNOCKED DOWN TO LV1', soundOn: 'SOUND ON', volume: 'VOLUME', music: 'MUSIC', annOn: 'ANNOUNCER ON', annOff: 'ANNOUNCER OFF', annVol: 'ANNOUNCER VOL.', motionOn: 'REDUCE MOTION ON', motionOff: 'REDUCE MOTION OFF', motionOnH: 'no camera shake', motionOffH: 'full screen-shake', cont: 'CONTINUE', contSub: 'from the door of', fromWorld: 'FROM WORLD', fromStart: 'from the start', fromSub: 'scores kept apart from the real best', bestHere: 'best from here', handLeft: 'LEFT-HANDED', handRight: 'RIGHT-HANDED', handH: 'the left thumb aims, the right moves', handHR: 'the left thumb moves, the right aims', stick: 'STICK', dead: 'DEAD ZONE', szSmall: 'SMALL', szNormal: 'NORMAL', szLarge: 'LARGE', stickH: 'how far the thumb travels for full speed', deadH: 'how far the aim thumb moves before it fires', autoOn: 'AUTO QUALITY ON', autoOff: 'AUTO QUALITY OFF', autoH: 'a slow phone gets a smaller picture · now {q}', records: 'RECORDS', recordsSub: 'your bests and your last runs', recBests: 'BESTS', recRuns: 'LAST RUNS', recRooms: 'rooms cleared', recNone: 'nothing yet: play a room or a run first', recWon: 'WON', recQuit: 'quit', recWorld: 'W', recReached: 'reached', langName: 'LANGUAGE · ENGLISH', gooOn: 'SPLATTER ON', gooOff: 'SPLATTER OFF', soundOff: 'SOUND OFF', score: 'SCORE', kills: 'KILLS', grazes: 'GRAZES',
     greenRush: 'GREEN RUSH! DOUBLE PRIZE', dud: 'DUD! GREEN MEANS GO', dashThrough: 'DASH THROUGH!', gateChain: 'GATE CHAIN', bounty: 'BOUNTY',
     world2: 'WORLD 2 · THE DRIVEWAY', world3: 'WORLD 3 · THE SEWER', world4: 'WORLD 4 · THE CISTERN', world5: 'WORLD 5 · THE BOILER ROOM', world6: 'WORLD 6 · THE RIVER', world7: 'WORLD 7 · THE ICE SHEET', world8: 'WORLD 8 · THE DEEP', world9: 'WORLD 9 · THE CORE', won: 'RUN COMPLETE', wonSub: 'all nine worlds',
     dashUp: 'DASH UP', dashDown: 'DASH KNOCKED DOWN TO LV1', fxInv: 'INVINCIBLE', fxRapid: 'RAPID FIRE', fxMult: 'SCORE', fxDash: 'DASH',
@@ -25,6 +25,7 @@ const STR = {
     hintKeys: 'WASD MOVES · MOUSE AIMS · HOLD CLICK TO FIRE · SPACE DASHES · ESC PAUSES',
     hintPad: 'LEFT STICK MOVES · RIGHT STICK AIMS AND FIRES · A DASHES · START PAUSES',
     gels: 'GELS', worlds: 'WORLDS', street: 'STREET', neon: 'NEON', streetSub: 'driveway, then sewer', neonSub: 'abstract hex, then tide', classic: 'CLASSIC', sdf: 'SDF', classicSub: 'mesh gels, as they are', sdfSub: 'ray-marched fields',
+    style: 'STYLE', physical: 'PHYSICAL', cel: 'CEL-SHADED', watercolor: 'WATERCOLOR', physicalSub: 'jelly that bends light', celSub: 'flat tones and an ink line', watercolorSub: 'pigment, dark at the edges',
   },
   ja: {
     intro: 'イントロ', introSub: '始まりを見てからプレイ',
@@ -32,7 +33,7 @@ const STR = {
     arcade: '1.xのウェーブ：ライフ3つ、撃破はヒートの×で加点。', hardcade: 'より険しいアーケード：残骸が撃ち返し、ワールドごとにライフが1つ戻る。', survival: '終わりなし。ひたすら厳しくなる。', campaign: 'それぞれの制限時間を持つ部屋 — クリアで次が開く', goalSurvive: '生き残れ', goalQuota: '撃破', goalFlawless: 'ノーダメージ', bossDown: '撃破', shift_breathe: '岸が呼吸する', shift_floe: '氷が割れる', shift_twins: '床がふたつに割れる', menuBtn: 'メニュー', menuSub: '設定・サウンド・言語', trial: 'チャレンジ', trial_gates: 'ゲートを抜けろ', trial_hold: '輪に留まれ', trial_collect: 'オーブを集めろ', trial_combo: '連鎖を保て', trial_protect: '心臓を守れ', trialMet: 'チャレンジ達成', trialMissed: 'チャレンジ失敗', skills: '求めるもの', sk_position: '位置取り', sk_priority: '優先順位', sk_aim: '照準の節約', sk_movement: '機動', sk_risk: 'リスク', whyDied: '倒れた', whyHit: 'ノーダメージの部屋で被弾', whyHeart: '心臓を失った', whyClock: '先に時間切れ', yours: 'あなた', start: 'スタート', tierC: 'クリア', tierF: '倒れるか時間切れ', hitCost: '被弾ごとに1段階下がる', downShare: '撃破', yourBest: '自己ベスト', notPlayed: '未プレイ', gDodge: '避けろ', gClear: '全滅させろ', gGates: 'ゲート', gHold: '輪に留まれ', gProtect: '心臓を守れ', gOrder: '順番に', gHunt: '狩れ', gStreak: '連鎖', gCollect: '集めろ', gBoss: 'ボス', gGauntlet: '試練', gEscort: '心臓を送り届けろ', gHills: '輪を順に守れ', whyOrbs: 'オーブを逃しすぎた', mNoGun: '銃なし', mDash: 'ダッシュのみ', mAmmo: '弾', mFaster: '加速', mMoving: '動く床', hits: '被弾', timeUp: '時間切れ', timeUpSub: '時計が尽きた', teaches: '教える', roomLocked: 'ロック中', grade: '評価', rooms: '部屋', worldLocked: '前のワールドをクリア', tierFScore: 'C未満、倒れるか時間切れ', whyScore: 'クリアしたがCライン未満', pts: '点', mBank: 'バンク — 点数はヒートが冷めるまでポットに貯まる。被弾でポットを失う', mCold: 'コールドガン — 撃つたびにヒートが下がる', mWhite: '白熱 — ヒートは×8を超えて×16まで上がる。倒し続け、被弾するな', record: 'プレイ記録', recordSub: '部屋とランの記録をコピーして、メッセージに貼り付け', recordCopied: 'コピーしました — メッセージに貼り付けて', recordShared: '共有しました', recordSaved: 'ファイルに保存しました', recordEmpty: 'まだ記録なし：まず部屋かランを遊んで', recordPhone: '前回：{hz} Hz・遅延フレーム {late}%', recordSlow: '・速度 {sim}倍', heatHint: '近くで素早く倒すと×が上がる。被弾で冷める', banked: 'バンク', potLost: 'ポット喪失', livesBack: 'ライフ回復', lifeBack: 'ライフ回復', campDone: 'キャンペーン制覇', hardDone: 'HARD PAIN 制覇', campDoneSub: '36部屋すべて突破', hardDoneSub: '36部屋すべて、残骸が撃ち返す中を突破', campDoneNext: '次はHARD PAIN：同じ部屋で、倒した敵がすべて撃ち返す', allS: 'すべての部屋でS', sToGo: 'まだSに届かない部屋', total: '合計',
     best: 'ベスト', hard: 'ハード', on: 'オン', off: 'オフ', hardSub: 'アーケードはHARDCADEに、キャンペーンはHARD PAINに：残骸が撃ち返す', campaignHard: '同じ部屋で、倒した敵がすべて撃ち返す — 通常でクリアした部屋がここで開く', hardTag: 'ハード', options: 'オプション', optionsSub: 'ダッシュ・ゼリー・ワールド・サウンド・言語', back: '戻る', nextRun: '次のプレイから', resume: '再開', quit: 'やめる', again: 'もう一度', menu: 'メニュー', paused: '一時停止',
     over: 'ゲームオーバー', gotyou: 'やられた相手', lastHit: '最後に当てた相手', lastShot: '最後の一発', by_curtain: 'カーテン', by_sweep: 'なぎ払いの列', time: 'タイム', newbest: '新記録', soon: '近日',
-    wave: 'ウェーブ', clear: 'クリア', curtain: 'カーテン！', pod: 'ポッド', podUp: 'ポッド LV2！', podDown: 'ポッドが LV1 に', soundOn: 'サウンド オン', volume: '音量', music: '音楽', annOn: 'アナウンサー オン', annOff: 'アナウンサー オフ', annVol: 'アナウンサー音量', motionOn: '手ぶれ軽減 オン', motionOff: '手ぶれ軽減 オフ', motionOnH: 'カメラ揺れなし', motionOffH: '画面揺れ演出あり', glowOn: 'グロー オン', glowOff: 'グロー オフ', glowH: '明るい部分がにじむ・少し重い', cont: 'つづきから', contSub: '入口から再開：', langName: '言語 · 日本語', gooOn: 'しぶき オン', gooOff: 'しぶき オフ', soundOff: 'サウンド オフ', score: 'スコア', kills: '撃破', grazes: 'グレイズ',
+    wave: 'ウェーブ', clear: 'クリア', curtain: 'カーテン！', pod: 'ポッド', podUp: 'ポッド LV2！', podDown: 'ポッドが LV1 に', soundOn: 'サウンド オン', volume: '音量', music: '音楽', annOn: 'アナウンサー オン', annOff: 'アナウンサー オフ', annVol: 'アナウンサー音量', motionOn: '手ぶれ軽減 オン', motionOff: '手ぶれ軽減 オフ', motionOnH: 'カメラ揺れなし', motionOffH: '画面揺れ演出あり', cont: 'つづきから', contSub: '入口から再開：', fromWorld: 'ワールドから開始', fromStart: '最初から', fromSub: 'スコアは通常のベストとは別に記録', bestHere: 'ここからのベスト', handLeft: '左利き', handRight: '右利き', handH: '左の親指で狙い、右で移動', handHR: '左の親指で移動、右で狙う', stick: 'スティック', dead: 'デッドゾーン', szSmall: '小', szNormal: '標準', szLarge: '大', stickH: '全速になるまでの親指の移動量', deadH: '撃ち始めるまでの親指の移動量', autoOn: '自動画質 オン', autoOff: '自動画質 オフ', autoH: '遅い端末では画面を小さく描く・現在 {q}', records: '記録', recordsSub: 'ベストと最近のプレイ', recBests: 'ベスト', recRuns: '最近のプレイ', recRooms: '部屋クリア', recNone: 'まだ記録なし：まず部屋かランを遊んで', recWon: '完走', recQuit: '中断', recWorld: 'W', recReached: '到達', langName: '言語 · 日本語', gooOn: 'しぶき オン', gooOff: 'しぶき オフ', soundOff: 'サウンド オフ', score: 'スコア', kills: '撃破', grazes: 'グレイズ',
     greenRush: 'グリーンラッシュ！賞品2倍', dud: 'ハズレ！緑で行け', dashThrough: 'ダッシュで抜けろ！', gateChain: 'ゲートチェーン', bounty: '賞金首',
     world2: 'ワールド2 · ドライブウェイ', world3: 'ワールド3 · 下水道', world4: 'ワールド4 · 貯水槽', world5: 'ワールド5 · ボイラー室', world6: 'ワールド6 · 川', world7: 'ワールド7 · 氷原', world8: 'ワールド8 · 深淵', world9: 'ワールド9 · コア', won: 'ラン完走', wonSub: '9ワールドすべて',
     dashUp: 'ダッシュ強化', dashDown: 'ダッシュが LV1 に', fxInv: '無敵', fxRapid: '連射', fxMult: 'スコア', fxDash: 'ダッシュ',
@@ -40,6 +41,7 @@ const STR = {
     hintKeys: 'WASDで移動 · マウスでエイム · クリック長押しで射撃 · スペースでダッシュ · ESCで一時停止',
     hintPad: '左スティックで移動 · 右スティックでエイムと射撃 · Aでダッシュ · STARTで一時停止',
     gels: 'ゼリー', worlds: 'ワールド', street: 'ストリート', neon: 'ネオン', streetSub: 'ドライブウェイ、そして下水道', neonSub: '抽象の六角、そして潮流', classic: 'クラシック', sdf: 'SDF', classicSub: 'いつものメッシュ', sdfSub: 'レイマーチの距離場',
+    style: 'スタイル', physical: 'フィジカル', cel: 'セルシェード', watercolor: '水彩', physicalSub: '光を曲げるゼリー', celSub: 'フラットな階調と輪郭線', watercolorSub: '顔料、縁は濃く',
   },
   fi: {
     intro: 'INTRO', introSub: 'katso alku, sitten pelaa',
@@ -47,7 +49,7 @@ const STR = {
     arcade: '1.x:n aallot: kolme elämää, jokainen kaato maksaa lämpösi × verran.', hardcade: 'Jyrkempi arcade: purijoiden raadot ampuvat, ja joka maailmasta palaa yksi elämä.', survival: 'Loputon. Pahenee vain.', campaign: 'huoneita omalla kellollaan — läpäisy avaa seuraavan', goalSurvive: 'SELVIYDY', goalQuota: 'KAADA', goalFlawless: 'EI OSUMIA', bossDown: 'KAATUI', shift_breathe: 'RANNAT HENGITTÄVÄT', shift_floe: 'JÄÄ LOHKEAA', shift_twins: 'LATTIA HALKEAA KAHTIA', menuBtn: 'VALIKKO', menuSub: 'asetukset, ääni, kieli', trial: 'HAASTE', trial_gates: 'SYÖKSY PORTEISTA', trial_hold: 'PIDÄ RENGAS', trial_collect: 'KERÄÄ PALLOT', trial_combo: 'PIDÄ PUTKI', trial_protect: 'SUOJAA SYDÄN', trialMet: 'HAASTE SUORITETTU', trialMissed: 'HAASTE JÄI', skills: 'vaatii', sk_position: 'sijoittuminen', sk_priority: 'kohteiden järjestys', sk_aim: 'tähtäyksen säästö', sk_movement: 'liike', sk_risk: 'riski', whyDied: 'kaaduit', whyHit: 'osuma huoneessa ilman osumia', whyHeart: 'sydän menetettiin', whyClock: 'kello loppui ensin', yours: 'sinun', start: 'ALOITA', tierC: 'läpäisy', tierF: 'kuolema tai kello', hitCost: 'jokainen osuma vie arvosanan', downShare: 'kaadettu', yourBest: 'paras', notPlayed: 'ei vielä pelattu', gDodge: 'VÄISTÄ', gClear: 'KAADA KAIKKI', gGates: 'PORTIT', gHold: 'PIDÄ RENGAS', gProtect: 'SUOJAA SYDÄN', gOrder: 'JÄRJESTYKSESSÄ', gHunt: 'METSÄSTÄ', gStreak: 'PUTKI', gCollect: 'KERÄÄ', gBoss: 'POMO', gGauntlet: 'KUJANJUOKSU', gEscort: 'SAATA SYDÄN', gHills: 'PIDÄ RENKAAT', whyOrbs: 'liian moni pallo sammui', mNoGun: 'EI ASETTA', mDash: 'VAIN SYÖKSY', mAmmo: 'AMMUKSET', mFaster: 'KIIHTYY', mMoving: 'LIIKKUVA LATTIA', hits: 'osumaa', timeUp: 'AIKA', timeUpSub: 'kello loppui', teaches: 'opettaa', roomLocked: 'LUKITTU', grade: 'ARVOSANA', rooms: 'HUONEET', worldLocked: 'läpäise edellinen maailma', tierFScore: 'alle C, kuolema tai kello', whyScore: 'läpi, mutta alle C-rajan', pts: 'p', mBank: 'PANKKI — pisteet odottavat potissa, kunnes lämpö laskee; osuma vie potin', mCold: 'KYLMÄ ASE — jokainen laukaus viilentää lämpöä', mWhite: 'VALKOHEHKU — lämpö nousee yli ×8:n ×16:een asti; kaada koko ajan, älä ota osumaa', record: 'PELIHISTORIA', recordSub: 'kopioi huoneesi ja pelisi viestiin liitettäväksi', recordCopied: 'KOPIOITU — liitä se viestiin', recordShared: 'JAETTU', recordSaved: 'TALLENNETTU TIEDOSTOKSI', recordEmpty: 'ei vielä mitään: pelaa ensin huone tai kierros', recordPhone: 'viime peli: {hz} Hz · {late} % ruuduista myöhässä', recordSlow: ' · peli {sim}×', heatHint: 'kaada läheltä ja nopeasti, niin × lämpenee; osuma viilentää', banked: 'PANKKIIN', potLost: 'POTTI MENI', livesBack: 'ELÄMÄT TAKAISIN', lifeBack: 'ELÄMÄ TAKAISIN', campDone: 'KAMPANJA LÄPI', hardDone: 'HARD PAIN LÄPI', campDoneSub: 'kaikki kolmekymmentäkuusi huonetta läpi', hardDoneSub: 'kaikki kolmekymmentäkuusi, ja jokainen raato ampui takaisin', campDoneNext: 'seuraavaksi HARD PAIN: samat huoneet, ja jokainen raato ampuu takaisin', allS: 'jokainen huone S', sToGo: 'huonetta vielä alle S:n', total: 'yhteensä',
     best: 'ENNÄTYS', hard: 'VAIKEA', on: 'PÄÄLLÄ', off: 'POIS', hardSub: 'arcadesta tulee HARDCADE ja kampanjasta HARD PAIN: raadot ampuvat takaisin', campaignHard: 'samat huoneet, ja jokainen raato ampuu takaisin — läpäise huone ensin tavallisena', hardTag: 'VAIKEA', options: 'ASETUKSET', optionsSub: 'syöksy, geelit, maailmat, ääni, kieli', back: 'TAKAISIN', nextRun: 'seuraavasta pelistä', resume: 'JATKA', quit: 'LOPETA', again: 'UUDESTAAN', menu: 'VALIKKO', paused: 'TAUKO',
     over: 'PELI OHI', gotyou: 'KAATAJA', lastHit: 'VIIMEKSI OSUI', lastShot: 'SEN VIIMEINEN LAUKAUS', by_curtain: 'VERHO', by_sweep: 'PYYHKÄISEVÄ RIVI', time: 'AIKA', newbest: 'UUSI ENNÄTYS', soon: 'TULOSSA',
-    wave: 'AALTO', clear: 'TYHJÄ', curtain: 'VERHO!', pod: 'KAPSELI', podUp: 'KAPSELI LV2!', podDown: 'KAPSELI PUTOSI LV1:EEN', soundOn: 'ÄÄNI PÄÄLLÄ', volume: 'ÄÄNENVOIMAKKUUS', music: 'MUSIIKKI', annOn: 'SELOSTAJA PÄÄLLÄ', annOff: 'SELOSTAJA POIS', annVol: 'SELOSTAJAN ÄÄNI', motionOn: 'VÄHENNÄ LIIKETTÄ PÄÄLLÄ', motionOff: 'VÄHENNÄ LIIKETTÄ POIS', motionOnH: 'ei kameran tärinää', motionOffH: 'täysi ruudun tärinä', glowOn: 'HEHKU PÄÄLLÄ', glowOff: 'HEHKU POIS', glowH: 'kirkkaat kohdat hohtavat · maksaa hieman', cont: 'JATKA', contSub: 'ovelta:', langName: 'KIELI · SUOMI', gooOn: 'ROISKEET PÄÄLLÄ', gooOff: 'ROISKEET POIS', soundOff: 'ÄÄNI POIS', score: 'PISTEET', kills: 'KAATOJA', grazes: 'HIPAISUJA',
+    wave: 'AALTO', clear: 'TYHJÄ', curtain: 'VERHO!', pod: 'KAPSELI', podUp: 'KAPSELI LV2!', podDown: 'KAPSELI PUTOSI LV1:EEN', soundOn: 'ÄÄNI PÄÄLLÄ', volume: 'ÄÄNENVOIMAKKUUS', music: 'MUSIIKKI', annOn: 'SELOSTAJA PÄÄLLÄ', annOff: 'SELOSTAJA POIS', annVol: 'SELOSTAJAN ÄÄNI', motionOn: 'VÄHENNÄ LIIKETTÄ PÄÄLLÄ', motionOff: 'VÄHENNÄ LIIKETTÄ POIS', motionOnH: 'ei kameran tärinää', motionOffH: 'täysi ruudun tärinä', cont: 'JATKA', contSub: 'ovelta:', fromWorld: 'MAAILMASTA', fromStart: 'alusta', fromSub: 'pisteet pidetään erillään oikeasta ennätyksestä', bestHere: 'ennätys täältä', handLeft: 'VASENKÄTINEN', handRight: 'OIKEAKÄTINEN', handH: 'vasen peukalo tähtää, oikea liikkuu', handHR: 'vasen peukalo liikkuu, oikea tähtää', stick: 'TATTI', dead: 'KUOLLUT ALUE', szSmall: 'PIENI', szNormal: 'TAVALLINEN', szLarge: 'SUURI', stickH: 'kuinka pitkälle peukalo liikkuu täyteen vauhtiin', deadH: 'kuinka pitkälle tähtäyspeukalo liikkuu ennen kuin se ampuu', autoOn: 'AUTOMAATTINEN LAATU PÄÄLLÄ', autoOff: 'AUTOMAATTINEN LAATU POIS', autoH: 'hidas puhelin saa pienemmän kuvan · nyt {q}', records: 'ENNÄTYKSET', recordsSub: 'ennätyksesi ja viime pelisi', recBests: 'ENNÄTYKSET', recRuns: 'VIIME PELIT', recRooms: 'huonetta läpi', recNone: 'ei vielä mitään: pelaa ensin huone tai kierros', recWon: 'LÄPI', recQuit: 'kesken', recWorld: 'M', recReached: 'saavutettu', langName: 'KIELI · SUOMI', gooOn: 'ROISKEET PÄÄLLÄ', gooOff: 'ROISKEET POIS', soundOff: 'ÄÄNI POIS', score: 'PISTEET', kills: 'KAATOJA', grazes: 'HIPAISUJA',
     greenRush: 'VIHREÄ RYNTÄYS! TUPLAPALKINTO', dud: 'SUUTARI! VIHREÄLLÄ MENNÄÄN', dashThrough: 'SYÖKSY LÄPI!', gateChain: 'PORTTIKETJU', bounty: 'PALKKIO',
     world2: 'MAAILMA 2 · PIHATIE', world3: 'MAAILMA 3 · VIEMÄRI', world4: 'MAAILMA 4 · VESISÄILIÖ', world5: 'MAAILMA 5 · KATTILAHUONE', world6: 'MAAILMA 6 · JOKI', world7: 'MAAILMA 7 · JÄÄKENTTÄ', world8: 'MAAILMA 8 · SYVYYS', world9: 'MAAILMA 9 · YDIN', won: 'LÄPI PELATTU', wonSub: 'kaikki yhdeksän maailmaa',
     dashUp: 'SYÖKSY PARANI', dashDown: 'SYÖKSY PUTOSI LV1:EEN', fxInv: 'KUOLEMATON', fxRapid: 'PIKATULI', fxMult: 'PISTEET', fxDash: 'SYÖKSY',
@@ -55,6 +57,7 @@ const STR = {
     hintKeys: 'WASD LIIKKUU · HIIRI TÄHTÄÄ · PIDÄ PAINIKE POHJASSA AMPUAKSESI · VÄLILYÖNTI SYÖKSYY · ESC TAUKO',
     hintPad: 'VASEN TATTI LIIKKUU · OIKEA TÄHTÄÄ JA AMPUU · A SYÖKSYY · START TAUKO',
     gels: 'GEELIT', worlds: 'MAAILMAT', street: 'KATU', neon: 'NEON', streetSub: 'pihatie, sitten viemäri', neonSub: 'abstrakti kenno, sitten virta', classic: 'KLASSINEN', sdf: 'SDF', classicSub: 'tavalliset verkkogeelit', sdfSub: 'säteenmarssatut kentät',
+    style: 'TYYLI', physical: 'FYSIKAALINEN', cel: 'CEL-VARJOSTUS', watercolor: 'AKVARELLI', physicalSub: 'valoa taittava hyytelö', celSub: 'tasaiset sävyt ja tussiviiva', watercolorSub: 'pigmenttiä, tummat reunat',
   },
 };
 // the language: the one picked in OPTIONS (toko2.lang), else the browser's
@@ -246,7 +249,7 @@ export class UI {
 
   // ── panels ─────────────────────────────────────────────────────
   _panel(children) {
-    this.menuEl.classList.remove('hardmode');
+    this.menuEl.classList.remove('hardmode', 'two');
     this.menuEl.replaceChildren(...children);
     this.menuEl.hidden = false;
     this.buttons = [...this.menuEl.querySelectorAll('button')];
@@ -271,7 +274,7 @@ export class UI {
   // `keep` holds the focus where it was (on OPTIONS, coming back from it).
   title(best, sound, source, test = { dash: 'push', hp: 1 }, keep = false) {
     const prev = this.focusIndex;
-    const logo = el('div', 'logo'); logo.append(el('span', 'name', 'TOKO DROP'), el('span', 'num', '2.0'));
+    const logo = el('div', 'logo'); logo.setAttribute('role', 'img'); logo.setAttribute('aria-label', 'TOKO DROP');   // v89: the icon's logo (index.html --logo), no numeral
     const hint = el('p', 'hint', t(source === 'pad' ? 'hintPad' : source === 'keys' ? 'hintKeys' : 'hintTouch'));
     const fmt = (v) => (v ? `${t('best')} ${v.toLocaleString('en-US')}` : '');
     // the start screen (owner, 2026-10-27): two big buttons, ARCADE and
@@ -279,7 +282,7 @@ export class UI {
     // HARD turns them into HARDCADE and HARD PAIN, and the screen goes red.
     // Every setting is behind MENU; the intro film is not here (?intro still
     // plays it, for a look check)
-    const startRow = el('div', 'row start');
+    const startRow = el('div', 'stack');   // v89: ARCADE, the HARD switch under it, CAMPAIGN under that (owner)
     const hard = !!this.h.hard?.(), m = hard ? 'hardcade' : 'arcade';
     // HARD is a switch, drawn as one (owner, 2026-10-26: "like an actual
     // toggle"): a track and a knob, lit red when on. The title is rebuilt on
@@ -290,7 +293,9 @@ export class UI {
     const sw = el('span', `switch${hard ? ' on' : ''}${this._hardWas !== undefined && this._hardWas !== hard ? ' flip' : ''}`);
     sw.setAttribute('aria-hidden', 'true'); sw.append(el('span', 'knob'));
     hardBtn.append(sw); this._hardWas = hard;
-    const arcadeBtn = this._button(m.toUpperCase(), `${t(m)} ${fmt(best[m])}`, () => this.h.onStart(m));
+    // v85: a run set to start at a later world says so on the button, with its own best from there
+    const sa = this.h.startAtInfo?.() ?? { at: 1, reached: 1, bestFrom: 0 };
+    const arcadeBtn = this._button(m.toUpperCase(), sa.at > 1 ? `${t('fromWorld')} ${sa.at} · ${t(`world${sa.at}`).split(' · ')[1] ?? ''} ${sa.bestFrom ? `· ${t('bestHere')} ${sa.bestFrom.toLocaleString('en-US')}` : ''}` : `${t(m)} ${fmt(best[m])}`, () => this.h.onStart(m));
     const campBtn = this._button(hard ? 'HARD PAIN' : 'CAMPAIGN', t(hard ? 'campaignHard' : 'campaign'), () => this.h.onCampaign?.());
     arcadeBtn.classList.add('big'); campBtn.classList.add('big');
     startRow.append(arcadeBtn, hardBtn, campBtn);
@@ -300,9 +305,13 @@ export class UI {
     const c = this.h.continueInfo?.();
     const contBtn = c ? this._button(t('cont'), `${t('contSub')} ${t(`world${c.world}`)} · ${c.score.toLocaleString('en-US')}`, () => this.h.onContinue?.()) : null;
     if (contBtn) contBtn.classList.add('cont');
+    // v85: once a run has reached world 2, a run can start at any world reached; a tap moves it on, round to the start
+    const fromBtn = sa.reached > 1 ? this._button(`${t('fromWorld')} ${sa.at}`, sa.at > 1 ? `${t(`world${sa.at}`)} · ${t('fromSub')}` : t('fromStart'), () => this.h.onStartAt?.()) : null;
+    if (fromBtn) fromBtn.classList.add('cont', 'from');
     this.optBack = null;
-    this._panel([logo, startRow, ...(contBtn ? [contBtn] : []), menuBtn, hint]);
+    this._panel([logo, startRow, ...(contBtn ? [contBtn] : []), ...(fromBtn ? [fromBtn] : []), menuBtn, hint]);
     this.menuEl.classList.toggle('hardmode', hard);
+    this.menuEl.classList.toggle('two', !!(contBtn && fromBtn));   // v85: both offered: side by side on a phone held sideways
     if (keep && prev > 0 && prev < this.buttons.length) { this.focusIndex = prev; this._focus(); }
   }
 
@@ -409,6 +418,30 @@ export class UI {
     if (keep > 0 && keep < this.buttons.length) { this.focusIndex = keep; this._focus(); }
   }
   _focusOn(label) { const i = this.buttons.findIndex((b) => b.querySelector('.label')?.textContent === label); if (i >= 0) { this.focusIndex = i; this._focus(); } }
+
+  // RECORDS (v87, the owner's fourth QoL pick): what this phone has done, on
+  // one page from OPTIONS — the bests (the real one per mode, each from-world
+  // best, how far a run has reached), the campaigns' rooms cleared and S
+  // grades, the last dozen rooms and runs, and how the phone ran the last run
+  records(d) {
+    const fmt = (v) => (v ? v.toLocaleString('en-US') : '—'), mmss = (s) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
+    const bests = el('dl', 'stats'), row = (l, k, v) => l.append(el('dt', null, k), el('dd', null, v));
+    for (const m of ['arcade', 'hardcade']) {
+      row(bests, m.toUpperCase(), `${fmt(d.best[m])}${d.reached[m] > 1 ? ` · ${t('recReached')} ${t(`world${d.reached[m]}`).split(' · ')[0]}` : ''}`);
+      for (const [n, v] of Object.entries(d.from[m] ?? {})) row(bests, `${m.toUpperCase()} · ${t('fromWorld')} ${n}`, fmt(v));
+    }
+    for (const [tag, c] of [['CAMPAIGN', d.campaign], ['HARD PAIN', d.hard]]) if (c.played) row(bests, tag, `${c.cleared}/${c.total} ${t('recRooms')} · ${c.s} S`);
+    const runs = el('dl', 'stats');
+    for (const e of d.recent) {
+      const when = (e.at ?? '').slice(5, 16), who = e.k === 'r' ? e.id : e.k === 'h' ? 'HARDCADE' : 'ARCADE';
+      const what = e.k === 'r' ? `${e.g ?? t('recQuit')} · ${fmt(e.s)}` : `${t('recWorld')}${e.w} · ${fmt(e.s)} · ${mmss(e.t || 0)}${e.won ? ` · ${t('recWon')}` : e.q ? ` · ${t('recQuit')}` : ''}${e.w0 ? ` · ${t('fromWorld')} ${e.w0}` : ''}`;
+      row(runs, `${when} ${who}`, what);
+    }
+    const num = (x) => (lang === 'fi' ? String(x).replace('.', ',') : String(x)), f = d.phone;
+    this._panel([el('h2', 'opt', t('records')), el('p', 'mode', t('recBests')), bests, el('p', 'mode', t('recRuns')), d.recent.length ? runs : el('p', 'hint', t('recNone')),
+      ...(f ? [el('p', 'hint', t('recordPhone').replace('{hz}', f[3]).replace('{late}', num(f[2])) + (f[4] < 0.98 ? t('recordSlow').replace('{sim}', num(f[4])) : ''))] : []),
+      this._button(t('back'), null, () => this.openOptions())]);
+  }
   closeOptions() { const b = this.optBack; this.optBack = null; b?.(); }
   get inOptions() { return !!this.optBack; }
 
@@ -422,6 +455,9 @@ export class UI {
       this._button(`${t('gels')} · ${t(g)}`, t(`${g}Sub`), () => this.h.onGels?.()),
       this._button(`${t('worlds')} · ${t(wl)}`, t(`${wl}Sub`), () => this.h.onWorlds?.()),
     );
+    // v92: the STYLE switch (render/style.js) — PHYSICAL, CEL-SHADED, WATERCOLOR — on a row of its own, so its name fits a phone
+    const st = ['physical', 'cel', 'watercolor'].includes(this.h.style?.()) ? this.h.style() : 'physical', rowS = el('div', 'row');
+    rowS.append(this._button(`${t('style')} · ${t(st)}`, t(`${st}Sub`), () => this.h.onStyle?.()));
     // 1.x's settings page (v81, v137): VOLUME and the announcer with its own
     // volume, REDUCE MOTION, and the language its title carried as chips;
     // MUSIC (v58) beside VOLUME, the music's own share of it
@@ -446,9 +482,19 @@ export class UI {
       const num = (x) => (lang === 'fi' ? String(x).replace('.', ',') : String(x));
       rec.append(el('span', 'sub', t('recordPhone').replace('{hz}', f[3]).replace('{late}', num(f[2])) + (f[4] < 0.98 ? t('recordSlow').replace('{sim}', num(f[4])) : '')));
     }
-    row5.append(this._button(t('langName'), null, () => this.h.onLang?.()), this._button(o.glow ? t('glowOn') : t('glowOff'), t('glowH'), () => this.h.onGlow?.()));   // v79: the glow, off by default
+    row5.append(this._button(t('langName'), null, () => this.h.onLang?.()), this._button(t('records'), t('recordsSub'), () => this.h.onRecords?.()));   // v87: the RECORDS page (v88: in the glow's place, which is gone)
+    // v86: the controls (LEFT-HANDED, the stick's size, the dead zone) and the auto-quality
+    const sz = (k) => t(`sz${k[0].toUpperCase()}${k.slice(1)}`), row7 = el('div', 'row'), row8 = el('div', 'row');
+    row7.append(
+      this._button(o.hand === 'left' ? t('handLeft') : t('handRight'), t(o.hand === 'left' ? 'handH' : 'handHR'), () => this.h.onHand?.()),
+      this._button(`${t('stick')} · ${sz(o.stick ?? 'normal')}`, t('stickH'), () => this.h.onStick?.()),
+    );
+    row8.append(
+      this._button(`${t('dead')} · ${sz(o.dead ?? 'normal')}`, t('deadH'), () => this.h.onDead?.()),
+      this._button(o.autoQ === false ? t('autoOff') : t('autoOn'), t('autoH').replace('{q}', `${Math.round((o.autoQ === false ? 1 : o.qShare ?? 1) * 100)}%`), () => this.h.onAutoQ?.()),
+    );
     row6.append(rec);
-    return [row, row2, row3, row4, row5, row6];
+    return [row, rowS, row2, row3, row4, row5, row7, row8, row6];
   }
 
   // the card for the gel that got you (or, paused, the last to land a hit):
@@ -477,7 +523,7 @@ export class UI {
     const rows = el('dl', 'stats');
     const row = (k, v) => rows.append(el('dt', null, k), el('dd', null, v));
     row(t('score'), r.score.toLocaleString('en-US') + (r.newBest ? `  ${t('newbest')}` : ''));
-    row(t('best'), r.best.toLocaleString('en-US'));
+    row(r.from ? `${t('best')} · ${t('fromWorld')} ${r.from}` : t('best'), r.best.toLocaleString('en-US'));   // v85: a run from a later world against its own best
     row(t('time'), r.time);
     if (r.gotYou && !r.gotYouKind) row(t('gotyou'), r.gotYou);
     row(t('kills'), String(r.kills));

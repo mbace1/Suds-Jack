@@ -21,15 +21,16 @@
 // (dashPlan). 1.x fires only
 // while the aim is valid AND the trigger is held: a touch or pad aim stick is
 // both at once, a mouse aims all the time and fires only while held.
-import { TUNING } from '../tuning.js?v=81';
-import * as heat from './heat.js?v=81';
-import { BEHAVIOUR } from './species/index.js?v=81';   // read at run time only (a species' hitTest)
-import { slip } from './rules.js?v=81';   // THE FOAM's slick floor
+import { TUNING } from '../tuning.js?v=92';
+import * as heat from './heat.js?v=92';
+import { BEHAVIOUR } from './species/index.js?v=92';   // read at run time only (a species' hitTest)
+import { slip } from './rules.js?v=92';   // THE FOAM's slick floor
 
 const T = TUNING, H = T.hero, L = T.heroLook;
 
 export function makeHero() {
   return {
+    pressX: 0, pressZ: 0, pressM: 0, pressAX: 0, pressAZ: 0,   // v82: what pressed on him this step (the gels standing in him): sim/press.js
     x: 0, z: 0, px: 0, pz: 0, velX: 0, velZ: 0,
     // 1.x _lastAim: the direction of the last SHOT, never of the stick or the
     // cursor alone (player.js:401). The eyes face it; a still dash takes it.

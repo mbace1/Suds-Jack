@@ -23,10 +23,11 @@
 // vortex (sim/worlds.js's transition: `swirl` 0 → 1 winds it up round
 // `swirlAt`, out to `swirlR`, and opens a hole of `hole` m in the middle).
 import * as THREE from 'three/webgpu';
-import { Fn, If, uv, uniform, float, abs, fract, min, max, sin, cos, length, smoothstep, step, mix, fwidth, texture, clamp, vec2, vec3, pow, floor as tfloor, round, select, mod, dFdx, dFdy, exp, normalize, dot, cameraPosition, positionWorld } from 'three/tsl';
-import { GEL_TIME } from './gel.js?v=81';
-import { noise, grate, cells, sewerSpots } from './scenery.js?v=81';
-import { lilyPads, DRIFT } from './kit.js?v=81';
+import { Fn, If, uv, uniform, float, abs, fract, min, max, sin, cos, length, smoothstep, step, mix, fwidth, texture, clamp, vec2, vec3, pow, floor as tfloor, round, select, mod, dFdx, dFdy, exp, normalize, dot, cameraPosition, positionWorld, vec4 } from 'three/tsl';
+import { pickStyle, grainAt } from './style.js?v=92';
+import { GEL_TIME } from './gel.js?v=92';
+import { noise, grate, cells, sewerSpots } from './scenery.js?v=92';
+import { lilyPads, DRIFT } from './kit.js?v=92';
 
 const _white = new THREE.Color(0xffffff);
 
@@ -148,7 +149,27 @@ export function buildFloor(T, hx, hz, light, { style = 'grid', bounds: hasBounds
     const thick = float(1).sub(exp(h.div(K.absorb).negate()));
     const body = stained.mul(absorb).add(hue.mul(thick).mul(K.scatter));
     const wet = body.mul(float(1).add(relief)).add(mix(hue, vec3(1), 0.5).mul(max(relief, 0)).mul(K.rim)).add(vec3(glint)).add(lightRgb.mul(K.lit));
-    return mix(stained, wet, edgeOf(h, K.edge));
+    const physical = mix(stained, wet, edgeOf(h, K.edge));
+    // v92, the STYLE switch (render/style.js). CEL: a flat wash with a crisp contour, a lighter flat pool where it
+    // is deep, an ink band along the contour, no relief and no glint; the stain a flat tint. WATERCOLOR: pigment
+    // (the hue deepened) pooling DARK at the border of the wash, grained, bleeding a little past the contour; the
+    // stain a dried ring, darkest at its rim — the washed-out look is the one with none of this
+    const CF = T.style.cel.film, WF = T.style.watercolor.film;
+    const edgeHard = (v, at) => { const fw = fwidth(v).mul(0.3).add(1e-4); return smoothstep(float(at).sub(fw), float(at).add(fw), v); };
+    const celIn = edgeHard(h, K.edge), celBand = celIn.sub(edgeHard(h, K.edge * CF.inkBand)), celDeep = edgeHard(h, K.edge * CF.inner);
+    const celDry = mix(under, under.mul(K.dryDark * CF.dryTone).add(dHue.mul(K.dryTint)), edgeHard(d, K.dryEdge).mul(K.dryAlpha));
+    let celCol = hue.mul(CF.tone).mul(float(1).add(celDeep.mul(CF.innerLift)));
+    celCol = mix(celCol, celCol.mul(1 - CF.ink), celBand).add(lightRgb.mul(K.lit));
+    const cel = mix(celDry, celCol, celIn);
+    const wIn = edgeOf(h, K.edge), wBleed = edgeOf(h, K.edge * WF.bleed);
+    const wRim = float(1).sub(smoothstep(float(K.edge), float(K.edge * WF.rimTo), h));
+    const pig = hue.pow(vec3(WF.gamma));
+    const wCol = pig.mul(float(1).sub(wRim.mul(WF.rim))).mul(grainAt(positionWorld.xz, WF.grainScale, WF.grain)).add(lightRgb.mul(K.lit));
+    const wA = wIn.mul(WF.alpha).add(wBleed.sub(wIn).mul(WF.alpha * 0.5));
+    const dryRing = edgeOf(d, K.dryEdge).sub(edgeOf(d, K.dryEdge * 2.5));
+    const wDry = mix(under, under.mul(K.dryDark).add(dHue.pow(vec3(WF.gamma)).mul(K.dryTint)).mul(float(1).sub(dryRing.mul(WF.dryRim))), edgeOf(d, K.dryEdge).mul(K.dryAlpha));
+    const wc = mix(wDry, wCol, wA);
+    return pickStyle(physical, cel, wc);
   };
 
   // world (x, z) from floor uv and back: v runs from z = +hz to -hz

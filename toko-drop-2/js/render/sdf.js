@@ -37,8 +37,8 @@ import {
   positionLocal, positionWorld, cameraPosition, modelWorldMatrixInverse, modelViewMatrix, cameraNear, cameraFar,
   viewZToPerspectiveDepth, transformNormalToView,
 } from 'three/tsl';
-import { TUNING } from '../tuning.js?v=81';
-import { gelDisplacement, gelReach, gelGlow, gelThickness, DISP } from './gel.js?v=81';
+import { TUNING } from '../tuning.js?v=92';
+import { gelDisplacement, gelReach, gelGlow, gelThickness, DISP } from './gel.js?v=92';
 
 const T = TUNING, B = T.blob;
 
@@ -86,6 +86,7 @@ function makeShared(name, classic, P) {
     radius: per(1, (s) => s.u.radius.value),
     hit: per(0, (s) => s.u.hit.value),
     hitDir: per(new THREE.Vector2(), (s) => s.u.hitDir.value),
+    contact: per(new THREE.Vector4(), (s) => s.u.contact.value),   // v82: the contact squash (v90: z the near side's depth, w the far side's)
     tear: per(0, (s) => s.u.tear.value),
     emissive: per(new THREE.Color(), (s) => s.mat.emissive),
     color: per(new THREE.Color(), (s) => s.mat.color),

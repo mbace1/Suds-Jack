@@ -7,16 +7,31 @@
 // things that work"). The arena is 1.x's, so every 1.x number ports as it is
 // instead of through a rescale. Axes: x across the screen (right +), y up,
 // z toward the bottom of the screen. The arena is centred on the origin.
-import { SPECIES } from './tuning/species/index.js?v=81';
-import WAVES from './tuning/waves.js?v=81';
-import PICKUPS from './tuning/pickups.js?v=81';
-import MUSIC from './tuning/music.js?v=81';
+import { SPECIES } from './tuning/species/index.js?v=92';
+import WAVES from './tuning/waves.js?v=92';
+import PICKUPS from './tuning/pickups.js?v=92';
+import MUSIC from './tuning/music.js?v=92';
 
 export const TUNING = {
   render: {
     clearColor: 0x0d0d1a,   // 1.x's background: the void past the floor, and the UI's ground
     maxPixelRatio: 2,       // a Pixel 10 Pro reports ~3; full-res HD gels at 2 are plenty
   },
+  // v86 (the owner's third QoL pick): CONTROLS AND AUTO-QUALITY, in OPTIONS.
+  // `controls`: the touch stick's size (px of thumb travel for a full stick;
+  // the flick's lengths are in units of it, so a bigger stick asks a longer
+  // flick) and the aim stick's dead zone (px before it aims and fires; the
+  // pad's radial dead zone scales with it, `padDead` at NORMAL). LEFT-HANDED
+  // swaps the halves: the left thumb aims, the right moves.
+  controls: { stick: { small: 46, normal: 60, large: 78 }, dead: { small: 10, normal: 15, large: 22 }, padDead: 0.2 },
+  // `quality`: the picture's pixel ratio as a share of what the phone would
+  // get (render.maxPixelRatio), walked DOWN a step when a window of `window`
+  // s had more than `down.late` % of its frames late (over one and a half of
+  // the refresh) or the game ran under `down.sim` of real time, and back UP a
+  // step after `up.windows` windows in a row under `up.late` %. The step is
+  // remembered (toko2.qstep) so a slow phone starts where it ended, and the
+  // play record's device line says `q0.72` for a run drawn at a lower step
+  quality: { steps: [1, 0.85, 0.72, 0.6], window: 3, down: { late: 25, sim: 0.9 }, up: { late: 4, windows: 5 } },
 
   // 1.x's arena presets (main.js:20-33), picked at the start of each run by
   // the screen's shape. Half sizes.
@@ -371,11 +386,6 @@ export const TUNING = {
     },
   },
 
-  // v79: the GLOW option (render/glow.js), off by default (owner): the bright
-  // part of the frame past `threshold` (eased in over `knee`) added back blurred,
-  // sampled at mip `levels` with `weights`, × `strength`; `samples` the pass's MSAA
-  glow: { threshold: 0.7, knee: 0.25, levels: [2, 3, 4, 5], weights: [0.35, 0.3, 0.25, 0.2], strength: 1.2, samples: 4 },
-
   // One fixed view of the whole arena, refitted on every resize and rotation.
   camera: {
     fov: 60,                // 1.x's vertical FOV
@@ -501,6 +511,21 @@ export const TUNING = {
     // `depth` in radii, `focus` how tightly it gathers round the impact,
     // `freq` rad/s and `damp` 1/s of the spring. 1.x only rippled.
     dent: { depth: 0.24, focus: 5.5, freq: 34, damp: 9 },
+    // v82 (owner, 2026-10-31: "more physical splatter and jelly like effects"):
+    // CONTACT SQUASH. A body pressed on — by another body it stands in, by a
+    // wall, by the hero — flattens where it is pressed and bulges at its
+    // sides, the way jelly against glass does. The sim reports the press as
+    // a vector toward what pressed (world.js pressX/pressZ: the crowd's
+    // overlaps, the walls' push-back, the hero's overlap), the view turns its
+    // length, in the body's own radii × `gain`, into a flattening DEPTH of at
+    // most `max` radii (eased in at `attack` 1/s and out at `release` 1/s, so
+    // one step's jostle reads and a jitter does not), and the gel's
+    // displacement law (gel.js gelDisplacement, shared with the SDF look)
+    // cuts the body by a plane that far in from its rim on the contact's
+    // side, over a belt from the floor to the body's widest (`belt`: where
+    // the belt starts fading, in radii, and where it is gone), pushing
+    // `bulge` × the depth out at the sides. The hero flattens too.
+    contact: { gain: 8, max: 0.42, attack: 28, release: 7, belt: [0.95, 1.5], bulge: 0.3 },
     death: 0.28,            // seconds a dying gel thrashes, swells and fades before it bursts
     deathSwell: 1.3,        // how much bigger it gets by the end
   },
@@ -590,25 +615,49 @@ export const TUNING = {
     // px are already near physical: ~6.3 a mm on a Pixel, ~5.2 on an iPad
     // Air, so a thumb's flick reads about the same on both); times in ms of
     // the events' own timeStamps; speeds in units a second (5 = 0.3 px/ms).
-    // Measured against synthetic thumb strokes driven through real CDP touch
-    // events (a touchmove a display frame while the thumb moves, none while
-    // it rests), on a phone at 60 and 120 Hz and an iPad: a flick of 7 mm
-    // in 160 ms is read on both, a thumb that stops 60 ms before it lifts or
-    // sweeps the aim round slowly is not (scratchpad cam18/flicks.mjs).
+    // Measured against synthetic thumb strokes (scratchpad dashlab/gestures.mjs:
+    // a touchmove a display frame while the thumb moves, none while it rests)
+    // at 60 and 120 Hz. v91 (owner, 2026-10-31: "get flick to dash to 1.x
+    // parity"; 1.x dashed on every lift): a flick of 4 mm in 60 ms, of 7 mm
+    // in 160 ms, and a 7 mm flick that slows to a stop and lifts up to 150 ms
+    // later all dash, as they did in 1.x; a thumb at rest for longer, a slow
+    // aim sweep and a 2 mm aim correction do not. v18's reader asked the thumb
+    // to be still moving AT the lift, and at 60 Hz no decelerating stroke was.
     flick: {
       tap: false,                  // a tap is no dash (1.x's was); true makes it 1.x's dash again
       tapMs: 200, tapPx: 12,       // shorter and stiller than this is a TAP
-      stopMs: 50,                  // no movement for this long before the lift: the thumb had stopped
-      releaseMs: 50,               // the speed at the lift is fitted over this much of the end
-      releaseFloor: 4,             // u/s at the lift under which it is a let-go, not a flick (0.24 px/ms)
-      peakFloor: 5,                // u/s the stroke must reach somewhere (0.3 px/ms; an aim sweep peaks near 2)
-      lengthFloor: 0.3,            // u of stroke under which it is a let-go (18 px, ~3 mm)
-      strokeFloor: 2,              // u/s: walking back from the lift, the stroke ends where the thumb was slower
+      landMs: 160,                 // the thumb may slow, stop and lift within this of its stroke's end: still that flick. Longer, it had come to rest (v91)
+      releaseMs: 50,               // the stroke's end speed is fitted over this much of it (the ?fps readout)
+      peakFloor: 3,                // u/s the stroke must reach somewhere (0.18 px/ms; an aim sweep peaks near 2)
+      lengthFloor: 0.25,           // u of stroke under which it is a let-go (15 px, ~2.4 mm)
+      strokeFloor: 1.5,            // u/s: walking back from the stroke's end, it ends where the thumb was slower; slower than this at the lift is the landing
       strokeMs: 350,               // and it looks back no further
       spanMs: 14,                  // a speed sample spans at least this (one sample's jitter is not a speed)
       restMs: 30,                  // a gap with no events this long was the thumb at rest
-      length: [0.3, 2.5],          // stroke length → sL 0..1 (18 → 150 px)
+      length: [0.75, 2.5],         // stroke length → sL 0..1 (45 → 150 px): an ordinary 7 mm flick buys 1.x's own dash, a long one more (v91)
       speed: [6, 40],              // peak stroke speed → sV 0..1 (0.36 → 2.4 px/ms)
+    },
+  },
+
+  // The STYLE switch (render/style.js, v92; owner: "watercolor, cell shaded,
+  // physical 3d"): how the gels and the goo are painted. PHYSICAL is the game's
+  // own look (material, blob, goo.look); these two are painted flat from the
+  // same bodies. Tones are factors on the body's own colour.
+  style: {
+    cel: {
+      shadow: 0.52, mid: 0.4, lit: 0.72, midTone: 0.5,   // three tones: below `mid`, between, above `lit` (nl = dot(N, L) × ½ + ½)
+      specAt: 0.985, spec: 0.32,                          // the highlight dot: a hard cut on the half vector (a cube's whole face takes it, so it lightens rather than whitens)
+      inkAt: 0.74, ink: 0.2,                              // the ink line: where 1 − dot(N, V) passes inkAt, the colour × ink
+      film: { inner: 3.2, innerLift: 0.22, inkBand: 1.8, ink: 0.3, tone: 0.95, dryTone: 0.8 },   // the film: a flat wash, a lighter pool past edge × inner, an ink band at the contour
+      drop: { shadow: 0.55, lit: 0.6, inkAt: 0.7, ink: 0.25 },
+    },
+    watercolor: {
+      shadow: 0.6, shadeFrom: 0.25, shadeTo: 0.75, bands: 3, banding: 0.4,   // the shade: soft, part-banded
+      gamma: 1.55,                                        // the pigment: the colour deepened (the pale first cut read as the washed-out look it replaces)
+      edgePow: 2.2, edge: 0.85, edgeDark: 0.42,           // dark at the edges, where the wash pools
+      grainScale: 9, grain: 0.18, paper: 0.04,            // granulation, and a little paper
+      film: { gamma: 1.45, rimTo: 4, rim: 0.6, grainScale: 14, grain: 0.3, alpha: 0.9, bleed: 0.6, dryRim: 0.55 },   // the film: pigment pooling dark at its border, grained, a bleed past the edge; the stain a dried ring
+      drop: { shadow: 0.6, edgePow: 2, edge: 0.6, edgeDark: 0.5 },
     },
   },
 
@@ -638,7 +687,10 @@ export const TUNING = {
     // A button (A / RB / RT, Space) is still 1.x's own dash, to the step
     // (owner: the pad keeps a fixed dash), and so is a bare input.dash true.
     flick: {
-      d: [2.4, 11], v: [18, 46],           // a flick: sL → distance (u), sV → speed (u/s); 1.x's is 4.77 at 26
+      // v91 (1.x parity): the lightest flick is 1.x's own dash — 4.77 u at 26 u/s, 11 steps — and a longer,
+      // faster one goes further and faster; v18's 2.4 u at 18 u/s made an ordinary 7 mm flick a dash shorter
+      // and slower than the one a 1.x thumb knew (measured: 4.1 u at 18 u/s)
+      d: [26 * 11 / 60, 11], v: [26, 46],   // a flick: sL → distance (u), sV → speed (u/s)
       dPow: 1, vPow: 1,
       vStd: 26,                            // the speed the scaled effects are measured against (1.x's)
       steps: [4, 24],                      // 0.067 .. 0.4 s
@@ -918,6 +970,20 @@ export const TUNING = {
     droplets: 4, dropletsBig: 8, dropletsBoss: 14,   // 1.x's extra burst: 4 small, 8 big, 14 a boss (main.js:4499)
     dropletSize: [0.09, 0.18], dropletSpeed: 2, dropletUp: [2.5, 6.5],
     chunkLife: 1.4, gravity: 14, floorKeep: 0.35, shrink: 0.3,
+    // v83 (the owner's third splatter pick): CHUNKS THAT BEHAVE. A strand of
+    // goo trails each chunk out of the burst and snaps as it thins (`strand`:
+    // `w` × the chunk's size wide at the start, thinning to nothing by `max`
+    // m, gone after `life` s or when the chunk lands); a chunk BOUNCES where
+    // it lands (`bounce`: `e` of its fall back up while it fell faster than
+    // `min` m/s, at most `max` times, a squash kick of `squash` × its fall/6
+    // each), jiggles (`wobble`: the squash spring's stiffness and damping a
+    // 60 Hz step; 1.x had 0.32 and 0.8), slides to a stop (`friction` 1/s)
+    // and over its last `shrink` s MELTS into the floor's film: `melt.vol` ×
+    // its drawn volume poured under it as it shrinks (its drawn size is mostly
+    // air; what it leaves is a blob about its own footprint). With SPLATTER
+    // off it fades out as 1.x's did.
+    strand: { w: 0.55, max: 1.1, life: 0.32 }, bounce: { e: 0.32, min: 1.6, max: 2, squash: 0.5 }, wobble: { k: 0.3, damp: 0.86 }, friction: 4,
+    melt: { vol: 0.08 },
     puddle: 1.5,                           // radius, as a share of the body's
     satellites: [0.6, 1.5], satelliteSize: [0.4, 0.7],
     big: 0.75,                             // a body this wide is big: more of everything, and a shockwave
@@ -1035,6 +1101,24 @@ export const TUNING = {
     // (goo.js): the hue by depth (`absorb` mm, `scatter`), the contact line
     // (`edge` mm), the slope lit by the sun (`bump`, `relief`, `rim`, a glint
     // `shine`/`spec` where it curves) and the stain (`dryAlpha`, `dryTint`).
+    // v84 (the owner's fourth splatter pick): SPRAY AND TRACKS. The sim keeps
+    // a coarse WET MAP of the floor (goo-sim.js: `cell` m cells, the goo
+    // volume each holds and its hue, fed by every stamp and pour, draining at
+    // `tau` s), so a body knows what it stands in without reading the film
+    // back; `wet` = volume × `gain`, clamped to 1. A body moving faster than
+    // `spray.minSpeed` through a cell wetter than `spray.minWet` throws
+    // `spray.rate` × wet × speed/6 drops a second out of its foot, back and to
+    // the sides (`back` rad either side of straight back), at `speed` m/s plus
+    // `carry` × its own, `up` m/s, `size`, at most `perStep` a step, in the
+    // goo's own colour. Its FOOT picks goo up while it stands in a wet cell
+    // (`tracks.pick` m³/s × wet, up to `cap` m³) and lays it down once it is
+    // out and moving faster than `minSpeed`, `lay` of what it carries a metre,
+    // as a streak `wide` × its radius: wet footprints out of a pool, drying
+    // as the floor's goo does. The hero counts mid-dash too.
+    // (`tracks.pickAt` / `layAt`: how wet a cell must be for the foot to take goo on, and how dry for it to lay it down)
+    wet: { cell: 1, tau: 6, gain: 80,
+      spray: { minSpeed: 2.5, minWet: 0.05, rate: 220, back: 1.1, speed: [0.8, 2.2], carry: 0.6, up: [1.0, 3.0], size: { min: 0.016, max: 0.05, skew: 1.7 }, perStep: 10 },
+      tracks: { pick: 3e-3, cap: 1.2e-3, lay: 1.6, wide: 0.45, minSpeed: 0.3, pickAt: 0.1, layAt: 0.05 } },
     wall: { on: true, h: 1.1, perMetre: 16, rows: 36, impact: 0.3, keep: 0.5, proud: 0.4, creep: 0.45, creepR: 60, settle: 6, slip: 3,
       shed: 1.6, streakWide: 0.9, minR: 0.012, blob: 1.6, out: 0.8,
       film: { yield: 4, run: 0.3, spread: 0.06, ref: 10, evap: 4, deposit: 0.6, ring: 2.5, ringAt: 0.5, dryHalfLife: 8, stampCap: 2048, minWid: 0.8, hz: 30, wetFor: 20, idleEvery: 0.5 },

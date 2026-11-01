@@ -7,35 +7,34 @@
 // The rules live in sim/ and run on a fixed step; this file feeds them input,
 // hands their events to the view and the sound, and draws in between steps.
 import * as THREE from 'three/webgpu';
-import { TUNING } from './tuning.js?v=81';
-import { buildFloor } from './render/floor.js?v=81';
-import { fitCamera, screenToWorld, screenDown } from './render/view.js?v=81';
-import * as worldsSim from './sim/worlds.js?v=81';
-import { shapeAt as shiftShape } from './sim/floorshift.js?v=81';
-import * as reshapeSim from './sim/reshape.js?v=81';
-import { Scenery } from './render/scenery.js?v=81';
-import { DRIFT } from './render/kit.js?v=81';
-import { Glow } from './render/glow.js?v=81';
-import { Transit } from './render/transit.js?v=81';
-import { Splats } from './render/splats.js?v=81';
-import { Actors } from './render/actors.js?v=81';
-import { GEL_TIME } from './render/gel.js?v=81';
-import { studioEnvironment } from './render/env.js?v=81';
-import { Specimen } from './render/specimen.js?v=81';
-import { createWorld, step, api as simApi } from './sim/world.js?v=81';
-import { stage as stagePk } from './sim/pickups.js?v=81';
-import { Input } from './input.js?v=81';
-import { UI, t, timeText, LANGS, getLang, setLang, goalText, bossName } from './ui.js?v=81';
-import { Announcer } from './announcer.js?v=81';
-import { rooms as campaignRooms, isOpen as roomOpen, better as betterGrade } from './sim/director/campaign.js?v=81';
-import { levelShape, slots as regionSlots } from './sim/shape.js?v=81';
-import { Sound } from './audio.js?v=81';
-import { Music, worldWant, cueFor, renderMusicWav } from './music.js?v=81';
-import { Intro, CUES as INTRO } from './intro/intro.js?v=81';
-import { scheduleIntroSfx, renderIntroSfxWav } from './intro/sfx.js?v=81';
-import { Readout } from './readout.js?v=81';
-import { Meter, device } from './meter.js?v=81';
-import * as record from './record.js?v=81';
+import { TUNING } from './tuning.js?v=92';
+import { buildFloor } from './render/floor.js?v=92';
+import { fitCamera, screenToWorld, screenDown } from './render/view.js?v=92';
+import * as worldsSim from './sim/worlds.js?v=92';
+import { shapeAt as shiftShape } from './sim/floorshift.js?v=92';
+import * as reshapeSim from './sim/reshape.js?v=92';
+import { Scenery } from './render/scenery.js?v=92';
+import { DRIFT } from './render/kit.js?v=92';
+import { Transit } from './render/transit.js?v=92';
+import { Splats } from './render/splats.js?v=92';
+import { Actors } from './render/actors.js?v=92';
+import { GEL_TIME } from './render/gel.js?v=92';
+import { studioEnvironment } from './render/env.js?v=92';
+import { Specimen } from './render/specimen.js?v=92';
+import { createWorld, step, api as simApi } from './sim/world.js?v=92';
+import { stage as stagePk } from './sim/pickups.js?v=92';
+import { Input } from './input.js?v=92';
+import { UI, t, timeText, LANGS, getLang, setLang, goalText, bossName } from './ui.js?v=92';
+import { Announcer } from './announcer.js?v=92';
+import { rooms as campaignRooms, isOpen as roomOpen, better as betterGrade } from './sim/director/campaign.js?v=92';
+import { levelShape, slots as regionSlots } from './sim/shape.js?v=92';
+import { Sound } from './audio.js?v=92';
+import { Music, worldWant, cueFor, renderMusicWav } from './music.js?v=92';
+import { Intro, CUES as INTRO } from './intro/intro.js?v=92';
+import { scheduleIntroSfx, renderIntroSfxWav } from './intro/sfx.js?v=92';
+import { Readout } from './readout.js?v=92';
+import { Meter, device, Quality } from './meter.js?v=92';
+import * as record from './record.js?v=92';
 
 const T = TUNING;
 const params = new URLSearchParams(location.search);
@@ -59,6 +58,12 @@ document.querySelector('meta[name="theme-color"]')?.setAttribute('content', void
 
 const renderer = new THREE.WebGPURenderer({ antialias: true, forceWebGL: params.has('webgl') });
 renderer.setPixelRatio(Math.min(devicePixelRatio, T.render.maxPixelRatio));
+// v86: AUTO QUALITY — the pixel ratio a step down on a phone that cannot keep
+// up (js/meter.js Quality, TUNING.quality), the step remembered; `toko2.autoq`
+// off holds the full picture whatever the frame times
+const quality = new Quality(T.quality, 0);
+const autoQ = () => store.str('toko2.autoq') !== 'off';
+const applyQuality = () => renderer.setPixelRatio(Math.min(devicePixelRatio, T.render.maxPixelRatio) * (autoQ() ? quality.share : 1));
 stage.appendChild(renderer.domElement);
 await renderer.init();
 
@@ -75,9 +80,6 @@ sun.position.set(...T.light.sun.position);
 scene.add(sun);
 // what the jelly reflects (render/env.js): 2.0's, 1.x had nothing to reflect
 if (T.env.on) { scene.environment = studioEnvironment(); scene.environmentIntensity = T.env.intensity; }
-// v79: the GLOW option (render/glow.js), off unless asked for; ?glow=1 / ?glow=0 override it for a link
-const glow = new Glow(renderer, scene, T);   // its pass takes the frame's camera when it first draws
-const glowOn = () => (params.get('glow') === '1' ? true : params.get('glow') === '0' ? false : store.str('toko2.glow') === 'on');
 // v75: each world lit in its own light (TUNING.worlds.light): the sun's colour, strength
 // and place, the ambient's, and how much the jelly reflects. Set as a floor is built, which
 // for a world change is under the dark
@@ -117,6 +119,16 @@ let trauma = 0;
 const shake = (amount) => { if (!reduceMotion()) trauma = Math.min(1, trauma + amount); };
 // REDUCE MOTION (1.x v81): OPTIONS' choice (toko2.motion), else the device's
 const reduceMotion = () => { const m = store.str('toko2.motion'); return m ? m === 'on' : matchMedia('(prefers-reduced-motion: reduce)').matches; };
+// v86: CONTROLS (OPTIONS) — LEFT-HANDED, the stick's size, the dead zone; applied to the input layer at once
+const SIZES = ['small', 'normal', 'large'];
+const handLeft = () => store.str('toko2.hand') === 'left';
+const stickSize = () => (SIZES.includes(store.str('toko2.stick')) ? store.str('toko2.stick') : 'normal');
+const deadSize = () => (SIZES.includes(store.str('toko2.dead')) ? store.str('toko2.dead') : 'normal');
+function applyControls() {
+  const C = T.controls;
+  input.swap = handLeft(); input.stickRadius = C.stick[stickSize()];
+  input.aimDead = C.dead[deadSize()]; input.padDead = C.padDead * (C.dead[deadSize()] / C.dead.normal);
+}
 
 // ── the arena: 1.x's size for the screen's shape, chosen at each run start
 // (never mid-run), with the floor made to match ──────────────────────────
@@ -298,6 +310,18 @@ const MODES = ['arcade', 'hardcade', 'survival', 'campaign'];
 // were another scale, and stay in storage untouched, but are no longer shown
 const bestKey = (m) => `toko2.heat.best.${m}`;
 const bests = () => Object.fromEntries(MODES.map((m) => [m, store.num(bestKey(m))]));
+// v85 (the owner's second QoL pick): START AT A REACHED WORLD. The furthest
+// world an ARCADE or HARDCADE run has reached on this phone is kept
+// (`toko2.reached.<mode>`), and the title offers to start a run at any world
+// up to it. A run started past world 1 keeps its scores APART from the real
+// best — its own best per starting world (`bestFromKey`) — so the BEST on the
+// title is always a run from the start. The choice is kept (`toko2.startAt`)
+// and said on the ARCADE button, so nobody plays from world 4 by accident
+const reachedKey = (m) => `toko2.reached.${m}`, startAtKey = (m) => `toko2.startAt.${m}`;
+const bestFromKey = (m, n) => `toko2.heat.best.${m}.from${n}`;
+const reachedOf = (m) => Math.max(1, Math.min(T.worlds.list.length, store.num(reachedKey(m)) || 1));
+const startAtOf = (m) => Math.max(1, Math.min(reachedOf(m), store.num(startAtKey(m)) || 1));
+let startedAt = 1;   // the world this run started at
 // The title's two test switches (owner, 2026-10-22: "the pushing dash should
 // be tested as it may be a better dynamic, allowing for more bullet sponge
 // enemies", then "likely we want dashes that go through and do damage in the
@@ -356,9 +380,9 @@ async function shareRecord() {
 // (v63, js/meter.js) how the phone ran it
 const meter = new Meter();
 const recordHow = () => ({
-  input: input.source, screen: arenaName, date: new Date(), frames: meter.summary(), letGos: input.letGos, cont: continuedFrom,
+  input: input.source, screen: arenaName, date: new Date(), frames: meter.summary(), letGos: input.letGos, cont: continuedFrom, from: startedAt > 1 ? startedAt : 0,
   device: device({ ua: navigator.userAgent, touchPoints: navigator.maxTouchPoints, width: renderer.domElement.width, height: renderer.domElement.height,
-    ratio: renderer.getPixelRatio(), backend, gels: actors.gels, goo: gooOn(), glow: glowOn() }),
+    ratio: renderer.getPixelRatio(), backend, gels: actors.gels, goo: gooOn(), q: autoQ() ? quality.share : 1 }),
 });
 // v80 (the owner's first QoL pick): CONTINUE A RUN. An ARCADE or HARDCADE run is saved
 // at each world's door — the world, the score, the lives, the weapon and the dash
@@ -375,6 +399,19 @@ function saveContinue() {
   store.set(CONT_KEY, JSON.stringify({ mode, world: world.world, score: world.score, kills: world.kills, heat: world.heat || 0, lives: h.lives, weapon: h.weapon ? { ...h.weapon } : null, dashLevel: h.dashLevel || 0, when: Date.now(), v: T.version ?? null }));
 }
 const clearContinue = () => { try { localStorage.removeItem(CONT_KEY); } catch { /* private mode */ } };
+// v87 (the owner's fourth QoL pick): RECORDS — what this phone has done, on
+// one page in OPTIONS: the bests (the real ones, and each from-world best),
+// the campaigns' rooms cleared and S grades, the last dozen rooms and runs
+// out of the play record, and how the phone ran the last of them
+function recordsData() {
+  const list = record.read(store), from = {};
+  for (const m of ['arcade', 'hardcade']) { from[m] = {}; for (let n = 2; n <= reachedOf(m); n++) { const v = store.num(bestFromKey(m, n)); if (v) from[m][n] = v; } }
+  const camp = (hard) => {
+    const p = campaignProgress(hard), all = campaignRooms(), got = all.filter((r) => p[r.id]?.grade);
+    return { played: got.length > 0, cleared: got.filter((r) => p[r.id].grade !== 'F').length, total: all.length, s: got.filter((r) => p[r.id].grade === 'S').length };
+  };
+  return { best: bests(), reached: { arcade: reachedOf('arcade'), hardcade: reachedOf('hardcade') }, from, campaign: camp(false), hard: camp(true), recent: list.slice(-12).reverse(), phone: record.lastFrames(list) };
+}
 // a room or a run left from the pause menu goes in the record as a quit (js/record.js)
 function recordQuit() {
   if (!world || world.over || (state !== 'paused' && state !== 'play')) return;
@@ -382,6 +419,8 @@ function recordQuit() {
 }
 
 const input = new Input(document);
+applyControls();   // v86: OPTIONS' controls, from the start
+quality.step = Math.max(0, Math.min(T.quality.steps.length - 1, store.num('toko2.qstep') || 0)); applyQuality();   // v86: a slow phone starts where it ended
 const sound = new Sound();
 // VOLUME (1.x v81): toko2.volume, 0..1 in quarters; a v23 SOUND OFF (toko2.mute) reads as 0
 const VOLUMES = [0, 0.25, 0.5, 0.75, 1];
@@ -405,6 +444,9 @@ const ui = new UI({
   // v80: the run kept at a world's door, for the title's CONTINUE, and taking it up
   continueInfo: () => { const c = contSnap(); return c && c.mode === (hardOn() ? 'hardcade' : 'arcade') ? { world: c.world, score: c.score } : null; },
   onContinue: () => { const c = contSnap(); if (c) start(c.mode, { intro: true, resume: c }); },
+  // v85: the world a run starts at, up to the furthest reached, and its own best from there
+  startAtInfo: () => { const m = hardOn() ? 'hardcade' : 'arcade', at = startAtOf(m), reached = reachedOf(m); return { at, reached, bestFrom: at > 1 ? store.num(bestFromKey(m, at)) : 0 }; },
+  onStartAt: () => { const m = hardOn() ? 'hardcade' : 'arcade', next = startAtOf(m) % reachedOf(m) + 1; store.set(startAtKey(m), next); showTitle(true); },
   // the title's HARD switch: ARCADE becomes HARDCADE (toko2.hard)
   hard: () => store.str('toko2.hard') === 'on',
   onHard: () => { store.set('toko2.hard', store.str('toko2.hard') === 'on' ? 'off' : 'on'); showTitle(true); },
@@ -418,20 +460,27 @@ const ui = new UI({
   onAnnouncer: () => { announcer.on = !announcer.on; store.set('toko2.announcer', announcer.on ? 'on' : 'off'); if (announcer.on) announcer.say('start'); else announcer.stop(); refreshMenu(); },
   onAnnVolume: () => { announcer.volume = next(VOLUMES.slice(1), announcer.volume); store.set('toko2.annVolume', announcer.volume); announcer.last = -1e9; announcer.say('clear'); refreshMenu(); },
   onMotion: () => { store.set('toko2.motion', reduceMotion() ? 'off' : 'on'); if (reduceMotion()) trauma = 0; refreshMenu(); },
-  onGlow: () => { store.set('toko2.glow', glowOn() ? 'off' : 'on'); refreshMenu(); },   // v79
+  // v86: the controls and the auto-quality
+  onHand: () => { store.set('toko2.hand', handLeft() ? 'right' : 'left'); applyControls(); refreshMenu(); },
+  onStick: () => { store.set('toko2.stick', SIZES[(SIZES.indexOf(stickSize()) + 1) % 3]); applyControls(); refreshMenu(); },
+  onDead: () => { store.set('toko2.dead', SIZES[(SIZES.indexOf(deadSize()) + 1) % 3]); applyControls(); refreshMenu(); },
+  onAutoQ: () => { store.set('toko2.autoq', autoQ() ? 'off' : 'on'); applyQuality(); refreshMenu(); },
   onLang: () => { setLang(LANGS[(LANGS.indexOf(getLang()) + 1) % LANGS.length]); refreshMenu(); },
   onDash: () => { store.set('toko2.dash', DASHES[(DASHES.indexOf(tests().dash) + 1) % DASHES.length]); refreshMenu(); },
   onGelHp: () => { const h = tests().hp; store.set('toko2.gelHp', HP_STEPS[(HP_STEPS.indexOf(h) + 1) % HP_STEPS.length]); refreshMenu(); },
   gels: () => gels(), onGels: () => flipGels(),
+  style: () => styleOf(), onStyle: () => flipStyle(),   // v92
   goo: () => gooOn(), onGoo: () => flipGoo(),
   worlds: () => worldsLook(), onWorlds: () => flipWorlds(),
   onSpecimen: (kind, box) => specimen.show(kind, box),
   onTitle: (keep) => (world?.room ? toMenu() : showTitle(keep)),
   onCampaign: () => showCampaign(),
   onRoom: (id) => startRoom(id),
-  optionsState: () => ({ sound: sound.on, volume: sound.volume, music: music.volume, announcer: announcer.on, annVolume: announcer.volume, reduceMotion: reduceMotion(), glow: glowOn(), test: tests(),
+  optionsState: () => ({ sound: sound.on, volume: sound.volume, music: music.volume, announcer: announcer.on, annVolume: announcer.volume, reduceMotion: reduceMotion(), test: tests(),
+    hand: handLeft() ? 'left' : 'right', stick: stickSize(), dead: deadSize(), autoQ: autoQ(), qShare: quality.share,   // v86
     ...((list) => ({ records: list.length, frames: record.lastFrames(list) }))(record.read(store)), recordSaid }),
   onRecord: () => shareRecord(),
+  onRecords: () => ui.records(recordsData()),   // v87: the RECORDS page
   onBack: () => { if (state === 'paused') resume(); else if (state === 'over') toMenu(); },
 });
 // the view of a world change: the swirl, the dark, the fall, the floor running out (render/transit.js)
@@ -449,9 +498,10 @@ const specimen = new Specimen(T, actors, scene.environment);
 // menu). It takes effect at run start; the menu also redraws the world left
 // behind the title in the new style. The HUD label says ' · sdf' while on.
 const GELS = ['classic', 'sdf'];
+import { STYLES } from './render/style.js?v=92';
 let urlGels = GELS.includes(params.get('gels')) ? params.get('gels') : null;
 const gels = () => urlGels ?? (GELS.includes(store.str('toko2.gels')) ? store.str('toko2.gels') : 'classic');
-const setLabel = () => { document.getElementById('backend').textContent = ` · ${backend}${actors.gels === 'sdf' ? ' · sdf' : ''}`; };
+const setLabel = () => { document.getElementById('backend').textContent = ` · ${backend}${actors.look !== 'physical' ? ` · ${actors.look}` : ''}${actors.gels === 'sdf' ? ' · sdf' : ''}`; };
 function flipGels() {
   const g = gels() === 'sdf' ? 'classic' : 'sdf';
   store.set('toko2.gels', g);
@@ -459,6 +509,19 @@ function flipGels() {
   actors.setGels(g); setLabel(); refreshMenu();
 }
 actors.setGels(gels()); setLabel();
+// The title's STYLE switch (render/style.js, v92; owner: "watercolor, cell shaded, physical 3d"): PHYSICAL, CEL
+// or WATERCOLOR, localStorage toko2.style; ?style= overrides it for a link, until the switch is used. A flip
+// rebuilds the bodies in the style (actors.setStyle) and runs the title's warm-up again, so the new shaders
+// compile on the title and not at the first gel of a run (v74's rule)
+let urlStyle = STYLES.includes(params.get('style')) ? params.get('style') : null;
+const styleOf = () => urlStyle ?? (STYLES.includes(store.str('toko2.style')) ? store.str('toko2.style') : 'physical');
+function flipStyle() {
+  const s = STYLES[(STYLES.indexOf(styleOf()) + 1) % STYLES.length];
+  store.set('toko2.style', s);
+  if (urlStyle) { urlStyle = null; const u = new URL(location.href); u.searchParams.delete('style'); history.replaceState(history.state, '', u); }
+  actors.setStyle(s); warming = true; setLabel(); refreshMenu();
+}
+actors.setStyle(styleOf()); setLabel();
 function flipWorlds() {
   store.set('toko2.worlds', worldsLook() === 'neon' ? 'street' : 'neon');
   if (urlWorlds) { urlWorlds = null; const u = new URL(location.href); u.searchParams.delete('worlds'); history.replaceState(history.state, '', u); }
@@ -516,7 +579,9 @@ function start(m, { intro: asked = false, room = null, resume = null } = {}) {
   // toko2.gateUsed: this browser has dashed a gate, so the DASH THROUGH! tag
   // is not shown again (1.x's tokoDropGateUsed, main.js:5310, 11166)
   // ?world=2 or 3 starts the run in a later world (a test on the phone)
-  const startWorld = Math.max(1, Math.min(T.worlds.list.length, resume ? resume.world : Number(params.get('world')) || 1));   // v80: or the kept run's door
+  // v80: or the kept run's door; v85: or the world the title was set to start at
+  const startWorld = Math.max(1, Math.min(T.worlds.list.length, resume ? resume.world : Number(params.get('world')) || ((mode === 'arcade' || mode === 'hardcade') && !room ? startAtOf(mode) : 1)));
+  startedAt = resume ? 1 : startWorld;   // a taken-up run is the run it was: its scores are real
   const turnRoom = arenaName === 'portrait';   // a room lies along the phone, either way up
   world = createWorld({ seed: (Math.random() * 2 ** 32) >>> 0, mode, arena, shape: arenaName, world: mode === 'campaign' ? 1 : startWorld, dashMode: test.dash, hpMult: test.hp, gateUsed: store.num('toko2.gateUsed') === 1,
     room: mode === 'campaign' ? { ...room, turn: turnRoom } : null });
@@ -563,7 +628,7 @@ const campaignProgress = (hard = false) => { try { return JSON.parse(store.str(h
 let lastRoom = null;   // AGAIN replays it
 const levels = new Map();
 async function loadLevel(id) {
-  if (!levels.has(id)) levels.set(id, fetch(new URL(`../levels/${id}.json?v=81`, import.meta.url)).then((r) => { if (!r.ok) throw new Error(`levels/${id}.json ${r.status}`); return r.json(); }));
+  if (!levels.has(id)) levels.set(id, fetch(new URL(`../levels/${id}.json?v=92`, import.meta.url)).then((r) => { if (!r.ok) throw new Error(`levels/${id}.json ${r.status}`); return r.json(); }));
   return levels.get(id);
 }
 // the list the room screen draws: worlds, their rooms, open or not, best grades
@@ -690,10 +755,11 @@ function finish() {
       showCampaign(played); return;
     }
   }
-  const k = bestKey(mode), best = store.num(k), newBest = world.score > best;
+  // v85: a run started past world 1 keeps its best apart, per starting world
+  const k = startedAt > 1 ? bestFromKey(mode, startedAt) : bestKey(mode), best = store.num(k), newBest = world.score > best;
   if (newBest) store.set(k, world.score);
   ui.results({
-    won: !!world.won,
+    won: !!world.won, from: startedAt > 1 ? startedAt : 0,
     room: R ? { ...world.room, name: world.room.level.name, grade: R.grade, outcome: R.outcome, why: R.why, value: R.score } : null,
     mode, score: world.score, best: Math.max(best, world.score), newBest,
     time: timeText(world.time), ...(({ kind, name, revenge }) => ({ gotYou: name, gotYouKind: world.won ? null : kind, gotYouRevenge: revenge }))(killer(world.killedBy)),
@@ -749,7 +815,7 @@ function onEvent(e) {
   if (e.type === 'dash') lastDash = e;
   if (e.type === 'hurt' && world) lost.push([world.wave, e.by ?? '?']);   // the play record's lives lost (js/record.js)
   if (e.type === 'worldIn') { useWorld(e.world, e.hx, e.hz); splats.clear(); actors.goo?.clear(); }   // the next world's floor, under the falling droplet; the last one's puddles went down the drain with it
-  if (e.type === 'worldGo') saveContinue();   // v80: the run kept at this world's door
+  if (e.type === 'worldGo') { saveContinue(); if (!world.room && (mode === 'arcade' || mode === 'hardcade') && world.world > reachedOf(mode)) store.set(reachedKey(mode), world.world); }   // v80: the run kept at this world's door; v85: the furthest reached
   if (e.type.startsWith('world')) transit.onEvent(e, floor, world);
   if (e.type === 'reshape') shake(T.survival.reshape.shake);
   if (e.type === 'shift') shake(T.survival.reshape.shake);
@@ -853,7 +919,7 @@ const debug = {
   get arena() { return arenaBox(); }, splats,
   frames: 0, ready: false, counts: {},
   announcer, music, get world() { return world; }, get state() { return state; }, get turn() { return turn; }, get lastDash() { return lastDash; },
-  floor: () => floor, get litAs() { return litAs; }, get glow() { return glowOn(); },   // v75: which world's light is on; v79: the glow pass on
+  floor: () => floor, get litAs() { return litAs; },   // v75: which world's light is on
   get following() { return !!following; }, get viewWorld() { return viewWorld; }, get floorStyle() { return floor?.style; }, camAt, scenery, transit,
   arenaFor: (n, shape) => worldsSim.arenaFor(n, shape),
   // the run straight to its world's boss wave, the floor emptied (the smoke's
@@ -882,10 +948,13 @@ const debug = {
   // coalesced behind a slow software-GPU frame
   loop(on) { capture.on = !on; },
   start, pause, resume, toMenu, specimen,
+  finish,   // v85: a run ended now, for a check of what it leaves behind (the death beat is paced by frames, slow under a software GPU)
+  quality, applyQuality, meter,   // v86: the quality step and the frame meter, for the smoke
   // ?nointro, switched at run time: the smoke turns the film back on to check it plays from the title only
   get nointro() { return introOff; }, set nointro(v) { introOff = !!v; }, room: (id) => startRoom(id), get rule() { return world?.rule ?? null; },
   // the GELS style ('classic' | 'sdf'), for the smoke and the captures; the readout
   get gels() { return actors.gels; }, setGels(g) { urlGels = GELS.includes(g) ? g : null; actors.setGels(gels()); setLabel(); }, readout,
+  get style() { return actors.look; }, setStyle(s) { urlStyle = STYLES.includes(s) ? s : null; actors.setStyle(styleOf()); warming = true; setLabel(); },   // v92
   // Look checks for one species (test/lookshot.mjs): a quiet arena with only
   // these bodies in it, the hero standing below them.
   showcase(kinds, { spacing = 4, heroZ = 0.6 } = {}) {
@@ -904,6 +973,7 @@ const debug = {
       const h = world.hero, a = aimAt ? Math.atan2(aimAt.z - h.z, aimAt.x - h.x) : 0;
       step(world, { mx: 0, mz: 0, ax: Math.cos(a), az: Math.sin(a), aim: !!aimAt, fire: !!aimAt, dash: false });
       for (const e of world.events) onEvent(e);
+      actors.goo?.setBodies(world, 1);   // v84: the goo's bodies follow the step (a frame's sync is not run here)
       actors.stepFx(T.sim.dt, i * T.sim.dt); splats.step(T.sim.dt); actors.goo?.render(renderer);
     }
   },
@@ -914,6 +984,7 @@ const debug = {
     for (let i = 0; i < n && !world.over; i++) {
       step(world, { mx: 0, mz: 0, ax: 1, az: 0, aim: false, fire: false, ...inp, dash: i === 0 ? (typeof inp.dash === 'object' ? inp.dash : !!inp.dash) : false });
       for (const e of world.events) onEvent(e);
+      actors.goo?.setBodies(world, 1);   // v84: as in idle()
       actors.stepFx(T.sim.dt, i * T.sim.dt); splats.step(T.sim.dt); actors.goo?.render(renderer);
     }
   },
@@ -932,6 +1003,7 @@ const debug = {
   campaignDone(hard = false) { campaignDone(campaignProgress(hard), hard, null); },
   freeCam: false, hold: false,
   intro, INTRO,
+  get tuning() { return T; },   // the live numbers, for a look check's A/B (v82)
   capBegin(m = 'arcade') { capture.on = true; capture.bot = true; start(m, { intro: true }); introT0 = 0; last = 0; return state; },
   capFrame(t) { frame(t * 1000, 1 / 30); return { state, t }; },
   // a song rendered offline (music.js renderMusicWav), as base64 WAV: the review films and marketing cuts
@@ -997,6 +1069,8 @@ function frame(now, dtFixed) {
       }
       if (steps === T.sim.maxSteps) acc = Math.min(acc, T.sim.dt);   // a slow frame drops its backlog, not the game
       meter.frame(wall, steps * T.sim.dt);   // the play record's frame times (js/meter.js)
+      // v86: a window of slow frames steps the picture down; calm ones, in time, back up
+      if (autoQ()) { const r = meter.recent(T.quality.window); if (r && quality.judge(r)) { applyQuality(); store.set('toko2.qstep', quality.step); } }
       if (world.over) { state = 'dying'; dyingT = T.flow.deathBeat; input.enabled = false; }
     }
   } else if (state === 'paused') {
@@ -1031,7 +1105,7 @@ function frame(now, dtFixed) {
   ui.drawSticks(input, following && world && state === 'play' ? offscreen() : null);
   actors.light.render(renderer);   // the arena's light map, which the floor reads
   if (actors.goo) { actors.goo.render(renderer); floor.setFilm(actors.goo.film); }   // the goo's film steps (render/goo.js), and the floor reads where it now is
-  if (glowOn()) glow.render(state === 'intro' ? intro.cam : camera); else renderer.render(scene, state === 'intro' ? intro.cam : camera);   // v79: through the glow pass when it is on
+  renderer.render(scene, state === 'intro' ? intro.cam : camera);
   if (state === 'paused' || state === 'over') specimen.render(renderer, time); else specimen.hide();   // the GOT YOU card's gel, over its box
   readout.frame(now, state, world);
   if (warming && (state === 'menu' || state === 'intro')) warming = actors.warmStep(warmExtra);   // v74: one kind a frame, on the title only

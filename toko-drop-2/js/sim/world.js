@@ -14,20 +14,21 @@
 // moves, then everything is tested, against post-move positions.
 //
 // Modes: 'arcade', 'hardcade' (corpses fire back) and 'survival'.
-import { TUNING } from '../tuning.js?v=81';
-import { makeRng } from './rng.js?v=81';
-import { BEHAVIOUR } from './species/index.js?v=81';
-import { DIRECTORS } from './director/index.js?v=81';
-import * as fire from './fire.js?v=81';
-import { makeHero, heroStep, applyPull, hurtHero, invincible } from './hero.js?v=81';
-import { swarmForces, resolveCrowd } from './crowd.js?v=81';
-import { revengeColor } from './color.js?v=81';
-import * as pickups from './pickups.js?v=81';
-import * as worlds from './worlds.js?v=81';
-import * as reshape from './reshape.js?v=81';
-import { Arena, levelShape, levelMoves, levelEnvelope, KIND } from './shape.js?v=81';
-import * as rules from './rules.js?v=81';
-import * as heat from './heat.js?v=81';
+import { TUNING } from '../tuning.js?v=92';
+import { press, pressReset } from './press.js?v=92';
+import { makeRng } from './rng.js?v=92';
+import { BEHAVIOUR } from './species/index.js?v=92';
+import { DIRECTORS } from './director/index.js?v=92';
+import * as fire from './fire.js?v=92';
+import { makeHero, heroStep, applyPull, hurtHero, invincible } from './hero.js?v=92';
+import { swarmForces, resolveCrowd } from './crowd.js?v=92';
+import { revengeColor } from './color.js?v=92';
+import * as pickups from './pickups.js?v=92';
+import * as worlds from './worlds.js?v=92';
+import * as reshape from './reshape.js?v=92';
+import { Arena, levelShape, levelMoves, levelEnvelope, KIND } from './shape.js?v=92';
+import * as rules from './rules.js?v=92';
+import * as heat from './heat.js?v=92';
 
 const T = TUNING;
 
@@ -138,7 +139,10 @@ export function step(w, input) {
 
   const h = w.hero;
   h.px = h.x; h.pz = h.z;
-  for (const g of w.gels) { g.px = g.x; g.pz = g.z; g.shield = false; }
+  // v82: what pressed on each body this step, as a vector toward it (the crowd's
+  // overlaps, the walls, the hero), read by the view alone (contact squash)
+  for (const g of w.gels) { g.px = g.x; g.pz = g.z; g.shield = false; pressReset(g); }
+  pressReset(h);
   for (const b of w.bullets) { b.px = b.x; b.pz = b.z; }
   for (const l of w.lobs) { l.px = l.x; l.pz = l.z; }
 
@@ -153,6 +157,7 @@ export function step(w, input) {
     for (const g of w.gels.slice()) gelStep(w, g, dt);
     applyPull(w);
     resolveCrowd(w, dt);
+    pressHero(w);
     for (const g of w.gels) { g.nudgedX += g.knockDX || 0; g.nudgedZ += g.knockDZ || 0; g.knockDX = g.knockDZ = 0; }
     bulletsStep(w, dt);
     lobsStep(w, dt);
@@ -242,10 +247,10 @@ function gelStep(w, g, dt) {
   // a knock moved it from outside, like the crowd: reported with the crowd's
   // nudge (below), so a cube mid-tumble carries a shove instead of dropping it
   g.knockDX = g.kx * dt; g.knockDZ = g.kz * dt;
-  // the arena's edges are walls
+  // the arena's edges are walls (what they push back by is a press on the body: v82)
   const HX = w.hx - g.r, HZ = w.hz - g.r;
-  if (g.x < -HX || g.x > HX) { g.x = clamp(g.x, -HX, HX); if (Math.abs(g.kx) > 2) g.sqV += T.gel.sq.wall; g.kx *= -T.gel.wallBounce; }
-  if (g.z < -HZ || g.z > HZ) { g.z = clamp(g.z, -HZ, HZ); if (Math.abs(g.kz) > 2) g.sqV += T.gel.sq.wall; g.kz *= -T.gel.wallBounce; }
+  if (g.x < -HX || g.x > HX) { press(g, g.x - clamp(g.x, -HX, HX), 0); g.x = clamp(g.x, -HX, HX); if (Math.abs(g.kx) > 2) g.sqV += T.gel.sq.wall; g.kx *= -T.gel.wallBounce; }
+  if (g.z < -HZ || g.z > HZ) { press(g, 0, g.z - clamp(g.z, -HZ, HZ)); g.z = clamp(g.z, -HZ, HZ); if (Math.abs(g.kz) > 2) g.sqV += T.gel.sq.wall; g.kz *= -T.gel.wallBounce; }
   // a room's region is a wall too: a knock off it comes back reflected
   if (w.region && inRegion(w, g, g.r)) {
     if (Math.hypot(g.kx, g.kz) > 2) { g.sqV += T.gel.sq.wall; g.kx *= -T.gel.wallBounce; g.kz *= -T.gel.wallBounce; }
@@ -256,10 +261,26 @@ function gelStep(w, g, dt) {
 export function inRegion(w, o, r) {
   if (!w.region || w.region.contains(o.x, o.z, r)) return false;
   const p = w.region.clamp(o.x, o.z, r, _rp);
+  if (o.pressX !== undefined) press(o, o.x - p.x, o.z - p.z);   // v82: the room's wall pressed it back
   o.x = p.x; o.z = p.z;
   return true;
 }
 const _rp = { x: 0, z: 0 };
+
+// v82: the hero and a gel standing in each other (the hero is never pushed,
+// so this is a press on both, not a move): toward the other, by the overlap
+function pressHero(w) {
+  const h = w.hero, R = T.hero.radius;
+  if (!h.alive) return;
+  for (const g of w.gels) {
+    if (!g.alive || g.state !== 'active') continue;
+    const dx = h.x - g.x, dz = h.z - g.z, d = Math.hypot(dx, dz), pen = g.r + R - d;
+    if (pen <= 0 || d < 1e-6) continue;
+    const nx = dx / d, nz = dz / d;
+    press(g, nx * pen, nz * pen);
+    press(h, -nx * pen, -nz * pen);
+  }
+}
 
 // a body put away without a fight (v42: what a boss leaves on the floor when
 // it goes down, sim/bossfight.js): it bursts as a kill does, but pays nothing,

@@ -15,18 +15,19 @@
 // that springs in and fades (splats.js). Views are pooled per species, so a
 // gel's material is built once and reused, never compiled mid-fight.
 import * as THREE from 'three/webgpu';
-import { TUNING } from '../tuning.js?v=81';
+import { TUNING } from '../tuning.js?v=92';
 import * as TSL from 'three/tsl';
-import { gelMaterial, domeGeometry, cubeGeometry, heroGeometry, GEL_TIME } from './gel.js?v=81';
-import { LOOKS } from './looks/index.js?v=81';
-import { JellyBody } from './jelly.js?v=81';
-import { Juice } from './juice.js?v=81';
-import { ArenaLight } from './light.js?v=81';
-import { toSdf } from './sdf.js?v=81';
-import { PickupView } from './pickups.js?v=81';
-import { ChallengeView } from './challenge.js?v=81';
-import { Goo } from './goo.js?v=81';
-import { mult as heatMult } from '../sim/heat.js?v=81';
+import { gelMaterial, domeGeometry, cubeGeometry, heroGeometry, GEL_TIME } from './gel.js?v=92';
+import { LOOKS } from './looks/index.js?v=92';
+import { styleName, setStyle as setStyleMode, styledBody } from './style.js?v=92';
+import { JellyBody } from './jelly.js?v=92';
+import { Juice } from './juice.js?v=92';
+import { ArenaLight } from './light.js?v=92';
+import { toSdf } from './sdf.js?v=92';
+import { PickupView } from './pickups.js?v=92';
+import { ChallengeView } from './challenge.js?v=92';
+import { Goo } from './goo.js?v=92';
+import { mult as heatMult } from '../sim/heat.js?v=92';
 
 const T = TUNING;
 const B = T.blob, D = T.death;
@@ -39,9 +40,9 @@ export class Actors {
     this.scene = scene; this.splats = splats; this.hx = 19; this.hz = 11; this.heat = 0;
     this.geo = { blob: domeGeometry(), cube: cubeGeometry(), hero: heroGeometry(), eye: new THREE.SphereGeometry(1, 12, 8) };
     this.views = new Map();      // live gels by id
-    this.pool = {};              // released views by species
     this.gels = 'classic';       // how the gels are drawn: 'classic' meshes or 'sdf' fields (setGels)
-    this.poolSdf = {};           // released SDF views by species: a view keeps the style it was built in
+    this.look = styleName();     // v92: how they are painted: 'physical', 'cel' or 'watercolor' (setStyle, render/style.js)
+    this.pools = {};             // released views by species, per gels × look: a view keeps the style it was built in (_pool)
     this.dying = [];             // killed gels playing out their last beat
     this.jellies = [];           // big gels dying as jelly halves (jelly.js)
     this.jellyMats = new Map();  // their material, per species, built and warmed when it first appears
@@ -91,7 +92,7 @@ export class Actors {
     // chunks of the dead: smooth goo for blobs, angular for cubes (1.x v83)
     this.chunkMax = 300;
     this.chunks = [];
-    const chunkMat = () => new THREE.MeshPhysicalNodeMaterial({ roughness: 0.16, clearcoat: 1, clearcoatRoughness: 0.06, sheen: 0.45 });
+    const chunkMat = () => this._chunkMat();
     this.chunkMesh = { blob: new THREE.InstancedMesh(new THREE.SphereGeometry(1, 9, 7), chunkMat(), this.chunkMax),
                        cube: new THREE.InstancedMesh(new THREE.SphereGeometry(1, 5, 3), chunkMat(), this.chunkMax) };
     for (const m of Object.values(this.chunkMesh)) {
@@ -100,6 +101,11 @@ export class Actors {
       m.count = 0; m.frustumCulled = false;
       scene.add(m);
     }
+    // v83: the strands — a tube of goo from the burst to each chunk, thinning as it stretches, until it snaps
+    this.strands = new THREE.InstancedMesh(new THREE.CylinderGeometry(1, 1, 1, 6, 1, true).translate(0, 0.5, 0), chunkMat(), this.chunkMax);
+    this.strands.instanceMatrix.setUsage(THREE.DynamicDrawUsage); this.strands.setColorAt(0, new THREE.Color());
+    this.strands.count = 0; this.strands.frustumCulled = false; this.strandCount = 0;
+    scene.add(this.strands);
     // lobs in flight and hazards on the floor
     this.lobMesh = new THREE.InstancedMesh(new THREE.SphereGeometry(1, 12, 8), new THREE.MeshPhysicalNodeMaterial({ roughness: 0.2, clearcoat: 1 }), 64);
     this.lobMesh.setColorAt(0, new THREE.Color()); this.lobMesh.count = 0; this.lobMesh.frustumCulled = false;
@@ -116,11 +122,25 @@ export class Actors {
   // the SPLATTER switch: off clears what is thrown and laid, and 1.x's puddles take over
   setGoo(on) { if (!on) this.gooKit.clear(); this.gooKit.setOn(on); this.goo = on ? this.gooKit : null; }
 
+  // the hero's material: 1.x's white satin (never jelly), in the style of the day (v92); the dash and mercy
+  // blinks drive its opacity (1.x player.js:62-63)
+  _heroMat() {
+    const L = T.heroLook, mat = gelMaterial(T.hero.color, 'blob', 1, { wobble: L.wobble, jelly: false });
+    mat.transparent = true; mat.opacity = L.opacity;
+    return mat;
+  }
+  // a chunk's or a strand's material (v83): glossy physical goo, or the style's own paint over the instance's colour (v92)
+  _chunkMat() {
+    const m = new THREE.MeshPhysicalNodeMaterial({ roughness: 0.16, clearcoat: 1, clearcoatRoughness: 0.06, sheen: 0.45 });
+    const look = styleName();
+    if (look !== 'physical') m.fragmentNode = TSL.vec4(styledBody(look, TSL.instanceColor.mul(TSL.materialColor), TSL.positionLocal.xz, TSL.vec3(...T.light.sun.position)), 1);
+    return m;
+  }
+
   _makeHero() {
     const L = T.heroLook, r = T.hero.radius;
     const root = new THREE.Group(), squash = new THREE.Group();
-    const mat = gelMaterial(T.hero.color, 'blob', 1, { wobble: L.wobble, jelly: false });   // the hero stays 1.x's white satin
-    mat.transparent = true; mat.opacity = L.opacity;      // 1.x: the dash and mercy blinks drive opacity (player.js:62-63)
+    const mat = this._heroMat();
     const body = new THREE.Mesh(this.geo.hero, mat);
     body.scale.setScalar(r);
     squash.add(body); root.add(squash);
@@ -174,7 +194,7 @@ export class Actors {
     }
     v.shape = !v.own && S.family !== 'cube' ? (B.shapes[kind] || B.shape) : null;
     squash.add(v.body); root.add(squash);
-    v.style = this.gels;
+    v.style = this.gels; v.look = this.look;
     if (this.gels === 'sdf') v.sdf = toSdf(v);   // render/sdf.js: the dome and cube bodies as fields
     if (S.family === 'blob' && D.jelly.on && !this.jellyMats.has(kind)) this._jellyMat(kind);
     return v;
@@ -244,16 +264,17 @@ export class Actors {
   }
 
   _take(kind) {
-    const v = (this.gels === 'sdf' ? this.poolSdf : this.pool)[kind]?.pop() || this._makeGel(kind);
-    v.vx = v.vz = 0; v.hit = 0; v.dyingT = 0;
-    if (v.mat?.gel) { v.mat.gel.hit.value = 0; v.mat.gel.tear.value = 0; }
+    const v = this._pool()[kind]?.pop() || this._makeGel(kind);
+    v.vx = v.vz = 0; v.hit = 0; v.dyingT = 0; v.cd = v.cb = 0; v.press = null;
+    if (v.mat?.gel) { v.mat.gel.hit.value = 0; v.mat.gel.tear.value = 0; v.mat.gel.contact?.value.set(0, 0, 0, 0); }
     v.mat?.emissive?.setScalar(0);
     v.L.reset?.(v);
     this.scene.add(v.root);
     return v;
   }
 
-  _release(v) { this.scene.remove(v.root); v.root.scale.setScalar(1); ((v.style === 'sdf' ? this.poolSdf : this.pool)[v.kind] ||= []).push(v); }
+  _release(v) { this.scene.remove(v.root); v.root.scale.setScalar(1); (this._pool(v.style, v.look)[v.kind] ||= []).push(v); }
+  _pool(gels = this.gels, look = this.look) { return (this.pools[`${gels}:${look}`] ||= {}); }
 
   // v74: every species' shaders compiled on the title, not on the frame its
   // first body is drawn mid-run. One kind a frame (a take is a build, and
@@ -298,10 +319,29 @@ export class Actors {
     this.gels = style;
   }
 
+  // The STYLE switch (render/style.js, v92): the bodies are built in a style, so every view goes back to its
+  // pool (kept per gels × look, as above) and the next sync takes them again; the hero's material is rebuilt
+  // in place, the chunks' and the strands' too; the jelly-death materials are let go, to be made again in the
+  // style when their species shows; and the title's warm-up runs again (main.js sets `warming`)
+  setStyle(look) {
+    look = setStyleMode(look);
+    if (look === this.look) return;
+    for (const v of this.views.values()) this._release(v);
+    for (const v of this.dying) this._release(v);
+    this.views.clear(); this.dying.length = 0;
+    this.look = look;
+    const hv = this.hero, old = hv.mat;
+    hv.mat = this._heroMat(); hv.body.material = hv.mat; old.dispose();
+    for (const m of [...Object.values(this.chunkMesh), this.strands]) { const o = m.material; m.material = this._chunkMat(); o.dispose(); }
+    this.jellyMats.clear();
+    this.warmQueue = null;
+  }
+
   reset() {
     for (const v of this.views.values()) this._release(v);
     for (const v of this.dying) this._release(v);
     this.views.clear(); this.dying.length = 0; this.chunks.length = 0; this.heat = 0;
+    this.strands.count = this.strandCount = 0;
     for (const j of this.jellies) { this.scene.remove(j.mesh); j.geo.dispose(); }
     this.jellies.length = 0;
     this.juice.reset();
@@ -356,9 +396,10 @@ export class Actors {
     this.heat = Math.min(1, this.heat + D.heatPerKill);
     const throwOut = (n, size, speed, up) => {
       for (let i = 0; i < n && this.chunks.length < this.chunkMax; i++) {
-        const a = Math.random() * Math.PI * 2, sp = rand(...speed);
+        const a = Math.random() * Math.PI * 2, sp = rand(...speed), s = rand(...size);
+        // v83: it trails a strand from where the body stood (ox, oy, oz), and melts into `vol` of goo at the end
         this.chunks.push({ fam, x: e.x, y, z: e.z, vx: Math.cos(a) * sp, vy: rand(...up), vz: Math.sin(a) * sp,
-          s: rand(...size), hex: e.color, life: D.chunkLife, sq: 1, sqV: 0 });
+          s, hex: e.color, life: D.chunkLife, sq: 1, sqV: 0, ox: e.x, oy: y * 0.6, oz: e.z, age: 0, strand: true, bounces: 0, rest: false, vol: D.melt.vol * VOLC * s * s * s });
       }
     };
     throwOut(Math.round(rand(D.chunks[0], D.chunks[1] + 0.99) - 0.49), [D.chunkSize, D.chunkSize], D.chunkSpeed, D.chunkUp);
@@ -437,6 +478,7 @@ export class Actors {
   sync(w, alpha, time) {
     // the hero
     const h = w.hero, hv = this.hero, L = T.heroLook;
+    const fdt = Math.min(0.1, Math.max(0, time - (this._syncT ?? time))); this._syncT = time;   // the frame's own step (v82's easing)
     // between worlds (sim/worlds.js): shrinking down the hole, then falling
     // into the next world from high above, drawn out long by the fall
     const sink = h.sink || 0, fall = h.fall || 0;
@@ -467,6 +509,8 @@ export class Actors {
     // the lunge the sim keeps (hero.stretch), into the gel's stretch
     hv.mat.gel.stretch.value = h.stretch || 0;
     hv.mat.gel.stretchDir.value.set(h.stretchX || 0, h.stretchZ || 0);
+    hv.press = h; hv.pressR = T.hero.radius;   // v82: the gels standing in him (sim/press.js)
+    contactEase(hv, fdt, 0);
 
     // the gels
     const seen = new Set();
@@ -481,6 +525,7 @@ export class Actors {
       v.vx += ((g.x - g.px) / T.sim.dt - v.vx) * 0.3;
       v.vz += ((g.z - g.pz) / T.sim.dt - v.vz) * 0.3;
       v.squash.scale.set(1 / Math.sqrt(g.sq), g.sq, 1 / Math.sqrt(g.sq));
+      v.press = g; v.pressR = g.r;   // v82: what pressed on it this step (sim/press.js; eased below)
       // the swell is the view's alone (the body is live from its first step): a
       // child never swells, and a brood still waiting out its parent's pop is not drawn
       v.root.visible = g.state !== 'appear';
@@ -495,6 +540,7 @@ export class Actors {
         else v.mat.emissive.setScalar(0);
       }
       v.L.update?.(v, g, w, time, grow);
+      contactEase(v, fdt, v.yaw);   // v82: eased here, on the frame clock, where the press is fresh
     }
     for (const [id, v] of this.views) if (!seen.has(id)) { this._release(v); this.views.delete(id); }
 
@@ -585,7 +631,8 @@ export class Actors {
   spray(x, z, n, hex, size) {
     for (let i = 0; i < n && this.chunks.length < this.chunkMax; i++) {
       const a = (i / n) * Math.PI * 2 + Math.random() * 0.6, sp = rand(2.5, 5.5);
-      this.chunks.push({ fam: 'blob', x, y: 0.4, z, vx: Math.cos(a) * sp, vy: rand(2, 5), vz: Math.sin(a) * sp, s: rand(...size), hex, life: D.chunkLife, sq: 1, sqV: 0 });
+      const s = rand(...size);
+      this.chunks.push({ fam: 'blob', x, y: 0.4, z, vx: Math.cos(a) * sp, vy: rand(2, 5), vz: Math.sin(a) * sp, s, hex, life: D.chunkLife, sq: 1, sqV: 0, age: 0, strand: false, bounces: 0, rest: false, vol: D.melt.vol * VOLC * s * s * s });
     }
   }
 
@@ -648,36 +695,97 @@ export class Actors {
     this.heat = Math.max(0, this.heat - D.heatDecay * dt);
 
     // goo in flight: 1.x's chunk physics — gravity, a squash and a skid where
-    // it lands, its own wobble, and a shrink over its last moments
-    const HX = this.hx, HZ = this.hz, k = Math.min(3, dt * 60);
+    // it lands, its own wobble, and a shrink over its last moments; v83: a
+    // strand trailing it out of the burst until it snaps, a bounce and a
+    // jiggle where it lands, a slide to a stop, and a melt into the floor's film
+    const HX = this.hx, HZ = this.hz, k = Math.min(3, dt * 60), Bn = D.bounce, Wb = D.wobble, St = D.strand, goo = this.goo;
+    const fric = Math.exp(-D.friction * dt);
     for (let i = this.chunks.length - 1; i >= 0; i--) {
       const c = this.chunks[i];
       if ((c.life -= dt) <= 0) { this.chunks.splice(i, 1); continue; }
+      c.age += dt;
       c.vy -= D.gravity * dt;
       c.x += c.vx * dt; c.y += c.vy * dt; c.z += c.vz * dt;
       if (c.y < c.s * 0.5) {
         c.y = c.s * 0.5;
-        if (c.vy < 0) { c.sqV -= 0.4 * Math.abs(c.vy) * 0.25; c.vy = 0; c.vx *= D.floorKeep; c.vz *= D.floorKeep; }
+        if (c.vy < 0) {
+          const vin = -c.vy;
+          if (vin > Bn.min && c.bounces < Bn.max) { c.vy = vin * Bn.e; c.bounces++; c.sqV -= Bn.squash * Math.min(1, vin / 6); }
+          else { c.vy = 0; c.sqV -= 0.4 * vin * 0.25; c.rest = true; }
+          c.vx *= D.floorKeep; c.vz *= D.floorKeep;
+          c.strand = false;   // landed: it has torn free
+        }
       }
-      c.sqV = (c.sqV - (c.sq - 1) * 0.32 * k) * Math.pow(0.8, k);
+      if (c.rest) { c.vx *= fric; c.vz *= fric; }
+      c.sqV = (c.sqV - (c.sq - 1) * Wb.k * k) * Math.pow(Wb.damp, k);
       c.sq = Math.max(0.3, Math.min(1.7, c.sq + c.sqV * k));
       if (Math.abs(c.x) > HX - c.s) { c.x = Math.sign(c.x) * (HX - c.s); c.vx *= -0.4; }
       if (Math.abs(c.z) > HZ - c.s) { c.z = Math.sign(c.z) * (HZ - c.s); c.vz *= -0.4; }
+      // its last moments: with the goo on it melts into the film under it, pouring
+      // its goo as it shrinks (so the puddle grows as the chunk goes); without, it fades
+      if (goo && c.vol > 0 && c.life < D.shrink) {
+        const dv = Math.min(c.vol, c.vol * dt / Math.max(0.05, c.life + dt));
+        goo.pour(c.x, c.z, Math.max(0.05, c.s * 0.8), dv, c.hex);
+        c.vol -= dv;
+      }
     }
     const n = { blob: 0, cube: 0 };
+    let ns = 0;
+    const sm = this.strands, up = this._up ||= new THREE.Vector3(0, 1, 0), dir = this._dir ||= new THREE.Vector3(), q = this._q ||= new THREE.Quaternion(), sc = this._sc ||= new THREE.Vector3(), at = this._at ||= new THREE.Vector3();
     for (const c of this.chunks) {
       const fade = Math.min(1, c.life / D.shrink), s = c.s * fade, sx = s / Math.sqrt(c.sq);
       this._m.makeScale(sx, s * c.sq, sx).setPosition(c.x, c.y, c.z);
       const m = this.chunkMesh[c.fam];
       m.setMatrixAt(n[c.fam], this._m); m.setColorAt(n[c.fam], this._c.setHex(c.hex)); n[c.fam]++;
+      // the strand: from the burst to the chunk, thinner the longer it is stretched, until it snaps
+      if (c.strand && ns < this.chunkMax) {
+        dir.set(c.x - c.ox, c.y - c.oy, c.z - c.oz);
+        const len = dir.length(), w = c.s * St.w * Math.pow(Math.max(0, 1 - len / St.max), 0.6) * Math.max(0, 1 - c.age / St.life);
+        if (len < 1e-3 || w < 0.004) { c.strand = false; continue; }
+        q.setFromUnitVectors(up, dir.multiplyScalar(1 / len));
+        sm.setMatrixAt(ns, this._m.compose(at.set(c.ox, c.oy, c.oz), q, sc.set(w, len, w))); sm.setColorAt(ns, this._c.setHex(c.hex)); ns++;
+      }
     }
     for (const [fam, m] of Object.entries(this.chunkMesh)) {
       m.count = n[fam];
       m.instanceMatrix.needsUpdate = true;
       if (m.instanceColor) m.instanceColor.needsUpdate = true;
     }
+    sm.count = this.strandCount = ns; sm.instanceMatrix.needsUpdate = true;
+    if (sm.instanceColor) sm.instanceColor.needsUpdate = true;
   }
 }
 
 const _white = new THREE.Color(0xffffff), _gooC = new THREE.Color();
+const VOLC = 4 / 3 * Math.PI;   // a chunk of radius s is drawn as VOLC s³ of goo
+
+// v82: the press the sim reported (v.press, the body itself: sim/press.js's
+// vector, total and axis, metres; pressR the body's radius) eased into the
+// gel's contact uniform — a direction in the body's own frame (the mesh is
+// yawed the way it moves, as hitDir is) and two depths in radii, quick to rise
+// and slower to let go. v90: the side facing the push takes the vector's share
+// plus the balance, the far side the balance alone — one body against you
+// flattens one side, two either side flatten both. Before this the vector
+// alone was read, and a squeeze from both sides read as nothing.
+function contactEase(v, dt, yaw) {
+  const u = v.mat?.gel?.contact;
+  if (!u) return;
+  const C = B.contact, p = v.press, R = v.pressR || 1;
+  const vx = p?.pressX || 0, vz = p?.pressZ || 0, pm = Math.hypot(vx, vz), tot = Math.max(p?.pressM || 0, pm);
+  const wantF = Math.min(C.max, (((tot + pm) / 2) / R) * C.gain), wantB = Math.min(C.max, (((tot - pm) / 2) / R) * C.gain);
+  const cd = v.cd || 0, cb = v.cb || 0;
+  const kF = Math.min(1, (wantF > cd ? C.attack : C.release) * dt), kB = Math.min(1, (wantB > cb ? C.attack : C.release) * dt);
+  v.cd = cd + (wantF - cd) * kF; v.cb = cb + (wantB - cb) * kB;
+  // the direction: the vector's while it has one, else the folded axis (a squeeze from both sides has an axis and no net push)
+  let dx = vx, dz = vz;
+  if (pm < 1e-6) { dx = p?.pressAX || 0; dz = p?.pressAZ || 0; }
+  const dl = Math.hypot(dx, dz);
+  if (dl > 1e-6) {
+    const c = Math.cos(yaw), s = Math.sin(yaw), wx = dx / dl, wz = dz / dl, k = Math.max(kF, kB);
+    const lx = wx * c - wz * s, lz = wx * s + wz * c;
+    v.cx = (v.cx || 0) + (lx - (v.cx || 0)) * k; v.cz = (v.cz || 0) + (lz - (v.cz || 0)) * k;
+    const l = Math.hypot(v.cx, v.cz) || 1; v.cx /= l; v.cz /= l;
+  }
+  u.value.set(v.cx || 0, v.cz || 0, v.cd, v.cb);
+}
 const smooth = (t) => { const u = Math.min(1, Math.max(0, t)); return u * u * (3 - 2 * u); };
