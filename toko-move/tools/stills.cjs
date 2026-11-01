@@ -9,10 +9,10 @@
 //
 //   NODE_PATH=$(npm root -g) node toko-move/tools/stills.cjs [outDir]
 //
-// Writes 01-dispatch, 02-catch, 03-crown-bridge, 04-event, 05-week, 06-daily,
-// and one still per core mutator — 07-night, 08-disruption, 09-rush-hour,
-// 10-snow-day (v2.72; MUTATORS.md: "one still each") — all 1080×1920, and
-// cover.png (630×500) + cover@2x.png (1260×1000).
+// Writes 00-ladder (the title card a new player meets), 01-dispatch,
+// 02-catch, 03-crown-bridge, 04-event, 05-week, 06-daily, 07-easy-complete
+// (the end card that opens MEDIUM), 08-hard and 09-night (v2.73: the runs) —
+// all 1080×1920 — and cover.png (630×500) + cover@2x.png (1260×1000).
 // The game is rendered from the STORE BUILD (tools/package-itch.mjs, unzipped
 // into a temp folder), because these are the store page's pictures: no arcade
 // HOME button, no LIVE on the title. The cover's lettering reads the brand's
@@ -178,20 +178,30 @@ server.listen(0, '127.0.0.1', async () => {
     await page.context().close();
 
     // 06 the daily: today's shift, the shareable result
-    page = await fresh('');
+    page = await fresh('?daily');
     await page.tap('#play'); await page.waitForTimeout(400);
     await play(page, { end: '06-daily' });
     await page.context().close();
 
-    // 07–10 one still per core mutator (MUTATORS.md), chosen the way a player
-    // chooses one — by its chip on the title card — and played by tapping what
-    // lights until the screen shows what that mutator is: a lit catch on the
-    // night board, the held line's card with a catch around it, the RUSH chip,
-    // the snow. A frame is taken once the shift has run a few minutes, so the
-    // board has trams on it and the clock says something.
-    for (const [id, name, q] of [['night', '07-night', '?shift=3'], ['disruption', '08-disruption', '?shift=2'], ['rush', '09-rush-hour', '?shift=3'], ['snow', '10-snow-day', '?shift=1']]) {
-      page = await fresh(q);
-      await Promise.all([page.waitForNavigation(), page.tap(`#mutRow .mut[data-mut="${id}"]`)]);
+    // 00 the ladder, as a new player meets it: EASY open, three runs locked
+    page = await fresh('');
+    await shoot(page, '00-ladder');
+    await page.context().close();
+
+    // 07 EASY played out by tapping: the end card that opens MEDIUM
+    page = await fresh('?shift=3&run=easy');
+    await page.tap('#play'); await page.waitForTimeout(400);
+    const easy = await play(page, { end: '07-easy-complete' });
+    if (!easy.has('end')) throw new Error('EASY never reached its end card');
+    await page.context().close();
+
+    // 08 HARD and 09 NIGHT, stood further up the ladder by the save (the save
+    // only opens them; the run is played by tapping) and taken once the shift
+    // has run a few minutes, at a lit catch — HARD with its line held
+    for (const [id, name, q] of [['hard', '08-hard', '?shift=2&run=hard'], ['night', '09-night', '?shift=3&run=night']]) {
+      page = await fresh('');
+      await page.evaluate(() => localStorage.setItem('tokoMoveRuns', JSON.stringify({ easy: { done: true, stars: 2 }, medium: { done: true, stars: 2 }, hard: { done: true, stars: 1 } })));
+      await page.goto(`${base}/toko-move/${q}`);
       await page.waitForFunction(() => window.__tm?.flow && !document.getElementById('play').disabled, null, { timeout: 30000 });
       await page.evaluate(() => window.__tm.flow.clock.setPaused(true));
       await page.tap('#play'); await page.waitForTimeout(400);
@@ -199,7 +209,7 @@ server.listen(0, '127.0.0.1', async () => {
       for (let i = 0; i < 5000 && !shot; i++) {
         const s = await look(page);
         if (s.phase === 'end') break;
-        const ready = await page.evaluate(want => { const tm = window.__tm; return tm.flow.clock.tick > 160 && (want !== 'disruption' || (tm.events?.activeHolds?.() || []).length > 0); }, id);
+        const ready = await page.evaluate(want => { const tm = window.__tm; return tm.flow.clock.tick > 160 && (want !== 'hard' || (tm.events?.activeHolds?.() || []).length > 0); }, id);
         if (ready && s.phase === 'catch') { await shoot(page, name); shot = true; break; }
         if (s.sel) { await page.tap(s.sel, { timeout: 1500 }).catch(() => {}); await page.waitForTimeout(60); continue; }
         if (s.due && held++ < 8) { await page.waitForTimeout(80); continue; }

@@ -2,10 +2,10 @@
 import {createFlow} from '../../flow-core/sim.js?v=2';
 import {FlowRenderer} from '../../flow-core/render.js?v=3';
 import {THEME} from './palette.js?v=1';
-import {tr} from './lang.js?v=5';
+import {tr} from './lang.js?v=6';
 const trLines=t=>String(t).split('\n').map(l=>tr(l)).join('\n');
 import {shareUrl,STORE} from './platform.js?v=1';
-import {DeliveryChallenge,DELIVERY_TARGET} from './deliveries.js?v=27';
+import {DeliveryChallenge,DELIVERY_TARGET} from './deliveries.js?v=28';
 import {TransitLayers} from './transit-layers.js?v=11';
 import {buildRealHelsinki} from './real-helsinki.js?v=5';
 import {boardBox,boardFit,roadPaths,lineFamily,ROAD_INK,ROAD_INK_MAJOR,ROAD_INK_MID,ROAD_INK_MINOR,HUB_INK,NIGHT} from './board.js?v=8';
@@ -21,15 +21,16 @@ import * as Week from './week.js?v=4';
 import * as Kit from './kit.js?v=1';
 import {drawWeather} from './weather.js?v=1';
 import {skinFor,applySkin,CORAL as SK_CORAL} from './skin.js?v=1';
-import {MUTATORS,resolveMutator,mutateShift,rushWith,startMinute} from './mutators.js?v=1';
+import {rushWith,startMinute} from './mutators.js?v=2';
+import * as Runs from './runs.js?v=1';
 import {loadNotebook} from './sealed.js?v=2';
-import {drawPoster} from './poster.js?v=6';
+import {drawPoster} from './poster.js?v=7';
 import * as WalkPath from './walkpath.js?v=1';
 import * as Rush from './rush.js?v=1';
 import {colourOf,parcelHtml,bagHtml} from './parcels.js?v=1';
 
 const $=id=>document.getElementById(id);
-const BUILD_VERSION='2.72';
+const BUILD_VERSION='2.73';
 const MAP_THEME={...THEME,latent:THEME.paper,hideQueues:true,hideLoadMarks:true,hideCarriers:true,modeColours:{metro:'rgba(0,0,0,0)',tram:'rgba(0,0,0,0)',car:'rgba(0,0,0,0)'}};
 const cargoColour=colourOf;   // ONE palette: this file and the job board drew the same parcel in two different colours until v2.43
 const esc=s=>String(s??'').replace(/[&<>\"]/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[ch]||ch));
@@ -61,18 +62,23 @@ let WEEK=params.has('week')?Week.resume():null;
 const LIVE=params.has('live')&&!params.has('week');
 if(WEEK&&Week.isOver(WEEK)){Week.clearWeek();WEEK=Week.resume();}
 const WEEK_DAY=WEEK?Week.today(WEEK):null;
-// v2.70: THE MUTATOR (mutators.js; MUTATORS.md) — one per run, `?mutator=`,
-// never on LIVE or a week. It decides the skin and turns levers the game
-// already has; on today's address it is today's city but not the daily.
-const MUT=resolveMutator(params,{live:LIVE,week:!!WEEK});
-const SHIFT_INFO=WEEK?{kind:'week',seed:WEEK_DAY.seed,index:WEEK_DAY.index,name:WEEK_DAY.name}:LIVE?{...resolveShift(params),kind:'live'}:mutateShift(resolveShift(params),MUT);
+// v2.73: THE RUN (runs.js) — the game is a ladder of four runs, EASY to
+// NIGHT, each opened by completing the one before. The bare address IS the
+// ladder and plays the next run on a FRESH shift every attempt (owner: a new
+// shift each time); `?run=` names one that is open. Any of the testers' and
+// the bot's parameters — a pinned shift, the daily, a day, a weather, the rush
+// or a kit — keeps the classic rules, so every gate written against them still
+// measures what it measured. LIVE and the week wear no run.
+const CLASSIC=['shift','daily','day','weather','rush','kit'].some(k=>params.has(k));
+const RUN=Runs.resolveRun(params,{live:LIVE,week:!!WEEK,other:CLASSIC});
+const SHIFT_INFO=WEEK?{kind:'week',seed:WEEK_DAY.seed,index:WEEK_DAY.index,name:WEEK_DAY.name}:LIVE?{...resolveShift(params),kind:'live'}:(params.has('shift')||params.has('daily')||(CLASSIC&&!RUN))?{...resolveShift(params),...(RUN?{run:RUN.id}:{})}:{kind:'run',run:RUN.id,seed:1000+Math.floor(Math.random()*9000)};
 const shiftSeed=SHIFT_INFO.seed;
 // The real clock in Helsinki, in minutes of the day.
 const helsinkiMinutes=(d=new Date())=>{try{const [h,m]=new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/Helsinki',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).format(d).split(':').map(Number);return h*60+m;}catch{return d.getHours()*60+d.getMinutes();}};
 const LIVE_START=LIVE?helsinkiMinutes():null;
 const hhmm=m=>`${String(Math.floor(m/60)%24).padStart(2,'0')}:${String(m%60).padStart(2,'0')}`;
-const shiftLabel=()=>SHIFT_INFO.kind==='live'?`LIVE · HELSINKI ${hhmm(LIVE_START)}`:SHIFT_INFO.kind==='daily'?`${dailyName(SHIFT_INFO.number).toUpperCase()} · ${SHIFT_INFO.label}`:SHIFT_INFO.kind==='week'?`WEEK ${WEEK.seed} · ${SHIFT_INFO.name}`:SHIFT_INFO.kind==='mutator'?`${MUT.name} · ${SHIFT_INFO.label}`:MUT?`${MUT.name} · shift #${shiftSeed}`:`shift #${shiftSeed}`;
-const cityDay=drawCityEvent(shiftSeed,WEEK?WEEK_DAY.day:LIVE||MUT?'none':params.get('day'));   // a mutator IS the day
+const shiftLabel=()=>SHIFT_INFO.kind==='live'?`LIVE · HELSINKI ${hhmm(LIVE_START)}`:SHIFT_INFO.kind==='daily'?`${dailyName(SHIFT_INFO.number).toUpperCase()} · ${SHIFT_INFO.label}`:SHIFT_INFO.kind==='week'?`WEEK ${WEEK.seed} · ${SHIFT_INFO.name}`:SHIFT_INFO.kind==='run'?`${RUN.name} · ${RUN.title}`:RUN?`${RUN.name} · shift #${shiftSeed}`:`shift #${shiftSeed}`;
+const cityDay=drawCityEvent(shiftSeed,WEEK?WEEK_DAY.day:LIVE||(RUN&&!RUN.cityDay)?'none':params.get('day'));   // a run says whether the city happens
 // v2.48: KIT (kit.js). A week carries what was picked on its nights. `?kit=`
 // applies it to a pinned or random shift — the bot measures each item that way
 // — and never to the daily, whose result is one everybody can compare.
@@ -80,22 +86,22 @@ const KIT_IDS=WEEK?Week.owned(WEEK):SHIFT_INFO.kind==='daily'?[]:Kit.parse(param
 const KIT_FX=Kit.effects(KIT_IDS);
 // v2.49: WEATHER (weather.js) — a look and a lever per morning, drawn from the
 // shift. `?weather=` pins it; the harness's `?day=none` control means clear.
-const WEATHER=drawWeather(shiftSeed,LIVE?'clear':MUT?(MUT.weather||'clear'):params.get('weather'),params.get('day'));
+const WEATHER=drawWeather(shiftSeed,LIVE?'clear':RUN?.weather||params.get('weather'),params.get('day'));
 // v2.69: THE SKIN (skin.js; art bible §1). Day paper is the default board and
 // the owner's grey night map is the Night skin; a run's mutator decides, and
 // `?skin=` pins one for a link. Everything on the board reads SK, never NIGHT.
-const SK=skinFor({skin:params.get('skin'),mutator:MUT?.id||null,weather:WEATHER});document.body?.classList.add(`skin-${SK.id}`);
+const SK=skinFor({skin:params.get('skin'),mutator:RUN?.skin||null,weather:WEATHER});document.body?.classList.add(`skin-${SK.id}`);
 // v2.52: THE RUSH (rush.js). `?rush=off`, and the harness's `?day=none`
 // control, turn it off; `?rush=on` keeps it on under that control.
 // A mutator may pin it: Night has none (opposite hours), Rush Hour is at its peak all shift.
-const RUSH=rushWith(MUT,!LIVE&&(params.get('rush')==='on'||(params.get('rush')!=='off'&&params.get('day')!=='none')),()=>flow?Rush.load(flow.clock.dayProgress):0);
+const RUSH=rushWith(RUN,!LIVE&&(params.get('rush')==='on'||(params.get('rush')!=='off'&&params.get('day')!=='none')),()=>flow?Rush.load(flow.clock.dayProgress):0);
 const RUSH_ON=RUSH.on;
 const rushLoad=()=>RUSH_ON?RUSH.load():0;
 // The clock's first minute: 07:00, or 23:00 on a Night run.
-const START_MIN=startMinute(MUT,SHIFT.startHour);
+const START_MIN=startMinute(RUN,SHIFT.startHour);
 const say=s=>{if(msgs[0]===s)return;msgs.unshift(s);msgs.length=Math.min(8,msgs.length);paintFeed();};  // a line repeated back to back is a double call, not news
 
-function publish(){window.__tm={...(window.__tm||{}),skin:SK.id,mutator:MUT,walkLine,walkProgress,live:LIVE,version:BUILD_VERSION,shiftSeed,shiftInfo:SHIFT_INFO,cityDay,kit:KIT_IDS,kitFx:KIT_FX,weather:WEATHER,rushOn:RUSH_ON,rushLoad,isFull:v=>RUSH_ON&&!!flow&&Rush.isFull(v,flow.clock.tick,rushLoad()),flow,challenge,renderer,transit,city,water,board:box,project:fitLatLon,projection,camera,ground,landmarkPoints:()=>_lmPoints,fleetFilter,courierLatLon,drawStopLabels,shift:SHIFT,say,paintHud,paintSheet,sheetSlot};}
+function publish(){window.__tm={...(window.__tm||{}),skin:SK.id,run:RUN,walkLine,walkProgress,live:LIVE,version:BUILD_VERSION,shiftSeed,shiftInfo:SHIFT_INFO,cityDay,kit:KIT_IDS,kitFx:KIT_FX,weather:WEATHER,rushOn:RUSH_ON,rushLoad,isFull:v=>RUSH_ON&&!!flow&&Rush.isFull(v,flow.clock.tick,rushLoad()),flow,challenge,renderer,transit,city,water,board:box,project:fitLatLon,projection,camera,ground,landmarkPoints:()=>_lmPoints,fleetFilter,courierLatLon,drawStopLabels,shift:SHIFT,say,paintHud,paintSheet,sheetSlot};}
 
 // THE one projection. It used to go lat/lon -> graph space -> flow.graph.fit(),
 // and fit() letterboxes with Math.min: the board is portrait (about 4km across
@@ -127,7 +133,7 @@ function boot(seed=7){
   // end card to it left a won shift running (v2.29-v2.45) until an event
   // happened to fire, and on a quiet day none did. The day's end always ends it.
   flow=createFlow({city,seed,days:1,demand:null,ticksPerDay:SHIFT.ticksPerDay,hooks:{onTick:()=>{const changed=challenge?.step?.();if(changed){paintHud();paintSheet();}weekProgress();if(challenge?.complete)finish();},onDay:()=>finish()}});
-  challenge=new DeliveryChallenge(flow,say);challenge.shiftSeed=shiftSeed;challenge.kit=KIT_FX;challenge.weatherSpeed=WEATHER.speed||1;challenge.surge=()=>RUSH_ON?Rush.surge(rushLoad()):1;if(WEEK)challenge.useStanding(Week.standingStore(WEEK));done=false;msgs=[];
+  challenge=new DeliveryChallenge(flow,say);challenge.shiftSeed=shiftSeed;challenge.kit=RUN?.deadline&&RUN.deadline!==1?{...KIT_FX,limit:(KIT_FX.limit||1)*RUN.deadline}:KIT_FX;if(RUN?.target&&RUN.target!==3)challenge.targetOverride=RUN.target;if(RUN?.cargo)challenge.cargoPool=RUN.cargo;if(RUN?.board==='short')challenge.shortBoard=true;challenge.weatherSpeed=WEATHER.speed||1;challenge.surge=()=>RUSH_ON?Rush.surge(rushLoad()):1;if(WEEK)challenge.useStanding(Week.standingStore(WEEK));done=false;msgs=[];
   renderer=new FlowRenderer($('map'),MAP_THEME);
   challenge.start();publish();paintHud();paintSheet();
 }
@@ -577,6 +583,7 @@ function paintFeed(){const f=$('feed');if(!f)return;f.innerHTML='';for(const m o
 function paintDaily(){const box=$('endStats');if(!box)return;
   const again=$('again');
   if(SHIFT_INFO.kind==='week'){paintWeek(box,again);return;}
+  if(RUN){paintRun(box,again);return;}
   if(SHIFT_INFO.kind!=='daily'){if(again)again.textContent=LIVE?'ANOTHER LIVE SHIFT':'RUN THIS SHIFT AGAIN';return;}
   const res={results:[...(challenge.results||[])],target:challenge.target,drops:challenge.drops||0,score:challenge.score,delivered:challenge.index,day:cityDay?.id||null};
   const r=recordDaily(SHIFT_INFO.key,res),rec=r.record,run=streak(SHIFT_INFO.key);
@@ -589,6 +596,21 @@ function paintDaily(){const box=$('endStats');if(!box)return;
     try{if(navigator.share){await navigator.share({text});btn.textContent='SHARED';return;}}catch(e){if(e?.name==='AbortError')return;}
     try{await navigator.clipboard.writeText(text);btn.textContent='COPIED';return;}catch{}
     const pre=$('shareText');if(pre){pre.textContent=text;pre.hidden=false;}btn.textContent='COPY THIS';};}
+
+// ── THE RUN'S RESULT (v2.73) ────────────────────────────────────────────
+// Every job delivered completes the run (late is allowed and costs score),
+// and completing it opens the next. Stars sit on top and gate nothing. The
+// loud button is the NEXT run when there is one to go to; trying again is a
+// fresh shift of the same run (a reload draws a new one).
+function paintRun(box,again){
+  const r=Runs.record(RUN.id,{delivered:challenge.index,target:challenge.target,late:challenge.late||0,score:challenge.score});if(!r)return;
+  const i=Runs.ORDER.indexOf(RUN.id),next=Runs.RUNS[i+1],star=n=>'★'.repeat(n)+'☆'.repeat(3-n);
+  const why=r.done?(r.stars===1?'every job delivered · some late':r.stars===2?`every job on time · ${Number(RUN.par).toLocaleString('en-US')} for the third star`:'every job on time, at par'):`deliver all ${challenge.target} to complete ${RUN.name}`;
+  const opened=r.opened.map(id=>`<p class="runOpened">${esc(Runs.BY_ID[id].name)} IS OPEN</p>`).join('')+(r.extrasOpened?'<p class="runOpened">THE DAILY AND THE WEEK ARE OPEN</p>':'');
+  const go=r.done&&next&&Runs.unlocked(next.id,r.all)?`<a class="btn prime wide" id="nextRun" href="${Runs.runHref(next.id,location.search)}">NEXT · ${esc(next.name)}</a>`:'';
+  box.insertAdjacentHTML('afterbegin',`<div class="dailyBox runBox"><p class="dailyHead">${esc(RUN.name)} · ${esc(RUN.title)}</p><p class="runStars" aria-label="${r.stars} of 3 stars">${star(r.stars)}</p><p class="hint">${esc(why)}${r.newBest&&r.all[RUN.id].plays>1?' · a new best':''}</p>${opened}${go}</div>`);
+  $('endTitle').textContent=r.done?`${RUN.name} COMPLETE`:'NOT YET';
+  if(again){again.textContent=r.done?`${RUN.name} AGAIN · A NEW SHIFT`:`TRY ${RUN.name} AGAIN`;again.classList.toggle('prime',!go);again.classList.toggle('ghost',!!go);}}
 
 // ── THE WEEK, on the page ────────────────────────────────────────────────
 // Every delivery is written into the save as it lands, so a page left at any
@@ -743,32 +765,39 @@ function showStop(node,at=null){const pop=$('pop'),body=$('popBody');if(!pop||!b
 // THE DAY, ON THE TITLE CARD. The shift has a name before it starts, which is
 // the whole of roadmap item 7: a modifier you meet by losing is a different
 // genre, so the card says what today does and which lines it slows.
-// v2.70: THE MUTATOR ROW on the title card — the four core mutators from the
-// first run (MUTATORS.md), plus Day, which is no mutator. Each is a link: a run
-// is decided at boot, so choosing one starts a fresh page wearing it. The two
-// title lines that name a time follow the clock, so Night says 23:00.
-function paintMutators(){const row=$('mutRow');if(!row)return;
-  if(START_MIN!==SHIFT.startHour*60&&!LIVE){const w=$('titleWhen'),g=$('titleGoal');if(w)w.textContent=`Helsinki · ${hhmm(START_MIN)} · five minutes`;if(g)g.textContent=`Three deliveries before ${hhmm(START_MIN+SHIFT.hours*60)}. Drops on the way are extra.`;}
+// v2.73: THE LADDER on the title card. Four runs, EASY to NIGHT: an open run
+// is a link (a run is decided at boot), a locked one says what opens it, and a
+// finished one wears its stars. The run this page will play is lit and its one
+// sentence sits under the list. The two title lines say this run's clock and
+// how many jobs it asks for.
+const COUNT=['no','One','Two','Three','Four','Five','Six'];
+function paintRuns(){const row=$('mutRow');if(!row)return;
+  const target=RUN?.target||3,start=LIVE?null:START_MIN;
+  if(start!=null&&(start!==SHIFT.startHour*60||target!==3)){const w=$('titleWhen'),g=$('titleGoal');if(w)w.textContent=`Helsinki · ${hhmm(start)} · five minutes`;if(g)g.textContent=`${COUNT[target]||target} deliveries before ${hhmm(start+SHIFT.hours*60)}. Drops on the way are extra.`;}
   if(LIVE||SHIFT_INFO.kind==='week'){row.innerHTML='';return;}
-  const href=id=>{const q=new URLSearchParams(location.search);q.delete('mutator');q.delete('skin');if(id)q.set('mutator',id);const s=q.toString();return `./${s?`?${s}`:''}`;};
-  const on=MUT?.id||null;
-  row.innerHTML=`<p class="mutHead">MUTATOR</p><div class="mutChips">${[{id:null,name:'DAY',glyph:'☀'},...MUTATORS].map(m=>`<a class="mut${m.id===on?' on':''}" href="${href(m.id)}" data-mut="${m.id||'day'}"${m.id===on?' aria-current="true"':''}><span class="mutG" aria-hidden="true">${m.glyph}</span>${esc(m.name)}</a>`).join('')}</div>${MUT?`<p class="hint mutBlurb">${esc(MUT.blurb)}</p>`:''}`;}
+  const all=Runs.loadRuns(),on=RUN?.id||null,star=n=>'★'.repeat(n)+'☆'.repeat(3-n);
+  row.innerHTML=`<p class="mutHead">RUNS</p><div class="runList">${Runs.RUNS.map((r,i)=>{const open=Runs.unlocked(r.id,all),rec=all[r.id],prev=Runs.RUNS[i-1];
+    return open?`<a class="run${r.id===on?' on':''}" href="${Runs.runHref(r.id,location.search)}" data-run="${r.id}"${r.id===on?' aria-current="true"':''}><span class="runG" aria-hidden="true">${r.glyph}</span><span class="runT"><b>${esc(r.name)}</b><small>${esc(r.title)} · ${r.target} jobs</small></span><span class="runS" title="${rec.stars} stars">${rec.done?star(rec.stars):''}</span></a>`
+    :`<span class="run locked" data-run="${r.id}" aria-disabled="true"><span class="runG" aria-hidden="true">🔒</span><span class="runT"><b>${esc(r.name)}</b><small>finish ${esc(prev.name)} to open</small></span></span>`;}).join('')}</div>${RUN?`<p class="hint mutBlurb">${esc(RUN.blurb)}</p>`:''}`;
+  // the daily and the week are the reward for clearing NIGHT (owner: ladder first)
+  const extras=Runs.extrasOpen(all),dl=$('dailyLink');if(dl)dl.hidden=!extras||SHIFT_INFO.kind==='daily';}
 function paintDayCard(){const el=$('dayCard');if(!el)return;
   const n=$('shiftNo');if(n){const rec=SHIFT_INFO.kind==='daily'?todayRecord(SHIFT_INFO.key):null;
     // Already played today: say so BEFORE the run, not after it — finding out
     // at the end that the run you just cared about was practice is a small
     // betrayal, and the whole point of one result a day is that it is one.
+    n.hidden=SHIFT_INFO.kind==='run';   // the ladder names the run
     n.innerHTML=SHIFT_INFO.kind==='week'?weekTitle():`${esc(shiftLabel())}${rec?`<br><span class="dailyDone">played · ${dailyGrid(rec.results,rec.target)} · ${Number(rec.score).toLocaleString('en-US')} — this run is practice</span>`:''}`;
     // A night left without a pick (the page was closed on the end card) is
     // offered again here, and the shift waits for it: the kit is applied at boot.
     if(SHIFT_INFO.kind==='week'&&Week.pending(WEEK)){n.insertAdjacentHTML('beforeend',kitPicker());wireKitPicker(n);const pl=$('play');pl.disabled=true;pl.textContent='TAKE ONE FIRST';}
-    const wl=$('weekLink');if(wl){const w=SHIFT_INFO.kind==='week'?null:Week.loadWeek();wl.hidden=SHIFT_INFO.kind==='week';
+    const wl=$('weekLink');if(wl){const w=SHIFT_INFO.kind==='week'?null:Week.loadWeek();wl.hidden=SHIFT_INFO.kind==='week'||!(Runs.extrasOpen()||(w&&!Week.isOver(w)&&w.shifts.length));
       wl.innerHTML=w&&!Week.isOver(w)&&w.shifts.length?`CONTINUE THE WEEK · ${Week.DAY_NAMES[w.day]} · €${Week.total(w)}/€${Week.RENT}`:`OR THE WEEK · five shifts, rent due Friday`;}
     // LIVE stays off a store build until it has been seen working on a real
     // phone (roadmap M6) — the store page must never sell a mode nobody played.
-    const ll=$('liveLink');if(ll)ll.hidden=SHIFT_INFO.kind==='week'||LIVE||STORE;}
-  paintMutators();
-  const wx=WEATHER&&WEATHER.id!=='clear'&&!MUT?.weather?`<div class="dayCard wxCard"><span class="dayGlyph">${WEATHER.glyph}</span><div><b>${esc(WEATHER.name)}</b><p>${esc(WEATHER.blurb)}</p></div></div>`:'';
+    const ll=$('liveLink');if(ll)ll.hidden=SHIFT_INFO.kind==='week'||LIVE||STORE||!Runs.extrasOpen();}
+  paintRuns();
+  const wx=WEATHER&&WEATHER.id!=='clear'&&!RUN?.weather?`<div class="dayCard wxCard"><span class="dayGlyph">${WEATHER.glyph}</span><div><b>${esc(WEATHER.name)}</b><p>${esc(WEATHER.blurb)}</p></div></div>`:'';
   const live=LIVE?`<div class="dayCard"><span class="dayGlyph">●</span><div><b>LIVE · THE REAL MORNING</b><p>Every tram and metro train on the board is where HSL says it is right now. Real time: seventy-five minutes is seventy-five minutes. Nothing is recorded.</p></div></div>`:'';
   // v2.71: THE NOTEBOOK (sealed.js) — a line for every sealed parcel delivered, on this device; it never explains itself
   const nb=loadNotebook(),note=nb.length?`<details class="notebook"><summary>✉ NOTEBOOK · ${nb.length}</summary><ol>${nb.map(l=>`<li>${esc(l)}</li>`).join('')}</ol></details>`:'';

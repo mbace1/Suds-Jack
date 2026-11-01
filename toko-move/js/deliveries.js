@@ -55,6 +55,8 @@ export class DeliveryChallenge{
  // (a campaign city, or the survey bot asking how many a day really holds).
  get target(){return this.targetOverride??DELIVERY_TARGET;}
  cargoRule(){return CARGO[this.active?.cargo]||CARGO.documents;}
+ // v2.73: a run may deal from fewer parcels (EASY: no rules to learn yet). Unset, the pool is every cargo, so a challenge built by hand deals exactly what it did.
+ cargoKeys(){return this.cargoPool?.length?this.cargoPool:CARGO_KEYS;}
  start(){this.refreshOffers();}
  // WHAT A DEADLINE IS.
  //
@@ -85,7 +87,7 @@ export class DeliveryChallenge{
   if(Number.isFinite(est)&&est>0)return Math.round((est*DEADLINE_GRACE+30*scale)*k);
   return Math.round((110+dist*16+(cargo==='hot food'||cargo==='express'?0:25))*scale*k);}
  refreshOffers(){if(this.index>=this.target){this.offers=[];return;}const from=this.location||'lasipalatsi',seed=hash(`${this.shiftTag()}${from}:${this.index}:${this.offerCycle++}`),pool=DESTINATIONS.filter(x=>x!==from&&this.flow.graph.node(x));const cands=[];
-  for(let i=0;i<6&&pool.length;i++){const pick=(seed+i*7)%pool.length,to=pool.splice(pick,1)[0],cargo=CARGO_KEYS[(seed+i*3+this.index)%CARGO_KEYS.length],dist=Math.max(1,Math.round(Math.hypot((this.flow.graph.node(to)?.x||0)-(this.flow.graph.node(from)?.x||0),(this.flow.graph.node(to)?.y||0)-(this.flow.graph.node(from)?.y||0))/5)),limit=this.deadlineFor({from,to,cargo,dist}),value=this.jobPay((90+dist*9)*payFor(cargo));cands.push({id:`offer:${this.index}:${i}:${to}`,stops:[from,to],label:`${this.name(from)} → ${this.name(to)}`,cargo,limit,value});}
+  for(let i=0;i<6&&pool.length;i++){const pick=(seed+i*7)%pool.length,to=pool.splice(pick,1)[0],cargo=this.cargoKeys()[(seed+i*3+this.index)%this.cargoKeys().length],dist=Math.max(1,Math.round(Math.hypot((this.flow.graph.node(to)?.x||0)-(this.flow.graph.node(from)?.x||0),(this.flow.graph.node(to)?.y||0)-(this.flow.graph.node(from)?.y||0))/5)),limit=this.deadlineFor({from,to,cargo,dist}),value=this.jobPay((90+dist*9)*payFor(cargo));cands.push({id:`offer:${this.index}:${i}:${to}`,stops:[from,to],label:`${this.name(from)} → ${this.name(to)}`,cargo,limit,value});}
   // Loop 47: a procedural job is constrained by a network relationship, never
   // rolled blind. Measured before this: the first offer taken had no compatible
   // vehicle for 1204 ticks — two minutes of wall time on the tutorial job —
@@ -112,11 +114,14 @@ export class DeliveryChallenge{
   const priced=cands.filter(o=>o.est!=null).sort((a,b)=>a.est-b.est),unpriced=cands.filter(o=>o.est==null);
   let fits=priced.filter(o=>o.est<=remaining*0.9);
   if(!fits.length)fits=priced.slice(0,3);
-  let kept=fits.length>=3?[fits[0],fits[fits.length>>1],fits[fits.length-1]]:fits.slice();
+  // v2.73: a SHORT board (EASY) keeps the three cheapest that fit and no
+  // hand-off — measured, the first thing listed was a hand-off of unknown
+  // length, and a player who takes what is listed first lost EASY to it
+  let kept=this.shortBoard?fits.slice(0,3):fits.length>=3?[fits[0],fits[fits.length>>1],fits[fits.length-1]]:fits.slice();
   for(const o of [...priced,...unpriced]){if(kept.length>=3)break;if(!kept.includes(o))kept.push(o);}
   kept=kept.filter((o,i)=>kept.indexOf(o)===i);
   if(typeof judge==='function'&&this.index===0){const soon=kept.filter(o=>judge(o));if(soon.length)kept=[soon[0],...kept.filter(o=>o!==soon[0])];}
-  if(this.pendingHandoff&&this.pendingHandoff.stops[0]===from)kept=[this.pendingHandoff,...kept.filter(o=>!o.handoff)].slice(0,3);
+  if(!this.shortBoard&&this.pendingHandoff&&this.pendingHandoff.stops[0]===from)kept=[this.pendingHandoff,...kept.filter(o=>!o.handoff)].slice(0,3);
   this.offers=kept;this.say(`DISPATCH · ${this.offers.length} jobs available at ${this.name(from)}.`);}
  // THE BAG IS SPACE, NOT A COUNT (v2.43, owner: "can carry many smaller but
  // only few or one larger"). Everything you are carrying takes room in one
@@ -194,7 +199,7 @@ export class DeliveryChallenge{
    for(const pick of picks){
    seen.add(pick.id);seenNames.add(pick.name);
    const isMk=pick===mk;
-   const cargo=CARGO_KEYS[(seed>>>3)%CARGO_KEYS.length],passed=Math.max(1,between.indexOf(pick)+1);
+   const cargo=this.cargoKeys()[(seed>>>3)%this.cargoKeys().length],passed=Math.max(1,between.indexOf(pick)+1);
    const marketPay=isMk?1+(this.market.bonus||0):1;
    out.push({id:`along:${this.index}:${c.line?.label}:${pick.id}`,stops:[c.from,pick.id],name:pick.name,lat:pick.lat,lon:pick.lon,label:`${this.name(c.from)} → ${pick.name}`,cargo,limit:this.active.limit,value:this.dropPay((45+passed*12)*marketPay*payFor(cargo)),market:isMk,line:c.line?.label,along:true});}}
   return out.slice(0,this.market?.offers||2);}
@@ -244,7 +249,7 @@ export class DeliveryChallenge{
   // fleet, so in snow every estimate is a fifth longer — and this line turned
   // that into distance, so a snowy hand-off paid more for the same two stops.
   // It was the whole of the "+€57 snow week" (v2.49's open finding).
-  const cargo=CARGO_KEYS[(seed>>>5)%CARGO_KEYS.length],dist=Math.max(1,Math.round(pick.est*(this.weatherSpeed||1)/40));
+  const cargo=this.cargoKeys()[(seed>>>5)%this.cargoKeys().length],dist=Math.max(1,Math.round(pick.est*(this.weatherSpeed||1)/40));
   this.pendingHandoff={id:`handoff:${this.index}:${pick.to}`,stops:[at,pick.to],label:`${this.name(at)} → ${this.name(pick.to)}`,cargo,
    limit:this.deadlineFor({from:at,to:pick.to,cargo,dist}),value:this.jobPay((90+dist*9)*payFor(cargo)),handoff:true,
    // No name on the door (v2.43, owner: "recipients names aren't needed"). A
