@@ -576,3 +576,20 @@ Everything below comes from search summaries. No article was opened.
 - **#1–#7:** nothing new found.
 - **Reactions:** no visible comment counts through search for any thread.
 - **Pattern note:** unchanged. The next dated Finnish step is LVV's water plan (5 Nov).
+
+### Check Sun 1 Nov 07:16 (search summaries only; nothing opened)
+- **HS:** no new candidate in the last two days.
+- **Secondary, *Salon Seudun Sanomat* (SSS), Salo · watch, LOW-MED:**
+  - Salo's city board approved land sales for a ~€2bn data centre in Kärkkä (Aug 2026).
+  - The developer Regant Oy long declined to name the end user; SSS later named atNorth.
+  - SSS reports residents split, saying "you can't know what is true and what isn't" (Oct 2026). Regant also refused to
+    name the Pieksämäki end user (2025).
+  - Same pattern as #2 (a hidden end user), but a weaker peg. Verified from search summaries only.
+  - [SSS Aug](https://www.sss.fi/2026/08/datakeskuksen-tulo-saloon-nytkahti-eteenpain-maakaupat-neuvoteltu/), [SSS Oct](https://www.sss.fi/2026/10/salolaiset-suhtautuvat-tulevaan/), [SSS 2025](https://www.sss.fi/2025/05/salo-saattaa-saada-pian-oman-datakeskuskohunsa/)
+- **Muhos / Count the Trees:** no new fact. The water management plan is due to LVV on 5 Nov, with a possible fine if it
+  is not delivered. Two police requests and LVV's own request remain open. "Two requests filed with the police" stays
+  right. [Kaleva](https://kaleva.fi/lvv-on-tehnyt-poliisille-tutkintapyynnon-googlen-m/13720712)
+- **Hamina / Trade Secret:** no follow-up found.
+- **#1–#7, Vaasa–Mustasaari:** nothing new.
+- **Reactions:** no comment counts visible through search.
+- **Pattern note:** unchanged. The 5 Nov water-plan deadline is the next dated Finnish step.

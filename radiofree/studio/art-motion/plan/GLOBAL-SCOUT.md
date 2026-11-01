@@ -846,3 +846,49 @@ Everything below comes from search summaries. No article was opened.
 - **Reactions to our own posts (The Panel, Short Supply):** not visible through search. Grok Bot's links are in
   POSTED.md, and opening IG or X is outside this check's search-only method.
 - **Big development:** none. One pre-posting flag (Grade Your Own Homework, above).
+
+### Check Sun 1 Nov 07:16 (search summaries only; EDGAR tried once with a generic user agent and no personal data, still blocked at the proxy, so nothing was opened)
+- **Coxon 13, Grade Your Own Homework (on HOLD since 31 Oct 17:25): the record as firmly as summaries allow.**
+  - **How Anthropic's deal ended:** the July 2025 CDAO agreement (up to $200M, described as two-year) was voided after
+    the Pentagon designated Anthropic a supply-chain risk, **27–28 Feb 2026**. The dispute was Anthropic's refusal to
+    allow mass domestic surveillance and fully autonomous weapons uses.
+    - The better-sourced date is Feb 2026 (Fortune 28 Feb; NHPR/NPR 27 Feb; EFF Mar). The "Sept 2025 breakdown"
+      version comes only from lower-tier sites (OpenTools and similar), so treat it as unreliable.
+  - **OpenAI's role:** OpenAI announced its own classified-systems deal hours after the designation. That is a new
+    deal, not proven to be a takeover of the same contract. A later TNW piece says seven companies now run AI on
+    classified Pentagon networks (adding Nvidia, Microsoft, AWS).
+  - **The other three July 2025 deals** (OpenAI, Google, xAI): no report of cancellation found. Presumed active, NOT
+    verified.
+  - **"Required" or "asked":** coverage of The Intercept's documents says the companies were "scheduled to produce" and
+    "agreed to" risk forecasting and threat-ideation exercises, i.e. contract deliverables. "Had to" fits; the
+    present-tense "must" does not, for Anthropic.
+  - **Implication for the fix.** Three lines are now present-tense or ambiguous: caption 2 ("Each must…"), the post
+    ("…ask each…"), and the end disclosure ("ANTHROPIC IS ONE OF THE FOUR"; true of the 2025 award, ambiguous now).
+    - Options: (a) re-render with "Each had to / [forecast] the risks / of its own AI." and "ANTHROPIC WAS ONE OF THE
+      FOUR", plus a past-tense post with "Anthropic's deal was cancelled in Feb 2026"; (b) the post only; (c) drop.
+  - [Fortune 28 Feb](https://fortune.com/2026/02/28/openai-pentagon-deal-anthropic-designated-supply-chain-risk-unprecedented-action-damage-its-growth/),
+    [NHPR/NPR 27 Feb](https://www.nhpr.org/2026-02-27/openai-announces-pentagon-deal-after-trump-bans-anthropic),
+    [EFF](https://www.eff.org/deeplinks/2026/03/anthropic-dod-conflict-privacy-protections-shouldnt-depend-decisions-few-powerful),
+    [TNW](https://thenextweb.com/news/pentagon-ai-deals-anthropic-safety-limits),
+    [Intercept 8 Sep](https://theintercept.com/2026/09/08/military-ai-weapons-contracts-openai-anthropic-google/),
+    [IBTimes](https://www.ibtimes.co.uk/ai-giants-pentagon-military-contracts-1818594)
+- **12 The Round Trip (Anthropic S-1): still HOLD.** No S-1/A with a price range found. The S-1 of 26 Oct leaves price
+  and share count blank (startuphub, allocations.com).
+  - [startuphub](https://www.startuphub.ai/ai-news/public-companies/2026/anthropic-files-for-ipo-but-leaves-price-blank),
+    [GPB 26 Oct](https://www.gpb.org/news/2026/10/26/ai-giant-anthropic-files-for-ipo-could-break-records)
+- **1 The Panel (Project Meridian):** no new record. The latest is still NPR 6 Oct: Musk's and Luckey's status is
+  undisclosed, and the DoD says MITRE applies "conflict-of-interest and information safeguards". The posted film stays
+  true. [OPB/NPR](https://www.opb.org/article/2026/10/06/pentagon-taps-elon-musk-and-palmer-luckey-for-strategy-study/)
+- **5 Short Supply (Garciaguirre v. Samsung, N.D. Cal., Judge Noel Wise):**
+  - The defendants' joint motion to dismiss was reportedly filed 2 Sep 2026. No ruling as of the latest (October)
+    update.
+  - **The 13 Nov hearing date is still NOT confirmed by a second source.** It is on screen in the posted film (tag
+    "HEARING 13 NOV 2026").
+  - [MLex](https://www.mlex.com/mlex/articles/2521453), [Law Street](https://lawstreetmedia.com/news/tech/antitrust-class-action-accuses-micron-samsung-and-sk-hynix-of-manipulating-dram-market/)
+- **3 For Your Protection follow-up (New Jersey S4304/A2774):** still only the 1 Oct Senate committee release; no floor
+  vote found. A2774 sits in Assembly committee since 13 Jan.
+  [Sierra Club NJ](https://www.sierraclub.org/new-jersey/blog/2026/10/data-center-transparency-bill-eliminating-ndas-municipalities-passes-senate), [FastDemocracy](https://fastdemocracy.com/bill/nj/2026-2027/bills/NJB00075280/)
+- **10 Meta / Grassley:** no Meta reply to the July 2026 letter found. The record still ends at Grassley's letter (reply
+  asked by 4 Aug 2026) and the March 2026 follow-up.
+  [Senate Judiciary](https://www.judiciary.senate.gov/press/rep/releases/grassley-probes-meta-on-disclosures-alleging-company-disregarded-child-safety-risks-and-retaliated-against-whistleblowers)
+- **Big development:** none.

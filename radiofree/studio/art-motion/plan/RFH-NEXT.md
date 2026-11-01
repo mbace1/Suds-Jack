@@ -384,3 +384,28 @@ All facts below come from search summaries; no article was opened.
 - **Count the Trees:** still right. **Trade Secret:** no follow-up.
 - **Finland:** no new HS candidate.
 - **Reactions to our posts:** not visible through search.
+
+## Daily check, Sun 1 Nov 07:16 (morning; search summaries only)
+- **Coxon 13, Grade Your Own Homework (HOLD): the cancellation is now firmer.**
+  - Anthropic's July 2025 deal was voided after the supply-chain-risk designation of 27–28 Feb 2026 (Fortune, NPR).
+    The "Sept 2025" version is from weak sources only.
+  - OpenAI then announced its own classified deal; it is not shown to be the same contract.
+  - The other three deals: no cancellation reported (unverified).
+  - **Fix for the owner to choose:**
+    - (a) Re-render: caption 2 "Each had to / [forecast] the risks / of its own AI.", the disclosure "…ANTHROPIC WAS ONE
+      OF THE FOUR", and a past-tense post with "Anthropic's deal was cancelled in Feb 2026" (~30 min).
+    - (b) Post copy only.
+    - (c) Drop.
+  - Keep the hold until the owner answers.
+- **Global 3, Short Supply (posted):**
+  - The motion to dismiss was filed 2 Sep and is still pending.
+  - **The on-screen "HEARING 13 NOV 2026" is still single-source.** If it proves wrong, the posted film carries a wrong
+    date. Re-check before 13 Nov.
+- **Brink 4, The Panel (posted):** still true.
+- **The Round Trip:** HOLD (no S-1/A; EDGAR blocked).
+- **Ends in 3:** no extension found for the 31 Oct digit-5 deadline; the posted copy stays true.
+- **Break Glass:** keep held. No 2026 plenary vote on the extension to end-2028 was found. The 168–29 result is the 2025
+  vote.
+- **Count the Trees:** still right; the next step is the water plan on 5 Nov. **Trade Secret:** no follow-up.
+- **Finland:** no new HS candidate. Secondary watch: Salo data centre, hidden end user (SSS).
+- **Reactions to our posts:** not visible through search.
