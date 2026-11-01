@@ -369,6 +369,9 @@ jobs:
       - name: the skins — day inks on paper, cyan kept for the courier, every key on every skin
         run: node toko-move/test/skin.mjs
 
+      - name: the mutators — the table against the bible, each lever, the halt, the deck
+        run: node toko-move/test/mutators.mjs
+
       - name: the camera — three scales, the 2 km circle, zoom about a point
         run: node toko-move/test/camera.mjs
 
@@ -489,6 +492,9 @@ jobs:
 
       - name: a stranger who only taps what lights finishes a shift — and is never told two things at once
         run: NODE_PATH=$(npm root -g) node toko-move/test/stranger.cjs
+
+      - name: every mutator chosen on the title card and played out by tapping
+        run: NODE_PATH=$(npm root -g) node toko-move/test/mutators.cjs
 
       - name: the game in Finnish — played, and nothing left in English
         run: NODE_PATH=$(npm root -g) node toko-move/test/lang.cjs

@@ -1,5 +1,47 @@
 # Toko Move — versions
 
+## v2.70 — 2026-11-01
+
+**FOUR MUTATORS, FROM THE FIRST RUN** (MUTATORS.md, itch v1's core set;
+owner: *"Now, make the game"*). The title card has a row — DAY · NIGHT ·
+DISRUPTION · RUSH HOUR · SNOW DAY — and a run wears one. Each chip is a link,
+because a run is decided at boot: choosing one starts a fresh page wearing it,
+and DAY takes it off. The row sits beside START SHIFT, where the choice is
+made, with the chosen mutator's one sentence under it (inside the title's
+scrolling body it was below the fold on a phone). `js/mutators.js` is the table, and every entry is a
+setting on a lever the game already had, which is the bible's own limit — a
+mutator never changes the verbs, never adds a currency, never draws a route:
+
+- **NIGHT** — the night skin, the clock from **23:00** (the title says so, and
+  the goal reads *before 00:15*), every line provisioned to **2×** the headway,
+  no rush (opposite hours), no low sun. Cards lean to facts and notices.
+- **DISRUPTION** — one **tram family** (seeded, never the metro: the bible's
+  safe spine) is **halted from ten minutes in**, every variant of it, drawn as
+  grey dashes with grey trams. It lifts when **two jobs** are done or after
+  28–44 minutes, and the feed says so. It keeps its own time: an encounter
+  waiting for the courier to be somewhere no longer holds a halt back behind it
+  (the chance disruption of an ordinary shift is unchanged).
+- **RUSH HOUR** — the rush **at its peak all shift** (the RUSH chip, full
+  trams, the surge on pay) and every line at **0.6×** the headway.
+- **SNOW DAY** — the snow skin and the first-snow weather: services a fifth
+  slower, feet two fifths slower (the bible's ×0.7), kinder cards.
+
+**A mutator is the day**: no city event is drawn on top of it, and no weather
+but its own — one mutator per run (MUTATORS.md). **Today's address under a
+mutator is today's city but not the daily**: same seed, its own kind, never
+recorded, so the one result everybody compares stays comparable. LIVE and the
+week wear none. Card moods follow the bible's bias (`pickWeighted`), and with
+no mutator the director deals exactly the schedule it always did — `mutators.mjs`
+compares sixty seeds card for card.
+
+Gates: `test/mutators.mjs` (bare node — the table against the bible, each
+lever, the halt, the mood shares moving the right way and no-mutator dealing
+the old deck) and `test/mutators.cjs` (a browser — the row on the title card,
+choosing by tapping a chip, then each mutator played out by tapping only, with
+its promise checked on screen: 23:00 and past midnight, the held family from
+~10 min lifting by the second job, RUSH from first tick to last, the snow skin;
+and the Finnish for every new line).
+
 ## v2.69 — 2026-11-01
 
 **THE BOARD IS PAPER, AND THE HUD IS ONE PILL** (art bible §1/§3/§4, the
