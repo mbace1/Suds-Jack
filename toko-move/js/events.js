@@ -16,6 +16,7 @@
 // one disruption a shift, and the ticks they can cost add to under a tenth of
 // the day, measured with test/shifts.cjs so a run of bad luck stays winnable.
 import {drawMasterBadge} from '../../toko/js/master.js';
+import {pickWeighted} from './mutators.js?v=1';
 const hash=s=>{let h=2166136261;for(const c of String(s)){h^=c.charCodeAt(0);h=Math.imul(h,16777619);}return h>>>0;};
 
 // Costs are in TICKS (ten a second at ×1). 100 ticks is the owner's ten seconds.
@@ -59,28 +60,46 @@ export const MOODS={
  notice:{disc:'#176b73',squash:.85,grin:.94},    // deep teal: inspectors, service notices
 };
 export const BUDGET={encounters:3,disruptions:1,maxCostTicks:280};
+// A Disruption run's held family (MUTATORS.md §2): not a car on the rails for a
+// few minutes but the run's whole problem — it holds until two jobs are done or
+// its time is up, whichever comes first.
+export const HALTED={id:'halted',mood:'warning',glyph:'⛔',text:l=>`${l} is halted — the network routes around it.`,minutes:30};
 
 // The shift's schedule, from its seed alone.
 // `encounters` overrides the budget for a day that is about people being out
 // (HELSINKI DAY). Everything else about the draw is unchanged, so the same seed
 // on an ordinary day still deals the same three cards it always did.
-export function drawSchedule(seed,ticksPerDay=3000,lines=[],encounters=null){const h=hash(`events:${seed}`),out=[];
+// v2.70: `moods` weights the deal by card mood (a mutator's bias, mutators.js)
+// and `halt` replaces the shift's chance disruption with a Disruption run's own
+// held family. With neither, the draw is the one it always was, card for card.
+export function drawSchedule(seed,ticksPerDay=3000,lines=[],encounters=null,moods=null,halt=null){const h=hash(`events:${seed}`),out=[];
  const n=Math.min(encounters||BUDGET.encounters,ENCOUNTERS.length),used=new Set;
- for(let i=0;i<n;i++){const k=(h>>>(i*4))&0xffff;let card=ENCOUNTERS[k%ENCOUNTERS.length];let guard=0;while(used.has(card.id)&&guard++<ENCOUNTERS.length)card=ENCOUNTERS[(k+guard)%ENCOUNTERS.length];used.add(card.id);
+ for(let i=0;i<n;i++){const k=(h>>>(i*4))&0xffff;let card=pickWeighted(ENCOUNTERS,k,moods);let guard=0;while(used.has(card.id)&&guard++<ENCOUNTERS.length)card=ENCOUNTERS[(k+guard)%ENCOUNTERS.length];used.add(card.id);
   const at=Math.round(ticksPerDay*(0.12+0.24*i)+(k%400));out.push({kind:'encounter',card,at});}
- if(BUDGET.disruptions&&lines.length){const k=(h>>>13)&0xffff,d=DISRUPTIONS[k%DISRUPTIONS.length],line=lines[(k>>3)%lines.length];out.push({kind:'disruption',card:d,line,at:Math.round(ticksPerDay*0.3+(k%(ticksPerDay*0.35)))});}
+ if(halt){out.push({kind:'disruption',card:{...HALTED,minutes:halt.minutes},line:halt.line,lines:halt.lines,at:halt.atTick,recoverJobs:halt.recoverJobs});}
+ else if(BUDGET.disruptions&&lines.length){const k=(h>>>13)&0xffff,d=DISRUPTIONS[k%DISRUPTIONS.length],line=lines[(k>>3)%lines.length];out.push({kind:'disruption',card:d,line,at:Math.round(ticksPerDay*0.3+(k%(ticksPerDay*0.35)))});}
  return out.sort((a,b)=>a.at-b.at);}
 
 export class EventDirector{
- constructor(tm,seed=7,opts={}){this.tm=tm;this.seed=seed;this.goodwillFactor=opts.goodwill||1;const lines=(tm.transit?.layers||[]).filter(l=>l.visible).map(l=>l.name);this.queue=drawSchedule(seed,tm.flow.clock.ticksPerDay,lines,opts.encounters||null);this.pending=null;this.seen=[];this.busyUntil=0;this.holds=[];}
+ constructor(tm,seed=7,opts={}){this.tm=tm;this.seed=seed;this.goodwillFactor=opts.goodwill||1;const lines=(tm.transit?.layers||[]).filter(l=>l.visible).map(l=>l.name);this.queue=drawSchedule(seed,tm.flow.clock.ticksPerDay,lines,opts.encounters||null,opts.moods||null,opts.halt||null);this.pending=null;this.seen=[];this.busyUntil=0;this.holds=[];}
  // Called every tick after mobility. An encounter fires at the first moment
  // after its scheduled tick that the courier is where the card says.
- step(){const tm=this.tm,ch=tm.challenge,tick=tm.flow.clock.tick;if(this.pending)return false;const st=tm.mobility?.status?.();const here=st?.kind==='waiting'?'stop':st?.kind==='riding'?'aboard':st?.kind==='walking'?'walking':null;
-  const next=this.queue[0];if(!next||tick<next.at)return false;
+ step(){const tm=this.tm,ch=tm.challenge,tick=tm.flow.clock.tick;
+  // a held family that two jobs lift (a Disruption run): the hole closes when
+  // the courier has worked round it twice, not only when its time is up
+  let lifted=false;for(const h of this.holds)if(h.recoverJobs&&tick<h.until&&(ch?.index||0)>=h.startIndex+h.recoverJobs){this.lift(h,tick);lifted=true;}
+  // a Disruption run's halt keeps its own time: it is not a card waiting for the
+  // courier to be somewhere, so a card that is waiting must not hold it back
+  {const hi=this.queue.findIndex(e=>e.recoverJobs&&tick>=e.at);if(hi>=0){const [ev]=this.queue.splice(hi,1);this.startHold(ev);return true;}}
+  if(this.pending)return lifted;const st=tm.mobility?.status?.();const here=st?.kind==='waiting'?'stop':st?.kind==='riding'?'aboard':st?.kind==='walking'?'walking':null;
+  const next=this.queue[0];if(!next||tick<next.at)return lifted;
   if(next.kind==='disruption'){this.queue.shift();this.startHold(next);return true;}
   if(!ch?.active||here!==next.card.where)return false;
   this.queue.shift();this.pending={...next,since:tick};ch.say?.(`${next.card.glyph} ${next.card.text}`);return true;}
- startHold(ev){if(this.tm.live)return;/* LIVE: the real city brings its own disruptions */const net=this.tm.liveNetwork,layer=net?.transit?.layers?.find(l=>l.name===ev.line);if(!net||!layer)return;const perMin=this.tm.flow.clock.ticksPerDay/((this.tm.shift?.hours||1.25)*60),from=this.tm.flow.clock.tick,until=from+Math.round(ev.card.minutes*perMin);net.hold?.(layer,from,until);this.holds.push({...ev,from,until});this.tm.challenge?.say?.(`${ev.card.glyph} ${ev.card.text(ev.line)}`);}
+ startHold(ev){if(this.tm.live)return;/* LIVE: the real city brings its own disruptions */const net=this.tm.liveNetwork,names=ev.lines||[ev.line],layers=(net?.transit?.layers||[]).filter(l=>names.includes(l.name));if(!net||!layers.length)return;const perMin=this.tm.flow.clock.ticksPerDay/((this.tm.shift?.hours||1.25)*60),from=this.tm.flow.clock.tick,until=from+Math.round(ev.card.minutes*perMin);for(const layer of layers)net.hold?.(layer,from,until);this.holds.push({...ev,from,until,startIndex:this.tm.challenge?.index||0});this.tm.challenge?.say?.(`${ev.card.glyph} ${ev.card.text(ev.line)}`);}
+ lift(h,tick){const net=this.tm.liveNetwork,ids=new Set((net?.transit?.layers||[]).filter(l=>(h.lines||[h.line]).includes(l.name)).map(l=>l.id));for(const x of net?.holds||[])if(ids.has(x.layerId)&&x.from===h.from&&x.until===h.until)x.until=tick;h.until=tick;h.lifted=true;this.tm.challenge?.say?.(`${h.line} is running again.`);}
+ // Is this layer standing still right now? (the board's grey dash and its trams)
+ heldLayer(l){return this.activeHolds().some(h=>(h.lines||[h.line]).includes(l?.name));}
  // What is held right now, for the banner.
  activeHolds(){const t=this.tm.flow.clock.tick;return this.holds.filter(h=>t>=h.from&&t<h.until);}
  options(){const p=this.pending;if(!p)return[];const cargo=this.tm.challenge?.active?.cargo;return p.card.options.filter(o=>!o.needs||o.needs===cargo);}
@@ -121,6 +140,6 @@ export function mountEvents(tm,seed=7,opts={}){const dir=new EventDirector(tm,se
   let html='';
   if(p){const opts=dir.options(),mood=p.card.mood||'info';html+=`<section class="eventCard mood-${esc(mood)}"><div class="evHead">${face(mood)}<b class="evLine">${esc(p.card.text)}</b></div><div class="evOpts${opts.some(o=>String(o.label).length>STACK_AT)?' evStack':''}">${opts.map((o,i)=>{const extra=[o.note,o.score?`+${o.score}`:''].filter(Boolean).join(' · ');return `<button class="evBtn ${i===0?'evPrimary':'evGhost'} eventOpt" data-i="${i}"${extra?` title="${esc(extra)}"`:''}><span class="evLb">${esc(o.label)}</span><span class="evCost">${priceSeconds(o)}</span></button>`;}).join('')}</div></section>`;}
   else if(busy){html+=`<div class="row dim"><span class="to">Helping…<small>${Math.max(1,Math.ceil((dir.busyUntil-tick)/10))} s</small></span></div>`;}
-  for(const h of holds){const perMin=tm.flow.clock.ticksPerDay/((tm.shift?.hours||1.25)*60),mood=h.card.mood||'warning';html+=`<section class="eventCard evHold mood-${esc(mood)}" title="${esc(h.card.text(h.line))}"><div class="evHead">${face(mood)}<b class="evLine"><span class="lb" style="background:${esc(tm.transit?.layers?.find(l=>l.name===h.line)?.colour||'#52676d')}">${esc(h.line)}</span> is held · ${Math.max(1,Math.round((h.until-tick)/perMin))} min</b></div></section>`;}
+  for(const h of holds){const perMin=tm.flow.clock.ticksPerDay/((tm.shift?.hours||1.25)*60),mood=h.card.mood||'warning';html+=`<section class="eventCard evHold mood-${esc(mood)}" title="${esc(h.card.text(h.line))}"><div class="evHead">${face(mood)}<b class="evLine"><span class="lb" style="background:${esc(tm.transit?.layers?.find(l=>l.name===(h.lines?.[0]||h.line))?.colour||'#52676d')}">${esc(h.line)}</span> is held · ${Math.max(1,Math.round((h.until-tick)/perMin))} min</b></div></section>`;}
   slot.innerHTML=html;slot.querySelectorAll('.eventOpt').forEach(b=>b.onclick=()=>{dir.choose(Number(b.dataset.i));last='';render();tm.paintHud?.();});};
  setInterval(render,200);render();return dir;}

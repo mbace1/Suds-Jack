@@ -1,16 +1,22 @@
 // Toko Move v2.12.2 runtime — clean HSL core + transfer hubs + walking/interception + two-job carry.
 // first, so every word the modules below draw passes through it (v2.66)
-import {tr} from './lang.js?v=3';
-import './core-v212.js?v=70';
+import {tr} from './lang.js?v=4';
+import './core-v212.js?v=71';
 import './route-choice.js?v=27';
 import {LiveNetwork,HEADWAY_MIN,MODE_KMH} from './live-network.js?v=17';
 import {hidden as fogHides} from './weather.js?v=1';
 import {mountCity,headwayFor,walkFactor,encounterCount,goodwillFactor,marketOf} from './city-events.js?v=1';
+import {headwayWith,haltFamily,haltMinutes} from './mutators.js?v=1';
+import {lineFamily} from './board.js?v=8';
+// A Disruption run's halt (MUTATORS.md §2): one seeded tram family, held from
+// ~10 minutes in, every variant of it, until two jobs or its time lift it.
+const haltFor=tm=>{const m=tm.mutator;if(!m?.halt)return null;const trams=(tm.transit?.layers||[]).filter(l=>l.visible&&String(l.mode||'').toUpperCase()!=='SUBWAY'),fam=haltFamily(tm.shiftSeed??7,trams.map(l=>lineFamily(l.name)));if(!fam)return null;
+  const perMin=tm.flow.clock.ticksPerDay/((tm.shift?.hours||1.25)*60);return{line:fam,lines:trams.filter(l=>lineFamily(l.name)===fam).map(l=>l.name),atTick:Math.round(m.halt.atMin*perMin),minutes:haltMinutes(tm.shiftSeed??7,m),recoverJobs:m.halt.recoverJobs};};
 import {TRANSFER_HUBS,WALK_STREETS,walksFrom} from './hubs-walking.js?v=4';
 import {MobilityController} from './mobility-v212.js?v=11';
 import {interceptionOptions,bestInterception} from './interception-v212.js?v=2';
 import {mountJobBoard,reachableSoon,planCost,alongOffersFor} from './job-board-v212.js?v=29';
-import {mountEvents} from './events.js?v=6';
+import {mountEvents} from './events.js?v=7';
 import {mountRival} from './rival.js?v=4';
 import {loadVisited,saveVisited,visit,teach,progress,streetsAt} from './knowledge.js?v=4';
 import {planEstimate} from './timetable.js?v=2';
@@ -18,12 +24,12 @@ import {ShiftLog} from './shiftlog.js?v=4';
 import {Trails} from './trails.js?v=2';
 import {mountHubTactics} from './hub-tactics-v212.js?v=7';
 import {mountSkillMoments} from './moments-v212.js?v=2';
-import {mountJuice} from './juice.js?v=4';
+import {mountJuice} from './juice.js?v=5';
 import {mountAudio} from './audio.js?v=1';
 import {mountTestCard} from './testcard.js?v=3';
 import {mountRecovery} from './recovery-v212.js?v=3';
 import {about,inMinutes} from './ui.js?v=2';
-const BUILD_VERSION='2.69';
+const BUILD_VERSION='2.70';
 function mount(){const tm=window.__tm;if(!tm?.transit||!tm?.flow||!tm?.city){setTimeout(mount,50);return;}tm.version=BUILD_VERSION;// THE DAY IS DRAWN BEFORE THE FLEET, because one of the four is a timetable:
 // QUIET SUNDAY provisions fewer trams, and a fleet cannot be re-provisioned
 // after its vehicles exist without every phase in it moving under the player.
@@ -36,7 +42,7 @@ tm.inFog=(layer,eta)=>{const w=tm.weather;if(!w?.fogM||eta==null)return false;co
   tm.market=at.length?{...mk,lat:at.reduce((a,s)=>a+s.lat,0)/at.length,lon:at.reduce((a,s)=>a+s.lon,0)/at.length}:mk;}
  else tm.market=null;}
 tm.challenge.market=tm.market;
-tm.liveNetwork=new LiveNetwork(tm.transit,{headwayMinutes:headwayFor(tm.cityDay,HEADWAY_MIN),ticksPerDay:tm.flow.clock.ticksPerDay,speedFactor:tm.weather?.speed||1});
+tm.liveNetwork=new LiveNetwork(tm.transit,{headwayMinutes:headwayWith(tm.mutator,headwayFor(tm.cityDay,HEADWAY_MIN)),ticksPerDay:tm.flow.clock.ticksPerDay,speedFactor:tm.weather?.speed||1});
 // LIVE (v2.56, hfp.js): the fleet above is the timetable; the real vehicles
 // re-time it as their reports arrive. Loaded only for a live shift, and
 // swallowed on failure — a feed that cannot connect leaves the timetable
@@ -63,7 +69,7 @@ tm.visitHere=id=>{if(!visit(tm.visited,id))return false;saveVisited(tm.visited);
   tm.challenge.say?.(`FIRST TIME AT ${tm.challenge.name(id)}${st.length?` · ${st.join(', ')}`:''} · ${p.known}/${p.total} walks open`);return true;};
 tm.teachStreet=seed=>{const id=teach(tm.visited,seed);if(id){saveVisited(tm.visited);tm.challenge.say?.(`SHOWN THE WAY · ${tm.challenge.name(id)} is walkable from here`);}return id;};
 tm.visitHere(tm.challenge.currentFrom?.()||'lasipalatsi');
-tm.alongOffers=()=>alongOffersFor(tm);mountJobBoard(tm);mountHubTactics(tm);mountSkillMoments(tm);mountJuice(tm);mountAudio(tm);mountTestCard(tm);mountRecovery(tm);mountCity(tm);mountEvents(tm,tm.shiftSeed??7,{encounters:encounterCount(tm.cityDay,null),goodwill:goodwillFactor(tm.cityDay)});mountRival(tm,tm.shiftSeed??7);const canvas=document.getElementById('map'),ctx=canvas?.getContext('2d');if(!canvas||!ctx)return;const project=(lat,lon)=>tm.project(lat,lon);const nodePoint=id=>{const n=tm.city.resolved?.[id];return n?project(n.lat,n.lon):null;};const drawTransitLayer=()=>{if(document.body.classList.contains('transit-view')||!tm.transit)return;tm.transit.draw(ctx,canvas.width,canvas.height,{fit:project,alpha:.96,lineWidth:2.5*(tm.renderer?.dpr||window.devicePixelRatio||1)});};// Which lines are any use to you RIGHT NOW: the one you are on, the one your plan
+tm.alongOffers=()=>alongOffersFor(tm);mountJobBoard(tm);mountHubTactics(tm);mountSkillMoments(tm);mountJuice(tm);mountAudio(tm);mountTestCard(tm);mountRecovery(tm);mountCity(tm);mountEvents(tm,tm.shiftSeed??7,{encounters:encounterCount(tm.cityDay,null),goodwill:goodwillFactor(tm.cityDay),moods:tm.mutator?.moods||null,halt:haltFor(tm)});mountRival(tm,tm.shiftSeed??7);const canvas=document.getElementById('map'),ctx=canvas?.getContext('2d');if(!canvas||!ctx)return;const project=(lat,lon)=>tm.project(lat,lon);const nodePoint=id=>{const n=tm.city.resolved?.[id];return n?project(n.lat,n.lon):null;};const drawTransitLayer=()=>{if(document.body.classList.contains('transit-view')||!tm.transit)return;tm.transit.draw(ctx,canvas.width,canvas.height,{fit:project,alpha:.96,lineWidth:2.5*(tm.renderer?.dpr||window.devicePixelRatio||1)});};// Which lines are any use to you RIGHT NOW: the one you are on, the one your plan
 // says to take, and the ones the board is offering. Those keep a readable badge in a
 // crowd; everything else yields to a dot. Without this the declutter would be
 // arbitrary about which tram it silenced, and the silenced one is often yours.
@@ -161,5 +167,5 @@ const rideStatus=()=>{const ch=tm.challenge,el=tm.sheetSlot?.('rideStatus');if(!
   if(!ch?.active||st?.kind!=='riding'||!ch.queued){if(el.innerHTML){el.innerHTML='';el.dataset.html='';}return;}
   const html=`<div style="margin-top:8px;padding:8px;border:2px solid #e2683c;border-radius:8px;background:#fff8ef;font-size:11px"><b>SECOND JOB ONBOARD</b> → ${ch.name(ch.queued.originalStops?.[1]||ch.queued.stops[1])}</div>`;
   if(el.dataset.html!==html){el.innerHTML=html;el.dataset.html=html;}};
-const draw=()=>{tm.shiftLog?.poll();if(!document.body.classList.contains('transit-view')){const dpr=tm.renderer?.dpr||window.devicePixelRatio||1,base=tm.fleetFilter?.(),here=tm.weather?.fogM?tm.courierLatLon?.():null,filter=here?(lat,lon,l,v)=>(!base||base(lat,lon,l,v))&&(v?.id===tm.liveNetwork?.selectedVehicleId||!fogHides(tm.weather,here,{lat,lon})):base;/* FOG: nothing past its reach but the ride you are on */tm.trails?.update(ctx,tm.liveNetwork,tm.flow.clock.tick,project,dpr,filter);const rel=relevantLines(),budget=Math.max(10,Math.min(32,Math.round((canvas.width/dpr)*(canvas.height/dpr)/11000))),lit=new Set((tm.catchables?.()||[]).map(x=>x.vehicle.id)),foc=tm.focusLines?.(),dim=foc&&foc.size?(l=>!foc.has(l?.name)&&!foc.has(l?.id)):null,boxes=tm.liveNetwork?.draw(ctx,tm.flow.clock.tick,project,dpr,{filter,dim,priority:(l,v)=>lit.has(v?.id)?2.5:rel.has(l?.name)||rel.has(l?.id)?2:1,budget,lit,now:performance.now(),full:tm.rushOn?tm.isFull:null,halted:(()=>{const h=tm.events?.activeHolds?.()||[];return h.length?(l=>h.some(x=>x.line===l.name)):null;})()})||[];tm.drawStopLabels?.(boxes);drawRival();drawCourier();drawInterception();drawGetOff();tm.juice?.draw(ctx,project,dpr);tm.audio?.poll();rideStatus();}requestAnimationFrame(draw);};requestAnimationFrame(draw);}
+const draw=()=>{tm.shiftLog?.poll();if(!document.body.classList.contains('transit-view')){const dpr=tm.renderer?.dpr||window.devicePixelRatio||1,base=tm.fleetFilter?.(),here=tm.weather?.fogM?tm.courierLatLon?.():null,filter=here?(lat,lon,l,v)=>(!base||base(lat,lon,l,v))&&(v?.id===tm.liveNetwork?.selectedVehicleId||!fogHides(tm.weather,here,{lat,lon})):base;/* FOG: nothing past its reach but the ride you are on */tm.trails?.update(ctx,tm.liveNetwork,tm.flow.clock.tick,project,dpr,filter);const rel=relevantLines(),budget=Math.max(10,Math.min(32,Math.round((canvas.width/dpr)*(canvas.height/dpr)/11000))),lit=new Set((tm.catchables?.()||[]).map(x=>x.vehicle.id)),foc=tm.focusLines?.(),dim=foc&&foc.size?(l=>!foc.has(l?.name)&&!foc.has(l?.id)):null,boxes=tm.liveNetwork?.draw(ctx,tm.flow.clock.tick,project,dpr,{filter,dim,priority:(l,v)=>lit.has(v?.id)?2.5:rel.has(l?.name)||rel.has(l?.id)?2:1,budget,lit,now:performance.now(),full:tm.rushOn?tm.isFull:null,halted:tm.events?.activeHolds?.()?.length?(l=>tm.events.heldLayer(l)):null})||[];tm.drawStopLabels?.(boxes);drawRival();drawCourier();drawInterception();drawGetOff();tm.juice?.draw(ctx,project,dpr);tm.audio?.poll();rideStatus();}requestAnimationFrame(draw);};requestAnimationFrame(draw);}
 mount();
