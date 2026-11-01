@@ -19,6 +19,41 @@
     Never `--no-verify`.
 -->
 
+## v96 — 2026-11-01
+**The hero's eyes from the owner's style sheet: a big highlight above, a small dot below**
+- The style sheet on the concept-handoff branch (STYLE_INSTRUCTIONS, 3: HERO EYES; "hero eyes more defined going forward") draws them as tall black ovals with a big white highlight in their upper part and a small white dot lower right. The ovals were already that shape; the single small glint is now the big oval highlight (TUNING.heroLook.eye.hi) and the dot is added under it (`dot`), both kept inside the black from the angles the game sees him at.
+- Cache tokens `?v=95` → `?v=96`; HUD label → `2.0 · v96`
+
+---
+
+## v95 — 2026-11-01
+**The river and the ice in daylight, to the owner's approved pictures (the concept handoff)**
+- The approved arena pictures for worlds 6 and 7 are bright day; the game had them at dusk and at night (their briefs said so, and the approved pictures win). THE RIVER: clear turquoise down a deep teal middle, the sand and pebbles showing through the shallows, foam at the banks only — v78's white flecks kept at an eighth (they fought the bullets, and the picture has none) — on banks of sand, pebbles, green reeds and grass, the lily pads green with pale flowers, the logs and piles sun-bleached, and dandelion fluff drifting where the fireflies were (by day nothing glows). THE ICE: pale blue with white cracks and frost creeping in from the edge, kept mid blue rather than white so the white hero and the pale gels still stand out on it, in a white snowfield with pale crystals and blue shadows in the drifts, under a bright cold sun. Both worlds' light rigs moved to day (a high sun, a sky ambient), their sun glints narrowed, and the campaign rooms that wear these looks take the same daylight.
+- Still to come from the pictures: the river's sparkle and visible shallows at the bank, the ice's raised ledges.
+- Cache tokens `?v=94` → `?v=95`; HUD label → `2.0 · v95`
+
+---
+
+## v94 — 2026-11-01
+**LENS: TILT-SHIFT in OPTIONS — the run as a miniature, sharp where you play (owner: "look into the tilt-shift look, detailed central area, maybe it works with small objects too if there are enough details")**
+- A miniature is read by its depth of field: a lens close to something small holds only a thin slice of it sharp. OPTIONS → LENS (beside STYLE), kept (`toko2.lens`); `?lens=tilt` for a link; the HUD label says ` · tilt`. The scene is drawn into a pass whose target carries mipmaps (as v79's glow did: the vendored three carries no depth-of-field addon) and each pixel is read back bicubically at the mip level its circle of confusion asks for — a thin lens's |z − f| / z, f the HERO's depth, so what you play stays in the sharp slice — sharp inside `band`, opening over `ramp`; nearer than the focus it softens at half the rate (the near side is where the next threat comes from: at full rate a gate at the bottom of the screen was a smear); and a little more saturation, the toy colours a miniature photograph shows (TUNING.lens).
+- It works with the small things because they have the detail to carry it: the curb's seams and the lawn's tufts go soft past the far edge while the jelly, its caustics and the cracks under it stay crisp. A first, narrower band read more strongly as a model and cost readability at the top and bottom of the screen; the shipped one keeps the whole play area sharp and softens the surround (scratchpad v94/ holds both).
+- It costs the scene drawn into a target, its mipmaps and a full-screen pass: under SwiftShader a frame took about 15–25% longer. Off unless asked for. The smoke plays a run through it (`lens-tilt`).
+- Cache tokens `?v=93` → `?v=94`; HUD label → `2.0 · v94`
+
+---
+
+## v93 — 2026-11-01
+**The worlds' own light: each floor lit by what stands in it, and every shadow thrown by the sun (owner: "better lights. Actual things that make sense, not just some random stuff")**
+- The target came from GitHub: the branch art/toko-drop-2-0-concept-handoff holds the owner's approved module sheets for worlds 2–8 and complete-arena pictures for worlds 4–8, and those pictures are read by their light — the boiler's deck by its fire, the cistern by its roof shaft, the deep by what lives there. docs/ENVIRONMENTS.md names each world's faults against them and the plan.
+- The floors stay pictures (the matte rule), so each world's light is worked out in its floor's own shader from the sources that stand there (TUNING.worlds.lit, render/floor.js worldLight): the light falling on a point multiplies its picture (Lambert on a flat floor, falling off with distance), a floor that is wet stone, water or steel mirrors its lights (Blinn on a flat floor), and a glowing source shows even on near-black silt. The sewer's sunlight through its street grates lights the flagstones round each shaft and the rest sits darker; the fire under every boiler grate lights the plates round it, breathing with it, and the deck's seam glows along its edge; the cistern's roof shaft lays a soft pool on the far-left water and its lamps warm the back; the deep's living things throw green pools and its edge glows blue; the core's neon lights the floor at its rim. The river and the ice keep a narrow sun glint only: their approved pictures are bright daylight, and that is a floor-art job, next.
+- Every body's shadow is the one the world's sun throws: an ellipse away from the sun, 1/sin θ long, starting under the body (straight overhead it is the disc it was). The driveway's curbs throw their sun shadows onto the slab and the lawn (render/sun.js), its sun stands lower on the near left, and the slab is a stop darker and warmer.
+- The jelly in the goo film scatters the world's light rather than its own, so a pool in a dark corner is dark.
+- Measured: the nine worlds shot before and after; test/view.mjs on the sun's shadow (overhead: the disc; 38° up from the near left: 1/sin θ long, its middle on from the foot, and back). The smoke's film check now lets the film spread over real frames before reading it: the film is stepped by frames, not by the sim, and world 3 under WebGL 2 read 12 texels without them and 199 with.
+- Cache tokens `?v=92` → `?v=93`; HUD label → `2.0 · v93`
+
+---
+
 ## v92 — 2026-10-31
 **STYLE: PHYSICAL, CEL-SHADED or WATERCOLOR (owner: "Do you have the 3 visual options, watercolor, cell shaded, physical 3d?"; "Test the 'splatter' in multiple styles, as now it's the most washed out watercolor look")**
 - OPTIONS → STYLE, kept (`toko2.style`); `?style=cel|watercolor` for a link. PHYSICAL is the game as it was. The two painted looks are drawn from the same bodies, the same displacement and the same goo sims (js/render/style.js): a style changes how a thing is painted, never what it does, so every number the smoke reads is the same in every style. **CEL-SHADED**: three flat tones cut at the terminator, a hard highlight dot, an ink line where a body turns away; the film a flat wash with a crisp contour and an ink band, the drops two tones and a rim. **WATERCOLOR**: pigment (the colour deepened), a soft, part-banded shade, DARK AT THE EDGES where the wash pools — the mark of the medium, and what the washed-out look lacked — grained, over a little paper; the film pools dark at its border, bleeds a little past it and dries to a ring. Tones are factors on the body's own colour (TUNING.style), so a species' colour survives the switch as it survives any light.

@@ -7,34 +7,34 @@
 // The rules live in sim/ and run on a fixed step; this file feeds them input,
 // hands their events to the view and the sound, and draws in between steps.
 import * as THREE from 'three/webgpu';
-import { TUNING } from './tuning.js?v=92';
-import { buildFloor } from './render/floor.js?v=92';
-import { fitCamera, screenToWorld, screenDown } from './render/view.js?v=92';
-import * as worldsSim from './sim/worlds.js?v=92';
-import { shapeAt as shiftShape } from './sim/floorshift.js?v=92';
-import * as reshapeSim from './sim/reshape.js?v=92';
-import { Scenery } from './render/scenery.js?v=92';
-import { DRIFT } from './render/kit.js?v=92';
-import { Transit } from './render/transit.js?v=92';
-import { Splats } from './render/splats.js?v=92';
-import { Actors } from './render/actors.js?v=92';
-import { GEL_TIME } from './render/gel.js?v=92';
-import { studioEnvironment } from './render/env.js?v=92';
-import { Specimen } from './render/specimen.js?v=92';
-import { createWorld, step, api as simApi } from './sim/world.js?v=92';
-import { stage as stagePk } from './sim/pickups.js?v=92';
-import { Input } from './input.js?v=92';
-import { UI, t, timeText, LANGS, getLang, setLang, goalText, bossName } from './ui.js?v=92';
-import { Announcer } from './announcer.js?v=92';
-import { rooms as campaignRooms, isOpen as roomOpen, better as betterGrade } from './sim/director/campaign.js?v=92';
-import { levelShape, slots as regionSlots } from './sim/shape.js?v=92';
-import { Sound } from './audio.js?v=92';
-import { Music, worldWant, cueFor, renderMusicWav } from './music.js?v=92';
-import { Intro, CUES as INTRO } from './intro/intro.js?v=92';
-import { scheduleIntroSfx, renderIntroSfxWav } from './intro/sfx.js?v=92';
-import { Readout } from './readout.js?v=92';
-import { Meter, device, Quality } from './meter.js?v=92';
-import * as record from './record.js?v=92';
+import { TUNING } from './tuning.js?v=96';
+import { buildFloor } from './render/floor.js?v=96';
+import { fitCamera, screenToWorld, screenDown } from './render/view.js?v=96';
+import * as worldsSim from './sim/worlds.js?v=96';
+import { shapeAt as shiftShape } from './sim/floorshift.js?v=96';
+import * as reshapeSim from './sim/reshape.js?v=96';
+import { Scenery } from './render/scenery.js?v=96';
+import { DRIFT } from './render/kit.js?v=96';
+import { Transit } from './render/transit.js?v=96';
+import { Splats } from './render/splats.js?v=96';
+import { Actors } from './render/actors.js?v=96';
+import { GEL_TIME } from './render/gel.js?v=96';
+import { studioEnvironment } from './render/env.js?v=96';
+import { Specimen } from './render/specimen.js?v=96';
+import { createWorld, step, api as simApi } from './sim/world.js?v=96';
+import { stage as stagePk } from './sim/pickups.js?v=96';
+import { Input } from './input.js?v=96';
+import { UI, t, timeText, LANGS, getLang, setLang, goalText, bossName } from './ui.js?v=96';
+import { Announcer } from './announcer.js?v=96';
+import { rooms as campaignRooms, isOpen as roomOpen, better as betterGrade } from './sim/director/campaign.js?v=96';
+import { levelShape, slots as regionSlots } from './sim/shape.js?v=96';
+import { Sound } from './audio.js?v=96';
+import { Music, worldWant, cueFor, renderMusicWav } from './music.js?v=96';
+import { Intro, CUES as INTRO } from './intro/intro.js?v=96';
+import { scheduleIntroSfx, renderIntroSfxWav } from './intro/sfx.js?v=96';
+import { Readout } from './readout.js?v=96';
+import { Meter, device, Quality } from './meter.js?v=96';
+import * as record from './record.js?v=96';
 
 const T = TUNING;
 const params = new URLSearchParams(location.search);
@@ -87,7 +87,8 @@ let litAs = null;
 function applyLight(id) {
   const L = T.worlds.light[id] ?? T.worlds.light.grid; litAs = T.worlds.light[id] ? id : 'grid';
   sun.color.setHex(L.sun); sun.intensity = L.sunI; sun.position.set(...L.at);
-  actors.light.setSun(...L.at);   // v76: the caustics slide away from it
+  actors.light.setSun(...L.at);   // v76: the caustics slide away from it; v93: the bodies' shadows fall away from it
+  setSceneSun(...L.at);           // v93: the slab's and the lawn's curb shadows too (render/sun.js)
   ambient.color.setHex(L.ambient); ambient.intensity = L.ambientI;
   if (T.env.on) scene.environmentIntensity = T.env.intensity * L.env;
 }
@@ -469,6 +470,7 @@ const ui = new UI({
   onDash: () => { store.set('toko2.dash', DASHES[(DASHES.indexOf(tests().dash) + 1) % DASHES.length]); refreshMenu(); },
   onGelHp: () => { const h = tests().hp; store.set('toko2.gelHp', HP_STEPS[(HP_STEPS.indexOf(h) + 1) % HP_STEPS.length]); refreshMenu(); },
   gels: () => gels(), onGels: () => flipGels(),
+  lens: () => lensOf(), onLens: () => flipLens(),   // v94
   style: () => styleOf(), onStyle: () => flipStyle(),   // v92
   goo: () => gooOn(), onGoo: () => flipGoo(),
   worlds: () => worldsLook(), onWorlds: () => flipWorlds(),
@@ -498,10 +500,28 @@ const specimen = new Specimen(T, actors, scene.environment);
 // menu). It takes effect at run start; the menu also redraws the world left
 // behind the title in the new style. The HUD label says ' · sdf' while on.
 const GELS = ['classic', 'sdf'];
-import { STYLES } from './render/style.js?v=92';
+import { STYLES } from './render/style.js?v=96';
+import { Lens } from './render/lens.js?v=96';
+import { setSceneSun } from './render/sun.js?v=96';
 let urlGels = GELS.includes(params.get('gels')) ? params.get('gels') : null;
 const gels = () => urlGels ?? (GELS.includes(store.str('toko2.gels')) ? store.str('toko2.gels') : 'classic');
-const setLabel = () => { document.getElementById('backend').textContent = ` · ${backend}${actors.look !== 'physical' ? ` · ${actors.look}` : ''}${actors.gels === 'sdf' ? ' · sdf' : ''}`; };
+// The LENS switch (render/lens.js, v94): NONE or TILT-SHIFT, localStorage toko2.lens; ?lens=tilt|none for a link
+let urlLens = ['tilt', 'none'].includes(params.get('lens')) ? params.get('lens') : null;
+const lensOf = () => urlLens ?? (store.str('toko2.lens') === 'tilt' ? 'tilt' : 'none');
+const lens = new Lens(renderer, scene, T), _focus = new THREE.Vector3();
+// the depth the lens holds sharp: the hero's, from the camera that draws the frame (the arena's middle without him)
+function focusDepth(cam) {
+  cam.updateMatrixWorld();
+  const h = world?.hero;
+  _focus.set(h && h.alive ? h.x : 0, 0.5, h && h.alive ? h.z : 0).applyMatrix4(cam.matrixWorldInverse);
+  return Math.max(1, -_focus.z);
+}
+function flipLens() {
+  store.set('toko2.lens', lensOf() === 'tilt' ? 'none' : 'tilt');
+  if (urlLens) { urlLens = null; const u = new URL(location.href); u.searchParams.delete('lens'); history.replaceState(history.state, '', u); }
+  setLabel(); refreshMenu();
+}
+const setLabel = () => { document.getElementById('backend').textContent = ` · ${backend}${actors.look !== 'physical' ? ` · ${actors.look}` : ''}${actors.gels === 'sdf' ? ' · sdf' : ''}${lensOf() === 'tilt' ? ' · tilt' : ''}`; };
 function flipGels() {
   const g = gels() === 'sdf' ? 'classic' : 'sdf';
   store.set('toko2.gels', g);
@@ -628,7 +648,7 @@ const campaignProgress = (hard = false) => { try { return JSON.parse(store.str(h
 let lastRoom = null;   // AGAIN replays it
 const levels = new Map();
 async function loadLevel(id) {
-  if (!levels.has(id)) levels.set(id, fetch(new URL(`../levels/${id}.json?v=92`, import.meta.url)).then((r) => { if (!r.ok) throw new Error(`levels/${id}.json ${r.status}`); return r.json(); }));
+  if (!levels.has(id)) levels.set(id, fetch(new URL(`../levels/${id}.json?v=96`, import.meta.url)).then((r) => { if (!r.ok) throw new Error(`levels/${id}.json ${r.status}`); return r.json(); }));
   return levels.get(id);
 }
 // the list the room screen draws: worlds, their rooms, open or not, best grades
@@ -954,6 +974,7 @@ const debug = {
   get nointro() { return introOff; }, set nointro(v) { introOff = !!v; }, room: (id) => startRoom(id), get rule() { return world?.rule ?? null; },
   // the GELS style ('classic' | 'sdf'), for the smoke and the captures; the readout
   get gels() { return actors.gels; }, setGels(g) { urlGels = GELS.includes(g) ? g : null; actors.setGels(gels()); setLabel(); }, readout,
+  get lens() { return lensOf(); }, setLens(l) { urlLens = ['tilt', 'none'].includes(l) ? l : null; setLabel(); }, focusDepth,   // v94
   get style() { return actors.look; }, setStyle(s) { urlStyle = STYLES.includes(s) ? s : null; actors.setStyle(styleOf()); warming = true; setLabel(); },   // v92
   // Look checks for one species (test/lookshot.mjs): a quiet arena with only
   // these bodies in it, the hero standing below them.
@@ -1105,7 +1126,7 @@ function frame(now, dtFixed) {
   ui.drawSticks(input, following && world && state === 'play' ? offscreen() : null);
   actors.light.render(renderer);   // the arena's light map, which the floor reads
   if (actors.goo) { actors.goo.render(renderer); floor.setFilm(actors.goo.film); }   // the goo's film steps (render/goo.js), and the floor reads where it now is
-  renderer.render(scene, state === 'intro' ? intro.cam : camera);
+  { const cam = state === 'intro' ? intro.cam : camera; if (lensOf() === 'tilt') lens.render(cam, focusDepth(cam)); else renderer.render(scene, cam); }   // v94: through the lens when it is on
   if (state === 'paused' || state === 'over') specimen.render(renderer, time); else specimen.hide();   // the GOT YOU card's gel, over its box
   readout.frame(now, state, world);
   if (warming && (state === 'menu' || state === 'intro')) warming = actors.warmStep(warmExtra);   // v74: one kind a frame, on the title only

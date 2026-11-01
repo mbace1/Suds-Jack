@@ -46,20 +46,21 @@
 // TUNING.scenery.
 import * as THREE from 'three/webgpu';
 import { Fn, float, vec2, vec3, fract, sin, dot, floor as tfloor, mix, smoothstep, abs, positionWorld, positionLocal, normalWorld, normalView, clamp, max, min, length, step, fwidth, uv, attribute } from 'three/tsl';
-import { GEL_TIME } from './gel.js?v=92';
-import { hash, noise, seeded, motes } from './kit.js?v=92';
-import { boiler } from './sets/boiler.js?v=92';
-import { river } from './sets/river.js?v=92';
-import { ice } from './sets/ice.js?v=92';
-import { deep } from './sets/deep.js?v=92';
-import { core } from './sets/core.js?v=92';
+import { GEL_TIME } from './gel.js?v=96';
+import { hash, noise, seeded, motes } from './kit.js?v=96';
+import { SUN_AT } from './sun.js?v=96';
+import { boiler } from './sets/boiler.js?v=96';
+import { river } from './sets/river.js?v=96';
+import { ice } from './sets/ice.js?v=96';
+import { deep } from './sets/deep.js?v=96';
+import { core } from './sets/core.js?v=96';
 
 // worlds 5-9 (v72): a set of their own each, built to its brief (render/sets/)
 const SETS = { boiler, river, ice, deep, core };
 
 // the noise, the cracks and the seeded numbers are the kit's (v72: render/kit.js),
 // and the floor still takes them from here
-export { noise, cells } from './kit.js?v=92';
+export { noise, cells } from './kit.js?v=96';
 
 // the storm drain's grate (v65, the owner's world-2 sheet), in its own units
 // (q, its frame's radius 1): x the grate, y a slot, z the frame. Rows of
@@ -134,9 +135,13 @@ export class Scenery {
       const stripe = smoothstep(-0.15, 0.15, sin(p.x.mul(Math.PI / S.stripe)));
       const lo = vec3(...S.grassLo), hi = vec3(...S.grassHi);
       const col = mix(lo, hi, blade.mul(0.55).add(tuft.mul(0.25)).add(stripe.mul(0.2)));
-      // the curb's shadow on the grass along its outside, as far as its near ends
-      const past = length(max(vec2(abs(p.x).sub(hx + W), p.y.negate().sub(hz + W)), 0));
-      const shade = float(1).sub(smoothstep(0, S.curbShadowW, past)).mul(float(1).sub(smoothstep(hz - S.curbNose, hz + 0.1, p.y)));
+      // the curb's shadow on the grass along its outside, as far as its near ends — v93: thrown away from the
+      // world's sun (sun.js), so only the sides that face away from it are shaded, cot θ × the curb's height out
+      const sunH = max(length(SUN_AT.xz), 1e-3), cot = min(sunH.div(max(SUN_AT.y, 1e-3)), 2.2);
+      const awayX = SUN_AT.x.negate().div(sunH), awayZ = SUN_AT.z.negate().div(sunH), ch = cot.mul(S.curbHeight);
+      const bandOf = (past, len) => float(1).sub(smoothstep(len.sub(0.3), len.add(0.3), past)).mul(step(0, past)).mul(step(0.05, len));
+      const shade = max(max(bandOf(p.x.sub(hx + W), ch.mul(max(awayX, 0))), bandOf(p.x.negate().sub(hx + W), ch.mul(max(awayX.negate(), 0)))), bandOf(p.y.negate().sub(hz + W), ch.mul(max(awayZ.negate(), 0))))
+        .mul(float(1).sub(smoothstep(hz - S.curbNose, hz + 0.1, p.y)));
       // it goes into the summer haze the further it is from the slab (v66; it fell into the night)
       const dx = max(abs(p.x).sub(hx), 0), dz = max(abs(p.y).sub(hz), 0);
       const far = clamp(length(vec2(dx, dz)).div(S.fade), 0, 1);

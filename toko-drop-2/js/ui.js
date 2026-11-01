@@ -2,13 +2,13 @@
 // crisp vector type on near-black (DIRECTION). Menus are pad-first — a d-pad
 // or arrow keys move a gold focus ring (1.x v134), A / Enter picks, B / Esc
 // backs out — and a tap or click works on every button just the same.
-import { TUNING } from './tuning.js?v=92';
-import { GEL_LINES } from './gels-said.js?v=92';
-import { goalOf, modsOf, speciesOf } from './sim/challenge.js?v=92';
-import { mult as heatMult } from './sim/heat.js?v=92';
-import { tiersFor, onCourse } from './sim/director/campaign.js?v=92';
-import { onCourse as fightCourse } from './sim/bossfight.js?v=92';
-import { roomChart, routeChart, goalGlyph, GRADE_COLORS } from './chart.js?v=92';
+import { TUNING } from './tuning.js?v=96';
+import { GEL_LINES } from './gels-said.js?v=96';
+import { goalOf, modsOf, speciesOf } from './sim/challenge.js?v=96';
+import { mult as heatMult } from './sim/heat.js?v=96';
+import { tiersFor, onCourse } from './sim/director/campaign.js?v=96';
+import { onCourse as fightCourse } from './sim/bossfight.js?v=96';
+import { roomChart, routeChart, goalGlyph, GRADE_COLORS } from './chart.js?v=96';
 
 const STR = {
   en: {
@@ -26,6 +26,7 @@ const STR = {
     hintPad: 'LEFT STICK MOVES · RIGHT STICK AIMS AND FIRES · A DASHES · START PAUSES',
     gels: 'GELS', worlds: 'WORLDS', street: 'STREET', neon: 'NEON', streetSub: 'driveway, then sewer', neonSub: 'abstract hex, then tide', classic: 'CLASSIC', sdf: 'SDF', classicSub: 'mesh gels, as they are', sdfSub: 'ray-marched fields',
     style: 'STYLE', physical: 'PHYSICAL', cel: 'CEL-SHADED', watercolor: 'WATERCOLOR', physicalSub: 'jelly that bends light', celSub: 'flat tones and an ink line', watercolorSub: 'pigment, dark at the edges',
+    lens: 'LENS', tilt: 'TILT-SHIFT', none: 'NONE', tiltSub: 'a miniature: sharp where you play', noneSub: 'everything sharp',
   },
   ja: {
     intro: 'イントロ', introSub: '始まりを見てからプレイ',
@@ -42,6 +43,7 @@ const STR = {
     hintPad: '左スティックで移動 · 右スティックでエイムと射撃 · Aでダッシュ · STARTで一時停止',
     gels: 'ゼリー', worlds: 'ワールド', street: 'ストリート', neon: 'ネオン', streetSub: 'ドライブウェイ、そして下水道', neonSub: '抽象の六角、そして潮流', classic: 'クラシック', sdf: 'SDF', classicSub: 'いつものメッシュ', sdfSub: 'レイマーチの距離場',
     style: 'スタイル', physical: 'フィジカル', cel: 'セルシェード', watercolor: '水彩', physicalSub: '光を曲げるゼリー', celSub: 'フラットな階調と輪郭線', watercolorSub: '顔料、縁は濃く',
+    lens: 'レンズ', tilt: 'ティルトシフト', none: 'なし', tiltSub: 'ミニチュア：遊ぶ場所だけくっきり', noneSub: 'すべてくっきり',
   },
   fi: {
     intro: 'INTRO', introSub: 'katso alku, sitten pelaa',
@@ -58,6 +60,7 @@ const STR = {
     hintPad: 'VASEN TATTI LIIKKUU · OIKEA TÄHTÄÄ JA AMPUU · A SYÖKSYY · START TAUKO',
     gels: 'GEELIT', worlds: 'MAAILMAT', street: 'KATU', neon: 'NEON', streetSub: 'pihatie, sitten viemäri', neonSub: 'abstrakti kenno, sitten virta', classic: 'KLASSINEN', sdf: 'SDF', classicSub: 'tavalliset verkkogeelit', sdfSub: 'säteenmarssatut kentät',
     style: 'TYYLI', physical: 'FYSIKAALINEN', cel: 'CEL-VARJOSTUS', watercolor: 'AKVARELLI', physicalSub: 'valoa taittava hyytelö', celSub: 'tasaiset sävyt ja tussiviiva', watercolorSub: 'pigmenttiä, tummat reunat',
+    lens: 'LINSSI', tilt: 'TILT-SHIFT', none: 'EI', tiltSub: 'pienoismalli: terävä siellä missä pelaat', noneSub: 'kaikki terävää',
   },
 };
 // the language: the one picked in OPTIONS (toko2.lang), else the browser's
@@ -457,7 +460,9 @@ export class UI {
     );
     // v92: the STYLE switch (render/style.js) — PHYSICAL, CEL-SHADED, WATERCOLOR — on a row of its own, so its name fits a phone
     const st = ['physical', 'cel', 'watercolor'].includes(this.h.style?.()) ? this.h.style() : 'physical', rowS = el('div', 'row');
-    rowS.append(this._button(`${t('style')} · ${t(st)}`, t(`${st}Sub`), () => this.h.onStyle?.()));
+    // v94: and the LENS beside it: NONE or TILT-SHIFT (render/lens.js)
+    const ln = this.h.lens?.() === 'tilt' ? 'tilt' : 'none';
+    rowS.append(this._button(`${t('style')} · ${t(st)}`, t(`${st}Sub`), () => this.h.onStyle?.()), this._button(`${t('lens')} · ${t(ln)}`, t(`${ln}Sub`), () => this.h.onLens?.()));
     // 1.x's settings page (v81, v137): VOLUME and the announcer with its own
     // volume, REDUCE MOTION, and the language its title carried as chips;
     // MUSIC (v58) beside VOLUME, the music's own share of it

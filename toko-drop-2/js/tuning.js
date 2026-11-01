@@ -7,10 +7,10 @@
 // things that work"). The arena is 1.x's, so every 1.x number ports as it is
 // instead of through a rescale. Axes: x across the screen (right +), y up,
 // z toward the bottom of the screen. The arena is centred on the origin.
-import { SPECIES } from './tuning/species/index.js?v=92';
-import WAVES from './tuning/waves.js?v=92';
-import PICKUPS from './tuning/pickups.js?v=92';
-import MUSIC from './tuning/music.js?v=92';
+import { SPECIES } from './tuning/species/index.js?v=96';
+import WAVES from './tuning/waves.js?v=96';
+import PICKUPS from './tuning/pickups.js?v=96';
+import MUSIC from './tuning/music.js?v=96';
 
 export const TUNING = {
   render: {
@@ -128,14 +128,46 @@ export const TUNING = {
     // from straight above in the deep. The gels and the sets take it; the
     // floors are pictures and carry their own. `grid` is 1.x's light, and the
     // title's; a campaign room takes its world's look's (main.js roomLook)
+    // v93 THE WORLD'S OWN LIGHT on its floor (render/floor.js worldLight; owner, 2026-10-31: "better lights.
+    // Actual things that make sense"; the approved arena pictures, docs/ENVIRONMENTS.md). The floor is a
+    // picture (owner, 2026-10-22: matte, no reflections of the scene), so its light is worked out in its own
+    // shader from the sources that stand in each world: `ambient` the floor's level away from every source;
+    // `lights` point sources [x, z] in arena fractions (`frac`) `h` m up, reaching `r` m, `k` strong, in their
+    // `color`, `flicker` [rad/s, depth]; `pools` the sewer's sunlight through its street grates (scenery.js
+    // sewerSpots, so the shafts and their pools agree); `grates` the fire under every boiler grate; `rim` a band
+    // of light along the arena's edge `w` m deep (the boiler's fire seam, the deep's living edge, the core's
+    // neon; `sides` 'all' or 'back' — the far side and the long ones, where the cistern's lamps stand, `every`
+    // m between their pools); `sun` the world's sun's sheen on water and ice; `sheen` how much the floor
+    // mirrors its point lights (wet stone, water, steel: k, shine). Worlds 1 and 2 are lit by the sky alone.
+    lit: {
+      sewer:   { ambient: 0.72, pools: { h: 7, r: 4.4, k: 0.85, color: [1, 0.84, 0.6] }, sheen: { k: 0.4, shine: 34 } },
+      // the cistern: the shaft through the roof is a broad, soft key on the far-left half (the approved picture's
+      // god rays), not a lamp — at 0.9 with a sharp sheen it read as a white fog blob; the lamps warm the back rim
+      cistern: { ambient: 0.6, lights: [{ frac: [-0.4, -0.45], h: 16, r: 14, k: 0.5, color: [0.62, 0.9, 1] }],
+                 rim: { w: 3.4, k: 0.7, color: [1, 0.68, 0.38], sides: 'back', every: 8.8, depth: 0.55 }, sheen: { k: 0.35, shine: 40 } },
+      boiler:  { ambient: 0.58, grates: { h: 1.4, r: 2.8, k: 1.05, color: [1, 0.42, 0.1], flicker: [1.6, 0.3] },
+                 rim: { w: 1.5, k: 0.75, glow: 0.03, color: [1, 0.42, 0.1], sides: 'all' }, sheen: { k: 0.3, shine: 20 } },
+      // the sun on water and ice is a glint, not a haze: broad and white it read as fog (shine 14 / 30)
+      river:   { ambient: 1.0, sun: { k: 0.2, shine: 70, color: [1, 1, 0.95] } },
+      ice:     { ambient: 1.0, sun: { k: 0.24, shine: 90, color: [1, 1, 1] } },
+      // a glowing source also shows on a floor too dark to light (`glow`: the share it adds as if the floor were
+      // mid grey) — the deep's silt and the core's black are near black, and light that only multiplies left them so
+      deep:    { ambient: 0.62, lights: [{ frac: [-0.55, 0.3], h: 1.2, r: 3.6, k: 0.75, glow: 0.07, color: [0.35, 1, 0.6], flicker: [0.9, 0.25] },
+                                         { frac: [0.38, -0.42], h: 1.2, r: 3.2, k: 0.7, glow: 0.07, color: [0.35, 1, 0.6], flicker: [1.3, 0.25] },
+                                         { frac: [0.62, 0.48], h: 1.2, r: 3.0, k: 0.65, glow: 0.07, color: [0.35, 1, 0.6], flicker: [0.7, 0.25] }],
+                 rim: { w: 2.2, k: 0.8, glow: 0.08, color: [0.25, 0.62, 1], sides: 'all' } },
+      core:    { ambient: 0.85, rim: { w: 1.9, k: 0.6, glow: 0.3, color: [1, 0.3, 0.85], sides: 'all' } },
+    },
     light: {
       grid:     { sun: 0xffffff, sunI: 1.3, at: [8, 20, 10],    ambient: 0xffffff, ambientI: 0.45, env: 1.0 },
-      driveway: { sun: 0xfff1d8, sunI: 1.5, at: [10, 26, 6],    ambient: 0xdce8ff, ambientI: 0.55, env: 1.05 },
+      // v93: the sun from the near left, lower (38°): the long curb on the left throws its shadow onto the slab, every
+      // body's shadow falls away toward the far right, and the bodies are lit from the camera's side
+      driveway: { sun: 0xfff1d8, sunI: 1.5, at: [-16, 15, 10],  ambient: 0xdce8ff, ambientI: 0.55, env: 1.05 },
       sewer:    { sun: 0xd4ecdc, sunI: 1.0, at: [3, 22, 4],     ambient: 0x9cc6c0, ambientI: 0.42, env: 0.85 },
       cistern:  { sun: 0xffc98e, sunI: 1.0, at: [-6, 10, -14],  ambient: 0x7fa2aa, ambientI: 0.40, env: 0.9 },
       boiler:   { sun: 0xffbd7a, sunI: 1.3, at: [4, 9, -16],    ambient: 0xb49070, ambientI: 0.38, env: 0.8 },
-      river:    { sun: 0xffd2a4, sunI: 0.9, at: [18, 8, 4],     ambient: 0x8aaaba, ambientI: 0.46, env: 0.9 },
-      ice:      { sun: 0xd2e6ff, sunI: 1.1, at: [-14, 14, 8],   ambient: 0x8ea2ca, ambientI: 0.42, env: 1.05 },
+      river:    { sun: 0xfff4e2, sunI: 1.5, at: [8, 24, 10],     ambient: 0xd8ecff, ambientI: 0.62, env: 1.08 },
+      ice:      { sun: 0xfff8ee, sunI: 1.5, at: [-10, 22, 10],   ambient: 0xdceeff, ambientI: 0.66, env: 1.12 },
       deep:     { sun: 0x6a8cff, sunI: 1.0, at: [0, 20, 2],     ambient: 0x4a5c8c, ambientI: 0.50, env: 0.7 },
       core:     { sun: 0xff6ae0, sunI: 1.0, at: [-10, 18, -10], ambient: 0x6c48a8, ambientI: 0.42, env: 1.1 },
     },
@@ -150,9 +182,11 @@ export const TUNING = {
       // (`pool`) all but gone in the day, the curb's contact shade on the slab
       // along it (`curbAO` m wide, `curbAODepth` dark), and the haze past the
       // lawn (`sky`: the background and the void the floor runs out over)
-      concrete: { lo: [0.17, 0.165, 0.155], hi: [0.3, 0.29, 0.275], speck: [0.05, 0.05, 0.05], oil: [0.07, 0.068, 0.066], oilDepth: 0.4,
+      // v93: a stop darker and warmer (it read overexposed under the sun), and the curb's SUN shadow on the slab (sunShadow:
+      // depth, the band's soft edge in m, cot θ held to cotMax): a slab in the sun is defined by its shadows
+      concrete: { lo: [0.145, 0.14, 0.128], hi: [0.265, 0.255, 0.238], sunShadow: { depth: 0.42, soft: 0.35, cotMax: 2.2 }, speck: [0.05, 0.05, 0.05], oil: [0.07, 0.068, 0.066], oilDepth: 0.4,
                   lip: [0.42, 0.41, 0.39], joint: 4.0, jointW: 0.025, flood: 0.12, ambient: 1.0, floodTint: [1.0, 0.85, 0.6], pool: 0.06,
-                  curbAO: 0.9, curbAODepth: 0.3, sky: [0.55, 0.7, 0.85],
+                  curbAO: 0.9, curbAODepth: 0.18, sky: [0.55, 0.7, 0.85],
                   // v65 (the owner's world-2 sheet): hairline cracks, a few to a slab and faint
                   // (the ice's lesson, v48: a texture under the fight, never lines across it):
                   // cells `crackScale` to the m (how far a crack runs before it forks),
@@ -190,15 +224,20 @@ export const TUNING = {
                 // v78: oily PUDDLES within `band` m of the long sides, under the pipe runs: the steel
                 // `dark` under a film with a `sheen` (a thin-film rainbow), the grates' `fire` in them
                 puddle: { scale: 0.45, t: 0.69, soft: 0.03, band: 3.0, dark: 0.3, sheen: 0.07, fire: 0.6, rim: 0.3 } },
-      river: { water: [0.004, 0.025, 0.03], waterHi: [0.08, 0.35, 0.3], flow: 1.6, bank: 0.78, pebble: [0.05, 0.05, 0.045], foam: [0.5, 0.75, 0.7], sky: [0.006, 0.012, 0.012],
+      // v95: in DAYLIGHT, to the owner's approved arena picture (the concept handoff): clear turquoise over sand and
+      // pebbles, deep teal down the middle, foam at the banks; `flecks` the share of v78's white dashes kept (they
+      // fought the bullets, and the picture has none)
+      river: { water: [0.03, 0.36, 0.36], waterHi: [0.36, 0.8, 0.74], flow: 1.6, bank: 0.78, pebble: [0.34, 0.29, 0.2], foam: [0.85, 0.95, 0.95], sky: [0.1, 0.16, 0.08], flecks: 0.12,
                // v78: a river that RUNS — streaks `stretch`:1 along the flow at `scale`, lifting the water
                // `lift` toward waterHi; `deep` down the middle (`deepK` of the way), the bed showing
                // through the shallows from `shallow` of the half width to the bank, tinted `shallowTint`
-               run: { stretch: 11, scale: 1.2, lift: 0.5, shallow: 0.55, deep: [0.002, 0.012, 0.018], deepK: 0.5, shallowTint: 0.55 } },
-      ice: { base: [0.055, 0.085, 0.125], deep: [0.02, 0.035, 0.07], crack: [0.6, 0.72, 0.85], lines: 0.45, scale: 0.35, frost: [0.6, 0.75, 0.85],
+               run: { stretch: 11, scale: 1.2, lift: 0.35, shallow: 0.55, deep: [0.008, 0.19, 0.23], deepK: 0.6, shallowTint: 0.55 } },
+      // v95: in DAYLIGHT, to the approved arena picture: pale blue ice with white cracks and frost — kept mid blue, not
+      // white, so the white hero and the pale gels still stand out on it
+      ice: { base: [0.26, 0.46, 0.66], deep: [0.11, 0.26, 0.48], crack: [0.92, 0.97, 1.0], lines: 0.45, scale: 0.35, frost: [0.85, 0.92, 1.0],
              // v72: frost in from the floor's edge over `edgeFrost` m, and air caught in the ice: in one
              // `bubble.cell` m cell in `keep` a bubble `r` m round; the dark past the snowfield
-             edgeFrost: 1.6, edgeFrostGain: 0.16, bubble: { cell: 2.2, keep: 0.35, r: [0.12, 0.3], gain: 0.22 }, sky: [0.008, 0.012, 0.022] },
+             edgeFrost: 1.6, edgeFrostGain: 0.22, bubble: { cell: 2.2, keep: 0.35, r: [0.12, 0.3], gain: 0.22 }, sky: [0.55, 0.65, 0.78] },
       deep: { silt: [0.006, 0.008, 0.02], ripple: [0.012, 0.018, 0.04], glow: [0.2, 0.5, 1.0], glow2: [0.5, 1.0, 0.7], specks: 2.6, sky: [0.002, 0.004, 0.01] },
       core: { base: [0.004, 0.0, 0.008], line: [0.8, 0.1, 0.7], pulse: [0.3, 0.9, 1.0], cell: 1.6, ringEvery: 2.4, ringSpeed: 4.5, sky: [0.006, 0.002, 0.01] },
     },
@@ -212,7 +251,7 @@ export const TUNING = {
     // slab, and a rounded end `curbNose` m long where it stops at the open near
     // side; `curbTone` how much one piece differs from the next, `curbShade` how
     // much darker it is where it meets the grass, and `curbShadow` the grass's
-    // shadow along it (`curbShadowW` m out). Grass TUFTS against it, thickest at
+    // shadow along it (v93: thrown away from the world's sun, sun.js). Grass TUFTS against it, thickest at
     // the corners: one every `every` m (`skip` of them left out), `out` m past
     // the curb, `h` m tall, of `blades` blades in a clump `r` × its height
     // across, each `w` × its height wide and bent out `bend` × its height
@@ -223,7 +262,7 @@ export const TUNING = {
     driveway: { lawnOut: 40, bladeScale: 4.5, tuftScale: 0.45, stripe: 4.2, grassLo: [0.06, 0.2, 0.045], grassHi: [0.16, 0.42, 0.08], fade: 30,
                 haze: [0.42, 0.56, 0.5], fadeTo: 0.55,
                 curb: [0.62, 0.61, 0.58], curbWidth: 1.0, curbHeight: 1.2, curbRound: 0.3, curbJoint: 3.0, curbGap: 0.05, curbArm: 1.6, curbNose: 1.0,
-                curbTone: 0.08, curbShade: 0.3, curbShadow: 0.4, curbShadowW: 0.9,
+                curbTone: 0.08, curbShade: 0.3, curbShadow: 0.4,
                 tuft: { every: 3.6, skip: 0.3, out: [0.2, 2.0], h: [0.5, 1.0], blades: 30, r: 0.8, w: 0.15, bend: 0.35,
                         lo: [0.04, 0.12, 0.03], hi: [0.2, 0.48, 0.1] } },
     // v70 (owner, 2026-10-31: "continue with world 3", from the World 3 brief,
@@ -291,18 +330,19 @@ export const TUNING = {
     // more past each end; `reed` clumps with cattails (`tails`) along the banks;
     // a `log` or two washed up; lily `pads` (one in `keep` of the `cell` m cells)
     // drifting the way the current rule pushes. Never along the near side
-    river: { ground: { out: 18, fade: 11, grassLo: [0.022, 0.045, 0.014], grassHi: [0.05, 0.09, 0.028], mud: [0.035, 0.028, 0.02], mudW: 1.2 },
+    // v95: the banks in daylight, to the approved picture (sand, pebbles, green reeds and grass); dandelion fluff where the fireflies were
+    river: { ground: { out: 18, fade: 11, grassLo: [0.06, 0.15, 0.03], grassHi: [0.15, 0.34, 0.06], mud: [0.3, 0.25, 0.16], mudW: 1.2 },
              edge: { color: 0x44ddbb, glow: 1.3, width: 0.1, height: 0.04 },
-             pads: { cell: 3.2, keep: 0.4, lo: [0.018, 0.05, 0.014], hi: [0.05, 0.11, 0.03], flower: [0.5, 0.32, 0.38] },
+             pads: { cell: 3.2, keep: 0.4, lo: [0.06, 0.2, 0.04], hi: [0.18, 0.42, 0.08], flower: [0.95, 0.75, 0.85] },
              stone: { every: 2.6, past: 4, skip: 0.25, out: [0.15, 2.4], r: [0.45, 1.25], inWater: 5, waterPast: 7, wetR: [0.35, 0.8],
-                      lo: [0.07, 0.068, 0.06], hi: [0.16, 0.15, 0.13], moss: [0.06, 0.11, 0.025] },
+                      lo: [0.22, 0.21, 0.18], hi: [0.48, 0.45, 0.4], moss: [0.15, 0.3, 0.06] },
              reed: { every: 1.5, past: 6, skip: 0.35, out: [0.25, 1.8], h: [1.1, 2.0], blades: 16, r: 0.3, w: 0.07, bend: 0.1, tails: 3,
-                     lo: [0.03, 0.06, 0.02], hi: [0.12, 0.17, 0.05], head: [0.08, 0.04, 0.018] },
-             log: { per: 2, out: [2.4, 3.6], len: [2.8, 4.6], r: [0.3, 0.45], bark: [0.05, 0.035, 0.022], barkHi: [0.09, 0.07, 0.05], wood: [0.28, 0.2, 0.12] },
-             pile: { at: [1.6, 4.5], every: 1.5, skip: 0.3, h: [0.6, 1.6], r: [0.13, 0.2], wood: [0.13, 0.095, 0.06], wet: [0.03, 0.03, 0.025] },
-             foam: { r: 1.6, period: 2.2, gain: 0.35, color: [0.55, 0.75, 0.72] },
-             // v77: fireflies over the banks at dusk
-             motes: { n: 24, h: 1.8, vy: 0.05, sway: 0.5, wobble: 0.7, r: 0.04, gain: 2.5, color: [0.8, 1.0, 0.4], blink: [3, 0.7], out: 2, deep: 3 } },
+                     lo: [0.06, 0.18, 0.04], hi: [0.26, 0.44, 0.1], head: [0.3, 0.2, 0.1] },
+             log: { per: 2, out: [2.4, 3.6], len: [2.8, 4.6], r: [0.3, 0.45], bark: [0.18, 0.12, 0.07], barkHi: [0.3, 0.22, 0.14], wood: [0.6, 0.45, 0.3] },
+             pile: { at: [1.6, 4.5], every: 1.5, skip: 0.3, h: [0.6, 1.6], r: [0.13, 0.2], wood: [0.3, 0.22, 0.14], wet: [0.12, 0.1, 0.08] },
+             foam: { r: 1.6, period: 2.2, gain: 0.35, color: [0.85, 0.95, 0.95] },
+             // v77: fireflies over the banks at dusk; v95: by day, dandelion fluff drifting over them (it does not glow or blink)
+             motes: { n: 18, h: 1.6, vy: 0.03, sway: 0.7, wobble: 0.7, r: 0.035, gain: 0.6, color: [1.0, 1.0, 0.92], out: 2, deep: 3 } },
     // v72 (from the World 7 brief, art-ref/briefs/world-7-ice.md): THE ICE. A
     // snowfield (`ground`: ribbed by the wind, snow blowing over it at `wind`
     // m/s) round the floor; ice `crystal` clusters along the far side and
@@ -310,14 +350,15 @@ export const TUNING = {
     // (the tallest `h` m, the rest leaning out `lean` rad), lit from inside
     // (`inner`) and brighter at the edge (`rim`); snow `drift`s banked against
     // their feet, snow-capped `rock`s between. Never along the near side
-    ice: { ground: { out: 16, fade: 10, lo: [0.06, 0.075, 0.1], hi: [0.13, 0.15, 0.19], wind: 1.1, wisp: [0.4, 0.45, 0.5], wispGain: 0.18 },
+    // v95: a snowfield by DAY, to the approved picture: white snow, pale crystals, blue shadows in the drifts
+    ice: { ground: { out: 16, fade: 10, lo: [0.58, 0.66, 0.76], hi: [0.85, 0.9, 0.96], wind: 1.1, wisp: [0.95, 0.97, 1.0], wispGain: 0.12 },
            edge: { color: 0xbfe6ff, glow: 1.2, width: 0.1, height: 0.04 },
            crystal: { every: 4.2, out: [2.0, 5.0], n: [3, 6], h: [1.6, 3.6], lean: [0.25, 0.7], spread: 0.6, thick: [0.12, 0.2],
-                      deep: [0.08, 0.16, 0.28], pale: [0.45, 0.62, 0.78], glow: [0.35, 0.65, 1.0], rim: 0.5, inner: 0.12 },
-           drift: { chance: 0.75, len: [1.4, 2.6], w: 0.35, h: 0.55, lo: [0.32, 0.38, 0.46], hi: [0.6, 0.66, 0.74] },
-           rock: { every: 5.5, out: [1.6, 5.5], r: [0.4, 1.0], lo: [0.06, 0.065, 0.075], snow: [0.55, 0.6, 0.68] },
+                      deep: [0.25, 0.5, 0.75], pale: [0.75, 0.88, 0.98], glow: [0.5, 0.8, 1.0], rim: 0.5, inner: 0.06 },
+           drift: { chance: 0.75, len: [1.4, 2.6], w: 0.35, h: 0.55, lo: [0.62, 0.72, 0.84], hi: [0.94, 0.96, 1.0] },
+           rock: { every: 5.5, out: [1.6, 5.5], r: [0.4, 1.0], lo: [0.2, 0.22, 0.26], snow: [0.92, 0.95, 1.0] },
            // v77: snow falling over the whole view
-           motes: { n: 160, h: 7, vy: -0.5, sway: 0.5, wobble: 0.9, r: 0.03, gain: 1.2, color: [0.9, 0.95, 1.0], out: 10 } },
+           motes: { n: 160, h: 7, vy: -0.5, sway: 0.5, wobble: 0.9, r: 0.03, gain: 0.8, color: [0.95, 0.97, 1.0], out: 10 } },
     // v72 (from the World 8 brief, art-ref/briefs/world-8-deep.md): THE DEEP. The
     // seabed (`ground`) round the floor; `kelp` in clumps every `every` m (`n`
     // ribbons `h` m tall, twisting `twist` rad up their length, swaying `sway`
@@ -369,11 +410,11 @@ export const TUNING = {
                 edge: { color: 0xff8a33, glow: 1.8, width: 0.12, height: 0.05 },
                 props: [{ shape: 'pipe', out: [1.1, 1.1], r: 0.42, y: 0.5, every: 3.2, color: 0x4a3f38, band: 0x7a6650 },
                         { shape: 'stack', every: 6.5, out: [3.8, 4.6], h: [3.0, 5.5], r: [0.55, 0.8], color: 0x2c2826, glow: 0xff7a22, glowI: 2.2, metal: 0.6, rough: 0.5 }] },
-      river: { ground: { lo: [0.03, 0.045, 0.025], hi: [0.075, 0.1, 0.05], scale: 0.7, out: 16, fade: 10 },
+      river: { ground: { lo: [0.06, 0.15, 0.03], hi: [0.15, 0.32, 0.06], scale: 0.7, out: 16, fade: 10 },
                edge: { color: 0x44ddbb, glow: 1.3, width: 0.1, height: 0.04 },
                props: [{ shape: 'rock', every: 2.3, out: [1.0, 4.5], h: [0.4, 1.1], r: [0.5, 1.1], color: 0x6b695e, tilt: 0.5 },
                        { shape: 'reed', every: 0.8, out: [0.5, 2.6], h: [0.8, 1.9], r: 0.05, color: 0x4a6a2e, tilt: 0.35 }] },
-      ice: { ground: { lo: [0.07, 0.09, 0.13], hi: [0.15, 0.19, 0.25], scale: 0.6, out: 16, fade: 10 },
+      ice: { ground: { lo: [0.58, 0.66, 0.76], hi: [0.85, 0.9, 0.96], scale: 0.6, out: 16, fade: 10 },
              edge: { color: 0xbfe6ff, glow: 1.2, width: 0.1, height: 0.04 },
              props: [{ shape: 'shard', every: 1.7, out: [1.0, 5.0], h: [0.8, 3.4], r: [0.25, 0.6], color: 0x8fbad6, glow: 0x6fb8ff, glowI: 0.25, metal: 0.1, rough: 0.2, tilt: 0.45 }] },
       deep: { ground: { lo: [0.004, 0.008, 0.02], hi: [0.014, 0.03, 0.06], scale: 0.5, out: 18, fade: 11 },
@@ -434,7 +475,9 @@ export const TUNING = {
         dash: { r: 4.5, k: 1.1, life: 0.3 },                          // the dash boom
         muzzle: { r: 1.3, k: 0.35, life: 0.06 },                       // each of the hero's shots
       },
-      shadow: { cap: 300, r: 1.35, strength: 0.6 },
+      shadow: { cap: 300, r: 1.35, strength: 0.6,
+        // v93: the shadows go away from the world's sun, 1/sin θ long (cot θ held to cotMax), their middle offset × cot θ × r on from the foot
+        sun: { cotMax: 2.2, offset: 0.55 } },
       floor: { spill: 0.18, grid: 0.9 },
       // v76 (the owner's second visual pick): CAUSTICS — light focused through
       // the jelly onto the floor round every body's foot, in the body's own
@@ -570,7 +613,10 @@ export const TUNING = {
     // 1.x's black ovals (player.js:81-93, 478-494): r 0.13 scaled (0.55, 1.15,
     // 0.4), a 0.042 glint. 1.x set them 0.4 forward and 0.16 up, which buried
     // them in the body (player-controls.md §14.2); 0.44 / 0.18 stand them proud.
-    eye: { r: 0.13, scale: [0.55, 1.15, 0.4], forward: 0.44, side: 0.14, up: 0.18, glint: 0.042 },
+    // v96 (the owner's style sheet, 3) HERO EYES: tall black ovals, a big white highlight in the upper part (`hi`: half
+    // width, half height, where) and a small white dot lower right (`dot`: radius, where), in eye-local metres
+    eye: { r: 0.13, scale: [0.55, 1.15, 0.4], forward: 0.44, side: 0.14, up: 0.18, glint: 0.042,
+           hi: { size: [0.03, 0.046], at: [-0.008, 0.062] }, dot: { r: 0.012, at: [0.02, -0.042] } },
     opacity: 0.98,          // the body at rest (player.js:63)
     flashColor: 0xff1100,   // red emissive from the hit to the END of mercy (player.js:266-273, 329-331)
     mercyBlink: { base: 0.3, amp: 0.7, rate: 12 },    // opacity through mercy (player.js:328)
@@ -638,6 +684,13 @@ export const TUNING = {
       speed: [6, 40],              // peak stroke speed → sV 0..1 (0.36 → 2.4 px/ms)
     },
   },
+
+  // The TILT-SHIFT lens (render/lens.js, v94; owner, 2026-11-01: "look into the tilt-shift look, detailed
+  // central area"): the circle of confusion |z − f| / z (f the hero's depth) is sharp inside `band`, opens to
+  // mip `maxLevel` over `ramp`; `saturation` the miniature's toy colours. Off unless OPTIONS → LENS says so
+  // `near` scales the blur nearer than the focus: the near side is where the next threat comes from on a phone held
+  // low, so it softens, it does not melt (at 1 the gate at the bottom of the screen was a smear)
+  lens: { band: 0.1, ramp: 0.26, maxLevel: 4, near: 0.5, saturation: 1.16 },
 
   // The STYLE switch (render/style.js, v92; owner: "watercolor, cell shaded,
   // physical 3d"): how the gels and the goo are painted. PHYSICAL is the game's

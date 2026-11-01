@@ -15,19 +15,19 @@
 // that springs in and fades (splats.js). Views are pooled per species, so a
 // gel's material is built once and reused, never compiled mid-fight.
 import * as THREE from 'three/webgpu';
-import { TUNING } from '../tuning.js?v=92';
+import { TUNING } from '../tuning.js?v=96';
 import * as TSL from 'three/tsl';
-import { gelMaterial, domeGeometry, cubeGeometry, heroGeometry, GEL_TIME } from './gel.js?v=92';
-import { LOOKS } from './looks/index.js?v=92';
-import { styleName, setStyle as setStyleMode, styledBody } from './style.js?v=92';
-import { JellyBody } from './jelly.js?v=92';
-import { Juice } from './juice.js?v=92';
-import { ArenaLight } from './light.js?v=92';
-import { toSdf } from './sdf.js?v=92';
-import { PickupView } from './pickups.js?v=92';
-import { ChallengeView } from './challenge.js?v=92';
-import { Goo } from './goo.js?v=92';
-import { mult as heatMult } from '../sim/heat.js?v=92';
+import { gelMaterial, domeGeometry, cubeGeometry, heroGeometry, GEL_TIME } from './gel.js?v=96';
+import { LOOKS } from './looks/index.js?v=96';
+import { styleName, setStyle as setStyleMode, styledBody } from './style.js?v=96';
+import { JellyBody } from './jelly.js?v=96';
+import { Juice } from './juice.js?v=96';
+import { ArenaLight } from './light.js?v=96';
+import { toSdf } from './sdf.js?v=96';
+import { PickupView } from './pickups.js?v=96';
+import { ChallengeView } from './challenge.js?v=96';
+import { Goo } from './goo.js?v=96';
+import { mult as heatMult } from '../sim/heat.js?v=96';
 
 const T = TUNING;
 const B = T.blob, D = T.death;
@@ -170,10 +170,15 @@ export class Actors {
       const eye = new THREE.Group();
       const ball = new THREE.Mesh(this.geo.eye, black);
       ball.scale.set(L.eye.r * L.eye.scale[0], L.eye.r * L.eye.scale[1], L.eye.r * L.eye.scale[2]);
+      // v96 (the style sheet's eyes): a big white highlight in the upper part, a small dot lower right
+      const front = L.eye.r * L.eye.scale[2] * 0.9, Hi = L.eye.hi, Dt = L.eye.dot;
       const glint = new THREE.Mesh(this.geo.eye, white);
-      glint.scale.setScalar(L.eye.glint * 0.6);
-      glint.position.set(0.02, 0.06, L.eye.r * L.eye.scale[2] * 0.9);
-      eye.add(ball, glint);
+      glint.scale.set(Hi.size[0], Hi.size[1], 0.012);
+      glint.position.set(Hi.at[0], Hi.at[1], front);
+      const dot = new THREE.Mesh(this.geo.eye, white);
+      dot.scale.setScalar(Dt.r);
+      dot.position.set(Dt.at[0], Dt.at[1], front);
+      eye.add(ball, glint, dot);
       eye.position.set(s * L.eye.side, r + L.eye.up, L.eye.forward);
       eyes.add(eye);
     }

@@ -24,10 +24,11 @@
 // `swirlAt`, out to `swirlR`, and opens a hole of `hole` m in the middle).
 import * as THREE from 'three/webgpu';
 import { Fn, If, uv, uniform, float, abs, fract, min, max, sin, cos, length, smoothstep, step, mix, fwidth, texture, clamp, vec2, vec3, pow, floor as tfloor, round, select, mod, dFdx, dFdy, exp, normalize, dot, cameraPosition, positionWorld, vec4 } from 'three/tsl';
-import { pickStyle, grainAt } from './style.js?v=92';
-import { GEL_TIME } from './gel.js?v=92';
-import { noise, grate, cells, sewerSpots } from './scenery.js?v=92';
-import { lilyPads, DRIFT } from './kit.js?v=92';
+import { pickStyle, grainAt } from './style.js?v=96';
+import { SUN_AT } from './sun.js?v=96';
+import { GEL_TIME } from './gel.js?v=96';
+import { noise, grate, cells, sewerSpots } from './scenery.js?v=96';
+import { lilyPads, DRIFT } from './kit.js?v=96';
 
 const _white = new THREE.Color(0xffffff);
 
@@ -127,7 +128,7 @@ export function buildFloor(T, hx, hz, light, { style = 'grid', bounds: hasBounds
     const bot = tex.sample(vec2(a.x, b.y)).mul(g0.x).add(tex.sample(vec2(b.x, b.y)).mul(g1.x));
     return top.mul(g0.y).add(bot.mul(g1.y));
   };
-  const goo = (under, lightRgb, st) => {
+  const goo = (under, lightRgb, st, E = null) => {
     const W = smoothRead(wetTex, st), Dr = smoothRead(dryTex, st);
     const h = W.a, hue = W.rgb.div(max(h, 1e-4)), d = Dr.a, dHue = Dr.rgb.div(max(d, 1e-4));
     const edgeOf = (v, at) => { const fw = fwidth(v).mul(0.75).add(1e-4); return smoothstep(float(at).sub(fw), float(at).add(fw), v); };
@@ -147,7 +148,7 @@ export function buildFloor(T, hx, hz, light, { style = 'grid', bounds: hasBounds
     const glint = pow(max(dot(n, normalize(Ld.add(Vd))), 0), float(K.shine)).mul(K.spec).mul(curve);
     const absorb = exp(vec3(1).sub(hue).mul(h.div(K.absorb)).negate());
     const thick = float(1).sub(exp(h.div(K.absorb).negate()));
-    const body = stained.mul(absorb).add(hue.mul(thick).mul(K.scatter));
+    const body = stained.mul(absorb).add(hue.mul(thick).mul(K.scatter).mul(E ?? float(1)));   // v93: the jelly scatters the world's light, not its own
     const wet = body.mul(float(1).add(relief)).add(mix(hue, vec3(1), 0.5).mul(max(relief, 0)).mul(K.rim)).add(vec3(glint)).add(lightRgb.mul(K.lit));
     const physical = mix(stained, wet, edgeOf(h, K.edge));
     // v92, the STYLE switch (render/style.js). CEL: a flat wash with a crisp contour, a lighter flat pool where it
@@ -237,6 +238,17 @@ export function buildFloor(T, hx, hz, light, { style = 'grid', bounds: hasBounds
     // ones, none at the open near side (v66)
     const toCurb = min(float(hx).sub(abs(w.x)), w.y.add(hz));
     col = col.mul(float(1).sub(float(1).sub(smoothstep(0, C.curbAO, toCurb)).mul(C.curbAODepth)));
+    // v93: the curb's shadow in the SUN (sun.js SUN_AT, the world's light rig): a curb `curbHeight` tall throws a
+    // band cot θ × that long away from the sun — onto the slab from the far curb when the sun stands past the far
+    // edge, from a long curb when it stands past that one. A slab in the sun is defined by its shadows; the AO
+    // above is the little that is left in the shade
+    const SS = C.sunShadow, ch = T.scenery.driveway.curbHeight;
+    const sunH = max(length(SUN_AT.xz), 1e-3), cot = min(sunH.div(max(SUN_AT.y, 1e-3)), SS.cotMax);
+    const awayX = SUN_AT.x.negate().div(sunH), awayZ = SUN_AT.z.negate().div(sunH);
+    const band = (dist, len) => float(1).sub(smoothstep(len.sub(SS.soft), len.add(SS.soft), dist)).mul(step(0.05, len));
+    const farLen = cot.mul(ch).mul(max(awayZ, 0)), leftLen = cot.mul(ch).mul(max(awayX, 0)), rightLen = cot.mul(ch).mul(max(awayX.negate(), 0));
+    const sunShade = max(max(band(w.y.add(hz), farLen), band(w.x.add(hx), leftLen)), band(float(hx).sub(w.x), rightLen));
+    col = col.mul(float(1).sub(sunShade.mul(SS.depth)));
     // the sun, a little warmer toward the far end (it was the garage's flood at night)
     const flood = smoothstep(float(hz * 2.2), float(-hz * 0.2), w.y.add(hz)).mul(C.flood);
     col = mix(col.mul(float(C.ambient).add(flood)).add(vec3(...C.floodTint).mul(flood.mul(0.06))), vec3(...G.slot), g.y);
@@ -425,8 +437,8 @@ export function buildFloor(T, hx, hz, light, { style = 'grid', bounds: hasBounds
     col = col.add(v3(B.glow).mul(pud.mul(fire).mul(PD.fire)));   // v78: the fire in the puddles
     return { col, mask: seam.mul(0.4).add(fire), lineCol: v3(B.glow), wet: pud };
   };
-  // THE RIVER: dark water running the long way, its streaks moving with it,
-  // pebbled banks at both edges
+  // THE RIVER: water running the long way, its streaks moving with it,
+  // pebbled banks at both edges (v95: in daylight, the approved picture's)
   const river = (p, w) => {
     const R = W.river, a = along(w), c = across(w), half = hx >= hz ? hz : hx, U = R.run;
     const flow = a.sub(GEL_TIME.mul(R.flow));
@@ -447,7 +459,7 @@ export function buildFloor(T, hx, hz, light, { style = 'grid', bounds: hasBounds
     const bank = smoothstep(half * R.bank, half * (R.bank + 0.08), abs(c));
     const foam = float(1).sub(smoothstep(0, 0.45, abs(abs(c).sub(half * R.bank)))).mul(smoothstep(0.4, 0.7, noise(vec2(flow.mul(1.5), c.mul(4)))));
     const flecks = smoothstep(0.86, 0.93, noise(vec2(flow.mul(2.2), c.mul(1.4)).add(4.4))).mul(depth);
-    col = mix(col, stones, bank).add(v3(R.foam).mul(foam.mul(0.4).add(flecks.mul(0.5))));
+    col = mix(col, stones, bank).add(v3(R.foam).mul(foam.mul(0.4).add(flecks.mul(0.5 * (R.flecks ?? 1)))));
     return { col, mask: smoothstep(0.5, 0.85, st).mul(float(1).sub(bank)).mul(0.6).add(foam).add(flecks), lineCol: v3(R.waterHi), wet: float(1).sub(bank) };
   };
   // THE ICE SHEET: pale ice, darker where it is deep, cracked, frost along the cracks
@@ -500,6 +512,59 @@ export function buildFloor(T, hx, hz, light, { style = 'grid', bounds: hasBounds
 
   const surface = { concrete, sewer, hex, tide, cistern, boiler, river, ice, deep, core }[style] ?? grid;
 
+  // v93 THE WORLD'S OWN LIGHT (TUNING.worlds.lit, docs/ENVIRONMENTS.md): what the floor is lit by, worked out
+  // here because the floor is a picture. Every source is baked into this world's shader (the floor is rebuilt
+  // with every world): E, the light falling on a point of the floor, multiplies its picture (Lambert on a flat
+  // floor: the source's height over its distance, falling off over `r`), and a source the floor can mirror
+  // adds its reflection where the half vector stands up (Blinn on a flat floor). Returns [lit colour, E].
+  const WL = T.worlds.lit?.[style];
+  const worldSources = () => {
+    const out = [];
+    for (const L of WL.lights ?? []) out.push({ x: L.frac[0] * hx, z: L.frac[1] * hz, ...L });
+    if (WL.pools) {
+      const sp = sewerSpots(T, hx, hz);
+      sp.pools.forEach((q, i) => out.push({ x: sp.alongX ? q.a : q.c, z: sp.alongX ? q.c : q.a, ...WL.pools, flicker: [0.35, 0.06], seed: i * 1.7 }));
+    }
+    return out;
+  };
+  const worldLight = (col, wp) => {
+    if (!WL) return [col, null];
+    const V = normalize(cameraPosition.sub(positionWorld)), sh = WL.sheen;
+    let E = vec3(WL.ambient ?? 1), spec = vec3(0), glow = vec3(0);
+    const point = (x, z, L, fl) => {
+      const d = vec3(x, L.h, z).sub(vec3(wp.x, 0, wp.y)), dist = length(d), Ld = d.div(dist);
+      const fall = float(1).div(float(1).add(dot(d, d).div(L.r * L.r))).mul(float(1).sub(smoothstep(L.r * 1.6, L.r * 2.8, dist)));
+      E = E.add(v3(L.color).mul(Ld.y.mul(fall).mul(L.k).mul(fl)));
+      if (L.glow) glow = glow.add(v3(L.color).mul(fall.mul(L.k * L.glow).mul(fl)));
+      if (sh) spec = spec.add(v3(L.color).mul(pow(max(normalize(Ld.add(V)).y, 0), float(sh.shine)).mul(fall).mul(L.k * sh.k).mul(fl)));
+    };
+    const flick = (L, seed) => (L.flicker ? float(1).add(sin(GEL_TIME.mul(L.flicker[0]).add(seed ?? 0)).mul(L.flicker[1])) : float(1));
+    worldSources().forEach((L, i) => point(L.x, L.z, L, flick(L, L.seed ?? i * 2.3)));
+    if (WL.grates) {
+      // the boiler: the fire under the NEAREST grate (they stand on a lattice), breathing with it
+      const G = WL.grates, g = W.boiler.grate, c = round(wp.div(g)).mul(g);
+      point(c.x, c.y, G, float(1).add(sin(GEL_TIME.mul(G.flicker[0]).add(noise(c.mul(0.37)).mul(6))).mul(G.flicker[1])));
+    }
+    if (WL.rim) {
+      // a band along the edge: all four sides, or the far side and the long ones (never the near side)
+      const Rm = WL.rim, ex = float(hx).sub(abs(wp.x)), ez = Rm.sides === 'back' ? wp.y.add(hz) : float(hz).sub(abs(wp.y));
+      let band = exp(min(ex, ez).max(0).div(Rm.w).negate());
+      if (Rm.every) {
+        // the lamps along it, a pool at each: along the far side x, along the long ones z
+        const along = select(ex.lessThan(ez), wp.y, wp.x);
+        band = band.mul(float(1 - Rm.depth).add(cos(along.div(Rm.every).mul(Math.PI * 2)).mul(0.5).add(0.5).mul(Rm.depth)));
+      }
+      E = E.add(v3(Rm.color).mul(band.mul(Rm.k)));
+      if (Rm.glow) glow = glow.add(v3(Rm.color).mul(band.mul(Rm.k * Rm.glow)));
+    }
+    if (WL.sun) {
+      // the sun's sheen on water and ice, broad
+      const Sn = WL.sun, Ls = normalize(SUN_AT);
+      spec = spec.add(v3(Sn.color).mul(pow(max(normalize(Ls.add(V)).y, 0), float(Sn.shine)).mul(Sn.k)));
+    }
+    return [col.mul(E).add(spec).add(glow), E];
+  };
+
   const mat = new THREE.MeshBasicNodeMaterial();
   mat.colorNode = Fn(() => {
     const p0 = uv(), w0 = toWorld(p0);
@@ -511,7 +576,7 @@ export function buildFloor(T, hx, hz, light, { style = 'grid', bounds: hasBounds
     const d1 = vec2(d0.x.mul(ca).sub(d0.y.mul(sa)), d0.x.mul(sa).add(d0.y.mul(ca))).mul(float(1).add(k.mul(W.swirl.pull)));
     const w = swirlAt.add(d1), p = toUv(w);
     const S = surface(p, w);
-    let out = S.col;
+    let [out, E] = worldLight(S.col, w0);   // v93: the world's own light falls on the picture before anything stands on it
     if (light) {
       // a shadow darkens what is under it; light lifts the floor a little and
       // its lines a lot, the way a lit surface shows its texture (wet stone
@@ -523,7 +588,7 @@ export function buildFloor(T, hx, hz, light, { style = 'grid', bounds: hasBounds
       if (S.wet) take = take.add(S.wet.mul(W.sewer.wetLight));
       out = out.mul(float(1).sub(shade)).add(L.rgb.mul(take));
       // the goo over the floor, before the hole and the walls: they cut it
-      if (film) out = goo(out, L.rgb, vec2(p.x, float(1).sub(p.y)));
+      if (film) out = goo(out, L.rgb, vec2(p.x, float(1).sub(p.y)), E);
     }
     // the hole in the middle of the swirl, its lip catching the light
     const inHole = float(1).sub(smoothstep(hole.mul(0.82), hole, r));

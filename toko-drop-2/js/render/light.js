@@ -20,9 +20,9 @@
 // TUNING.light.arena.
 import * as THREE from 'three/webgpu';
 import { uv, vec2, vec3, float, length, clamp, pow } from 'three/tsl';
-import { TUNING } from '../tuning.js?v=92';
+import { TUNING } from '../tuning.js?v=96';
 
-const T = TUNING, A = T.light.arena;
+const T = TUNING, A = T.light.arena, _Y = new THREE.Vector3(0, 1, 0);
 const smooth = (t) => { t = Math.min(1, Math.max(0, t)); return t * t * (3 - 2 * t); };
 
 function quads(cap, mat) {
@@ -54,6 +54,8 @@ export class ArenaLight {
     this.shades = quads(A.shadow.cap, shadeMat);
     this.scene.add(this.shades, this.pools);
     this.sunOff = { x: 0, z: 0 };   // where a caustic slides to, away from the world's sun (setSun)
+    this.sunDir = { dx: 1, dz: 0, cot: 0, stretch: 1 };   // v93: the way the sun's shadows fall; straight down until setSun
+    this._q = new THREE.Quaternion(); this._s = new THREE.Vector3(); this._p = new THREE.Vector3();
     this.bursts = [];   // { x, z, r, k, life, max, hex }
     this._m = new THREE.Matrix4(); this._c = new THREE.Color(); this._prev = new THREE.Color();
   }
@@ -65,6 +67,23 @@ export class ArenaLight {
   setSun(x, y, z) {
     const l = Math.hypot(x, z) || 1, lean = l / (Math.abs(y) || 1);
     this.sunOff.x = (-x / l) * Math.min(1, lean) * A.caustic.offset; this.sunOff.z = (-z / l) * Math.min(1, lean) * A.caustic.offset;
+    // v93: the shadow a body throws goes AWAY from the sun and grows as the sun stands lower — cot θ of its
+    // elevation, held to `cotMax` so a sun on the horizon does not throw a shadow across the floor
+    const h = Math.hypot(x, z);   // straight overhead (h = 0) throws the disc it always was
+    const cot = h < 1e-6 ? 0 : Math.min(A.shadow.sun.cotMax, h / Math.max(1e-3, Math.abs(y)));
+    this.sunDir = h < 1e-6 ? { dx: 1, dz: 0, cot: 0, stretch: 1 } : { dx: -x / h, dz: -z / h, cot, stretch: Math.sqrt(1 + cot * cot) };   // 1 / sin θ
+  }
+
+  // a body's shadow (v93): what the world's sun throws of a ball standing on the floor — an ellipse `stretch`
+  // times as long along the way from the sun as it is across, its middle `offset` × cot θ × r on from the foot,
+  // so it still starts under the body (a contact shadow, not a cast one, keeps a body readable at its foot).
+  // Before v93 every world's shadow was a disc straight under the body, whatever its light said
+  _putShade(mesh, n, x, z, r) {
+    const d = this.sunDir, off = r * d.cot * A.shadow.sun.offset;
+    this._q.setFromAxisAngle(_Y, Math.atan2(-d.dz, d.dx));
+    this._s.set(r * 2 * d.stretch, 1, r * 2); this._p.set(x + d.dx * off, 0, z + d.dz * off);
+    mesh.setMatrixAt(n, this._m.compose(this._p, this._q, this._s));
+    mesh.setColorAt(n, this._c.setHex(0));
   }
 
   // the map covers the arena exactly, at A.perMetre texels a metre
@@ -115,7 +134,7 @@ export class ArenaLight {
     let s = 0;
     const S = A.shadow, h = w.hero;
     // the hero's shadow narrows as it falls into a world from high up, and goes with it down a drain
-    if (h.alive) this._put(this.shades, s++, h.px + (h.x - h.px) * alpha, h.pz + (h.z - h.pz) * alpha, T.hero.radius * S.r * (1 - 0.6 * (h.fall || 0)) * (1 - (h.sink || 0)), 0, 0);
+    if (h.alive) this._putShade(this.shades, s++, h.px + (h.x - h.px) * alpha, h.pz + (h.z - h.pz) * alpha, T.hero.radius * S.r * (1 - 0.6 * (h.fall || 0)) * (1 - (h.sink || 0)));
     for (const g of w.gels) {
       if (s >= S.cap) break;
       if (g.state === 'appear' && g.t < 0) continue;              // a brood still waiting out its parent's pop is not there yet
@@ -123,7 +142,7 @@ export class ArenaLight {
       if (v && v.root && !v.root.visible) continue;
       const grow = g.child || !(g.t < T.gel.swell) ? 1 : smooth(g.t / T.gel.swell);
       const r = g.r * S.r * grow * (v?.shadow ?? 1);
-      if (r > 0.02) this._put(this.shades, s++, g.px + (g.x - g.px) * alpha, g.pz + (g.z - g.pz) * alpha, r, 0, 0);
+      if (r > 0.02) this._putShade(this.shades, s++, g.px + (g.x - g.px) * alpha, g.pz + (g.z - g.pz) * alpha, r);
     }
     for (const [m, c] of [[this.pools, n], [this.shades, s]]) {
       m.count = c;
