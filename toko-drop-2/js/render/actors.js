@@ -15,19 +15,19 @@
 // that springs in and fades (splats.js). Views are pooled per species, so a
 // gel's material is built once and reused, never compiled mid-fight.
 import * as THREE from 'three/webgpu';
-import { TUNING } from '../tuning.js?v=102';
+import { TUNING } from '../tuning.js?v=103';
 import * as TSL from 'three/tsl';
-import { gelMaterial, domeGeometry, cubeGeometry, heroGeometry, GEL_TIME } from './gel.js?v=102';
-import { LOOKS } from './looks/index.js?v=102';
-import { styleName, setStyle as setStyleMode, styledBody } from './style.js?v=102';
-import { JellyBody } from './jelly.js?v=102';
-import { Juice } from './juice.js?v=102';
-import { ArenaLight } from './light.js?v=102';
-import { toSdf } from './sdf.js?v=102';
-import { PickupView } from './pickups.js?v=102';
-import { ChallengeView } from './challenge.js?v=102';
-import { Goo } from './goo.js?v=102';
-import { mult as heatMult } from '../sim/heat.js?v=102';
+import { gelMaterial, domeGeometry, cubeGeometry, heroGeometry, GEL_TIME } from './gel.js?v=103';
+import { LOOKS } from './looks/index.js?v=103';
+import { styleName, setStyle as setStyleMode, styledBody } from './style.js?v=103';
+import { JellyBody } from './jelly.js?v=103';
+import { Juice } from './juice.js?v=103';
+import { ArenaLight } from './light.js?v=103';
+import { toSdf } from './sdf.js?v=103';
+import { PickupView } from './pickups.js?v=103';
+import { ChallengeView } from './challenge.js?v=103';
+import { Goo } from './goo.js?v=103';
+import { mult as heatMult } from '../sim/heat.js?v=103';
 
 const T = TUNING;
 const B = T.blob, D = T.death;
@@ -88,6 +88,23 @@ export class Actors {
     this.bullets.setColorAt(0, new THREE.Color());
     this.bullets.count = 0; this.bullets.frustumCulled = false;
     scene.add(this.bullets);
+    // v103: a corpse that bites warns first (sim/world.js plantSeed): a SEED on the corpse, swelling and
+    // blinking toward the shot, and a bar on the floor along every line a bullet will take, growing out —
+    // solid, in the corpse fire's own colour, no glow
+    {
+      const V = T.revenge.view, inst = (geo, n) => {
+        const m = new THREE.InstancedMesh(geo, new THREE.MeshBasicNodeMaterial(), n);
+        m.instanceMatrix.setUsage(THREE.DynamicDrawUsage); m.setColorAt(0, new THREE.Color());
+        m.count = 0; m.frustumCulled = false; scene.add(m); return m;
+      };
+      this.seeds = inst(sphere, V.maxSeeds);
+      this.ticks = inst(new THREE.BoxGeometry(1, 1, 1).translate(0.5, 0, 0), V.maxTicks);   // a unit bar along +x from its foot
+      // and an arrowhead at each bar's tip, flat on the floor and pointing out: the kill's goo strands radiate
+      // from the same corpse in the same colour, and a line with a head is the one that says "a shot goes here"
+      const head = new THREE.BufferGeometry();
+      head.setAttribute('position', new THREE.Float32BufferAttribute([1, 0, 0, 0, 0, -0.5, 0, 0, 0.5], 3)); head.computeVertexNormals();
+      this.heads = inst(head, V.maxTicks); this.heads.material.side = THREE.DoubleSide;
+    }
 
     // chunks of the dead: smooth goo for blobs, angular for cubes (1.x v83)
     this.chunkMax = 300;
@@ -563,6 +580,29 @@ export class Actors {
     bm.count = n;
     bm.instanceMatrix.needsUpdate = true;
     if (bm.instanceColor) bm.instanceColor.needsUpdate = true;
+    // v103: the corpse fire waiting to bite: its seed, and a bar along each line it will fire down
+    {
+      const V = T.revenge.view, sm = this.seeds, tm = this.ticks, hm = this.heads, M = this._m;
+      let ns = 0, nt = 0;
+      for (const sd of w.seeds ?? []) {
+        if (ns >= V.maxSeeds) break;
+        const k = Math.min(1, Math.max(0, 1 - sd.t / sd.tell)), blink = k > V.blinkFrom && Math.floor(k * V.blinks) % 2 === 0;
+        const r = V.seed[0] + (V.seed[1] - V.seed[0]) * k;
+        M.makeScale(r, r, r).setPosition(sd.x, BULLET_Y, sd.z); sm.setMatrixAt(ns, M);
+        sm.setColorAt(ns, this._c.setHex(sd.opts.color).lerp(_white, blink ? V.blinkWhite : V.lift)); ns++;
+        const len = V.tick.len * Math.min(1, k / V.tick.grow);
+        for (const a of sd.angles) {
+          if (nt >= V.maxTicks) break;
+          M.makeRotationY(-a).scale(_tickS.set(Math.max(len, 1e-3), V.tick.h, V.tick.w))
+            .setPosition(sd.x + Math.cos(a) * V.tick.from, V.tick.y, sd.z + Math.sin(a) * V.tick.from);
+          tm.setMatrixAt(nt, M); tm.setColorAt(nt, this._c.setHex(sd.opts.color).lerp(_white, V.tick.lift));
+          const H = V.tick.head, d = V.tick.from + len;
+          M.makeRotationY(-a).scale(_tickS.set(H, 1, H)).setPosition(sd.x + Math.cos(a) * d, V.tick.y + 0.005, sd.z + Math.sin(a) * d);
+          hm.setMatrixAt(nt, M); hm.setColorAt(nt, this._c); nt++;
+        }
+      }
+      for (const [m, c] of [[sm, ns], [tm, nt], [hm, nt]]) { m.count = c; m.instanceMatrix.needsUpdate = true; if (m.instanceColor) m.instanceColor.needsUpdate = true; }
+    }
     this.juice.sync(w, alpha, BULLET_Y);
     this.light.sync(w, alpha, this.views);
     // v76: a caustic under every body, in its colour, slid away from the sun
@@ -761,7 +801,7 @@ export class Actors {
   }
 }
 
-const _white = new THREE.Color(0xffffff), _gooC = new THREE.Color();
+const _white = new THREE.Color(0xffffff), _gooC = new THREE.Color(), _tickS = new THREE.Vector3();
 const VOLC = 4 / 3 * Math.PI;   // a chunk of radius s is drawn as VOLC s³ of goo
 
 // v82: the press the sim reported (v.press, the body itself: sim/press.js's

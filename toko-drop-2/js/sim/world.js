@@ -14,21 +14,21 @@
 // moves, then everything is tested, against post-move positions.
 //
 // Modes: 'arcade', 'hardcade' (corpses fire back) and 'survival'.
-import { TUNING } from '../tuning.js?v=102';
-import { press, pressReset } from './press.js?v=102';
-import { makeRng } from './rng.js?v=102';
-import { BEHAVIOUR } from './species/index.js?v=102';
-import { DIRECTORS } from './director/index.js?v=102';
-import * as fire from './fire.js?v=102';
-import { makeHero, heroStep, applyPull, hurtHero, invincible } from './hero.js?v=102';
-import { swarmForces, resolveCrowd } from './crowd.js?v=102';
-import { revengeColor } from './color.js?v=102';
-import * as pickups from './pickups.js?v=102';
-import * as worlds from './worlds.js?v=102';
-import * as reshape from './reshape.js?v=102';
-import { Arena, levelShape, levelMoves, levelEnvelope, KIND } from './shape.js?v=102';
-import * as rules from './rules.js?v=102';
-import * as heat from './heat.js?v=102';
+import { TUNING } from '../tuning.js?v=103';
+import { press, pressReset } from './press.js?v=103';
+import { makeRng } from './rng.js?v=103';
+import { BEHAVIOUR } from './species/index.js?v=103';
+import { DIRECTORS } from './director/index.js?v=103';
+import * as fire from './fire.js?v=103';
+import { makeHero, heroStep, applyPull, hurtHero, invincible } from './hero.js?v=103';
+import { swarmForces, resolveCrowd } from './crowd.js?v=103';
+import { revengeColor } from './color.js?v=103';
+import * as pickups from './pickups.js?v=103';
+import * as worlds from './worlds.js?v=103';
+import * as reshape from './reshape.js?v=103';
+import { Arena, levelShape, levelMoves, levelEnvelope, KIND } from './shape.js?v=103';
+import * as rules from './rules.js?v=103';
+import * as heat from './heat.js?v=103';
 
 const T = TUNING;
 
@@ -57,7 +57,7 @@ export function createWorld({ seed = 1, mode = 'arcade', arena = T.arena.landsca
     seed, mode, dashMode, hpMult, rng: makeRng(seed), rngFx: makeRng((seed ^ 0x5bd1e995) >>> 0), tick: 0, time: 0, over: false,
     shape, world, trans: null, lastBoss: null,
     hx: arena.hx, hz: arena.hz, hero: makeHero(),
-    gels: [], bullets: [], lobs: [], hazards: [], events: [],
+    gels: [], bullets: [], lobs: [], hazards: [], events: [], seeds: [],   // seeds: corpse fire waiting to bite (v103)
     heroBullets: 0, gelBullets: 0, refused: 0,
     nextId: 1, score: 0, streak: 0, kills: 0, grazes: 0, nextMilestone: T.score.milestone, killedBy: null,
     wave: 1, dir: null, room, region, hits: 0,
@@ -160,6 +160,7 @@ export function step(w, input) {
     pressHero(w);
     for (const g of w.gels) { g.nudgedX += g.knockDX || 0; g.nudgedZ += g.knockDZ || 0; g.knockDX = g.knockDZ = 0; }
     bulletsStep(w, dt);
+    seedsStep(w, dt);
     lobsStep(w, dt);
     hazardsStep(w, dt);
     heroBulletsHit(w);
@@ -313,39 +314,63 @@ function kill(w, g, src = 'hero') {
   // another's: 1.x built that brood only when its pop ended ("newborn minnows
   // must not be vaporized by the shockwave that birthed them", main.js:4518-4529)
   if (g.r >= T.death.big) for (const o of w.gels) if (o.alive && o !== g && o.state !== 'appear' && Math.hypot(o.x - g.x, o.z - g.z) <= T.death.shockRadius) o.sqV -= T.death.shockSquash;
-  // VOLATILE: an 8-ring at corpse speed on death, in every mode (1.x main.js:4367-4377)
-  if (g.affix === 'volatile') {
-    fire.ring(w, g.x, g.z, 8, w.rngFx.range(0, Math.PI * 2), { speedMult: T.revenge.speedMult, color: revengeColor(g.kind), src: g.kind, revenge: true });
-  }
+  // VOLATILE: an 8-ring at corpse speed on death, in every mode (1.x main.js:4367-4377); since v103 it
+  // warns first and its first bullet goes where you stood, as HARDCADE's corpse fire does — but it is a
+  // bomb, so it bites close too
+  if (g.affix === 'volatile') plantSeed(w, g, ringAt(aimFrom(w, g), 8), T.revenge.speedMult);
   if (hard && src !== 'env') revenge(w, g);
   w.director.onKill?.(w, g, api);
   milestones(w);
 }
 
 // HARDCADE: 1.x's corpse fire (main.js:4390-4420). Biters (or every corpse,
-// with `who: 'all'`) and bosses bloom from the corpse's centre the step they
-// die: AIMED is a tight burst at you, FAN a slow arc, RING the circle. Not
-// before `fromWave`, and not while the floor already holds `fieldCap` live
-// corpse bullets (a bloom that starts under the cap lands whole).
+// with `who: 'all'`) and bosses bloom from the corpse's centre: AIMED is a
+// tight burst at you, FAN a slow arc, RING the circle. Not before `fromWave`,
+// and not while the floor already holds `fieldCap` live corpse bullets,
+// counting the seeds still waiting (a bloom that starts under the cap lands
+// whole). v103: it WARNS first and aims where you stood (seed, below), and
+// a corpse within `near` of you cannot bite: it fizzles
 function revenge(w, g) {
   // a HARD campaign room (v49): every corpse, from the first, under the room's own cap
   const room = !!w.room?.hard, R = room ? { ...T.revenge, ...T.revenge.room, ...(w.room.level?.hard ?? {}) } : T.revenge, S = T.species[g.kind];
   if (!(g.isBoss || S.revenge || R.who === 'all') || (!room && w.wave < R.fromWave)) return;
+  const h = w.hero;
+  if (Math.hypot(h.x - g.x, h.z - g.z) < R.near) { w.events.push({ type: 'revengeFizzle', x: g.x, z: g.z, kind: g.kind }); return; }
   let live = 0;
   for (const b of w.bullets) if (b.revenge && !b.dead) live++;
+  for (const sd of w.seeds) live += sd.angles.length;
   const cap = room ? R.cap : Math.min(R.fieldCap.max, Math.round(R.fieldCap.base + w.wave * R.fieldCap.per));
   if (live >= cap || w.gelBullets >= R.poolGate) return;
-  const h = w.hero, near = Math.hypot(h.x - g.x, h.z - g.z) < 0.001;
-  if (room && Math.hypot(h.x - g.x, h.z - g.z) < R.near) return;
-  const aim = near ? w.rngFx.range(0, Math.PI * 2) : Math.atan2(h.z - g.z, h.x - g.x);
-  const opts = { speedMult: R.speedMult, color: revengeColor(g.kind), src: g.kind, revenge: true };
   const dialect = g.isBoss ? 'RING' : (S.revenge ?? 'RING');
   const dens = room && !(g.isBoss || S.revenge) ? R.others : R.density;
-  const n = (c) => Math.max(1, Math.round(c * dens));
-  if (dialect === 'AIMED') fire.fanStep(w, g.x, g.z, aim, n(R.aimed.count), R.aimed.spread, opts);
-  else if (dialect === 'FAN') fire.fanStep(w, g.x, g.z, aim, n(R.fan.count), R.fan.spread, opts);
-  else fire.ring(w, g.x, g.z, n(g.isBoss ? R.ring.boss : g.r > R.ring.bigRadius ? R.ring.big : R.ring.small), w.rngFx.range(0, Math.PI * 2), opts);
-  w.events.push({ type: 'revenge', x: g.x, z: g.z, kind: g.kind });
+  const n = (c) => Math.max(1, Math.round(c * dens)), aim = aimFrom(w, g);
+  const angles = dialect === 'AIMED' ? fanAt(aim, n(R.aimed.count), R.aimed.spread)
+    : dialect === 'FAN' ? fanAt(aim, n(R.fan.count), R.fan.spread)
+    : ringAt(aim, n(g.isBoss ? R.ring.boss : g.r > R.ring.bigRadius ? R.ring.big : R.ring.small));
+  plantSeed(w, g, angles, R.speedMult);
+}
+// where a corpse aims: at the hero as it died (straight down the screen's
+// right if the hero stands on it, so a bloom is never turned at random)
+const aimFrom = (w, g) => { const h = w.hero, dx = h.x - g.x, dz = h.z - g.z; return Math.hypot(dx, dz) < 1e-3 ? 0 : Math.atan2(dz, dx); };
+const ringAt = (aim, n) => Array.from({ length: n }, (_, i) => aim + (i * Math.PI * 2) / n);
+const fanAt = (aim, n, step) => Array.from({ length: n }, (_, j) => aim + (j - (n - 1) / 2) * step);
+// v103: a corpse's fire waits `tell` s as a SEED on the corpse, every line it
+// will fire along fixed the moment it died (render/actors.js draws them), then
+// fires along them — the same lines, whatever the hero has done since
+function plantSeed(w, g, angles, speedMult) {
+  const R = T.revenge;
+  w.seeds.push({ x: g.x, z: g.z, kind: g.kind, angles, t: R.tell, tell: R.tell, opts: { speedMult, color: revengeColor(g.kind), src: g.kind, revenge: true } });
+  w.events.push({ type: 'revengeSeed', x: g.x, z: g.z, kind: g.kind, n: angles.length });
+}
+function seedsStep(w, dt) {
+  if (!w.seeds.length) return;
+  for (const sd of w.seeds) {
+    if ((sd.t -= dt) > 1e-9) continue;
+    for (const a of sd.angles) fire.emit(w, sd.x, sd.z, a, sd.opts);
+    w.events.push({ type: 'revenge', x: sd.x, z: sd.z, kind: sd.kind });
+    sd.done = true;
+  }
+  w.seeds = w.seeds.filter((sd) => !sd.done);
 }
 
 function milestones(w) {

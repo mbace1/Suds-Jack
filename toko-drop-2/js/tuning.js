@@ -7,10 +7,10 @@
 // things that work"). The arena is 1.x's, so every 1.x number ports as it is
 // instead of through a rescale. Axes: x across the screen (right +), y up,
 // z toward the bottom of the screen. The arena is centred on the origin.
-import { SPECIES } from './tuning/species/index.js?v=102';
-import WAVES from './tuning/waves.js?v=102';
-import PICKUPS from './tuning/pickups.js?v=102';
-import MUSIC from './tuning/music.js?v=102';
+import { SPECIES } from './tuning/species/index.js?v=103';
+import WAVES from './tuning/waves.js?v=103';
+import PICKUPS from './tuning/pickups.js?v=103';
+import MUSIC from './tuning/music.js?v=103';
 
 export const TUNING = {
   render: {
@@ -1294,7 +1294,7 @@ export const TUNING = {
   shake: { decay: 2.8, amp: [1.8, 1.2, 1.2], freq: [41, 37, 43], kill: 0.07, killPerRadius: 0.13, hurt: 0.38, bigKill: 0.1 },
   // v58: one sound at most this many times in `window` s (a pile-up's
   // rest is not heard), and the limiter on the master only a pile-up reaches
-  audio: { master: 0.5, gate: { window: 0.04, land: 3, spawn: 3, kill: 4, hit: 4, lobLand: 3, mothShot: 3 },
+  audio: { master: 0.5, gate: { window: 0.04, land: 3, spawn: 3, kill: 4, hit: 4, lobLand: 3, mothShot: 3, revengeSeed: 2, revengeFizzle: 2 },
     limit: { threshold: -3, ratio: 20, attack: 0.002, release: 0.12 } },
   // the music (tuning/music.js, v58): a song a world, layered by the heat
   music: MUSIC,
@@ -1309,6 +1309,16 @@ export const TUNING = {
     who: 'biters',
     density: 1,              // owner: "more or less bullets" — scales every bloom's count (min 1)
     speedMult: 0.6,
+    // v103 (owner: "Revenge bullets on Hardcade ... needs certain predictability to stay fair"): a corpse
+    // that fires back WARNS first. Its bloom waits `tell` s on the corpse as a SEED, with a line on the floor
+    // for every bullet it will fire (render/actors.js, `view`), then fires along those lines. Every dialect
+    // aims at where you stood when the body died — a RING's first bullet too, where 1.x turned it at random
+    // — and a corpse within `near` m of you cannot bite (a dash kill is point-blank: it fizzles). A VOLATILE
+    // corpse's ring (every mode) warns the same way and aims the same way, but is a bomb: it bites close too.
+    tell: 0.5, near: 2.2,
+    // drawn lighter than the goo the kill throws in the same colour (`lift` toward white), and longer than its burst
+    view: { maxSeeds: 64, maxTicks: 320, seed: [0.24, 0.42], lift: 0.3, blinkFrom: 0.55, blinks: 9, blinkWhite: 0.8,
+            tick: { from: 0.6, len: 2.4, grow: 0.6, w: 0.14, h: 0.02, y: 0.04, lift: 0.55, head: 0.42 } },
     fromWave: 3,
     fieldCap: { base: 14, per: 1.2, max: 44 },
     poolGate: 240,

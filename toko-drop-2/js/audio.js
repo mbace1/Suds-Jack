@@ -1,7 +1,7 @@
 // audio.js — synthesised, never sampled. Every voice goes through one master
 // gain, so mute really mutes and a sound added later inherits it. Browsers
 // keep audio asleep until a gesture; unlock() is called from the first one.
-import { TUNING } from './tuning.js?v=102';
+import { TUNING } from './tuning.js?v=103';
 
 const A = TUNING.audio;
 
@@ -96,6 +96,9 @@ export class Sound {
         break;
       }
       case 'lobLand': this._tone('sine', 150, 55, 0.28, 0.2); this._hiss(0.16, 0.12, 900, 300); break;   // 1.x lobSplash
+      // v103: HARDCADE's corpse fire warns: a rising tick as the seed is laid, a dull puff where a corpse too close could not bite
+      case 'revengeSeed': this._tone('triangle', 620, 1040, 0.1, 0.05); break;
+      case 'revengeFizzle': this._hiss(0.12, 0.05, 1400, 500); break;
       // a campaign room's goal moving on (v46): a step made chimes, an orb gone out falls, the heart hurt thumps
       case 'chStep':
         if (e.what === 'orbLost') this._tone('triangle', 520, 180, 0.22, 0.12);

@@ -19,6 +19,19 @@
     Never `--no-verify`.
 -->
 
+## v103 — 2026-11-02
+**HARDCADE's corpse fire warns first and aims where you stood (owner: "Revenge bullets on Hardcade ... needs certain predictability to stay fair")**
+- What was unpredictable: a corpse bloomed the step it died, from its middle, with no warning; a RING's turn was rolled at random; a point-blank kill (a dash through it) put the bloom on top of you before it could be seen; and whether a corpse fired at all hung on how many corpse bullets were already out, which nothing showed.
+- A CORPSE WARNS: its fire waits half a second (`revenge.tell`) as a SEED on the corpse — swelling, blinking white at the end — with a line on the floor for every bullet it will fire, an arrowhead at each line's tip, lighter than the goo the kill throws in the same colour (the kill's goo strands radiate from the same corpse; a line with a head is the one that says a shot goes there). Then it fires along exactly those lines. Solid, no glow. A rising tick when a seed is laid.
+- ONE RULE FOR WHERE IT GOES: every dialect aims at where you stood when the body died — AIMED and FAN centred on you, and a RING's first bullet at you, the rest evenly round (1.x turned a ring at random). The lines are fixed when it dies, so the shot goes where it warned, whatever you have done since: step off the line.
+- CLOSE KILLS ARE SAFE: a corpse within 2.2 m of you when it dies (`revenge.near`; a HARD room keeps its 3) cannot bite — it fizzles, with a dull puff. A dash kill is point-blank, so dashing a biter is the way to kill it clean, and the heat already pays a close kill more.
+- The cap counts the seeds still waiting as well as the bullets out, so a corpse that would go past it shows no seed at all: no seed, no shot. A VOLATILE corpse's ring (every mode) warns and aims the same way, but is a bomb: it bites close too.
+- Measured, HARDCADE's difficulty did not move: the expert bot (scripts/reach.mjs; it cannot see a seed, it dodges bullets) over 36 seeds reaches wave 33.9 ± 1.9 against v102's 37.3 ± 2.4 (medians 36 and 37), inside the noise — a run forks the moment a ring stops drawing its turn from the effects' random stream, which also seeds the bodies' moves — and corpse fire takes ~4% of its lives either way (6 of 174 against 7 of 177). One HARD room's lines (THE SPLITTER, scripts/room-tiers.mjs --hard) stay in their band. What changed is what a person can read.
+- The tests that read a corpse's bullets the step it died read them after the warning now (sim, campaign and ten species), and the new rules have checks of their own: the seed and its lines, nothing in the air while it warns, the burst along those lines however the hero moved, the fizzle, a ring's first line at the hero.
+- Cache tokens `?v=102` → `?v=103`; HUD label → `2.0 · v103`
+
+---
+
 ## v102 — 2026-11-02
 **Less paint, more goo (owner: "There is too much splatter paint left over visually, but not enough goo vfx")**
 - Read off a time-lapse of a fight's floor (six kills, then the burst, +1, +3, +8, +15 and +30 s) at a phone's portrait size, and off the whole floor film read back every 10 s of a minute's fight. The paint: what the goo DRIES to stayed — it halved every 8 s, and the thinnest stain still drew at a fifth of its strength, so on the dark grid every kill of the last half minute was still on the floor at +30 s, and over a minute's fight the stained floor only grew (4% → 19%, a tenth of it deep). The goo: a kill threw mostly fine drops, 2–8 cm — on a portrait phone a metre is about 18 px, so most of a burst was a speck of a pixel or two.

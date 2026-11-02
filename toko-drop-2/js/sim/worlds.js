@@ -18,8 +18,8 @@
 // While a transition runs the run is held: no director, no bodies, no gun;
 // the hero is the transition's and cannot be hurt. Every number is
 // TUNING.worlds.
-import { TUNING } from '../tuning.js?v=102';
-import * as rules from './rules.js?v=102';
+import { TUNING } from '../tuning.js?v=103';
+import * as rules from './rules.js?v=103';
 
 const T = TUNING, WD = T.worlds;
 
@@ -65,7 +65,7 @@ export function begin(w) {
   // what is still in the air or on the floor goes with the world: the
   // bullets, the lobs and their hazards, the pickups
   for (const b of w.bullets) b.dead = true;
-  w.lobs.length = 0; w.hazards.length = 0;
+  w.lobs.length = 0; w.hazards.length = 0; w.seeds.length = 0;
   if (w.pk) { w.pk.items.length = 0; w.pk.gates.length = 0; w.pk.convoy = null; w.pk.bounty = { arm: false, id: null, t: 0 }; }
   h.dash = 0; h.burst.length = 0;
   w.events.push({ type: 'worldOut', kind, world: w.world, x: at.x, z: at.z });
