@@ -4,7 +4,7 @@
 // round a floor props stand on, and the few shapes more than one set makes
 import * as THREE from 'three/webgpu';
 import { Fn, float, vec2, vec3, fract, sin, cos, dot, floor as tfloor, mix, length, min, max, abs, atan, fwidth, smoothstep, step, uniform, instanceIndex, normalView, positionLocal, positionGeometry } from 'three/tsl';
-import { GEL_TIME } from './gel.js?v=100';
+import { GEL_TIME } from './gel.js?v=101';
 
 // a hash and value noise on the world plane, cheap enough for a picture
 export const hash = (p) => fract(sin(dot(p, vec2(127.1, 311.7))).mul(43758.5453));
@@ -137,6 +137,38 @@ export function frameGeometry(hx, hz, gap, w, h) {
     parts.push(h ? new THREE.BoxGeometry(sx, h, sz).translate(x, h / 2, z) : new THREE.PlaneGeometry(sx, sz).rotateX(-Math.PI / 2).translate(x, 0, z));
   }
   return merge(parts);
+}
+
+// v100/v101: a LEDGE round the floor (the ice's banks, the boiler's low wall, the deep's rims): blocks along
+// the far side and both long sides — never the near side — each `len` m along, `deep` m back and `h` m tall
+// (a number, or [min, max] drawn per block), `gap` m off the edge, turned up to `tilt` rad; now and then
+// (`step.chance`) a lower step `step.deep` m deep in front at `step.h` of the height. One [x, z, length,
+// depth, height, turn] per block, from a seeded draw (the far run spans the corners, the sides start behind it)
+export function ledgeBlocks(hx, hz, Lg, seed) {
+  const lr = seeded(seed), rr = (a) => (Array.isArray(a) ? a[0] + lr() * (a[1] - a[0]) : a), blocks = [];
+  const run = (ox, oz, ax, az, nx, nz, s0, s1) => {
+    for (let s = s0; s < s1 - 0.25;) {
+      const l = Math.min(rr(Lg.len), s1 - s), d = rr(Lg.deep), h = rr(Lg.h), mid = s + l / 2, ry = -Math.atan2(az, ax) + (lr() - 0.5) * (Lg.tilt ?? 0);
+      const at = (back, dd) => [ox + ax * mid + nx * (Lg.gap + back + dd / 2), oz + az * mid + nz * (Lg.gap + back + dd / 2)];
+      if (Lg.step && lr() < Lg.step.chance) {
+        const sd = Lg.step.deep;
+        blocks.push([...at(0, sd), l, sd, h * Lg.step.h, ry]);
+        blocks.push([...at(sd, d - sd), l, d - sd, h, ry]);
+      } else blocks.push([...at(0, d), l, d, h, ry]);
+      s += l;
+    }
+  };
+  const D = (Array.isArray(Lg.deep) ? Lg.deep[1] : Lg.deep) + Lg.gap;
+  run(-hx - D, -hz, 1, 0, 0, -1, 0, 2 * (hx + D));
+  run(-hx, -hz, 0, 1, -1, 0, 0, 2 * hz);
+  run(hx, -hz, 0, 1, 1, 0, 0, 2 * hz);
+  return blocks;
+}
+// the blocks as one instanced draw: a unit box standing on its foot (positionGeometry.y runs 0 → 1 up it)
+export function ledgeMesh(sc, blocks, mat) {
+  const bm = sc._add(new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1).translate(0, 0.5, 0), mat, blocks.length));
+  blocks.forEach(([x, z, l, d, h, ry], i) => put(bm, i, x, -0.02, z, l, h + 0.02, d, 0, ry, 0));
+  return bm;
 }
 
 // the thin glowing line where the floor stops, all four sides

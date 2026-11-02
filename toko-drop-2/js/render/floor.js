@@ -24,11 +24,11 @@
 // `swirlAt`, out to `swirlR`, and opens a hole of `hole` m in the middle).
 import * as THREE from 'three/webgpu';
 import { Fn, If, uv, uniform, float, abs, fract, min, max, sin, cos, length, smoothstep, step, mix, fwidth, texture, clamp, vec2, vec3, pow, floor as tfloor, round, select, mod, dFdx, dFdy, exp, normalize, dot, cameraPosition, positionWorld, vec4 } from 'three/tsl';
-import { pickStyle, grainAt } from './style.js?v=100';
-import { SUN_AT } from './sun.js?v=100';
-import { GEL_TIME } from './gel.js?v=100';
-import { noise, grate, cells, sewerSpots } from './scenery.js?v=100';
-import { lilyPads, DRIFT, hash } from './kit.js?v=100';
+import { pickStyle, grainAt } from './style.js?v=101';
+import { SUN_AT } from './sun.js?v=101';
+import { GEL_TIME } from './gel.js?v=101';
+import { noise, grate, cells, sewerSpots } from './scenery.js?v=101';
+import { lilyPads, DRIFT, hash } from './kit.js?v=101';
 
 const _white = new THREE.Color(0xffffff);
 
@@ -286,7 +286,20 @@ export function buildFloor(T, hx, hz, light, { style = 'grid', bounds: hasBounds
     const flecks = smoothstep(0.82, 0.9, noise(vec2(flow.mul(1.6), c.mul(2.2)).add(7.7)));
     const rip = smoothstep(0.55, 0.85, st).mul(0.7).add(foamLine).add(flecks.mul(0.6));
     const water = mix(vec3(...S.water), vec3(...S.waterHi), st.mul(M.lift)).add(vec3(...M.foam).mul(foamLine.mul(0.5).add(flecks.mul(0.35))));
-    let col = mix(stone, water, inCh).add(vec3(...S.kerb).mul(kerb.mul(0.35)));
+    let col = mix(stone, water, inCh);
+    // v101: the channel's KERB (the module sheet's: a raised strip of pale stone either side of the water) — it was
+    // a faint lighter line. Blocks `w` m wide in lengths of `joint` m, their water edge catching the light and
+    // their outer edge in a line of shadow on the floor
+    const KS = S.kerbStone;
+    if (KS) {
+      const dk = abs(c).sub(S.channel / 2), kaa = max(fwidth(dk), 1e-4);
+      const inK = smoothstep(kaa.negate(), kaa, dk).mul(float(1).sub(smoothstep(float(KS.w).sub(kaa), float(KS.w).add(kaa), dk)));
+      const jq = abs(fract(a.div(KS.joint)).sub(0.5)).mul(KS.joint), jaa = max(fwidth(jq), 1e-4);
+      const joint = smoothstep(float(KS.joint / 2 - 0.025).sub(jaa), float(KS.joint / 2 - 0.025).add(jaa), jq);
+      const lip = float(1).sub(smoothstep(0, 0.05, dk)).mul(inK), shade = float(1).sub(smoothstep(0, 0.09, dk.sub(KS.w))).mul(step(KS.w, dk));
+      const kcol = vec3(...KS.color).mul(noise(vec2(a.mul(2.3), c.mul(5))).mul(0.25).add(0.85)).mul(float(1).sub(joint.mul(0.55))).add(vec3(...KS.lit).mul(lip));
+      col = mix(col, kcol, inK).mul(float(1).sub(shade.mul(KS.shadow)));
+    } else col = col.add(vec3(...S.kerb).mul(kerb.mul(0.35)));
     // v70: the pipes' rivulets, green water from each mouth in the wall across
     // the floor to the channel, glinting as it runs (scenery.js sewerSpots)
     const SP = sewerSpots(T, hx, hz), Rp = T.scenery.sewer.pipe, pm = SP.perSide;
@@ -465,14 +478,35 @@ export function buildFloor(T, hx, hz, light, { style = 'grid', bounds: hasBounds
     const pud = pd.mask.mul(smoothstep(half - PD.band - 1.2, half - PD.band, abs(across(w))));
     const hue = noise(w.mul(1.3).add(1.7)).mul(6.283), sheen = vec3(sin(hue), sin(hue.add(2.1)), sin(hue.add(4.2))).mul(0.5).add(0.5);
     col = mix(col, col.mul(PD.dark).add(sheen.mul(PD.sheen)), pud).add(v3(B.rivet).mul(pd.rim.mul(pud.oneMinus()).mul(PD.rim * 0.5)));
-    // the grates: slots with the fire under them, breathing
-    const gq = fract(w.div(B.grate).add(0.5)).sub(0.5).mul(B.grate);
-    const inG = float(1).sub(smoothstep(0, 0.05, max(abs(gq.x).sub(B.grateW[0]), abs(gq.y).sub(B.grateW[1]))));
-    const slot = smoothstep(0.35, 0.5, abs(fract(gq.x.mul(2.2)).sub(0.5)).mul(-1).add(0.5).mul(2));
+    // the grates (v101, the approved picture's): a steel frame round a LATTICE of square holes, the fire under it
+    // breathing and hottest in the middle — they were rows of slots. The holes `hole` m across at a `pitch`
+    const gq = fract(w.div(B.grate).add(0.5)).sub(0.5).mul(B.grate), G = B.lattice;
+    const gd = max(abs(gq.x).sub(B.grateW[0]), abs(gq.y).sub(B.grateW[1]));   // < 0 inside the grate
+    const inG = float(1).sub(smoothstep(0, 0.03, gd)), inner = float(1).sub(smoothstep(float(-G.frame - 0.02), float(-G.frame), gd));
+    const lq = abs(fract(gq.div(G.pitch)).sub(0.5)).mul(G.pitch), haa = max(fwidth(lq.x), 1e-4);
+    const hole = float(1).sub(smoothstep(float(G.hole / 2).sub(haa), float(G.hole / 2).add(haa), max(lq.x, lq.y))).mul(inner);
     const pulse = float(0.55).add(sin(GEL_TIME.mul(B.pulse).add(noise(tfloor(w.div(B.grate)).mul(3)).mul(6))).mul(0.45));
-    const fire = inG.mul(float(1).sub(slot)).mul(pulse);
-    col = mix(col, v3(B.glow).mul(0.6), fire).add(v3(B.glow).mul(inG.mul(0.08)));
+    const heat = float(1).sub(smoothstep(0, 1.1, length(gq.div(vec2(...B.grateW)))));   // hotter toward the middle
+    const fireCol = mix(v3(B.glow), v3(G.core), heat.mul(heat)).mul(pulse.mul(0.5).add(0.5)).mul(heat.mul(0.6).add(0.55));
+    const fire = hole.mul(pulse);
+    const frame = inG.mul(float(1).sub(inner)), bars = inner.mul(float(1).sub(hole));
+    col = mix(col, v3(G.steel), frame.add(bars).min(1));   // the frame and the bars, dark iron
+    col = col.add(v3(B.glow).mul(bars.mul(heat).mul(G.barGlow))).add(v3(B.glow).mul(frame.mul(G.frameGlow)));   // lit from the fire under them
+    col = mix(col, fireCol, hole);
     col = col.add(v3(B.glow).mul(pud.mul(fire).mul(PD.fire)));   // v78: the fire in the puddles
+    // v101: FIRE IN THE SEAMS along the deck's edge (the approved picture's veins of light at the wall's foot):
+    // cracks glowing within `reach` m of the edge, thickest at it, breathing on their own beat
+    const V = B.veins;
+    if (V) {
+      // from the edge as it stands NOW: the boiler squeezes its floor (worlds `squeeze`), and the fire hugs the rail
+      const e = bounds ? min(bounds.cur.x.sub(abs(w.x)), bounds.cur.y.sub(abs(w.y))) : min(float(hx).sub(abs(w.x)), float(hz).sub(abs(w.y)));
+      const near = smoothstep(V.reach, 0, e).mul(step(0, e));
+      const vn = noise(w.mul(V.scale)), vr = abs(vn.sub(0.5)), vaa = max(fwidth(vr), 1e-4);
+      const crack = float(1).sub(smoothstep(float(V.width).sub(vaa), float(V.width).add(vaa), vr)).mul(near.mul(near))
+        .mul(smoothstep(0.35, 0.55, noise(w.mul(V.scale * 0.5).add(9.1))).mul(0.7).add(near.mul(0.3)));
+      const breathe = float(0.7).add(sin(GEL_TIME.mul(V.pulse).add(vn.mul(9))).mul(0.3));
+      col = col.add(v3(V.color).mul(crack.mul(breathe).mul(V.gain))).add(v3(V.color).mul(near.mul(near).mul(near).mul(V.haze)));
+    }
     return { col, mask: seam.mul(0.4).add(fire), lineCol: v3(B.glow), wet: pud };
   };
   // THE RIVER: water running the long way, its streaks moving with it,
@@ -573,20 +607,66 @@ export function buildFloor(T, hx, hz, light, { style = 'grid', bounds: hasBounds
   };
   // THE DEEP: black silt in slow ripples, lit only by what lives in it
   const deep = (p, w) => {
-    const D = W.deep, t = GEL_TIME;
+    const D = W.deep, t = GEL_TIME, S = D.bed;
     const rip = smoothstep(0.7, 1.0, sin(w.x.mul(0.9).add(noise(w.mul(0.3)).mul(6))).mul(0.5).add(0.5));
     let col = mix(v3(D.silt), v3(D.ripple), rip.mul(0.6).add(noise(w.mul(1.7)).mul(0.3)));
+    // v101: a SEABED, as the approved picture's — warm silt in soft lumps (the river's cellular pebbles, read
+    // softly), paler down a swept band through the middle, cold toward the edges — where it was a dark blue field
+    // under specks spread evenly as stars, and read as night sky
+    let pool = float(1);
+    if (S) {
+      // soft lumps from a few noises — a cellular field read as lumps here doubled the deep's frame under
+      // SwiftShader (9 cells a pixel), and its joints read as paving until they were softened away anyway
+      const n1 = noise(w.div(S.cell)), n2 = noise(w.mul(2.3 / S.cell).add(4.1));
+      const lump = smoothstep(0.32, 0.78, n1.mul(0.65).add(n2.mul(0.35)));
+      col = mix(v3(S.lo), v3(S.hi), lump.mul(S.lumpK).add(noise(w.mul(0.35)).mul(0.35)).add(noise(w.mul(3.7)).mul(0.12)));
+      const half = hx >= hz ? hz : hx, cc = across(w).add(noise(vec2(along(w).mul(0.07), 1.7)).sub(0.5).mul(half * 0.6));
+      col = mix(col, col.mul(S.swept), float(1).sub(smoothstep(0, half * S.band, abs(cc))).mul(0.7));
+      const e = min(float(hx).sub(abs(w.x)), float(hz).sub(abs(w.y)));
+      col = mix(col, v3(S.cold), smoothstep(S.coldReach, 0, e).mul(S.coldK)).add(v3(D.ripple).mul(rip.mul(S.ripple)));
+      // the specks GATHER where the deep's lights are (worlds.lit.deep: the light IS theirs), a few strays between
+      pool = float(S.strays);
+      for (const L of T.worlds.lit?.deep?.lights ?? []) {
+        const d = length(w.sub(vec2(L.frac[0] * hx, L.frac[1] * hz)));
+        pool = max(pool, float(1).sub(smoothstep(L.r * S.poolR[0], L.r * S.poolR[1], d)));
+      }
+      col = col.add(v3(D.glow2).mul(pool.mul(pool).mul(S.poolGlow)));
+    }
     const cell = tfloor(w.mul(D.specks)), rnd = noise(cell.mul(1.31));
     const fp = fract(w.mul(D.specks)).sub(0.5), dot2 = length(fp);
     const tw = sin(t.mul(float(1.2).add(rnd.mul(2))).add(rnd.mul(40))).mul(0.5).add(0.5);
-    const speck = smoothstep(0.86, 0.95, rnd).mul(float(1).sub(smoothstep(0.03, 0.14, dot2))).mul(tw);
-    col = col.add(mix(v3(D.glow), v3(D.glow2), smoothstep(0.9, 0.95, rnd)).mul(speck.mul(1.6)));
+    const speck = smoothstep(S ? float(0.86).sub(pool.mul(0.22)) : float(0.86), S ? float(0.95).sub(pool.mul(0.2)) : float(0.95), rnd)
+      .mul(float(1).sub(smoothstep(0.03, 0.14, dot2))).mul(tw).mul(S ? pool : float(1));
+    col = col.add(mix(v3(D.glow), v3(D.glow2), S ? float(S.green) : smoothstep(0.9, 0.95, rnd)).mul(speck.mul(1.6)));
     return { col, mask: speck.add(rip.mul(0.15)), lineCol: v3(D.glow) };
   };
   // THE CORE: black, traced with circuitry; rings go out from the middle and
   // light the traces as they pass
   const core = (p, w) => {
-    const K = W.core, u = w.div(K.cell), f = fract(u).sub(0.5), id = tfloor(u);
+    const K = W.core;
+    if (K.tiles) {
+      // v101: the approved picture's deck — dark tiles on a MAGENTA GRID, two disc PADS glowing on it and rings of
+      // light washing out from them across the lines (the circuitry before it read as a maze, and the rings came
+      // from nowhere in particular)
+      const Tl = K.tiles, q = w.div(Tl.cell), f = abs(fract(q).sub(0.5)).mul(2), ed = max(f.x, f.y), aa = max(fwidth(ed), 1e-4);
+      const line = smoothstep(float(1 - Tl.line).sub(aa), float(1 - Tl.line).add(aa), ed);
+      const sheen = float(1).sub(ed).mul(0.25).add(noise(tfloor(q).mul(1.7)).mul(0.25)).add(0.75);   // each tile a shade of its own, lighter in its middle
+      let col = v3(Tl.tile).mul(sheen), wash = float(0), pad = float(0), lit = float(0);
+      for (const P of Tl.pads) {
+        const d = length(w.sub(vec2(P[0] * hx, P[1] * hz))), daa = max(fwidth(d), 1e-4);
+        const disc = float(1).sub(smoothstep(float(Tl.padR).sub(daa), float(Tl.padR).add(daa), d));
+        const rim = float(1).sub(smoothstep(0, 0.07, abs(d.sub(Tl.padR * 0.86)))).mul(disc);
+        const ring = smoothstep(0.86, 1, fract(d.div(Tl.ringEvery).sub(GEL_TIME.mul(Tl.ringSpeed)))).mul(float(1).sub(smoothstep(Tl.padR, Tl.reach, d))).mul(step(Tl.padR, d));
+        pad = max(pad, disc.mul(float(0.55).add(float(1).sub(d.div(Tl.padR)).mul(0.25))).add(rim.mul(0.6)));
+        wash = max(wash, ring);
+        lit = max(lit, float(1).sub(smoothstep(Tl.padR, Tl.reach * 0.6, d)));   // the pads light the floor round them
+      }
+      col = col.add(v3(Tl.glow).mul(lit.mul(lit).mul(Tl.halo)));
+      col = col.add(v3(Tl.line_).mul(line.mul(float(Tl.lineGlow).add(wash.mul(Tl.washGlow)).add(lit.mul(0.5))))).add(v3(Tl.glow).mul(wash.mul(Tl.washFloor)));
+      col = mix(col, v3(Tl.glow).mul(Tl.padGlow), pad.min(1));
+      return { col, mask: line.add(pad), lineCol: v3(Tl.line_) };
+    }
+    const u = w.div(K.cell), f = fract(u).sub(0.5), id = tfloor(u);
     const pick = noise(id.mul(0.77));
     const trace = select(pick.greaterThan(0.5), abs(f.x), abs(f.y));
     const aa = max(fwidth(trace), 1e-4), line = float(1).sub(smoothstep(float(0.03).sub(aa), float(0.03).add(aa), trace));

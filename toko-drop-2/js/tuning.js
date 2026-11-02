@@ -7,10 +7,10 @@
 // things that work"). The arena is 1.x's, so every 1.x number ports as it is
 // instead of through a rescale. Axes: x across the screen (right +), y up,
 // z toward the bottom of the screen. The arena is centred on the origin.
-import { SPECIES } from './tuning/species/index.js?v=100';
-import WAVES from './tuning/waves.js?v=100';
-import PICKUPS from './tuning/pickups.js?v=100';
-import MUSIC from './tuning/music.js?v=100';
+import { SPECIES } from './tuning/species/index.js?v=101';
+import WAVES from './tuning/waves.js?v=101';
+import PICKUPS from './tuning/pickups.js?v=101';
+import MUSIC from './tuning/music.js?v=101';
 
 export const TUNING = {
   render: {
@@ -202,7 +202,11 @@ export const TUNING = {
                   // and the storm drain set in the slab, `at` m in from the far right corner
                   // (x left, z toward you: clear of the HUD in the corner), `r` m across its frame
                   grate: { at: [2.4, 5.5], r: 0.95, iron: [0.03, 0.031, 0.034], frame: [0.12, 0.12, 0.125], slot: [0.002, 0.002, 0.003] } },
-      sewer: { stone: [0.034, 0.04, 0.046], groutCol: [0.007, 0.008, 0.01], water: [0.003, 0.011, 0.013], waterHi: [0.05, 0.17, 0.16],
+      // v101 (the module sheet: wet grey-blue flagstones, a stone-kerbed channel): the slabs a little lighter and
+      // bluer, the water lighter teal, the puddles fewer and quieter (their bright rims were noise over everything),
+      // and the channel's `kerbStone`: `w` m blocks `joint` m long, `lit` on their water edge, a `shadow` beyond
+      sewer: { stone: [0.042, 0.05, 0.058], groutCol: [0.008, 0.009, 0.011], water: [0.007, 0.032, 0.036], waterHi: [0.09, 0.27, 0.25],
+               kerbStone: { w: 0.34, joint: 1.15, color: [0.1, 0.1, 0.098], lit: [0.07, 0.08, 0.08], shadow: 0.45 },
                kerb: [0.06, 0.06, 0.062], channel: 2.4, slab: [1.7, 0.85], grout: 0.035, flow: 1.2, wetLight: 0.9,
                sky: [0.005, 0.014, 0.017],   // v70: the dark past the walls and the gates, a deep teal
                // v78 (owner, 2026-10-31: the waters must differ): PUDDLES on the flagstones —
@@ -210,7 +214,7 @@ export const TUNING = {
                // vault's `sky` reflected `reflect` of the way, a meniscus `rim` in `rimCol`; and the
                // channel's MURK: streaks `stretch`:1 along the flow at `scale`, lifting the water
                // `lift` toward waterHi, foam `foamW` m in from each kerb in `foam`
-               puddle: { scale: 0.7, t: 0.7, soft: 0.03, dark: 0.55, sky: [0.035, 0.07, 0.08], reflect: 0.4, rim: 0.3, rimCol: [0.3, 0.38, 0.4] },
+               puddle: { scale: 0.7, t: 0.745, soft: 0.03, dark: 0.55, sky: [0.035, 0.07, 0.08], reflect: 0.55, rim: 0.12, rimCol: [0.3, 0.38, 0.4] },
                murk: { stretch: 7, scale: 1.6, lift: 0.55, foamW: 0.25, foam: [0.35, 0.42, 0.4] } },
       // WORLDS · NEON (v23): the abstract floors
       hex: { cell: 1.8, line: 0.035, waveK: 0.55, waveHz: 2.2, base: [0.02, 0.012, 0.035], cell2: [0.09, 0.02, 0.08],
@@ -229,7 +233,13 @@ export const TUNING = {
                  // vault every `period` s, its rings spreading to `reach` m
                  stump: 0.82, stumpTone: [0.075, 0.08, 0.078],
                  drip: { cell: 6, period: 3.6, reach: 1.5, width: 0.035, gain: 0.32 } },
-      boiler: { plate: [3.2, 2.1], seam: 0.035, steel: [0.05, 0.04, 0.035], rivet: [0.16, 0.12, 0.09], grate: 6.4, grateW: [1.4, 0.5],
+      // v101 (the approved picture): the plates a stop lighter (it read as a black floor plan), the grates square
+      // LATTICES `grateW` half sizes on a `grate` m lattice — `lattice`: holes `hole` m at `pitch`, a `frame` m iron
+      // frame, bars and frame lit by the fire under them, its `core` white-hot in the middle — and fire in the seams
+      // along the edge (`veins`: within `reach` m, `width` of a noise's contour at `scale`, `haze` the glow at the foot)
+      boiler: { plate: [3.2, 2.1], seam: 0.035, steel: [0.085, 0.07, 0.06], rivet: [0.2, 0.15, 0.11], grate: 7.2, grateW: [0.85, 0.65],
+                lattice: { hole: 0.17, pitch: 0.26, frame: 0.12, steel: [0.03, 0.026, 0.024], core: [1.0, 0.85, 0.45], barGlow: 0.18, frameGlow: 0.05 },
+                veins: { reach: 1.6, scale: 0.9, width: 0.025, gain: 1.4, haze: 0.22, pulse: 1.3, color: [1.0, 0.38, 0.07] },
                 glow: [1.0, 0.35, 0.06], scorch: [0.012, 0.008, 0.006], pulse: 1.6, sky: [0.012, 0.008, 0.006],
                 // v78: oily PUDDLES within `band` m of the long sides, under the pipe runs: the steel
                 // `dark` under a film with a `sheen` (a thin-film rainbow), the grates' `fire` in them
@@ -263,8 +273,18 @@ export const TUNING = {
              // v72: frost in from the floor's edge over `edgeFrost` m, and air caught in the ice: in one
              // `bubble.cell` m cell in `keep` a bubble `r` m round; the dark past the snowfield
              edgeFrost: 1.6, edgeFrostGain: 0.22, bubble: { cell: 2.2, keep: 0.35, r: [0.12, 0.3], gain: 0.22 }, sky: [0.55, 0.65, 0.78] },
-      deep: { silt: [0.006, 0.008, 0.02], ripple: [0.012, 0.018, 0.04], glow: [0.2, 0.5, 1.0], glow2: [0.5, 1.0, 0.7], specks: 2.6, sky: [0.002, 0.004, 0.01] },
-      core: { base: [0.004, 0.0, 0.008], line: [0.8, 0.1, 0.7], pulse: [0.3, 0.9, 1.0], cell: 1.6, ringEvery: 2.4, ringSpeed: 4.5, sky: [0.006, 0.002, 0.01] },
+      // v101 (the approved picture's seabed): the `bed` — silt in lumps `cell` m across from `lo` to `hi`, `swept`
+      // brighter in a band `band` of the half width down the middle, `cold` within `coldReach` m of the edge; the
+      // specks in POOLS round the deep's lights (`poolR` × each light's r, `poolGlow`, `strays` elsewhere), `green`
+      deep: { silt: [0.006, 0.008, 0.02], ripple: [0.012, 0.018, 0.04], glow: [0.2, 0.5, 1.0], glow2: [0.5, 1.0, 0.7], specks: 2.6, sky: [0.002, 0.004, 0.01],
+              bed: { cell: 0.9, lumpK: 0.45, lo: [0.03, 0.026, 0.022], hi: [0.1, 0.078, 0.05], swept: 1.35, band: 0.45, cold: [0.012, 0.03, 0.06], coldReach: 3, coldK: 0.65,
+                     ripple: 0.5, poolR: [0.25, 0.75], poolGlow: 0.05, strays: 0.12, green: 0.85 } },
+      // v101 (the approved picture and module sheet): `tiles` — dark tiles `cell` m on a magenta grid (`line` of the
+      // tile, glowing `lineGlow`), two disc `pads` (fractions of the half sizes) `padR` m, glowing `padGlow`, rings
+      // every `ringEvery` m washing out to `reach` m at `ringSpeed`, lighting the lines (`washGlow`) and the floor
+      core: { base: [0.004, 0.0, 0.008], line: [0.8, 0.1, 0.7], pulse: [0.3, 0.9, 1.0], cell: 1.6, ringEvery: 2.4, ringSpeed: 4.5, sky: [0.006, 0.002, 0.01],
+              tiles: { cell: 2.2, line: 0.045, tile: [0.016, 0.012, 0.022], line_: [1.0, 0.18, 0.72], lineGlow: 0.55, glow: [1.0, 0.25, 0.7],
+                       pads: [[-0.32, 0.18], [0.3, -0.22]], padR: 1.5, padGlow: 0.85, ringEvery: 2.2, ringSpeed: 0.45, reach: 9, washGlow: 1.2, washFloor: 0.035, halo: 0.06 } },
     },
   },
   // what stands round a world's floor (render/scenery.js). Colours are
@@ -347,6 +367,13 @@ export const TUNING = {
     boiler: { deck: { out: 16, fade: 10, tread: 0.42, lo: [0.022, 0.019, 0.016], hi: [0.055, 0.046, 0.038] },
               edge: { color: 0xff8a33, glow: 1.8, width: 0.12, height: 0.05 },
               band: { w: 0.55, stripe: 0.8, yellow: [0.4, 0.26, 0.02], black: [0.018, 0.016, 0.014], worn: [0.1, 0.085, 0.07] },
+              // v101: the LOW STEEL WALL (the approved module sheet's 3 × 1.2 m panels, kept low so the fireboxes show
+              // over it from the play camera): panels `len` m on the hazard band `gap` m out, `h` m tall, `deep` m thick,
+              // rivets every `rivetEvery` m in rows at `rivetY` m, a lighter `cap`, `footDark` grime at the foot and the
+              // seams' fire on it (`glow` up to `glowH` m, `footGlow`). Never along the near side (kit.js ledgeBlocks)
+              wall: { len: 3, deep: 0.42, h: 0.8, gap: 0.14, tilt: 0, rivetEvery: 0.36, rivetY: [0.1, 0.68],
+                      steel: [0.075, 0.064, 0.055], rivet: [0.13, 0.11, 0.09], cap: [0.12, 0.1, 0.085], footDark: 0.55,
+                      glow: [1.0, 0.38, 0.07], glowH: 0.32, footGlow: 0.55 },
               boiler: { every: 7.2, side: 2.5, out: 3.4, r: 1.3, h: 3.2, dome: 0.85, bands: [0.55, 1.6, 2.65], rivets: 40,
                         iron: [0.12, 0.1, 0.085], rust: [0.16, 0.07, 0.03], rivet: [0.26, 0.22, 0.18], stackColor: [0.05, 0.045, 0.04],
                         stackR: 0.22, stack: 2.4, door: [0.95, 0.9], doorY: 0.72, frame: [0.025, 0.022, 0.02],
@@ -409,13 +436,18 @@ export const TUNING = {
     // m at the top, `beads` of light down their middles); `boulder`s with barnacles on their
     // tops, an `anemone` at the feet of some (`n` tentacles, tips lit); `vent`s
     // breathing `bubbles` up out of the silt. Never along the near side
-    deep: { ground: { out: 18, fade: 11, lo: [0.004, 0.008, 0.02], hi: [0.014, 0.028, 0.055] },
+    deep: { ground: { out: 18, fade: 11, lo: [0.012, 0.011, 0.014], hi: [0.04, 0.034, 0.03] },
             edge: { color: 0x5577ff, glow: 2.2, width: 0.12, height: 0.05 },
-            kelp: { every: 2.8, out: [1.2, 4.8], n: [2, 5], h: [1.8, 4.6], w: 0.22, twist: 2.6, sway: 0.22, speed: 0.7, beads: 9,
+            // v101: the BANKS (the approved picture's raised rims, glowing blue down their faces; kit.js ledgeBlocks)
+            // — `face` dark blue, `top` silt, lit from the lip (`lipGlow`) and faintly all down (`faceGlow`); the kelp,
+            // the boulders and the vents stand behind them now
+            bank: { len: [1.2, 2.6], deep: [1.1, 2.0], h: [0.38, 0.7], gap: 0.08, tilt: 0.06, step: { chance: 0.25, h: 0.5, deep: 0.45 },
+                    face: [0.015, 0.035, 0.07], top: [0.06, 0.05, 0.042], glow: [0.25, 0.65, 1.0], lipGlow: 2.4, faceGlow: 0.3 },
+            kelp: { every: 2.8, out: [2.3, 5.6], n: [2, 5], h: [1.8, 4.6], w: 0.22, twist: 2.6, sway: 0.22, speed: 0.7, beads: 9,
                     lo: [0.02, 0.045, 0.025], hi: [0.06, 0.13, 0.06], glow: [0.2, 1.0, 0.65], glowI: 1.4 },
-            boulder: { every: 5, out: [1.6, 5.5], r: [0.7, 1.5], barnacles: 5, lo: [0.03, 0.035, 0.05], hi: [0.07, 0.08, 0.1], barnacle: [0.22, 0.22, 0.2], anemone: 0.6 },
+            boulder: { every: 5, out: [2.6, 6.4], r: [0.7, 1.5], barnacles: 5, lo: [0.03, 0.035, 0.05], hi: [0.07, 0.08, 0.1], barnacle: [0.22, 0.22, 0.2], anemone: 0.6 },
             anemone: { n: 12, r: 0.06, h: [0.8, 1.3], sway: 0.08, speed: 1.3, lo: [0.12, 0.03, 0.08], hi: [0.3, 0.08, 0.2], glow: [1.0, 0.3, 0.7], glow2: [0.3, 0.9, 1.0], glowI: 2.2 },
-            vent: { every: 9, out: [1.2, 3.5], color: [0.02, 0.025, 0.035] },
+            vent: { every: 9, out: [2.3, 4.2], color: [0.02, 0.025, 0.035] },
             bubbles: { per: 8, period: 3.6, rise: 4.5, r: [0.08, 0.17], sway: 0.12, wobble: 9, gain: 1.0, color: [0.35, 0.65, 1.0], rim: true, add: true, fade: 0.8 },
             // v77: marine snow sinking through the whole view
             motes: { n: 120, h: 6, vy: -0.12, sway: 0.1, wobble: 0.4, r: 0.02, gain: 0.8, color: [0.5, 0.7, 1.0], out: 8 } },
@@ -425,8 +457,13 @@ export const TUNING = {
     // sides, windows lit in `bands`, capped, an `antenna` blinking on some, a
     // neon `ring` a light chases round on the tallest; light `pillar`s along the
     // far side pulsing down the row; the `edge` with light running round it
-    core: { ground: { out: 18, fade: 9, lo: [0.006, 0.003, 0.012], hi: [0.022, 0.006, 0.036], cell: 2.6, line: [0.11, 0.02, 0.1], pulse: [0.4, 0.9, 1.0], pulseEvery: 6, pulseSpeed: 0.35 },
+    core: { ground: { out: 18, fade: 7, lo: [0.004, 0.002, 0.008], hi: [0.014, 0.005, 0.022], cell: 2.6, line: [0.05, 0.01, 0.05], pulse: [0.4, 0.9, 1.0], pulseEvery: 6, pulseSpeed: 0.35 },
             edge: { color: 0xff55ee, glow: 1.6, width: 0.12, height: 0.05, dash: 3, speed: 0.6, dashGlow: 2.2 },
+            // v101 (the approved module sheet): low NEON STUMPS in place of the towers — every `every` m, `out` m past
+            // the edge, `r` m round and `h` m tall, `lines` neon strips up the side, the top lit (`topGlow`) with rings
+            // going out across it (`ringGlow`, `ringSpeed`)
+            stump: { every: 6.5, out: [1.4, 2.6], r: [0.5, 0.8], h: [0.7, 1.2], color: [0.035, 0.03, 0.045], base: [0.05, 0.045, 0.06],
+                     neon: 0xff3fb8, lines: 6, glowI: 1.6, topGlow: 0.9, ringGlow: 0.8, ringSpeed: 2.4 },
             tower: { every: 3.6, out: [1.6, 5.0], h: [1.4, 5.2], w: [0.6, 1.4], color: [0.03, 0.012, 0.04], cap: [0.08, 0.05, 0.1], bands: 3, windows: 3, glow: 0xff44dd, glowI: 1.8 },
             antenna: { chance: 0.4, h: [0.8, 1.8], color: 0xffffff, glow: 2.5, rate: 2.2 },
             ring: { minH: 3.8, r: 1.15, tube: 0.04, at: 0.62, color: 0x44e0ff, glow: 0.8, chaseGlow: 3, speed: 0.4, bob: 1.1 },

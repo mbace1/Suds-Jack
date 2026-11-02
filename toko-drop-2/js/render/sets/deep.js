@@ -7,8 +7,8 @@
 // side. Every number TUNING.scenery.deep
 import * as THREE from 'three/webgpu';
 import { Fn, float, vec2, vec3, sin, cos, abs, max, mix, smoothstep, length, clamp, fract, uv, positionWorld, positionLocal, positionGeometry, normalWorld } from 'three/tsl';
-import { GEL_TIME } from '../gel.js?v=100';
-import { noise, seeded, phase, put, stations, groundPlane, edgeLine, stoneGeometry, risers, merge, motes } from '../kit.js?v=100';
+import { GEL_TIME } from '../gel.js?v=101';
+import { noise, seeded, phase, put, stations, groundPlane, edgeLine, stoneGeometry, risers, merge, motes, ledgeBlocks, ledgeMesh } from '../kit.js?v=101';
 
 const v3 = (a) => vec3(...a);
 
@@ -32,6 +32,24 @@ export function deep(sc, hx, hz) {
     return col.mul(float(1).sub(far.mul(far).mul(0.96)));
   })());
   edgeLine(sc, hx, hz, D.edge);
+
+  // v101: the BANKS — the approved picture's seabed is sunk between raised rims of rock, a cold blue light running
+  // down their faces from the lip; silt on their tops. Never along the near side (kit.js ledgeBlocks)
+  const Bk = D.bank;
+  if (Bk) {
+    const bm = new THREE.MeshStandardNodeMaterial({ roughness: 0.85, metalness: 0 });
+    bm.colorNode = Fn(() => {
+      const top = smoothstep(0.55, 0.85, normalWorld.y), p = positionWorld;
+      const grit = noise(vec2(p.x.add(p.z).mul(4.1), p.y.mul(6))).mul(0.35).add(0.75);
+      return mix(v3(Bk.face).mul(grit), v3(Bk.top).mul(noise(p.xz.mul(2.7)).mul(0.4).add(0.8)), top);
+    })();
+    bm.emissiveNode = Fn(() => {
+      const hgt = positionGeometry.y, side = float(1).sub(smoothstep(0.55, 0.85, normalWorld.y));
+      const fall = noise(vec2(positionWorld.x.add(positionWorld.z).mul(3.3), hgt.mul(1.5))).mul(0.5).add(0.6);   // light running down in streaks
+      return v3(Bk.glow).mul(hgt.pow(3).mul(Bk.lipGlow).add(Bk.faceGlow).mul(fall)).mul(side);
+    })();
+    ledgeMesh(sc, ledgeBlocks(hx, hz, Bk, 108), bm);
+  }
 
   // v77: marine snow sinking through the whole view
   motes(sc, [[0, 0, 2 * (hx + D.motes.out), 2 * (hz + D.motes.out), 0]], D.motes);

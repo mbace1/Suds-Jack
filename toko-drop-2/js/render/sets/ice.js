@@ -7,8 +7,8 @@
 // Every number TUNING.scenery.ice; the floor's frost and bubbles are floor.js
 import * as THREE from 'three/webgpu';
 import { Fn, float, vec2, vec3, sin, abs, max, mix, smoothstep, length, clamp, positionWorld, positionGeometry, normalView, normalWorld } from 'three/tsl';
-import { GEL_TIME } from '../gel.js?v=100';
-import { noise, seeded, put, stations, groundPlane, edgeLine, stoneGeometry, motes } from '../kit.js?v=100';
+import { GEL_TIME } from '../gel.js?v=101';
+import { noise, seeded, put, stations, groundPlane, edgeLine, stoneGeometry, motes, ledgeBlocks, ledgeMesh } from '../kit.js?v=101';
 
 const v3 = (a) => vec3(...a);
 
@@ -35,24 +35,7 @@ export function ice(sc, hx, hz) {
   // its foot to a pale lip, streaked where melt ran down it and lit from inside at the foot; snow on top
   const Lg = I.ledge;
   if (Lg) {
-    const lr = seeded(100), rr = (a) => a[0] + lr() * (a[1] - a[0]), blocks = [];
-    // a run from s0 to s1 along a, set back along n (away from the floor) from the edge point o
-    const run = (ox, oz, ax, az, nx, nz, s0, s1) => {
-      for (let s = s0; s < s1 - 0.25;) {
-        const l = Math.min(rr(Lg.len), s1 - s), d = rr(Lg.deep), h = rr(Lg.h), mid = s + l / 2, ry = -Math.atan2(az, ax) + (lr() - 0.5) * Lg.tilt;
-        const at = (back, dd) => [ox + ax * mid + nx * (Lg.gap + back + dd / 2), oz + az * mid + nz * (Lg.gap + back + dd / 2)];
-        if (lr() < Lg.step.chance) {
-          const sd = Lg.step.deep;
-          blocks.push([...at(0, sd), l, sd, h * Lg.step.h, ry]);
-          blocks.push([...at(sd, d - sd), l, d - sd, h, ry]);
-        } else blocks.push([...at(0, d), l, d, h, ry]);
-        s += l;
-      }
-    };
-    const D = Lg.deep[1] + Lg.gap;   // the far run spans the corners, the sides start behind it
-    run(-hx - D, -hz, 1, 0, 0, -1, 0, 2 * (hx + D));
-    run(-hx, -hz, 0, 1, -1, 0, 0, 2 * hz);
-    run(hx, -hz, 0, 1, 1, 0, 0, 2 * hz);
+    const blocks = ledgeBlocks(hx, hz, Lg, 100);
     const lm = new THREE.MeshStandardNodeMaterial({ roughness: Lg.rough, metalness: 0 });   // glossy, it mirrored the pale sky and read grey
     lm.colorNode = Fn(() => {
       const p = positionWorld, hgt = positionGeometry.y, top = smoothstep(0.55, 0.85, normalWorld.y);
@@ -67,8 +50,7 @@ export function ice(sc, hx, hz) {
       const hgt = positionGeometry.y, side = float(1).sub(smoothstep(0.55, 0.85, normalWorld.y));
       return v3(Lg.glow).mul(float(1).sub(smoothstep(0, 0.45, hgt)).mul(Lg.footGlow).add(Lg.through)).mul(side);
     })();
-    const bm = sc._add(new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1).translate(0, 0.5, 0), lm, blocks.length));
-    blocks.forEach(([x, z, l, d, h, ry], i) => put(bm, i, x, -0.02, z, l, h + 0.02, d, 0, ry, 0));
+    ledgeMesh(sc, blocks, lm);
   }
 
   // v77: snow falling over the whole view

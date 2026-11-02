@@ -7,9 +7,9 @@
 // them. A hazard-striped band round the floor, tread plate past it, going
 // into the dark. Never along the near side. Every number TUNING.scenery.boiler
 import * as THREE from 'three/webgpu';
-import { Fn, float, vec2, vec3, fract, sin, abs, min, max, mix, smoothstep, length, atan, uv, clamp, fwidth, floor as tfloor, positionWorld, positionGeometry } from 'three/tsl';
-import { GEL_TIME } from '../gel.js?v=100';
-import { noise, seeded, phase, put, groundPlane, edgeLine, frameGeometry, risers, motes } from '../kit.js?v=100';
+import { Fn, float, vec2, vec3, fract, sin, abs, min, max, mix, smoothstep, length, atan, uv, clamp, fwidth, floor as tfloor, positionWorld, positionGeometry, normalWorld } from 'three/tsl';
+import { GEL_TIME } from '../gel.js?v=101';
+import { noise, seeded, phase, put, groundPlane, edgeLine, frameGeometry, risers, motes, ledgeBlocks, ledgeMesh } from '../kit.js?v=101';
 
 const v3 = (a) => vec3(...a);
 
@@ -66,6 +66,25 @@ export function boiler(sc, hx, hz) {
   })();
   const band = sc._add(new THREE.Mesh(frameGeometry(hx, hz, ew, bw, 0), bandMat));
   band.position.y = -0.006; band.renderOrder = 1;
+
+  // v101: the LOW STEEL WALL round the deck (the approved module sheet's riveted panels; never along the near
+  // side, where the hazard band stays the edge): panels `len` m long on the band, two rows of rivets, a lighter
+  // cap, lit orange at their foot by the fire in the deck's seams (floor.js boiler `veins`)
+  const Wl = B.wall;
+  if (Wl) {
+    const wm = new THREE.MeshStandardNodeMaterial({ roughness: 0.55, metalness: 0.6 });
+    wm.colorNode = Fn(() => {
+      const p = positionWorld, top = smoothstep(0.55, 0.85, normalWorld.y), y = p.y;
+      const along = p.x.add(p.z), rq = fract(along.div(Wl.rivetEvery)).sub(0.5).mul(Wl.rivetEvery);
+      const row = min(abs(y.sub(Wl.rivetY[0])), abs(y.sub(Wl.rivetY[1])));
+      const rivet = float(1).sub(smoothstep(0.022, 0.036, length(vec2(rq, row))));
+      const grime = noise(vec2(along.mul(1.7), y.mul(3))).mul(0.25).add(0.8).mul(mix(float(Wl.footDark), float(1), smoothstep(0, 0.4, y)));
+      return mix(v3(Wl.steel).mul(grime).add(v3(Wl.rivet).mul(rivet)), v3(Wl.cap), top);
+    })();
+    wm.emissiveNode = Fn(() => v3(Wl.glow).mul(float(1).sub(smoothstep(0, Wl.glowH, positionWorld.y)).mul(Wl.footGlow))
+      .mul(float(1).sub(smoothstep(0.55, 0.85, normalWorld.y))))();
+    ledgeMesh(sc, ledgeBlocks(hx, hz, Wl, 101), wm);
+  }
 
   // the boilers, along the far side and past both its corners
   const R = B.boiler, run = 2 * (hx + R.side), nb = Math.max(2, Math.round(run / R.every)), zb = -(hz + R.out);
