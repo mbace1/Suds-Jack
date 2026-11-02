@@ -70,12 +70,14 @@ server.listen(0, '127.0.0.1', async () => {
   const t = cab.text.toLowerCase();
   ok('the card does not describe the superseded line-drawing lane',
     !/drag stop to stop|drag from stop|draw a line/.test(t), cab.text.slice(0, 90));
-  for (const word of ['courier', 'catch']) ok(`the card says what you do ("${word}")`, t.includes(word));
+  for (const word of ['courier', 'tram']) ok(`the card says what you do ("${word}")`, t.includes(word));
   ok('the card carries a version', /v\d+\.\d+/.test(cab.text), cab.text.slice(0, 60));
 
   // ---- and the version it shows is the one that will load ---------------
   const shown = (cab.text.match(/v(\d+\.\d+)/) || [])[1];
-  const built = fs.readFileSync(path.join(ROOT, 'toko-move/js/core-v212.js'), 'utf8').match(/BUILD_VERSION\s*=\s*'([^']+)'/)?.[1];
+  // v3.0: the bare address is the card journey (play.js); the real-time game
+  // behind ?classic carries the same number
+  const built = fs.readFileSync(path.join(ROOT, 'toko-move/js/play.js'), 'utf8').match(/BUILD_VERSION\s*=\s*'([^']+)'/)?.[1];
   ok(`the cabinet's version matches the build (${shown} vs ${built})`, shown === built);
 
   // ---- the way HOME, which a hand-deploy renumbers and nobody notices ---
@@ -117,7 +119,7 @@ server.listen(0, '127.0.0.1', async () => {
     // first (once per browser) and only then send you through. So the URL is
     // asserted AFTER the game has come up, not after the click — checking it
     // early reported the hub's own address and called a working route broken.
-    const booted = await page.waitForFunction(() => window.__tm?.camera && window.__tm?.challenge, null, { timeout: 25000 })
+    const booted = await page.waitForFunction(() => window.__tm3 && !document.getElementById('play')?.disabled, null, { timeout: 25000 })
       .then(() => true).catch(() => false);
     ok('Play lands on the game', /toko-move/.test(page.url()), page.url().replace(base, ''));
     ok('and the game boots through it', booted);
@@ -125,11 +127,11 @@ server.listen(0, '127.0.0.1', async () => {
       const start = await page.locator('#play').textContent().catch(() => '');
       ok('the start button is ready, not a load failure', /START/i.test(start || ''), start);
       await page.click('#play').catch(() => {});
-      await page.waitForTimeout(1200);
-      const live = await page.evaluate(() => ({ v: window.__tm.version, tick: window.__tm.flow.clock.tick,
-        offers: (window.__tm.challenge.offers || []).length }));
-      ok('pressing START runs the clock', live.tick > 0, `tick ${live.tick}`);
-      ok('and dispatch has jobs on the board', live.offers > 0, `${live.offers} offers`);
+      await page.waitForSelector('#v3panel .eventOpt', { timeout: 15000 }).catch(() => {});
+      const live = await page.evaluate(() => ({ v: window.__tm3.version, kind: window.__tm3.card()?.kind,
+        buttons: document.querySelectorAll('#v3panel .eventOpt').length }));
+      ok('pressing START deals the first card', live.kind === 'dispatch', String(live.kind));
+      ok('and it can be answered', live.buttons === 2, `${live.buttons} buttons`);
       ok(`the running build is ${built}`, live.v === built, live.v);
     }
   }

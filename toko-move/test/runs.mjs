@@ -58,8 +58,8 @@ ok(BY_ID.night.skin === 'night' && BY_ID.night.startHour === 23 && BY_ID.night.h
   ok(nextRun(loadRuns(s)) === 'night', 'with every run done, the title offers NIGHT'); }
 
 // ── 3. stars never gate, and say what they mean
-ok(starsFor(BY_ID.easy, { delivered: 3, target: 3, late: 0, score: 999 }) === 2, '★★ every job on time');
-ok(starsFor(BY_ID.easy, { delivered: 3, target: 3, late: 0, score: 1000 }) === 3, '★★★ on time AND at par');
+ok(starsFor(BY_ID.easy, { delivered: 3, target: 3, late: 0, score: BY_ID.easy.par - 1 }) === 2, '★★ every job on time');
+ok(starsFor(BY_ID.easy, { delivered: 3, target: 3, late: 0, score: BY_ID.easy.par }) === 3, '★★★ on time AND at par');
 ok(starsFor(BY_ID.easy, { delivered: 3, target: 3, late: 1, score: 5000 }) === 1, 'late is ★ however high the score');
 ok(starsFor(BY_ID.hard, { delivered: 4, target: 5, late: 0, score: 9999 }) === 0, 'four of five is not complete');
 
@@ -84,7 +84,8 @@ ok(starsFor(BY_ID.hard, { delivered: 4, target: 5, late: 0, score: 9999 }) === 0
   ok(resolveRun(P('shift=3&run=easy'), { other: true }, fresh) === BY_ID.easy, 'unless it names a run');
   ok(resolveRun(P(''), { live: true }, fresh) === null && resolveRun(P('run=easy'), { week: true }, fresh) === null, 'LIVE and the week wear no run');
   ok(runHref('medium', '?shift=4&day=none&lang=fi') === './?shift=4&lang=fi&run=medium', 'a run link keeps a pinned shift and the language, nothing else');
-  ok(runHref('hard', '') === './?run=hard', 'and from the bare address it is just the run'); }
+  ok(runHref('hard', '') === './?run=hard', 'and from the bare address it is just the run');
+  ok(runHref('medium', '?classic&lang=fi') === './?lang=fi&classic=&run=medium', 'v3.0: a run link from the real-time game keeps it the real-time game'); }
 const core = fs.readFileSync(new URL('../js/core-v212.js', import.meta.url), 'utf8');
 ok(/const CLASSIC=\['shift','daily','day','weather','rush','kit'\]/.test(core), 'core: any tester parameter keeps the classic rules');
 ok(/kind:'run',run:RUN\.id,seed:1000\+Math\.floor\(Math\.random\(\)\*9000\)/.test(core), 'core: a run is a FRESH shift every attempt (owner: a new shift each time)');

@@ -18,6 +18,10 @@
 //   · clearing NIGHT opens the daily and the week
 //   · the ladder and the end card in Finnish
 //
+// Since v3.0 the bare address is the card journey (test/play.cjs holds its
+// ladder); this gate holds the same ladder in the real-time game, which is
+// `?classic` now, and every run link it draws keeps it there.
+//
 //   NODE_PATH=$(npm root -g) node toko-move/test/runs.cjs [rootDir]
 const { chromium } = require('playwright');
 const http = require('http'), fs = require('fs'), path = require('path');
@@ -76,7 +80,7 @@ server.listen(0, '127.0.0.1', async () => {
     // ── a new player
     {
       const c = await ctx(), page = await c.newPage(); const errs = []; page.on('pageerror', e => errs.push(String(e).slice(0, 140)));
-      await boot(page, `${base}/toko-move/`);
+      await boot(page, `${base}/toko-move/?classic`);
       let t = await title(page);
       ok(`the bare address is the ladder: four runs, EASY first (${t.runs.map(r => r.id + (r.open ? '' : '🔒')).join(' ')})`, t.runs.map(r => r.id).join() === 'easy,medium,hard,night');
       ok('a new player has EASY open and lit, and three runs locked', t.runs[0].open && t.runs[0].lit && t.runs.slice(1).every(r => !r.open && !r.href) && t.run === 'easy');
@@ -87,7 +91,7 @@ server.listen(0, '127.0.0.1', async () => {
       ok('tapping a locked run does nothing', page.url() === before);
       // a fresh shift every attempt
       const seeds = new Set([t.seed]);
-      for (let i = 0; i < 3; i++) { await boot(page, `${base}/toko-move/`); seeds.add((await title(page)).seed); }
+      for (let i = 0; i < 3; i++) { await boot(page, `${base}/toko-move/?classic`); seeds.add((await title(page)).seed); }
       ok(`each attempt is a fresh shift (${[...seeds].join(', ')})`, seeds.size >= 3 && (await title(page)).kind === 'run');
       // EASY, played out by tapping
       const end = await playOut(page);
@@ -108,14 +112,14 @@ server.listen(0, '127.0.0.1', async () => {
       const c = await ctx(), page = await c.newPage(); const errs = []; page.on('pageerror', e => errs.push(String(e).slice(0, 140)));
       await page.goto(`${base}/toko-move/js/runs.js`);
       await seed(page, { easy: { done: true, stars: 2 }, medium: { done: true, stars: 1 } });
-      await boot(page, `${base}/toko-move/`);
+      await boot(page, `${base}/toko-move/?classic`);
       let t = await title(page);
       ok(`after MEDIUM, the bare address plays HARD (${t.run}) and NIGHT is still locked`, t.run === 'hard' && t.runs[2].lit && !t.runs[3].open);
       const h = await page.evaluate(() => ({ rush: window.__tm.rushOn, load: window.__tm.rushLoad(), headway: window.__tm.liveNetwork.headwayMinutes?.TRAM, target: window.__tm.challenge.target, queue: (window.__tm.events.queue || []).filter(e => e.kind === 'disruption').map(e => [e.line, e.at, e.recoverJobs]) }));
       ok(`HARD: the rush at its peak, 0.6× headway, five jobs (${h.load}, ${h.headway}, ${h.target})`, h.rush && h.load === 1 && Math.abs(h.headway - 4.5) < 1e-9 && h.target === 5);
       ok(`HARD: one family halted from about ten minutes in (${JSON.stringify(h.queue)})`, h.queue.length === 1 && Math.abs(h.queue[0][1] - 400) < 5 && h.queue[0][2] === 2);
       await seed(page, { easy: { done: true }, medium: { done: true }, hard: { done: true } });
-      await boot(page, `${base}/toko-move/?run=night`);
+      await boot(page, `${base}/toko-move/?classic&run=night`);
       t = await title(page);
       const nn = await page.evaluate(() => ({ skin: window.__tm.skin, body: document.body.className, headway: window.__tm.liveNetwork.headwayMinutes?.TRAM, rush: window.__tm.rushOn }));
       ok(`NIGHT: the night board, 23:00, five jobs at twice the headway (${nn.skin}, ${t.when}, ${t.target}, ${nn.headway})`, nn.skin === 'night' && /skin-night/.test(nn.body) && /23:00/.test(t.when) && t.target === 5 && nn.headway === 15 && !nn.rush);
@@ -125,7 +129,7 @@ server.listen(0, '127.0.0.1', async () => {
       ok(`NIGHT's clock reads after eleven (${await page.evaluate(() => document.getElementById('clock').textContent)})`, /^23:/.test(await page.evaluate(() => document.getElementById('clock').textContent)));
       // clearing NIGHT
       await seed(page, { easy: { done: true }, medium: { done: true }, hard: { done: true }, night: { done: true, stars: 1 } });
-      await boot(page, `${base}/toko-move/`);
+      await boot(page, `${base}/toko-move/?classic`);
       t = await title(page);
       ok(`clearing NIGHT opens the daily and the week (${JSON.stringify(t.links)})`, t.links.dailyLink && t.links.weekLink);
       await Promise.all([page.waitForNavigation(), page.tap('#dailyLink')]); await ready(page);
@@ -137,7 +141,7 @@ server.listen(0, '127.0.0.1', async () => {
     // ── in Finnish
     {
       const c = await ctx(), page = await c.newPage();
-      await boot(page, `${base}/toko-move/?lang=fi`);
+      await boot(page, `${base}/toko-move/?classic&lang=fi`);
       await page.evaluate(() => { for (const t of ['EASY COMPLETE', 'MEDIUM IS OPEN', 'NEXT · MEDIUM', 'TRY EASY AGAIN', 'EASY AGAIN · A NEW SHIFT', 'NOT YET', 'deliver all 3 to complete EASY', 'every job on time · 1,000 for the third star', 'every job delivered · some late', 'THE DAILY AND THE WEEK ARE OPEN']) { const p = document.createElement('p'); p.className = 'runProbe'; p.textContent = t; document.getElementById('feed').appendChild(p); } });
       await page.waitForTimeout(500);
       const r = await page.evaluate(() => ({ row: document.getElementById('mutRow').innerText.replace(/\s+/g, ' '), probes: [...document.querySelectorAll('.runProbe')].map(e => e.textContent), misses: [...(window.__tmLang?.misses || [])] }));

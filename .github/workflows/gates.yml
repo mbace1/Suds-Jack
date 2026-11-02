@@ -372,6 +372,9 @@ jobs:
       - name: the runs — the ladder, what opens what, the stars, the save, the levers
         run: node toko-move/test/runs.mjs
 
+      - name: the journey (v3) — the network, the card grammar, the clock, the halt, the ladder's bands
+        run: node toko-move/test/journey.mjs
+
       - name: the sealed parcel — which offer, the notebook, its store, the Finnish
         run: node toko-move/test/sealed.mjs
 
@@ -496,7 +499,10 @@ jobs:
       - name: a stranger who only taps what lights finishes a shift — and is never told two things at once
         run: NODE_PATH=$(npm root -g) node toko-move/test/stranger.cjs
 
-      - name: the ladder — EASY played out by tapping opens MEDIUM; HARD, NIGHT and what clearing NIGHT opens
+      - name: the card journey (v3) — EASY tapped through on a phone to NEXT · MEDIUM; the scenes, the board, HARD, NIGHT, Finnish, sideways
+        run: NODE_PATH=$(npm root -g) node toko-move/test/play.cjs
+
+      - name: the ladder in the real-time game (?classic) — EASY played out by tapping opens MEDIUM; HARD, NIGHT and what clearing NIGHT opens
         run: NODE_PATH=$(npm root -g) node toko-move/test/runs.cjs
 
       - name: the sealed parcel taken, ridden to and written in the notebook, by tapping

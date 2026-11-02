@@ -1,5 +1,110 @@
 # Toko Move — versions
 
+## v3.0 — 2026-11-02
+
+**THE CARD JOURNEY** (owner: *"We need more of the new design, less of the old
+map with visible trams on a realistic schedule. The new art bibles is what we
+are going from as an experience and occasionally you should feel like the
+trams have some realism but it's less actual schedule, more curated narrative
+roguelike with fun choices and minimalistic visuals"*). Signed off in three
+answers: **turn-based card hops**; **the scenes as the main view, the board
+between moments**; and **a slim job strip** kept from the old UI.
+
+The bare address is a new game on the same city. A shift is a run of **cards**,
+each in the art bible's grammar: a Toko face, one line, two buttons with a
+price. The **clock moves only by the prices you choose**, so nothing happens
+while you read.
+
+- **Dispatch:** *"Documents for Kamppi."* Take it, or pay a minute to ask for
+  another.
+- **At a stop:** where to go from here, for example *"4 to Lasipalatsi · +6:00"*
+  or *"Walk to Kamppi · +5:00"*. The price is this hop's. The left button is
+  the cheaper hop, not always the right one, because the choice is where it
+  leaves you.
+- **The deck's cards** happen at a stop, aboard or on foot.
+- **HARD halts a line:** route round it for free, or wait it out at its honest
+  price.
+
+The network is real: 23 named places, every HSL line variant between them,
+and the walks between neighbours. The times are plausible but never a
+timetable. A ride is distance along the line at a tram's or the metro's pace,
+plus a wait drawn from the line's headway. On HARD the rush sometimes fills
+the first tram.
+
+**The screen is the art bible's** (`js/play.js`):
+
+- **A stop** is the iso stop scene and **a ride** is the tram interior, or the
+  night car on NIGHT. Each is the layer stack from
+  `art/minimal-metro-look/layers/`, cut to WebP in both native plates
+  (`scenes/`, 744 KB). Each layer moves per its MOTION.md: the window scrolls,
+  the car sways, the riders lag the sway, and the stop's people shift their
+  weight. Every scene opens with a push-in of at most 4%.
+- **The in-car display** says the line, where it is going and the next stop.
+- **Between moments, the board** (`js/hopboard.js`) shows the courier disc
+  snapping onto its line's pill and riding the real HSL geometry to the next
+  stop. A walk is an ink dash.
+- **The corner MAP** shows here, the drop, and the two offers as their own
+  paths. Tap it for the whole board.
+- **The HUD** is one pill (the clock rolls to its new time, the job dots and
+  the deadline ring) and **the strip**: *Documents → KAMPPI · 9 min left*.
+- **A delivery** is a stamp on the stop.
+- Every animation is skippable with a tap, and none of them is something the
+  game waits on to be fair.
+
+**The model is pure** (`js/journey.js`: no DOM and no clock, deterministic from
+a seed, with its rng in one integer).
+
+**Measured, not guessed** (`node test/journey.mjs`): sixty fresh shifts of
+every run, one bot that reads the board and one that taps left every time.
+Completed, reader / left-tapper (on time in brackets):
+
+| run | reader | left-tapper |
+|---|---|---|
+| EASY | 60/60 (60) | 60/60 (55) |
+| MEDIUM | 57/60 (41) | 44/60 (15) |
+| HARD | 53/60 (22) | 35/60 (8) |
+| NIGHT | 48/60 (24) | 26/60 (3) |
+
+Par was re-set to the reader's 70th percentile: 720, 1330, 1380 and 1580.
+Two things the measurement changed:
+
+- **NIGHT's deadlines were first set from daytime waits.** That put 2 of 40
+  night jobs on time. The best-route table is now per run.
+- **One stop card in five had a single button.** The second option now falls
+  back to another line to the same stop, because two lines with two waits is
+  still a choice. 93% of stop cards now offer two.
+
+**The real-time game is `?classic`** (`js/boot.js`). It also opens for every
+tester or share link that names one of its modes (`?shift`, `?daily`, `?day`,
+`?weather`, `?rush`, `?kit`, `?week`, `?live`, `?skin`, `?mutator`). So a
+shared daily still works, and the daily, the week and LIVE still open after
+NIGHT. Its ladder keeps its own links (`runHref` keeps `classic`).
+
+Gates:
+
+- New: `test/journey.mjs` (156 checks: the network, the card grammar, the
+  rules a hop keeps, the clock as the sum of the prices, determinism, the
+  halt, the deck, the bands) and `test/play.cjs` (40 checks).
+  - play.cjs plays EASY on a phone by tapping only, to COMPLETE and NEXT ·
+    MEDIUM.
+  - It checks the scenes, the in-car display, the board, the strip, the MAP,
+    and that the clock is the run's at every card.
+  - It also covers HARD's halt card with the pulsing tram, NIGHT in the night
+    car, a whole run in Finnish with no misses, sideways, and `?classic`.
+- Moved to `?classic`: `runs.cjs`, `stranger.cjs` and `lang.cjs`'s ladder
+  run.
+- `itch.cjs` plays the journey from the zip, then `?classic`.
+- `cabinet-route.cjs` lands on the journey.
+
+What it does not have yet:
+
+- The sealed parcel, the rival and the regulars.
+- Sound.
+- A card deck written for the journey. It plays the classic deck, re-priced
+  at 1.5 s a tick.
+
+The daily and the week are still the real-time game.
+
 ## v2.73 — 2026-11-01
 
 **THE LADDER: EASY, MEDIUM, HARD, NIGHT** (owner: *"make it a much more of a

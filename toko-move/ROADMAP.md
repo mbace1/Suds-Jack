@@ -1,5 +1,27 @@
 # Toko Move — roadmap after v2.36
 
+## Owner direction, 2026-11-02 — the card journey (v3.0)
+
+*"We need more of the new design, less of the old map with visible trams on a
+realistic schedule. The new art bibles is what we are going from as an
+experience and occasionally you should feel like the trams have some realism
+but it's less actual schedule, more curated narrative roguelike with fun
+choices and minimalistic visuals."* Signed off as turn-based card hops, the
+scenes as the main view with the board between moments, and a slim job strip.
+
+v3.0 shipped the frame of it. The bare address is the card journey
+(`js/journey.js` + `js/play.js`), and the real-time game is `?classic`. What
+is next, in order:
+
+1. **A deck written for the journey.** The classic encounters are re-priced
+   for now. The itch bible's CARDS.md story arcs come next: Same Morning, the
+   Inspector, the Other Courier, the Retired Number, the Dispatch arc.
+2. **The sealed parcel, the rival and the regulars on the journey.** They are
+   run-modifiers, so each adds a card and never a screen.
+3. **The daily and the week as journeys.** Today they open the real-time game.
+4. **Sound.**
+5. **The store copy, stills and cover re-shot from v3.** Do this before itch.
+
 ## Owner direction, 2026-10-24 — publish Toko Move first; Piritori is its spin-off
 
 *"Toko Move is the thing we publish first and then Piritori is a spin-off that

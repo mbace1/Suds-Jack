@@ -250,11 +250,26 @@ export const FI = new Map(Object.entries({
   'THANK YOU': 'KIITOS', 'TRY': 'KOKEILE',
   // missions card (arcade build only) and misc
   'Toko reads every note.': 'Toko lukee jokaisen viestin.', 'Each one ticks itself off when you actually do it.': 'Jokainen kuittaantuu itsestään, kun oikeasti teet sen.',
+  // v3.0: the journey — cards, the strip, the stamp, the stage
+  'A courier in Helsinki. At every stop, one card: which tram, which way, who to help. The clock only moves when you choose.': 'Lähetti Helsingissä. Jokaisella pysäkillä yksi kortti: mikä ratikka, mihin suuntaan, ketä autat. Kello liikkuu vain, kun valitset.',
+  'Take it': 'Ota se', 'Ask for another': 'Pyydä toinen', 'Find another way': 'Etsi toinen reitti', 'Wait it out': 'Odota ohi', 'Wait for the next one': 'Odota seuraavaa',
+  'Documents': 'Asiakirjat', 'Hot food': 'Lämmin ruoka', 'Parts': 'Osat', 'Something fragile': 'Jotain särkyvää', 'Equipment': 'Laitteet', 'An express parcel': 'Pikalähetys', 'Fresh food': 'Tuoreruoka', 'Market goods': 'Torikamat', 'A parcel': 'Paketti',
+  'DELIVERED': 'TOIMITETTU', 'DELIVERED LATE': 'TOIMITETTU MYÖHÄSSÄ', 'TAP TO CLOSE': 'SULJE NAPAUTTAMALLA', 'on time': 'ajallaan', 'jobs': 'keikat',
+  'the board': 'kartta', 'the board: where you are going': 'kartta: minne olet menossa',
 }));
 
 // Lines that carry names and numbers. Each is [regexp, replacement] and is
 // tried on one " · " segment at a time.
 const PATTERNS = [
+  // v3.0: the journey's lines — a cargo for a place, a line or a walk to a place
+  [/^(Documents|Hot food|Parts|Something fragile|Equipment|An express parcel|Fresh food|Market goods|A parcel) for (.+?)\.?$/, (m, a, b) => `${FI.get(a)} → ${b}.`],
+  [/^Walk to (.+)$/, 'Kävele → $1'],
+  [/^Metro to (.+)$/, 'Metro → $1'],
+  [/^(\d{1,2}[A-Z]{0,2}|H\d*) to (.+)$/, '$1 → $2'],
+  [/^The (\S+) is halted\.?$/, 'Linja $1 on pysäytetty.'],
+  [/^(\d+) min left$/, '$1 min jäljellä'],
+  [/^late by (\d+) min$/, 'myöhässä $1 min'],
+  [/^(Three|Four|Five) deliveries before (\d\d):(\d\d)\.?$/, (m, n, h, mm) => `${({ Three: 'Kolme', Four: 'Neljä', Five: 'Viisi' })[n]} toimitusta ennen kello ${Number(h)}.${mm}.`],
   // v2.73: the ladder — a run's name inside a line is translated with it
   [/^(\d+) jobs$/, '$1 keikkaa'],
   [/^finish (EASY|MEDIUM|HARD|NIGHT) to open$/, (m, a) => `aukeaa, kun ${FI.get(a)} on suoritettu`],
