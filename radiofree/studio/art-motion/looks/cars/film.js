@@ -37,8 +37,8 @@ const scene = new THREE.Scene();
 const pmrem = new THREE.PMREMGenerator(renderer);
 scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;   // the toy paint's glossy highlights
 scene.environmentIntensity = 0.55;
-const FOG = C3('#bccdea'); scene.fog = new THREE.Fog(FOG, 95, 290); scene.background = FOG.clone();
-const camera = new THREE.PerspectiveCamera(30, W / H, 1, 700);
+const FOG = C3('#aec4e8'); scene.fog = new THREE.Fog(FOG, 110, 380); scene.background = FOG.clone();
+const camera = new THREE.PerspectiveCamera(32, W / H, 1, 900);
 const post = new Post(renderer, W, H);
 const out = document.createElement('canvas'); out.width = W; out.height = H; const g2d = out.getContext('2d');
 
@@ -62,19 +62,26 @@ const canvasTex = (w, h, draw) => { const c = document.createElement('canvas'); 
 
 // ------------------------------------------------------------------ the sky: a painted dome and soft anime clouds
 const skyTex = canvasTex(8, 512, (g, w, h) => { const gr = g.createLinearGradient(0, 0, 0, h);
-  gr.addColorStop(0, '#3f7bd2'); gr.addColorStop(0.4, '#6fa2e4'); gr.addColorStop(0.468, '#9fc3ef'); gr.addColorStop(0.493, '#dbe6f3'); gr.addColorStop(0.5, '#f0e2d0'); gr.addColorStop(1, '#f0e2d0'); g.fillStyle = gr; g.fillRect(0, 0, w, h); });
-const SKY = new THREE.Mesh(new THREE.SphereGeometry(300, 32, 16), new THREE.MeshBasicMaterial({ map: skyTex, side: THREE.BackSide, fog: false, depthWrite: false }));
+  gr.addColorStop(0, '#2f64c0'); gr.addColorStop(0.3, '#447fd6'); gr.addColorStop(0.44, '#5e97e2'); gr.addColorStop(0.478, '#8fb8ee'); gr.addColorStop(0.495, '#c4d6f0'); gr.addColorStop(0.5, '#aec4e8'); gr.addColorStop(1, '#aec4e8'); g.fillStyle = gr; g.fillRect(0, 0, w, h); });
+const SKY = new THREE.Mesh(new THREE.SphereGeometry(600, 32, 16), new THREE.MeshBasicMaterial({ map: skyTex, side: THREE.BackSide, fog: false, depthWrite: false })); SKY.renderOrder = -1;
 scene.add(SKY);
 const cloudTex = canvasTex(512, 256, (g, w, h) => { const r = rng(5);
-  for (let i = 0; i < 26; i++) { const x = 80 + r() * 350, y = 120 + (r() - 0.5) * 60 - Math.sin((x - 60) / 380 * Math.PI) * 50, rad = 28 + r() * 46;
-    const gr = g.createRadialGradient(x, y - rad * 0.25, rad * 0.2, x, y, rad); gr.addColorStop(0, 'rgba(255,255,255,0.95)'); gr.addColorStop(0.7, 'rgba(244,240,252,0.85)'); gr.addColorStop(1, 'rgba(214,206,236,0)');
-    g.fillStyle = gr; g.beginPath(); g.arc(x, y, rad, 0, TAU); g.fill(); } });
-const CLOUDS = [[-60, 34, -260, 130], [45, 44, -275, 150], [120, 30, -250, 110], [-5, 26, -240, 90]].map(([x, y, z, w]) => {
+  const B = []; for (let i = 0; i < 22; i++) { const x = 90 + r() * 330, rad = 22 + r() * 40; B.push([x, 168 - rad * 0.55 - Math.sin((x - 90) / 330 * Math.PI) * 55 - r() * 20, rad]); }
+  g.save(); g.beginPath(); g.rect(0, 0, w, 176); g.clip();                                   // a flat base, as cumulus have
+  for (const [x, y, rad] of B) { g.fillStyle = 'rgba(178,184,226,0.96)'; g.beginPath(); g.arc(x, y + rad * 0.18, rad, 0, TAU); g.fill(); }
+  for (const [x, y, rad] of B) { const gr = g.createRadialGradient(x - rad * 0.2, y - rad * 0.35, rad * 0.1, x, y - rad * 0.1, rad * 0.92);
+    gr.addColorStop(0, 'rgba(255,255,255,1)'); gr.addColorStop(0.75, 'rgba(250,248,255,0.98)'); gr.addColorStop(1, 'rgba(232,230,250,0)');
+    g.fillStyle = gr; g.beginPath(); g.arc(x, y - rad * 0.1, rad * 0.92, 0, TAU); g.fill(); }
+  g.restore(); });
+const CLOUDS = [[-70, 50, -262, 120], [40, 66, -280, 150], [125, 46, -252, 100], [-10, 38, -244, 80], [-140, 62, -270, 110]].map(([x, y, z, w]) => {
   const m = new THREE.Mesh(new THREE.PlaneGeometry(w, w / 2), new THREE.MeshBasicMaterial({ map: cloudTex, transparent: true, depthWrite: false, fog: false })); m.position.set(x, y, z); scene.add(m); return m; });
 
 // ------------------------------------------------------------------ the world: forest road, barrier, fenced site
 const BARRIER_Z = -18, ROAD_W = 7.5;
-mesh(new THREE.PlaneGeometry(400, 400).rotateX(-Math.PI / 2), M.ground, { cast: false });
+mesh(new THREE.PlaneGeometry(800, 800).rotateX(-Math.PI / 2), M.ground, { cast: false });
+// layered far hills: the anime background is planes of distance, each one bluer than the last
+[[-150, -185, 70, 9, '#4f8460'], [40, -215, 95, 11, '#5d8f6e'], [190, -190, 80, 10, '#4f8460'], [-60, -265, 120, 16, '#6f9a86'], [150, -275, 110, 14, '#6f9a86']].forEach(([x, z, r, h, c]) => {
+  const m = new THREE.Mesh(new THREE.SphereGeometry(1, 20, 10, 0, TAU, 0, Math.PI / 2), new THREE.MeshLambertMaterial({ color: c })); m.scale.set(r, h, r * 0.35); m.position.set(x, -1, z); scene.add(m); });
 mesh(new THREE.PlaneGeometry(ROAD_W + 3, 220).rotateX(-Math.PI / 2), M.shoulder, { pos: [0, 0.01, 40], cast: false });
 mesh(new THREE.PlaneGeometry(ROAD_W, 220).rotateX(-Math.PI / 2), M.road, { pos: [0, 0.02, 40], cast: false });
 for (let z = BARRIER_Z + 4; z < 150; z += 6) mesh(new THREE.PlaneGeometry(0.22, 2.8).rotateX(-Math.PI / 2), M.line, { pos: [0, 0.03, z + 1.4], cast: false });
@@ -99,7 +106,7 @@ mesh(rbox(34, 7, 16, 0.3), M.concrete, { pos: [-14, 3.5, BARRIER_Z - 32] });
 for (let i = 0; i < 6; i++) { const x = 6 + i * 3.4;
   mesh(new THREE.BoxGeometry(0.35, 7, 0.35), M.steel, { pos: [x, 3.5, BARRIER_Z - 24.5] }); mesh(new THREE.BoxGeometry(0.35, 7, 0.35), M.steel, { pos: [x, 3.5, BARRIER_Z - 39.5] }); }
 mesh(new THREE.BoxGeometry(18, 0.35, 0.35), M.steel, { pos: [14.5, 7, BARRIER_Z - 24.5] }); mesh(new THREE.BoxGeometry(18, 0.35, 0.35), M.steel, { pos: [14.5, 7, BARRIER_Z - 39.5] });
-const crane = new THREE.Group(); scene.add(crane); crane.position.set(22, 0, BARRIER_Z - 46);
+const crane = new THREE.Group(); scene.add(crane); crane.position.set(9, 0, BARRIER_Z - 40);
 mesh(new THREE.BoxGeometry(1.2, 26, 1.2), paint('#f0b429'), { pos: [0, 13, 0], parent: crane });
 mesh(new THREE.BoxGeometry(26, 0.9, 0.9), paint('#f0b429'), { pos: [-6, 26, 0], parent: crane });
 mesh(rbox(2.6, 1.6, 1.6, 0.2), paint('#f2efe8'), { pos: [0, 25, 1.4], parent: crane });
@@ -162,12 +169,14 @@ const siteTex = canvasTex(1220, 200, (g, w, h) => { g.fillStyle = '#1f3b57'; g.f
 const spruceGeo = mergeGeometries([0, 1, 2].map((i) => new THREE.ConeGeometry(2.1 - i * 0.55, 3.0, 7).translate(0, 1.8 + i * 1.7, 0)).concat([new THREE.CylinderGeometry(0.22, 0.28, 1.4, 6).translate(0, 0.7, 0)]).map((g) => g.toNonIndexed()));
 const birchTrunk = new THREE.CylinderGeometry(0.14, 0.2, 4.2, 6).translate(0, 2.1, 0), birchCrown = new THREE.IcosahedronGeometry(1.5, 0).translate(0, 4.6, 0);
 const R = rng(31), spr = [], bir = [];
-for (let i = 0; i < 520; i++) {
-  const x = (R() - 0.5) * 190, z = -110 + R() * 230;
+for (let i = 0; i < 1100; i++) {
+  const x = (R() - 0.5) * 300, z = -170 + R() * 290;
   if (Math.abs(x) < ROAD_W / 2 + 3.2) continue;                                   // the road and its shoulders
   if (z < BARRIER_Z - 1 && z > BARRIER_Z - 75 && Math.abs(x) < 58) continue;       // the cleared site
   if (Math.abs(x - (BX + 2.9)) < 5 && Math.abs(z - BARRIER_Z) < 5) continue;       // the sign
-  (R() < 0.72 ? spr : bir).push([x, z, 0.7 + R() * 0.75, R() * TAU]);
+  if (Math.abs(x) < 15 && Math.abs(z - BARRIER_Z) < 7) continue;                  // the crossing reads clean on both sides
+  const isSpr = R() < 0.72; if (!isSpr && z > 12) continue;                         // no birch crown right under the lens
+  (isSpr ? spr : bir).push([x, z, 0.7 + R() * 0.75, R() * TAU]);
 }
 const inst = (geo, mat, list, k = 1) => { const m = new THREE.InstancedMesh(geo, mat, list.length); const o = new THREE.Object3D();
   list.forEach(([x, z, s, r], i) => { o.position.set(x, 0, z); o.rotation.set(0, r, 0); o.scale.set(s, s * k, s); o.updateMatrix(); m.setMatrixAt(i, o.matrix); });
@@ -275,7 +284,7 @@ const fill = new THREE.DirectionalLight('#a493e0', 0.4); fill.position.set(30, 2
 
 // ------------------------------------------------------------------ one frame
 const DUSK = (t) => smooth((t - 4.4) / 3.2);   // the afternoon sinks to a pink-violet dusk over the second half
-const fogA = C3('#bccdea'), fogB = C3('#c39cc4');
+const fogA = C3('#aec4e8'), fogB = C3('#c39cc4');
 function setWorld(t) {
   const d = DUSK(t);
   sun.intensity = lerp(2.3, 0.7, d); sun.color.copy(C3('#ffdcae')).lerp(C3('#ff8a6a'), d);
@@ -309,7 +318,7 @@ function setWorld(t) {
 function cam(t) {
   const k = ease.io(t / DUR);
   const pos = new THREE.Vector3(lerp(11, 8.5, k), lerp(17.5, 14.8, k), lerp(56, 46, k));
-  const at = new THREE.Vector3(1.6, 4.5, lerp(-24, -27, k));
+  const at = new THREE.Vector3(1.6, 6.2, lerp(-24, -27, k));
   return { pos, at };
 }
 const tmp = new THREE.Vector3();
@@ -320,9 +329,9 @@ function frame(t, captions = true) {
   tmp.set(LANE, 1, Math.max(zAt(CONVOY[0], t), BARRIER_Z + 10)).project(camera); const cy = (tmp.y + 1) / 2;
   const d = DUSK(t);
   // the grade: soft anime afternoon; lifted blue-violet shadows, gentle contrast, a wide soft bloom, light grain
-  post.render(scene, camera, { focus: 60, aperture: 0, maxBlur: 26, tilt: 14, tiltCenter: cy, tiltBand: 0.58,
-    threshold: 0.9, knee: 0.5, bloomA: 0.5, bloomB: 0.45, exposure: lerp(1.04, 1.0, d), vignette: 0.3, grain: 0.022, seed: Math.floor(t * 24),
-    sat: 1.08, contrast: 0.98, toe: 0.0, lift: [0.022, 0.016, 0.05], gain: [1.03, 1.0, 0.97] });
+  post.render(scene, camera, { focus: 60, aperture: 0, maxBlur: 26, tilt: 10, tiltCenter: cy, tiltBand: 0.6,
+    threshold: 0.95, knee: 0.45, bloomA: 0.4, bloomB: 0.35, exposure: lerp(1.04, 1.0, d), vignette: 0.3, grain: 0.022, seed: Math.floor(t * 24),
+    sat: 1.16, contrast: 1.06, toe: 0.0, lift: [0.012, 0.008, 0.034], gain: [1.03, 1.0, 0.97] });
   g2d.setTransform(1, 0, 0, 1, 0, 0); g2d.drawImage(renderer.domElement, 0, 0);
   CAP.bug(g2d);
   if (captions) CAP.draw(g2d, P, t, { busy: BUSY || {} });
