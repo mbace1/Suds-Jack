@@ -1,0 +1,26 @@
+{
+  "film": "look-3d-cars",
+  "cut": "look demo (2 Nov): 3D miniature, tilt-shift toy world; not for posting",
+  "series": "rfh",
+  "captionSize": "big",
+  "argument": "Look test only. Muhos: the regulator LVV ordered the data-centre site work stopped on 6 Oct; the trucks stop at the barrier.",
+  "langs": ["en", "fi", "ja"],
+  "native_read": { "en": true, "fi": false, "ja": false },
+  "syntax": "'/' breaks a line, [word] is the pop word",
+  "captions": [
+    {
+      "id": "stop",
+      "role": "punchline",
+      "at": "s1+3.7",
+      "until": "end-0.35",
+      "hold": "end",
+      "text": { "en": "The trucks / had to [stop].", "fi": "Rekkojen piti / [pysähtyä].", "ja": "トラックは [止まる] しかなかった。" },
+      "source": "Look demo. LVV (the Finnish licensing and supervisory authority) ordered the Muhos data-centre site work halted on 6 Oct 2026 (Kaleva, STT/LVV), as logged in plan/HS-SCOUT.md."
+    }
+  ],
+  "ui": {
+    "stop": { "en": "STOP", "fi": "STOP", "ja": "STOP" },
+    "halt": { "en": "HALT ORDER · 6 OCT", "fi": "KESKEYTYSMÄÄRÄYS · 6.10.", "ja": "停止命令 · 10月6日" },
+    "site": { "en": "DATA CENTRE SITE", "fi": "DATAKESKUSTYÖMAA", "ja": "データセンター建設地" }
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "film": "look-robot",
+  "cut": "look test (2 Nov): a stylised 3D robot wakes in a misty Nordic forest and jumps; demo only, not for posting",
+  "series": "rfh",
+  "captionSize": "big",
+  "argument": "Look test for the Brink strand: the future of war is being planned (The Panel's subject).",
+  "langs": ["en", "fi", "ja"],
+  "native_read": { "en": true, "fi": false, "ja": false },
+  "syntax": "'/' breaks a line, [word] is the pop word; in Japanese a space marks a reveal segment and is never drawn",
+  "captions": [
+    {
+      "id": "planned",
+      "role": "punchline",
+      "at": "cap",
+      "until": "end-0.1",
+      "hold": "end",
+      "text": {
+        "en": "The future of war / is being [planned].",
+        "fi": "Sodan tulevaisuutta / [suunnitellaan].",
+        "ja": "戦争の未来が / [計画]されている。"
+      },
+      "source": "Look test only. The line echoes The Panel (Project Meridian, OPB/NPR 6 Oct). The robot is generic: no insignia, no logo, nobody's."
+    }
+  ],
+  "ui": {}
+}
