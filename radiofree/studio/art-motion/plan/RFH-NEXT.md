@@ -446,3 +446,21 @@ All facts below come from search summaries; no article was opened.
 - **Break Glass:** keep held (no 2026 plenary vote found).
 - **Count the Trees:** still right. Police information is due in December. **Trade Secret:** no confirmed follow-up.
 - **Finland:** no new HS candidate. Helsinki's own siting was sent back for more preparation; no decision found.
+
+## Daily check, Mon 2 Nov 17:16 (evening; search summaries only)
+- **Big development:** none.
+- **Global 3, Short Supply (posted):** the on-screen "HEARING 13 NOV 2026" is still single-source. The case (Judge Noel
+  Wise, N.D. Cal.) and the 3 Sep motion to dismiss are confirmed; no hearing date or ruling found. Needs the docket before
+  13 Nov; if wrong, pin a correction.
+- **Coxon 13, Grade Your Own Homework (HOLD):** nothing new on the other three deals (no 2026 changes reported). Option
+  (a), past tense, stays the safe fix. Keep the hold until the owner answers.
+- **Brink 4, The Panel (posted):** still true (status undisclosed, no recusal).
+- **The Round Trip:** HOLD (no S-1/A; EDGAR blocked; roadshow not before 10 Nov).
+- **For Your Protection follow-up (NJ S4304):** the 22 Oct 38–0 Senate vote is still single-source (PolicyRisk). The
+  legislature's site is blocked from here. Do not use it yet.
+- **Ends in 3:** the digit-5 deadline (31 Oct) passed; no new extension found. The schedule continues with digit 6 on
+  15 Nov. The posted copy stays true.
+- **Break Glass:** keep held (no plenary vote on HE 148/2026 found).
+- **Count the Trees:** still right. The LVV water-plan deadline is **5 Nov**; check 5–6 Nov whether it was met.
+  **Trade Secret:** no follow-up.
+- **Finland:** no new HS candidate. Helsinki's city board was due to decide on siting principles today; no report yet.

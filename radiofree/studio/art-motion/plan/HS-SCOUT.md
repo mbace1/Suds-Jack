@@ -640,3 +640,38 @@ Everything below comes from search summaries. No article was opened.
     known. No new official action.
     [Yle](https://yle.fi/a/74-20252425)
   - **Reader reaction:** not visible through search.
+
+### Check Mon 2 Nov 17:16 (search summaries only; nothing opened)
+- **HS (last ~2 days):** no new Trade-Secret-like candidate found. A search for HS data-centre secrecy returned only the
+  old Viestikoekeskus case.
+- **Helsinki's own data-centre siting (secondary, Verkkouutiset / STT):** the city board was due to decide on the
+  siting principles today, 2 Nov, after postponing on 19 Oct. The draft names Myllypuro, Salmisaari, Heikinlaakso,
+  Malmi and Östersundom. No report of today's decision was found yet; the hel.fi decision bulletin is the source. It is
+  an open plan, so it stays a contrast, not a story.
+  [Verkkouutiset](https://www.verkkouutiset.fi/a/naille-viidelle-helsingin-alueelle-voi-tulla-datakeskus),
+  [STT/Vihreät](https://www.sttinfo.fi/tiedote/72457140/vihreat-vaatii-helsingin-datakeskusperiaatteisiin-tiukkoja-linjoja-ja-luonnon-suojaamista?lang=fi)
+- **Municipal NDAs (Finland):** no Finnish municipality NDA with a data-centre developer found in search. The Muhos
+  land-use agreement with Tuike Finland (€26M) is public (Yle).
+  [Yle](https://yle.fi/a/74-20175928)
+- **Reactions:**
+  - **Count the Trees / Muhos:** LVV's deadline for the detailed water-management plan is **5 Nov**. If it is not
+    delivered, LVV can demand it under a conditional fine.
+    - LVV also holds that the ditching needs a Water Act permit; the ditching notice was due 60 days before the work.
+    - The site lies in a black-shale zone.
+    - Google answered the stop request on 11 Oct; its content is not in the results.
+    - LVV's police request stands, and LVV will not comment further because the matter is confidential under the
+      Publicity Act.
+    - Nothing shows the plan was submitted yet. Check 5–6 Nov.
+    - The posted film ("Two requests filed with the police") still holds.
+    [Kaleva/LVV](https://kaleva.fi/lvv-on-tehnyt-poliisille-tutkintapyynnon-googlen-m/13720712),
+    [Verkkouutiset](https://www.verkkouutiset.fi/a/viranomainen-kehottaa-googlea-keskeyttamaan-datakeskusten-valmistelun/),
+    [STT/LVV](https://www.sttinfo.fi/tiedote/72435808/lupa-ja-valvontavirasto-vaatii-tuike-finland-oylta-toimenpiteita?lang=fi)
+  - **Trade Secret / Hamina:** no new official action or follow-up in search. Background only: Google's 56 ha land
+    purchase in Hamina (DCD).
+    [DCD](https://www.datacenterdynamics.com/en/news/google-buys-56-hectares-in-hamina-finland-amid-ongoing-issues-over-muhos-tree-felling/)
+  - **Salo / atNorth:** settled (atNorth named itself on 5 Oct). Nothing new.
+  - **Break Glass (HE 148/2026):** no plenary vote on HE 148/2026 found. The 167–31 and 168–29 results in search are
+    earlier votes on the same law. The constitution committee asks for constitutional procedure; declaring it urgent
+    needs a five-sixths majority. Keep held.
+    [Edilex HE 148/2026](https://www.edilex.fi/he/20260148)
+  - **Reader reaction:** not visible through search.

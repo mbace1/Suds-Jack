@@ -950,3 +950,44 @@ Everything below comes from search summaries. No article was opened.
   also says Meta never fully answered his 14 Apr 2025 letter. These are Grassley's allegations; Meta's only response on
   record is to the separate Wynn-Williams matter.
   [Senate Judiciary](https://www.judiciary.senate.gov/press/rep/releases/grassley-probes-meta-on-disclosures-alleging-company-disregarded-child-safety-risks-and-retaliated-against-whistleblowers)
+
+### Check Mon 2 Nov 17:16 (search summaries only; EDGAR and njleg.state.nj.us both tried once with a generic user agent and no personal data: proxy CONNECT 403; nothing opened)
+- **Big development:** none.
+- **3 For Your Protection follow-up (NJ S4304/A2774): still UNCONFIRMED.**
+  - The same single tracker (PolicyRisk) again shows "10/22/2026 3RDG FINAL PASSAGE Yes 38 No 0". FastDemocracy still
+    shows only the 1 Oct committee report. The Sierra Club's 1 Oct post covers committee passage only.
+  - The Assembly companion, A2774, is listed as carried over, with no Assembly vote.
+  - The legislature's own site is blocked from here, so do not use the Senate vote on screen or in copy until it is
+    confirmed there.
+  - [PolicyRisk](https://policyrisk.com/state-bill/NJ-S4304-2026-2027), [FastDemocracy](https://fastdemocracy.com/bill/nj/2026-2027/bills/NJB00075280/),
+    [Sierra Club NJ](https://www.sierraclub.org/new-jersey/blog/2026/10/data-center-transparency-bill-eliminating-ndas-municipalities-passes-senate)
+- **Global 3, Short Supply (posted; on-screen "HEARING 13 NOV 2026"):** still single-source. Search confirms the case
+  (Garciaguirre v. Samsung, N.D. Cal., filed 25 Jun, assigned to Judge Noel Wise) and the defendants' motion to dismiss
+  (MLex, 3 Sep: the claims recycle ones the Ninth Circuit dismissed). No hearing date appears, and no ruling. Needs the
+  docket before 13 Nov.
+  [MLex](https://www.mlex.com/mlex/articles/2521308), [Börse Express](https://www.boerse-express.com/news/articles/samsung-electronics-aktie-garciaguirre-klage-gegen-chip-riesen-924997)
+- **Coxon 13 (Grade Your Own Homework, HOLD):** nothing new. Search returns only the July 2025 award coverage (ceilings
+  of up to $200M each over two years). No 2026 task orders, modifications or terminations are reported for OpenAI,
+  Google or xAI. The past-tense fix stays the safe one.
+  [The Decoder](https://the-decoder.com/anthropic-openai-google-and-xai-have-landed-pentagon-contracts-worth-up-to-200-million/)
+- **12 The Round Trip (Anthropic S-1): still HOLD.**
+  - No S-1/A with a price range. Leverage Shares (30 Oct) still reads the cover range as blank.
+  - The roadshow cannot start before 10 Nov (15 days after the 26 Oct filing).
+  - The $1T+ valuation talk is reported, not filed.
+  [Leverage Shares](https://leverageshares.com/us/insights/when-is-the-anthropic-ipo/)
+- **1 The Panel (Project Meridian):** no new record after NPR 6 Oct. Musk's and Luckey's SGE/contractor status is still
+  undisclosed, and there is no recusal. The only official lines on record:
+  - the DoD spokesperson: MITRE does the analysis, with conflict-of-interest safeguards;
+  - a GAO official: there are safeguards to keep them from procurement.
+  The posted film stays true.
+  [OPB/NPR](https://www.opb.org/article/2026/10/06/pentagon-taps-elon-musk-and-palmer-luckey-for-strategy-study/)
+- **10 Meta / Grassley:** no Meta reply found to the July letter (DeFriez, Sevedge). These remain Grassley's allegations.
+  [Senate Judiciary](https://www.judiciary.senate.gov/press/rep/releases/grassley-probes-meta-on-disclosures-alleging-company-disregarded-child-safety-risks-and-retaliated-against-whistleblowers)
+- **11 AI Whistleblower Protection Act (S.1792):** no floor action found; still in committee per trackers. The Senate
+  returns 9 Nov.
+  [Grassley](https://www.grassley.senate.gov/news/news-releases/support-grows-for-ai-whistleblower-protection-act)
+- **5 Short Supply background (GPU/memory prices):** no dated November price data in results; the reporting found is
+  forecasts from late 2025 and early 2026 (a memory shortage into 2027). Nothing to add on screen.
+- **Town NDAs (US):** no new November item. The most recent dated items are Bessemer, AL (Jul) and NPR Illinois (27 Aug).
+  [WBHM](https://www.wbhm.org/local-news/2026-07-14/document-shows-bessemer-data-center-non-disclosure-agreement-required-officials-to-destroy-records),
+  [NPR Illinois](https://www.nprillinois.org/2026-08-27/ndas-are-hiding-data-center-deals-drawing-ire-from-locals-and-attention-from-lawmakers)
