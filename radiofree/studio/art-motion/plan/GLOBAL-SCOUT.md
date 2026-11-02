@@ -923,3 +923,30 @@ Everything below comes from search summaries. No article was opened.
   whistleblowers, since public: Joshua DeFriez, William Sevedge; reply asked by 4 Aug). These are Grassley's
   allegations; Meta's response is not on record.
   [Senate Judiciary](https://www.judiciary.senate.gov/press/rep/releases/grassley-probes-meta-on-disclosures-alleging-company-disregarded-child-safety-risks-and-retaliated-against-whistleblowers)
+
+### Check Mon 2 Nov 07:16 (search summaries only; EDGAR tried once with a generic user agent and no personal data: proxy CONNECT 403; nothing opened)
+- **Big development:** none.
+- **Global 3, Short Supply (posted; on-screen "HEARING 13 NOV 2026"):** the hearing date is still single-source.
+  - Search finds the case (Garciaguirre v. Samsung, N.D. Cal., filed 25 Jun) and the joint motion to dismiss (2–3 Sep;
+    reportedly argues the 2022 grounds), but no hearing date. A CourtListener search by party name returns nothing.
+  - **Before 13 Nov:** if the docket cannot be reached, either hold any repost or plan a pinned correction should the date
+    prove wrong. No ruling yet.
+  - [MLex 3 Sep](https://www.mlex.com/mlex/articles/2521308), [Law Street Media](https://lawstreetmedia.com/news/tech/antitrust-class-action-accuses-micron-samsung-and-sk-hynix-of-manipulating-dram-market/)
+- **Coxon 13 (Grade Your Own Homework, HOLD):** nothing new. Search still returns only the July 2025 award coverage
+  (two-year prototype agreements, up to $200M each; ceilings, not obligations). No 2026 modification or option exercise is
+  reported for OpenAI, Google or xAI. The past-tense fix stays the safe one.
+  [GovConWire](https://www.govconwire.com/articles/cdao-frontier-ai-contract-awards-national-security)
+- **12 The Round Trip (Anthropic S-1): still HOLD.** No S-1/A with a price range; the cover still reads "between $ and $".
+  The roadshow cannot start before 10 Nov. [Leverage Shares](https://leverageshares.com/us/insights/when-is-the-anthropic-ipo/)
+- **1 The Panel (Project Meridian):** no new record after NPR 6 Oct. Status undisclosed, no recusal. A DoD spokesperson's
+  line (MITRE does the analysis, with conflict-of-interest safeguards) is the only official response.
+  [OPB/NPR](https://www.opb.org/article/2026/10/06/pentagon-taps-elon-musk-and-palmer-luckey-for-strategy-study/)
+- **3 For Your Protection follow-up (NJ S4304/A2774): possible Senate passage, UNCONFIRMED.** One search summary reads the
+  PolicyRisk roll-call page as "10/22/2026 3RDG FINAL PASSAGE Yes 38 No 0". Earlier checks read the same page as
+  committee-only, and FastDemocracy still shows 1 Oct as the last action. Treat it as unverified until the NJ Legislature
+  site (njleg.state.nj.us) confirms. No Assembly vote found.
+  [PolicyRisk](https://policyrisk.com/state-bill/NJ-S4304-2026-2027), [Sierra Club NJ](https://www.sierraclub.org/new-jersey/blog/2026/10/data-center-transparency-bill-eliminating-ndas-municipalities-passes-senate)
+- **10 Meta / Grassley:** no Meta reply found to the 22 Jul letter (DeFriez, Sevedge; reply asked by 4 Aug). Grassley
+  also says Meta never fully answered his 14 Apr 2025 letter. These are Grassley's allegations; Meta's only response on
+  record is to the separate Wynn-Williams matter.
+  [Senate Judiciary](https://www.judiciary.senate.gov/press/rep/releases/grassley-probes-meta-on-disclosures-alleging-company-disregarded-child-safety-risks-and-retaliated-against-whistleblowers)

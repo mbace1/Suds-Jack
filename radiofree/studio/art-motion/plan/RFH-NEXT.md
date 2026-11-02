@@ -430,3 +430,19 @@ All facts below come from search summaries; no article was opened.
 - **Finland:** no new HS candidate. Secondary watch: Helsinki's own data-centre siting (Verkkouutiset; city board about
   2 Nov). Salo: atNorth confirmed as the end user (5 Oct).
 - **Reactions to our posts:** not visible through search.
+
+## Daily check, Mon 2 Nov 07:16 (morning; search summaries only)
+- **Big development:** none.
+- **Global 3, Short Supply (posted):** the on-screen "HEARING 13 NOV 2026" is still single-source. Search finds only the
+  2–3 Sep motion to dismiss. CourtListener by party name returns nothing. Needs the N.D. Cal. docket before 13 Nov; if it
+  proves wrong, pin a correction.
+- **Coxon 13, Grade Your Own Homework (HOLD):** nothing new on the other three deals (no 2026 modifications found).
+  Option (a), past tense, stays the safe fix. Keep the hold until the owner answers.
+- **Brink 4, The Panel (posted):** still true.
+- **The Round Trip:** HOLD (no S-1/A; EDGAR blocked).
+- **For Your Protection follow-up:** one search summary says NJ S4304 passed the Senate 38–0 on 22 Oct. UNCONFIRMED, and
+  it contradicts earlier reads of the same tracker. Verify on njleg before any use.
+- **Ends in 3:** the 31 Oct digit-5 deadline passed; no extension found. The posted copy stays true.
+- **Break Glass:** keep held (no 2026 plenary vote found).
+- **Count the Trees:** still right. Police information is due in December. **Trade Secret:** no confirmed follow-up.
+- **Finland:** no new HS candidate. Helsinki's own siting was sent back for more preparation; no decision found.

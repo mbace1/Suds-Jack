@@ -617,3 +617,26 @@ Everything below comes from search summaries. No article was opened.
 - **Reactions:** no comment counts visible through search, for the candidates or for our posted Panel and Short Supply.
 - **Pattern note:** unchanged. The next dated Finnish steps: Muhos water plan 5 Nov; Helsinki board, data-centre siting
   (about 2 Nov).
+
+### Check Mon 2 Nov 07:16 (search summaries only; nothing opened)
+- **HS (last ~2 days):** no new Trade-Secret-like candidate found.
+- **Helsinki's own data-centre siting (secondary, Verkkouutiset):** the draft names Myllypuro, Salmisaari, Heikinlaakso,
+  Malmi and Östersundom, with the first possible by 2028, justified by waste heat for district heating. The city board
+  sent it back for more preparation; no decision of about 2 Nov was found. The Greens want full waste-heat use and
+  fossil-free power, including backup. An open plan, not a hidden one: useful as a contrast, not a story yet.
+  [Verkkouutiset](https://www.verkkouutiset.fi/a/naille-viidelle-helsingin-alueelle-voi-tulla-datakeskus),
+  [STT/Vihreät](https://www.sttinfo.fi/tiedote/72457140/vihreat-vaatii-helsingin-datakeskusperiaatteisiin-tiukkoja-linjoja-ja-luonnon-suojaamista?lang=fi)
+- **Salo / atNorth (SSS):** settled; atNorth named itself on 5 Oct. Nothing new.
+- **Reactions:**
+  - **Count the Trees / Muhos:**
+    - LVV's demand stands: a more detailed water management plan and a Water Act permit.
+    - Police are treating it as suspected environmental damage. More information is promised in December; the
+      investigation is expected to run into 2027.
+    - The 5 Nov water-plan date was not seen in today's results.
+    - The posted film ("Two requests filed with the police") still holds.
+    [Kaleva/LVV](https://kaleva.fi/lvv-on-tehnyt-poliisille-tutkintapyynnon-googlen-m/13720712), [Yle](https://yle.fi/a/74-20254086)
+  - **Trade Secret / Hamina:** a Yle piece on Tuike Finland felling more in Summa in 2018–19 than it declared, with a photo
+    caption dated Oct 2026, appears in search. Date and newness are unconfirmed; it may be the background piece already
+    known. No new official action.
+    [Yle](https://yle.fi/a/74-20252425)
+  - **Reader reaction:** not visible through search.
