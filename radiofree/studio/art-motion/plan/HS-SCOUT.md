@@ -2,6 +2,8 @@
 
 > **Status (owner, 23 Oct): keep these for later and follow up.** None is being built yet. The twice-daily RFH check (07:16 and 17:16 Helsinki) updates each candidate's Reactions line. When a candidate moves (a ruling, a reversal, an official response, a new document), flag it to the owner as ready to pitch. Before any build: open or ask for the original article.
 
+> **Naming (owner, 2 Nov): "use Google for the Finland data centers for now".** New films about Google's Finnish sites (Hamina, Muhos, Kajaani) name Google plainly in plain type, with no real logo, instead of the Doodle parody. Posted films stay as they are.
+
 **Owner, 23 Oct:** "Start looking at weird stuff like that in Helsingin Sanomat." "Like that" means *Trade Secret*
 (Doodle 6): an absurdity with a document trail, where one fact turns into the punchline.
 
