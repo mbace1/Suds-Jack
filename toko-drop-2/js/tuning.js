@@ -7,10 +7,10 @@
 // things that work"). The arena is 1.x's, so every 1.x number ports as it is
 // instead of through a rescale. Axes: x across the screen (right +), y up,
 // z toward the bottom of the screen. The arena is centred on the origin.
-import { SPECIES } from './tuning/species/index.js?v=101';
-import WAVES from './tuning/waves.js?v=101';
-import PICKUPS from './tuning/pickups.js?v=101';
-import MUSIC from './tuning/music.js?v=101';
+import { SPECIES } from './tuning/species/index.js?v=102';
+import WAVES from './tuning/waves.js?v=102';
+import PICKUPS from './tuning/pickups.js?v=102';
+import MUSIC from './tuning/music.js?v=102';
 
 export const TUNING = {
   render: {
@@ -1100,10 +1100,11 @@ export const TUNING = {
   // chunks and droplets of goo thrown out, a puddle with satellites, a
   // shockwave through nearby bodies when a big one goes, and the camera shaken.
   death: {
-    chunks: [5, 6], chunkSize: 0.18, chunkSpeed: [3, 7], chunkUp: [3, 8],
+    chunks: [7, 9], chunkSize: 0.22, chunkSpeed: [3, 7], chunkUp: [3, 8],
     droplets: 4, dropletsBig: 8, dropletsBoss: 14,   // 1.x's extra burst: 4 small, 8 big, 14 a boss (main.js:4499)
     dropletSize: [0.09, 0.18], dropletSpeed: 2, dropletUp: [2.5, 6.5],
     chunkLife: 1.4, gravity: 14, floorKeep: 0.35, shrink: 0.3,
+    burstLife: 1.7,                        // v102: a KILL's chunks live this long (more goo to see); 1.x's 1.4 s stays for the species' own pops and a lob's spray
     // v83 (the owner's third splatter pick): CHUNKS THAT BEHAVE. A strand of
     // goo trails each chunk out of the burst and snaps as it thins (`strand`:
     // `w` × the chunk's size wide at the start, thinning to nothing by `max`
@@ -1116,7 +1117,7 @@ export const TUNING = {
     // its drawn volume poured under it as it shrinks (its drawn size is mostly
     // air; what it leaves is a blob about its own footprint). With SPLATTER
     // off it fades out as 1.x's did.
-    strand: { w: 0.55, max: 1.1, life: 0.32 }, bounce: { e: 0.32, min: 1.6, max: 2, squash: 0.5 }, wobble: { k: 0.3, damp: 0.86 }, friction: 4,
+    strand: { w: 0.7, max: 1.5, life: 0.45 }, bounce: { e: 0.32, min: 1.6, max: 2, squash: 0.5 }, wobble: { k: 0.3, damp: 0.86 }, friction: 4,
     melt: { vol: 0.08 },
     puddle: 1.5,                           // radius, as a share of the body's
     satellites: [0.6, 1.5], satelliteSize: [0.4, 0.7],
@@ -1161,7 +1162,7 @@ export const TUNING = {
     stampCap: 4096,         // what drops lay into the film between two film steps
     life: 4, gravity: 14, bodyTop: 3,                         // s; m/s² (1.x's chunk gravity); no body stands taller (m)
     air: { lin: 0.1, quad: 0.0005, wall: 0.15 },              // drag 1/s, and its quadratic part × speed / radius (≈ 3/8 · Cd · ρair/ρgoo, doubled for a lumpy drop); the rail returns this much
-    size: { min: 0.022, max: 0.085, skew: 2.2 },              // r = exp(lerp(ln min, ln max, u^skew)): mostly fine, a few fat; under a bullet's 0.15
+    size: { min: 0.028, max: 0.11, skew: 1.8 },              // r = exp(lerp(ln min, ln max, u^skew)): mostly fine, a few fat; under a bullet's 0.15
     sizeSpeed: 0.35,                                          // a drop's speed × (min / r)^this: a fat drop flies slower
     // on the floor: kinetic friction mu and viscous drag 1/s while it slides;
     // it sheds `shed` of its volume a metre in a streak `streakWide` × its
@@ -1182,7 +1183,7 @@ export const TUNING = {
     ride: { creep: 0.6, creepR: 60, max: 1.6, carry: 0.6, out: 1.2, proud: 0.35, heroMaxR: 0.03 },
     // the impostor: stretched by `stretch` × its screen speed (at most
     // `maxStretch`), wrap-lit, with a fresnel rim, a glint and a glow of its own
-    drop: { stretch: 0.09, maxStretch: 3.2, gloss: 28, glint: 0.7, diffuse: 0.75, ambient: 0.35, rim: 0.8, glow: 0.18 },
+    drop: { stretch: 0.09, maxStretch: 3.2, gloss: 28, glint: 0.7, diffuse: 0.75, ambient: 0.35, rim: 0.8, glow: 0.18, draw: 1.6 },
     // its shadow straight below it: `size` × its radius on the floor, `grow`
     // × its radius wider a metre up, `alpha` at the floor and 1/(1 + fade·h) above
     shadow: { size: 1.3, grow: 4, alpha: 0.5, fade: 1.5, y: 0.006 },
@@ -1198,8 +1199,8 @@ export const TUNING = {
     // `foot` × their radius. A stamp is at least `minWid` texels wide.
     // Nothing reaching the film for `wetFor` s means it has all dried: then
     // the stain fades a step every `idleEvery` s.
-    film: { perMetre: 16, hz: 30, stampCap: 4096, minWid: 0.8, yield: 6, spread: 0.2, ref: 10, evap: 4, deposit: 0.6, ring: 2.5, ringAt: 0.5, dryHalfLife: 8,
-      drag: 0.5, foot: 0.9, wetFor: 20, idleEvery: 0.5 },
+    film: { perMetre: 16, hz: 30, stampCap: 4096, minWid: 0.8, yield: 6, spread: 0.2, ref: 10, evap: 4, deposit: 0.2, ring: 1.2, ringAt: 0.5, dryHalfLife: 1.5,
+      drag: 0.5, foot: 0.9, wetFor: 12, idleEvery: 0.5 },
     // how the floor shows it (floor.js): the wet film's contact line (mm),
     // its absorption depth (mm), how much of its own hue a deep film
     // scatters back, the slope's bump, which slopes count as curved (m/m),
@@ -1208,7 +1209,7 @@ export const TUNING = {
     // (mm), how strong the thinnest stain is (`dryBase`) and the depth (mm)
     // over which it comes to `dryAlpha`, how dark and how tinted it dries
     look: { edge: 0.35, absorb: 6, scatter: 0.22, bump: 4, curve: [0.02, 0.12], relief: 1.4, shine: 50, spec: 0.55, rim: 0.35, lit: 1.0,
-      dryEdge: 0.08, dryBase: 0.2, dryDepth: 2.5, dryAlpha: 0.5, dryDark: 0.7, dryTint: 0.14 },
+      dryEdge: 0.08, dryBase: 0.05, dryDepth: 2.5, dryAlpha: 0.35, dryDark: 0.7, dryTint: 0.08 },
     // a body's puddle: `lobes` blobs, `spread` × its radius off the middle, each `size` × its radius by its share
     puddle: { lobes: 6, spread: 1.0, size: [0.3, 0.7] },
     // v81 (owner, 2026-10-31: "more physical splatter and jelly like effects"):
@@ -1255,17 +1256,17 @@ export const TUNING = {
       tracks: { pick: 3e-3, cap: 1.2e-3, lay: 1.6, wide: 0.45, minSpeed: 0.3, pickAt: 0.1, layAt: 0.05 } },
     wall: { on: true, h: 1.1, perMetre: 16, rows: 36, impact: 0.3, keep: 0.5, proud: 0.4, creep: 0.45, creepR: 60, settle: 6, slip: 3,
       shed: 1.6, streakWide: 0.9, minR: 0.012, blob: 1.6, out: 0.8,
-      film: { yield: 4, run: 0.3, spread: 0.06, ref: 10, evap: 4, deposit: 0.6, ring: 2.5, ringAt: 0.5, dryHalfLife: 8, stampCap: 2048, minWid: 0.8, hz: 30, wetFor: 20, idleEvery: 0.5 },
+      film: { yield: 4, run: 0.3, spread: 0.06, ref: 10, evap: 4, deposit: 0.2, ring: 1.2, ringAt: 0.5, dryHalfLife: 1.5, stampCap: 2048, minWid: 0.8, hz: 30, wetFor: 12, idleEvery: 0.5 },
       look: { edge: 0.3, absorb: 6, scatter: 0.9, bump: 4, curve: [0.02, 0.12], relief: 1.2, shine: 50, spec: 0.5, rim: 0.35,
-              dryEdge: 0.08, dryBase: 0.2, dryDepth: 2.5, dryAlpha: 0.45, dryTint: 0.35 } },
+              dryEdge: 0.08, dryBase: 0.05, dryDepth: 2.5, dryAlpha: 0.3, dryTint: 0.2 } },
     // what throws goo
     emit: {
       // a kill: base + perR × its radius drops (more while kills come fast:
       // `heat`), `exit` of them thrown on the way the shot or dash went, and
       // `puddle` × r² m³ poured where it stood, over `puddleR` × its radius
-      kill: { base: 10, perR: 45, heat: 0.5, exit: 0.45, exitCone: 0.7, exitBoost: 1.3, speed: [1.5, 6.5], up: [2, 6], puddle: 0.03, puddleR: 0.8 },
+      kill: { base: 16, perR: 64, heat: 0.5, exit: 0.45, exitCone: 0.7, exitBoost: 1.3, speed: [1.5, 7], up: [2.5, 7], puddle: 0.03, puddleR: 0.8 },
       // a hit: back-spray out of the entry toward the gun, a few out of the far side
-      hit: { count: 3, cone: 0.8, speed: [2, 6], up: [1, 4], size: { min: 0.016, max: 0.04, skew: 1.6 }, through: 1 },
+      hit: { count: 5, cone: 0.8, speed: [2, 6], up: [1, 4], size: { min: 0.016, max: 0.04, skew: 1.6 }, through: 1 },
       lob: { count: 26, speed: [2.5, 6.5], up: [2, 5], puddle: 0.04, puddleR: 0.6 },          // a lob's splashdown
       shove: { count: 8, cone: 1.0, speed: [1.5, 4], up: [1, 3], inherit: 0.5 },                // the dash shoves a body: it slops forward
       cut: { count: 16, along: 6, cone: 0.5, speed: [3, 7], up: [1.5, 4], streak: 0.012 },        // the CUT dash: two sheets out of the sides, a streak along the cut

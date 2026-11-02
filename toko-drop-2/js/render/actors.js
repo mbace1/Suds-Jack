@@ -15,19 +15,19 @@
 // that springs in and fades (splats.js). Views are pooled per species, so a
 // gel's material is built once and reused, never compiled mid-fight.
 import * as THREE from 'three/webgpu';
-import { TUNING } from '../tuning.js?v=101';
+import { TUNING } from '../tuning.js?v=102';
 import * as TSL from 'three/tsl';
-import { gelMaterial, domeGeometry, cubeGeometry, heroGeometry, GEL_TIME } from './gel.js?v=101';
-import { LOOKS } from './looks/index.js?v=101';
-import { styleName, setStyle as setStyleMode, styledBody } from './style.js?v=101';
-import { JellyBody } from './jelly.js?v=101';
-import { Juice } from './juice.js?v=101';
-import { ArenaLight } from './light.js?v=101';
-import { toSdf } from './sdf.js?v=101';
-import { PickupView } from './pickups.js?v=101';
-import { ChallengeView } from './challenge.js?v=101';
-import { Goo } from './goo.js?v=101';
-import { mult as heatMult } from '../sim/heat.js?v=101';
+import { gelMaterial, domeGeometry, cubeGeometry, heroGeometry, GEL_TIME } from './gel.js?v=102';
+import { LOOKS } from './looks/index.js?v=102';
+import { styleName, setStyle as setStyleMode, styledBody } from './style.js?v=102';
+import { JellyBody } from './jelly.js?v=102';
+import { Juice } from './juice.js?v=102';
+import { ArenaLight } from './light.js?v=102';
+import { toSdf } from './sdf.js?v=102';
+import { PickupView } from './pickups.js?v=102';
+import { ChallengeView } from './challenge.js?v=102';
+import { Goo } from './goo.js?v=102';
+import { mult as heatMult } from '../sim/heat.js?v=102';
 
 const T = TUNING;
 const B = T.blob, D = T.death;
@@ -404,7 +404,7 @@ export class Actors {
         const a = Math.random() * Math.PI * 2, sp = rand(...speed), s = rand(...size);
         // v83: it trails a strand from where the body stood (ox, oy, oz), and melts into `vol` of goo at the end
         this.chunks.push({ fam, x: e.x, y, z: e.z, vx: Math.cos(a) * sp, vy: rand(...up), vz: Math.sin(a) * sp,
-          s, hex: e.color, life: D.chunkLife, sq: 1, sqV: 0, ox: e.x, oy: y * 0.6, oz: e.z, age: 0, strand: true, bounces: 0, rest: false, vol: D.melt.vol * VOLC * s * s * s });
+          s, hex: e.color, life: D.burstLife ?? D.chunkLife, sq: 1, sqV: 0, ox: e.x, oy: y * 0.6, oz: e.z, age: 0, strand: true, bounces: 0, rest: false, vol: D.melt.vol * VOLC * s * s * s });
       }
     };
     throwOut(Math.round(rand(D.chunks[0], D.chunks[1] + 0.99) - 0.49), [D.chunkSize, D.chunkSize], D.chunkSpeed, D.chunkUp);

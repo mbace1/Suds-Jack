@@ -19,6 +19,15 @@
     Never `--no-verify`.
 -->
 
+## v102 — 2026-11-02
+**Less paint, more goo (owner: "There is too much splatter paint left over visually, but not enough goo vfx")**
+- Read off a time-lapse of a fight's floor (six kills, then the burst, +1, +3, +8, +15 and +30 s) at a phone's portrait size, and off the whole floor film read back every 10 s of a minute's fight. The paint: what the goo DRIES to stayed — it halved every 8 s, and the thinnest stain still drew at a fifth of its strength, so on the dark grid every kill of the last half minute was still on the floor at +30 s, and over a minute's fight the stained floor only grew (4% → 19%, a tenth of it deep). The goo: a kill threw mostly fine drops, 2–8 cm — on a portrait phone a metre is about 18 px, so most of a burst was a speck of a pixel or two.
+- THE PAINT GOES: the stain halves every 1.5 s (was 8), a drying film leaves a fifth of what it carried (was 0.6) and a fainter ring at its edge (1.2 × the middle, was 2.5), and a thin stain draws faint (`dryBase` 0.05, `dryAlpha` 0.35, the tint 0.08) — the wall's film the same way. A kill's goo is gone from the floor by +8 s; over the same minute's fight the stained floor holds at ~9% (deep stain ~5%, half v101's) instead of climbing.
+- MORE GOO: a kill throws 16 + 64 × its radius drops (was 10 + 45), higher and faster, fatter (2.8–11 cm, more of them fat), and 7–9 chunks (was 5–6) a fifth bigger, trailing longer strands and lasting 1.7 s (`death.burstLife`; a species' own pop chunks keep 1.x's 1.4); a hit throws 5 drops (was 3). A drop is DRAWN 1.6 × its radius (`goo.drop.draw`), so a burst reads on a phone, while its volume — and so what it lays in the floor's film — stays what it was; its shadow follows the drawn size. The wet goo dries as fast as before (4 mm a second): it is the goo; what it leaves is what shortened.
+- Cache tokens `?v=101` → `?v=102`; HUD label → `2.0 · v102`
+
+---
+
 ## v101 — 2026-11-02
 **An art pass on every world (owner: "Can you do a upgrade pass on all level art?"): the boiler, the sewer, the deep and the core to their approved pictures**
 - All nine worlds rendered as they stood and held against the owner's approved pictures and module sheets (concept handoff). Four were far from theirs; the cistern, river and ice were repainted in v97–v100, the driveway already matches its module sheet, and world 1 is 1.x's grid, kept as the homage.

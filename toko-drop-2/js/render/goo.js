@@ -50,9 +50,9 @@ import {
   Fn, uniform, attribute, texture, uv, vec2, vec3, vec4, float, normalize, dot, length, max, min, clamp, pow, sqrt,
   mix, cameraViewMatrix, varying, select, positionGeometry, step, smoothstep, mrt, fwidth, dFdx, dFdy, exp, abs, normalLocal, cameraPosition, positionWorld,
 } from 'three/tsl';
-import { TUNING } from '../tuning.js?v=101';
-import { GooSim, BODY, STAMP, wallLen, WALL_N, WALL_T } from './goo-sim.js?v=101';
-import { pickStyle, grainAt } from './style.js?v=101';
+import { TUNING } from '../tuning.js?v=102';
+import { GooSim, BODY, STAMP, wallLen, WALL_N, WALL_T } from './goo-sim.js?v=102';
+import { pickStyle, grainAt } from './style.js?v=102';
 
 const T = TUNING, G = T.goo;
 const MAX_BODIES = 256;
@@ -185,7 +185,10 @@ export class Goo {
     const axis = varying(ax, 'vAxis');
     const pos = positionGeometry;            // −0.5 … 0.5 across the quad
     const wAxis = right.mul(axis.x).add(up.mul(axis.y)), wPerp = right.mul(axis.y.negate()).add(up.mul(axis.x));
-    mat.positionNode = P.xyz.add(wAxis.mul(pos.x.mul(P.w).mul(2).mul(stretch))).add(wPerp.mul(pos.y.mul(P.w).mul(2)));
+    // v102 (owner: "not enough goo vfx"): a drop is DRAWN `draw` × its radius — on a phone's portrait floor a metre is
+    // ~18 px and a 5 cm drop was a pixel — while its volume, and so what it lays in the film, stays what it is
+    const rDraw = P.w.mul(D.draw ?? 1);
+    mat.positionNode = P.xyz.add(wAxis.mul(pos.x.mul(rDraw).mul(2).mul(stretch))).add(wPerp.mul(pos.y.mul(rDraw).mul(2)));
     // the sphere's normal from where on the quad this is (x runs along the stretch)
     const q = uv().mul(2).sub(1), d2 = dot(q, q);
     const nz = sqrt(max(float(0), float(1).sub(d2)));
@@ -203,7 +206,7 @@ export class Goo {
     const sgeo = new THREE.InstancedBufferGeometry();
     sgeo.index = base.index; sgeo.setAttribute('position', base.attributes.position); sgeo.setAttribute('uv', base.attributes.uv);
     sgeo.setAttribute('iPos', this.iPos); sgeo.instanceCount = 0;
-    const lift = max(P.y.sub(P.w), 0), size = P.w.mul(float(S.size).add(lift.mul(S.grow)));
+    const lift = max(P.y.sub(P.w), 0), size = P.w.mul(G.drop.draw ?? 1).mul(float(S.size).add(lift.mul(S.grow)));
     sm.positionNode = vec3(P.x.add(pos.x.mul(size).mul(2)), S.y, P.z.sub(pos.y.mul(size).mul(2)));
     const ring = length(uv().sub(0.5)).mul(2);
     sm.colorNode = vec3(0);
