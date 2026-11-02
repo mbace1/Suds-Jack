@@ -37,8 +37,8 @@ const scene = new THREE.Scene();
 const pmrem = new THREE.PMREMGenerator(renderer);
 scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;   // the toy paint's glossy highlights
 scene.environmentIntensity = 0.55;
-const FOG = C3('#c99a86'); scene.fog = new THREE.Fog(FOG, 70, 150); scene.background = FOG.clone();
-const camera = new THREE.PerspectiveCamera(26, W / H, 1, 400);
+const FOG = C3('#bccdea'); scene.fog = new THREE.Fog(FOG, 95, 290); scene.background = FOG.clone();
+const camera = new THREE.PerspectiveCamera(30, W / H, 1, 700);
 const post = new Post(renderer, W, H);
 const out = document.createElement('canvas'); out.width = W; out.height = H; const g2d = out.getContext('2d');
 
@@ -46,19 +46,31 @@ const out = document.createElement('canvas'); out.width = W; out.height = H; con
 const paint = (c, o = {}) => new THREE.MeshPhysicalMaterial({ color: c, roughness: 0.28, metalness: 0.0, clearcoat: 1, clearcoatRoughness: 0.12, ...o });
 const matte = (c, o = {}) => new THREE.MeshStandardMaterial({ color: c, roughness: 0.85, metalness: 0, ...o });
 const M = {
-  ground: matte('#4f5a2e', { roughness: 1 }), shoulder: matte('#8a7a60'), road: matte('#3a3a3e', { roughness: 0.9 }),
-  line: matte('#efe7d2', { roughness: 0.7 }), mud: matte('#6b4a32', { roughness: 1 }), stump: matte('#c8a275'),
+  ground: matte('#8bb35c', { roughness: 1 }), shoulder: matte('#dccba4'), road: matte('#676d80', { roughness: 0.9 }),
+  line: matte('#f6f1e2', { roughness: 0.7 }), mud: matte('#b48b66', { roughness: 1 }), stump: matte('#e2c08e'),
   rubber: matte('#1c1c1f', { roughness: 0.7 }), hub: paint('#cfd2d6', { metalness: 0.4, roughness: 0.3 }),
   chassis: matte('#26272b', { roughness: 0.6 }), glass: paint('#1a2230', { roughness: 0.08, clearcoat: 1 }),
-  bark: matte('#7a5236'), logEnd: matte('#e3c08a'), spruce: matte('#264a33'), spruce2: matte('#2f5a3a'),
-  birchTrunk: matte('#efeae0'), birchLeaf: matte('#e3a833'), birchLeaf2: matte('#d68a2a'),
-  concrete: matte('#b9b4aa'), steel: paint('#9aa3ad', { metalness: 0.5, roughness: 0.35 }), fence: matte('#c9ccd0', { roughness: 0.5 }),
+  bark: matte('#8a5d3c'), logEnd: matte('#f0d29c'), spruce: matte('#3f7a55'), spruce2: matte('#4f8c60'),
+  birchTrunk: matte('#f4f0e6'), birchLeaf: matte('#f2c44c'), birchLeaf2: matte('#eaa13f'),
+  concrete: matte('#dcd8d0'), steel: paint('#9aa3ad', { metalness: 0.5, roughness: 0.35 }), fence: matte('#c9ccd0', { roughness: 0.5 }),
   white: paint('#f2efe8'), red: paint('#d7372b'), post: paint('#e8e4da'),
 };
 const mesh = (geo, mat, { pos = [0, 0, 0], rot = [0, 0, 0], parent = scene, cast = true, recv = true } = {}) => {
   const m = new THREE.Mesh(geo, mat); m.position.set(...pos); m.rotation.set(...rot); m.castShadow = cast; m.receiveShadow = recv; parent.add(m); return m; };
 const rbox = (w, h, d, r = 0.25, seg = 3) => new RoundedBoxGeometry(w, h, d, seg, Math.min(r, w / 2 - 0.01, h / 2 - 0.01, d / 2 - 0.01));
 const canvasTex = (w, h, draw) => { const c = document.createElement('canvas'); c.width = w; c.height = h; draw(c.getContext('2d'), w, h); const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; return t; };
+
+// ------------------------------------------------------------------ the sky: a painted dome and soft anime clouds
+const skyTex = canvasTex(8, 512, (g, w, h) => { const gr = g.createLinearGradient(0, 0, 0, h);
+  gr.addColorStop(0, '#3f7bd2'); gr.addColorStop(0.4, '#6fa2e4'); gr.addColorStop(0.468, '#9fc3ef'); gr.addColorStop(0.493, '#dbe6f3'); gr.addColorStop(0.5, '#f0e2d0'); gr.addColorStop(1, '#f0e2d0'); g.fillStyle = gr; g.fillRect(0, 0, w, h); });
+const SKY = new THREE.Mesh(new THREE.SphereGeometry(300, 32, 16), new THREE.MeshBasicMaterial({ map: skyTex, side: THREE.BackSide, fog: false, depthWrite: false }));
+scene.add(SKY);
+const cloudTex = canvasTex(512, 256, (g, w, h) => { const r = rng(5);
+  for (let i = 0; i < 26; i++) { const x = 80 + r() * 350, y = 120 + (r() - 0.5) * 60 - Math.sin((x - 60) / 380 * Math.PI) * 50, rad = 28 + r() * 46;
+    const gr = g.createRadialGradient(x, y - rad * 0.25, rad * 0.2, x, y, rad); gr.addColorStop(0, 'rgba(255,255,255,0.95)'); gr.addColorStop(0.7, 'rgba(244,240,252,0.85)'); gr.addColorStop(1, 'rgba(214,206,236,0)');
+    g.fillStyle = gr; g.beginPath(); g.arc(x, y, rad, 0, TAU); g.fill(); } });
+const CLOUDS = [[-60, 34, -260, 130], [45, 44, -275, 150], [120, 30, -250, 110], [-5, 26, -240, 90]].map(([x, y, z, w]) => {
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(w, w / 2), new THREE.MeshBasicMaterial({ map: cloudTex, transparent: true, depthWrite: false, fog: false })); m.position.set(x, y, z); scene.add(m); return m; });
 
 // ------------------------------------------------------------------ the world: forest road, barrier, fenced site
 const BARRIER_Z = -18, ROAD_W = 7.5;
@@ -103,11 +115,22 @@ const FLOODS = [[-22, BARRIER_Z - 8], [8, BARRIER_Z - 10], [30, BARRIER_Z - 16]]
 const stripes = canvasTex(256, 32, (g, w, h) => { for (let i = 0; i < 8; i++) { g.fillStyle = i % 2 ? '#f4f1ea' : '#d22d24'; g.fillRect(i * w / 8, 0, w / 8 + 1, h); } });
 const boomMat = new THREE.MeshPhysicalMaterial({ map: stripes, roughness: 0.3, clearcoat: 1, clearcoatRoughness: 0.15 });
 const BX = ROAD_W / 2 + 1.0;
-for (const s of [-1, 1]) mesh(rbox(0.55, 1.5, 0.55, 0.12), M.post, { pos: [s * BX, 0.75, BARRIER_Z] });
-mesh(new THREE.CylinderGeometry(0.16, 0.16, BX * 2 + 0.6, 12).rotateZ(Math.PI / 2), boomMat, { pos: [0, 1.25, BARRIER_Z] });
-const amberM = new THREE.MeshStandardMaterial({ color: '#ffb347', emissive: '#ff9a1f', emissiveIntensity: 0 });
-mesh(new THREE.SphereGeometry(0.28, 14, 10), amberM, { pos: [BX, 1.75, BARRIER_Z], cast: false });
-const amberL = new THREE.PointLight('#ffa030', 0, 14, 1.8); amberL.position.set(BX, 2.0, BARRIER_Z + 0.6); scene.add(amberL);
+// two half-booms on pivots, up at first and lowering as the convoy comes; on each post a pair of red lamps that
+// alternate, left-right-left, at a bell's rhythm (the reference: a level crossing)
+const BOOMS = [-1, 1].map((s) => {
+  mesh(rbox(0.6, 1.4, 0.6, 0.14), M.post, { pos: [s * BX, 0.7, BARRIER_Z] });
+  mesh(new THREE.CylinderGeometry(0.1, 0.1, 3.4, 8), M.post, { pos: [s * (BX + 0.75), 1.7, BARRIER_Z] });
+  const head = new THREE.Group(); scene.add(head); head.position.set(s * (BX + 0.75), 3.3, BARRIER_Z + 0.06);
+  mesh(rbox(2.2, 1.0, 0.18, 0.1), matte('#202226'), { parent: head });
+  const lamps = [-1, 1].map((k) => { const m = new THREE.MeshStandardMaterial({ color: '#5a0d0a', emissive: '#ff2a18', emissiveIntensity: 0.1 });
+    mesh(new THREE.CircleGeometry(0.34, 20), m, { pos: [k * 0.6, 0, 0.1], parent: head, cast: false }); return m; });
+  const pivot = new THREE.Group(); scene.add(pivot); pivot.position.set(s * BX, 1.25, BARRIER_Z);
+  const len = BX - 0.15;   // each half reaches the centre line
+  mesh(new THREE.CylinderGeometry(0.15, 0.15, len, 12).rotateZ(Math.PI / 2), boomMat, { pos: [-s * len / 2, 0, 0], parent: pivot });
+  return { s, pivot, lamps };
+});
+const bellL = new THREE.PointLight('#ff3a20', 0, 16, 1.8); bellL.position.set(0, 3.0, BARRIER_Z + 1.5); scene.add(bellL);
+const GATE = { flash: 0.35, down0: 0.75, down1: 1.85 };   // lights start; the booms come down over a second
 
 await CAP.loadFonts(FONT_DIR);
 const COPY = await CAP.loadCopy('copy.json');
@@ -169,6 +192,19 @@ function lights(body, w, y, zRear, zFront) {
   for (const s of [-1, 1]) mesh(rbox(0.4, 0.22, 0.1, 0.04), head, { pos: [s * (w / 2 - 0.3), y, zFront - 0.03], parent: body, cast: false });
   return brake;
 }
+/** a side-profile silhouette extruded across the vehicle's width, bevelled soft. The profile is drawn with the front
+ *  at +x; after the turn the front faces −z (the barrier). pts: [[x, y], …] */
+function profile(pts, width, bevel = 0.14) {
+  const sh = new THREE.Shape(); sh.moveTo(...pts[0]); for (const p of pts.slice(1)) sh.lineTo(...p); sh.closePath();
+  const d = Math.max(0.05, width - 2 * bevel);
+  return new THREE.ExtrudeGeometry(sh, { depth: d, bevelEnabled: true, bevelThickness: bevel, bevelSize: bevel, bevelSegments: 3, curveSegments: 8 }).translate(0, 0, -d / 2).rotateY(Math.PI / 2);
+}
+/** a bottom edge with a wheel arch over each wheel: [x, r] pairs, front to back are sorted for the caller */
+function sill(x0, x1, y, wheels, ar) {
+  const out = [[x0, y]];
+  for (const [wx, wy] of [...wheels].sort((a, b) => a[0] - b[0])) { out.push([wx - ar, y]); for (let i = 0; i <= 10; i++) { const a = Math.PI - i / 10 * Math.PI; out.push([wx + Math.cos(a) * ar, wy + Math.sin(a) * ar]); } out.push([wx + ar, y]); }
+  out.push([x1, y]); return out;
+}
 /** a red point light behind a vehicle: the brake lights wash the road at dusk */
 function glowAt(root, z) { const l = new THREE.PointLight('#ff2a14', 0, 7, 2); l.position.set(0, 0.9, z); root.add(l); return l; }
 /** a vehicle faces −z (towards the barrier); its root sits on the road, its body pitches about the axle line */
@@ -176,8 +212,10 @@ function timberTruck(cabColor) {
   const root = new THREE.Group(), body = new THREE.Group(); scene.add(root); root.add(body); const r = 0.62, L = 10.4;
   mesh(new THREE.PlaneGeometry(4.2, L + 1.6).rotateX(-Math.PI / 2), blobMat, { pos: [0, 0.03, 0], parent: root, cast: false, recv: false });
   mesh(rbox(2.3, 0.45, L, 0.18), M.chassis, { pos: [0, 0.95, 0], parent: body });
-  mesh(rbox(2.5, 2.1, 2.3, 0.45), paint(cabColor), { pos: [0, 2.15, -L / 2 + 1.25], parent: body });
-  mesh(rbox(2.36, 0.85, 0.1, 0.06), M.glass, { pos: [0, 2.6, -L / 2 + 0.1], parent: body, cast: false });
+  // the cab: an extruded side profile (bonnet-less, a tall windscreen), and its side window in dark glass
+  const cab = mesh(profile([[-1.25, 0.95], [1.15, 0.95], [1.3, 1.25], [1.3, 2.15], [0.95, 3.2], [-1.25, 3.25]], 2.5, 0.2), paint(cabColor), { pos: [0, 0, -L / 2 + 1.3], parent: body });
+  mesh(profile([[1.0, 2.25], [0.78, 3.0], [0.05, 3.0], [0.05, 2.25]], 2.56, 0.05), M.glass, { pos: [0, 0, -L / 2 + 1.3], parent: body, cast: false });
+  mesh(rbox(2.2, 0.75, 0.08, 0.05), M.glass, { pos: [0, 2.65, -L / 2 + 0.02], rot: [0.3, 0, 0], parent: body, cast: false });
   mesh(rbox(2.6, 0.5, 0.5, 0.2), M.chassis, { pos: [0, 1.15, -L / 2 + 0.05], parent: body });                  // bumper
   // the bunks and the logs: a pyramid of cylinders with pale cut ends
   for (const z of [-1.4, 1.2, 3.6]) for (const s of [-1, 1]) mesh(new THREE.BoxGeometry(0.16, 2.3, 0.16), M.chassis, { pos: [s * 1.1, 2.2, z], parent: body });
@@ -195,21 +233,24 @@ function timberTruck(cabColor) {
 function car(color) {
   const root = new THREE.Group(), body = new THREE.Group(); scene.add(root); root.add(body); const r = 0.42, L = 4.3;
   mesh(new THREE.PlaneGeometry(2.8, L + 1.2).rotateX(-Math.PI / 2), blobMat, { pos: [0, 0.03, 0], parent: root, cast: false, recv: false });
-  mesh(rbox(1.9, 0.75, L, 0.32), paint(color), { pos: [0, 0.8, 0], parent: body });
-  mesh(rbox(1.66, 0.7, 2.2, 0.32), paint(color), { pos: [0, 1.42, 0.25], parent: body });
-  mesh(rbox(1.7, 0.5, 2.0, 0.22), M.glass, { pos: [0, 1.47, 0.25], parent: body, cast: false });
-  const brake = lights(body, 1.9, 0.95, L / 2, -L / 2);
+  // a hatchback's side profile: sill with two arches, bonnet, windscreen, roof, hatch
+  const sl = sill(-2.15, 2.15, 0.32, [[-1.35, 0.42], [1.35, 0.42]], 0.55).reverse();
+  mesh(profile([...sl, [-2.22, 0.55], [-2.22, 1.05], [-1.95, 1.42], [-1.1, 1.82], [0.5, 1.8], [1.3, 1.16], [2.2, 1.0], [2.25, 0.55]].reverse(), 1.9, 0.18), paint(color), { parent: body });
+  mesh(profile([[1.18, 1.17], [0.48, 1.68], [-1.05, 1.72], [-1.8, 1.38], [-1.85, 1.16]], 1.96, 0.04), M.glass, { parent: body, cast: false });
+  const brake = lights(body, 1.9, 0.92, 2.22 + 0.04, -2.25 - 0.04);
   const wheels = [-1.35, 1.35].flatMap((z) => [-1, 1].map((s) => wheel(r, 0.32, root, s * 0.9, z)));
   return { root, body, wheels, r, L, brake, dip: 0.07, glow: glowAt(root, L / 2 + 0.7) };
 }
 function van(color) {
   const root = new THREE.Group(), body = new THREE.Group(); scene.add(root); root.add(body); const r = 0.46, L = 5.2;
   mesh(new THREE.PlaneGeometry(3, L + 1.2).rotateX(-Math.PI / 2), blobMat, { pos: [0, 0.03, 0], parent: root, cast: false, recv: false });
-  mesh(rbox(2.0, 1.9, L, 0.4), paint(color), { pos: [0, 1.4, 0.15], parent: body });
-  mesh(rbox(2.04, 0.62, 1.2, 0.2), M.glass, { pos: [0, 1.75, -L / 2 + 0.95], parent: body, cast: false });
-  mesh(rbox(1.6, 0.18, 0.06, 0.04), paint('#e2512d'), { pos: [0, 1.15, L / 2 + 0.17], parent: body, cast: false });   // a stripe on the back
-  const brake = lights(body, 2.0, 1.0, L / 2 + 0.15, -L / 2 + 0.15);
-  const wheels = [-1.7, 1.7].flatMap((z) => [-1, 1].map((s) => wheel(r, 0.34, root, s * 0.95, z)));
+  // a van's side profile: sill with arches, a short sloped nose, a tall flat roof
+  const sl = sill(-2.45, 2.75, 0.36, [[-1.55, 0.46], [1.85, 0.46]], 0.6).reverse();
+  mesh(profile([...sl, [-2.5, 0.5], [-2.5, 2.35], [1.7, 2.4], [2.45, 1.55], [2.8, 1.25], [2.8, 0.5]].reverse(), 2.0, 0.2), paint(color), { parent: body });
+  mesh(profile([[2.38, 1.55], [1.66, 2.22], [1.05, 2.22], [1.05, 1.55]], 2.06, 0.04), M.glass, { parent: body, cast: false });
+  mesh(rbox(1.6, 0.18, 0.06, 0.04), paint('#e2512d'), { pos: [0, 1.25, 2.45 + 0.13], parent: body, cast: false });   // a stripe on the back
+  const brake = lights(body, 2.0, 1.05, 2.45 + 0.12, -2.75 - 0.12);
+  const wheels = [-1.85, 1.55].flatMap((z) => [-1, 1].map((s) => wheel(r, 0.34, root, s * 0.95, z)));
   return { root, body, wheels, r, L, brake, dip: 0.06, glow: glowAt(root, L / 2 + 0.8) };
 }
 // the convoy, front to back, with where each one stops and when; the right-hand lane is +x
@@ -226,25 +267,30 @@ function zAt(v, t) {
 const EVENTS_BRAKE = Object.fromEntries(CONVOY.flatMap((v, i) => [['brake' + i, +v.tb.toFixed(3)], ['stop' + i, +v.ts.toFixed(3)]]));
 
 // ------------------------------------------------------------------ light: a low golden key that sinks into dusk
-const hemi = new THREE.HemisphereLight('#a9c4ef', '#3d3a2c', 0.9); scene.add(hemi);
-const sun = new THREE.DirectionalLight('#ffb57a', 2.6); sun.position.set(-40, 26, -28); sun.target.position.set(0, 0, -6);
+const hemi = new THREE.HemisphereLight('#c3d6f6', '#8270a8', 1.05); scene.add(hemi);
+const sun = new THREE.DirectionalLight('#ffdcae', 2.3); sun.position.set(-40, 26, -28); sun.target.position.set(0, 0, -6);
 sun.castShadow = true; sun.shadow.mapSize.set(2048, 2048); sun.shadow.bias = -0.0005; sun.shadow.normalBias = 0.03; sun.shadow.radius = 4;
 Object.assign(sun.shadow.camera, { left: -45, right: 45, top: 45, bottom: -45, near: 1, far: 140 }); scene.add(sun, sun.target);
-const fill = new THREE.DirectionalLight('#7d9bd6', 0.35); fill.position.set(30, 20, 40); scene.add(fill);
+const fill = new THREE.DirectionalLight('#a493e0', 0.4); fill.position.set(30, 20, 40); scene.add(fill);
 
 // ------------------------------------------------------------------ one frame
-const DUSK = (t) => smooth((t - 4.4) / 3.2);   // golden hour sinks to blue dusk over the second half
-const fogA = C3('#d2a48d'), fogB = C3('#36405f');
+const DUSK = (t) => smooth((t - 4.4) / 3.2);   // the afternoon sinks to a pink-violet dusk over the second half
+const fogA = C3('#bccdea'), fogB = C3('#c39cc4');
 function setWorld(t) {
   const d = DUSK(t);
-  sun.intensity = lerp(2.6, 0.22, d); sun.color.copy(C3('#ffb57a')).lerp(C3('#ff6a4a'), d);
-  hemi.intensity = lerp(0.9, 0.3, d); hemi.color.copy(C3('#a9c4ef')).lerp(C3('#4a5c9a'), d);
+  sun.intensity = lerp(2.3, 0.7, d); sun.color.copy(C3('#ffdcae')).lerp(C3('#ff8a6a'), d);
+  hemi.intensity = lerp(1.05, 0.62, d); hemi.color.copy(C3('#c3d6f6')).lerp(C3('#9a8ccc'), d);
+  SKY.material.color.copy(C3('#ffffff')).lerp(C3('#f0a8c0'), d * 0.8); CLOUDS.forEach((c) => c.material.color.copy(C3('#ffffff')).lerp(C3('#f4b0b8'), d));
   scene.environmentIntensity = lerp(0.55, 0.3, d);
-  scene.fog.color.copy(fogA).lerp(fogB, d); scene.background.copy(scene.fog.color);
+  scene.fog.color.copy(fogA).lerp(fogB, d);
   // floodlights stutter on as it darkens; the barrier lamp blinks all film
   FLOODS.forEach((f, i) => { const on = clamp((t - 5.6 - i * 0.22) / 0.08) * (t > 5.7 + i * 0.22 && t < 5.78 + i * 0.22 ? 0.3 : 1);
     f.lampM.emissiveIntensity = on * 3.2; f.pl.intensity = on * 260; });
-  const blink = Math.sin(t * TAU * 1.1) > 0.15 ? 1 : 0.08; amberM.emissiveIntensity = 3.2 * blink; amberL.intensity = 30 * blink * (0.4 + 0.6 * d);
+  // the crossing: lamps alternate at ~1.6 Hz once the warning starts; the booms come down
+  const on = t >= GATE.flash, ph = Math.floor((t - GATE.flash) * 3.2) % 2;
+  BOOMS.forEach((b) => { b.lamps.forEach((m, k) => { m.emissiveIntensity = on ? (k === ph ? 7 : 0.15) : 0.1; });
+    b.pivot.rotation.z = b.s * (Math.PI / 2) * (1 - ease.io((t - GATE.down0) / (GATE.down1 - GATE.down0))) * -1; });
+  bellL.intensity = on ? 22 * (0.6 + 0.4 * d) : 0; bellL.position.x = ph ? 3 : -3;
   // the convoy: position, rolling wheels, the nose-dip on braking and the rock back on the stop, brake lights
   for (const v of CONVOY) {
     const z = zAt(v, t), z0 = zAt(v, 0);
@@ -259,11 +305,11 @@ function setWorld(t) {
     v.glow.intensity = braking * lerp(8, 26, d);
   }
 }
-/** the camera: 3/4 overhead from behind-right on a long lens, dollying slowly in and down */
+/** the camera: 3/4 from behind-right, low enough for a strip of sky over the site, dollying slowly in and down */
 function cam(t) {
   const k = ease.io(t / DUR);
-  const pos = new THREE.Vector3(lerp(13, 10, k), lerp(56, 49, k), lerp(64, 52, k));
-  const at = new THREE.Vector3(1.8, 0, lerp(-13, -16, k));
+  const pos = new THREE.Vector3(lerp(11, 8.5, k), lerp(17.5, 14.8, k), lerp(56, 46, k));
+  const at = new THREE.Vector3(1.6, 4.5, lerp(-24, -27, k));
   return { pos, at };
 }
 const tmp = new THREE.Vector3();
@@ -273,14 +319,16 @@ function frame(t, captions = true) {
   // the tilt-shift band sits on the barrier: project it, every frame, so the dolly never drifts it out of focus
   tmp.set(LANE, 1, Math.max(zAt(CONVOY[0], t), BARRIER_Z + 10)).project(camera); const cy = (tmp.y + 1) / 2;
   const d = DUSK(t);
-  post.render(scene, camera, { focus: 60, aperture: 0, maxBlur: 26, tilt: 22, tiltCenter: cy, tiltBand: 0.5,
-    threshold: 0.95, knee: 0.45, bloomA: 0.55, bloomB: 0.35, exposure: lerp(1.04, 1.0, d), vignette: 0.38, grain: 0.032, seed: Math.floor(t * 24),
-    sat: 1.12, contrast: 1.06, toe: 0.03, lift: [0.012, 0.016, 0.03], gain: [1.03, 1.0, 0.96] });
+  // the grade: soft anime afternoon; lifted blue-violet shadows, gentle contrast, a wide soft bloom, light grain
+  post.render(scene, camera, { focus: 60, aperture: 0, maxBlur: 26, tilt: 14, tiltCenter: cy, tiltBand: 0.58,
+    threshold: 0.9, knee: 0.5, bloomA: 0.5, bloomB: 0.45, exposure: lerp(1.04, 1.0, d), vignette: 0.3, grain: 0.022, seed: Math.floor(t * 24),
+    sat: 1.08, contrast: 0.98, toe: 0.0, lift: [0.022, 0.016, 0.05], gain: [1.03, 1.0, 0.97] });
   g2d.setTransform(1, 0, 0, 1, 0, 0); g2d.drawImage(renderer.domElement, 0, 0);
   CAP.bug(g2d);
   if (captions) CAP.draw(g2d, P, t, { busy: BUSY || {} });
   return out;
 }
+frame(0, false); frame(0.5, false);   // warm-up before the busy measure too
 let BUSY = null; if (Q.get('busy') !== '0') BUSY = CAP.measureBusy(g2d, P, (t) => frame(t, false));
 window.__film = { fps: FPS, frames: Math.round(DUR * FPS), events: { ...T, lang: LANG, ...EVENTS_BRAKE, ...CAP.events(P), quiet: [] }, lang: LANG,
   report: { ...CAP.report(g2d, P, { keep: () => [], busy: BUSY || {} }) },

@@ -227,7 +227,7 @@ const DUST = (() => { const r = rng(61), n = 420, pos = new Float32Array(n * 3),
 // the leaves lying on the robot: placed in P space, they fly off on the shake
 const RLEAVES = (() => { const r = rng(71), out = [], c = new THREE.Color();
   for (let i = 0; i < 9; i++) { const m = new THREE.Mesh(LEAFG, leafMat.clone()); m.material.color.set(LEAFCOLS[i % 5]); m.castShadow = true; scene.add(m);
-    const local = i < 7 ? [TOR.w / 2 + 0.02, TOR.y0 + 0.12 + r() * 0.55, (r() - 0.5) * 0.45] : [HW / 2 + 0.02, TOR.h + 0.3 + r() * 0.4, (r() - 0.5) * 0.4];
+    const local = [(r() - 0.5) * 0.6, TOR.y0 + 0.1 + r() * 0.58, TOR.d / 2 + 0.015];   // on its chest, which faces the sky
     out.push({ m, local, v: [(r() - 0.5) * 2.2, 1.2 + r() * 1.6, (r() - 0.3) * 1.6], spin: [(r() - 0.5) * 9, (r() - 0.5) * 9, (r() - 0.5) * 9], rest: [0, 0, 0] }); }
   return out; })();
 
@@ -237,16 +237,17 @@ const EV = { eyes: 1.15, plant: 1.9, sit: 2.3, stand: 3.05, shake: 3.65, look: 4
 const START = [0, 0, 0], LANDAT = [ROCK.pos[0] - 0.05, ROCK.top, ROCK.pos[2] + 0.05];
 /** everything about the robot at t: where R stands, the pelvis, the squash, the head, the hands and feet (WORLD) */
 function pose(t) {
-  const o = { r: [...START], yaw: 0, py: 0.42, tiltZ: 1.5, tiltX: 0, sq: 1, headYaw: 0, headPitch: 0.25, eyes: { on: 0, dx: 0, dy: 0, blink: 0, squint: 0, happy: 0 }, lamp: 0 };
+  const o = { r: [...START], yaw: 0, py: 0.32, tiltZ: 0, tiltX: -1.5, sq: 1, headYaw: 0, headPitch: 0.25, eyes: { on: 0, dx: 0, dy: 0, blink: 0, squint: 0, happy: 0 }, lamp: 0 };
   // 0 · lying on its side in the moss; at 1.15 the eyes flicker on (a stutter, then held), the head lifts a touch
   const fl = t - EV.eyes; if (fl > 0) o.eyes.on = fl < 0.55 ? ((Math.sin(fl * 61) > 0.2 || fl > 0.42) ? clamp(fl * 3) : 0.15) : 1;
   o.lamp = fl > 0.3 ? 1 : 0; o.eyes.dy = 0.3 * (1 - win(t, 1.7, 2.1));
-  o.headPitch = lerp(0.25, -0.05, ease.io(win(t, 1.5, 2.0)));
+
   // 1 · it sits up: rolls off its side to upright, the top hand planted, then the other; pelvis low
   const up = ease.io(win(t, EV.sit, EV.stand));
-  o.tiltZ = lerp(1.5, 0, up); o.py = lerp(0.42, 0.3, up);
+  o.tiltX = lerp(-1.5, 0, up); o.py = lerp(0.32, 0.3, up);
+  o.headPitch = 0.38 * ease.io(win(t, 1.45, 1.95)) * (1 - up) + 0.05 * up;   // it lifts its head to look, then sits up
   // 2 · it stands: pelvis rises, a little overshoot
-  const st = win(t, EV.stand, EV.shake - 0.05); o.py = lerp(o.py, 0.5, ease.back(st)); o.tiltX = Math.sin(st * Math.PI) * 0.28;
+  const st = win(t, EV.stand, EV.shake - 0.05); o.py = lerp(o.py, 0.5, ease.back(st)); o.tiltX += Math.sin(st * Math.PI) * 0.28;
   // squash on the push and the stand
   o.sq = 1 - 0.08 * Math.sin(win(t, EV.sit - 0.15, EV.sit + 0.2) * Math.PI) - 0.07 * Math.sin(win(t, EV.stand - 0.1, EV.stand + 0.25) * Math.PI) + 0.06 * Math.sin(win(t, EV.stand + 0.25, EV.shake) * Math.PI);
   // 3 · the shake: a fast decaying wobble about the vertical and a side-to-side roll
@@ -264,14 +265,14 @@ function pose(t) {
   // 6 · the jump: a ballistic arc to the rock, stretched on the way up, tucked over the top
   const jk = win(t, EV.jump, EV.land);
   if (t >= EV.jump) {
-    const k = jk, arc = Math.sin(k * Math.PI) * 1.05;
+    const k = jk, arc = Math.sin(k * Math.PI) * 0.62;
     o.r = lerp3(START, LANDAT, ease.io(k * 0.85 + 0.15 * k * k)); o.r[1] = lerp(START[1], LANDAT[1], k) + arc;
     o.py = lerp(0.3, 0.5, ease.out(k * 3)); o.sq = k < 0.45 ? lerp(0.84, 1.2, ease.out(k / 0.2)) : lerp(1.2, 0.96, win(k, 0.45, 1));
     o.tiltX = lerp(0.25, -0.15, k);
   }
   // 7 · the landing: a hard squash, a springy recovery; it turns to the light, eyes go happy
   if (t >= EV.land) { o.r = [...LANDAT]; const lt = t - EV.land; o.sq = 1 - 0.2 * Math.exp(-lt * 7) * Math.cos(lt * 16); o.py = 0.5 - 0.12 * Math.exp(-lt * 6); o.tiltX = -0.15 * Math.exp(-lt * 5);
-    o.yaw = lerp(0.95, 0.35, ease.io(win(t, EV.settle, EV.settle + 0.6))); o.headYaw = lerp(0, 0.25, ease.io(win(t, EV.settle + 0.2, EV.settle + 0.8))); o.headPitch = lerp(0.1, -0.12, ease.io(win(t, EV.settle + 0.3, 7.6)));
+    o.yaw = lerp(0.95, -0.22, ease.io(win(t, EV.settle, EV.settle + 0.7))); o.headYaw = lerp(0, 0.12, ease.io(win(t, EV.settle + 0.2, EV.settle + 0.8)));   // it turns to us o.headPitch = lerp(0.1, -0.12, ease.io(win(t, EV.settle + 0.3, 7.6)));
     o.eyes.happy = t > EV.settle + 0.5 && t < 7.4 ? 1 : 0; o.eyes.dx = 0; o.eyes.blink = Math.max(o.eyes.blink, bl(7.5)); }
   return o;
 }
@@ -282,7 +283,7 @@ function ends(t, o) {
   // feet: lying curled to its right; sitting, out in front; standing, under the hips; crouch wider; mid-air tucked
   const up = ease.io(win(t, EV.sit, EV.stand)), st = ease.io(win(t, EV.stand, EV.shake - 0.1));
   for (const s of [-1, 1]) {
-    let f = [0.62 + (s > 0 ? 0.0 : 0.12), 0, s * 0.16 + 0.05];
+    let f = [s * 0.2, 0, 0.6];
     f = lerp3(f, [s * 0.24, 0, 0.42], up); f = lerp3(f, [s * 0.2, 0, 0.0], st);
     const cr = ease.io(win(t, EV.crouch, EV.jump)); f = lerp3(f, [s * 0.27, 0, 0.04], cr);
     if (t >= EV.jump && t < EV.land) { const k = win(t, EV.jump, EV.land); f = [s * 0.18, Math.sin(k * Math.PI) * 0.0, 0.0]; feet.push(pToW([s * 0.2, -0.28 - 0.1 * (1 - Math.abs(k - 0.5) * 2), 0.06])); continue; }
@@ -290,20 +291,13 @@ function ends(t, o) {
   }
   // hands: lying, the top hand rests on the body and the lower one is tucked; then each is PLANTED on the moss while
   // the body rises (the telescoping arm keeps the paddle on the ground); standing, they hang at the sides
-  const plantLow = toW([-0.62, HANDR * 0.8, 0.2]), plantTop = toW([0.58, HANDR * 0.8, 0.14]);
   for (const A of ARMS) {
-    const side = A.s;          // +1 is the top arm while lying (its +x side faces up); −1 is underneath and does the pushing
+    const side = A.s;
     const rest = pToW([side * 0.52, TOR.y0 + 0.12, 0.08]);
-    let h;
-    if (side < 0) {
-      const tuck = pToW([-0.5, TOR.y0 + 0.42, 0.22]);
-      const k1 = ease.io(win(t, EV.plant, EV.sit)), k2 = ease.io(win(t, EV.stand + 0.1, EV.shake - 0.05));
-      h = tuck.lerp(plantLow, k1); if (k2 > 0) h = plantLow.clone().lerp(rest, k2).add(V(0, Math.sin(k2 * Math.PI) * 0.12, 0));
-    } else {
-      const lie = pToW([0.2, TOR.y0 + 0.22, TOR.d / 2 + 0.07]);              // on its own belly, lying
-      const k1 = ease.io(win(t, EV.sit + 0.35, EV.sit + 0.62)), k2 = ease.io(win(t, EV.stand + 0.15, EV.shake));
-      h = lie.lerp(plantTop, k1).add(V(0, Math.sin(k1 * Math.PI) * 0.18, 0)); if (k2 > 0) h = plantTop.clone().lerp(rest, k2).add(V(0, Math.sin(k2 * Math.PI) * 0.15, 0));
-    }
+    const lie = toW([side * 0.62, HANDR * 0.8, -0.38]), plant = toW([side * 0.6, HANDR * 0.8, 0.08]);   // beside the chest; beside the hips
+    const k1 = ease.io(win(t, EV.plant + (side > 0 ? 0 : 0.08), EV.sit + 0.05)), k2 = ease.io(win(t, EV.stand + (side > 0 ? 0.15 : 0.1), EV.shake));
+    let h = lie.lerp(plant, k1).add(V(0, Math.sin(k1 * Math.PI) * 0.12, 0));
+    if (k2 > 0) h = plant.clone().lerp(rest, k2).add(V(0, Math.sin(k2 * Math.PI) * 0.14, 0));
     // shake: arms flap; look: hang; crouch: swing back; jump: swing up and forward; land: out for balance
     const sh = t - EV.shake; if (sh > 0 && sh < 0.6) h.add(V(side * 0.12 * Math.exp(-sh * 5) * Math.abs(Math.sin(sh * 42)), 0.05 * Math.exp(-sh * 5), 0));
     const cr = ease.io(win(t, EV.crouch, EV.jump)); if (cr > 0) h.lerp(pToW([side * 0.5, TOR.y0 + 0.25, -0.42]), cr);
@@ -331,7 +325,7 @@ function placeRobot(t) {
   // the leaves on it: riding along until the shake, then thrown, then lying where they fell
   for (const L of RLEAVES) {
     const dt = t - EV.shake;
-    if (dt <= 0) { L.m.position.copy(P.localToWorld(V(...L.local))); L.m.quaternion.copy(P.getWorldQuaternion(_q)); L.m.rotateY(Math.PI / 2); L.m.rotateZ(L.spin[0] * 0.3); L.rest = L.m.position.toArray(); }
+    if (dt <= 0) { L.m.position.copy(P.localToWorld(V(...L.local))); L.m.quaternion.copy(P.getWorldQuaternion(_q)); L.m.rotateZ(L.spin[0] * 0.3); L.rest = L.m.position.toArray(); }
     else { const p0 = L.rest; let y = p0[1] + L.v[1] * dt - 4.9 * dt * dt * 0.6; const tl = Math.min(dt, 1.4);
       const x = p0[0] + L.v[0] * tl * 0.7, z = p0[2] + L.v[2] * tl * 0.7; y = Math.max(0.015, y + Math.sin(dt * 7 + L.v[0]) * 0.03 * Math.min(1, dt));
       L.m.position.set(x, y, z); if (y > 0.016) L.m.rotation.set(L.spin[0] * dt, L.spin[1] * dt, L.spin[2] * dt); else L.m.rotation.set(-Math.PI / 2, 0, L.spin[2]); }
@@ -342,12 +336,13 @@ function placeRobot(t) {
 // ------------------------------------------------------------------ the camera: low and close on the waking; a step back
 // for the shake and the look; it cranes and follows the jump, and settles wide on the rock with the light behind
 const CAMK = [
-  { t: 0, pos: [-1.95, 0.72, 1.6], at: [-0.35, 0.42, 0.0], fov: 42 },
-  { t: 2.2, pos: [-1.6, 0.85, 2.05], at: [-0.2, 0.52, 0.0], fov: 43 },
-  { t: 3.4, pos: [-0.7, 1.05, 2.95], at: [0.08, 0.78, 0.0], fov: 46 },
-  { t: 5.5, pos: [-0.45, 1.15, 3.25], at: [0.3, 0.82, -0.2], fov: 46 },
-  { t: 6.35, pos: [0.0, 1.6, 4.15], at: [1.05, 1.18, -0.5], fov: 48 },
-  { t: 8.0, pos: [0.25, 1.7, 3.9], at: [1.3, 1.38, -0.6], fov: 47 },
+  { t: 0, pos: [0.35, 2.7, 1.6], at: [0.0, 0.26, -0.5], fov: 41 },        // high, from its feet: lying in the moss, face to the sky
+  { t: 2.2, pos: [0.25, 2.0, 1.85], at: [0.0, 0.42, -0.3], fov: 43 },
+  { t: 3.3, pos: [-0.6, 1.05, 2.95], at: [0.05, 0.8, 0.0], fov: 46 },      // square on as it stands
+  { t: 5.5, pos: [-0.45, 1.15, 3.25], at: [0.3, 0.84, -0.2], fov: 46 },
+  { t: 6.0, pos: [-0.2, 1.5, 3.7], at: [0.75, 1.55, -0.4], fov: 47 },      // up with it over the top
+  { t: 6.45, pos: [-0.05, 1.55, 3.9], at: [1.0, 1.35, -0.5], fov: 47 },     // down with it onto the rock
+  { t: 9.0, pos: [0.45, 1.55, 3.15], at: [1.35, 1.52, -0.65], fov: 45 },    // in on the rock, it below the caption
 ];
 function cam(t) {
   let i = 0; while (i < CAMK.length - 2 && t > CAMK[i + 1].t) i++;
@@ -360,8 +355,8 @@ function cam(t) {
 // ------------------------------------------------------------------ captions (house style), the station bug
 await CAP.loadFonts(FONT_DIR);
 const COPY = await CAP.loadCopy('copy.json');
-const BEATS = [['s1', 0], ['cap', 5.25], ['end', DUR]];
-const PL = CAP.plan(COPY, LANG, BEATS), T = PL.T;
+const BEATS = [['s1', 0], ['cap', EV.land + 0.15], ['end', DUR]];
+const PL = CAP.plan(COPY, LANG, BEATS), T = PL.T, END = PL.end;   // the caption's hold lengthens the film
 const EVENTS = { ...T, lang: LANG, ...EV, ...CAP.events(PL), quiet: [] };
 
 const GRADE = { exposure: 1.0, contrast: 1.08, sat: 1.0, lift: [0.018, 0.03, 0.042], gain: [1.06, 1.0, 0.9], tint: [1, 1, 1], toe: 0.02,
@@ -382,7 +377,7 @@ function frame(t, captions = true) {
   if (captions) CAP.draw(g2d, PL, t, { busy: {} });
   return out2d;
 }
-window.__film = { fps: FPS, frames: Math.round(DUR * FPS), events: EVENTS, lang: LANG,
+window.__film = { fps: FPS, frames: Math.round(END * FPS), events: EVENTS, lang: LANG,
   report: { ...CAP.report(g2d, PL, { busy: {} }) },
   frame(i, q = 0.92) { return frame(i / FPS).toDataURL('image/jpeg', q); },
   still(t) { return frame(t).toDataURL('image/png'); } };

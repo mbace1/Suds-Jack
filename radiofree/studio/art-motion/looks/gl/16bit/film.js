@@ -96,7 +96,7 @@ function runner(frame, mode, t) {
   const leg = (s, shade) => { const a = run ? Math.sin(p + s) * 0.9 : skid ? (s ? -0.5 : 0.7) : (s ? -0.15 : 0.15);
     const kx = hx + Math.sin(a) * 6, ky = hy + Math.cos(a) * 6, bend = run ? Math.max(0, -Math.cos(p + s)) * 4 : 0;
     const fx = kx + Math.sin(a - 0.4) * 6 - bend, fy = Math.min(42, ky + 7);
-    limb(hx, hy, kx, ky, 3, C.pants[shade]); limb(kx, ky, fx, fy, 3, C.pants[shade]); sg.fillStyle = C.shoe[shade]; sg.fillRect(Math.round(fx - 1), Math.round(fy - 1), 5, 3); };
+    limb(hx, hy, kx, ky, 4, C.pants[shade]); limb(kx, ky, fx, fy, 4, C.pants[shade]); sg.fillStyle = C.shoe[shade]; sg.fillRect(Math.round(fx - 2), Math.round(fy - 1), 7, 3); sg.fillStyle = C.out; sg.fillRect(Math.round(fx - 2), Math.round(fy + 1), 7, 1); };
   const arm = (s, shade) => { const a = run ? -Math.sin(p + s) * 1.1 : skid ? 1.2 : 0.2, sx0 = 18, sy0 = 15 + bob;
     const ex = sx0 + Math.sin(a) * 5, ey = sy0 + Math.cos(a) * 5, wx = ex + Math.sin(a + 0.9) * 5, wy = ey + Math.cos(a + 0.9) * 4;
     limb(sx0, sy0, ex, ey, 3, C.coat[1 + shade]); limb(ex, ey, wx, wy, 3, C.coat[1 + shade]); sg.fillStyle = C.skin[shade]; sg.fillRect(Math.round(wx - 1), Math.round(wy - 1), 3, 3); };
@@ -104,7 +104,7 @@ function runner(frame, mode, t) {
   for (let i = 0; i < 9; i++) { sg.fillStyle = C.scarf[i < 2 ? 0 : i % 2 ? 1 : 2]; sg.fillRect(15 - i * 1.6, 13 + bob + Math.round(Math.sin(t * 14 - i * 0.8) * (run ? 1.5 : 0.6)) + i * 0.3, 3, 3); }
   arm(Math.PI, 1); leg(Math.PI, 1);
   // coat body: three shades, light from the upper left
-  sg.fillStyle = C.coat[1]; sg.fillRect(13, 13 + bob, 11, 15); sg.fillStyle = C.coat[0]; sg.fillRect(13, 13 + bob, 6, 13); sg.fillStyle = C.coat[2]; sg.fillRect(21, 15 + bob, 3, 13);
+  sg.fillStyle = C.coat[1]; sg.fillRect(13, 13 + bob, 11, 16); sg.fillStyle = C.coat[0]; sg.fillRect(13, 13 + bob, 6, 13); sg.fillStyle = C.coat[2]; sg.fillRect(21, 15 + bob, 3, 13);
   sg.fillStyle = C.scarf[0]; sg.fillRect(14, 12 + bob, 10, 3); sg.fillStyle = C.scarf[1]; sg.fillRect(19, 13 + bob, 5, 2);
   leg(0, 0); arm(0, 0);
   // head: skin in three tones, spiky hair, goggles across the eyes
