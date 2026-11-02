@@ -127,13 +127,13 @@ for (const s of [-1, 1]) mesh(new THREE.CylinderGeometry(0.13, 0.13, 3.4, 8), M.
 mesh(rbox(6.6, 4.2, 0.22, 0.08), M.white, { pos: [0, 4.6, -0.1], parent: SIGN });
 mesh(new THREE.PlaneGeometry(6.4, 4.0), new THREE.MeshStandardMaterial({ map: signTex, roughness: 0.55 }), { pos: [0, 4.6, 0.02], parent: SIGN, cast: false });
 // the fence banner (owner, 2 Nov: name Google, plain type, no logo): GOOGLE DATA CENTRE SITE · MUHOS
-const siteTex = canvasTex(1536, 200, (g, w, h) => { g.fillStyle = '#1f3b57'; g.fillRect(0, 0, w, h); g.fillStyle = '#f2efe8'; g.textAlign = 'center'; g.textBaseline = 'middle';
+const siteTex = canvasTex(1220, 200, (g, w, h) => { g.fillStyle = '#1f3b57'; g.fillRect(0, 0, w, h); g.fillStyle = '#f2efe8'; g.textAlign = 'center'; g.textBaseline = 'middle';
   let fs = LANG === 'ja' ? 96 : 120; g.font = `${WT}${fs}px ${FAM}`; while (g.measureText(UI.site).width > w - 80 && fs > 40) { fs -= 4; g.font = `${WT}${fs}px ${FAM}`; } g.fillText(UI.site, w / 2, h / 2 + 6); });
-{ const GX = ROAD_W / 2 + 1.4, GY = 6.2, GZ = BARRIER_Z - 3.2;   // a gantry over the road at the fence line: the banner faces the convoy
+{ const GX = ROAD_W / 2 + 2.3, GY = 6.2, GZ = BARRIER_Z - 3.2;   // a gantry over the road at the fence line: the banner faces the convoy
   for (const s of [-1, 1]) mesh(new THREE.CylinderGeometry(0.16, 0.18, GY + 0.9, 8), M.steel, { pos: [s * GX, (GY + 0.9) / 2, GZ] });
   mesh(new THREE.BoxGeometry(GX * 2 + 0.6, 0.3, 0.3), M.steel, { pos: [0, GY + 0.9, GZ] });
-  mesh(rbox(11.2, 1.95, 0.16, 0.06), paint('#1f3b57'), { pos: [0, GY, GZ - 0.1] });
-  mesh(new THREE.PlaneGeometry(11, 1.8), new THREE.MeshStandardMaterial({ map: siteTex, roughness: 0.6 }), { pos: [0, GY, GZ + 0.0] , cast: false }); }
+  mesh(rbox(11.3, 2.0, 0.16, 0.06), paint('#1f3b57'), { pos: [0, GY, GZ + 0.05] });
+  mesh(new THREE.PlaneGeometry(11, 1.8), new THREE.MeshStandardMaterial({ map: siteTex, roughness: 0.6 }), { pos: [0, GY, GZ + 0.2], cast: false }); }
 
 // the forest: spruces (stacked cones) and autumn birches, instanced, kept off the road and the clearing
 const spruceGeo = mergeGeometries([0, 1, 2].map((i) => new THREE.ConeGeometry(2.1 - i * 0.55, 3.0, 7).translate(0, 1.8 + i * 1.7, 0)).concat([new THREE.CylinderGeometry(0.22, 0.28, 1.4, 6).translate(0, 0.7, 0)]).map((g) => g.toNonIndexed()));
@@ -271,9 +271,9 @@ function frame(t, captions = true) {
   setWorld(t);
   const L = cam(t); camera.position.copy(L.pos); camera.lookAt(L.at); camera.updateProjectionMatrix(); scene.updateMatrixWorld(true);
   // the tilt-shift band sits on the barrier: project it, every frame, so the dolly never drifts it out of focus
-  tmp.set(LANE, 1, BARRIER_Z + 12).project(camera); const cy = (tmp.y + 1) / 2;
+  tmp.set(LANE, 1, Math.max(zAt(CONVOY[0], t), BARRIER_Z + 10)).project(camera); const cy = (tmp.y + 1) / 2;
   const d = DUSK(t);
-  post.render(scene, camera, { focus: 60, aperture: 0, maxBlur: 26, tilt: 22, tiltCenter: cy, tiltBand: 0.42,
+  post.render(scene, camera, { focus: 60, aperture: 0, maxBlur: 26, tilt: 22, tiltCenter: cy, tiltBand: 0.5,
     threshold: 0.95, knee: 0.45, bloomA: 0.55, bloomB: 0.35, exposure: lerp(1.04, 1.0, d), vignette: 0.38, grain: 0.032, seed: Math.floor(t * 24),
     sat: 1.12, contrast: 1.06, toe: 0.03, lift: [0.012, 0.016, 0.03], gain: [1.03, 1.0, 0.96] });
   g2d.setTransform(1, 0, 0, 1, 0, 0); g2d.drawImage(renderer.domElement, 0, 0);

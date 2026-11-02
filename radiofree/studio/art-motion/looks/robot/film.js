@@ -53,7 +53,7 @@ const M = {
   joint: STD('#2c2f33', { roughness: 0.4, metalness: 0.6 }),
   piston: STD('#9aa1a6', { roughness: 0.25, metalness: 0.9 }),
   glass: STD('#090d10', { roughness: 0.12, metalness: 0.4 }),
-  moss: STD('#4f6b2e', { roughness: 0.95, vertexColors: true }),
+  moss: STD('#ffffff', { roughness: 0.95, vertexColors: true }),
   mossDark: STD('#34491f', { roughness: 0.95 }),
   rock: STD('#6f7470', { roughness: 0.9 }),
   bark: STD('#d9d6cf', { roughness: 0.85 }),
@@ -227,7 +227,7 @@ const DUST = (() => { const r = rng(61), n = 420, pos = new Float32Array(n * 3),
 // the leaves lying on the robot: placed in P space, they fly off on the shake
 const RLEAVES = (() => { const r = rng(71), out = [], c = new THREE.Color();
   for (let i = 0; i < 9; i++) { const m = new THREE.Mesh(LEAFG, leafMat.clone()); m.material.color.set(LEAFCOLS[i % 5]); m.castShadow = true; scene.add(m);
-    const local = [(r() - 0.2) * 0.4, TOR.y0 + 0.15 + r() * 0.55, (r() - 0.5) * 0.5];
+    const local = i < 7 ? [TOR.w / 2 + 0.02, TOR.y0 + 0.12 + r() * 0.55, (r() - 0.5) * 0.45] : [HW / 2 + 0.02, TOR.h + 0.3 + r() * 0.4, (r() - 0.5) * 0.4];
     out.push({ m, local, v: [(r() - 0.5) * 2.2, 1.2 + r() * 1.6, (r() - 0.3) * 1.6], spin: [(r() - 0.5) * 9, (r() - 0.5) * 9, (r() - 0.5) * 9], rest: [0, 0, 0] }); }
   return out; })();
 
@@ -237,14 +237,14 @@ const EV = { eyes: 1.15, plant: 1.9, sit: 2.3, stand: 3.05, shake: 3.65, look: 4
 const START = [0, 0, 0], LANDAT = [ROCK.pos[0] - 0.05, ROCK.top, ROCK.pos[2] + 0.05];
 /** everything about the robot at t: where R stands, the pelvis, the squash, the head, the hands and feet (WORLD) */
 function pose(t) {
-  const o = { r: [...START], yaw: 0, py: 0.42, tiltZ: 1.42, tiltX: 0, sq: 1, headYaw: 0, headPitch: 0.25, eyes: { on: 0, dx: 0, dy: 0, blink: 0, squint: 0, happy: 0 }, lamp: 0 };
+  const o = { r: [...START], yaw: 0, py: 0.42, tiltZ: 1.5, tiltX: 0, sq: 1, headYaw: 0, headPitch: 0.25, eyes: { on: 0, dx: 0, dy: 0, blink: 0, squint: 0, happy: 0 }, lamp: 0 };
   // 0 · lying on its side in the moss; at 1.15 the eyes flicker on (a stutter, then held), the head lifts a touch
   const fl = t - EV.eyes; if (fl > 0) o.eyes.on = fl < 0.55 ? ((Math.sin(fl * 61) > 0.2 || fl > 0.42) ? clamp(fl * 3) : 0.15) : 1;
   o.lamp = fl > 0.3 ? 1 : 0; o.eyes.dy = 0.3 * (1 - win(t, 1.7, 2.1));
   o.headPitch = lerp(0.25, -0.05, ease.io(win(t, 1.5, 2.0)));
   // 1 · it sits up: rolls off its side to upright, the top hand planted, then the other; pelvis low
   const up = ease.io(win(t, EV.sit, EV.stand));
-  o.tiltZ = lerp(1.42, 0, up); o.py = lerp(0.42, 0.3, up);
+  o.tiltZ = lerp(1.5, 0, up); o.py = lerp(0.42, 0.3, up);
   // 2 · it stands: pelvis rises, a little overshoot
   const st = win(t, EV.stand, EV.shake - 0.05); o.py = lerp(o.py, 0.5, ease.back(st)); o.tiltX = Math.sin(st * Math.PI) * 0.28;
   // squash on the push and the stand
@@ -290,19 +290,19 @@ function ends(t, o) {
   }
   // hands: lying, the top hand rests on the body and the lower one is tucked; then each is PLANTED on the moss while
   // the body rises (the telescoping arm keeps the paddle on the ground); standing, they hang at the sides
-  const plantTop = toW([-0.2, HANDR * 0.8, 0.5]), plantLow = toW([-0.55, HANDR * 0.8, 0.12]);
+  const plantLow = toW([-0.62, HANDR * 0.8, 0.2]), plantTop = toW([0.58, HANDR * 0.8, 0.14]);
   for (const A of ARMS) {
-    const side = A.s;          // +1 is the top arm while lying (its +x side faces up)
+    const side = A.s;          // +1 is the top arm while lying (its +x side faces up); −1 is underneath and does the pushing
     const rest = pToW([side * 0.52, TOR.y0 + 0.12, 0.08]);
     let h;
-    if (side > 0) {
-      const lie = pToW([0.18, TOR.y0 + 0.2, TOR.d / 2 + 0.06]);              // on its own belly, lying
-      const k1 = ease.io(win(t, EV.plant, EV.sit)), k2 = ease.io(win(t, EV.stand + 0.15, EV.shake));
-      h = k1 < 1 ? lie.lerp(plantTop, k1) : plantTop.clone(); if (k2 > 0) h = plantTop.clone().lerp(rest, k2).add(V(0, Math.sin(k2 * Math.PI) * 0.15, 0));
+    if (side < 0) {
+      const tuck = pToW([-0.5, TOR.y0 + 0.42, 0.22]);
+      const k1 = ease.io(win(t, EV.plant, EV.sit)), k2 = ease.io(win(t, EV.stand + 0.1, EV.shake - 0.05));
+      h = tuck.lerp(plantLow, k1); if (k2 > 0) h = plantLow.clone().lerp(rest, k2).add(V(0, Math.sin(k2 * Math.PI) * 0.12, 0));
     } else {
-      const tuck = pToW([-0.48, TOR.y0 + 0.5, 0.18]);
-      const k1 = ease.io(win(t, EV.sit + 0.3, EV.sit + 0.55)), k2 = ease.io(win(t, EV.stand + 0.1, EV.shake - 0.05));
-      h = k1 < 1 ? tuck.lerp(plantLow, k1) : plantLow.clone(); if (k2 > 0) h = plantLow.clone().lerp(rest, k2).add(V(0, Math.sin(k2 * Math.PI) * 0.12, 0));
+      const lie = pToW([0.2, TOR.y0 + 0.22, TOR.d / 2 + 0.07]);              // on its own belly, lying
+      const k1 = ease.io(win(t, EV.sit + 0.35, EV.sit + 0.62)), k2 = ease.io(win(t, EV.stand + 0.15, EV.shake));
+      h = lie.lerp(plantTop, k1).add(V(0, Math.sin(k1 * Math.PI) * 0.18, 0)); if (k2 > 0) h = plantTop.clone().lerp(rest, k2).add(V(0, Math.sin(k2 * Math.PI) * 0.15, 0));
     }
     // shake: arms flap; look: hang; crouch: swing back; jump: swing up and forward; land: out for balance
     const sh = t - EV.shake; if (sh > 0 && sh < 0.6) h.add(V(side * 0.12 * Math.exp(-sh * 5) * Math.abs(Math.sin(sh * 42)), 0.05 * Math.exp(-sh * 5), 0));
@@ -331,7 +331,7 @@ function placeRobot(t) {
   // the leaves on it: riding along until the shake, then thrown, then lying where they fell
   for (const L of RLEAVES) {
     const dt = t - EV.shake;
-    if (dt <= 0) { L.m.position.copy(P.localToWorld(V(...L.local))); L.m.quaternion.copy(P.getWorldQuaternion(_q)); L.m.rotateX(-Math.PI / 2 + 0.2); L.rest = L.m.position.toArray(); }
+    if (dt <= 0) { L.m.position.copy(P.localToWorld(V(...L.local))); L.m.quaternion.copy(P.getWorldQuaternion(_q)); L.m.rotateY(Math.PI / 2); L.m.rotateZ(L.spin[0] * 0.3); L.rest = L.m.position.toArray(); }
     else { const p0 = L.rest; let y = p0[1] + L.v[1] * dt - 4.9 * dt * dt * 0.6; const tl = Math.min(dt, 1.4);
       const x = p0[0] + L.v[0] * tl * 0.7, z = p0[2] + L.v[2] * tl * 0.7; y = Math.max(0.015, y + Math.sin(dt * 7 + L.v[0]) * 0.03 * Math.min(1, dt));
       L.m.position.set(x, y, z); if (y > 0.016) L.m.rotation.set(L.spin[0] * dt, L.spin[1] * dt, L.spin[2] * dt); else L.m.rotation.set(-Math.PI / 2, 0, L.spin[2]); }
@@ -342,12 +342,12 @@ function placeRobot(t) {
 // ------------------------------------------------------------------ the camera: low and close on the waking; a step back
 // for the shake and the look; it cranes and follows the jump, and settles wide on the rock with the light behind
 const CAMK = [
-  { t: 0, pos: [-0.85, 0.75, 2.45], at: [0.25, 0.32, 0.0], fov: 44 },
-  { t: 2.6, pos: [-0.75, 0.95, 2.65], at: [0.2, 0.55, 0.0], fov: 44 },
-  { t: 4.0, pos: [-0.55, 1.25, 3.25], at: [0.25, 0.9, -0.1], fov: 46 },
-  { t: 5.6, pos: [-0.35, 1.3, 3.45], at: [0.5, 0.85, -0.3], fov: 46 },
-  { t: 6.4, pos: [0.05, 1.75, 3.9], at: [1.2, 1.3, -0.6], fov: 48 },
-  { t: 8.0, pos: [0.25, 1.85, 3.75], at: [1.35, 1.45, -0.7], fov: 47 },
+  { t: 0, pos: [-1.95, 0.72, 1.6], at: [-0.35, 0.42, 0.0], fov: 42 },
+  { t: 2.2, pos: [-1.6, 0.85, 2.05], at: [-0.2, 0.52, 0.0], fov: 43 },
+  { t: 3.4, pos: [-0.7, 1.05, 2.95], at: [0.08, 0.78, 0.0], fov: 46 },
+  { t: 5.5, pos: [-0.45, 1.15, 3.25], at: [0.3, 0.82, -0.2], fov: 46 },
+  { t: 6.35, pos: [0.0, 1.6, 4.15], at: [1.05, 1.18, -0.5], fov: 48 },
+  { t: 8.0, pos: [0.25, 1.7, 3.9], at: [1.3, 1.38, -0.6], fov: 47 },
 ];
 function cam(t) {
   let i = 0; while (i < CAMK.length - 2 && t > CAMK[i + 1].t) i++;
