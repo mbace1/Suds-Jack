@@ -1,0 +1,152 @@
+{
+  "film": "cut-first",
+  "cut": "v1 stills (3 Nov): five beats in the approved 3D cars look; for the owner's approval, not for posting",
+  "series": "rfh",
+  "captionSize": "big",
+  "argument": "Google cleared about 330 hectares at Muhos first; then the regulator ordered a halt, police opened an investigation, the ground is black shale, and the water plan is due 5 Nov.",
+  "langs": [
+    "en",
+    "fi",
+    "ja"
+  ],
+  "native_read": {
+    "en": true,
+    "fi": false,
+    "ja": false
+  },
+  "syntax": "'/' breaks a line, [word] is the pop word; in Japanese a space marks a reveal segment and is never drawn",
+  "captions": [
+    {
+      "id": "cleared",
+      "role": "setup",
+      "at": "s1+0.4",
+      "until": "s2-0.3",
+      "hold": "s2",
+      "text": {
+        "en": "In Muhos, Google / cleared 330 / hectares [first].",
+        "fi": "Muhoksella / Google kaatoi / 330 hehtaaria / [ensin].",
+        "ja": "ムホスで Googleが / [まず] 330ヘクタールを / 伐採。"
+      },
+      "source": "About 330 ha cleared at Muhos: Google's own figure (Fortune 26 Oct 2026; Kainuun Sanomat; Maaseudun Tulevaisuus). The site company is Tuike Finland, which represents Google; Google has confirmed the site and the figure, so the caption names Google (owner, 3 Nov: 'use Google for the Finland data centers for now'). 'First' is the station's word for the order of events: the clearing came before the water plan the regulator later demanded (caption 5)."
+    },
+    {
+      "id": "stop",
+      "role": "evidence",
+      "at": "s2+0.4",
+      "until": "s3-0.3",
+      "hold": "s3",
+      "text": {
+        "en": "Then the regulator / said [stop].",
+        "fi": "Sitten virasto / sanoi: [seis].",
+        "ja": "そして 当局が / [停止を] 命じた。"
+      },
+      "source": "LVV (Lupa- ja valvontavirasto, the licensing and supervisory authority) asked Tuike Finland on 6 Oct 2026 to stop the work, with compliance due 23 Oct (Kaleva; Satakunnan Kansa). The lvv.fi release title was seen; the page is blocked from here."
+    },
+    {
+      "id": "police",
+      "role": "evidence",
+      "at": "s3+0.4",
+      "until": "s4-0.3",
+      "hold": "s4",
+      "text": {
+        "en": "Now the police / are [investigating].",
+        "fi": "Nyt asiaa / [tutkii] poliisi.",
+        "ja": "今は 警察が / [調べて] いる。"
+      },
+      "source": "The Oulu Police Department decided to investigate Tuike Finland over the preparatory work at Muhos, on suspected breaches of environmental law (Reuters 29 Oct 2026, via Al Jazeera, Courthouse News, The Star). Yle reports five requests for an investigation. The Finnish term differs between summaries (esitutkinta / esiselvitys), so the copy uses the plain verb in every language (tutkii; 調べている) and claims no charge."
+    },
+    {
+      "id": "shale",
+      "role": "evidence",
+      "at": "s4+0.4",
+      "until": "s5-0.3",
+      "hold": "s5",
+      "text": {
+        "en": "The site sits on / [black shale].",
+        "fi": "Työmaan alla on / [mustaliusketta].",
+        "ja": "現場は / [黒色頁岩] 地帯。"
+      },
+      "source": "LVV places the site in the black-shale area and says monitoring already shows changes pointing to acidification (Kaleva; Satakunnan Kansa; Uutissuomalainen). Black shale holds sulphides that turn acid when dug up and exposed to air (GTK, general geology). The ditch in the picture is the reported ditching (its notice was late and it needs a Water Act permit); the ditch walls' layers are drawn, not surveyed."
+    },
+    {
+      "id": "plan",
+      "role": "punchline",
+      "at": "s5+0.5",
+      "until": "end-0.4",
+      "hold": "end",
+      "text": {
+        "en": "Cut first. / Plan [last].",
+        "fi": "Ensin kaadetaan. / Suunnitelma / [myöhemmin].",
+        "ja": "まず 伐って、 / 計画は [後回し]。"
+      },
+      "source": "The station's line. The detailed water-management plan, covering the acid-producing soils and extreme runoff, is due on 5 Nov 2026, after the clearing (Kaleva; Satakunnan Kansa; Uutissuomalainen); a conditional fine is possible. The tag beside it is Google's side: a spokesperson said it will replant 130 ha (Kainuun Sanomat; MT; Fortune, which notes that is less than half of what was cleared)."
+    }
+  ],
+  "ui": {
+    "stop": {
+      "en": "STOP",
+      "fi": "STOP",
+      "ja": "STOP"
+    },
+    "halt": {
+      "en": "HALT ORDER · 6 OCT",
+      "fi": "KESKEYTYSMÄÄRÄYS · 6.10.",
+      "ja": "停止命令 · 10月6日"
+    },
+    "site": {
+      "en": "GOOGLE DATA CENTRE SITE · MUHOS",
+      "fi": "GOOGLEN DATAKESKUSTYÖMAA · MUHOS",
+      "ja": "Google データセンター建設地 · MUHOS"
+    },
+    "police": {
+      "en": "POLIISI",
+      "fi": "POLIISI",
+      "ja": "POLIISI"
+    },
+    "calHead": {
+      "en": "WATER PLAN DUE",
+      "fi": "VESISUUNNITELMA",
+      "ja": "水管理計画の期限"
+    },
+    "calA": {
+      "en": "4 NOV",
+      "fi": "4.11.",
+      "ja": "11月4日"
+    },
+    "calB": {
+      "en": "5 NOV",
+      "fi": "5.11.",
+      "ja": "11月5日"
+    },
+    "tag1": {
+      "en": "330 HA · GOOGLE'S OWN FIGURE",
+      "fi": "330 HA · GOOGLEN OMA LUKU",
+      "ja": "330ヘクタール · Google自身の数字"
+    },
+    "tag2": {
+      "en": "ORDER BY LVV, FINLAND'S PERMIT REGULATOR",
+      "fi": "MÄÄRÄYS: LUPA- JA VALVONTAVIRASTO",
+      "ja": "命令：フィンランド許認可監督庁（LVV）"
+    },
+    "tag3": {
+      "en": "OULU POLICE · REUTERS, 29 OCT 2026",
+      "fi": "OULUN POLIISI · REUTERS 29.10.2026",
+      "ja": "オウル警察 · ロイター 2026年10月29日"
+    },
+    "tag4": {
+      "en": "LVV: MONITORING POINTS TO ACIDIFICATION",
+      "fi": "LVV: SEURANTA VIITTAA HAPPAMOITUMISEEN",
+      "ja": "LVV：監視で酸性化の兆候"
+    },
+    "tag5": {
+      "en": "GOOGLE SAYS IT WILL REPLANT 130 HA",
+      "fi": "GOOGLE: AIKOO ISTUTTAA 130 HA",
+      "ja": "Google：130ヘクタールを植林予定"
+    }
+  },
+  "post": {
+    "en": "In Muhos, Finland, Google cleared about 330 ha of forest for a data centre. The regulator ordered a halt on 6 Oct; Oulu police are investigating. The site is in a black-shale zone. Google says it will replant 130 ha. The water plan is due 5 Nov. Shouldn't the plan come first?",
+    "fi": "Muhoksella Google kaatoi noin 330 hehtaaria metsää datakeskuksen tieltä. Lupa- ja valvontavirasto määräsi työt keskeytettäviksi 6.10., ja Oulun poliisi tutkii asiaa. Alue on mustaliuskealuetta. Google kertoo istuttavansa 130 hehtaaria. Vesisuunnitelma on jätettävä 5.11. Eikö suunnitelman pitäisi tulla ensin?",
+    "ja": "フィンランドのムホスで、Googleはデータセンターのために約330ヘクタールの森を伐採した。当局は10月6日に作業の停止を命じ、オウル警察が調べている。現場は黒色頁岩地帯。Googleは130ヘクタールを植林するとしている。水管理計画の期限は11月5日。計画が先では？"
+  }
+}
