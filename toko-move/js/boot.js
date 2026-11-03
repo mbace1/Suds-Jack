@@ -8,5 +8,5 @@
 // tester's link and a shared daily keep working.
 const p = new URLSearchParams(location.search);
 const CLASSIC = ['classic', 'shift', 'daily', 'day', 'weather', 'rush', 'kit', 'week', 'live', 'skin', 'mutator'].some(k => p.has(k));
-if (CLASSIC) import('./main-v212.js?v=77');
-else import('./play.js?v=1');
+if (CLASSIC) import('./main-v212.js?v=78');
+else import('./play.js?v=2');

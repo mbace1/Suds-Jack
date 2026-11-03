@@ -9,21 +9,43 @@ but it's less actual schedule, more curated narrative roguelike with fun
 choices and minimalistic visuals."* Signed off as turn-based card hops, the
 scenes as the main view with the board between moments, and a slim job strip.
 
-v3.0 shipped the frame of it. The bare address is the card journey
-(`js/journey.js` + `js/play.js`), and the real-time game is `?classic`. What
-is next, in order:
+v3.0 shipped the frame of it, and v3.1 shipped Act 1's content (`ACT1.md`):
+36 Helsinki cards by tone, stakes with the odds in words, euros, buyers and
+what the parcels held, the weather, six tram models (look only), and
+landmarks at twelve key stations. The bare address is the card journey
+(`js/journey.js` + `js/play.js`); the real-time game is `?classic`.
 
-1. ~~**A deck written for the journey.**~~ Shipped in v3.1 (Act 1, `ACT1.md`):
-   36 Helsinki cards by tone, stakes with the odds in words, buyers and the
-   parcels' contents, the weather, six tram models (look only), and landmarks
-   at twelve key stations. Next for the deck: the itch bible's CARDS.md story
-   arcs (Same Morning, the Inspector, the Other Courier, the Retired Number,
-   the Dispatch arc), and interiors for the old trams.
-2. **The sealed parcel, the rival and the regulars on the journey.** They are
-   run-modifiers, so each adds a card and never a screen.
-3. **The daily and the week as journeys.** Today they open the real-time game.
-4. **Sound.**
-5. **The store copy, stills and cover re-shot from v3.** Do this before itch.
+### Act 1 to ship — the plan (owner, 2026-11-03: *"keep going with upgrading through a plan"*)
+
+The owner's Act 1 note put feel first: *"Making the visual layers have smooth
+animations will add to the appeal. UI animations and effects will be a big
+polish issue for shipping the Helsinki act."* So the order is feel, then
+character, then the modes, then the store. One version per step, each measured
+and gated, each deployed before the next starts.
+
+1. ~~**The cabinet cover from the v3.1 scenes.**~~ Done 2026-11-03: the
+   arcade's `tramstop` marquee is the Kauppatori stop as the game draws it.
+2. ~~**v3.2 · Sound for the journey.**~~ Shipped in v3.2. The journey is silent; only `?classic`
+   has the kit. The same house kit (synthesised, one master gain, the same
+   kept mute): a tram bell when it pulls in, the ride, a card dealt, the
+   stamp, euros counting up, a risk landing or not, a sale, the museum tram,
+   quiet weather beds (rain, snow wind, night), and the end of a run.
+3. **v3.3 · The old trams from inside.** One interior serves all six models
+   today; Nr I, Nr II and the museum tram get their own (wood, brass, the
+   bell rope), the newer ones share theirs. Look only, like the outside.
+4. **v3.4 · Story arcs.** The itch bible's CARDS.md arcs (Same Morning, the
+   Inspector, the Other Courier, the Retired Number, the Dispatch arc): a card
+   that comes back later in the same run and remembers what you chose. The
+   character and the funny moments live here.
+5. **v3.5 · The rival, the regulars and the sealed parcel on the journey.**
+   Run modifiers, so each adds a card and never a screen.
+6. **v3.6 · The daily and the week as journeys.** Today they open the
+   real-time game.
+7. **v3.7 · The ship bar on the journey, and the store pass.** `ship.cjs`'s
+   S1–S7 re-run against the journey (a whole run by tapping, leaving
+   mid-run, hostile storage, landscape and 320px, frame cost, sound and mute,
+   credits), then the store copy, stills and cover re-shot from v3. Then Act 1
+   is ready for itch — the upload stays the owner's.
 
 ## Owner direction, 2026-10-24 — publish Toko Move first; Piritori is its spin-off
 
