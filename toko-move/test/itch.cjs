@@ -68,8 +68,10 @@ server.listen(0, '127.0.0.1', async () => {
       if (!s.busy && s.btn) { await page.tap('#v3panel .eventOpt[data-i="0"]').catch(() => {}); await page.waitForTimeout(100); continue; }
       await page.touchscreen.tap(80, 380).catch(() => {}); await page.waitForTimeout(140);
     }
-    const j = await page.evaluate(() => ({ done: window.__tm3.state().done, painted: [...document.querySelectorAll('#v3frame .L')].map(e => getComputedStyle(e).backgroundImage).filter(b => /\.webp/.test(b)).length }));
-    ok(`a card-journey delivery from the zip alone (${j.done} delivered; scenes ${[...scenes]}; ${boards} board frames)`, j.done >= 1 && boards > 0 && scenes.has('stop'));
+    const j = await page.evaluate(() => ({ done: window.__tm3.state().done, hops: window.__tm3.boards, painted: [...document.querySelectorAll('#v3frame .L')].map(e => getComputedStyle(e).backgroundImage).filter(b => /\.webp/.test(b)).length }));
+    // hops are COUNTED (__tm3.boards): this loop hurries every animation, so a
+    // sampled board frame was luck, and v3.1's tram drive-in made it unlucky
+    ok(`a card-journey delivery from the zip alone (${j.done} delivered; scenes ${[...scenes]}; ${j.hops} hops on the board)`, j.done >= 1 && j.hops > 0 && scenes.has('stop'));
     ok(`the scenes are in the package and painted (${j.painted} layers)`, j.painted >= 4);
     // ?classic: the real-time game, from the same zip
     await page.goto(`${base}/toko-move/index.html?classic`, { waitUntil: 'load' });

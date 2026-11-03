@@ -438,6 +438,7 @@ function render() {
 function showBoard(hop, t = 1) { const cv = $('v3board'); cv.classList.add('on'); board.resize(); board.draw({ at: S.at, hop, t, dest: S.job?.to, destColour: S.job ? colourOf(S.job.cargo) : undefined, halted: haltedLayer }); weather(); }
 function hideBoard() { $('v3board').classList.remove('on'); weather(); }
 function rideBoard(hop, t0 = 0, t1 = 1) {
+  game.boards++;
   return new Promise(done => {
     const cv = $('v3board'); cv.classList.add('on'); board.resize(); $('v3mini').hidden = true; weather();
     const dur = CALM ? 300 : (1300 + 700 * Math.min(1, hop.price / 900)) * (t1 - t0), start = performance.now();
@@ -572,5 +573,7 @@ sizeFrame();
 
 // For the gates: what the screen is showing, read-only. Every action a gate
 // takes is a tap on a real button.
-const game = { version: BUILD_VERSION, run: RUN, seed: SEED, ready, state: () => S, net: () => net, card: () => (S ? J.card(net, S) : null), busy: () => busy, scene: () => scene, result: null };
+// `boards` counts the hops played on the board — a hurried player skips each
+// in a frame, so a gate counts them rather than hoping to sample one.
+const game = { version: BUILD_VERSION, run: RUN, seed: SEED, ready, state: () => S, net: () => net, card: () => (S ? J.card(net, S) : null), busy: () => busy, scene: () => scene, result: null, boards: 0 };
 globalThis.__tm3 = game;

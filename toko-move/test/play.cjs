@@ -143,7 +143,8 @@ server.listen(0, '127.0.0.1', async () => {
       ok(`the pill's clock is the run's clock at every card (${seen.clocks.length} read)`, !offClock.length, JSON.stringify(offClock.slice(0, 3)));
       ok(`the stop and the tram interior were both on screen (${[...seen.scenes]})`, seen.scenes.has('stop') && seen.scenes.has('tram'));
       ok(`a ride shows the in-car display (${seen.signs[0] || 'none'})`, seen.signs.some(s => /›/.test(s)));
-      ok(`hops were played on the board (${seen.boards} frames)`, seen.boards > 0);
+      const hops = await page.evaluate(() => window.__tm3.boards);
+      ok(`hops were played on the board (${hops} hops; counted, since a hurried tap skips each in a frame)`, hops > 0);
       ok(`the strip names the job and where it goes (${seen.strips[0]})`, seen.strips.length && seen.strips.every(s => /→/.test(s) && /min (left)|late by/.test(s)));
       ok(`every drop is stamped, with what was inside and what it paid (${seen.stamps.find(s => /DELIVERED/.test(s))})`, seen.stamps.some(s => /DELIVERED/.test(s) && /Signed for: \S/.test(s) && /\+€\d+/.test(s)));
       const risky = seen.stakes.find(x => /^(usually|maybe|long shot) .+ · or .+/.test(x));
