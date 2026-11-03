@@ -48,6 +48,10 @@ const seedRuns = (ctx, runs) => ctx.addInitScript(r => { try { if (!sessionStora
 const ready = page => page.waitForFunction(() => window.__tm3 && !document.getElementById('play').disabled, null, { timeout: 30000 });
 
 // What the screen shows, read the way a person reads it.
+// the top row: the pill must clear the arcade's HUB button and ♪, at any width
+const topRow = page => page.evaluate(() => { const r = e => e?.getBoundingClientRect(), pill = r(document.getElementById('v3pill')), snd = r(document.getElementById('v3sound')), home = r(document.querySelector('.arcade-home'));
+  const hit = (a, c) => !!a && !!c && a.width > 0 && c.width > 0 && a.left < c.right && c.left < a.right && a.top < c.bottom && c.top < a.bottom;
+  return { home: hit(pill, home), snd: hit(pill, snd), w: Math.round(pill.width), left: Math.round(pill.left), right: Math.round(pill.right), hasHome: !!home?.width, t: document.getElementById('v3pill').style.transform }; });
 const look = page => page.evaluate(() => {
   const end = document.getElementById('end'), panel = document.getElementById('v3panel');
   const btns = [...panel.querySelectorAll('.eventOpt:not([disabled])')];
@@ -111,7 +115,7 @@ server.listen(0, '127.0.0.1', async () => {
         runs: [...document.querySelectorAll('#mutRow .run')].map(r => ({ id: r.dataset.run, open: !r.classList.contains('locked'), lit: r.classList.contains('on') })),
         goal: document.getElementById('titleGoal').textContent, play: document.getElementById('play').textContent,
         links: ['dailyLink', 'weekLink', 'liveLink'].filter(id => { const e = document.getElementById(id); return e && !e.hidden && getComputedStyle(e).display !== 'none'; }) }));
-      ok(`the bare address is the card journey, not the real-time game (v${t.v})`, !t.classic && t.v === '3.1' && /v3\.1/.test(t.hero));
+      ok(`the bare address is the card journey, not the real-time game (v${t.v})`, !t.classic && t.v === '3.2' && /v3\.2/.test(t.hero));
       ok(`it is Act 1, in Helsinki (${await page.evaluate(() => document.getElementById('titleWhen').textContent)})`, await page.evaluate(() => /^Act 1 · Helsinki · 07:00/.test(document.getElementById('titleWhen').textContent)));
       ok(`the ladder: EASY open and lit, three locked (${t.runs.map(r => r.id + (r.open ? '' : '🔒')).join(' ')})`, t.runs.map(r => r.id).join() === 'easy,medium,hard,night' && t.runs[0].open && t.runs[0].lit && t.runs.slice(1).every(r => !r.open) && t.run === 'easy');
       ok(`the goal and the button (${t.goal} · ${t.play})`, /^Three deliveries before 08:15/.test(t.goal) && t.play === 'START SHIFT');
@@ -128,6 +132,16 @@ server.listen(0, '127.0.0.1', async () => {
       ok(`the HUD pill: the run's clock, three empty jobs, no money yet (${first.clock} ${first.dots} ${first.eur})`, first.clock === '07:00' && first.dots === '○○○' && first.eur === '€0');
       ok(`Take it says what the job pays (${first.stakes})`, /^€\d+$/.test(first.stakes[0] || ''));
       ok('the corner map shows where the job on offer goes', first.mini);
+      // ── sound (v3.2): the house kit's toggle on the journey, top-right, and a real mute
+      const snd = await page.evaluate(() => { const r = e => e?.getBoundingClientRect(), b = r(document.getElementById('v3sound')), pill = r(document.getElementById('v3pill')), home = r(document.querySelector('.arcade-home'));
+        const hit = (a, c) => !!a && !!c && a.left < c.right && c.left < a.right && a.top < c.bottom && c.top < a.bottom;
+        return { w: b?.width, h: b?.height, right: b ? innerWidth - b.right : null, pressed: document.getElementById('v3sound')?.getAttribute('aria-pressed'), pill: hit(b, pill), home: hit(b, home), level: window.__tm3.audio.level() }; });
+      ok(`a sound toggle, 44px, top-right, clear of the pill and the HUB button (${snd.w}×${snd.h}, ${snd.right}px from the edge)`, snd.w >= 44 && snd.h >= 44 && snd.right < 20 && !snd.pill && !snd.home && snd.pressed === 'true');
+      await page.tap('#v3sound'); await page.waitForTimeout(100);
+      const off = await page.evaluate(() => ({ pressed: document.getElementById('v3sound').getAttribute('aria-pressed'), kept: localStorage.getItem('tokoMoveSound'), level: window.__tm3.audio.level() }));
+      await page.tap('#v3sound'); await page.waitForTimeout(100);
+      const back = await page.evaluate(() => ({ pressed: document.getElementById('v3sound').getAttribute('aria-pressed'), kept: localStorage.getItem('tokoMoveSound'), level: window.__tm3.audio.level() }));
+      ok(`♪ mutes at once and the choice is kept, the same key as ?classic (${off.pressed}/${off.kept}/${off.level} → ${back.pressed}/${back.kept}/${back.level})`, off.pressed === 'false' && off.kept === 'off' && off.level === 0 && back.pressed === 'true' && back.kept === 'on' && back.level > 0);
       // the corner MAP opens the board, and a tap closes it
       await page.tap('#v3mini'); await page.waitForTimeout(250);
       const open = await page.evaluate(() => ({ on: document.getElementById('v3board').classList.contains('on'), card: getComputedStyle(document.getElementById('v3panel')).visibility }));
@@ -153,6 +167,11 @@ server.listen(0, '127.0.0.1', async () => {
       const tr = seen.trams.find(t => t.model && /^\d+$/.test(t.chip));
       ok(`a tram ride pulls in at the stop as a model, with the line's number on its chip (${JSON.stringify(tr)})`, !!tr && ['artic', 'nr2plus', 'vario', 'nr2', 'nr1', 'museum'].includes(tr.model));
       ok(`every stop has its plate (${[...seen.plates].join(', ')})`, seen.plates.size >= 2);
+      const heard = await page.evaluate(() => [...new Set(window.__tm3.audio.log.map(e => e.name))]);
+      const need = ['forecast', 'deal', 'tap', 'stamp', 'end'], missing = need.filter(n => !heard.includes(n));
+      ok(`the run is heard: the forecast, a card dealt, a tap, the stamp, the end (${heard.join(' ')})`, !missing.length, `missing ${missing}`);
+      ok('a tram rings in, and a hop is heard on the rails or underfoot', heard.some(n => n === 'bell' || n === 'museum') && heard.some(n => n === 'ride' || n === 'walk'));
+      ok('a delivery is heard as one (or as late)', heard.includes('deliver') || heard.includes('late'));
       const eur = await page.evaluate(() => document.getElementById('endStats').textContent);
       ok(`the end card says what was earned, in euros, and what you carried (${(eur.match(/earned €\d+/) || [])[0]})`, /earned €[1-9]\d*/.test(eur) && /WHAT YOU CARRIED/.test(eur) && (eur.match(/· (delivered|sold)/g) || []).length >= 3);
       const card = await page.evaluate(() => ({ t: document.getElementById('endTitle').textContent, stars: document.querySelector('.runStars')?.textContent || '', opened: [...document.querySelectorAll('.runOpened')].map(e => e.textContent), next: document.getElementById('nextRun')?.textContent || null, again: document.getElementById('again').textContent }));
@@ -181,6 +200,8 @@ server.listen(0, '127.0.0.1', async () => {
       ok(`the halt is a card that names the line, and the stop's tram pulses (${halt?.line})`, !!halt && /is halted/.test(halt.line) && halt.halt && halt.scene === 'stop' && halt.tram && /^\d+$/.test(halt.tram.chip));
       const hw = await page.evaluate(() => window.__tm3.state().weather);
       ok(`HARD's shift is snow or rain, and it falls on the stop (${hw})`, ['snow', 'rain'].includes(hw) && (halt?.wx || '').includes(`${hw} on`));
+      const beds = await page.evaluate(() => window.__tm3.audio.log.filter(e => /^bed:/.test(e.name)).map(e => e.name));
+      ok(`and it is heard: a ${hw} bed under the stop, quiet inside the car (${beds.slice(0, 4).join(' ')})`, beds.includes(`bed:${hw}`) && beds.includes('bed:none'));
       ok(`and both ways out are priced (${halt?.buttons.map(b => b.t).join(' / ')})`, !!halt && halt.buttons.length === 2 && /Find another way/.test(halt.buttons[0].t) && /Wait it out/.test(halt.buttons[1].t));
       ok('no page or network errors (HARD)', !errs.length, errs.slice(0, 3).join(' | '));
       await ctx.close();
@@ -199,8 +220,22 @@ server.listen(0, '127.0.0.1', async () => {
       ok(`the tram with no number pulls in: the museum tram, no number on it, glowing (${JSON.stringify(ghost?.tram)})`, ghost?.tram?.model === 'museum' && ghost.tram.chip === '' && ghost.tram.glow);
       const c = seen.cards[0];
       ok(`the night stage: the pill reads after eleven, five jobs (${c?.clock} ${c?.dots})`, !!c && /^23:/.test(c.clock) && c.dots === '○○○○○' && c.night);
+      const nt = await topRow(page);
+      ok(`the night's wider pill clears the HUB button and ♪ (${nt.left}–${nt.right}px ${nt.t || 'centred'})`, nt.hasHome && !nt.home && !nt.snd);
       ok(`a ride at night is the night car (${[...seen.scenes]})`, seen.scenes.has('night') && !seen.scenes.has('tram'));
+      ok('the night hums under the city', await page.evaluate(() => window.__tm3.audio.log.some(e => e.name === 'bed:night')));
       ok('no page or network errors (NIGHT)', !errs.length, errs.slice(0, 3).join(' | '));
+      await ctx.close();
+    }
+    // ── a 320px phone: the pill still clears both corners, scaled if it must be
+    {
+      const ctx = await browser.newContext({ ...PHONE, viewport: { width: 320, height: 640 } }); await seedRuns(ctx, { easy: { done: true }, medium: { done: true }, hard: { done: true } });
+      const page = await ctx.newPage(), errs = watch(page);
+      await page.goto(`${base}/toko-move/?run=night&seed=60`, { waitUntil: 'load' }); await ready(page);
+      await page.tap('#play'); await page.waitForSelector('#v3panel .eventOpt', { timeout: 15000 }); await page.waitForTimeout(400);
+      const t = await topRow(page), scale = Number((t.t.match(/scale\(([\d.]+)\)/) || [])[1] || 1);
+      ok(`on a 320px phone the night pill clears the HUB button and ♪ (${t.left}–${t.right}px, ×${scale})`, t.hasHome && !t.home && !t.snd && scale >= 0.6);
+      ok('no page or network errors (320px)', !errs.length, errs.slice(0, 3).join(' | '));
       await ctx.close();
     }
     // ── in Finnish

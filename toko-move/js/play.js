@@ -37,8 +37,9 @@ import { esc } from './ui.js?v=2';
 import { STORE } from './platform.js?v=1';
 import { lineFamily } from './board.js?v=8';
 import { TRAMS } from './cards.js?v=1';
+import { mountAudio } from './audio.js?v=2';
 
-export const BUILD_VERSION = '3.1';
+export const BUILD_VERSION = '3.2';
 const $ = id => document.getElementById(id);
 const params = new URLSearchParams(location.search);
 const RUN = Runs.resolveRun(params);
@@ -124,7 +125,10 @@ const CSS = `
 #v3board{position:absolute;inset:0;width:100%;height:100%;opacity:0;transition:opacity .22s;pointer-events:none}
 #v3board.on{opacity:1;pointer-events:auto}
 #v3top{position:absolute;left:0;right:0;top:calc(env(safe-area-inset-top) + 10px);display:flex;flex-direction:column;align-items:center;gap:6px;pointer-events:none;z-index:3}
-@media (max-width:520px){#v3top .v3pill{margin-left:58px}}   /* the arcade's HUB button owns the top-left corner; the strip below it is clear */
+#v3top .v3pill{transform-origin:50% 50%}   /* fitTop() places it between the HUB button and ♪ */
+#v3sound{position:absolute;top:calc(env(safe-area-inset-top) + 8px);right:calc(env(safe-area-inset-right) + 8px);z-index:4;width:44px;height:44px;border-radius:50%;border:0;background:#fff;color:#233d4d;font:700 19px/44px system-ui,sans-serif;box-shadow:0 0 0 1px rgba(21,38,43,.12),0 2px 6px rgba(21,38,43,.14);cursor:pointer;padding:0}
+#v3sound.off{color:rgba(35,61,77,.38);text-decoration:line-through}
+#v3.night #v3sound{background:#161e24;color:#f6f9fc;box-shadow:0 0 0 1px #2a363e}#v3.night #v3sound.off{color:rgba(246,249,252,.38)}
 .v3pill{display:inline-flex;align-items:center;gap:9px;padding:3px 3px 3px 12px;height:40px;border-radius:999px;background:#fff;box-shadow:0 0 0 1px rgba(21,38,43,.12),0 2px 6px rgba(21,38,43,.14)}
 .v3pill .clk{font-size:18px;font-weight:800;font-variant-numeric:tabular-nums;line-height:1}
 .v3pill .wxg{font-size:14px;line-height:1;opacity:.75}
@@ -198,7 +202,7 @@ for (const id of ['hud', 'map', 'transitPanel', 'zoomRail', 'pop', 'feed', 'shee
 document.head.insertAdjacentHTML('beforeend', `<style id="v3css">${CSS}</style>`);
 document.body.insertAdjacentHTML('afterbegin', `<div id="v3" hidden class="${NIGHT ? 'night' : ''}"><div class="frame" id="v3frame"></div><div id="v3wx"></div><canvas id="v3board" aria-label="the board: where you are going"></canvas>
 <div id="v3top"><span class="v3pill" id="v3pill"><span class="wxg" id="v3wxg" aria-hidden="true"></span><span class="clk" id="v3clock">07:00</span><span class="dots" id="v3dots" aria-label="jobs"></span><span class="eur" id="v3eur">€0</span><span class="v3ring" id="v3ring" title="time left on this job"></span></span><div class="v3strip" id="v3strip" hidden></div></div>
-<button id="v3mini" type="button" hidden aria-label="the board"><canvas id="v3minic"></canvas><span class="tag">MAP</span></button><div id="v3panel" aria-live="polite"></div></div>`);
+<button id="v3sound" type="button" aria-pressed="true" aria-label="sound on" title="sound on">♪</button><button id="v3mini" type="button" hidden aria-label="the board"><canvas id="v3minic"></canvas><span class="tag">MAP</span></button><div id="v3panel" aria-live="polite"></div></div>`);
 const stage = $('v3'), frameEl = $('v3frame'), panel = $('v3panel'), wxEl = $('v3wx');
 // focusing a button that is still sliding in scrolled the stage under the HUD
 // (overflow:hidden is a scroll container); the stage never scrolls
@@ -206,6 +210,9 @@ stage.addEventListener('scroll', () => { stage.scrollTop = 0; stage.scrollLeft =
 
 // ── the frame ──────────────────────────────────────────────────────────────
 let fmt = '', scene = '', sceneKey = '', ACT = null;
+// sound (v3.2): the house kit, mounted on the handle at the bottom of the file
+let audio = null;
+const sfx = name => audio?.play(name);
 function sizeFrame() {
   const f = innerWidth / innerHeight < 1 ? '916' : '169';
   if (f !== fmt) { fmt = f; stage.classList.toggle('fmt-916', f === '916'); stage.classList.toggle('fmt-169', f === '169'); if (scene) paintScene(scene, view, true); }
@@ -280,7 +287,8 @@ function setTram(t) {
 // Drive along the track: in from up the line, or on and away. A Web Animation,
 // so a tap finishes it.
 function drive(dir) {
-  const el = $('v3tram'); if (!el || el.hidden || CALM) { if (dir === 'out' && el) el.hidden = true; return Promise.resolve(); }
+  const el = $('v3tram');
+  if (dir === 'in' && el && !el.hidden && !el.classList.contains('glow')) sfx(el.dataset.model === 'museum' ? 'museum' : 'bell'); if (!el || el.hidden || CALM) { if (dir === 'out' && el) el.hidden = true; return Promise.resolve(); }
   const ax = ACT?.axis?.[fmt] || [-0.866, 0.5], D = frameEl.offsetWidth * 0.9, off = `translate(${-ax[0] * D}px, ${-ax[1] * D}px)`, away = `translate(${ax[0] * D}px, ${ax[1] * D}px)`;
   const a = el.animate(dir === 'in' ? [{ transform: off }, { transform: 'none' }] : [{ transform: 'none' }, { transform: away }],
     { duration: dir === 'in' ? 950 : 850, easing: dir === 'in' ? 'cubic-bezier(.15,.7,.25,1)' : 'cubic-bezier(.6,0,.85,.4)', fill: 'forwards' });
@@ -293,6 +301,7 @@ function drive(dir) {
 function weather() {
   const w = S?.weather || 'clear', show = w !== 'clear' && (scene === 'stop' || $('v3board').classList.contains('on'));
   wxEl.className = show ? `${w} on` : w;
+  audio?.bed(show ? w : (NIGHT && !stage.hidden ? 'night' : null));
 }
 
 // ── loading ────────────────────────────────────────────────────────────────
@@ -356,6 +365,24 @@ function paintHud() {
   if (job) { strip.hidden = false; const m = job.mult;
     strip.innerHTML = `${parcelHtml(job.cargo, { max: 15 })}<span>${esc(J.cargoWord(job.cargo))}</span><span aria-hidden="true">→</span><b>${esc(net.name(job.to).toUpperCase())}</b><span class="fee">€${job.fee}</span>${m !== 1 ? `<span class="mult${m < 1 ? ' down' : ''}">×${+m.toFixed(2)}</span>` : ''}<span class="left${left < 0 ? ' late' : ''}">${left < 0 ? `late by ${Math.ceil(-left / 60)} min` : `${Math.max(1, Math.ceil(left / 60))} min left`}</span>`; }
   else strip.hidden = true;
+  fitTop();
+}
+
+// The pill lives between two corners it does not own: the arcade's HUB button
+// top-left and ♪ top-right. A fixed margin fitted the day's pill and put the
+// night's — five jobs and the weather — under the HUB button, and nothing fits
+// a 320px phone at full size. So it is MEASURED: centred if it clears both,
+// slid if it fits but not centred, and scaled down only when it cannot fit.
+function fitTop() {
+  const pill = $('v3pill'), snd = $('v3sound'); if (!pill || !snd || stage.hidden) return;
+  pill.style.transform = '';
+  const W = innerWidth, home = document.querySelector('.arcade-home'), hr = home?.getBoundingClientRect();
+  const L = hr && hr.width ? hr.right + 6 : 8, R = snd.getBoundingClientRect().left - 6, w = pill.offsetWidth;
+  const x0 = (W - w) / 2, x1 = x0 + w;
+  if (x0 >= L && x1 <= R) return;
+  if (w <= R - L) { pill.style.transform = `translateX(${Math.round(x0 < L ? L - x0 : R - x1)}px)`; return; }
+  const k = Math.max(0.6, (R - L) / w);
+  pill.style.transform = `translateX(${Math.round((L + R) / 2 - W / 2)}px) scale(${k.toFixed(3)})`;
 }
 
 // ── the card ───────────────────────────────────────────────────────────────
@@ -371,7 +398,10 @@ function stakesHtml(st) {
   if (st.sure) return `<small class="evStk">${chipSpans(st.sure)}</small>`;
   return `<small class="evStk"><em class="${st.odds === 'long shot' ? 'long' : st.odds}">${esc(st.odds)}</em> ${chipSpans(st.win)} <span class="or">· or</span> ${chipSpans(st.lose)}</small>`;
 }
+let dealt = '';
 function paintCard(c) {
+  const key = `${S.log.length}:${c.kind}:${c.id || ''}:${c.text}`;
+  if (key !== dealt) { dealt = key; sfx(c.kind === 'halt' ? 'event' : 'deal'); }
   const stack = c.options.some(o => String(tr(o.label)).length > 18 || o.stakes);
   panel.innerHTML = `<section class="eventCard mood-${esc(c.mood)}" data-kind="${c.kind}"${c.id ? ` data-card="${c.id}"` : ''}><div class="evHead">${face(c.mood)}<b class="evLine">${c.at ? `<span class="evAt">${esc(c.at.toUpperCase())}</span>` : ''}${esc(c.text)}</b></div><div class="evOpts${stack ? ' evStack' : ''}">${c.options.map((o, i) => `<button class="evBtn ${i === 0 ? 'evPrimary' : 'evGhost'} eventOpt" type="button" data-i="${i}"><span class="evLb"><span>${esc(o.label)}</span>${stakesHtml(o.stakes)}</span><span class="evCost">${price(o.price)}</span></button>`).join('')}</div></section>`;
   const armed = performance.now() + 300;
@@ -438,7 +468,7 @@ function render() {
 function showBoard(hop, t = 1) { const cv = $('v3board'); cv.classList.add('on'); board.resize(); board.draw({ at: S.at, hop, t, dest: S.job?.to, destColour: S.job ? colourOf(S.job.cargo) : undefined, halted: haltedLayer }); weather(); }
 function hideBoard() { $('v3board').classList.remove('on'); weather(); }
 function rideBoard(hop, t0 = 0, t1 = 1) {
-  game.boards++;
+  game.boards++; sfx(hop.kind === 'walk' ? 'walk' : 'ride');
   return new Promise(done => {
     const cv = $('v3board'); cv.classList.add('on'); board.resize(); $('v3mini').hidden = true; weather();
     const dur = CALM ? 300 : (1300 + 700 * Math.min(1, hop.price / 900)) * (t1 - t0), start = performance.now();
@@ -480,6 +510,7 @@ async function reveal(rv) {
   const mood = rv.sold ? 'opportunity' : rv.how === 'win' ? 'opportunity' : rv.how === 'lose' ? 'warning' : 'info';
   const tag = rv.sold ? (rv.sold.cash > 0 ? 'SOLD' : 'SWINDLED') : rv.how === 'win' ? 'IT WORKED' : rv.how === 'lose' ? 'IT DID NOT' : '';
   const bad = c => /^(\+\d|−€|×0\.|€0|job gone|fees)/.test(c) && !/^\+€/.test(c);
+  sfx(rv.sold ? (rv.sold.cash > 0 ? 'coin' : 'lose') : rv.how === 'win' ? 'win' : rv.how === 'lose' ? 'lose' : rv.chips.some(c => /^\+€/.test(c)) ? 'coin' : 'tap');
   panel.innerHTML = `<div class="v3rev ${rv.sold ? 'sold' : rv.how}" role="status" data-how="${rv.how}">${face(mood)}<div>${tag ? `<div class="tag">${tag}</div>` : ''}<div class="say">${esc(rv.say)}</div>${rv.chips.length ? `<div class="chips">${rv.chips.map(c => `<i class="${bad(c) ? 'bad' : ''}">${esc(c)}</i>`).join('')}</div>` : ''}</div></div>`;
   paintHud();
   await beat(rv.say.length > 70 ? 3200 : 2500);
@@ -488,6 +519,7 @@ async function reveal(rv) {
 async function pick(i) {
   if (busy || !S || S.phase === 'end') return;
   busy = true; panel.querySelectorAll('button').forEach(b => { b.disabled = true; });
+  sfx('tap');
   const wasHop = pendingHop;
   const r = J.choose(net, S, i);
   if (r.error) { busy = false; render(); return; }
@@ -523,6 +555,7 @@ async function pick(i) {
 // A delivery: the fee, and what was inside all along.
 async function stamp(d) {
   hideBoard(); paintScene('stop', { at: S.at, tram: arrived }); setTram(arrived); $('v3mini').hidden = true;
+  sfx('stamp'); setTimeout(() => sfx(d.late ? 'late' : 'deliver'), 140);
   panel.innerHTML = `<div class="v3stamp${d.late ? ' late' : ''}" role="status"><span class="big">${d.late ? 'DELIVERED LATE' : 'DELIVERED'}</span><span>${esc(net.name(d.to))}</span><span class="inside"><span>Signed for:</span> <span>${esc(d.contents)}</span></span><span class="pts">+€${d.pay}${d.mult !== 1 ? ` <small>(×${+d.mult.toFixed(2)})</small>` : ''}</span></div>`;
   paintHud();
   await beat(2200);
@@ -535,13 +568,14 @@ async function rare() {
 // The shift's weather, said once at the start (ACT1.md §4).
 async function forecast() {
   const w = WX[S.weather] || WX.clear, line = NIGHT && NIGHT_WX[S.weather] ? NIGHT_WX[S.weather] : w.line;
-  paintScene('stop', { at: S.at }); panel.innerHTML = `<div class="v3stamp wxs" role="status"><span class="big"><span aria-hidden="true">${esc(w.glyph)}</span> <span>${esc(w.name.toUpperCase())}</span></span><span>${esc(line)}</span></div>`;
+  paintScene('stop', { at: S.at }); sfx('forecast'); weather();
+  panel.innerHTML = `<div class="v3stamp wxs" role="status"><span class="big"><span aria-hidden="true">${esc(w.glyph)}</span> <span>${esc(w.name.toUpperCase())}</span></span><span>${esc(line)}</span></div>`;
   await beat(1800);
 }
 
 // ── the end: the run's result (runs.js), and what you carried ─────────────
 function finish() {
-  hideBoard(); $('v3mini').hidden = true; panel.innerHTML = ''; wxEl.className = '';
+  hideBoard(); $('v3mini').hidden = true; panel.innerHTML = ''; wxEl.className = ''; audio?.bed(null);
   const r = Runs.record(RUN.id, { delivered: S.done, target: S.target, late: S.late, score: S.score });
   const i = Runs.ORDER.indexOf(RUN.id), next = Runs.RUNS[i + 1], star = n => '★'.repeat(n) + '☆'.repeat(3 - n);
   const why = r.done ? (r.stars === 1 ? 'every job delivered · some late' : r.stars === 2 ? `every job on time · €${RUN.par} for the third star` : 'every job on time, at par') : `deliver all ${S.target} to complete ${RUN.name}`;
@@ -554,6 +588,7 @@ function finish() {
   $('endNote').textContent = r.done ? 'Every job delivered.' : 'The shift ended.';
   const again = $('again'); if (again) { again.textContent = r.done ? `${RUN.name} AGAIN · A NEW SHIFT` : `TRY ${RUN.name} AGAIN`; again.classList.toggle('prime', !go); again.classList.toggle('ghost', !!go); again.onclick = () => { location.href = Runs.runHref(RUN.id, location.search); }; }
   $('end').hidden = false;
+  sfx(RUN.id === 'night' && r.first && r.done ? 'act' : r.done ? 'end' : 'miss');
   game.result = r;
 }
 
@@ -568,7 +603,7 @@ async function start() {
 }
 paintTitle();
 $('play')?.addEventListener('click', start);
-addEventListener('resize', () => { if (!stage.hidden) { sizeFrame(); if (boardOpen) openBoard(); } });
+addEventListener('resize', () => { if (!stage.hidden) { sizeFrame(); fitTop(); if (boardOpen) openBoard(); } });
 sizeFrame();
 
 // For the gates: what the screen is showing, read-only. Every action a gate
@@ -577,3 +612,4 @@ sizeFrame();
 // in a frame, so a gate counts them rather than hoping to sample one.
 const game = { version: BUILD_VERSION, run: RUN, seed: SEED, ready, state: () => S, net: () => net, card: () => (S ? J.card(net, S) : null), busy: () => busy, scene: () => scene, result: null, boards: 0 };
 globalThis.__tm3 = game;
+audio = mountAudio(game, { button: 'v3sound', clock: () => S?.clock ?? 0 });

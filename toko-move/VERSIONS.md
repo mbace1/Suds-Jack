@@ -1,5 +1,45 @@
 # Toko Move — versions
 
+## v3.2 — 2026-11-03
+
+**SOUND FOR THE JOURNEY** — step 2 of the Act 1 ship plan (`ROADMAP.md`;
+owner, 2026-11-03: *"keep going with upgrading through a plan"*). The card
+journey had been silent since v3.0: only `?classic` carried the house kit.
+The same kit now plays the journey, through the same master gain and the
+same kept mute (`tokoMoveSound`), so a mute set in either game holds in both.
+
+- **Called, not inferred.** `?classic` hears itself by watching state
+  (`poll`); the journey stages every moment itself, so `play.js` calls the
+  kit at each: a card dealt (a paper flick; a halt gets the two-pip
+  warning), a tap, the tram's **ding-ding** as it pulls in (the museum tram
+  strikes three, lower; the night's tram with no number arrives in
+  silence), the rails clacking or footsteps for a hop, a risk that worked
+  (up) or did not (down), euros changing hands (a coin), the stamp's thump
+  and then the delivery's arpeggio (or the late slide), the forecast's
+  chime, the end, and a longer fanfare for ACT 1 COMPLETE.
+- **Beds.** `audio.bed()` is a quiet loop that follows the weather on
+  screen — bandpassed rain, wind through snow, fog, and a low hum at night
+  — crossfading as the scene changes and falling silent inside the car,
+  where the weather is never drawn either. A hidden tab suspends the
+  context, so a bed never hisses on under somebody else's page.
+- **The toggle.** ♪, 44px, top-right; the HUB button owns the top-left, and
+  on a phone the pill moves in from both sides to clear them.
+- Sound is not motion: under `prefers-reduced-motion` the drive-in is still,
+  and its bell still rings.
+
+Synthesised, never sampled, nothing fetched, so the store zip stays one
+file with nothing outside it.
+
+Gates: `test/play.cjs` hears an EASY run (forecast, deal, tap, bell, a hop,
+the stamp, a delivery, the end), measures the toggle (44px, top-right, clear
+of the pill and the HUB button) and checks ♪ is a real mute at once and
+kept; HARD has its snow or rain bed under the stop and quiet in the car;
+NIGHT hums; and the night's wider pill, and a 320px phone's, clear the HUB
+button and ♪ (the pill is now measured into the space between them —
+`fitTop()` — after a fixed margin put the night's under the HUB button).
+`test/ship.cjs`'s S6 still holds `?classic`'s sound, which now shares the
+module.
+
 ## v3.1 — 2026-11-03
 
 **ACT 1: HELSINKI** (owner, 2026-11-02: *"The trams in the bible look a bit
