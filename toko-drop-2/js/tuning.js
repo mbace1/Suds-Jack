@@ -7,10 +7,10 @@
 // things that work"). The arena is 1.x's, so every 1.x number ports as it is
 // instead of through a rescale. Axes: x across the screen (right +), y up,
 // z toward the bottom of the screen. The arena is centred on the origin.
-import { SPECIES } from './tuning/species/index.js?v=114';
-import WAVES from './tuning/waves.js?v=114';
-import PICKUPS from './tuning/pickups.js?v=114';
-import MUSIC from './tuning/music.js?v=114';
+import { SPECIES } from './tuning/species/index.js?v=115';
+import WAVES from './tuning/waves.js?v=115';
+import PICKUPS from './tuning/pickups.js?v=115';
+import MUSIC from './tuning/music.js?v=115';
 
 export const TUNING = {
   render: {
@@ -1145,6 +1145,16 @@ export const TUNING = {
     // takes HEAVY's own darken), a giant its species' hue turned `hue`, saturated × `sat`, lightness × `light`
     look: { mite: 0.22, brute: 0.75, giant: { hue: 0.11, sat: 1.4, light: 0.58 } },
   },
+  // v115 the FIRST-TIME TAGS (sim/teach.js, render/hints.js): STEP OUT! over a giant gathering with you within `near`
+  // m of its ring, CLEAR THE LANE! by a ram's lane that warns with you within `near` m of it — until this browser
+  // has once got out of one in time, or has seen one `cap` times. The slam's sits `lift` over the giant's top (as a
+  // bounty's tag, r × 3 + lift), the ram's `laneY` up, `past` m beyond its lane's end (over the lane, it hid the hero
+  // standing in it) and, where the lane runs across the screen, `beside` m clear of its side; both beat as DASH THROUGH! does
+  // (alpha[0] + alpha[1] sin(rate t)). The colours are the ring's and the lane's own; the shadow is dark, so the line
+  // reads on the snow and the river as on the sewer (a shadow under the letters, not a glow)
+  hints: { cap: 8, near: 2, lift: 1.3, laneY: 0.6, past: 1.1, beside: 1.4, alpha: [0.8, 0.2], rate: 6,
+    slam: { say: 'stepOut', color: '#ff8a66', glow: 'rgba(0,0,0,0.9)' },
+    ram: { say: 'clearLane', color: '#ffd23f', glow: 'rgba(0,0,0,0.9)' } },
   // v108 THE FLOOR'S OWN SHAPE (sim/posts.js; owner: "arcade arena shapes are boring"): what stands in a later
   // world's floor and BLOCKS — the hero and the bodies are pushed out, a bullet dies on it (cover both ways), a
   // spawn, a gate or a drop is moved clear. `kind` is its look (render/posts.js), `r` its radius (× a third

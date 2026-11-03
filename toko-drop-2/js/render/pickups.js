@@ -28,9 +28,9 @@
 import * as THREE from 'three/webgpu';
 import * as TSL from 'three/tsl';
 import { texture } from 'three/tsl';
-import { TUNING } from '../tuning.js?v=114';
-import { itemLook, gateLook, glyphOf, colorOf } from '../sim/pickups.js?v=114';
-import { t as say } from '../ui.js?v=114';
+import { TUNING } from '../tuning.js?v=115';
+import { itemLook, gateLook, glyphOf, colorOf } from '../sim/pickups.js?v=115';
+import { t as say } from '../ui.js?v=115';
 
 const T = TUNING, P = T.pickups, G = P.gate, C = P.convoy, B = P.bounty, GL = G.look, FAM = G.family;
 const POOLS = 96;   // pools of light a frame: the drops, the beams, the moths
@@ -59,8 +59,8 @@ const glyphTexture = (text, hex) => canvasTexture(`g:${text}:${hex}`, P.badge.px
   g.textAlign = 'center'; g.textBaseline = 'middle';
   g.fillText(text, m, m + 2);
 });
-// a line of glowing text (1.x drew these on its HUD canvas over the world point)
-function labelTexture(text, color, glow) {
+// a line of glowing text (1.x drew these on its HUD canvas over the world point); render/hints.js draws with it too
+export function labelTexture(text, color, glow) {
   const key = `l:${text}:${color}`, hit = cache.get(key);
   if (hit) return hit;
   const px = P.label.px, font = `bold ${px}px monospace`;
@@ -78,7 +78,7 @@ function labelTexture(text, color, glow) {
 
 // a sprite whose picture can change without a new material: its colour is a
 // texture node whose value is swapped
-function sprite(order = 5) {
+export function sprite(order = 5) {
   const node = texture(glyphTexture(' ', 0xffffff));
   const mat = new THREE.SpriteNodeMaterial({ transparent: true, depthTest: false, depthWrite: false });
   mat.colorNode = node;
@@ -87,7 +87,7 @@ function sprite(order = 5) {
   s.userData.node = node;
   return s;
 }
-const setPicture = (s, tex) => { if (s.userData.node.value !== tex) s.userData.node.value = tex; };
+export const setPicture = (s, tex) => { if (s.userData.node.value !== tex) s.userData.node.value = tex; };
 
 export class PickupView {
   // `actors` lends its chunks (actors.spray) and the arena's light map

@@ -20,7 +20,7 @@
 //
 //   w.posts  [{ x, z, r, kind, px, pz, orbit? { a0, R, w }, drift? { vx, vz }, ram? { ... }, ball? { vx, vz, roll } }]
 //            none in world 1 (1.x's floor) or a campaign room
-import { TUNING } from '../tuning.js?v=114';
+import { TUNING } from '../tuning.js?v=115';
 
 const T = TUNING, G = T.pickups.gate;
 const smooth = (k) => k * k * (3 - 2 * k), _q = { x: 0, z: 0 };
@@ -194,17 +194,23 @@ export function push(w, o, r, press = null, place = false) {
 export function clear(w, o, r) {
   let moved = push(w, o, r, null, true);
   for (const p of w.posts ?? []) {
-    if (!p.ram) continue;
-    const m = p.ram, R = T.posts.worlds[w.world]?.rams;
-    if (!R) continue;
-    // the lane: from the wall to the ram's face at full reach, the ram's width across
-    const across = m.zWalls ? o.x - m.along : o.z - m.along, into = m.side * (m.zWalls ? o.z : o.x), depth = m.half - into;
-    if (Math.abs(across) >= p.r + r || depth >= R.reach + r) continue;
-    const out = R.reach + r - depth;   // push it out of the lane's end, into the floor (never into the wall)
+    const out = inLane(w, p, o.x, o.z, r);   // push it out of the lane's end, into the floor (never into the wall)
+    if (out < 0) continue;
+    const m = p.ram;
     if (m.zWalls) o.z -= m.side * out; else o.x -= m.side * out;
     moved = m.zWalls ? { nx: 0, nz: -m.side } : { nx: -m.side, nz: 0 };
   }
   return moved;
+}
+
+// a circle of radius r at (x, z) in ram p's lane — from its wall to the ram's face at full reach, the ram's width
+// across: how far past the lane's end it would have to go to be out of it, or -1 when it is clear (or p no ram).
+// clear() reads it, and so do the first-time tags (v115, sim/teach.js)
+export function inLane(w, p, x, z, r = 0) {
+  const m = p.ram, R = m && T.posts.worlds[w.world]?.rams;
+  if (!R) return -1;
+  const across = m.zWalls ? x - m.along : z - m.along, depth = m.half - m.side * (m.zWalls ? z : x);
+  return Math.abs(across) < p.r + r && depth < R.reach + r ? R.reach + r - depth : -1;
 }
 
 // the post (x, z) is inside, with a margin, or null

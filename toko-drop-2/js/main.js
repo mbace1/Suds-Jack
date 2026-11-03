@@ -7,34 +7,34 @@
 // The rules live in sim/ and run on a fixed step; this file feeds them input,
 // hands their events to the view and the sound, and draws in between steps.
 import * as THREE from 'three/webgpu';
-import { TUNING } from './tuning.js?v=114';
-import { buildFloor } from './render/floor.js?v=114';
-import { fitCamera, screenToWorld, screenDown } from './render/view.js?v=114';
-import * as worldsSim from './sim/worlds.js?v=114';
-import { shapeAt as shiftShape } from './sim/floorshift.js?v=114';
-import * as reshapeSim from './sim/reshape.js?v=114';
-import { Scenery } from './render/scenery.js?v=114';
-import { DRIFT } from './render/kit.js?v=114';
-import { Transit } from './render/transit.js?v=114';
-import { Splats } from './render/splats.js?v=114';
-import { Actors } from './render/actors.js?v=114';
-import { GEL_TIME } from './render/gel.js?v=114';
-import { studioEnvironment } from './render/env.js?v=114';
-import { Specimen } from './render/specimen.js?v=114';
-import { createWorld, step, api as simApi } from './sim/world.js?v=114';
-import { stage as stagePk } from './sim/pickups.js?v=114';
-import { Input } from './input.js?v=114';
-import { UI, t, timeText, LANGS, getLang, setLang, goalText, bossName } from './ui.js?v=114';
-import { Announcer } from './announcer.js?v=114';
-import { rooms as campaignRooms, isOpen as roomOpen, better as betterGrade } from './sim/director/campaign.js?v=114';
-import { levelShape, slots as regionSlots } from './sim/shape.js?v=114';
-import { Sound } from './audio.js?v=114';
-import { Music, worldWant, cueFor, renderMusicWav } from './music.js?v=114';
-import { Intro, CUES as INTRO } from './intro/intro.js?v=114';
-import { scheduleIntroSfx, renderIntroSfxWav } from './intro/sfx.js?v=114';
-import { Readout } from './readout.js?v=114';
-import { Meter, device, Quality } from './meter.js?v=114';
-import * as record from './record.js?v=114';
+import { TUNING } from './tuning.js?v=115';
+import { buildFloor } from './render/floor.js?v=115';
+import { fitCamera, screenToWorld, screenDown } from './render/view.js?v=115';
+import * as worldsSim from './sim/worlds.js?v=115';
+import { shapeAt as shiftShape } from './sim/floorshift.js?v=115';
+import * as reshapeSim from './sim/reshape.js?v=115';
+import { Scenery } from './render/scenery.js?v=115';
+import { DRIFT } from './render/kit.js?v=115';
+import { Transit } from './render/transit.js?v=115';
+import { Splats } from './render/splats.js?v=115';
+import { Actors } from './render/actors.js?v=115';
+import { GEL_TIME } from './render/gel.js?v=115';
+import { studioEnvironment } from './render/env.js?v=115';
+import { Specimen } from './render/specimen.js?v=115';
+import { createWorld, step, api as simApi } from './sim/world.js?v=115';
+import { stage as stagePk } from './sim/pickups.js?v=115';
+import { Input } from './input.js?v=115';
+import { UI, t, timeText, LANGS, getLang, setLang, goalText, bossName } from './ui.js?v=115';
+import { Announcer } from './announcer.js?v=115';
+import { rooms as campaignRooms, isOpen as roomOpen, better as betterGrade } from './sim/director/campaign.js?v=115';
+import { levelShape, slots as regionSlots } from './sim/shape.js?v=115';
+import { Sound } from './audio.js?v=115';
+import { Music, worldWant, cueFor, renderMusicWav } from './music.js?v=115';
+import { Intro, CUES as INTRO } from './intro/intro.js?v=115';
+import { scheduleIntroSfx, renderIntroSfxWav } from './intro/sfx.js?v=115';
+import { Readout } from './readout.js?v=115';
+import { Meter, device, Quality } from './meter.js?v=115';
+import * as record from './record.js?v=115';
 
 const T = TUNING;
 const params = new URLSearchParams(location.search);
@@ -502,9 +502,9 @@ const specimen = new Specimen(T, actors, scene.environment);
 // menu). It takes effect at run start; the menu also redraws the world left
 // behind the title in the new style. The HUD label says ' · sdf' while on.
 const GELS = ['classic', 'sdf'];
-import { STYLES } from './render/style.js?v=114';
-import { Lens } from './render/lens.js?v=114';
-import { setSceneSun } from './render/sun.js?v=114';
+import { STYLES } from './render/style.js?v=115';
+import { Lens } from './render/lens.js?v=115';
+import { setSceneSun } from './render/sun.js?v=115';
 let urlGels = GELS.includes(params.get('gels')) ? params.get('gels') : null;
 const gels = () => urlGels ?? (GELS.includes(store.str('toko2.gels')) ? store.str('toko2.gels') : 'classic');
 // The LENS switch (render/lens.js, v94): NONE or TILT-SHIFT, localStorage toko2.lens; ?lens=tilt|none for a link
@@ -619,6 +619,8 @@ function start(m, { intro: asked = false, room = null, resume = null } = {}) {
   if (world.shapeT) useSurvival();
   resize();   // v104: fitted to the run (the zoomed view box needs the world: main.js viewBox), not to the title's arena
   splats.clear(); actors.reset(); trauma = 0; transit.reset(floor);
+  // v115: the first-time tags this browser has learned (render/hints.js): STEP OUT! for a giant's slam, CLEAR THE LANE! for a ram
+  actors.hints.load({ slam: store.num('toko2.hintSlam'), ram: store.num('toko2.hintRam') });
   acc = 0; pendingDash = false;
   sound.unlock();
   actors.setGels(gels()); setLabel();
@@ -651,7 +653,7 @@ const campaignProgress = (hard = false) => { try { return JSON.parse(store.str(h
 let lastRoom = null;   // AGAIN replays it
 const levels = new Map();
 async function loadLevel(id) {
-  if (!levels.has(id)) levels.set(id, fetch(new URL(`../levels/${id}.json?v=114`, import.meta.url)).then((r) => { if (!r.ok) throw new Error(`levels/${id}.json ${r.status}`); return r.json(); }));
+  if (!levels.has(id)) levels.set(id, fetch(new URL(`../levels/${id}.json?v=115`, import.meta.url)).then((r) => { if (!r.ok) throw new Error(`levels/${id}.json ${r.status}`); return r.json(); }));
   return levels.get(id);
 }
 // the list the room screen draws: worlds, their rooms, open or not, best grades
@@ -1117,8 +1119,10 @@ function frame(now, dtFixed) {
 
   if (world) {
     const a = state === 'play' ? acc / T.sim.dt : 1;
-    actors.pickups.playing = state === 'play';   // 1.x drew its gate and bounty tags only while playing (main.js:5893, 6018)
+    actors.pickups.playing = actors.hints.playing = state === 'play';   // 1.x drew its gate and bounty tags only while playing (main.js:5893, 6018)
     actors.sync(world, a, time);
+    const hk = actors.hints.k;
+    if (hk.dirty) { hk.dirty = false; store.set('toko2.hintSlam', hk.slam); store.set('toko2.hintRam', hk.ram); }
     // a look check's hold freezes the effects too: they move only when idle() steps them
     if (state !== 'paused' && !(state === 'play' && debug.hold)) { actors.stepFx(dt, time); splats.step(dt); }
     const h = world.hero;

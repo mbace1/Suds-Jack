@@ -19,6 +19,17 @@
     Never `--no-verify`.
 -->
 
+## v115 — 2026-11-03
+**The floor teaches its own attacks: STEP OUT! over a giant gathering for its slam, CLEAR THE LANE! by a sewer ram's lit lane — until you have once got out in time**
+- v112's slam and v110's rams are told every time — a ring at the slam's reach, a striped lane that beats before the punch — but a first look at a ring on the floor says nothing about what it means. As DASH THROUGH! does for a gate, a line of text now says it: STEP OUT! over a giant gathering with you in its ring or within 2 m of it, CLEAR THE LANE! by a ram's lane that warns with you in it or near it (sim/teach.js decides, render/hints.js draws; TUNING.hints).
+- LEARNED for good in this browser (`toko2.hintSlam`, `toko2.hintRam`) the first time you get out of one in time: in it while it warned, out of it when it came. Being hit does not count. Someone who keeps near it and never in it is told 8 times, then not again.
+- Drawn only while the game is playing (never over the pause panel, the death beat or the results), and never over the hero: the lane's tag lies on the floor past the lane's end, and where the lane runs across the screen (portrait) to its side, away from you. The slam's sits over the giant, as a bounty's tag does. In English, Finnish and Japanese.
+- A ram's lane is one test now (sim/posts.js `inLane`): what keeps a spawn, a gate or a drop out of a lane is what the tag reads.
+- Tests: test/teach.mjs (16 checks: shown near, not far; counted only while it can be seen; learned by getting out, not by being hit; the cap; where the lane's tag stands both ways); the smoke draws both tags for a staged warning and neither while the game is not playing.
+- Cache tokens `?v=114` → `?v=115`; HUD label → `2.0 · v115`
+
+---
+
 ## v114 — 2026-11-03
 **Bullet sponges you can see soaking it up: a big body sheds goo where it is hit, and wears down as its life goes (owner: "anything that pushes the gelatin look and behavior is great for enemies")**
 - A BRUTE, A TANK OR A GIANT (v105's sizes 3-5) HIT sheds a little of its own goo where the shot went in — a droplet every other hit from a brute, two from a tank, two on every hit from a giant — the droplets flying and melting into the floor as every chunk does (render/actors.js; TUNING.sizes.wear). Before, a body with four or six times the life took a stream of shots with nothing to show for it but the ripple every body shows.
