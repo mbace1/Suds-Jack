@@ -10,9 +10,9 @@ All are code-drawn (three.js r167 from `clay/vendor`, or canvas 2D) and render t
 |---|---|---|---|---|
 | 3D toy-world traffic, soft anime grade (level-crossing stop) | `cars/` | `previews/02-11-LOOK-3D-Cars-demo.mp4` | **approved for future use** | infrastructure stories: data centres, roads, grids, mines (Muhos "Cut First") |
 | 3D robot in a misty forest (wakes, looks, jumps) | `robot/` | `previews/02-11-LOOK-3D-Robot-demo.mp4` | **approved for future use** | Brink / military-AI stories; a generic machine character |
-| GL 8-bit bumper | `gl/8bit/` | `previews/02-11-LOOK-GL-8bit-demo.mp4` | shown, choice pending | Gameplay Laboratory intro |
-| GL 16-bit bumper | `gl/16bit/` | `previews/02-11-LOOK-GL-16bit-demo.mp4` | shown, choice pending | Gameplay Laboratory intro |
-| GL early-3D (PS1-style) bumper | `gl/3d/` | `previews/02-11-LOOK-GL-early3d-demo.mp4` | approved as a 3D look; GL choice pending | Gameplay Laboratory intro |
+| GL 8-bit bumper | `gl/8bit/` | `previews/02-11-LOOK-GL-8bit-demo.mp4` | not chosen (owner: GL is 3D) | Gameplay Laboratory intro |
+| GL 16-bit bumper | `gl/16bit/` | `previews/02-11-LOOK-GL-16bit-demo.mp4` | not chosen (owner: GL is 3D) | Gameplay Laboratory intro |
+| GL early-3D (PS1-style) bumper | `gl/3d/` | `previews/02-11-LOOK-GL-early3d-demo.mp4` | **THE GL LOOK** (owner, 3 Nov: "GL needs to be 3d") | Gameplay Laboratory intro |
 
 **References.**
 - **Cars:** the owner saw code-made videos on 2 Nov. The closest one found is a Claude Opus 5.5 code-made anime town
