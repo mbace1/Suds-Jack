@@ -1033,3 +1033,57 @@ Everything below comes from search summaries. No article was opened.
 - **11 AI Whistleblower Protection Act (S.1792):** no change; the Senate returns 9 Nov.
 - **New candidates:** none strong enough to add. The federal NDA bill (above) is the nearest; it would pair with For Your
   Protection once a vote or a hearing is on record.
+
+### Check Tue 3 Nov 17:16 (search summaries only; EDGAR tried once with a generic client name and no personal data: proxy CONNECT 403; nothing opened)
+- **Big development:** none.
+- **12 The Round Trip (Anthropic S-1): still HOLD.** No S-1/A with a price range found; the cover range still reads
+  blank. The roadshow cannot start before 10 Nov. One search summary attributes a debut in the week of 16 Nov at
+  $1.5–2T to the WSJ; that is reported talk, not opened and not a filing. One result giving an early-September IPO price
+  is unreliable and ignored.
+  [Leverage Shares](https://leverageshares.com/us/insights/when-is-the-anthropic-ipo/)
+- **Global 3, Short Supply (posted; on-screen "HEARING 13 NOV 2026"): still unconfirmed.** Garciaguirre v. Samsung,
+  N.D. Cal. 3:26-cv-06345, Judge Noel Wise; motion to dismiss filed 3 Sep (MLex: argues the claims repackage theories the
+  Ninth Circuit rejected); class not certified. **No hearing date in any result.** Needs the docket before 13 Nov; if
+  the date is wrong, pin a correction.
+  [Law360](https://www.law360.com/cases/6a3d70d4893b66ba8de08a17),
+  [PacerMonitor](https://www.pacermonitor.com/public/case/65375103/Garciaguirre_et_al_v_Samsung_Electronics_Co,_Ltd_et_al) (blocked)
+- **1 The Panel (Project Meridian):** nothing newer than NPR 6 Oct. Musk's and Luckey's status is still undisclosed and
+  there is no recusal; GAO says the findings need scrutiny. The posted film stays true.
+  [OPB/NPR](https://www.opb.org/article/2026/10/06/pentagon-taps-elon-musk-and-palmer-luckey-for-strategy-study/)
+- **3 For Your Protection follow-up (data-centre NDAs):**
+  - **NJ S4304/A2774:** not re-searched; still single-source (PolicyRisk). Do not use. The film's "One US state,
+    Delaware, now bans them" stays true until NJ is confirmed signed.
+  - **Federal bills, now pinned down:** the "No Data Center NDAs Act" is **H.R. 10118** (Rep. Tom Barrett, R-MI),
+    introduced 20 Aug 2026, no cosponsors, in committee. It is narrow: it bars **Members of Congress** from signing
+    data-centre NDAs. Companion: H.R. 10119, Protecting Local Control of Data Centers Act. A separate bipartisan
+    **"No Secrets for Data Centers Act"** (Reps. Landsman, Raskin, Barrett) would ban NDAs that stop government officials
+    discussing proposed projects with the public; bill number not confirmed.
+  - **NEW to this file, dated 30 Sep–21 Oct: the Raskin letters.** Rep. Jamie Raskin (ranking Democrat, House
+    Judiciary) wrote to Amazon, Google, Meta and Oracle asking about NDAs signed with government officials, projected
+    power and water use, and whether the NDAs were used to block public-records requests (WSJ, 30 Sep). **Amazon** told
+    the WSJ it no longer uses NDAs with government collaborators on data-centre projects, going forward only (Microsoft
+    reportedly earlier). **Google:** The Information reported on 21 Oct that it stopped requiring local officials to sign
+    NDAs; single outlet, no Google statement found. **Meta and Oracle:** no commitment found; Oracle did not answer the
+    WSJ.
+  - **State background:** North Dakota lawmakers rejected an NDA ban (Valley News Live, 4 Sep); Minnesota had a
+    bipartisan push in April.
+  - **Candidate (new, background-strength):** "Who still signs?" — a For Your Protection sequel built on the four
+    letters and who answered. Needs the committee's own release and a Google statement before it is a film.
+  [Barrett bill text](https://barrett.house.gov/sites/evo-subsites/barrett.house.gov/files/evo-media-document/no-data-center-ndas-act.pdf),
+  [FastDemocracy](https://fastdemocracy.com/bill-search/us/119/bills/USB00107788/),
+  [Landsman](https://landsman.house.gov/posts/landsman-leads-new-bill-requiring-big-tech-to-pay-for-data-centers-and-no-ndas),
+  [Political Wire](https://politicalwire.com/2026/09/30/jamie-raskin-probes-secret-ai-data-center-deals/),
+  [DCD (Amazon)](https://datacenterdynamics.com/en/news/aws-drops-non-disclosure-agreements-for-data-center-projects),
+  [Bloomberg Law](https://news.bloomberglaw.com/tech-and-telecom-law/data-centers-under-fire-for-forcing-local-officials-to-sign-ndas),
+  [KTTC (Minnesota)](https://www.kttc.com/2026/04/08/minnesota-lawmakers-push-ban-ndas-with-data-centers-bipartisan-effort/?outputType=amp)
+- **10 Meta / Grassley:** still no Meta reply found to the July letter. These remain Grassley's allegations. Separately,
+  Louisiana's PSC voted 3–1 (Aug) to let Meta keep its data-centre job and power calculations private; background only.
+  [Senate Judiciary](https://www.judiciary.senate.gov/press/rep/releases/grassley-probes-meta-on-disclosures-alleging-company-disregarded-child-safety-risks-and-retaliated-against-whistleblowers),
+  [Louisiana Illuminator](https://lailluminator.com/2026/08/13/meta-data-center-private/embed/)
+- **Coxon 13 (Grade Your Own Homework, HOLD):** nothing new. Results are still the July 2025 award coverage (CDAO,
+  ceilings up to $200M each to Anthropic, Google, OpenAI and xAI); no 2026 task-order, modification or termination news
+  for the other three. Option (a), past tense, stays the safe fix; awaiting the owner.
+  [The Decoder](https://the-decoder.com/anthropic-openai-google-and-xai-have-landed-pentagon-contracts-worth-up-to-200-million/)
+- **11 AI Whistleblower Protection Act (S.1792):** no change; the Senate returns 9 Nov.
+- **Global follow-up from Finland (see HS-SCOUT):** Reuters, 29 Oct: Oulu police opened an investigation into the Muhos
+  site. International pickup (Al Jazeera, Courthouse News, The Star), so it is a global story too.

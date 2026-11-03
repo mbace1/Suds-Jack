@@ -727,3 +727,38 @@ Everything below comes from search summaries. No article was opened.
   - **Trade Secret / Hamina:** no follow-up and no new official action.
   - **Break Glass (HE 148/2026):** no plenary vote found. Keep held.
   - **Reader reaction:** not visible through search.
+
+### Check Tue 3 Nov 17:16 (search summaries only; nothing opened)
+- **HS (last ~2 days):** no Helsingin Sanomat data-centre story surfaced in search. Nothing to add from HS itself.
+- **Muhos — police investigation OPENED (new to this file; dated 29 Oct):**
+  - **Reuters, 29 Oct** (via Al Jazeera, Courthouse News, The Star): the Oulu Police Department decided to investigate
+    Tuike Finland, which represents Google, over the preparatory work at Muhos, on suspected breaches of environmental
+    law. Al Jazeera's headline calls it a criminal probe. The police expect to finish next year.
+  - **Yle:** the police have received **five** requests for an investigation about the Muhos site. Kaleva's earlier
+    report said two. The Finnish term differs between summaries (esitutkinta / esiselvitys); read the Yle text before
+    using either word on screen.
+  - The question the police are weighing, per Kaleva: whether there is reason to suspect, for example, environmental
+    damage (ympäristön turmeleminen). LVV declined further comment, citing the Publicity Act.
+  - **Count the Trees (posted): NOT wrong.** "Two requests have been filed with the police" is still true (at least two
+    were), but it now understates: there are reportedly five, and the police have opened an investigation. No
+    correction needed; this is a **follow-up beat**, single-source on the "five" (Yle), multi-source on the probe
+    (Reuters pickup).
+  [Yle](https://yle.fi/a/74-20254086),
+  [Al Jazeera](https://www.aljazeera.com/economy/2026/10/29/finland-launches-criminal-probe-of-suspected-environmental-damage-by-google),
+  [Courthouse News](https://courthousenews.com/finnish-police-launch-probe-over-google-data-center-site/),
+  [The Star](https://www.thestar.com.my/tech/tech-news/2026/10/30/finnish-police-launches-probe-over-google-data-centre-site),
+  [Kaleva](https://kaleva.fi/lvv-on-tehnyt-poliisille-tutkintapyynnon-googlen-m/13720712)
+- **Muhos — 5 Nov water plan:** no news yet of whether Tuike filed it. Check 5–6 Nov.
+- **Muhos — water and zoning, background (Kaleva):** a Kaleva headline says Google is preparing to take up to
+  **20 million m³ a year** from the Oulujoki, most of it evaporating; headline only, body not seen, figures unverified.
+  An appeal was filed against the Leppiniemi–Pyhänsivu detailed plan (council approved it unanimously on 3 Mar); no ruling
+  found. Both would sharpen "Cut First" if confirmed.
+  [Kaleva Google topic](https://www.kaleva.fi/aihe/google/1594),
+  [Kaleva (appeal)](https://www.kaleva.fi/yle-googlen-muhoksen-datakeskusalueen-asemakaavast/13461712)
+- **Helsinki (2 Nov siting decision):** no reaction found beyond the decision itself and the Greens' earlier demand. One
+  summary repeats the city's own aim of two or three projects and first construction possibly in 2028.
+  [Verkkouutiset](https://www.verkkouutiset.fi/a/naille-viidelle-helsingin-alueelle-voi-tulla-datakeskus)
+- **Reactions:**
+  - **Count the Trees / Muhos:** still holds; police probe is the follow-up (above).
+  - **Trade Secret / Hamina:** no follow-up and no new official action.
+  - **Reader reaction:** not visible through search.

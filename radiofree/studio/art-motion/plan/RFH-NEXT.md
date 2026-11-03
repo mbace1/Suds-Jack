@@ -486,3 +486,22 @@ All facts below come from search summaries; no article was opened.
 - **Ends in 3:** still true; next deadline digit 6 on 15 Nov. **Break Glass:** keep held. **Count the Trees:** still
   right; check the 5 Nov plan on 5–6 Nov. **Trade Secret:** no follow-up.
 - **Films now wrong:** none found.
+
+## Daily check, Tue 3 Nov 17:16 (evening; search summaries only)
+- **Big development:** none on a global candidate (no S-1/A; Meridian unchanged; no Meta reply; nothing on the other
+  three Pentagon deals). EDGAR tried once with a generic client name: blocked at the proxy.
+- **New follow-up, Finland/global — Muhos police investigation (29 Oct, Reuters, picked up by Al Jazeera and others):**
+  Oulu police opened an investigation into Tuike Finland's work at Muhos on suspected environmental-law breaches; Yle
+  says five requests have been filed (Kaleva earlier: two). **Count the Trees is not wrong** ("Two requests have been
+  filed with the police" is still true) but it now understates. Strongest new beat for "Cut First".
+- **New background, global — data-centre NDAs:** Rep. Raskin's letters to Amazon, Google, Meta and Oracle (WSJ,
+  30 Sep); Amazon has dropped government NDAs going forward; Google reportedly too (The Information, 21 Oct, single
+  outlet). The federal "No Data Center NDAs Act" is H.R. 10118 (Barrett), narrow: Members of Congress only. A possible
+  For Your Protection sequel ("Who still signs?"); not yet a film.
+- **Global 3, Short Supply (posted):** "HEARING 13 NOV 2026" still unconfirmed; no hearing date in any source. Needs
+  the docket before 13 Nov; if wrong, pin a correction.
+- **Coxon 13 (HOLD):** nothing new; option (a) stays the safe fix. Awaiting the owner.
+- **The Panel:** still true. **The Round Trip:** HOLD. **For Your Protection:** still true (NJ still unconfirmed).
+- **Finland:** no new HS story. Helsinki: no reaction beyond the 2 Nov decision. Muhos water plan: check 5–6 Nov.
+  Kaleva headline: up to 20 million m³/yr from the Oulujoki (unverified). **Trade Secret:** no follow-up.
+- **Films now wrong:** none. Count the Trees understates the police count; follow-up, not a correction.
