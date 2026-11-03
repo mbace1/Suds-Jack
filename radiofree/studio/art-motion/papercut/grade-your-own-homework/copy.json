@@ -1,9 +1,9 @@
 {
   "film": "grade-your-own-homework",
-  "cut": "RFH Brink/Coxon, VIRAL CUT v1 stills (30 Oct). Pentagon frontier-AI contracts ask the four AI companies to forecast the risks of their own models. A contract folder stamped PENTAGON; four contracts (LAB A-D, no names); the clause RISK FORECASTING · THREAT IDEATION highlighted; the page becomes an exam the company marks itself: ticks, A+, SELF-GRADED. Disclosure tag at the end: made with Anthropic's tools, Anthropic is one of the four.",
+  "cut": "RFH Brink/Coxon, VIRAL CUT v2 (3 Nov, option (a) for the owner): past tense, because Anthropic's deal was cancelled in early 2026 (after the Feb-Mar 2026 supply-chain-risk designation; Fortune, NPR). v1 copy kept as copy-v1.json; the filed v1 film is untouched. Pentagon frontier-AI contracts ask the four AI companies to forecast the risks of their own models. A contract folder stamped PENTAGON; four contracts (LAB A-D, no names); the clause RISK FORECASTING · THREAT IDEATION highlighted; the page becomes an exam the company marks itself: ticks, A+, SELF-GRADED. Disclosure tag at the end: made with Anthropic's tools, Anthropic is one of the four.",
   "series": "rfh",
   "captionSize": "big",
-  "argument": "The Pentagon's July 2025 frontier-AI contracts (up to $200M each, four companies) ask each company to forecast the risks of its own AI; critics, among them the AI Now Institute, call relying on vendors to assess their own products a conflict of interest.",
+  "argument": "The Pentagon's July 2025 frontier-AI contracts (up to $200M each, four companies) asked each company to forecast the risks of its own AI; critics, among them the AI Now Institute, call relying on vendors to assess their own products a conflict of interest. Anthropic's deal was cancelled in early 2026.",
   "langs": [
     "en",
     "fi",
@@ -36,11 +36,11 @@
       "until": "s3-0.3",
       "hold": "s3",
       "text": {
-        "en": "Each must / [forecast] the risks / of its own AI.",
-        "fi": "Kunkin pitää / [ennustaa] oman / tekoälynsä riskit.",
-        "ja": "各社は 自社AIの / リスクを [予測]する。"
+        "en": "Each had to / [forecast] the risks / of its own AI.",
+        "fi": "Kunkin piti / [ennustaa] oman / tekoälynsä riskit.",
+        "ja": "各社に 自社AIの / リスク[予測]を 求めた。"
       },
-      "source": "The Intercept, 8 Sep 2026 (theintercept.com/2026/09/08/military-ai-weapons-contracts-openai-anthropic-google/), from 400+ pages obtained in a FOIA lawsuit: the contracts require each company to supply 'risk forecasting' and 'threat ideation' on dangers its own future products might pose. Multiple outlets carrying the story agree (IBTimes, AI Weekly, heise). Verified from search summaries only; the article itself was not opened (no fetch tool in this session). DoD and OpenAI say certain OpenAI pages (the 'minimal refusal rates' wording) were drafts incorrectly provided; that dispute is not about this clause and the film does not use those pages."
+      "source": "The Intercept, 8 Sep 2026 (theintercept.com/2026/09/08/military-ai-weapons-contracts-openai-anthropic-google/), from 400+ pages obtained in a FOIA lawsuit: the contracts require each company to supply 'risk forecasting' and 'threat ideation' on dangers its own future products might pose. Multiple outlets carrying the story agree (IBTimes, AI Weekly, heise). Verified from search summaries only; the article itself was not opened (no fetch tool in this session). DoD and OpenAI say certain OpenAI pages (the 'minimal refusal rates' wording) were drafts incorrectly provided; that dispute is not about this clause and the film does not use those pages. v2 (3 Nov): past tense, because Anthropic's contract was cancelled in early 2026 (Fortune 28 Feb, NPR); no cancellation is reported for the other three."
     },
     {
       "id": "critic",
@@ -121,9 +121,9 @@
       "ja": "自己採点"
     },
     "disclose": {
-      "en": "MADE WITH ANTHROPIC'S TOOLS · ANTHROPIC IS ONE OF THE FOUR",
-      "fi": "TEHTY ANTHROPICIN TYÖKALUILLA · ANTHROPIC ON YKSI NELJÄSTÄ",
-      "ja": "Anthropicのツールで制作 · Anthropicは4社の1つ"
+      "en": "MADE WITH ANTHROPIC'S TOOLS · ANTHROPIC WAS ONE OF THE FOUR",
+      "fi": "TEHTY ANTHROPICIN TYÖKALUILLA · ANTHROPIC OLI YKSI NELJÄSTÄ",
+      "ja": "Anthropicのツールで制作 · Anthropicは4社の1つだった"
     },
     "student": {
       "en": "STUDENT:",
@@ -160,8 +160,8 @@
     }
   },
   "post": {
-    "en": "Pentagon AI deals with OpenAI, Anthropic, Google and xAI (up to $200M each) ask each to forecast the risks of its own AI, per contracts The Intercept won in a FOIA suit. Critics call it a conflict of interest. Made with Anthropic's tools; Anthropic is one of the four. Who checks?",
-    "fi": "Pentagonin tekoälysopimukset OpenAI:n, Anthropicin, Googlen ja xAI:n kanssa (enintään 200 M$) vaativat kutakin ennustamaan oman tekoälynsä riskit (The Intercept). Kriitikot puhuvat eturistiriidasta. Tehty Anthropicin työkaluilla; Anthropic on yksi neljästä. Kuka tarkastaa?",
-    "ja": "国防総省のAI契約（OpenAI、Anthropic、Google、xAI、各最大2億ドル）は、各社に自社AIのリスク予測を求める。The Interceptが情報公開訴訟で入手した文書による。批判派は利益相反と指摘。本作はAnthropicのツールで制作。Anthropicは4社の1つ。誰が確かめる？"
+    "en": "The Pentagon's July 2025 AI deals with OpenAI, Anthropic, Google and xAI (up to $200M each) asked each to forecast its own AI's risks (The Intercept, via FOIA). Critics: a conflict of interest. Anthropic's deal was cancelled in early 2026. Made with Anthropic's tools. Who checks?",
+    "fi": "Pentagonin 7/2025 tekoälysopimukset OpenAI:n, Anthropicin, Googlen ja xAI:n kanssa (enint. 200 M$) vaativat kutakin ennustamaan oman tekoälynsä riskit (The Intercept). Kriitikot: eturistiriita. Anthropicin sopimus peruttiin 2026. Tehty Anthropicin työkaluilla. Kuka tarkastaa?",
+    "ja": "2025年7月の国防総省のAI契約（OpenAI、Anthropic、Google、xAI、各最大2億ドル）は、各社に自社AIのリスク予測を求めた。The Interceptが情報公開訴訟で入手した文書による。批判派は利益相反と指摘。Anthropicの契約は2026年初めに解除された。本作はAnthropicのツールで制作。誰が確かめる？"
   }
 }
