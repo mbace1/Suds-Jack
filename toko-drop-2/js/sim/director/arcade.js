@@ -21,12 +21,12 @@
 // runs down in its enemy loop — the same sequence 1.x runs, with the seam in
 // a different place. test/director.mjs holds all of it in lockstep with 1.x's
 // own loop source.
-import { TUNING } from '../../tuning.js?v=105';
-import * as worlds from '../worlds.js?v=105';
-import * as challenge from '../challenge.js?v=105';
-import { makeRng } from '../rng.js?v=105';
-import * as bossfight from '../bossfight.js?v=105';
-import * as floorshift from '../floorshift.js?v=105';
+import { TUNING } from '../../tuning.js?v=106';
+import * as worlds from '../worlds.js?v=106';
+import * as challenge from '../challenge.js?v=106';
+import { makeRng } from '../rng.js?v=106';
+import * as bossfight from '../bossfight.js?v=106';
+import * as floorshift from '../floorshift.js?v=106';
 
 const T = TUNING, W = T.waves, TAU = Math.PI * 2;
 
@@ -355,11 +355,20 @@ function pump(w, d, dt, api) {
     }
     // v105: a plain body's SIZE CLASS (TUNING.sizes), drawn when its wave was laid out (sizeWave)
     else if (s.size) o.size = s.size;
+    // v106: an escort's mite rides the giant that landed before it (sim/formation.js)
+    if (s.moon) o.form = { kind: 'escort', lead: d.giantId ?? -1, slot: s.moon.slot, n: s.moon.n, phase: d.giantPhase ?? 0 };
     // and "a bit less shooting" (owner): every body the worlds spawn runs its fire clocks this much slower
     if (worlds.on(w) && !s.boss) o.fireMult = T.sizes.fireMult;
     const g = api.spawn(w, s.kind, p.x + s.ox, p.z + s.oz, o);
     if (s.ox || s.oz) api.clamp(w, g);
     d.present = true;
+    // v106: a giant is the lead its escort rides (its orbit starts where the hero stands from it); a pair's
+    // second end joins the first with a strand
+    if (s.size === 5) { d.giantId = g.id; d.giantPhase = Math.atan2(w.hero.z - g.z, w.hero.x - g.x); }
+    if (s.pair) {
+      if (s.pair.end === 0) d.pairEnd = { id: s.pair.id, g: g.id };
+      else if (d.pairEnd?.id === s.pair.id) { api.link(w, d.pairEnd.g, g.id, s.kind); d.pairEnd = null; }
+    }
   }
 }
 
@@ -373,22 +382,59 @@ const sizeRng = (w) => (w.rngSize ??= makeRng((w.seed ^ 0x6f1d3a27) >>> 0));
 // and a few, not a full wave and a giant (a mite, under one body, pays some of the bill back)
 function sizeWave(w, d) {
   const Z = T.sizes, C = Z.cost;
-  let extra = 0;
   for (const s of d.queue) {
     if (s.boss || (s.variant ?? 'normal') !== 'normal') continue;
     s.size = drawSize(w, d, s.kind);
-    extra += (C[s.size] ?? 1) - 1;
   }
+  formWave(w, d);
+  let extra = 0;
+  for (const s of d.queue) if (s.size) extra += (C[s.size] ?? 1) - 1;
   let owe = extra * Z.pay - 0.5, mob = 0;
   for (const s of d.queue) if (s.front != null) mob++;
   const keep = Math.ceil(mob * Z.keep);
   for (let i = d.queue.length - 1; i >= 0 && owe > 0 && mob > keep; i--) {
     const s = d.queue[i];
-    if (s.front == null || s.shooter || s.boss || (s.size ?? 2) !== 2) continue;
+    if (s.front == null || s.shooter || s.boss || (s.size ?? 2) !== 2 || s.pair) continue;
     d.queue.splice(i, 1); owe -= Z.worth[s.variant] ?? 1; mob--;
     d.thinned = (d.thinned ?? 0) + 1;
   }
 }
+// v106: the wave's FORMATIONS (sim/formation.js), laid out with its sizes and from the sizes' own stream. Every
+// GIANT brings its ESCORT, queued right behind it: `n` mites (its own kind if it can be one) landing round it on
+// the ring it rides. And from world `pair.from`, a wave may carry one LINKED PAIR: its first two plain bodies or
+// brutes, made one kind that walks at you and one size, landing together `apart` round the ring, joined when the
+// second lands
+function formWave(w, d) {
+  const F = T.forms, r = sizeRng(w), q = d.queue;
+  for (let i = 0; i < q.length; i++) {
+    const s = q[i];
+    if (s.size !== 5 || s.moon) continue;
+    const E = F.escort, n = E.n[0] + Math.floor(r.next() * (E.n[1] - E.n[0] + 1));
+    const kind = T.sizes.mites.includes(s.kind) ? s.kind : E.kind, ring = T.species[s.kind].radius * T.sizes.classes[5].r + E.gap;
+    const moons = [];
+    for (let k = 0; k < n; k++) {
+      const a = (k / n) * Math.PI * 2;
+      moons.push({ ...s, kind, size: 1, delay: s.delay + E.stagger * (k + 1), ox: s.ox + Math.cos(a) * ring, oz: s.oz + Math.sin(a) * ring,
+                   shooter: false, variant: 'normal', affix: null, moon: { slot: k, n } });
+    }
+    q.splice(i + 1, 0, ...moons);
+    i += n;
+  }
+  const P = F.pair;
+  if (w.world >= P.from && d.plan.kind !== 'boss' && r.next() < P.chance) {
+    const at = [];
+    for (let i = 0; i < q.length && at.length < 2; i++) { const s = q[i]; if (s.front != null && !s.shooter && !s.boss && (s.size === 2 || s.size === 3)) at.push(i); }
+    if (at.length === 2) {
+      const a = q[at[0]], [b] = q.splice(at[1], 1);
+      const kind = P.kinds.includes(a.kind) ? a.kind : P.kinds.includes(b.kind) ? b.kind : P.kind;
+      const id = (d.pairSeq = (d.pairSeq ?? 0) + 1);
+      a.kind = b.kind = kind; a.size = b.size = Math.max(a.size, b.size); a.pair = { id, end: 0 };
+      Object.assign(b, { delay: a.delay, angle: a.angle + P.apart, ox: 0, oz: 0, front: a.front, pair: { id, end: 1 } });
+      q.splice(at[0] + 1, 0, b);
+    }
+  }
+}
+
 // a body's size class: a giant if the wave has one due and none stands, else the world's weights — world 1 a
 // few mites and brutes, a later world its HEAVY share split into brutes and tanks — and no mite that fires
 function drawSize(w, d, kind) {

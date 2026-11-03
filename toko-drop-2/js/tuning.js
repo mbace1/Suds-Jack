@@ -7,10 +7,10 @@
 // things that work"). The arena is 1.x's, so every 1.x number ports as it is
 // instead of through a rescale. Axes: x across the screen (right +), y up,
 // z toward the bottom of the screen. The arena is centred on the origin.
-import { SPECIES } from './tuning/species/index.js?v=105';
-import WAVES from './tuning/waves.js?v=105';
-import PICKUPS from './tuning/pickups.js?v=105';
-import MUSIC from './tuning/music.js?v=105';
+import { SPECIES } from './tuning/species/index.js?v=106';
+import WAVES from './tuning/waves.js?v=106';
+import PICKUPS from './tuning/pickups.js?v=106';
+import MUSIC from './tuning/music.js?v=106';
 
 export const TUNING = {
   render: {
@@ -1134,6 +1134,20 @@ export const TUNING = {
     // takes HEAVY's own darken), a giant its species' hue turned `hue`, saturated × `sat`, lightness × `light`
     look: { mite: 0.22, brute: 0.75, giant: { hue: 0.11, sat: 1.4, light: 0.58 } },
   },
+  // v106 FORMATIONS (sim/formation.js; owner: "more unique patterns and synergies"): bodies laid out as one unit
+  forms: {
+    // a GIANT's ESCORT: `n` mites (the giant's kind if it can be one, else `kind`) riding an orbit `gap` off its
+    // rim, a turn every `period` s, drawn to their place at `pull` /s up to `maxSpeed`; a mite peels off for good
+    // within `peel` of you, and when the giant dies the riders SCATTER, surging × `mult` for `time` s
+    escort: { n: [4, 6], kind: 'globbo', gap: 0.9, period: 3.2, pull: 6, maxSpeed: 7.5, peel: 4.5, stagger: 0.06, scatter: { time: 3, mult: 1.5 } },
+    // a LINKED PAIR: from world `from`, `chance` a wave, its first two plain bodies made one of `kinds` (else
+    // `kind`), landing `apart` rad round the ring from each other, a goo STRAND between them held `min`–`max`
+    // long by a spring (`spring` /s, at most `give` a step for each end). It hurts within `r` (+ the hero's
+    // hit radius), between the two bodies; a dash through cuts it, and so does either death (`keep` s for the view)
+    pair: { from: 3, chance: 0.35, kinds: ['globbo', 'yela', 'redd', 'bulwark', 'hoppa', 'salma'], kind: 'globbo', apart: 0.6,
+            min: 4, max: 9, spring: 6, give: 0.2, r: 0.2, keep: 0.4,
+            view: { max: 6, segs: 10, w: 0.2, thin: 0.35, y: 0.32, lift: 0.18, amp: 0.12, hz: 5, waves: 6, snap: 10, snapSize: [0.08, 0.16] } },
+  },
   // 1.x elites and affixes (main.js:9402-9422)
   variants: {
     elite: { hp: 2, radius: 1.2 }, elitelite: { hp: 1.5, affixChance: 0.5 }, swiftSpeed: 1.35, boss: { radius: 1.5 },
@@ -1342,7 +1356,7 @@ export const TUNING = {
   shake: { decay: 2.8, amp: [1.8, 1.2, 1.2], freq: [41, 37, 43], kill: 0.07, killPerRadius: 0.13, hurt: 0.38, bigKill: 0.1 },
   // v58: one sound at most this many times in `window` s (a pile-up's
   // rest is not heard), and the limiter on the master only a pile-up reaches
-  audio: { master: 0.5, gate: { window: 0.04, land: 3, spawn: 3, kill: 4, hit: 4, lobLand: 3, mothShot: 3, revengeSeed: 2, revengeFizzle: 2 },
+  audio: { master: 0.5, gate: { window: 0.04, land: 3, spawn: 3, kill: 4, hit: 4, lobLand: 3, mothShot: 3, revengeSeed: 2, revengeFizzle: 2, escortScatter: 1, strandCut: 2 },
     limit: { threshold: -3, ratio: 20, attack: 0.002, release: 0.12 } },
   // the music (tuning/music.js, v58): a song a world, layered by the heat
   music: MUSIC,

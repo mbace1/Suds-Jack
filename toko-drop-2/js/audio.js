@@ -1,7 +1,7 @@
 // audio.js — synthesised, never sampled. Every voice goes through one master
 // gain, so mute really mutes and a sound added later inherits it. Browsers
 // keep audio asleep until a gesture; unlock() is called from the first one.
-import { TUNING } from './tuning.js?v=105';
+import { TUNING } from './tuning.js?v=106';
 
 const A = TUNING.audio;
 
@@ -99,6 +99,9 @@ export class Sound {
       // v103: HARDCADE's corpse fire warns: a rising tick as the seed is laid, a dull puff where a corpse too close could not bite
       case 'revengeSeed': this._tone('triangle', 620, 1040, 0.1, 0.05); break;
       case 'revengeFizzle': this._hiss(0.12, 0.05, 1400, 500); break;
+      // v106: a strand snaps (a wet twang, lower for a death than for a dash's cut); an escort scatters (a rising squeal)
+      case 'strandCut': this._tone('triangle', e.by === 'dash' ? 880 : 520, e.by === 'dash' ? 260 : 180, 0.14, 0.12); this._hiss(0.1, 0.08, 2200, 700); break;
+      case 'escortScatter': this._tone('sawtooth', 300, 700, 0.18, 0.06); break;   // one a window (TUNING.audio.gate)
       // a campaign room's goal moving on (v46): a step made chimes, an orb gone out falls, the heart hurt thumps
       case 'chStep':
         if (e.what === 'orbLost') this._tone('triangle', 520, 180, 0.22, 0.12);

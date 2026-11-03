@@ -15,19 +15,20 @@
 // that springs in and fades (splats.js). Views are pooled per species, so a
 // gel's material is built once and reused, never compiled mid-fight.
 import * as THREE from 'three/webgpu';
-import { TUNING } from '../tuning.js?v=105';
+import { TUNING } from '../tuning.js?v=106';
 import * as TSL from 'three/tsl';
-import { gelMaterial, domeGeometry, cubeGeometry, heroGeometry, GEL_TIME } from './gel.js?v=105';
-import { LOOKS } from './looks/index.js?v=105';
-import { styleName, setStyle as setStyleMode, styledBody } from './style.js?v=105';
-import { JellyBody } from './jelly.js?v=105';
-import { Juice } from './juice.js?v=105';
-import { ArenaLight } from './light.js?v=105';
-import { toSdf } from './sdf.js?v=105';
-import { PickupView } from './pickups.js?v=105';
-import { ChallengeView } from './challenge.js?v=105';
-import { Goo } from './goo.js?v=105';
-import { mult as heatMult } from '../sim/heat.js?v=105';
+import { gelMaterial, domeGeometry, cubeGeometry, heroGeometry, GEL_TIME } from './gel.js?v=106';
+import { LOOKS } from './looks/index.js?v=106';
+import { styleName, setStyle as setStyleMode, styledBody } from './style.js?v=106';
+import { JellyBody } from './jelly.js?v=106';
+import { Juice } from './juice.js?v=106';
+import { ArenaLight } from './light.js?v=106';
+import { toSdf } from './sdf.js?v=106';
+import { PickupView } from './pickups.js?v=106';
+import { ChallengeView } from './challenge.js?v=106';
+import { Goo } from './goo.js?v=106';
+import { mult as heatMult } from '../sim/heat.js?v=106';
+import { strands as liveStrands } from '../sim/formation.js?v=106';
 
 const T = TUNING;
 const B = T.blob, D = T.death;
@@ -133,6 +134,16 @@ export class Actors {
     this.strands.instanceMatrix.setUsage(THREE.DynamicDrawUsage); this.strands.setColorAt(0, new THREE.Color());
     this.strands.count = 0; this.strands.frustumCulled = false; this.strandCount = 0;
     scene.add(this.strands);
+    // v106: a linked PAIR's strand (sim/formation.js) — a cord of the pair's goo from one body to the other, in
+    // `segs` pieces that wave a little across their line, thinner the further it is stretched; the same goo as a
+    // burst's strands, so it reads as made of them, never as a beam
+    {
+      const C = T.forms.pair.view;
+      this.cords = new THREE.InstancedMesh(new THREE.CylinderGeometry(1, 1, 1, 7, 1, true).translate(0, 0.5, 0), chunkMat(), C.max * C.segs);
+      this.cords.instanceMatrix.setUsage(THREE.DynamicDrawUsage); this.cords.setColorAt(0, new THREE.Color());
+      this.cords.count = 0; this.cords.frustumCulled = false;
+      scene.add(this.cords);
+    }
     // lobs in flight and hazards on the floor
     this.lobMesh = new THREE.InstancedMesh(new THREE.SphereGeometry(1, 12, 8), new THREE.MeshPhysicalNodeMaterial({ roughness: 0.2, clearcoat: 1 }), 64);
     this.lobMesh.setColorAt(0, new THREE.Color()); this.lobMesh.count = 0; this.lobMesh.frustumCulled = false;
@@ -379,7 +390,7 @@ export class Actors {
     this.look = look;
     const hv = this.hero, old = hv.mat;
     hv.mat = this._heroMat(); hv.body.material = hv.mat; old.dispose();
-    for (const m of [...Object.values(this.chunkMesh), this.strands]) { const o = m.material; m.material = this._chunkMat(); o.dispose(); }
+    for (const m of [...Object.values(this.chunkMesh), this.strands, this.cords]) { const o = m.material; m.material = this._chunkMat(); o.dispose(); }
     this.jellyMats.clear();
     this.warmQueue = null;
   }
@@ -388,7 +399,7 @@ export class Actors {
     for (const v of this.views.values()) this._release(v);
     for (const v of this.dying) this._release(v);
     this.views.clear(); this.dying.length = 0; this.chunks.length = 0; this.heat = 0;
-    this.strands.count = this.strandCount = 0;
+    this.strands.count = this.strandCount = 0; this.cords.count = 0;
     for (const j of this.jellies) { this.scene.remove(j.mesh); j.geo.dispose(); }
     this.jellies.length = 0;
     this.juice.reset();
@@ -424,6 +435,10 @@ export class Actors {
       const dx = e.x - g.x, dz = e.z - g.z, c = Math.cos(v.yaw), s = Math.sin(v.yaw);
       const lx = dx * c - dz * s, lz = dx * s + dz * c, l = Math.hypot(lx, lz) || 1;
       v.hit = 1; v.mat.gel.hitDir.value.set(lx / l, lz / l);
+    } else if (e.type === 'strandCut') {
+      // v106: a strand snaps: a spit of the pair's goo where it parted
+      const C = T.forms.pair.view, hex = T.species[e.kind]?.color ?? 0xffffff;
+      this.spray(e.x, e.z, C.snap, hex, C.snapSize);
     } else if (e.type === 'kill') {
       this.burst(e, w);
       const v = this.views.get(e.id);
@@ -514,7 +529,7 @@ export class Actors {
     } else if (e.type === 'hurt' && h) {
       // the hero hit: the goo that hit him, splashed onto him from all round
       // (fine drops, the only ones he wears)
-      const by = String(e.by || '').replace('revenge:', ''), c = _gooC.setHex(T.species[by]?.color ?? T.bullets.gelColor), rMax = T.goo.ride.heroMaxR;
+      const by = String(e.by || '').replace(/^(revenge|strand):/, ''), c = _gooC.setHex(T.species[by]?.color ?? T.bullets.gelColor), rMax = T.goo.ride.heroMaxR;
       for (let i = 0; i < E.hurt.count && goo.left > 0; i++, goo.left--) {
         const a = Math.random() * Math.PI * 2, r = rMax * (0.4 + 0.6 * Math.random()), d = T.hero.radius * 1.25;
         goo.sim.emit(h.x + Math.cos(a) * d, 0.5 + Math.random() * 0.5, h.z + Math.sin(a) * d, -Math.cos(a) * 2, 0.5, -Math.sin(a) * 2, r, c.r, c.g, c.b);
@@ -676,6 +691,32 @@ export class Actors {
     }
     this.hazMesh.count = k; this.hazMesh.instanceMatrix.needsUpdate = true;
     if (this.hazMesh.instanceColor) this.hazMesh.instanceColor.needsUpdate = true;
+    this._cords(w, alpha, time);
+  }
+
+  // v106: the strands that stand, each a waving cord of goo between its two bodies (where they are drawn)
+  _cords(w, alpha, time) {
+    const P = T.forms.pair, C = P.view, m = this.cords, cap = C.max * C.segs, up = this._up ||= new THREE.Vector3(0, 1, 0);
+    const dir = this._cdir ||= new THREE.Vector3(), q = this._cq ||= new THREE.Quaternion(), sc = this._csc ||= new THREE.Vector3(), at = this._cat ||= new THREE.Vector3();
+    let n = 0;
+    for (const { L, a, b } of liveStrands(w)) {
+      if (n + C.segs > cap) break;
+      const ax = a.px + (a.x - a.px) * alpha, az = a.pz + (a.z - a.pz) * alpha, bx = b.px + (b.x - b.px) * alpha, bz = b.pz + (b.z - b.pz) * alpha;
+      const dx = bx - ax, dz = bz - az, len = Math.hypot(dx, dz) || 1e-6, nx = -dz / len, nz = dx / len;
+      const stretch = Math.min(1, Math.max(0, (len - P.min) / (P.max - P.min))), wid = C.w * (1 - stretch * C.thin), hex = T.species[L.kind]?.color ?? 0xffffff;
+      let px = ax, py = C.y, pz = az;
+      for (let k = 1; k <= C.segs; k++) {
+        const t = k / C.segs, arc = Math.sin(t * Math.PI), wave = arc * Math.sin(time * C.hz + t * C.waves + L.id) * C.amp;
+        const x = ax + dx * t + nx * wave, z = az + dz * t + nz * wave, y = C.y + arc * C.lift;
+        dir.set(x - px, y - py, z - pz);
+        const l = Math.max(dir.length(), 1e-6);
+        q.setFromUnitVectors(up, dir.multiplyScalar(1 / l));
+        m.setMatrixAt(n, this._m.compose(at.set(px, py, pz), q, sc.set(wid, l, wid))); m.setColorAt(n, this._c.setHex(hex)); n++;
+        px = x; py = y; pz = z;
+      }
+    }
+    m.count = n; m.instanceMatrix.needsUpdate = true;
+    if (m.instanceColor) m.instanceColor.needsUpdate = true;
   }
 
   // 1.x's per-frame body: silhouette × breath × the smear it drags along the

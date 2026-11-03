@@ -14,21 +14,22 @@
 // moves, then everything is tested, against post-move positions.
 //
 // Modes: 'arcade', 'hardcade' (corpses fire back) and 'survival'.
-import { TUNING } from '../tuning.js?v=105';
-import { press, pressReset } from './press.js?v=105';
-import { makeRng } from './rng.js?v=105';
-import { BEHAVIOUR } from './species/index.js?v=105';
-import { DIRECTORS } from './director/index.js?v=105';
-import * as fire from './fire.js?v=105';
-import { makeHero, heroStep, applyPull, hurtHero, invincible } from './hero.js?v=105';
-import { swarmForces, resolveCrowd } from './crowd.js?v=105';
-import { revengeColor } from './color.js?v=105';
-import * as pickups from './pickups.js?v=105';
-import * as worlds from './worlds.js?v=105';
-import * as reshape from './reshape.js?v=105';
-import { Arena, levelShape, levelMoves, levelEnvelope, KIND } from './shape.js?v=105';
-import * as rules from './rules.js?v=105';
-import * as heat from './heat.js?v=105';
+import { TUNING } from '../tuning.js?v=106';
+import { press, pressReset } from './press.js?v=106';
+import { makeRng } from './rng.js?v=106';
+import { BEHAVIOUR } from './species/index.js?v=106';
+import { DIRECTORS } from './director/index.js?v=106';
+import * as fire from './fire.js?v=106';
+import { makeHero, heroStep, applyPull, hurtHero, invincible } from './hero.js?v=106';
+import { swarmForces, resolveCrowd } from './crowd.js?v=106';
+import { revengeColor } from './color.js?v=106';
+import * as pickups from './pickups.js?v=106';
+import * as worlds from './worlds.js?v=106';
+import * as reshape from './reshape.js?v=106';
+import { Arena, levelShape, levelMoves, levelEnvelope, KIND } from './shape.js?v=106';
+import * as rules from './rules.js?v=106';
+import * as heat from './heat.js?v=106';
+import * as formation from './formation.js?v=106';
 
 const T = TUNING;
 
@@ -112,6 +113,8 @@ export const api = {
     heat.shot(w);   // COLD GUN: a shot costs heat
   },
   kill: (w, g, src) => kill(w, g, src),
+  // v106: join two bodies with a goo strand (sim/formation.js: a linked pair)
+  link: (w, a, b, kind) => formation.link(w, a, b, kind),
   pop: (w, g) => pop(w, g),
   clamp(w, g) { if (!g) return; g.x = clamp(g.x, -w.hx + g.r, w.hx - g.r); g.z = clamp(g.z, -w.hz + g.r, w.hz - g.r); inRegion(w, g, g.r); },
   // points from anything but a kill or a graze (a wave's clear bonus), with
@@ -155,6 +158,7 @@ export function step(w, input) {
     rules.step(w, dt, api);
     swarmForces(w, dt);
     for (const g of w.gels.slice()) gelStep(w, g, dt);
+    formation.step(w, dt);   // v106: the strands' springs, and a dash through one cuts it
     applyPull(w);
     resolveCrowd(w, dt);
     pressHero(w);
@@ -207,7 +211,7 @@ function spawn(w, kind, x, z, o = {}) {
     variant: o.variant ?? 'normal', affix: o.affix ?? null, anchored: o.affix === 'anchored', isBoss: !!o.isBoss, child: !!o.child, heavy: (!!o.heavy || (SZ != null && o.size >= 3)) && !o.isBoss,
     shield: false, surgeT: 0, surgeMult: 1, cloak: 0, tell: 0, faceX: 0, faceZ: 1, dashedBy: -1, shovedBy: -1,
     dodgeCd: 0, dodgeT: 0, dodgeVx: 0, dodgeVz: 0, mvPhase: w.rngFx.range(0, Math.PI * 2), mvSide: w.rngFx.next() < 0.5 ? 1 : -1,
-    nudgedX: 0, nudgedZ: 0, s: {},
+    nudgedX: 0, nudgedZ: 0, s: {}, form: o.form ?? null,   // v106: a rider in a formation (sim/formation.js)
   };
   w.gels.push(g);
   BEHAVIOUR[kind].init?.(w, g, api, o);
@@ -244,7 +248,8 @@ function gelStep(w, g, dt) {
     return;
   }
   g.vx = g.vz = 0;
-  BEHAVIOUR[g.kind].step(w, g, dt, api);
+  // v106: a body riding a formation (an escort's mite) is moved by it, not by its species
+  if (!(g.form && formation.ride(w, g, dt, api))) BEHAVIOUR[g.kind].step(w, g, dt, api);
   if (!g.alive) return;
   const fr = Math.exp(-T.gel.knockFriction * dt);
   g.kx *= fr; g.kz *= fr;
@@ -313,6 +318,7 @@ function kill(w, g, src = 'hero') {
   w.events.push({ type: 'kill', id: g.id, x: g.x, z: g.z, kind: g.kind, r: g.r, color: S.color, big: g.r >= T.death.big, boss: g.isBoss, src, m: m0 });
   if (g.isBoss) w.lastBoss = { x: g.x, z: g.z };   // where a later world's drain opens
   BEHAVIOUR[g.kind].onKill?.(w, g, api, src);
+  formation.onDeath(w, g);   // v106: a giant's escort scatters; a strand to this body snaps (sim/formation.js)
   // v105: a GIANT (size class 5) splits, dying, into bodies of its kind (TUNING.sizes: two brutes), thrown apart
   // across the line it was hit on
   const SP = T.sizes.classes[g.size]?.split;
@@ -349,6 +355,7 @@ function revenge(w, g) {
   // a HARD campaign room (v49): every corpse, from the first, under the room's own cap
   const room = !!w.room?.hard, R = room ? { ...T.revenge, ...T.revenge.room, ...(w.room.level?.hard ?? {}) } : T.revenge, S = T.species[g.kind];
   if (!(g.isBoss || S.revenge || R.who === 'all') || (!room && w.wave < R.fromWave)) return;
+  if (g.size === 1) return;   // v106: a mite never fires, dead or alive (an escort's five would be five seeds at once)
   const h = w.hero;
   if (Math.hypot(h.x - g.x, h.z - g.z) < R.near) { w.events.push({ type: 'revengeFizzle', x: g.x, z: g.z, kind: g.kind }); return; }
   let live = 0;
@@ -493,4 +500,6 @@ function contacts(w) {
     const touching = B.touches ? B.touches(w, g) : T.species[g.kind].contact && Math.hypot(g.x - h.x, g.z - h.z) < g.r + T.gel.contactRadius;
     if (touching) { hurtHero(w, g.kind); return; }
   }
+  // v106: a linked pair's strand hurts to touch, between its two bodies
+  for (const { L, a, b } of formation.strands(w)) if (formation.touches(L, a, b, h.x, h.z, T.hero.hitRadius)) { hurtHero(w, `strand:${L.kind}`); return; }
 }
