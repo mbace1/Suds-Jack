@@ -14,23 +14,23 @@
 // moves, then everything is tested, against post-move positions.
 //
 // Modes: 'arcade', 'hardcade' (corpses fire back) and 'survival'.
-import { TUNING } from '../tuning.js?v=109';
-import { press, pressReset } from './press.js?v=109';
-import { makeRng } from './rng.js?v=109';
-import { BEHAVIOUR } from './species/index.js?v=109';
-import { DIRECTORS } from './director/index.js?v=109';
-import * as fire from './fire.js?v=109';
-import { makeHero, heroStep, applyPull, hurtHero, invincible } from './hero.js?v=109';
-import { swarmForces, resolveCrowd } from './crowd.js?v=109';
-import { revengeColor } from './color.js?v=109';
-import * as pickups from './pickups.js?v=109';
-import * as worlds from './worlds.js?v=109';
-import * as reshape from './reshape.js?v=109';
-import { Arena, levelShape, levelMoves, levelEnvelope, KIND } from './shape.js?v=109';
-import * as rules from './rules.js?v=109';
-import * as heat from './heat.js?v=109';
-import * as formation from './formation.js?v=109';
-import * as posts from './posts.js?v=109';
+import { TUNING } from '../tuning.js?v=110';
+import { press, pressReset } from './press.js?v=110';
+import { makeRng } from './rng.js?v=110';
+import { BEHAVIOUR } from './species/index.js?v=110';
+import { DIRECTORS } from './director/index.js?v=110';
+import * as fire from './fire.js?v=110';
+import { makeHero, heroStep, applyPull, hurtHero, invincible } from './hero.js?v=110';
+import { swarmForces, resolveCrowd } from './crowd.js?v=110';
+import { revengeColor } from './color.js?v=110';
+import * as pickups from './pickups.js?v=110';
+import * as worlds from './worlds.js?v=110';
+import * as reshape from './reshape.js?v=110';
+import { Arena, levelShape, levelMoves, levelEnvelope, KIND } from './shape.js?v=110';
+import * as rules from './rules.js?v=110';
+import * as heat from './heat.js?v=110';
+import * as formation from './formation.js?v=110';
+import * as posts from './posts.js?v=110';
 
 const T = TUNING;
 
@@ -101,7 +101,7 @@ export const api = {
       if (d > bd) { bd = d; best = { x, z }; }
       if (d > clear) break;
     }
-    posts.push(w, best, 1.2);   // v108: never inside what stands on the floor
+    posts.clear(w, best, 1.2);   // v108: never inside what stands on the floor (v110: nor in a ram's lane)
     return best;
   },
   // hurt the hero unless they are in mercy or a dash; true if it landed

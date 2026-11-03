@@ -13,8 +13,8 @@
 // Reads the world, never writes it. Every number is TUNING.posts (sim) and the look's own below.
 import * as THREE from 'three/webgpu';
 import { Fn, float, vec2, vec3, smoothstep, positionWorld } from 'three/tsl';
-import { TUNING } from '../tuning.js?v=109';
-import { noise } from './kit.js?v=109';
+import { TUNING } from '../tuning.js?v=110';
+import { noise } from './kit.js?v=110';
 
 const T = TUNING;
 const std = (color, rough = 0.6, metal = 0, extra = {}) => new THREE.MeshStandardNodeMaterial({ color, roughness: rough, metalness: metal, ...extra });
@@ -107,36 +107,123 @@ function build(kind) {
       f.position.set(r0 * Math.cos(phi), 0.12, r0 * Math.sin(phi)); f.quaternion.setFromUnitVectors(up, dir);
       const tip = add(new THREE.SphereGeometry(0.15, 12, 10), tipM); tip.position.copy(f.position).addScaledVector(dir, h);
     }
+  } else if (kind === 'ram') {
+    // v110: the sewer's ram — a squat iron head with a rusted face and a ring of rivets, on a thick rod that runs back
+    // into its wall (local +z is into the floor; the rod goes out of the back, -z). Low, so the near wall's never hides
+    // the floor behind it from the camera
+    const iron = std(0x3c3a38, 0.5, 0.7), face = std(0x7a4426, 0.7, 0.35), rivet = std(0x9a8f80, 0.35, 0.8), rod = std(0x8c8a86, 0.25, 0.9);
+    add(new THREE.CylinderGeometry(1, 1, 0.8, 28).translate(0, 0.42, 0), iron);
+    add(new THREE.CylinderGeometry(0.9, 0.96, 0.1, 28).translate(0, 0.86, 0), face);
+    for (let i = 0; i < 12; i++) { const a = (i / 12) * Math.PI * 2, m = add(new THREE.SphereGeometry(0.07, 8, 6), rivet); m.position.set(Math.cos(a) * 0.78, 0.92, Math.sin(a) * 0.78); }
+    add(new THREE.CylinderGeometry(0.32, 0.32, 6, 16).rotateX(Math.PI / 2).translate(0, 0.45, -3.9), rod);
   } else if (kind === 'crystal') {
     // lit from inside, as the core's own lamps are: a surface that is its own light, not a halo round it (v104)
     const glass = phys(0xd2a6ff, { roughness: 0.06, sheen: 0.6, sheenColor: new THREE.Color(0xff8cf0), emissive: 0x7a3bd6, emissiveIntensity: 0.55 }), base = std(0x2a2240, 0.6, 0.4);
     add(new THREE.CylinderGeometry(0.9, 1, 0.25, 6).translate(0, 0.12, 0), base);
     add(new THREE.OctahedronGeometry(0.75, 0).translate(0, 0.75, 0), glass, 0, 1, 2.2, 1);
   }
-  g.traverse((o) => { if (o.isMesh) { o.castShadow = false; o.receiveShadow = false; } });
-  return g;
+  return byMaterial(g);
 }
 
+// v110: a model folded to one mesh per material — its parts baked where they stand (a coral was sixteen draws, a
+// ram fifteen; on a phone a draw is the cost, not a triangle). A part drawn with several materials stays whole
+function byMaterial(g) {
+  g.updateMatrixWorld(true);
+  const sets = new Map(), whole = [], out = new THREE.Group();
+  g.traverse((o) => { if (!o.isMesh) return; if (Array.isArray(o.material)) whole.push(o); else { if (!sets.has(o.material)) sets.set(o.material, []); sets.get(o.material).push(o); } });
+  // an unindexed geometry is cloned, never converted (toNonIndexed() hands back the geometry itself, and baking a
+  // part into it would move the shared original)
+  const baked = (m) => (m.geometry.index ? m.geometry.toNonIndexed() : m.geometry.clone()).applyMatrix4(m.matrixWorld);
+  for (const [mat, ms] of sets) {
+    const parts = ms.map(baked), geo = new THREE.BufferGeometry();
+    for (const name of ['position', 'normal', 'uv']) {
+      if (!parts.every((q) => q.attributes[name])) continue;
+      const n = parts.reduce((a, q) => a + q.attributes[name].array.length, 0), arr = new Float32Array(n);
+      let at = 0;
+      for (const q of parts) { arr.set(q.attributes[name].array, at); at += q.attributes[name].array.length; }
+      geo.setAttribute(name, new THREE.BufferAttribute(arr, parts[0].attributes[name].itemSize));
+    }
+    parts.forEach((q) => q.dispose());
+    out.add(new THREE.Mesh(geo, mat));
+  }
+  for (const m of whole) { const c = new THREE.Mesh(m.geometry.clone().applyMatrix4(m.matrixWorld), m.material); out.add(c); }
+  out.traverse((o) => { if (o.isMesh) { o.castShadow = false; o.receiveShadow = false; } });
+  return out;
+}
+
+// v110: yellow and black stripes, for a ram's lane on the floor and its housing's lip (a sign, not a light)
+let _stripes = null;
+function stripes() {
+  if (_stripes || typeof document === 'undefined') return _stripes;
+  const c = document.createElement('canvas'); c.width = c.height = 64;
+  const g = c.getContext('2d'); g.fillStyle = '#16130f'; g.fillRect(0, 0, 64, 64); g.fillStyle = '#f2c230';
+  for (let k = -64; k < 128; k += 32) { g.beginPath(); g.moveTo(k, 0); g.lineTo(k + 16, 0); g.lineTo(k + 16 - 64, 64); g.lineTo(k - 64, 64); g.closePath(); g.fill(); }
+  _stripes = new THREE.CanvasTexture(c); _stripes.wrapS = _stripes.wrapT = THREE.RepeatWrapping; _stripes.colorSpace = THREE.SRGBColorSpace;
+  return _stripes;
+}
+
+// which way is into the floor for a ram (its model's +z), as a turn about y
+const ramYaw = (m) => (m.zWalls ? (m.side < 0 ? 0 : Math.PI) : (m.side < 0 ? Math.PI / 2 : -Math.PI / 2));
+
 export class PostView {
-  constructor(scene) { this.scene = scene; this.views = []; this.key = ''; this.cache = new Map(); }
+  constructor(scene) { this.scene = scene; this.views = []; this.extras = []; this.lanes = []; this.key = ''; this.cache = new Map(); }
   _model(kind) {
     // one model a kind, cloned: the geometry and materials are shared
     if (!this.cache.has(kind)) this.cache.set(kind, build(kind));
     return this.cache.get(kind).clone();
   }
-  reset() { for (const v of this.views) this.scene.remove(v); this.views = []; this.key = ''; }
+  reset() {
+    for (const v of this.views) this.scene.remove(v);
+    // a ram's housing and lane are made for it (the models are clones sharing a kind's), so they are let go
+    for (const v of this.extras) { this.scene.remove(v); v.traverse((o) => { if (o.isMesh) { o.geometry.dispose(); if (o.material.map && o.material.map !== _stripes) o.material.map.dispose(); o.material.dispose(); } }); }
+    this.views = []; this.extras = []; this.lanes = []; this.key = '';
+  }
+  // a ram's housing in its wall (a low iron box, a dark mouth on its floor side, a striped lip) and its lane on the floor
+  _ramFixtures(w, p) {
+    const m = p.ram, R = T.posts.worlds[w.world]?.rams, tex = stripes();
+    if (!R) return;
+    const yaw = ramYaw(m), wallX = m.zWalls ? m.along : m.side * m.half, wallZ = m.zWalls ? m.side * m.half : m.along;
+    const iron = std(0x2b2a29, 0.55, 0.6), dark = new THREE.MeshBasicNodeMaterial({ color: 0x050505 });
+    const house = new THREE.Group(); house.rotation.y = yaw; house.position.set(wallX, 0, wallZ);
+    const W = p.r * 2.7, D = 3.4, H = 1.05;
+    const box = new THREE.Mesh(new THREE.BoxGeometry(W, H, D), iron); box.position.set(0, H / 2, -D / 2 - 0.05); house.add(box);
+    const mouth = new THREE.Mesh(new THREE.PlaneGeometry(p.r * 2.2, H * 0.8), dark); mouth.position.set(0, H * 0.45, -0.04); house.add(mouth);
+    if (tex) {
+      const lip = new THREE.Mesh(new THREE.BoxGeometry(W + 0.02, 0.12, 0.3), new THREE.MeshStandardNodeMaterial({ map: tex, roughness: 0.6 }));
+      lip.position.set(0, H + 0.02, -0.2); house.add(lip);
+      // the lane: from the wall to the ram's reach, as wide as the ram
+      const lm = new THREE.MeshBasicNodeMaterial({ map: tex.clone(), transparent: true, opacity: 0.22, depthWrite: false });
+      lm.map.repeat.set(2 * p.r / 1.2, R.reach / 1.2); lm.map.needsUpdate = true;
+      const lane = new THREE.Mesh(new THREE.PlaneGeometry(2 * p.r, R.reach).rotateX(-Math.PI / 2), lm);
+      lane.position.set(0, 0.012, R.reach / 2); lane.renderOrder = 2; house.add(lane);
+      this.lanes.push({ p, mat: lm });
+    }
+    this.scene.add(house); this.extras.push(house);
+  }
   sync(w, alpha, time) {
-    const P = w?.posts ?? [], key = P.map((p) => `${p.kind}:${p.r.toFixed(2)}`).join('|');
+    const P = w?.posts ?? [], key = `${w?.world}|` + P.map((p) => `${p.kind}:${p.r.toFixed(2)}`).join('|');
     if (key !== this.key) {
       this.reset();
       this.key = key;
-      for (const p of P) { const v = this._model(p.kind); v.scale.setScalar(p.r); v.rotation.y = (p.x * 1.7 + p.z * 0.9) % (Math.PI * 2); this.scene.add(v); this.views.push(v); }
+      for (const p of P) {
+        const v = this._model(p.kind); v.scale.setScalar(p.r);
+        v.rotation.y = p.ram ? ramYaw(p.ram) : (p.x * 1.7 + p.z * 0.9) % (Math.PI * 2);
+        v.userData.yaw = v.rotation.y;
+        this.scene.add(v); this.views.push(v);
+        if (p.ram) this._ramFixtures(w, p);
+      }
     }
     P.forEach((p, i) => {
       const v = this.views[i];
       if (!v) return;
       v.position.set(p.px + (p.x - p.px) * alpha, 0, p.pz + (p.z - p.pz) * alpha);
       if (p.kind === 'crystal') v.rotation.y = time * 0.4 + i * 1.3;
+      else if (p.drift) v.rotation.y = v.userData.yaw + v.position.x * 0.12 - v.position.z * 0.09;   // a drifting block turns as it goes
     });
+    // a ram's lane on the floor: faint, brighter and beating while it warns, held while it is out
+    for (const L of this.lanes) {
+      const st = L.p.ram.stage;
+      L.mat.opacity = st === 'warn' ? 0.5 + 0.3 * Math.sin(time * 18) : st === 'punch' || st === 'hold' ? 0.45 : 0.18;
+    }
   }
 }

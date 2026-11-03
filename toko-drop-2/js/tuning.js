@@ -7,10 +7,10 @@
 // things that work"). The arena is 1.x's, so every 1.x number ports as it is
 // instead of through a rescale. Axes: x across the screen (right +), y up,
 // z toward the bottom of the screen. The arena is centred on the origin.
-import { SPECIES } from './tuning/species/index.js?v=109';
-import WAVES from './tuning/waves.js?v=109';
-import PICKUPS from './tuning/pickups.js?v=109';
-import MUSIC from './tuning/music.js?v=109';
+import { SPECIES } from './tuning/species/index.js?v=110';
+import WAVES from './tuning/waves.js?v=110';
+import PICKUPS from './tuning/pickups.js?v=110';
+import MUSIC from './tuning/music.js?v=110';
 
 export const TUNING = {
   render: {
@@ -92,7 +92,9 @@ export const TUNING = {
         // its third wave the banks breathe in and out (sim/floorshift.js, v44)
         shift: { at: 3, kind: 'breathe', room: 0.8, parts: [{ kind: 'rect', hx: 1, hz: 1, pulse: { from: 1, to: 0.58, period: 9, mode: 'breathe' } }] },
         arena: { landscape: { hx: 34, hz: 12 }, portrait: { hx: 12, hz: 34 } } },
-      { id: 'ice', trial: 'combo', heavy: 0.6, species: [['skata', 0, 3]], speciesWeight: 3, rule: 'slip', rail: 0xbfe6ff,
+      // v110 `room` 0.92: the ice's blocks drift (TUNING.posts), and a floor that moves under a fight costs a sharp
+      // player ~10 points of its clears (scripts/curve.mjs, 48 seeds); 8% fewer bodies gives them back
+      { id: 'ice', trial: 'combo', heavy: 0.6, room: 0.92, species: [['skata', 0, 3]], speciesWeight: 3, rule: 'slip', rail: 0xbfe6ff,
         // its seventh wave, the breather before its boss, the floor is a round floe drifting round the
         // middle (v59: it was the third, a swarm — on a third of the floor, on ice, that one wave took 40%
         // of the six skilled bots' lives in the world, 62% of the expert's; the river's and the core's
@@ -1142,11 +1144,18 @@ export const TUNING = {
   posts: {
     worlds: {
       2: { kind: 'bollard', r: 0.6, at: [[-0.42, -0.45], [0.42, -0.45], [-0.42, 0.45], [0.42, 0.45]] },
-      3: { kind: 'pipe', r: 0.75, at: [[-0.33, -0.62], [0.33, -0.62], [-0.33, 0.62], [0.33, 0.62]] },
+      // v110: the sewer's RAMS punch out of its long walls (the pair nearer the middle) by turns: `at` [along, side,
+      // phase] — `along` a fraction of the long half, `side` which wall, `phase` of the beat; every `period` s a ram
+      // shows its face in its slot for `warn` s (`peek` m out of the wall), punches out to `reach` m in `punch` s,
+      // holds `hold` s and goes back in `back` s; at rest it is `hide` m inside the wall
+      3: { kind: 'pipe', r: 0.75, at: [[-0.33, -0.62], [0.33, -0.62], [-0.33, 0.62], [0.33, 0.62]],
+           rams: { kind: 'ram', r: 1.1, at: [[0, -1, 0], [0, 1, 0.5]], period: 6.5, warn: 0.9, peek: 0.35, punch: 0.22, hold: 1.3, back: 0.9, reach: 4.2, hide: -0.5 } },
       4: { kind: 'pillar', r: 1.05, at: [[-0.36, -0.42], [0.36, -0.42], [-0.36, 0.42], [0.36, 0.42]] },
       5: { kind: 'drum', r: 1.55, at: [[-0.45, 0], [0.45, 0]] },
       6: { kind: 'boulder', r: 1.0, at: [[-0.5, 0.32, 1.1], [0, -0.45, 0.9], [0.5, 0.32, 1.1]] },
-      7: { kind: 'block', r: 0.95, at: [[-0.4, -0.3], [0.4, 0.3]] },
+      // v110: the ice's blocks DRIFT at `speed` m/s along `dirs`, turning back off a line `gap` in from the rail and
+      // glancing off each other
+      7: { kind: 'block', r: 0.95, at: [[-0.4, -0.55], [0.4, 0.55]], drift: { speed: 1.1, dirs: [[1, 0], [-1, 0]], gap: 1.6 } },
       8: { kind: 'coral', r: 1.0, at: [[-0.45, -0.35], [0.45, -0.35], [0, 0.45]] },
       9: { kind: 'crystal', r: 0.95, at: [[0.45, 0], [-0.45, 0]], orbit: { period: 22 } },
     },

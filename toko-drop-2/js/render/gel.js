@@ -14,8 +14,8 @@ import * as THREE from 'three/webgpu';
 import {
   uniform, positionLocal, normalLocal, normalView, positionViewDirection, cameraViewMatrix,
   materialEmissive, modelScale, vec3, vec4, float, sin, cos, exp, dot, normalize, clamp, max, abs, smoothstep, length, materialColor, materialOpacity } from 'three/tsl';
-import { TUNING } from '../tuning.js?v=109';
-import { styleName, styledBody } from './style.js?v=109';
+import { TUNING } from '../tuning.js?v=110';
+import { styleName, styledBody } from './style.js?v=110';
 
 const T = TUNING;
 
