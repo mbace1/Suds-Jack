@@ -49,6 +49,10 @@ const look = page => page.evaluate(() => {
 const play = async (page, until = 99) => {
   let held = 0;  // see below: waiting for the panel to show what the game says is there
       for (let i = 0; i < 6000; i++) {
+    // a kit pick NAVIGATES to the next day (?week); reading the page before the
+    // new one has booted read a window with no game on it, and lost that race
+    // once under load. Wait for the game, as a person waits for the page.
+    await page.waitForFunction(() => window.__tm?.challenge && window.__tm?.flow, null, { timeout: 30000 }).catch(() => {});
     const s = await look(page);
     if (s.phase === 'end') return s;
     if (await page.evaluate(() => window.__tm.challenge.index) >= until) return { phase: 'delivered' };

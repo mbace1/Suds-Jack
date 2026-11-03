@@ -19,7 +19,7 @@
 // caching their files from out here would be two answers to the same question.
 // A narrower scope wins the page, so those keep controlling themselves.
 
-const VERSION = 'v234';
+const VERSION = 'v235';
 const CACHE = `suds-hub-${VERSION}`;
 
 const SHELL = [
@@ -28,10 +28,10 @@ const SHELL = [
   './hub/arcade.js?v=5',
   './hub/art.js?v=28',
   './hub/feedback.js?v=13',
-  './hub/games.js?v=242',
-  './hub/hub-entry.js?v=169',
+  './hub/games.js?v=243',
+  './hub/hub-entry.js?v=170',
   './hub/hub.css?v=23',
-  './hub/hub.js?v=246',
+  './hub/hub.js?v=247',
   './hub/i18n.js?v=11',
   './hub/pad.js?v=10',
   './hub/playlog-auto.js',

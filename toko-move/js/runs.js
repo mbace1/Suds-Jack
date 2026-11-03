@@ -1,4 +1,4 @@
-// Toko Move — THE RUNS (v2.73; owner, 2026-11-01: "a much more structured
+// Toko Move — THE RUNS (v2.73, played as cards since v3.0; owner, 2026-11-01: "a much more structured
 // experience. Easy, medium, hard and night runs. Each unlocked after the easier
 // is completed").
 //
@@ -18,19 +18,22 @@
 // long a deadline, which parcels, and whether the rival and the sealed parcel
 // are in it.
 //
-// MEASURED, not guessed (`node test/shifts.cjs --runs=12`: twelve fresh shifts
-// of each run, a sensible bot and a naive one — completed, sensible / naive):
-//   EASY   3 jobs, deadlines ×1.5    12/12 · 12/12
-//   MEDIUM 4 jobs                    12/12 · 10/12
-//   HARD   5 jobs, rush, line down   12/12 ·  6/12   (on time: 4/12 sensible)
-//   NIGHT  5 jobs, 23:00, ×2 waits   12/12 ·  5/12
-// so a player who reads the board can clear the ladder, and one who taps the
-// first thing on it is stopped higher up each rung. Medium was 3 jobs at first
-// and measured flat against Easy (12/12 both); Hard's first deadline of ×0.9
-// left 3/12 on time, which made two stars a rumour; Night at 4 jobs was easier
-// than Hard for the naive player. Par is about the sensible bot's 70th
-// percentile of completed scores, so three stars ask for a good shift.
-//
+// MEASURED, not guessed. Since v3.0 the runs are played as the card journey
+// (journey.js), and `node test/journey.mjs` holds these bands: sixty fresh
+// shifts of each run, a bot that reads the board (the hop that leaves the
+// least to go) and one that taps the left button every time — completed,
+// reader / left-tapper (on time in brackets):
+//   EASY   3 jobs, short board, ×1.5    60/60 (60) · 60/60 (55)
+//   MEDIUM 4 jobs, reach 20 min         57/60 (41) · 44/60 (15)
+//   HARD   5 jobs, rush, a line halted  53/60 (22) · 35/60  (8)
+//   NIGHT  5 jobs from 23:00, ×2 waits  48/60 (24) · 26/60  (3)
+// so a player who reads the board clears the ladder, and one who taps the
+// first thing on it is stopped higher up each rung. `reach` is how far a job
+// may send you (minutes of the best route); EASY's short board is the nearest
+// third of the city. Par is the reader's 70th percentile of completed scores,
+// so three stars ask for a good shift. (v2.73 measured the same ladder in the
+// real-time game with test/shifts.cjs; ?classic still plays it, on these pars.)
+
 // Pure apart from the save: test/runs.mjs holds it in bare node.
 
 export const RUNS = [
@@ -38,21 +41,25 @@ export const RUNS = [
     blurb: 'Three plain parcels, a generous clock, a quiet city.',
     target: 3, deadline: 1.5, cargo: ['documents', 'parts'], board: 'short', encounters: 1, places: ['stop', 'aboard'],
     moods: { opportunity: 3, info: 2, warning: 0, notice: 0 }, disruptions: 0,
-    rush: 'off', weather: 'clear', cityDay: false, rival: false, sealed: false, par: 1000 },
+    rush: 'off', weather: 'clear', cityDay: false, rival: false, sealed: false, par: 65,
+    tones: { fun: 1 }, skies: ['clear'], cards: 3 },
   { id: 'medium', name: 'MEDIUM', title: 'A morning', glyph: '②',
     blurb: 'Four jobs, every kind of parcel, the morning rush, and the city happening to you.',
     target: 4, deadline: 1, cargo: null, encounters: 3, moods: null,
-    rush: null, weather: null, cityDay: true, rival: true, sealed: true, par: 1600 },
+    rush: null, weather: null, cityDay: true, rival: true, sealed: true, reach: 16, par: 110,
+    tones: { fun: 3, risky: 1 }, skies: ['clear', 'rain', 'snow'], cards: 4 },
   { id: 'hard', name: 'HARD', title: 'Rush hour, one line down', glyph: '③',
     blurb: 'Five jobs at the height of the rush, with one tram line halted.',
     target: 5, deadline: 1, cargo: null, encounters: 3, moods: { warning: 2, notice: 2 },
     headway: 0.6, rush: 'max', weather: null, cityDay: false,
-    halt: { atMin: 10, recoverJobs: 2, minutes: [28, 44] }, rival: true, sealed: true, par: 2000 },
+    halt: { atMin: 10, recoverJobs: 2, minutes: [28, 44] }, rival: true, sealed: true, reach: 14, par: 120,
+    tones: { risky: 3, fun: 1 }, skies: ['snow', 'rain'], cards: 5 },
   { id: 'night', name: 'NIGHT', title: 'Last service', glyph: '☾',
     blurb: 'Five jobs from 23:00, half the trams, the lines lit like neon.',
     target: 5, deadline: 0.9, cargo: null, encounters: 3, moods: { info: 2, notice: 2, opportunity: 0.5 },
     skin: 'night', startHour: 23, headway: 2, rush: 'off', weather: 'clear', cityDay: false,
-    rival: true, sealed: true, par: 1850 },
+    rival: true, sealed: true, reach: 16, par: 140,
+    tones: { scary: 3, risky: 1 }, skies: ['fog', 'rain', 'snow'], cards: 5 },
 ];
 export const BY_ID = Object.fromEntries(RUNS.map(r => [r.id, r]));
 export const ORDER = RUNS.map(r => r.id);
@@ -116,6 +123,7 @@ export function runHref(id, search = '') {
   const q = new URLSearchParams(search), out = new URLSearchParams();
   if (q.get('shift')) out.set('shift', q.get('shift'));
   for (const k of ['lang', 'q']) if (q.get(k)) out.set(k, q.get(k));
+  if (q.has('classic')) out.set('classic', '');   // v3.0: the real-time ladder stays the real-time ladder
   out.set('run', id);
   return `./?${out}`;
 }
