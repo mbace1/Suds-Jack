@@ -18,8 +18,9 @@
 // While a transition runs the run is held: no director, no bodies, no gun;
 // the hero is the transition's and cannot be hurt. Every number is
 // TUNING.worlds.
-import { TUNING } from '../tuning.js?v=107';
-import * as rules from './rules.js?v=107';
+import { TUNING } from '../tuning.js?v=109';
+import * as rules from './rules.js?v=109';
+import * as posts from './posts.js?v=109';
 
 const T = TUNING, WD = T.worlds;
 
@@ -109,6 +110,7 @@ function swap(w) {
   const A = arenaFor(w.world, w.shape);
   w.hx = A.hx; w.hz = A.hz;
   rules.create(w);   // the new world's rule, from its first step
+  posts.layout(w);   // v108: and what stands on its floor
   // v54: a world's boss beaten gives lives back (TUNING.worlds.heal), as 1.x's hp pod gives one
   const was = h.lives;
   h.lives = Math.min(T.hero.lives, h.lives + (WD.heal?.[w.mode] ?? 0));

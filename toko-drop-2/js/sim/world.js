@@ -14,22 +14,23 @@
 // moves, then everything is tested, against post-move positions.
 //
 // Modes: 'arcade', 'hardcade' (corpses fire back) and 'survival'.
-import { TUNING } from '../tuning.js?v=107';
-import { press, pressReset } from './press.js?v=107';
-import { makeRng } from './rng.js?v=107';
-import { BEHAVIOUR } from './species/index.js?v=107';
-import { DIRECTORS } from './director/index.js?v=107';
-import * as fire from './fire.js?v=107';
-import { makeHero, heroStep, applyPull, hurtHero, invincible } from './hero.js?v=107';
-import { swarmForces, resolveCrowd } from './crowd.js?v=107';
-import { revengeColor } from './color.js?v=107';
-import * as pickups from './pickups.js?v=107';
-import * as worlds from './worlds.js?v=107';
-import * as reshape from './reshape.js?v=107';
-import { Arena, levelShape, levelMoves, levelEnvelope, KIND } from './shape.js?v=107';
-import * as rules from './rules.js?v=107';
-import * as heat from './heat.js?v=107';
-import * as formation from './formation.js?v=107';
+import { TUNING } from '../tuning.js?v=109';
+import { press, pressReset } from './press.js?v=109';
+import { makeRng } from './rng.js?v=109';
+import { BEHAVIOUR } from './species/index.js?v=109';
+import { DIRECTORS } from './director/index.js?v=109';
+import * as fire from './fire.js?v=109';
+import { makeHero, heroStep, applyPull, hurtHero, invincible } from './hero.js?v=109';
+import { swarmForces, resolveCrowd } from './crowd.js?v=109';
+import { revengeColor } from './color.js?v=109';
+import * as pickups from './pickups.js?v=109';
+import * as worlds from './worlds.js?v=109';
+import * as reshape from './reshape.js?v=109';
+import { Arena, levelShape, levelMoves, levelEnvelope, KIND } from './shape.js?v=109';
+import * as rules from './rules.js?v=109';
+import * as heat from './heat.js?v=109';
+import * as formation from './formation.js?v=109';
+import * as posts from './posts.js?v=109';
 
 const T = TUNING;
 
@@ -73,6 +74,7 @@ export function createWorld({ seed = 1, mode = 'arcade', arena = T.arena.landsca
   if (world > 1 && worlds.on(w)) { w.dir.wave = (world - 1) * T.waves.rhythm.bossEvery; w.dir.gapT = 1e-9; }
   if (reshape.on(w)) reshape.create(w);   // SURVIVAL starts small and changes size as you play
   rules.create(w);                        // a campaign world's one rule (sim/rules.js)
+  posts.layout(w);                        // v108: what stands in a later world's floor (sim/posts.js)
   return w;
 }
 
@@ -99,6 +101,7 @@ export const api = {
       if (d > bd) { bd = d; best = { x, z }; }
       if (d > clear) break;
     }
+    posts.push(w, best, 1.2);   // v108: never inside what stands on the floor
     return best;
   },
   // hurt the hero unless they are in mercy or a dash; true if it landed
@@ -152,6 +155,7 @@ export function step(w, input) {
   if (w.trans) worlds.step(w, dt);   // between two worlds the run is held, and the hero is the transition's
   else {
     if (w.shapeT) reshape.step(w, dt);
+    posts.step(w);   // v108: the floor's moving posts go round
     w.director.step(w, dt, api);
     pickups.afterDirector(w, dt);
     heroStep(w, input, dt, api);
@@ -261,6 +265,9 @@ function gelStep(w, g, dt) {
   const HX = w.hx - g.r, HZ = w.hz - g.r;
   if (g.x < -HX || g.x > HX) { press(g, g.x - clamp(g.x, -HX, HX), 0); g.x = clamp(g.x, -HX, HX); if (Math.abs(g.kx) > 2) g.sqV += T.gel.sq.wall; g.kx *= -T.gel.wallBounce; }
   if (g.z < -HZ || g.z > HZ) { press(g, 0, g.z - clamp(g.z, -HZ, HZ)); g.z = clamp(g.z, -HZ, HZ); if (Math.abs(g.kz) > 2) g.sqV += T.gel.sq.wall; g.kz *= -T.gel.wallBounce; }
+  // v108: a post is a wall too, and a knock off it comes back reflected
+  const off = posts.push(w, g, g.r, press);
+  if (off && Math.hypot(g.kx, g.kz) > 2) { const kn = g.kx * off.nx + g.kz * off.nz; if (kn < 0) { g.kx -= (1 + T.gel.wallBounce) * kn * off.nx; g.kz -= (1 + T.gel.wallBounce) * kn * off.nz; g.sqV += T.gel.sq.wall; } }
   // a room's region is a wall too: a knock off it comes back reflected
   if (w.region && inRegion(w, g, g.r)) {
     if (Math.hypot(g.kx, g.kz) > 2) { g.sqV += T.gel.sq.wall; g.kx *= -T.gel.wallBounce; g.kz *= -T.gel.wallBounce; }
@@ -413,6 +420,8 @@ function bulletsStep(w, dt) {
     }
     b.x += b.vx * dt; b.z += b.vz * dt;
     if ((b.life -= dt) <= 0 || Math.abs(b.x) > HX || Math.abs(b.z) > HZ || (w.region && b.src !== 'sweep' && w.region.sdf(b.x, b.z) > 1.5)) b.dead = true;
+    // v108: a post is cover, both ways: a bullet dies on it (a world's sweeping lines pass, as they pass a room's edge)
+    else if (w.posts.length && b.src !== 'sweep' && posts.inside(w, b.x, b.z, b.r)) { b.dead = true; w.events.push({ type: 'postHit', x: b.x, z: b.z, color: b.color, hero: b.hero }); }
   }
 }
 

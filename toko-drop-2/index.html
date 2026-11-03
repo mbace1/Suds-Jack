@@ -83,6 +83,20 @@
       background: rgba(8, 8, 16, .55); border-radius: 3px; pointer-events: none; z-index: 5; text-shadow: 0 0 10px rgba(255, 180, 104, .35); }
     #banner[hidden] { display: none; }
     #banner.pop { animation: pop .5s ease-out; }
+    /* v109: a card — a boss's name in the banner's band as it comes in, WORLD CLEAR in the middle once the fight is
+       over (owner: "finished world 1 quite abruptly"); big letters, the banner's amber, a dark plate, no glow */
+    #card { position: fixed; left: 50%; transform: translateX(-50%); width: max-content; max-width: min(86vw, 820px); padding: 8px 22px 9px;
+      text-align: center; background: rgba(8, 8, 16, .62); border-radius: 4px; pointer-events: none; z-index: 5; color: var(--amber); }
+    #card.band { top: calc(max(12px, env(safe-area-inset-top)) + 80px); padding: 4px 16px 5px; }
+    #card.band .t { font-size: clamp(17px, 3.2vw, 30px); }
+    #card.band .s { margin-top: 2px; font-size: clamp(9px, 1.4vw, 12px); }
+    #card.center { top: 38%; }
+    #card[hidden] { display: none; }
+    #card .t { font-size: clamp(22px, 5.2vw, 46px); letter-spacing: min(.16em, .9vw); line-height: 1.05; }
+    #card .s { margin-top: 4px; font-size: clamp(11px, 1.9vw, 16px); letter-spacing: min(.3em, .9vw); opacity: .85; }
+    #card.pop { animation: cardIn .45s ease-out; }
+    @keyframes cardIn { from { transform: translateX(-50%) scale(1.12); opacity: 0; } to { transform: translateX(-50%) scale(1); opacity: 1; } }
+    @media (prefers-reduced-motion: reduce) { #card.pop { animation: none; } }
     @keyframes pop { from { transform: translateX(-50%) translateY(-6px); opacity: 0; } to { transform: translateX(-50%) translateY(0); opacity: 1; } }
     #menu { position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 6; width: min(92vw, 460px); max-height: 92vh; overflow-y: auto;
       padding: 18px 18px 14px; background: rgba(5, 5, 6, .82); border: 1px solid var(--line); text-align: center; touch-action: pan-y; }
@@ -240,9 +254,10 @@
     <div id="bossbar" hidden><i></i></div>
   </div>
   <div id="banner" hidden></div>
+  <div id="card" hidden><div class="t"></div><div class="s"></div></div>
   <div id="vignette" aria-hidden="true"></div>
   <div id="menu" class="menu" hidden></div>
-  <div id="ver">2.0 · v107<span id="backend"></span></div>
+  <div id="ver">2.0 · v109<span id="backend"></span></div>
   <pre id="fault" hidden></pre>
   <script>
     // A failure must be visible on the phone: there is no console there.
@@ -351,6 +366,6 @@
       });
     })();
   </script>
-  <script type="module" src="js/main.js?v=107"></script>
+  <script type="module" src="js/main.js?v=109"></script>
 </body>
 </html>

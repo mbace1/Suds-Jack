@@ -21,10 +21,11 @@
 // (dashPlan). 1.x fires only
 // while the aim is valid AND the trigger is held: a touch or pad aim stick is
 // both at once, a mouse aims all the time and fires only while held.
-import { TUNING } from '../tuning.js?v=107';
-import * as heat from './heat.js?v=107';
-import { BEHAVIOUR } from './species/index.js?v=107';   // read at run time only (a species' hitTest)
-import { slip } from './rules.js?v=107';   // THE FOAM's slick floor
+import { TUNING } from '../tuning.js?v=109';
+import * as heat from './heat.js?v=109';
+import { BEHAVIOUR } from './species/index.js?v=109';   // read at run time only (a species' hitTest)
+import { slip } from './rules.js?v=109';   // THE FOAM's slick floor
+import * as posts from './posts.js?v=109';
 
 const T = TUNING, H = T.hero, L = T.heroLook;
 
@@ -352,6 +353,7 @@ export function clampHero(w) {
   h.z = Math.max(-w.hz + r, Math.min(w.hz - r, h.z));
   // a campaign room's region (sim/shape.js), when it is not a rectangle
   if (w.region && !w.region.contains(h.x, h.z, r)) { const p = w.region.clamp(h.x, h.z, r, _rp); h.x = p.x; h.z = p.z; }
+  posts.push(w, h, r);   // v108: and what stands on a later world's floor (sim/posts.js)
 }
 const _rp = { x: 0, z: 0 };
 

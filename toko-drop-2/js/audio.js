@@ -1,7 +1,7 @@
 // audio.js — synthesised, never sampled. Every voice goes through one master
 // gain, so mute really mutes and a sound added later inherits it. Browsers
 // keep audio asleep until a gesture; unlock() is called from the first one.
-import { TUNING } from './tuning.js?v=107';
+import { TUNING } from './tuning.js?v=109';
 
 const A = TUNING.audio;
 
@@ -150,6 +150,8 @@ export class Sound {
       case 'fuse': this._tone('sine', 140, 40, 0.45, 0.3); this._hiss(0.4, 0.22, 1800, 160, 1); break;
       case 'slalom': this._tone('triangle', 660 * [1, 1.26, 1.5][Math.min(2, (e.n || 1) - 1)], 660 * [1, 1.26, 1.5][Math.min(2, (e.n || 1) - 1)], 0.09, 0.12); break;
       case 'threaded': [784, 988, 1175, 1568].forEach((f, i) => this._tone('triangle', f, f, 0.12, 0.13, i * 0.06)); break;
+      // v109: a world cleared — a rising fanfare under the card, longer than a wave's
+      case 'worldClear': [523, 659, 784, 1047, 1319].forEach((f, i) => this._tone('triangle', f, f, i === 4 ? 0.5 : 0.16, 0.13, i * 0.09)); break;
       case 'gateChain': case 'bountyPaid': [523, 659, 784].forEach((f, i) => this._tone('triangle', f, f, 0.14, 0.18, i * 0.07)); break;
       case 'bounty': this._tone('square', 1150, 1150, 0.06, 0.13); this._tone('square', 1550, 1550, 0.07, 0.11, 0.075); break;
       case 'mothShot': this._tone('sine', 420, 75, 0.22, 0.22); break;

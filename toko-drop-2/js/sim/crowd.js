@@ -7,8 +7,9 @@
 // flock, solo hunters weave, and the whole wave rides one current. The crowd
 // solver runs after the bodies have moved: bodies keep a pad apart, and one
 // closing on you from behind another is held back and slid aside.
-import { TUNING } from '../tuning.js?v=107';
-import { press } from './press.js?v=107';
+import { TUNING } from '../tuning.js?v=109';
+import { press } from './press.js?v=109';
+import * as posts from './posts.js?v=109';
 
 const MV = TUNING.movement, C = TUNING.crowd;
 const ARCHS = ['stream', 'ring', 'pincer'];
@@ -148,6 +149,8 @@ export function resolveCrowd(w, dt) {
   }
   // a campaign room's region is a wall for the crowd as well
   if (w.region) for (const g of gels) if (g.alive && !w.region.contains(g.x, g.z, g.r)) { const p = w.region.clamp(g.x, g.z, g.r, _rp); g.nudgedX += p.x - g.x; g.nudgedZ += p.z - g.z; press(g, g.x - p.x, g.z - p.z); g.x = p.x; g.z = p.z; }
+  // v108: and so are the posts on a later world's floor (sim/posts.js)
+  if (w.posts?.length) for (const g of gels) if (g.alive) { const x0 = g.x, z0 = g.z; if (posts.push(w, g, g.r, press)) { g.nudgedX += g.x - x0; g.nudgedZ += g.z - z0; } }
 }
 
 const clampTo = (v, m) => (v < -m ? -m : v > m ? m : v);

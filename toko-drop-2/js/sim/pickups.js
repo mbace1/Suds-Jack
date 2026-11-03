@@ -30,9 +30,10 @@
 // from its seed, and a pickup roll never shifts the wave's schedule: the
 // director's w.rng stays in lockstep with 1.x's own source
 // (test/director.mjs's oracle neutralises exactly these draws).
-import { TUNING } from '../tuning.js?v=107';
-import { makeRng } from './rng.js?v=107';
-import { equipWeapon, grantInvincibility, grantRapid } from './hero.js?v=107';
+import { TUNING } from '../tuning.js?v=109';
+import { makeRng } from './rng.js?v=109';
+import { equipWeapon, grantInvincibility, grantRapid } from './hero.js?v=109';
+import * as posts from './posts.js?v=109';
 
 const T = TUNING, P = T.pickups, H = T.hero, G = P.gate, C = P.convoy, B = P.bounty, FAM = G.family;
 
@@ -120,6 +121,8 @@ function makeGate(w, k, risk, drift) {
   // the posts, and the laser between them, lie along (−sin a, cos a)
   const g = { id: k.nextId++, x, z, px: x, pz: z, angle, ax: -Math.sin(angle), az: Math.cos(angle),
               risk, green: true, alive: true, cd: 0, retireT: null, drift, dx: 0, dz: 0 };
+  // v108: never standing in what stands on a later world's floor (sim/posts.js)
+  if (posts.push(w, g, G.half * 0.6)) { g.px = g.x; g.pz = g.z; }
   if (drift) { const da = r.next() * Math.PI * 2; g.dx = Math.cos(da) * G.drift.speed; g.dz = Math.sin(da) * G.drift.speed; }
   w.events.push({ type: 'gate', id: g.id, x, z, angle, risk, drift });
   return g;
@@ -144,6 +147,7 @@ function family(w, k, g) {
     const F = FAM.turnstile;
     g.half = F.half; g.spin = (r.next() < 0.5 ? -1 : 1) * (2 * Math.PI) / (F.period[0] + r.next() * (F.period[1] - F.period[0]));
     g.drift = false; g.dx = g.dz = 0;
+    if (posts.push(w, g, F.half + 0.2)) { g.px = g.x; g.pz = g.z; }   // v108: its sweep clears what stands on the floor
   } else if (type === 'slalom') {
     // three, `gap` apart along the beam's normal (cos a, sin a), the middle one where the gate stood
     const F = FAM.slalom, nx = Math.cos(g.angle), nz = Math.sin(g.angle), group = g.id;
@@ -225,6 +229,7 @@ function randomPod(w, k) {
 // (vx, vz) u/s for its `life` seconds
 function drop(w, k, x, z, what, life = P.life, vx = 0, vz = 0) {
   const it = { id: k.nextId++, type: what.type, fam: what.fam ?? null, x, z, px: x, pz: z, vx, vz, life, max: life, taken: false };
+  if (posts.push(w, it, 0.7)) { it.px = it.x; it.pz = it.z; }   // v108: a drop never lies inside a post
   k.items.push(it);
   w.events.push({ type: 'drop', id: it.id, kind: it.type, fam: it.fam, x, z });
   return it;
@@ -338,6 +343,9 @@ export function step(w, dt, api) {
       const inset = g.inset ?? G.drift.inset;
       if (Math.abs(g.x) > w.hx - inset) g.dx *= -1;
       if (Math.abs(g.z) > w.hz - inset) g.dz *= -1;
+      // v108: a drifting gate glances off what stands on the floor (sim/posts.js), as off a wall
+      const off = g.type === 'fence' ? null : posts.push(w, g, g.type === 'hoop' ? g.ring : G.half * 0.6);
+      if (off) { const dn = g.dx * off.nx + g.dz * off.nz; if (dn < 0) { g.dx -= 2 * dn * off.nx; g.dz -= 2 * dn * off.nz; } }
     }
     if (g.cd > 0) g.cd -= dt;
   }

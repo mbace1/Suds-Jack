@@ -21,12 +21,12 @@
 // runs down in its enemy loop — the same sequence 1.x runs, with the seam in
 // a different place. test/director.mjs holds all of it in lockstep with 1.x's
 // own loop source.
-import { TUNING } from '../../tuning.js?v=107';
-import * as worlds from '../worlds.js?v=107';
-import * as challenge from '../challenge.js?v=107';
-import { makeRng } from '../rng.js?v=107';
-import * as bossfight from '../bossfight.js?v=107';
-import * as floorshift from '../floorshift.js?v=107';
+import { TUNING } from '../../tuning.js?v=109';
+import * as worlds from '../worlds.js?v=109';
+import * as challenge from '../challenge.js?v=109';
+import { makeRng } from '../rng.js?v=109';
+import * as bossfight from '../bossfight.js?v=109';
+import * as floorshift from '../floorshift.js?v=109';
 
 const T = TUNING, W = T.waves, TAU = Math.PI * 2;
 
@@ -500,6 +500,8 @@ function curtainStep(w, d, dt, api) {
 
 // the round end (main.js:11356-11441), in 1.x's order
 function roundEnd(w, d, dt, api) {
+  // v109: a world's boss is down and its floor holds a beat before it opens
+  if (d.worldOutT > 0) { if ((d.worldOutT -= dt) <= 0) { d.worldOutT = 0; worlds.begin(w); } return; }
   curtainStep(w, d, dt, api);
   // the breather runs out: the next wave rolls in
   if (d.gapT > 0) { d.gapT -= dt; if (d.gapT <= 0) startWave(w, d, false); }
@@ -517,9 +519,12 @@ function roundEnd(w, d, dt, api) {
     // every frame, so a clear that crosses one shows it here
     while (w.score >= w.nextMilestone) { w.events.push({ type: 'milestone', score: w.nextMilestone }); w.nextMilestone += T.score.milestone; }
     w.events.push({ type: 'clear', wave: d.wave, bonus, dur: W.clear.banner, color: W.clear.color, flash: W.clear.flash });
-    // a world's boss wave cleared: the floor opens (sim/worlds.js), and the
-    // breather starts when the droplet has landed in the next world (onWorld)
-    if (worlds.endsWorld(w, d.wave)) { d.present = false; worlds.begin(w); }
+    // a world's boss wave cleared: the WORLD CLEAR beat (v109: `worldClear.hold` s), then the floor opens
+    // (sim/worlds.js), and the breather starts when the droplet has landed in the next world (onWorld)
+    if (worlds.endsWorld(w, d.wave)) {
+      d.present = false; d.worldOutT = W.worldClear.hold;
+      w.events.push({ type: 'worldClear', world: w.world, grade: w.fight?.grade ?? null, dur: W.worldClear.hold });
+    }
     // the last world's boss: the run is won (v27, owner: "make arcade mode complete")
     else if (worlds.endsRun(w, d.wave)) { w.won = true; w.over = true; w.events.push({ type: 'won', score: w.score, wave: d.wave }); }
     else d.gapT = W.clear.breather;

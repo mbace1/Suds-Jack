@@ -19,6 +19,31 @@
     Never `--no-verify`.
 -->
 
+## v109 — 2026-11-03
+**A world's boss comes in under its own name, and a world ends on a beat (owner: "I finished world 1 quite abruptly.. was there a boss or what was the trigger?")**
+- THE BOSS'S CARD: a world's boss wave opens with the boss's own name — TWIN PRISMS, CURB KING, MAW… — big, over "BOSS · WORLD 1 · THE GRID" (render: `ui.card`), in the banner's band under the HUD, where a fight's banners sit (owner, 2026-10-24: never over the middle of one). The wave's banner used to say only WAVE 8 · BOSS.
+- WORLD CLEAR: the boss down and its wave clear, the floor HOLDS 2.6 s before it opens (`waves.worldClear.hold`, sim/director/arcade.js) — WORLD CLEAR in the middle of the screen (the fight is over) over the world's name and the boss's grade, a fanfare under it, and the time to pick up what the boss dropped — where it used to start swallowing the droplet in the same moment as the boss's last hit. The last world's boss still ends the run, won.
+- test/worlds.mjs: world 1's boss wave clears, WORLD CLEAR is told with its hold, the floor is still whole a step before the hold is out and opens after it.
+- WHAT STANDS ON THE FLOOR READS (render/posts.js; v108 seen in its own pictures): the cistern's pillars are its own columns now — the set's stone, wet at the waterline, on a stepped octagonal plinth, snapped off with a paler jagged break — where v108's first cut wore a capital and read from above as a stool; the ice's blocks are a deep blue, faceted, a darker heart showing through, where they were the sheet's own pale colour and all but vanished on it; the deep's coral fills the circle it blocks (a dark rock, a dome, seven fingers leaning out to its edge, faintly lit from inside), where it was half of it and drowned to a dark purple.
+- test/smoke.mjs: world 1's floor colour is read from the darkest of four patches round its point — a yellow cube walking onto the one patch read as a floor that is not navy.
+- Cache tokens `?v=108` → `?v=109`; HUD label → `2.0 · v109`
+
+---
+
+## v108 — 2026-11-03
+**The floor's own shape: things stand in every later world's floor, and they block (owner: "arcade arena shapes are boring. We need some dynamic elements")**
+- WHAT STANDS ON THE FLOOR (sim/posts.js; TUNING.posts): from world 2 each world's floor carries its own — the driveway four bollards, the sewer four pipe stubs on its walkways, the cistern four stone pillars, the boiler two copper drums, the river three boulders in the stream, the ice two blocks of ice, the deep three coral heads, and the core two crystals that GO ROUND the middle, once every 22 s. Laid out as fractions of the world's floor, so one layout fits it in either orientation; balanced left and right so neither side is the safe one; never on the middle, where you land from the world before. World 1 stays 1.x's empty floor, and a campaign room keeps its own shape.
+- THEY BLOCK: you and every body are pushed out of them as the rail pushes (a body knocked into one glances off it); a bullet — yours or a gel's — dies on one, so each is COVER both ways (a world's sweeping lines pass, as they pass a room's edge); a body lands, a gate stands and a drop lies clear of them (a turnstile where its whole sweep clears them), and a drifting gate glances off them.
+- HOW THEY LOOK (render/posts.js): small sculptures in their world's materials, lit by its light, standing in their own shadow on the light map — a concrete bollard with a yellow band; an iron pipe with a dark mouth and a rusted flange; a fluted limestone column on a plinth; a riveted copper drum with a brass valve; a flattened wet boulder; a hand-cut block of clear blue ice under frost; a brain-coral head with branching fingers; a violet crystal on a dark base, slowly turning. A bullet that dies on one spits a little of its colour there.
+- The bots read a post as a wall (scripts/bot.mjs pathRisk), as the shaped campaign rooms' edges.
+- MEASURED (scripts/curve.mjs, 24 seeds a world, against v107's own 24): the sharp bot clears 73% of the worlds (v107 69%) losing 1.41 lives a world (1.42) — unchanged; the average bot 29% (36%) and 2.52 (2.42), and the fights run a few seconds longer. That is the posts eating its shots: a bot fires at its target whatever stands between, and never stands behind one on purpose, where a person does — so for a bot a post is all cost and for a player it is cover too, and a person's number will sit nearer the sharp bot's than this.
+- The world bosses' own tests count their patterns on a bare floor (test/lib/boss.mjs `posts: false`): the BERG's fourth wall lost a shot to an ice block, which is the posts' rule doing its job, not the boss's pattern changing.
+- test/posts.mjs (new, in the gate): every later world has its posts, balanced, off the middle and inside the floor in both orientations, world 1 and a campaign room none; you stop at a post's face and a body inside one is pushed out; your bullet and a gel's die on one, a sweeping line does not; no body lands, no gate stands inside one, a drop is moved clear; the core's crystals turn a quarter in a quarter of their period and push you out of their way; the next world lays its own out. The smoke checks a later world's floor has its posts, every one drawn.
+- test/smoke.mjs: the goo check counts a kill's chunks by their AGE — on the sewer's floor a gel's shot dying on a pipe threw two fresh droplets of its own inside the check's 1.9 s, and the check read them as the kill's chunks lying on.
+- Cache tokens `?v=107` → `?v=108`; HUD label → `2.0 · v108`
+
+---
+
 ## v107 — 2026-11-03
 **The gate family: five more gates, and every gate redrawn (owner: "The gates are a good base concept but we need more similar ones … Gates get boring fast and look boring")**
 - From world 2 a wave's gate may stand as one of the family (sim/pickups.js family; TUNING.pickups.gate.family), the mix opening a world at a time and drawn from a stream of its own, so world 1's gates — and every draw the pickups make — stay 1.x's. Each keeps the gate's rule (walking through does nothing; a DASH through breaks it and pays; its beam cuts the bodies it touches) and changes its shape, how it moves or what it pays. None is a risk gate; each wears its own colour:

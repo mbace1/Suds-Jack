@@ -7,34 +7,34 @@
 // The rules live in sim/ and run on a fixed step; this file feeds them input,
 // hands their events to the view and the sound, and draws in between steps.
 import * as THREE from 'three/webgpu';
-import { TUNING } from './tuning.js?v=107';
-import { buildFloor } from './render/floor.js?v=107';
-import { fitCamera, screenToWorld, screenDown } from './render/view.js?v=107';
-import * as worldsSim from './sim/worlds.js?v=107';
-import { shapeAt as shiftShape } from './sim/floorshift.js?v=107';
-import * as reshapeSim from './sim/reshape.js?v=107';
-import { Scenery } from './render/scenery.js?v=107';
-import { DRIFT } from './render/kit.js?v=107';
-import { Transit } from './render/transit.js?v=107';
-import { Splats } from './render/splats.js?v=107';
-import { Actors } from './render/actors.js?v=107';
-import { GEL_TIME } from './render/gel.js?v=107';
-import { studioEnvironment } from './render/env.js?v=107';
-import { Specimen } from './render/specimen.js?v=107';
-import { createWorld, step, api as simApi } from './sim/world.js?v=107';
-import { stage as stagePk } from './sim/pickups.js?v=107';
-import { Input } from './input.js?v=107';
-import { UI, t, timeText, LANGS, getLang, setLang, goalText, bossName } from './ui.js?v=107';
-import { Announcer } from './announcer.js?v=107';
-import { rooms as campaignRooms, isOpen as roomOpen, better as betterGrade } from './sim/director/campaign.js?v=107';
-import { levelShape, slots as regionSlots } from './sim/shape.js?v=107';
-import { Sound } from './audio.js?v=107';
-import { Music, worldWant, cueFor, renderMusicWav } from './music.js?v=107';
-import { Intro, CUES as INTRO } from './intro/intro.js?v=107';
-import { scheduleIntroSfx, renderIntroSfxWav } from './intro/sfx.js?v=107';
-import { Readout } from './readout.js?v=107';
-import { Meter, device, Quality } from './meter.js?v=107';
-import * as record from './record.js?v=107';
+import { TUNING } from './tuning.js?v=109';
+import { buildFloor } from './render/floor.js?v=109';
+import { fitCamera, screenToWorld, screenDown } from './render/view.js?v=109';
+import * as worldsSim from './sim/worlds.js?v=109';
+import { shapeAt as shiftShape } from './sim/floorshift.js?v=109';
+import * as reshapeSim from './sim/reshape.js?v=109';
+import { Scenery } from './render/scenery.js?v=109';
+import { DRIFT } from './render/kit.js?v=109';
+import { Transit } from './render/transit.js?v=109';
+import { Splats } from './render/splats.js?v=109';
+import { Actors } from './render/actors.js?v=109';
+import { GEL_TIME } from './render/gel.js?v=109';
+import { studioEnvironment } from './render/env.js?v=109';
+import { Specimen } from './render/specimen.js?v=109';
+import { createWorld, step, api as simApi } from './sim/world.js?v=109';
+import { stage as stagePk } from './sim/pickups.js?v=109';
+import { Input } from './input.js?v=109';
+import { UI, t, timeText, LANGS, getLang, setLang, goalText, bossName } from './ui.js?v=109';
+import { Announcer } from './announcer.js?v=109';
+import { rooms as campaignRooms, isOpen as roomOpen, better as betterGrade } from './sim/director/campaign.js?v=109';
+import { levelShape, slots as regionSlots } from './sim/shape.js?v=109';
+import { Sound } from './audio.js?v=109';
+import { Music, worldWant, cueFor, renderMusicWav } from './music.js?v=109';
+import { Intro, CUES as INTRO } from './intro/intro.js?v=109';
+import { scheduleIntroSfx, renderIntroSfxWav } from './intro/sfx.js?v=109';
+import { Readout } from './readout.js?v=109';
+import { Meter, device, Quality } from './meter.js?v=109';
+import * as record from './record.js?v=109';
 
 const T = TUNING;
 const params = new URLSearchParams(location.search);
@@ -502,9 +502,9 @@ const specimen = new Specimen(T, actors, scene.environment);
 // menu). It takes effect at run start; the menu also redraws the world left
 // behind the title in the new style. The HUD label says ' · sdf' while on.
 const GELS = ['classic', 'sdf'];
-import { STYLES } from './render/style.js?v=107';
-import { Lens } from './render/lens.js?v=107';
-import { setSceneSun } from './render/sun.js?v=107';
+import { STYLES } from './render/style.js?v=109';
+import { Lens } from './render/lens.js?v=109';
+import { setSceneSun } from './render/sun.js?v=109';
 let urlGels = GELS.includes(params.get('gels')) ? params.get('gels') : null;
 const gels = () => urlGels ?? (GELS.includes(store.str('toko2.gels')) ? store.str('toko2.gels') : 'classic');
 // The LENS switch (render/lens.js, v94): NONE or TILT-SHIFT, localStorage toko2.lens; ?lens=tilt|none for a link
@@ -651,7 +651,7 @@ const campaignProgress = (hard = false) => { try { return JSON.parse(store.str(h
 let lastRoom = null;   // AGAIN replays it
 const levels = new Map();
 async function loadLevel(id) {
-  if (!levels.has(id)) levels.set(id, fetch(new URL(`../levels/${id}.json?v=107`, import.meta.url)).then((r) => { if (!r.ok) throw new Error(`levels/${id}.json ${r.status}`); return r.json(); }));
+  if (!levels.has(id)) levels.set(id, fetch(new URL(`../levels/${id}.json?v=109`, import.meta.url)).then((r) => { if (!r.ok) throw new Error(`levels/${id}.json ${r.status}`); return r.json(); }));
   return levels.get(id);
 }
 // the list the room screen draws: worlds, their rooms, open or not, best grades
@@ -861,7 +861,11 @@ function onEvent(e) {
   else if (e.type === 'milestone') ui.banner(e.score.toLocaleString('en-US'), 1.2);
   // a boss's act change or the surviving twin's rage: 1.x's 1.1 s popup (main.js:10398-10407); the 0.3 shake comes as its own event
   else if (e.type === 'phase') ui.banner(e.label ?? 'BOSS PHASE!', e.dur ?? 1.1);
+  // v109: a world's boss comes in under its own name, in the banner's band (its wave's banner would say only BOSS)
+  else if (e.type === 'wave' && e.kind === 'boss' && world?.fight && world.world) ui.card(bossName(world.fight.kind), `${t('bossOf')} · ${t(`world${world.world}`)}`, 2.4, 'band');
   else if (e.type === 'wave') ui.banner(`${t('wave')} ${e.wave}${e.label ? ` · ${e.label}` : ''}`, e.dur ?? 1.4);
+  // and when it is down and its wave is clear, the world is: WORLD CLEAR in the middle, the fight over, before the floor opens
+  else if (e.type === 'worldClear') ui.card(t('worldClear'), `${t(`world${e.world}`)}${e.grade ? ` · ${e.grade}` : ''}`, e.dur ?? 2.4, 'center');
   // a boss wave's clear comes a beat after its fight's banner: it joins it rather than writing over it (v42)
   else if (e.type === 'clear' && world?.fight?.done) ui.banner(`${bossName(world.fight.kind)} ${t('bossDown')} · ${world.fight.grade} · +${(world.fight.bonus + e.bonus).toLocaleString('en-US')}`, 2.2);
   else if (e.type === 'clear') ui.banner(`${t('wave')} ${e.wave} ${t('clear')} +${e.bonus.toLocaleString('en-US')}`, e.dur ?? 1.0);

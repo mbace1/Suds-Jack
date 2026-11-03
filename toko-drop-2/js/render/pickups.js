@@ -28,9 +28,9 @@
 import * as THREE from 'three/webgpu';
 import * as TSL from 'three/tsl';
 import { texture } from 'three/tsl';
-import { TUNING } from '../tuning.js?v=107';
-import { itemLook, gateLook, glyphOf, colorOf } from '../sim/pickups.js?v=107';
-import { t as say } from '../ui.js?v=107';
+import { TUNING } from '../tuning.js?v=109';
+import { itemLook, gateLook, glyphOf, colorOf } from '../sim/pickups.js?v=109';
+import { t as say } from '../ui.js?v=109';
 
 const T = TUNING, P = T.pickups, G = P.gate, C = P.convoy, B = P.bounty, GL = G.look, FAM = G.family;
 const POOLS = 96;   // pools of light a frame: the drops, the beams, the moths

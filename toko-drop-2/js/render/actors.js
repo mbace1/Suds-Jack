@@ -15,20 +15,21 @@
 // that springs in and fades (splats.js). Views are pooled per species, so a
 // gel's material is built once and reused, never compiled mid-fight.
 import * as THREE from 'three/webgpu';
-import { TUNING } from '../tuning.js?v=107';
+import { TUNING } from '../tuning.js?v=109';
 import * as TSL from 'three/tsl';
-import { gelMaterial, domeGeometry, cubeGeometry, heroGeometry, GEL_TIME } from './gel.js?v=107';
-import { LOOKS } from './looks/index.js?v=107';
-import { styleName, setStyle as setStyleMode, styledBody } from './style.js?v=107';
-import { JellyBody } from './jelly.js?v=107';
-import { Juice } from './juice.js?v=107';
-import { ArenaLight } from './light.js?v=107';
-import { toSdf } from './sdf.js?v=107';
-import { PickupView } from './pickups.js?v=107';
-import { ChallengeView } from './challenge.js?v=107';
-import { Goo } from './goo.js?v=107';
-import { mult as heatMult } from '../sim/heat.js?v=107';
-import { strands as liveStrands } from '../sim/formation.js?v=107';
+import { gelMaterial, domeGeometry, cubeGeometry, heroGeometry, GEL_TIME } from './gel.js?v=109';
+import { LOOKS } from './looks/index.js?v=109';
+import { styleName, setStyle as setStyleMode, styledBody } from './style.js?v=109';
+import { JellyBody } from './jelly.js?v=109';
+import { Juice } from './juice.js?v=109';
+import { ArenaLight } from './light.js?v=109';
+import { toSdf } from './sdf.js?v=109';
+import { PickupView } from './pickups.js?v=109';
+import { ChallengeView } from './challenge.js?v=109';
+import { PostView } from './posts.js?v=109';
+import { Goo } from './goo.js?v=109';
+import { mult as heatMult } from '../sim/heat.js?v=109';
+import { strands as liveStrands } from '../sim/formation.js?v=109';
 
 const T = TUNING;
 const B = T.blob, D = T.death;
@@ -60,6 +61,7 @@ export class Actors {
     this.light = new ArenaLight();   // the light and shadow the floor reads (main.js draws it)
     this.pickups = new PickupView(scene, this);   // 1.x's drops, gates, convoy and bounty (render/pickups.js)
     this.challenge = new ChallengeView(scene);    // a campaign room's ring, heart, orbs and lit body (render/challenge.js)
+    this.posts = new PostView(scene);             // v108: what stands on a later world's floor (render/posts.js)
     // droplets and the floor's film (render/goo.js); main.js steps the film.
     // The kit is always built (the floor reads its film); `goo` is it while
     // the title's SPLATTER switch is on, and null while 1.x's puddles stand in
@@ -407,6 +409,7 @@ export class Actors {
     this.caustics.count = 0;
     this.pickups.reset();
     this.challenge.reset();
+    this.posts.reset();
     this.goo?.clear();
   }
 
@@ -435,6 +438,9 @@ export class Actors {
       const dx = e.x - g.x, dz = e.z - g.z, c = Math.cos(v.yaw), s = Math.sin(v.yaw);
       const lx = dx * c - dz * s, lz = dx * s + dz * c, l = Math.hypot(lx, lz) || 1;
       v.hit = 1; v.mat.gel.hitDir.value.set(lx / l, lz / l);
+    } else if (e.type === 'postHit') {
+      // v108: a bullet that dies on a post spits a little of its colour there
+      if ((this._postHitN = (this._postHitN ?? 0) + 1) % 2 === 0) this.spray(e.x, e.z, 2, e.color ?? 0xffffff, [0.05, 0.09]);
     } else if (e.type === 'strandCut') {
       // v106: a strand snaps: a spit of the pair's goo where it parted
       const C = T.forms.pair.view, hex = T.species[e.kind]?.color ?? 0xffffff;
@@ -669,6 +675,7 @@ export class Actors {
     }
     this.pickups.sync(w, alpha, time);
     this.challenge.sync(w, alpha, time);
+    this.posts.sync(w, alpha, time);
     this.goo?.setBodies(w, alpha);
 
     // lobs in flight, hazards on the floor (a slow pulse, fading out at the end)

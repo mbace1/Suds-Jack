@@ -159,6 +159,10 @@ export default {
   bossFight: { on: true, perWave: 1000, share: { S: 1, A: 0.6, B: 0.35, C: 0.15 } },
 
   clear: { perWave: 500, breather: 1.5, dying: 0.28, banner: 1.0, color: 0x66ffcc, flash: 0.4 },
+  // v109 (owner: "I finished world 1 quite abruptly"): a world's boss down, the floor holds `hold` s before it
+  // opens — the WORLD CLEAR card, the boss's grade, the prize it dropped there to be picked up — where it used to
+  // swallow the hero the same moment
+  worldClear: { hold: 2.6 },
 
   // CHALLENGE WAVES (v36, sim/challenge.js): the campaign's goals asked of an
   // arcade wave — from wave `from`, every `every`th, never a boss wave (those

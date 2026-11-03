@@ -20,7 +20,7 @@
 // TUNING.light.arena.
 import * as THREE from 'three/webgpu';
 import { uv, vec2, vec3, float, length, clamp, pow } from 'three/tsl';
-import { TUNING } from '../tuning.js?v=107';
+import { TUNING } from '../tuning.js?v=109';
 
 const T = TUNING, A = T.light.arena, _Y = new THREE.Vector3(0, 1, 0);
 const smooth = (t) => { t = Math.min(1, Math.max(0, t)); return t * t * (3 - 2 * t); };
@@ -148,6 +148,8 @@ export class ArenaLight {
       const r = g.r * S.r * grow * (v?.shadow ?? 1);
       if (r > 0.02) this._putShade(this.shades, s++, g.px + (g.x - g.px) * alpha, g.pz + (g.z - g.pz) * alpha, r);
     }
+    // v108: what stands on a later world's floor stands in its own shadow (sim/posts.js)
+    for (const p of w.posts ?? []) if (s < S.cap) this._putShade(this.shades, s++, p.px + (p.x - p.px) * alpha, p.pz + (p.z - p.pz) * alpha, p.r * S.r * (A.postShade ?? 1.15));
     for (const [m, c] of [[this.pools, n], [this.shades, s]]) {
       m.count = c;
       m.instanceMatrix.needsUpdate = true;

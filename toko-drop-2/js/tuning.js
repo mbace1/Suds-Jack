@@ -7,10 +7,10 @@
 // things that work"). The arena is 1.x's, so every 1.x number ports as it is
 // instead of through a rescale. Axes: x across the screen (right +), y up,
 // z toward the bottom of the screen. The arena is centred on the origin.
-import { SPECIES } from './tuning/species/index.js?v=107';
-import WAVES from './tuning/waves.js?v=107';
-import PICKUPS from './tuning/pickups.js?v=107';
-import MUSIC from './tuning/music.js?v=107';
+import { SPECIES } from './tuning/species/index.js?v=109';
+import WAVES from './tuning/waves.js?v=109';
+import PICKUPS from './tuning/pickups.js?v=109';
+import MUSIC from './tuning/music.js?v=109';
 
 export const TUNING = {
   render: {
@@ -1133,6 +1133,24 @@ export const TUNING = {
     // how a class reads (render/actors.js _heavy): a mite `mite` of the way to white, a brute × `brute` (a tank
     // takes HEAVY's own darken), a giant its species' hue turned `hue`, saturated × `sat`, lightness × `light`
     look: { mite: 0.22, brute: 0.75, giant: { hue: 0.11, sat: 1.4, light: 0.58 } },
+  },
+  // v108 THE FLOOR'S OWN SHAPE (sim/posts.js; owner: "arcade arena shapes are boring"): what stands in a later
+  // world's floor and BLOCKS — the hero and the bodies are pushed out, a bullet dies on it (cover both ways), a
+  // spawn, a gate or a drop is moved clear. `kind` is its look (render/posts.js), `r` its radius (× a third
+  // number, per post), `at` [fx, fz] fractions of the floor's half sides — symmetric, never on the middle, where
+  // the hero lands; an `orbit` goes round the middle once every `period` s
+  posts: {
+    worlds: {
+      2: { kind: 'bollard', r: 0.6, at: [[-0.42, -0.45], [0.42, -0.45], [-0.42, 0.45], [0.42, 0.45]] },
+      3: { kind: 'pipe', r: 0.75, at: [[-0.33, -0.62], [0.33, -0.62], [-0.33, 0.62], [0.33, 0.62]] },
+      4: { kind: 'pillar', r: 1.05, at: [[-0.36, -0.42], [0.36, -0.42], [-0.36, 0.42], [0.36, 0.42]] },
+      5: { kind: 'drum', r: 1.55, at: [[-0.45, 0], [0.45, 0]] },
+      6: { kind: 'boulder', r: 1.0, at: [[-0.5, 0.32, 1.1], [0, -0.45, 0.9], [0.5, 0.32, 1.1]] },
+      7: { kind: 'block', r: 0.95, at: [[-0.4, -0.3], [0.4, 0.3]] },
+      8: { kind: 'coral', r: 1.0, at: [[-0.45, -0.35], [0.45, -0.35], [0, 0.45]] },
+      9: { kind: 'crystal', r: 0.95, at: [[0.45, 0], [-0.45, 0]], orbit: { period: 22 } },
+    },
+    bulletSplash: 0.4,                       // a bullet dying on a post throws a little of its colour (render)
   },
   // v106 FORMATIONS (sim/formation.js; owner: "more unique patterns and synergies"): bodies laid out as one unit
   forms: {
