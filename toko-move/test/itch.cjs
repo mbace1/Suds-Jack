@@ -64,7 +64,9 @@ server.listen(0, '127.0.0.1', async () => {
     for (let i = 0; i < 300; i++) {
       const s = await page.evaluate(() => ({ done: window.__tm3.state().done, busy: window.__tm3.busy(), scene: window.__tm3.scene(), board: document.getElementById('v3board').classList.contains('on'), btn: !!document.querySelector('#v3panel .eventOpt:not([disabled])') }));
       scenes.add(s.scene); if (s.board) boards++;
-      if (s.done >= 1) break;
+      // the state moves inside choose(), before the hop is played: wait for the
+      // delivery to finish playing, or a first-hop drop reads 0 hops (CI, main)
+      if (s.done >= 1 && !s.busy) break;
       if (!s.busy && s.btn) { await page.tap('#v3panel .eventOpt[data-i="0"]').catch(() => {}); await page.waitForTimeout(100); continue; }
       await page.touchscreen.tap(80, 380).catch(() => {}); await page.waitForTimeout(140);
     }
