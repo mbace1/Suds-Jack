@@ -14,21 +14,21 @@
 // moves, then everything is tested, against post-move positions.
 //
 // Modes: 'arcade', 'hardcade' (corpses fire back) and 'survival'.
-import { TUNING } from '../tuning.js?v=104';
-import { press, pressReset } from './press.js?v=104';
-import { makeRng } from './rng.js?v=104';
-import { BEHAVIOUR } from './species/index.js?v=104';
-import { DIRECTORS } from './director/index.js?v=104';
-import * as fire from './fire.js?v=104';
-import { makeHero, heroStep, applyPull, hurtHero, invincible } from './hero.js?v=104';
-import { swarmForces, resolveCrowd } from './crowd.js?v=104';
-import { revengeColor } from './color.js?v=104';
-import * as pickups from './pickups.js?v=104';
-import * as worlds from './worlds.js?v=104';
-import * as reshape from './reshape.js?v=104';
-import { Arena, levelShape, levelMoves, levelEnvelope, KIND } from './shape.js?v=104';
-import * as rules from './rules.js?v=104';
-import * as heat from './heat.js?v=104';
+import { TUNING } from '../tuning.js?v=105';
+import { press, pressReset } from './press.js?v=105';
+import { makeRng } from './rng.js?v=105';
+import { BEHAVIOUR } from './species/index.js?v=105';
+import { DIRECTORS } from './director/index.js?v=105';
+import * as fire from './fire.js?v=105';
+import { makeHero, heroStep, applyPull, hurtHero, invincible } from './hero.js?v=105';
+import { swarmForces, resolveCrowd } from './crowd.js?v=105';
+import { revengeColor } from './color.js?v=105';
+import * as pickups from './pickups.js?v=105';
+import * as worlds from './worlds.js?v=105';
+import * as reshape from './reshape.js?v=105';
+import { Arena, levelShape, levelMoves, levelEnvelope, KIND } from './shape.js?v=105';
+import * as rules from './rules.js?v=105';
+import * as heat from './heat.js?v=105';
 
 const T = TUNING;
 
@@ -194,13 +194,17 @@ function spawn(w, kind, x, z, o = {}) {
   if (o.isBoss) r *= V.boss.radius;
   // HEAVY (TUNING.worlds.heavy): a later world's bigger, tougher body
   else if (o.heavy) { r *= T.worlds.heavy.radius; if (!S.noHpMult) hp = Math.ceil(hp * T.worlds.heavy.hp); }
+  // v105: a SIZE CLASS (TUNING.sizes): × radius, hit points, speed and fire clock, one rule for every species
+  const SZ = !o.isBoss && o.size && o.size !== 2 && !T.sizes.skip.includes(kind) ? T.sizes.classes[o.size] : null;
+  if (SZ) { r *= SZ.r; if (!S.noHpMult) hp = Math.max(1, Math.ceil(hp * SZ.hp)); }
   if (o.hp != null) hp = o.hp;
   if (!o.isBoss && w.hpMult !== 1) hp = Math.max(1, Math.round(hp * w.hpMult));
   const g = {
     id: w.nextId++, kind, x, z, px: x, pz: z, vx: 0, vz: 0, kx: 0, kz: 0, velX: 0, velZ: 0,
     r, hp, maxHp: hp, state: 'active', t: 0, alive: true,
-    flash: 0, sq: 1, sqV: 0, speedMult: o.speedMult ?? 1, intervalMult: o.intervalMult ?? 1,
-    variant: o.variant ?? 'normal', affix: o.affix ?? null, anchored: o.affix === 'anchored', isBoss: !!o.isBoss, child: !!o.child, heavy: !!o.heavy && !o.isBoss,
+    flash: 0, sq: 1, sqV: 0, speedMult: (o.speedMult ?? 1) * (SZ?.speed ?? 1), intervalMult: o.intervalMult ?? 1,
+    fireMult: (o.fireMult ?? 1) * (SZ?.fire ?? 1), size: SZ ? o.size : 2,   // v105: the fire clocks' own multiplier, and the size class
+    variant: o.variant ?? 'normal', affix: o.affix ?? null, anchored: o.affix === 'anchored', isBoss: !!o.isBoss, child: !!o.child, heavy: (!!o.heavy || (SZ != null && o.size >= 3)) && !o.isBoss,
     shield: false, surgeT: 0, surgeMult: 1, cloak: 0, tell: 0, faceX: 0, faceZ: 1, dashedBy: -1, shovedBy: -1,
     dodgeCd: 0, dodgeT: 0, dodgeVx: 0, dodgeVz: 0, mvPhase: w.rngFx.range(0, Math.PI * 2), mvSide: w.rngFx.next() < 0.5 ? 1 : -1,
     nudgedX: 0, nudgedZ: 0, s: {},
@@ -303,12 +307,23 @@ function kill(w, g, src = 'hero') {
   // paid at the heat it was made at, then it heats you (v53): by how close it was, and more for
   // the kill that empties the floor; a gate's or a hazard's kill pays, but heats nothing
   const m0 = heat.mult(w);
-  heat.pay(w, T.score.perKill * pickups.scoreMult(w), hard);
+  heat.pay(w, T.score.perKill * pickups.scoreMult(w) * (T.sizes.classes[g.size]?.score ?? 1), hard);   // v105: a bigger body pays more
   heat.gain(w, heat.killHeat(w, g, src) + (src !== 'env' && heat.lull(w) ? T.heat.clear : 0));
   pickups.onKill(w, g);             // the bounty pays (1.x main.js:4436-4448)
   w.events.push({ type: 'kill', id: g.id, x: g.x, z: g.z, kind: g.kind, r: g.r, color: S.color, big: g.r >= T.death.big, boss: g.isBoss, src, m: m0 });
   if (g.isBoss) w.lastBoss = { x: g.x, z: g.z };   // where a later world's drain opens
   BEHAVIOUR[g.kind].onKill?.(w, g, api, src);
+  // v105: a GIANT (size class 5) splits, dying, into bodies of its kind (TUNING.sizes: two brutes), thrown apart
+  // across the line it was hit on
+  const SP = T.sizes.classes[g.size]?.split;
+  if (SP && !g.isBoss) {
+    const h = w.hero, a = Math.atan2(g.z - h.z, g.x - h.x) + Math.PI / 2, off = g.r * 0.55;
+    for (let i = 0; i < SP.n; i++) {
+      const k = SP.n === 1 ? 0 : (i / (SP.n - 1)) * 2 - 1;
+      const c = spawn(w, g.kind, g.x + Math.cos(a) * off * k, g.z + Math.sin(a) * off * k, { child: true, size: SP.into, speedMult: g.speedMult / (T.sizes.classes[g.size].speed || 1), intervalMult: g.intervalMult, fireMult: g.fireMult / (T.sizes.classes[g.size].fire || 1) });
+      api.clamp(w, c);
+    }
+  }
   // a big death shakes the bodies around it (1.x main.js:4517-4540) — the ones
   // alive at the kill, so never a brood still waiting out a pop, this body's or
   // another's: 1.x built that brood only when its pop ended ("newborn minnows

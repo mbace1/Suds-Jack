@@ -10,7 +10,7 @@
 //
 // g.s.shell is the bubble's hits left (the look reads it, bubbla's look).
 // Numbers: js/tuning/species/blister.js. Seeded: w.rng only.
-import { rage, range, toHero } from './bosskit.js?v=104';
+import { rage, range, toHero } from './bosskit.js?v=105';
 
 export default {
   init(w, g, api) {
@@ -46,7 +46,7 @@ export default {
       g.vx = (-ux * 0.5 - uz * side) * sp;
       g.vz = (-uz * 0.5 + ux * side) * sp;
       if ((s.panicT -= dt) <= 0) {
-        s.panicT = S.panic.every * g.intervalMult;
+        s.panicT = S.panic.every * g.intervalMult * g.fireMult;
         api.fire.fanSpan(w, g.x, g.z, api.fire.aimAngle(w, g.x, g.z), S.panic.count, S.panic.span, { ...opts, speedMult: S.panic.shotSpeed });
         w.events.push({ type: 'gelShot', x: g.x, z: g.z, kind: g.kind });
       }
@@ -64,7 +64,7 @@ export default {
     g.vx = ux * radial * sp - uz * sway;
     g.vz = uz * radial * sp + ux * sway;
     if ((s.blowT -= dt) <= 0) {
-      s.blowT = range(w, mad ? R.every : B.every) * g.intervalMult;
+      s.blowT = range(w, mad ? R.every : B.every) * g.intervalMult * g.fireMult;
       const a0 = api.fire.aimAngle(w, g.x, g.z);
       for (let j = 0; j < B.count; j++) {
         const a = B.count > 1 ? a0 - B.span / 2 + (j * B.span) / (B.count - 1) : a0;

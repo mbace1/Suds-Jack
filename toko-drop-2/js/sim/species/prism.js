@@ -114,11 +114,11 @@ export default {
     if (s.fireT <= 0) {
       const opts = { color: S.bulletColor, src: g.kind };
       if (raged) {
-        s.fireT = F.raged.every * g.intervalMult;
+        s.fireT = F.raged.every * g.intervalMult * g.fireMult;
         api.fire.ring(w, g.x, g.z, F.raged.count, F.raged.base, opts);
         s.rings++;
       } else {
-        s.fireT = F.calm.every * g.intervalMult;
+        s.fireT = F.calm.every * g.intervalMult * g.fireMult;
         api.fire.fanSpan(w, g.x, g.z, api.fire.aimAngle(w, g.x, g.z), F.calm.count, F.calm.span, opts);
         s.volleys++;
       }
@@ -155,9 +155,9 @@ export default {
 // exactly that step of my own — half a step of slack either side.
 function halfBehind(w, g, sib, F, api) {
   const dt = api.T.sim.dt;
-  const P = F.calm.every * g.intervalMult;
+  const P = F.calm.every * g.intervalMult * g.fireMult;
   let k = clockSteps(sib.s.fireT, dt) + Math.round(P / 2 / dt);
-  const period = clockSteps(F.calm.every * sib.intervalMult, dt);
+  const period = clockSteps(F.calm.every * sib.intervalMult * sib.fireMult, dt);
   while (k <= 0) k += period;
   return (k - 0.5) * dt;
 }

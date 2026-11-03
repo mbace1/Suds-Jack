@@ -7,10 +7,10 @@
 // things that work"). The arena is 1.x's, so every 1.x number ports as it is
 // instead of through a rescale. Axes: x across the screen (right +), y up,
 // z toward the bottom of the screen. The arena is centred on the origin.
-import { SPECIES } from './tuning/species/index.js?v=104';
-import WAVES from './tuning/waves.js?v=104';
-import PICKUPS from './tuning/pickups.js?v=104';
-import MUSIC from './tuning/music.js?v=104';
+import { SPECIES } from './tuning/species/index.js?v=105';
+import WAVES from './tuning/waves.js?v=105';
+import PICKUPS from './tuning/pickups.js?v=105';
+import MUSIC from './tuning/music.js?v=105';
 
 export const TUNING = {
   render: {
@@ -1101,6 +1101,39 @@ export const TUNING = {
     current: { stream: 1.2, ring: 1.1, pincer: 1.0, pincerSide: 6 },
   },
 
+  // v105 (owner, 2026-11-02: "Essential more enemies in a pool maybe each on a size scale 1-5. Or different
+  // color giants, etc. The more defined options you have, the better choices you can make for waves that play
+  // well"; and "Some enemies should be more tank and bullet sponge, a bit less shooting"): every body the arcade
+  // spawns carries a SIZE CLASS, one rule for every species, so the pool is each species × five defined bodies.
+  // Each class is × the species' radius, hit points (rounded up, at least 1), walking speed, fire clock (slower
+  // is bigger: `fire` × its period) and what a kill pays. 1 a MITE (never a shooter: the arcade draws it only
+  // for bodies that do not fire), 2 the body as it was, 3 a BRUTE (HEAVY's place: v20's later-world bodies), 4 a
+  // TANK, a bullet sponge, slow, that a dash cannot kill outright (it takes `dashHits` a pass, as a boss does), 5
+  // a GIANT in its own colour that splits, dying, into `split.n` class-4s of its kind. Bodies that size
+  // themselves (BAMBU's and SLUG's segments, PYRA's holes) and bosses keep their own size.
+  sizes: {
+    classes: {
+      1: { r: 0.62, hp: 0.5, speed: 1.3, fire: 1, score: 0.5 },
+      2: { r: 1, hp: 1, speed: 1, fire: 1, score: 1 },
+      3: { r: 1.3, hp: 2, speed: 0.85, fire: 1.15, score: 2 },
+      4: { r: 1.65, hp: 4, speed: 0.68, fire: 1.4, score: 4, dashHits: 2 },
+      5: { r: 2.1, hp: 6, speed: 0.5, fire: 1.8, score: 8, dashHits: 2, split: { into: 3, n: 2 } },
+    },
+    skip: ['bambu', 'slug', 'pyra', 'ribbon'],   // they size themselves, or are chains
+    mites: ['globbo', 'yela', 'sludge', 'redd', 'splitta', 'toro', 'bulwark', 'hoppa', 'bubbla', 'worma'],   // the bodies that never fire: the only ones drawn as mites
+    // the arcade's draw (sim/director/arcade.js drawSize): world 1's weights [mite, —, brute, tank]; past it a
+    // `mite` share, and the world's HEAVY share (TUNING.worlds.list[].heavy) split `tank` of it into tanks and
+    // the rest brutes. A GIANT is a wave's event: from world `from`, `chance` + `perWorld` a world past it
+    draw: { first: [0.15, 0.8, 0.05, 0], mite: 0.15, tank: 0.25, giant: { from: 2, chance: 0.2, perWorld: 0.025 } },
+    // what a class costs a wave, in ordinary bodies (a giant counts the two brutes it splits into), the share of
+    // what the big ones cost over that the wave pays back in ordinary bodies off its end (what one is `worth`,
+    // by its variant), never thinning its mob under `keep`
+    cost: { 1: 0.5, 2: 1, 3: 2, 4: 4, 5: 10 }, pay: 0.6, keep: 0.5, worth: { elite: 2, elitelite: 1.5 },
+    fireMult: 1.25,   // "a bit less shooting" (owner): the worlds' bodies run their fire clocks this much slower
+    // how a class reads (render/actors.js _heavy): a mite `mite` of the way to white, a brute × `brute` (a tank
+    // takes HEAVY's own darken), a giant its species' hue turned `hue`, saturated × `sat`, lightness × `light`
+    look: { mite: 0.22, brute: 0.75, giant: { hue: 0.11, sat: 1.4, light: 0.58 } },
+  },
   // 1.x elites and affixes (main.js:9402-9422)
   variants: {
     elite: { hp: 2, radius: 1.2 }, elitelite: { hp: 1.5, affixChance: 0.5 }, swiftSpeed: 1.35, boss: { radius: 1.5 },

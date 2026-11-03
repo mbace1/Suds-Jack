@@ -63,7 +63,7 @@ export default {
 
     // the fire clock (1.x enemy.js:2784-2785, 2878-2902)
     g.s.t += dt;
-    if (!g.s.tele && g.s.t >= S.fireInterval * g.intervalMult) {
+    if (!g.s.tele && g.s.t >= S.fireInterval * g.intervalMult * g.fireMult) {
       g.s.t = 0;
       g.s.teleT = g.s.teleMax = S.tellTime;
       g.s.tele = true;

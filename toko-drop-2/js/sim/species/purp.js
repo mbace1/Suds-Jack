@@ -68,7 +68,7 @@
 // shockwave rattles it while it waits, its own or another's: the core's shock
 // skips a body in the wait, as 1.x had nothing there yet to rattle
 // (main.js:4518-4529).
-import { cubeInit, cubeCarry, cubeFlop } from './redd.js?v=104';
+import { cubeInit, cubeCarry, cubeFlop } from './redd.js?v=105';
 
 const TAU = Math.PI * 2;
 
@@ -109,7 +109,7 @@ export default {
     // the spiral, on its own clock (1.x enemy.js:2318-2326)
     s.fireT -= dt;
     if (s.fireT <= 0) {
-      s.fireT = P.period * g.intervalMult;
+      s.fireT = P.period * g.intervalMult * g.fireMult;
       const opts = { color: S.bulletColor, src: g.kind, speedMult: P.bulletSpeedMult };
       for (let k = 0; k < P.arms; k++) api.fire.emit(w, ex, ez, s.spiralA + (k * TAU) / P.arms, opts);
       w.events.push({ type: 'gelShot', x: ex, z: ez, kind: g.kind, id: g.id, angle: s.spiralA, n: P.arms });

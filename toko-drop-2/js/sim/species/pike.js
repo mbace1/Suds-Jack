@@ -10,7 +10,7 @@
 //
 //   CIRCLE → AIM → CHARGE → (STUN at a wall) → CIRCLE
 // Numbers: js/tuning/species/pike.js. Seeded: w.rng only.
-import { rage, range, toHero } from './bosskit.js?v=104';
+import { rage, range, toHero } from './bosskit.js?v=105';
 
 // the far end of the lane from (x, z) along (dx, dz): where it meets a wall
 function laneEnd(w, x, z, dx, dz, m) {
@@ -51,7 +51,7 @@ export default {
       if ((Math.abs(g.x) > w.hx - g.r - 0.3 && g.x * g.vx > 0) || (Math.abs(g.z) > w.hz - g.r - 0.3 && g.z * g.vz > 0)) s.sign = -s.sign;
       g.tell = 0;
       if ((s.fanT -= dt) <= 0) {
-        s.fanT = C.fan.every * g.intervalMult;
+        s.fanT = C.fan.every * g.intervalMult * g.fireMult;
         api.fire.fanSpan(w, g.x, g.z, api.fire.aimAngle(w, g.x, g.z), C.fan.count, C.fan.span, { ...opts, speedMult: C.fan.speed });
         w.events.push({ type: 'gelShot', x: g.x, z: g.z, kind: g.kind });
       }

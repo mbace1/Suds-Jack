@@ -21,12 +21,12 @@
 // runs down in its enemy loop — the same sequence 1.x runs, with the seam in
 // a different place. test/director.mjs holds all of it in lockstep with 1.x's
 // own loop source.
-import { TUNING } from '../../tuning.js?v=104';
-import * as worlds from '../worlds.js?v=104';
-import * as challenge from '../challenge.js?v=104';
-import { makeRng } from '../rng.js?v=104';
-import * as bossfight from '../bossfight.js?v=104';
-import * as floorshift from '../floorshift.js?v=104';
+import { TUNING } from '../../tuning.js?v=105';
+import * as worlds from '../worlds.js?v=105';
+import * as challenge from '../challenge.js?v=105';
+import { makeRng } from '../rng.js?v=105';
+import * as bossfight from '../bossfight.js?v=105';
+import * as floorshift from '../floorshift.js?v=105';
 
 const T = TUNING, W = T.waves, TAU = Math.PI * 2;
 
@@ -288,12 +288,19 @@ function startWave(w, d, carry) {
   const shift = floorshift.shiftFor(w, d.wave), own = worlds.on(w) ? T.worlds.list[w.world - 1]?.room ?? 1 : 1;
   const plan = schedule(d.wave, w.rng, w.seed, worlds.on(w) ? w.world : 1, bossWorld, pressure(w, d.wave), own * (shift?.room ?? 1));
   d.kind = plan.kind; d.plan = plan;
+  // v105: a GIANT (size class 5) is a wave's event, from world `giant.from` on: rolled once a wave, never on a
+  // boss wave, from the sizes' own stream (so the waves draw as they did)
+  const GZ = T.sizes.draw.giant, sr = sizeRng(w);
+  d.giantDue = plan.kind !== 'boss' && worlds.on(w) && w.world >= GZ.from && sr.next() < GZ.chance + GZ.perWorld * (w.world - GZ.from);
   d.roundLen = plan.roundLen; d.waveT = 0; d.frontLandedAt = W.pulses.landedInit;
   d.liveCap = plan.liveCap; d.childCap = plan.liveCap * W.caps.childMult; d.held = 0;
   // a carry removes the dead and keeps the living (main.js:7201-7202), so no
   // death still playing can hold the next clear
   d.dying = 0; d.present = carry && aliveCount(w) > 0;
   d.queue = layout(plan, w.rng);
+  // v105: every plain body's SIZE CLASS, drawn for the whole wave as it is laid out, and the mob THINNED to pay
+  // for its big ones — fewer, bigger bodies, never a full wave with tanks on top
+  if (worlds.on(w)) sizeWave(w, d);
   Object.assign(d.curtain, armCurtain(d.wave, plan.kind, w.rng), { warnT: 0, cross: null });
 
   const B = W.banner[plan.kind] ?? W.banner.normal, K = W.calls;
@@ -346,13 +353,53 @@ function pump(w, d, dt, api) {
       // in the worlds 1.x's own bosses are fought as long as theirs (v45)
       if (worlds.on(w) && w.world) o.hp = Math.round(o.hp * (W.boss.worldHp?.[s.kind] ?? 1));
     }
-    // a later world's share of HEAVY bodies (TUNING.worlds): plain bodies
-    // only, and the roll is drawn only there, so world 1 replays as it was
-    else if ((s.variant ?? 'normal') === 'normal' && worlds.heavyShare(w) > 0 && w.rng.next() < worlds.heavyShare(w)) o.heavy = true;
+    // v105: a plain body's SIZE CLASS (TUNING.sizes), drawn when its wave was laid out (sizeWave)
+    else if (s.size) o.size = s.size;
+    // and "a bit less shooting" (owner): every body the worlds spawn runs its fire clocks this much slower
+    if (worlds.on(w) && !s.boss) o.fireMult = T.sizes.fireMult;
     const g = api.spawn(w, s.kind, p.x + s.ox, p.z + s.oz, o);
     if (s.ox || s.oz) api.clamp(w, g);
     d.present = true;
   }
+}
+
+// v105: the sizes' own random stream, so drawing a size never moves the waves' draws
+const sizeRng = (w) => (w.rngSize ??= makeRng((w.seed ^ 0x6f1d3a27) >>> 0));
+// A wave's sizes, where a later world's share of HEAVY bodies was: drawn from the sizes' own stream, so the
+// waves themselves draw exactly as they did (world 1 as 1.x's). The world's HEAVY share becomes its brutes and
+// tanks; a mite is only ever a body that does not fire. Then the bill: a class-c body costs `cost[c]` ordinary
+// ones, and `pay` of what the big ones cost over that comes off the wave's LAST ordinary bodies (an elite's
+// worth more; never a shooter, a boss or a sized body), keeping `keep` of its mob — a giant's wave is the giant
+// and a few, not a full wave and a giant (a mite, under one body, pays some of the bill back)
+function sizeWave(w, d) {
+  const Z = T.sizes, C = Z.cost;
+  let extra = 0;
+  for (const s of d.queue) {
+    if (s.boss || (s.variant ?? 'normal') !== 'normal') continue;
+    s.size = drawSize(w, d, s.kind);
+    extra += (C[s.size] ?? 1) - 1;
+  }
+  let owe = extra * Z.pay - 0.5, mob = 0;
+  for (const s of d.queue) if (s.front != null) mob++;
+  const keep = Math.ceil(mob * Z.keep);
+  for (let i = d.queue.length - 1; i >= 0 && owe > 0 && mob > keep; i--) {
+    const s = d.queue[i];
+    if (s.front == null || s.shooter || s.boss || (s.size ?? 2) !== 2) continue;
+    d.queue.splice(i, 1); owe -= Z.worth[s.variant] ?? 1; mob--;
+    d.thinned = (d.thinned ?? 0) + 1;
+  }
+}
+// a body's size class: a giant if the wave has one due and none stands, else the world's weights — world 1 a
+// few mites and brutes, a later world its HEAVY share split into brutes and tanks — and no mite that fires
+function drawSize(w, d, kind) {
+  const Z = T.sizes, D = Z.draw, r = sizeRng(w);
+  if (Z.skip.includes(kind)) return 2;
+  if (d.giantDue && !w.gels.some((g) => g.alive && g.size === 5)) { d.giantDue = false; return 5; }
+  const h = worlds.heavyShare(w), wt = w.world <= 1 ? [...D.first] : [D.mite, Math.max(0, 1 - D.mite - h), h * (1 - D.tank), h * D.tank];
+  if (!Z.mites.includes(kind)) { wt[1] += wt[0]; wt[0] = 0; }
+  let u = r.next() * (wt[0] + wt[1] + wt[2] + wt[3]);
+  for (let c = 0; c < 4; c++) if ((u -= wt[c]) < 0) return c + 1;
+  return 2;
 }
 
 // fireArenaCurtain (main.js:2645-2670): a wall from one side, marching across

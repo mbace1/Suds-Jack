@@ -9,8 +9,8 @@
 //
 //   CREEP → (near the light) TELL → BITE → REST → CREEP
 // Numbers: js/tuning/species/angler.js. Seeded: w.rng only.
-import { steerTo } from './base.js?v=104';
-import { rage, range, toHero, inside } from './bosskit.js?v=104';
+import { steerTo } from './base.js?v=105';
+import { rage, range, toHero, inside } from './bosskit.js?v=105';
 
 export default {
   init(w, g, api) {
@@ -40,7 +40,7 @@ export default {
       g.tell = 0;
       s.lx = g.x + g.faceX * reach; s.lz = g.z + g.faceZ * reach;
       if ((s.lanternT -= dt) <= 0) {
-        s.lanternT = range(w, mad ? R.lantern : L.every) * g.intervalMult;
+        s.lanternT = range(w, mad ? R.lantern : L.every) * g.intervalMult * g.fireMult;
         api.fire.fanSpan(w, s.lx, s.lz, api.fire.aimAngle(w, s.lx, s.lz), L.count, L.span, { ...opts, speedMult: L.speed, homing: L.homing, life: L.life, radius: L.radius });
         w.events.push({ type: 'gelShot', x: s.lx, z: s.lz, kind: g.kind });
       }

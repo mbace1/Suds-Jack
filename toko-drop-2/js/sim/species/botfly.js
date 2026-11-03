@@ -72,7 +72,7 @@ export default {
     g.faceX = ddx / dist; g.faceZ = ddz / dist;
 
     // the charge-up, read before the tick as 1.x's emissive block read it (enemy.js:2682-2683)
-    const interval = S.fireInterval * g.intervalMult;
+    const interval = S.fireInterval * g.intervalMult * g.fireMult;
     s.charge = s.t >= interval - S.chargeWindow;
     g.tell = s.charge ? 1 : 0;
 

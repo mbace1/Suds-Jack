@@ -21,10 +21,10 @@
 // (dashPlan). 1.x fires only
 // while the aim is valid AND the trigger is held: a touch or pad aim stick is
 // both at once, a mouse aims all the time and fires only while held.
-import { TUNING } from '../tuning.js?v=104';
-import * as heat from './heat.js?v=104';
-import { BEHAVIOUR } from './species/index.js?v=104';   // read at run time only (a species' hitTest)
-import { slip } from './rules.js?v=104';   // THE FOAM's slick floor
+import { TUNING } from '../tuning.js?v=105';
+import * as heat from './heat.js?v=105';
+import { BEHAVIOUR } from './species/index.js?v=105';   // read at run time only (a species' hitTest)
+import { slip } from './rules.js?v=105';   // THE FOAM's slick floor
 
 const T = TUNING, H = T.hero, L = T.heroLook;
 
@@ -178,11 +178,13 @@ export function heroStep(w, input, dt, api) {
       if (!(B?.hitTest ? B.hitTest(w, g, h.x, h.z, R) : Math.hypot(g.x - h.x, g.z - h.z) < g.r + R)) continue;
       g.dashedBy = h.dashId;
       w.events.push({ type: 'dashCut', x: g.x, z: g.z, id: g.id });
-      if (!g.isBoss && h.dashLevel >= 1) { api.kill(w, g, 'dash'); continue; }
+      // v105: a TANK or a GIANT (size class 4-5, TUNING.sizes) is not killed outright either: it takes the pass
+      const tank = T.sizes.classes[g.size]?.dashHits;
+      if (!g.isBoss && !tank && h.dashLevel >= 1) { api.kill(w, g, 'dash'); continue; }
       // a boss takes it as one of the hero's hits (a CUT, as its hits): the
       // flash, the squash, and the hit event (the ripple from the side the
       // hero came through, the sound) that world.js heroBulletsHit sends for a bullet
-      g.hp -= cutting ? cutHits(h) : H.dashKill.bossHits; g.flash = T.gel.flash; g.sqV += T.gel.sq.hit;
+      g.hp -= cutting ? cutHits(h) : tank ?? H.dashKill.bossHits; g.flash = T.gel.flash; g.sqV += T.gel.sq.hit;
       w.events.push({ type: 'hit', x: h.x, z: h.z, id: g.id, kind: g.kind });
       if (g.hp <= 0) api.kill(w, g, 'dash');
     }

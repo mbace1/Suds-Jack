@@ -100,7 +100,7 @@ export default {
       s.spool += dt * S.spoolSpin;
       if (s.windup <= 0) {
         loom(w, g, ex, ez, ddx / dist, ddz / dist, S, dt, api);
-        s.weave = S.fireInterval * g.intervalMult;
+        s.weave = S.fireInterval * g.intervalMult * g.fireMult;
       }
     } else {
       s.weave -= dt;

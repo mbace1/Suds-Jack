@@ -113,16 +113,16 @@ export default {
     if (s.fireT <= 0) {
       const opts = { color: S.bulletColor, src: g.kind };
       if (phase === 3) {
-        s.fireT = S.ring.period * g.intervalMult;
+        s.fireT = S.ring.period * g.intervalMult * g.fireMult;
         api.fire.ring(w, g.x, g.z, S.ring.count, S.ring.base, opts);
         s.ringVolleys++;
       } else if (phase === 2) {
-        s.fireT = S.spiral.period * g.intervalMult;
+        s.fireT = S.spiral.period * g.intervalMult * g.fireMult;
         s.spiralA = (s.spiralA ?? w.rng.range(0, Math.PI * 2)) + S.spiral.step;
         for (let k = 0; k < S.spiral.arms; k++) api.fire.emit(w, g.x, g.z, s.spiralA + (k * Math.PI * 2) / S.spiral.arms, opts);
         s.spiralVolleys++;
       } else {
-        s.fireT = S.fan.period * g.intervalMult;
+        s.fireT = S.fan.period * g.intervalMult * g.fireMult;
         api.fire.fanSpan(w, g.x, g.z, api.fire.aimAngle(w, g.x, g.z), S.fan.count, S.fan.span, opts);
         s.fanVolleys++;
       }

@@ -118,7 +118,7 @@ export default {
       }
       if (s.timer <= 0) {
         s.state = 'waiting';
-        s.fireT = S.fireInterval * g.intervalMult;
+        s.fireT = S.fireInterval * g.intervalMult * g.fireMult;
         s.lob = null;
       }
     }

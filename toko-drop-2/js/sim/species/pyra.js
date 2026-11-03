@@ -62,7 +62,7 @@ export default {
     g.hp = g.maxHp = hp;
     s.spin = 0;                                // 1.x group.rotation.y
     s.spinSpeed = S.spin;                      // 1.x _spinSpeed
-    s.fireT = S.fireInterval * g.intervalMult; // 1.x _pyraFireTimer
+    s.fireT = S.fireInterval * g.intervalMult * g.fireMult; // 1.x _pyraFireTimer
     s.lost = 0;                                // holes lost so far
     s.volleys = 0;                             // volleys fired so far
     g.sq = 1; g.sqV = 0;
@@ -81,7 +81,7 @@ export default {
     // the fire tick (1.x enemy.js:2792-2808)
     s.fireT -= dt;
     if (s.fireT <= 0) {
-      s.fireT = S.fireInterval * g.intervalMult;
+      s.fireT = S.fireInterval * g.intervalMult * g.fireMult;
       let n = 0;
       for (const hole of s.holes) {
         if (!hole.alive) continue;

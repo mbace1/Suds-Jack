@@ -54,7 +54,7 @@ export default {
     // the spiral: the turn is read before this shot's accel grows (1.x enemy.js:2949)
     const turn = (S.spiralStep + g.s.accel) / g.intervalMult;
     g.s.t += dt;
-    if (g.s.t >= S.fireInterval * g.intervalMult) {
+    if (g.s.t >= S.fireInterval * g.intervalMult * g.fireMult) {
       g.s.t = 0;
       const a = g.s.angle;
       const b = api.fire.emit(w, g.x, g.z, a, { color: S.bulletColor, src: g.kind, speedMult: S.bulletSpeedMult });

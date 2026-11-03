@@ -15,19 +15,19 @@
 // that springs in and fades (splats.js). Views are pooled per species, so a
 // gel's material is built once and reused, never compiled mid-fight.
 import * as THREE from 'three/webgpu';
-import { TUNING } from '../tuning.js?v=104';
+import { TUNING } from '../tuning.js?v=105';
 import * as TSL from 'three/tsl';
-import { gelMaterial, domeGeometry, cubeGeometry, heroGeometry, GEL_TIME } from './gel.js?v=104';
-import { LOOKS } from './looks/index.js?v=104';
-import { styleName, setStyle as setStyleMode, styledBody } from './style.js?v=104';
-import { JellyBody } from './jelly.js?v=104';
-import { Juice } from './juice.js?v=104';
-import { ArenaLight } from './light.js?v=104';
-import { toSdf } from './sdf.js?v=104';
-import { PickupView } from './pickups.js?v=104';
-import { ChallengeView } from './challenge.js?v=104';
-import { Goo } from './goo.js?v=104';
-import { mult as heatMult } from '../sim/heat.js?v=104';
+import { gelMaterial, domeGeometry, cubeGeometry, heroGeometry, GEL_TIME } from './gel.js?v=105';
+import { LOOKS } from './looks/index.js?v=105';
+import { styleName, setStyle as setStyleMode, styledBody } from './style.js?v=105';
+import { JellyBody } from './jelly.js?v=105';
+import { Juice } from './juice.js?v=105';
+import { ArenaLight } from './light.js?v=105';
+import { toSdf } from './sdf.js?v=105';
+import { PickupView } from './pickups.js?v=105';
+import { ChallengeView } from './challenge.js?v=105';
+import { Goo } from './goo.js?v=105';
+import { mult as heatMult } from '../sim/heat.js?v=105';
 
 const T = TUNING;
 const B = T.blob, D = T.death;
@@ -291,14 +291,23 @@ export class Actors {
   // (the sim's radius), and denser — a darker colour that light gets less
   // far into. A pooled view is put back to its own colour for the next body.
   // The SDF bodies share one material a species, so they are only bigger.
-  _heavy(v, on) {
+  // v105: and a SIZE CLASS (TUNING.sizes, sizeLook): a mite paler, a brute and a tank denser, a giant in its
+  // own colour — the species' hue turned, deeper and more saturated — so a giant reads as another animal
+  _heavy(v, on, size = on ? 3 : 2) {
     const m = v.mat;
     if (!m?.color || v.sdf) return;
     if (!v.base) v.base = { color: m.color.clone(), att: m.attenuationColor?.clone(), dist: m.attenuationDistance };
-    const H = T.worlds.heavyLook;
+    const H = T.worlds.heavyLook, Z = T.sizes.look;
     m.color.copy(v.base.color);
     if (v.base.att) m.attenuationColor.copy(v.base.att);
-    if (on) { m.color.multiplyScalar(H.darken); if (m.attenuationColor) m.attenuationColor.multiplyScalar(H.darken); }
+    const dk = size === 3 ? Z.brute : size === 4 ? H.darken : 1;
+    if (size === 1) { m.color.lerp(_white, Z.mite); if (m.attenuationColor) m.attenuationColor.lerp(_white, Z.mite); }
+    else if (size === 5) {
+      for (const c of [m.color, m.attenuationColor]) {
+        if (!c) continue;
+        c.getHSL(_hsl); c.setHSL((_hsl.h + Z.giant.hue + 1) % 1, Math.min(1, _hsl.s * Z.giant.sat), _hsl.l * Z.giant.light);
+      }
+    } else if (dk !== 1) { m.color.multiplyScalar(dk); if (m.attenuationColor) m.attenuationColor.multiplyScalar(dk); }
   }
 
   _take(kind) {
@@ -556,7 +565,7 @@ export class Actors {
     for (const g of w.gels) {
       seen.add(g.id);
       let v = this.views.get(g.id);
-      if (!v) { v = this._take(g.kind); this._heavy(v, g.heavy); this.views.set(g.id, v); }
+      if (!v) { v = this._take(g.kind); this._heavy(v, g.heavy, g.size ?? (g.heavy ? 3 : 2)); this.views.set(g.id, v); }
       v.r = g.r;                                   // its real size: an elite is ×1.2, a boss ×1.5
       const x = g.px + (g.x - g.px) * alpha, z = g.pz + (g.z - g.pz) * alpha;
       v.root.position.set(x, 0, z);
@@ -819,7 +828,7 @@ export class Actors {
   }
 }
 
-const _white = new THREE.Color(0xffffff), _gooC = new THREE.Color(), _tickS = new THREE.Vector3();
+const _white = new THREE.Color(0xffffff), _gooC = new THREE.Color(), _tickS = new THREE.Vector3(), _hsl = { h: 0, s: 0, l: 0 };
 const VOLC = 4 / 3 * Math.PI;   // a chunk of radius s is drawn as VOLC s³ of goo
 
 // v82: the press the sim reported (v.press, the body itself: sim/press.js's

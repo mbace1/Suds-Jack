@@ -16,7 +16,7 @@ export const stub = {
     const S = api.S(g);
     steerTo(g, w.hero.x, w.hero.z, api.speed(g));
     if (!S.fireInterval) return;
-    if ((g.s.t += dt) >= S.fireInterval * g.intervalMult) {
+    if ((g.s.t += dt) >= S.fireInterval * g.intervalMult * g.fireMult) {
       g.s.t = 0;
       api.fire.emit(w, g.x, g.z, api.fire.aimAngle(w, g.x, g.z), { color: S.bulletColor ?? undefined, src: g.kind });
       w.events.push({ type: 'gelShot', x: g.x, z: g.z, kind: g.kind });
