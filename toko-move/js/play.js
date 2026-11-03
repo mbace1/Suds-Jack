@@ -2,23 +2,29 @@
 // of the old map with visible trams on a realistic schedule … more curated
 // narrative roguelike with fun choices and minimalistic visuals"; signed off as
 // turn-based card hops, the scenes as the main view with the board between
-// moments, and a slim job strip).
+// moments, and a slim job strip). Act 1 since v3.1 (ACT1.md): risky cards with
+// their stakes on the button, the reveal that follows, euros, the weather, the
+// old trams, the key stations' landmarks, and the motion.
 //
 // journey.js is the game and knows nothing of a screen; this file acts it out.
 // One moment at a time:
-//   · AT A STOP   the iso stop scene, and ONE card at the bottom (the art
-//                 bible's grammar: a Toko face, one line, two buttons priced in
-//                 time). A corner inset of the board shows the two offers as
-//                 the paths they are, so a choice reads as where it leaves you
+//   · AT A STOP   the iso stop scene — its landmark if it is a key station,
+//                 its plate, the tram that came or is coming (six models,
+//                 look only) — and ONE card at the bottom: a Toko face, one
+//                 line, at most two buttons, each with its price in time and
+//                 its stakes ("maybe ×1.3 · or +3:00"). A corner inset of the
+//                 board shows the offers as the paths they are
 //   · ABOARD      the tram interior (the night car on NIGHT) with the in-car
-//                 display — "4 · MUNKKINIEMI › LASIPALATSI" — and, if the deck
-//                 deals one there, its card
-//   · BETWEEN     the board: the courier disc snaps onto its line's pill and
-//                 rides the real geometry to the next stop; a walk is a dash
-//   · DELIVERED   a stamp on the stop, then the next job's card
-// The clock moves only by the prices you choose, so nothing happens while you
-// read. Every animation is skippable by a tap and none of them is a timer the
-// game waits on to be fair: the state has already moved when it starts.
+//                 display, and, if the deck deals one there, its card
+//   · BETWEEN     the board: the courier disc rides the real line; a walk is
+//                 a dash; the weather falls on it
+//   · A REVEAL    what a choice did: the line (often the funny one) and its
+//                 chips — ×1.3, +3:00, +€120 · job gone
+//   · DELIVERED   a stamp: the fee, and what was inside all along
+// The clock moves only by the prices you choose and what they cost you, so
+// nothing happens while you read. Every animation is skippable by a tap and
+// none of them is a timer the game waits on to be fair: the state has already
+// moved when it starts.
 import { tr } from './lang.js?v=7';
 import * as J from './journey.js?v=1';
 import * as Runs from './runs.js?v=2';
@@ -30,8 +36,9 @@ import { colourOf, parcelHtml } from './parcels.js?v=1';
 import { esc } from './ui.js?v=2';
 import { STORE } from './platform.js?v=1';
 import { lineFamily } from './board.js?v=8';
+import { TRAMS } from './cards.js?v=1';
 
-export const BUILD_VERSION = '3.0';
+export const BUILD_VERSION = '3.1';
 const $ = id => document.getElementById(id);
 const params = new URLSearchParams(location.search);
 const RUN = Runs.resolveRun(params);
@@ -40,24 +47,29 @@ const SKIN = skinFor({ mutator: RUN.skin || null });
 const NIGHT = SKIN.id === 'night';
 const CALM = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-// ── the scenes (art/minimal-metro-look/layers/*/MOTION.md) ──────────────────
+// ── the scenes (art/minimal-metro-look/layers/*/MOTION.md; make_act1.py) ──
 // Each is a stack of full-frame layers, cut once to WebP in two native plates
 // (9:16 and 16:9 — each its own composition, not a crop). The frame is fitted
 // to COVER the screen and every layer moves inside it, so a sway is a sway of
-// the car and never of the screen.
+// the car and never of the screen. `face` is the courier's Toko face (the
+// push-in's origin); `focus` is the point a cropped screen keeps in view.
 const SCENES = {
-  // `face` is the courier's Toko face (the push-in's origin); `focus` is the
-  // point a cropped screen keeps in view — on a phone the 9:16 plate is wider
-  // than the screen, and centring it cut the courier off the stop's right edge
   tram: { layers: ['01-outside-tile', '02-car', '03-people', '04-courier'], tile: { '916': 1222 / 1920, '169': 1670 / 1080 }, face: { '916': [.53, .34], '169': [.43, .22] }, focus: { '916': [.5, .5], '169': [.5, .45] } },
   night: { layers: ['01-outside-tile', '02-car', '03-people', '04-courier'], drift: true, face: { '916': [.29, .59], '169': [.29, .25] }, focus: { '916': [.42, .55], '169': [.45, .5] } },
-  // `chip` is the coral pause disc on the tram's front chip (03-tram is the
-  // disruption plate): covered in the chip's own ink unless a line IS halted,
-  // when it pulses (the bible's 2 s halt pulse)
-  stop: { layers: ['01-backdrop', '02-street', '03-tram', '04-shelter', '05-people', '06-courier'], face: { '916': [.89, .32], '169': [.59, .33] }, focus: { '916': [.68, .4], '169': [.55, .45] }, chip: { '916': [.663, .3958, .034], '169': [.4542, .3278, .02] } },
+  stop: { layers: ['01-backdrop', '02-street', '04-shelter', '05-people', '06-courier'], face: { '916': [.89, .32], '169': [.59, .33] }, focus: { '916': [.68, .4], '169': [.55, .45] } },
 };
+// The key stations with a landmark behind the stop (ACT1.md §7) — the ids are
+// the network's own.
+const LANDMARKS = new Set(['rautatientori', 'senaatintori', 'kauppatori', 'kamppi', 'kallionkirkko', 'hakaniemi', 'ooppera', 'lasipalatsi', 'olympiaterminaali', 'hietalahti', 'kalasatama', 'pasila']);
+// Where the stop's plate stands, in frame fractions: beside the shelter, inside
+// a phone's crop and clear of the card.
+const PLATE = { '916': [.40, .445], '169': [.255, .52] };
+const WX = { clear: { glyph: '☀', name: 'Clear', line: 'A quiet city.' }, rain: { glyph: '☂', name: 'Rain', line: 'Paper gets wet. Bring a bag.' },
+  snow: { glyph: '❄', name: 'Snow', line: 'Walks are slow and the trams are full.' }, fog: { glyph: '〰', name: 'Fog', line: 'You can hear the city better than you can see it.' } };
+const NIGHT_WX = { clear: 'The last trams are running. Mostly.' };
 
 const CSS = `
+@property --p{syntax:'<number>';inherits:false;initial-value:0}
 #v3{position:fixed;inset:0;overflow:hidden;overflow:clip;background:#f4f1e8;color:#15262b;font-family:Inter,system-ui,-apple-system,'Segoe UI',sans-serif;-webkit-user-select:none;user-select:none;touch-action:manipulation}
 #v3[hidden]{display:none}
 #v3 .frame{position:absolute;left:0;top:0;transition:opacity .22s}
@@ -81,48 +93,102 @@ const CSS = `
 @keyframes v3shift{from{transform:translateX(0)}to{transform:translateX(2px)}}
 #v3 .idle{animation:v3idle 2.4s ease-in-out infinite alternate}
 @keyframes v3idle{from{transform:translateY(0)}to{transform:translateY(1.5px)}}
-#v3 .L.dusk{background:linear-gradient(#0d1730,#1b2a4d 55%,#2a3550);mix-blend-mode:multiply;opacity:.92}
-#v3 .chip{position:absolute;aspect-ratio:1;border-radius:50%;background:#142529;transform:translate(-50%,-50%)}
-#v3.halt .chip{background:transparent;box-shadow:0 0 0 0 rgba(226,104,60,.7);animation:v3pulse 2s ease-out infinite}
-@keyframes v3pulse{from{box-shadow:0 0 0 0 rgba(226,104,60,.75)}to{box-shadow:0 0 0 1.4em rgba(226,104,60,0)}}
+#v3 .L.wheel{animation:v3turn 48s linear infinite}
+@keyframes v3turn{to{transform:rotate(360deg)}}
+#v3 .L.ferry{animation:v3ferry 3.4s ease-in-out infinite alternate}
+@keyframes v3ferry{from{transform:translateY(0) rotate(0)}to{transform:translateY(2.5px) rotate(.25deg)}}
+#v3 .L.dusk{background:linear-gradient(#0b1530,#1b2a4d 60%,rgba(27,42,77,0) 92%);opacity:.86}
+#v3.night-stop .L:not(.dusk):not(.glow){filter:brightness(.5) saturate(.72)}
+#v3 .L.tram.glow{filter:drop-shadow(0 0 14px rgba(255,196,110,.75)) brightness(1.08)}
+#v3 .L.tram{will-change:transform}
+#v3 .L.tram[hidden]{display:none}
+#v3 .chip{position:absolute;transform:translate(-50%,-50%);display:grid;place-items:center;border-radius:6px;color:#fff;font:900 clamp(9px,1.6vmin,16px)/1 Inter,system-ui,sans-serif;letter-spacing:.5px}
+#v3 .chip.halted{background:transparent;color:#ffd2c2;animation:v3pulse 2s ease-out infinite}
+@keyframes v3pulse{from{box-shadow:0 0 0 0 rgba(226,104,60,.8)}to{box-shadow:0 0 0 1.4em rgba(226,104,60,0)}}
+#v3 .plate{position:absolute;transform:translate(-50%,-100%);display:flex;flex-direction:column;align-items:center;pointer-events:none}
+#v3 .plate .pl{display:flex;flex-direction:column;align-items:center;gap:4px;padding:6px 10px 7px;border-radius:9px;background:#15262b;color:#e6edf0;box-shadow:0 2px 0 rgba(0,0,0,.15)}
+#v3 .plate .pl b{font:800 clamp(10px,2.3vmin,15px)/1 Inter,system-ui,sans-serif;letter-spacing:1.4px;white-space:nowrap}
+#v3 .plate .pl .lines{display:flex;gap:3px}
+#v3 .plate .pl .lines i{font-style:normal;display:grid;place-items:center;min-width:18px;height:15px;padding:0 3px;border-radius:4px;font:800 10px/1 Inter,system-ui,sans-serif;color:#fff;box-shadow:0 0 0 1.5px #fff}
+#v3 .plate .pole{width:3px;height:clamp(20px,6vmin,46px);background:#15262b}
+#v3 .plate.key .pl{background:#233d4d;box-shadow:0 0 0 2px #ffcc00,0 2px 0 rgba(0,0,0,.15)}
+#v3wx{position:absolute;inset:0;pointer-events:none;z-index:2;opacity:0;transition:opacity .4s}
+#v3wx.on{opacity:1}
+#v3wx.snow{background-image:radial-gradient(circle,#fff 0 1.6px,transparent 2.2px),radial-gradient(circle,rgba(255,255,255,.9) 0 2.6px,transparent 3.2px);background-size:90px 90px,170px 170px;animation:v3snow 9s linear infinite;filter:drop-shadow(0 0 1px rgba(120,145,160,.6))}
+@keyframes v3snow{from{background-position:0 0,40px 0}to{background-position:-60px 90px,10px 170px}}
+#v3wx.rain{background-image:repeating-linear-gradient(105deg,transparent 0 22px,rgba(120,160,190,.38) 22px 23.5px,transparent 23.5px 47px);background-size:100% 140px;animation:v3rain .45s linear infinite}
+@keyframes v3rain{from{background-position:0 0}to{background-position:-36px 140px}}
+#v3wx.fog{background:linear-gradient(180deg,rgba(236,240,242,.0),rgba(236,240,242,.55) 45%,rgba(236,240,242,.15)),radial-gradient(60% 30% at 30% 55%,rgba(255,255,255,.45),transparent),radial-gradient(50% 25% at 70% 40%,rgba(255,255,255,.35),transparent);background-size:100% 100%,200% 100%,200% 100%;animation:v3fog 14s ease-in-out infinite alternate}
+@keyframes v3fog{from{background-position:0 0,0 0,0 0}to{background-position:0 0,-60% 0,40% 0}}
+#v3.night #v3wx.fog{background:linear-gradient(180deg,rgba(40,52,70,0),rgba(70,84,104,.5) 45%,rgba(40,52,70,.1)),radial-gradient(60% 30% at 30% 55%,rgba(110,124,146,.4),transparent);background-size:100% 100%,200% 100%}
 #v3board{position:absolute;inset:0;width:100%;height:100%;opacity:0;transition:opacity .22s;pointer-events:none}
 #v3board.on{opacity:1;pointer-events:auto}
 #v3top{position:absolute;left:0;right:0;top:calc(env(safe-area-inset-top) + 10px);display:flex;flex-direction:column;align-items:center;gap:6px;pointer-events:none;z-index:3}
-.v3pill{display:inline-flex;align-items:center;gap:11px;padding:3px 3px 3px 14px;height:40px;border-radius:999px;background:#fff;box-shadow:0 0 0 1px rgba(21,38,43,.12),0 2px 6px rgba(21,38,43,.14)}
-.v3pill .clk{font-size:19px;font-weight:800;font-variant-numeric:tabular-nums;line-height:1}
-.v3pill .dots{font-size:15px;letter-spacing:3px;color:#233d4d;line-height:1}
+@media (max-width:520px){#v3top .v3pill{margin-left:58px}}   /* the arcade's HUB button owns the top-left corner; the strip below it is clear */
+.v3pill{display:inline-flex;align-items:center;gap:9px;padding:3px 3px 3px 12px;height:40px;border-radius:999px;background:#fff;box-shadow:0 0 0 1px rgba(21,38,43,.12),0 2px 6px rgba(21,38,43,.14)}
+.v3pill .clk{font-size:18px;font-weight:800;font-variant-numeric:tabular-nums;line-height:1}
+.v3pill .wxg{font-size:14px;line-height:1;opacity:.75}
+.v3pill .dots{font-size:14px;letter-spacing:2px;color:#233d4d;line-height:1}
 .v3pill .dots i{font-style:normal;color:#e2683c}
-.v3ring{position:relative;display:inline-grid;place-items:center;width:34px;height:34px;border-radius:50%;background:conic-gradient(var(--ring,#233d4d) calc(var(--p,0) * 1%),#e2e6e1 0)}
+.v3pill .dots .pop{display:inline-block;animation:v3pop .5s ease-out}
+@keyframes v3pop{0%{transform:scale(1)}35%{transform:scale(1.8)}100%{transform:scale(1)}}
+.v3pill .eur{font-size:15px;font-weight:800;color:#3f7a45;font-variant-numeric:tabular-nums;line-height:1;min-width:2.6em;text-align:right}
+.v3pill .eur.up{animation:v3pop .5s ease-out}
+.v3ring{position:relative;display:inline-grid;place-items:center;width:34px;height:34px;border-radius:50%;background:conic-gradient(var(--ring,#233d4d) calc(var(--p) * 1%),#e2e6e1 0);transition:--p .9s ease-out}
 .v3ring::after{content:'';position:absolute;inset:4px;border-radius:50%;background:#fff}
 .v3ring .pcl{position:relative;z-index:1}
-.v3strip{display:flex;align-items:center;gap:8px;max-width:min(92vw,460px);min-height:30px;padding:4px 13px;border-radius:999px;background:rgba(255,253,247,.95);box-shadow:0 0 0 1px rgba(21,38,43,.10);font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden}
+.v3strip{display:flex;align-items:center;gap:7px;max-width:min(94vw,470px);min-height:30px;padding:4px 13px;border-radius:999px;background:rgba(255,253,247,.95);box-shadow:0 0 0 1px rgba(21,38,43,.10);font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden}
 .v3strip[hidden]{display:none}
 .v3strip b{font-weight:800;letter-spacing:1px;overflow:hidden;text-overflow:ellipsis}
+.v3strip .fee{color:#3f7a45;font-weight:800;font-variant-numeric:tabular-nums}
+.v3strip .mult{color:#3f7a45;font-weight:800}.v3strip .mult.down{color:#b34a36}
 .v3strip .left{color:#69777a;font-variant-numeric:tabular-nums}
 .v3strip .left.late{color:#b34a36}
 #v3.night .v3pill,#v3.night .v3strip{background:#161e24;color:#f6f9fc;box-shadow:0 0 0 1px #2a363e}
-#v3.night .v3pill .dots{color:#f6f9fc}
-#v3.night .v3ring{background:conic-gradient(var(--ring,#7ad3b0) calc(var(--p,0) * 1%),#2a363e 0)}
+#v3.night .v3pill .dots{color:#f6f9fc}#v3.night .v3pill .eur,#v3.night .v3strip .fee{color:#7ad3b0}
+#v3.night .v3ring{background:conic-gradient(var(--ring,#7ad3b0) calc(var(--p) * 1%),#2a363e 0)}
 #v3.night .v3ring::after{background:#161e24}
 #v3mini{position:absolute;right:12px;top:calc(env(safe-area-inset-top) + 98px);width:min(34vw,164px);aspect-ratio:1;padding:0;border:0;border-radius:18px;overflow:hidden;background:#f4f1e8;box-shadow:0 0 0 3px #fff,0 4px 14px rgba(21,38,43,.25);cursor:pointer;z-index:3;transition:opacity .2s}
 #v3mini canvas{display:block;width:100%;height:100%}
 #v3mini[hidden]{display:none}
 #v3mini .tag{position:absolute;left:8px;bottom:6px;font:800 10px/1 ui-monospace,Menlo,monospace;letter-spacing:1.5px;color:#15262b;background:rgba(255,255,255,.85);padding:3px 5px;border-radius:5px}
 #v3panel{position:absolute;left:12px;right:12px;bottom:calc(env(safe-area-inset-bottom) + 12px);max-width:520px;margin:0 auto;z-index:4}
-@media (orientation:landscape){#v3panel{left:auto;right:16px;width:min(430px,48vw)}#v3mini{top:calc(env(safe-area-inset-top) + 64px)}}
-#v3panel .eventCard{margin:0;animation:v3stamp .22s ease-out both}
-@keyframes v3stamp{from{opacity:0;transform:translateY(28px)}to{opacity:1;transform:none}}
+@media (orientation:landscape){#v3panel{left:auto;right:16px;width:min(440px,50vw)}#v3mini{top:calc(env(safe-area-inset-top) + 64px)}}
+#v3panel .eventCard{margin:0;animation:v3stamp .26s cubic-bezier(.2,.8,.3,1.2) both}
+#v3panel .leaving{animation:v3leave .18s ease-in both}
+@keyframes v3stamp{from{opacity:0;transform:translateY(28px) scale(.98)}to{opacity:1;transform:none}}
+@keyframes v3leave{to{opacity:0;transform:translateY(16px)}}
 .evAt{display:block;font-size:11px;font-weight:800;letter-spacing:1.6px;color:#69777a;margin-bottom:3px}
-.v3sign{display:flex;align-items:center;gap:10px;padding:12px 16px;border-radius:14px;background:#101418;color:#ffb648;font:700 15px/1.2 ui-monospace,'SF Mono',Menlo,Consolas,monospace;letter-spacing:1px;box-shadow:0 0 0 2px #2a2f34,0 4px 14px rgba(0,0,0,.35);animation:v3stamp .22s ease-out both}
+.evBtn .evLb{display:flex;flex-direction:column;gap:2px;min-width:0}
+.evStk{display:block;font-size:11.5px;font-weight:600;line-height:1.25;opacity:.92;white-space:normal}
+.evStk em{font-style:normal;font-weight:800;padding:0 4px;border-radius:4px;margin-right:2px}
+.evStk em.usually{background:#dff0e3;color:#2f6b3a}.evStk em.maybe{background:#fff1c7;color:#7a5a00}.evStk em.long{background:#fde0d4;color:#a13d1d}
+.evPrimary .evStk em.usually{background:#3f7a45;color:#fff}.evPrimary .evStk em.maybe{background:#ffcc00;color:#15262b}.evPrimary .evStk em.long{background:#e2683c;color:#fff}
+.evStk .or{opacity:.7;margin:0 2px}
+.v3sign{display:flex;align-items:center;gap:10px;padding:12px 16px;border-radius:14px;background:#101418;color:#ffb648;font:700 15px/1.2 ui-monospace,'SF Mono',Menlo,Consolas,monospace;letter-spacing:1px;box-shadow:0 0 0 2px #2a2f34,0 4px 14px rgba(0,0,0,.35);animation:v3stamp .22s ease-out both;flex-wrap:wrap}
 .v3sign .lb{display:inline-grid;place-items:center;min-width:34px;height:26px;padding:0 6px;border-radius:6px;color:#fff;font-weight:900}
-.v3sign .nx{color:#fff}
-.v3stamp{display:flex;flex-direction:column;align-items:center;gap:4px;padding:16px;border-radius:18px;background:#fffdf7;border:3px solid #233d4d;box-shadow:0 6px 20px rgba(21,38,43,.25);text-align:center;animation:v3stamp .22s ease-out both}
-.v3stamp .big{font-size:22px;font-weight:900;letter-spacing:3px;color:#233d4d}
+.v3sign .nx{color:#fff}.v3sign .model{flex-basis:100%;font-size:11px;color:#8a949b;letter-spacing:2px}
+.v3stamp{display:flex;flex-direction:column;align-items:center;gap:5px;padding:16px;border-radius:18px;background:#fffdf7;border:3px solid #233d4d;box-shadow:0 6px 20px rgba(21,38,43,.25);text-align:center;animation:v3bump .42s cubic-bezier(.2,.9,.3,1.35) both}
+@keyframes v3bump{0%{opacity:0;transform:translateY(24px) scale(.92) rotate(-1.5deg)}100%{opacity:1;transform:none}}
+.v3stamp .big{font-size:21px;font-weight:900;letter-spacing:3px;color:#233d4d}
 .v3stamp.late{border-color:#e2683c}.v3stamp.late .big{color:#b34a36}
-.v3stamp .pts{font-size:15px;font-weight:800;color:#3f7a45}
+.v3stamp .pts{font-size:16px;font-weight:800;color:#3f7a45}
+.v3stamp .inside{font-size:13px;color:#4d5a5e;font-style:italic}
+.v3stamp.rare{border-color:#c9a24a;background:#fffaf0}.v3stamp.rare .big{color:#8a6802}
+.v3stamp.wxs{border-color:#33b2d2}.v3stamp.wxs .big{color:#176b73}
+.v3rev{display:flex;gap:12px;align-items:flex-start;padding:14px 16px;border-radius:16px;background:#fffdf7;border:2px solid #233d4d;box-shadow:0 6px 20px rgba(21,38,43,.22);animation:v3bump .4s cubic-bezier(.2,.9,.3,1.35) both}
+.v3rev.win{border-color:#3f7a45}.v3rev.lose{border-color:#e2683c}.v3rev.sold{border-color:#c9a24a}
+.v3rev .evFace{flex:none}
+.v3rev .say{font-size:14.5px;font-weight:600;line-height:1.35;color:#15262b}
+.v3rev .chips{display:flex;flex-wrap:wrap;gap:5px;margin-top:7px}
+.v3rev .chips i{font-style:normal;font-size:12.5px;font-weight:800;padding:3px 8px;border-radius:999px;background:#e9efe9;color:#2f6b3a}
+.v3rev .chips i.bad{background:#fde0d4;color:#a13d1d}
+.v3rev .tag{font-size:10.5px;font-weight:900;letter-spacing:1.6px;color:#69777a;margin-bottom:3px}
 .v3tap{position:absolute;right:14px;bottom:calc(env(safe-area-inset-bottom) + 14px);font:700 11px/1 ui-monospace,Menlo,monospace;letter-spacing:1.5px;color:rgba(21,38,43,.55);pointer-events:none;z-index:4}
 #v3.night .v3tap{color:rgba(246,249,252,.6)}
-@media (prefers-reduced-motion:reduce){#v3 .L,#v3 .sway,#v3 .bob,#v3 .shift,#v3 .idle,#v3 .frame.push{animation:none!important}}
+.carried{margin-top:10px;text-align:left}.carried h3{font-size:11px;letter-spacing:1.5px;color:var(--dim,#69777a)}.carried li{font-size:12.5px;margin:4px 0 0 18px}
+.carried li small{color:var(--dim,#69777a)}
+@media (prefers-reduced-motion:reduce){#v3 .L,#v3 .sway,#v3 .bob,#v3 .shift,#v3 .idle,#v3 .frame.push,#v3wx,#v3 .chip.halted{animation:none!important}}
 `;
 
 // ── the page ───────────────────────────────────────────────────────────────
@@ -130,17 +196,19 @@ const CSS = `
 // tester links (boot.js); none of it belongs on this stage.
 for (const id of ['hud', 'map', 'transitPanel', 'zoomRail', 'pop', 'feed', 'sheet', 'paused', 'upgrade']) $(id)?.remove();
 document.head.insertAdjacentHTML('beforeend', `<style id="v3css">${CSS}</style>`);
-document.body.insertAdjacentHTML('afterbegin', `<div id="v3" hidden class="${NIGHT ? 'night' : ''}"><div class="frame" id="v3frame"></div><canvas id="v3board" aria-label="the board: where you are going"></canvas>
-<div id="v3top"><span class="v3pill" id="v3pill"><span class="clk" id="v3clock">07:00</span><span class="dots" id="v3dots" aria-label="jobs"></span><span class="v3ring" id="v3ring" title="time left on this job"></span></span><div class="v3strip" id="v3strip" hidden></div></div>
+document.body.insertAdjacentHTML('afterbegin', `<div id="v3" hidden class="${NIGHT ? 'night' : ''}"><div class="frame" id="v3frame"></div><div id="v3wx"></div><canvas id="v3board" aria-label="the board: where you are going"></canvas>
+<div id="v3top"><span class="v3pill" id="v3pill"><span class="wxg" id="v3wxg" aria-hidden="true"></span><span class="clk" id="v3clock">07:00</span><span class="dots" id="v3dots" aria-label="jobs"></span><span class="eur" id="v3eur">€0</span><span class="v3ring" id="v3ring" title="time left on this job"></span></span><div class="v3strip" id="v3strip" hidden></div></div>
 <button id="v3mini" type="button" hidden aria-label="the board"><canvas id="v3minic"></canvas><span class="tag">MAP</span></button><div id="v3panel" aria-live="polite"></div></div>`);
-const stage = $('v3'), frameEl = $('v3frame'), panel = $('v3panel');
+const stage = $('v3'), frameEl = $('v3frame'), panel = $('v3panel'), wxEl = $('v3wx');
 // focusing a button that is still sliding in scrolled the stage under the HUD
 // (overflow:hidden is a scroll container); the stage never scrolls
 stage.addEventListener('scroll', () => { stage.scrollTop = 0; stage.scrollLeft = 0; });
-let fmt = '';
+
+// ── the frame ──────────────────────────────────────────────────────────────
+let fmt = '', scene = '', sceneKey = '', ACT = null;
 function sizeFrame() {
   const f = innerWidth / innerHeight < 1 ? '916' : '169';
-  if (f !== fmt) { fmt = f; stage.classList.toggle('fmt-916', f === '916'); stage.classList.toggle('fmt-169', f === '169'); if (scene) paintScene(scene, true); }
+  if (f !== fmt) { fmt = f; stage.classList.toggle('fmt-916', f === '916'); stage.classList.toggle('fmt-169', f === '169'); if (scene) paintScene(scene, view, true); }
   place();
   board?.resize(); mini?.resize(); if (still) still();
 }
@@ -153,23 +221,78 @@ function place() {
   frameEl.style.transformOrigin = `${sc.face[fmt][0] * 100}% ${sc.face[fmt][1] * 100}%`;
   if (sc.tile) frameEl.style.setProperty('--tw', `${Math.round(H * sc.tile[fmt])}px`);
 }
-let scene = '';
-function paintScene(name, force = false) {
-  if (name === scene && !force) return;
-  const sc = SCENES[name], first = !scene; scene = name;
+const L = (name, l, cls = '', extra = '', style = '') => `<div class="L ${cls}" style="background-image:url(scenes/${name}/${fmt}/${l}.webp);${style}"${extra}></div>`;
+// A scene is built once per place: the stop's landmark and plate are part of
+// it, the tram is a layer of its own that comes and goes without a rebuild.
+let view = {};
+function paintScene(name, v = {}, force = false) {
+  const key = name === 'stop' ? `stop|${v.at || ''}` : name;
+  view = v;
+  if (key === sceneKey && !force) return 0;
+  const sc = SCENES[name], first = !scene; scene = name; sceneKey = key;
   stage.classList.toggle('night-stop', NIGHT && name === 'stop');
   stage.classList.toggle('night-car', name === 'night');
   const build = () => {
-    frameEl.innerHTML = sc.layers.map((l, i) => {
-      const cls = i === 0 ? (sc.tile ? 'tile' : sc.drift ? 'drift' : '') : name === 'stop' ? (l === '05-people' ? 'shift' : l === '06-courier' ? 'idle' : '') : (i === 1 ? 'sway' : i === 2 ? 'sway lag' : 'bob');
-      const chip = l === '03-tram' && sc.chip ? `<i class="chip" style="left:${sc.chip[fmt][0] * 100}%;top:${sc.chip[fmt][1] * 100}%;width:${sc.chip[fmt][2] * 100}%"></i>` : '';
-      return `<div class="L ${cls}" style="background-image:url(scenes/${name}/${fmt}/${l}.webp)">${chip}</div>`;
-    }).join('') + (NIGHT && name === 'stop' ? '<div class="L dusk"></div>' : '');
+    let html = '';
+    if (name === 'stop') {
+      const land = LANDMARKS.has(v.at) ? v.at : null, extra = land && ACT?.land?.[land]?.[fmt];
+      html += L('stop', '01-backdrop');
+      if (land) html += L('stop', `01b-land-${land}`, 'land', ` data-land="${land}"`);
+      if (extra?.wheel) html += L('stop', '01c-wheel', 'wheel', '', `transform-origin:${extra.wheel[0] * 100}% ${extra.wheel[1] * 100}%`);
+      if (extra?.ferry) html += L('stop', '01c-ferry', 'ferry');
+      if (NIGHT) html += '<div class="L dusk"></div>';      // the night sky over the far city; every layer is dimmed on its own, so a lit tram can glow
+      html += L('stop', '02-street') + `<div class="L tram" id="v3tram" hidden><span class="chip" id="v3chip"></span></div>`
+        + L('stop', '04-shelter') + L('stop', '05-people', 'shift') + L('stop', '06-courier', 'idle');
+      html += plateHtml(v.at, !!land);
+    } else html = sc.layers.map((l, i) => L(name, l, i === 0 ? (sc.tile ? 'tile' : sc.drift ? 'drift' : '') : (i === 1 ? 'sway' : i === 2 ? 'sway lag' : 'bob'))).join('');
+    frameEl.innerHTML = html;
     place();
     frameEl.classList.remove('push'); if (!CALM) { void frameEl.offsetWidth; frameEl.classList.add('push'); }
     frameEl.classList.remove('fade');
+    if (name === 'stop') setTram(view.tram || null);
   };
-  if (first || force || CALM) build(); else { frameEl.classList.add('fade'); setTimeout(build, 200); }
+  weather();
+  if (first || force || CALM) { build(); return 0; }
+  frameEl.classList.add('fade'); setTimeout(build, 200); return 230;   // how long until the new scene stands
+}
+// The stop's plate: its name and the lines that stop there; a key station's is
+// ringed in yellow.
+function plateHtml(at, key) {
+  if (!at || !net) return '';
+  const fams = [...new Set((net.at.get(at) || []).map(l => l.mode === 'metro' ? 'M' : l.family))].sort((a, b) => (a === 'M') - (b === 'M') || String(a).localeCompare(String(b), 'en', { numeric: true })).slice(0, 6);
+  const [x, y] = PLATE[fmt];
+  return `<div class="plate${key ? ' key' : ''}" style="left:${x * 100}%;top:${y * 100}%"><div class="pl"><b>${esc(net.name(at).toUpperCase())}</b><span class="lines">${fams.map(f => `<i style="background:${inkOf(f)}">${esc(f)}</i>`).join('')}</span></div><div class="pole"></div></div>`;
+}
+const inkOf = fam => { if (fam === 'M') return SKIN.metro; const l = board?.transit.layers.find(x => x.mode !== 'SUBWAY' && lineFamily(x.name) === fam); return l?.colour || '#52676d'; };
+
+// ── the trams at the stop (look only) ─────────────────────────────────────
+// `tram` is { model, family, halted, ghost }: the model's layer, the line's
+// number on its front chip (a ghost has none), and the coral pulse when halted.
+function setTram(t) {
+  const el = $('v3tram'); if (!el) return;
+  if (!t) { el.hidden = true; return; }
+  el.hidden = false; el.style.backgroundImage = `url(scenes/stop/${fmt}/03-tram-${t.model}.webp)`; el.dataset.model = t.model;
+  const chip = $('v3chip'), c = ACT?.trams?.[t.model]?.[fmt];
+  if (c) Object.assign(chip.style, { left: `${c[0] * 100}%`, top: `${c[1] * 100}%`, width: `${c[2] * 100}%`, height: `${c[3] * 100}%` });
+  chip.textContent = t.ghost ? '' : (t.family || ''); chip.style.background = t.ghost ? 'transparent' : inkOf(t.family);
+  chip.classList.toggle('halted', !!t.halted); el.classList.toggle('glow', !!t.ghost);
+}
+// Drive along the track: in from up the line, or on and away. A Web Animation,
+// so a tap finishes it.
+function drive(dir) {
+  const el = $('v3tram'); if (!el || el.hidden || CALM) { if (dir === 'out' && el) el.hidden = true; return Promise.resolve(); }
+  const ax = ACT?.axis?.[fmt] || [-0.866, 0.5], D = frameEl.offsetWidth * 0.9, off = `translate(${-ax[0] * D}px, ${-ax[1] * D}px)`, away = `translate(${ax[0] * D}px, ${ax[1] * D}px)`;
+  const a = el.animate(dir === 'in' ? [{ transform: off }, { transform: 'none' }] : [{ transform: 'none' }, { transform: away }],
+    { duration: dir === 'in' ? 950 : 850, easing: dir === 'in' ? 'cubic-bezier(.15,.7,.25,1)' : 'cubic-bezier(.6,0,.85,.4)', fill: 'forwards' });
+  // the tap that hurries it is its own: a later beat's skip is never cleared by this one finishing
+  return new Promise(done => { let over = false; const end = () => { if (over) return; over = true; if (skip === end) skip = null; if (dir === 'out') el.hidden = true; a.cancel(); done(); };
+    skip = end; a.onfinish = end; });
+}
+
+// The weather falls on the stop and on the board, never inside the car.
+function weather() {
+  const w = S?.weather || 'clear', show = w !== 'clear' && (scene === 'stop' || $('v3board').classList.contains('on'));
+  wxEl.className = show ? `${w} on` : w;
 }
 
 // ── loading ────────────────────────────────────────────────────────────────
@@ -177,21 +300,21 @@ let net = null, board = null, mini = null, S = null, still = null;
 const getJson = async url => { const r = await fetch(url, { cache: 'no-store' }); if (!r.ok) throw new Error(`${url} ${r.status}`); return r.json(); };
 const ready = (async () => {
   const play = $('play'); if (play) { play.disabled = true; play.textContent = 'LOADING HELSINKI…'; }
-  const [pack, water] = await Promise.all([getJson('./cities/helsinki.json'), getJson('./cities/ground/helsinki-water.json').catch(() => null)]);
-  net = J.network(buildRealHelsinki(pack));
+  const [pack, water, act] = await Promise.all([getJson('./cities/helsinki.json'), getJson('./cities/ground/helsinki-water.json').catch(() => null), getJson('./scenes/stop/act1.json').catch(() => null)]);
+  net = J.network(buildRealHelsinki(pack)); ACT = act;
   board = new HopBoard($('v3board'), { pack, water, skin: SKIN, net }); board.label = tr;
   mini = new HopBoard($('v3minic'), { pack, water, skin: SKIN, net }); mini.label = tr;
   if (play) { play.disabled = false; play.textContent = 'START SHIFT'; }
 })().catch(err => { const p = $('play'); if (p) p.textContent = 'MAP LOAD FAILED'; console.error(err); throw err; });
 
-// ── the title card: the ladder (runs.js) ───────────────────────────────────
+// ── the title card: Act 1, the ladder (runs.js) ───────────────────────────
 const COUNT = ['No', 'One', 'Two', 'Three', 'Four', 'Five', 'Six'];
 const hhmm = m => `${String(Math.floor(m / 60) % 24).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
 function paintTitle() {
   const start = (RUN.startHour ?? 7) * 60, end = start + J.SHIFT_SECONDS / 60;
   const set = (id, t) => { const e = $(id); if (e) e.textContent = t; };
-  set('titleWhen', `Helsinki · ${hhmm(start)} · ${RUN.title}`);
-  const body = document.querySelector('#title .cardBody p'); if (body) body.textContent = 'A courier in Helsinki. At every stop, one card: which tram, which way, who to help. The clock only moves when you choose.';
+  set('titleWhen', `Act 1 · Helsinki · ${hhmm(start)} · ${RUN.title}`);
+  const body = document.querySelector('#title .cardBody p'); if (body) body.textContent = 'A courier in Helsinki. At every stop, one card: which tram, which way, who to help, and what to risk. The clock only moves when you choose.';
   set('titleGoal', `${COUNT[RUN.target] || RUN.target} deliveries before ${hhmm(end)}.`);
   const n = $('shiftNo'); if (n) n.hidden = true;
   const all = Runs.loadRuns(), star = k => '★'.repeat(k) + '☆'.repeat(3 - k), row = $('mutRow');
@@ -209,34 +332,50 @@ function paintTitle() {
 }
 
 // ── the HUD: one pill and one strip ────────────────────────────────────────
-let shownMin = null, rollTimer = 0;
+let shownMin = null, rollTimer = 0, shownEur = 0, eurTimer = 0, shownDone = 0;
+const roll = (from, to, ms, paint, timerSet) => { const t0 = performance.now(); const id = setInterval(() => { const k = Math.min(1, (performance.now() - t0) / ms), v = Math.round(from + (to - from) * (1 - (1 - k) ** 2)); paint(v); if (k >= 1) clearInterval(id); }, 30); timerSet(id); };
 function paintHud() {
   const s = S, clock = $('v3clock'), mins = (RUN.startHour ?? 7) * 60 + Math.floor(s.clock / 60);
+  $('v3wxg').textContent = s.weather !== 'clear' ? WX[s.weather]?.glyph || '' : ''; $('v3wxg').title = WX[s.weather]?.name || '';
   // the clock ROLLS to its new time (art bible: transitions/hud-clock-roll)
   clearInterval(rollTimer);
   if (shownMin == null || CALM || mins - shownMin > 90 || mins < shownMin) { shownMin = mins; clock.textContent = hhmm(mins); }
-  else { const from = shownMin, steps = Math.max(1, mins - from), t0 = performance.now(), dur = Math.min(900, 120 + steps * 40);
-    rollTimer = setInterval(() => { const k = Math.min(1, (performance.now() - t0) / dur), m = Math.round(from + (mins - from) * k); clock.textContent = hhmm(m); if (k >= 1) clearInterval(rollTimer); }, 30); shownMin = mins; }
-  $('v3dots').innerHTML = Array.from({ length: s.target }, (_, i) => i < s.results.length ? (s.results[i] === 'late' ? '<i>●</i>' : '●') : '○').join('');
+  else { const from = shownMin; roll(from, mins, Math.min(900, 120 + (mins - from) * 40), m => { clock.textContent = hhmm(m); }, id => { rollTimer = id; }); shownMin = mins; }
+  // the money rolls too, and bumps when it goes up
+  const eur = $('v3eur'); clearInterval(eurTimer);
+  if (CALM || s.score === shownEur) eur.textContent = `€${s.score}`;
+  else { const up = s.score > shownEur; roll(shownEur, s.score, 700, v => { eur.textContent = `€${v}`; }, id => { eurTimer = id; }); if (up) { eur.classList.remove('up'); void eur.offsetWidth; eur.classList.add('up'); } }
+  shownEur = s.score;
+  const fresh = s.results.length > shownDone; shownDone = s.results.length;
+  $('v3dots').innerHTML = Array.from({ length: s.target }, (_, i) => { const d = i < s.results.length ? (s.results[i] === 'late' ? '<i>●</i>' : '●') : '○'; return fresh && i === s.results.length - 1 ? `<span class="pop">${d}</span>` : d; }).join('');
   const ring = $('v3ring'), job = s.job, left = J.timeLeft(s);
   if (job) { const p = Math.max(0, Math.min(1, left / job.limit)); ring.style.setProperty('--p', String(Math.round(p * 100))); ring.style.setProperty('--ring', p < 0.3 ? '#e2683c' : (NIGHT ? '#7ad3b0' : '#233d4d')); ring.innerHTML = parcelHtml(job.cargo, { max: 17 }); }
   else { ring.style.setProperty('--p', '0'); ring.innerHTML = ''; }
-  // the strip: the job, where it goes, and how long it has
+  // the strip: the job, where it goes, what it pays, how long it has
   const strip = $('v3strip');
-  if (job) { strip.hidden = false;
-    strip.innerHTML = `${parcelHtml(job.cargo, { max: 15 })}<span>${esc(J.cargoWord(job.cargo))}</span><span aria-hidden="true">→</span><b>${esc(net.name(job.to).toUpperCase())}</b><span class="left${left < 0 ? ' late' : ''}">${left < 0 ? `late by ${Math.ceil(-left / 60)} min` : `${Math.max(1, Math.ceil(left / 60))} min left`}</span>`; }
+  if (job) { strip.hidden = false; const m = job.mult;
+    strip.innerHTML = `${parcelHtml(job.cargo, { max: 15 })}<span>${esc(J.cargoWord(job.cargo))}</span><span aria-hidden="true">→</span><b>${esc(net.name(job.to).toUpperCase())}</b><span class="fee">€${job.fee}</span>${m !== 1 ? `<span class="mult${m < 1 ? ' down' : ''}">×${+m.toFixed(2)}</span>` : ''}<span class="left${left < 0 ? ' late' : ''}">${left < 0 ? `late by ${Math.ceil(-left / 60)} min` : `${Math.max(1, Math.ceil(left / 60))} min left`}</span>`; }
   else strip.hidden = true;
 }
 
 // ── the card ───────────────────────────────────────────────────────────────
 // Prices read as a stopwatch, "+6:00": the classic deck's "+40 s" scaled to a
-// tram ride would be "+1260 s", which nobody can compare at a glance.
+// tram ride would be "+1260 s", which nobody can compare at a glance. Under
+// the label, the STAKES (ACT1.md §3): the odds as a word, then what is won,
+// then what is lost — "maybe ×1.3 · or +3:00".
 const price = sec => `+${Math.floor(sec / 60)}:${String(Math.round(sec % 60)).padStart(2, '0')}`;
-const face = mood => { const url = moodFace(mood), disc = (MOODS[mood] || MOODS.info).disc; return url ? `<img class="evFace" src="${url}" alt="" width="44" height="44">` : `<i class="evFace" style="background:${disc}"></i>`; };
+const face = (mood, px = 44) => { const url = moodFace(mood), disc = (MOODS[mood] || MOODS.info).disc; return url ? `<img class="evFace" src="${url}" alt="" width="${px}" height="${px}">` : `<i class="evFace" style="background:${disc}"></i>`; };
+const chipSpans = list => list.map(c => `<span>${esc(c)}</span>`).join(' ');
+function stakesHtml(st) {
+  if (!st) return '';
+  if (st.sure) return `<small class="evStk">${chipSpans(st.sure)}</small>`;
+  return `<small class="evStk"><em class="${st.odds === 'long shot' ? 'long' : st.odds}">${esc(st.odds)}</em> ${chipSpans(st.win)} <span class="or">· or</span> ${chipSpans(st.lose)}</small>`;
+}
 function paintCard(c) {
-  const stack = c.options.some(o => String(tr(o.label)).length > 18);
-  panel.innerHTML = `<section class="eventCard mood-${esc(c.mood)}" data-kind="${c.kind}"><div class="evHead">${face(c.mood)}<b class="evLine">${c.at ? `<span class="evAt">${esc(c.at.toUpperCase())}</span>` : ''}${esc(c.text)}</b></div><div class="evOpts${stack ? ' evStack' : ''}">${c.options.map((o, i) => `<button class="evBtn ${i === 0 ? 'evPrimary' : 'evGhost'} eventOpt" type="button" data-i="${i}"><span class="evLb">${esc(o.label)}</span><span class="evCost">${price(o.price)}</span></button>`).join('')}</div></section>`;
-  panel.querySelectorAll('.eventOpt').forEach(b => b.addEventListener('click', () => pick(Number(b.dataset.i))));
+  const stack = c.options.some(o => String(tr(o.label)).length > 18 || o.stakes);
+  panel.innerHTML = `<section class="eventCard mood-${esc(c.mood)}" data-kind="${c.kind}"${c.id ? ` data-card="${c.id}"` : ''}><div class="evHead">${face(c.mood)}<b class="evLine">${c.at ? `<span class="evAt">${esc(c.at.toUpperCase())}</span>` : ''}${esc(c.text)}</b></div><div class="evOpts${stack ? ' evStack' : ''}">${c.options.map((o, i) => `<button class="evBtn ${i === 0 ? 'evPrimary' : 'evGhost'} eventOpt" type="button" data-i="${i}"><span class="evLb"><span>${esc(o.label)}</span>${stakesHtml(o.stakes)}</span><span class="evCost">${price(o.price)}</span></button>`).join('')}</div></section>`;
+  const armed = performance.now() + 300;
+  panel.querySelectorAll('.eventOpt').forEach(b => b.addEventListener('click', () => { if (performance.now() >= armed) pick(Number(b.dataset.i)); }));
 }
 
 // the corner inset: here, the drop, and the hops on offer as their own paths
@@ -258,15 +397,21 @@ function openBoard() {
   const cv = $('v3board'); cv.classList.add('on'); board.resize();
   const job = S.job || (S.offer ? { to: S.offer.to, cargo: S.offer.cargo } : null);
   board.draw({ at: S.at, dest: job?.to, destColour: job ? colourOf(job.cargo) : undefined, previews: c.kind === 'route' ? c.options.map(o => o.hop).filter(Boolean) : [], lift: false, halted: haltedLayer });
-  hint('TAP TO CLOSE');
+  hint('TAP TO CLOSE'); weather();
 }
 $('v3mini').addEventListener('click', openBoard);
 $('v3board').addEventListener('click', () => { if (!boardOpen) return; boardOpen = false; $('v3board').classList.remove('on'); panel.style.visibility = ''; hint(''); render(); });
 function hint(t) { let h = stage.querySelector('.v3tap'); if (!t) { h?.remove(); return; } if (!h) { h = document.createElement('div'); h.className = 'v3tap'; stage.append(h); } h.textContent = t; }
 
 // ── the moment ─────────────────────────────────────────────────────────────
-let busy = false, pendingHop = null, skip = null;
+let busy = false, pendingHop = null, skip = null, arrived = null;
 const interior = () => NIGHT ? 'night' : 'tram';
+const modelName = id => TRAMS.find(t => t.id === id)?.name || id;
+function tramFor(c) {
+  if (c.kind === 'halt') return { model: S.hop?.model && S.hop.model !== 'metro' ? S.hop.model : 'nr2', family: S.halt.family, halted: true };
+  if (c.tram === 'museum') return { model: 'museum', family: '', ghost: true };
+  return null;
+}
 function render() {
   paintHud();
   const c = J.card(net, S);
@@ -275,39 +420,68 @@ function render() {
     // a card dealt on the way: aboard is the car, on foot is the board mid-walk
     if (pendingHop.kind === 'walk') { showBoard(pendingHop, 0.5); }
     else { hideBoard(); paintScene(interior()); }
-  } else { hideBoard(); paintScene('stop'); }
+  } else {
+    hideBoard();
+    const t = tramFor(c), leaving = !t && arrived;
+    const wait = paintScene('stop', { at: S.at, tram: t || arrived || null });
+    if (!wait) setTram(t || arrived || null);
+    // the tram that brought you leaves, while the next card comes in; a ghost
+    // or a halted tram pulls in to be looked at
+    if (leaving) { const go = arrived; arrived = null; setTimeout(() => { if (!busy && $('v3tram')?.dataset.model === go.model) drive('out'); }, wait + 650); }
+    else if (t && !CALM) setTimeout(() => drive('in'), wait);
+  }
   stage.classList.toggle('halt', c.kind === 'halt');
   paintCard(c); paintMini(c);
 }
 
 // Play the board for a hop from t0 to t1; resolves when done or tapped past.
-function showBoard(hop, t = 1) { const cv = $('v3board'); cv.classList.add('on'); board.resize(); board.draw({ at: S.at, hop, t, dest: S.job?.to, destColour: S.job ? colourOf(S.job.cargo) : undefined, halted: haltedLayer }); }
-function hideBoard() { $('v3board').classList.remove('on'); }
+function showBoard(hop, t = 1) { const cv = $('v3board'); cv.classList.add('on'); board.resize(); board.draw({ at: S.at, hop, t, dest: S.job?.to, destColour: S.job ? colourOf(S.job.cargo) : undefined, halted: haltedLayer }); weather(); }
+function hideBoard() { $('v3board').classList.remove('on'); weather(); }
 function rideBoard(hop, t0 = 0, t1 = 1) {
   return new Promise(done => {
-    const cv = $('v3board'); cv.classList.add('on'); board.resize(); $('v3mini').hidden = true;
+    const cv = $('v3board'); cv.classList.add('on'); board.resize(); $('v3mini').hidden = true; weather();
     const dur = CALM ? 300 : (1300 + 700 * Math.min(1, hop.price / 900)) * (t1 - t0), start = performance.now();
     const ease = k => k < .5 ? 2 * k * k : 1 - (-2 * k + 2) ** 2 / 2;
-    let over = false; const end = () => { if (over) return; over = true; skip = null; board.draw({ at: S.at, hop, t: t1, dest: S.job?.to, destColour: S.job ? colourOf(S.job.cargo) : undefined, halted: haltedLayer }); done(); };
+    const dest = S.job?.to, col = S.job ? colourOf(S.job.cargo) : undefined;
+    let over = false; const end = () => { if (over) return; over = true; skip = null; board.draw({ at: S.at, hop, t: t1, dest, destColour: col, halted: haltedLayer }); done(); };
     skip = end;
     const step = now => { if (over) return; const k = Math.min(1, (now - start) / dur);
-      board.draw({ at: S.at, hop, t: t0 + (t1 - t0) * ease(k), dest: S.job?.to, destColour: S.job ? colourOf(S.job.cargo) : undefined, halted: haltedLayer });
+      board.draw({ at: S.at, hop, t: t0 + (t1 - t0) * ease(k), dest, destColour: col, halted: haltedLayer });
       if (k >= 1) end(); else requestAnimationFrame(step); };
     requestAnimationFrame(step);
   });
 }
 // A beat that a tap ends early.
-const beat = ms => new Promise(done => { let over = false; const end = () => { if (over) return; over = true; skip = null; done(); }; skip = end; setTimeout(end, CALM ? Math.min(ms, 500) : ms); });
-stage.addEventListener('pointerup', e => { if (skip && !e.target.closest('button')) skip(); });
+const beat = ms => new Promise(done => { let over = false; const end = () => { if (over) return; over = true; skip = null; done(); }; skip = end; setTimeout(end, CALM ? Math.min(ms, 600) : ms); });
+// A tap that HURRIES something must not also press what appears under it:
+// the skip runs on pointerup, and the browser's click for the same tap comes
+// after — onto the next card's button, or the end card's NEXT (a playtest of
+// v3.1 tapped through the last stamp straight into MEDIUM). That click is
+// swallowed, and a fresh card's buttons arm a beat after they appear.
+let quietUntil = 0;
+stage.addEventListener('pointerup', e => { if (skip && !e.target.closest('button')) { quietUntil = performance.now() + 450; skip(); } });
+document.addEventListener('click', e => { if (performance.now() < quietUntil) { e.preventDefault(); e.stopPropagation(); } }, true);
 addEventListener('keydown', e => { if (skip && !stage.hidden && (e.key === ' ' || e.key === 'Enter' || e.key === 'Escape')) { e.preventDefault(); skip(); } });
 
-// The in-car display: the line, where it is going, and the next stop.
+// The in-car display: the line, where it is going, the next stop — and, on a
+// tram, which tram (look only).
 function sign(hop) {
   const layer = board.transit.layers.find(l => l.id === hop.line?.sourceId), ink = layer?.colour || '#52676d';
   const where = J.terminus(net, hop);
-  // the line's last stop that way, then the next — once, when they are one
   const end = where && where !== net.name(hop.to) ? `<span>${esc(String(where).toUpperCase())}</span><span aria-hidden="true">›</span>` : '<span aria-hidden="true">›</span>';
-  panel.innerHTML = `<div class="v3sign" role="status"><span class="lb" style="background:${ink}">${esc(hop.line.mode === 'metro' ? 'M' : (hop.line.family || hop.line.label))}</span>${end}<span class="nx">${esc(net.name(hop.to).toUpperCase())}</span></div>`;
+  const model = hop.model && hop.model !== 'metro' ? `<span class="model">${esc(modelName(hop.model).toUpperCase())}</span>` : '';
+  panel.innerHTML = `<div class="v3sign" role="status"><span class="lb" style="background:${ink}">${esc(hop.line.mode === 'metro' ? 'M' : (hop.line.family || hop.line.label))}</span>${end}<span class="nx">${esc(net.name(hop.to).toUpperCase())}</span>${model}</div>`;
+}
+
+// What a choice did (ACT1.md §3): the line, and its chips.
+async function reveal(rv) {
+  if (!rv || (!rv.say && !rv.chips.length)) return;
+  const mood = rv.sold ? 'opportunity' : rv.how === 'win' ? 'opportunity' : rv.how === 'lose' ? 'warning' : 'info';
+  const tag = rv.sold ? (rv.sold.cash > 0 ? 'SOLD' : 'SWINDLED') : rv.how === 'win' ? 'IT WORKED' : rv.how === 'lose' ? 'IT DID NOT' : '';
+  const bad = c => /^(\+\d|−€|×0\.|€0|job gone|fees)/.test(c) && !/^\+€/.test(c);
+  panel.innerHTML = `<div class="v3rev ${rv.sold ? 'sold' : rv.how}" role="status" data-how="${rv.how}">${face(mood)}<div>${tag ? `<div class="tag">${tag}</div>` : ''}<div class="say">${esc(rv.say)}</div>${rv.chips.length ? `<div class="chips">${rv.chips.map(c => `<i class="${bad(c) ? 'bad' : ''}">${esc(c)}</i>`).join('')}</div>` : ''}</div></div>`;
+  paintHud();
+  await beat(rv.say.length > 70 ? 3200 : 2500);
 }
 
 async function pick(i) {
@@ -320,41 +494,62 @@ async function pick(i) {
   try {
     if (r.hop) {
       $('v3mini').hidden = true;
+      const tram = r.hop.kind === 'ride' && r.hop.model && r.hop.model !== 'metro';
+      // the tram you chose pulls in (look only: the model is drawn, the ride is the same)
+      if (tram) { const wait = scene !== 'stop' ? paintScene('stop', { at: r.hop.from }) : 0; if (wait) await beat(wait); setTram({ model: r.hop.model, family: r.hop.line.family }); panel.innerHTML = ''; await drive('in'); }
+      if (r.hop.model === 'museum') await rare();
       if (r.hop.kind === 'ride') { hideBoard(); paintScene(interior()); sign(r.hop); }
       if (r.story) { pendingHop = r.hop; busy = false; return render(); }
       if (r.hop.kind === 'ride') await beat(1200);
       panel.innerHTML = '';
       await rideBoard(r.hop);
+      if (r.reveal) await reveal(r.reveal);                   // the weather's stakes on a walk land on the way
+      if (tram) arrived = { model: r.hop.model, family: r.hop.line.family };
     } else if (wasHop) {
-      // the card on the way is answered: the rest of the hop, then the stop
-      pendingHop = null; panel.innerHTML = '';
+      // the card on the way is answered: what it did, the rest of the hop, then the stop
+      pendingHop = null;
+      if (r.reveal) await reveal(r.reveal);
+      panel.innerHTML = '';
       await rideBoard(wasHop, wasHop.kind === 'walk' ? 0.5 : 0, 1);
-    }
+      if (wasHop.kind === 'ride' && wasHop.model && wasHop.model !== 'metro') arrived = { model: wasHop.model, family: wasHop.line.family };
+    } else if (r.reveal) await reveal(r.reveal);
     pendingHop = null;
     if (r.delivered) await stamp(r.delivered);
   } finally { busy = false; }
   render();
 }
 
+// A delivery: the fee, and what was inside all along.
 async function stamp(d) {
-  hideBoard(); paintScene('stop'); $('v3mini').hidden = true;
-  const pts = S.score - (stamp.last || 0); stamp.last = S.score;
-  panel.innerHTML = `<div class="v3stamp${d.late ? ' late' : ''}" role="status"><span class="big">${d.late ? 'DELIVERED LATE' : 'DELIVERED'}</span><span>${esc(net.name(d.to))}</span><span class="pts">+${pts}</span></div>`;
+  hideBoard(); paintScene('stop', { at: S.at, tram: arrived }); setTram(arrived); $('v3mini').hidden = true;
+  panel.innerHTML = `<div class="v3stamp${d.late ? ' late' : ''}" role="status"><span class="big">${d.late ? 'DELIVERED LATE' : 'DELIVERED'}</span><span>${esc(net.name(d.to))}</span><span class="inside"><span>Signed for:</span> <span>${esc(d.contents)}</span></span><span class="pts">+€${d.pay}${d.mult !== 1 ? ` <small>(×${+d.mult.toFixed(2)})</small>` : ''}</span></div>`;
   paintHud();
-  await beat(1500);
+  await beat(2200);
+}
+// The museum tram: super rare (signed off), and worth a moment.
+async function rare() {
+  panel.innerHTML = `<div class="v3stamp rare" role="status"><span class="big">MUSEUM TRAM</span><span>It runs on the same rails. It is just older than everyone aboard.</span></div>`;
+  await beat(2200);
+}
+// The shift's weather, said once at the start (ACT1.md §4).
+async function forecast() {
+  const w = WX[S.weather] || WX.clear, line = NIGHT && NIGHT_WX[S.weather] ? NIGHT_WX[S.weather] : w.line;
+  paintScene('stop', { at: S.at }); panel.innerHTML = `<div class="v3stamp wxs" role="status"><span class="big"><span aria-hidden="true">${esc(w.glyph)}</span> <span>${esc(w.name.toUpperCase())}</span></span><span>${esc(line)}</span></div>`;
+  await beat(1800);
 }
 
-// ── the end: the run's result (runs.js) ────────────────────────────────────
+// ── the end: the run's result (runs.js), and what you carried ─────────────
 function finish() {
-  hideBoard(); $('v3mini').hidden = true; panel.innerHTML = '';
+  hideBoard(); $('v3mini').hidden = true; panel.innerHTML = ''; wxEl.className = '';
   const r = Runs.record(RUN.id, { delivered: S.done, target: S.target, late: S.late, score: S.score });
   const i = Runs.ORDER.indexOf(RUN.id), next = Runs.RUNS[i + 1], star = n => '★'.repeat(n) + '☆'.repeat(3 - n);
-  const why = r.done ? (r.stars === 1 ? 'every job delivered · some late' : r.stars === 2 ? `every job on time · ${Number(RUN.par).toLocaleString('en-US')} for the third star` : 'every job on time, at par') : `deliver all ${S.target} to complete ${RUN.name}`;
-  const opened = r.opened.map(id => `<p class="runOpened">${esc(Runs.BY_ID[id].name)} IS OPEN</p>`).join('') + (r.extrasOpened ? '<p class="runOpened">THE DAILY AND THE WEEK ARE OPEN</p>' : '');
+  const why = r.done ? (r.stars === 1 ? 'every job delivered · some late' : r.stars === 2 ? `every job on time · €${RUN.par} for the third star` : 'every job on time, at par') : `deliver all ${S.target} to complete ${RUN.name}`;
+  const opened = r.opened.map(id => `<p class="runOpened">${esc(Runs.BY_ID[id].name)} IS OPEN</p>`).join('') + (r.extrasOpened ? '<p class="runOpened">THE DAILY AND THE WEEK ARE OPEN</p>' : '') + (RUN.id === 'night' && r.first ? '<p class="runOpened">ACT 1 COMPLETE</p>' : '');
   const go = r.done && next && Runs.unlocked(next.id, r.all) ? `<a class="btn prime wide" id="nextRun" href="${Runs.runHref(next.id, location.search)}">NEXT · ${esc(next.name)}</a>` : '';
   $('endTitle').textContent = r.done ? `${RUN.name} COMPLETE` : 'NOT YET';
+  const carried = S.seen.length ? `<div class="carried"><h3>WHAT YOU CARRIED</h3><ul>${S.seen.map(x => `<li>${esc(x.contents)} <small>· ${x.how}</small></li>`).join('')}</ul></div>` : '';
   $('endStats').innerHTML = `<div class="dailyBox runBox"><p class="dailyHead">${esc(RUN.name)} · ${esc(RUN.title)}</p><p class="runStars" aria-label="${r.stars} of 3 stars">${star(r.stars)}</p><p class="hint">${esc(why)}${r.newBest && r.all[RUN.id].plays > 1 ? ' · a new best' : ''}</p>${opened}${go}</div>`
-    + `<p>deliveries <b>${S.done}/${S.target}</b></p><p>on time <b>${S.done - S.late}</b></p><p>score <b>${S.score}</b></p><p>best streak <b>${S.bestStreak}</b></p>`;
+    + `<p>earned <b>€${S.score}</b></p><p>deliveries <b>${S.done}/${S.target}</b></p><p>on time <b>${S.done - S.late}</b></p>${S.sold ? `<p>sold <b>${S.sold}</b></p>` : ''}<p>best streak <b>${S.bestStreak}</b></p>${carried}`;
   $('endNote').textContent = r.done ? 'Every job delivered.' : 'The shift ended.';
   const again = $('again'); if (again) { again.textContent = r.done ? `${RUN.name} AGAIN · A NEW SHIFT` : `TRY ${RUN.name} AGAIN`; again.classList.toggle('prime', !go); again.classList.toggle('ghost', !!go); again.onclick = () => { location.href = Runs.runHref(RUN.id, location.search); }; }
   $('end').hidden = false;
@@ -365,8 +560,10 @@ function finish() {
 async function start() {
   await ready;
   $('title').hidden = true; stage.hidden = false;
-  S = J.newRun(net, RUN, SEED); stamp.last = 0; shownMin = null;
-  sizeFrame(); render();
+  S = J.newRun(net, RUN, SEED); shownMin = null; shownEur = 0; shownDone = 0; arrived = null;
+  sizeFrame(); paintHud();
+  busy = true; try { await forecast(); } finally { busy = false; }
+  render();
 }
 paintTitle();
 $('play')?.addEventListener('click', start);

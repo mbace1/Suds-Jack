@@ -1,5 +1,164 @@
 # Toko Move — versions
 
+## v3.1 — 2026-11-03
+
+**ACT 1: HELSINKI** (owner, 2026-11-02: *"The trams in the bible look a bit
+like the latest Helsinki trams, but we have older and even older models with
+distinct visual look. That and key stations should have more visual
+indicators. And design random events and funny situations that can happen.
+Card choices should also have some risk factors as well as added time, risks
+can add positive and negative multipliers. Snow will impact walking routes,
+but also congest trams … selling the package to someone else can gain big
+bucks, but also hint at what the packages might contain … focus on making act1
+the playable for now … UI animations and effects will be a big polish issue
+for shipping the Helsinki act"*).
+
+Signed off 2026-11-03:
+
+- **The act:** Act 1 is just Helsinki, as a complete experience. It is the
+  four runs: *"easy and medium that are more fun, hard is more risky and
+  difficult and night is a bit more scary and very risky"*.
+- **Risk:** stakes shown, with the odds in words.
+- **Money:** euros, not points.
+- **Trams:** look only, *"museum quality trams are super rare, but there are
+  many tiers in between"*.
+
+The design is `ACT1.md`.
+
+### The deck (`js/cards.js`)
+
+There are 36 Helsinki cards, each with a tone:
+
+- **fun:** the seagull on your parcel, the choir doing Finlandia, the man with
+  a whole spruce, the public sauna at quarter to eight, the dog in a tiny
+  raincoat walking itself to work;
+- **risky:** run for the red light, the gap in the rail-yard fence, the
+  parcel held above your head in the rush;
+- **scary:** the tram with no number, someone humming your ringtone, the
+  reindeer on Mannerheimintie nobody else can see.
+
+Each run deals one card per job from its own tones and its shift's weather.
+
+**A button can carry stakes.** They show under its label, with the odds as a
+word: *usually* is 75%, *maybe* 50%, *long shot* 25%. The words are fixed, so
+a player can learn them, and the gate holds each to within 8 points over
+thousands of rolls. What a choice did is a **reveal**: the line (often the
+funny one) and its chips.
+
+**Selling the parcel** is a family of buyers:
+
+- a vappu student;
+- a dentist who decides it is the crowns;
+- the rival courier, who pays half the time in Monopoly money;
+- at night, a woman in a long coat who knows your name.
+
+Every buyer **names what was inside**. Every job has hidden contents (*"a whole
+salmon, looking at you"*, *"a USB stick labelled DO NOT"*). A buyer, the rain
+or curiosity can name them; otherwise the delivery stamp does: *"Signed for:
+…"*. A sale pays now, but the job is gone. **Dispatch hears**, so every fee
+after it is ×0.85. Without that, a sale was free money on any clock with room
+in it: the left-tapper sold in 24 of 60 EASY shifts and still finished every
+one.
+
+### Euros
+
+A job pays a **fee**: €8 plus about €1.10 per minute of the best route, times
+the parcel's size pay. These multiply it:
+
+- an on-time streak;
+- late, which halves it;
+- every risk that lands on the job (the strip shows the job's ×).
+
+The run's score is **€ banked**. Pars are now €65, €110, €120 and €140.
+
+### Weather (per shift, from the run's skies)
+
+| run | skies |
+|---|---|
+| EASY | clear |
+| MEDIUM | clear, rain or snow |
+| HARD | snow or rain |
+| NIGHT | fog, rain or snow |
+
+- **Snow:** walks ×1.4 and tram waits ×1.3, and trams are full more often.
+  Every walk can slip you (*usually* fine · or +1:30, and someone helps you
+  up).
+- **Rain:** walks ×1.1, and a paper parcel on a walk can get wet (*maybe* · or
+  ×0.7).
+
+Deadlines are set from the weather, so it is slow, not unfair. The shift opens
+on a weather stamp, and snow, rain or fog falls on the stop and the board.
+
+### The stop (`art/minimal-metro-look/make_act1.py`)
+
+Drawn in the art pack's own iso camera and palette:
+
+- **Six tram models, look only:** Artic (40%), Nr II+ (22%), Variotram (14%),
+  Nr II (12%), Nr I (10%) and the museum tram (2%). The model you ride
+  **drives in** at the stop, with the line's number on its chip, and **drives
+  out** when you arrive. The in-car display names it. The museum tram gets its
+  own stamp.
+- **Twelve key stations stand behind their landmark.** The station clock
+  tower, the cathedral, the SkyWheel (turning) and the tents, the Chapel of
+  Silence, Kallio's tower, the brick market hall, the opera, Amos Rex's
+  domes, a ferry (bobbing), the shipyard cranes, Kalasatama's and Pasila's
+  towers. Each is placed where a phone's crop and a phone held sideways both
+  keep it in view.
+- **Every stop has its plate:** its name and its lines, ringed in yellow at a
+  key station.
+- **NIGHT** dims every layer on its own, so the tram with no number glows.
+
+### Motion
+
+- The € counter rolls and bumps.
+- A job's dot pops.
+- The deadline ring drains smoothly.
+- Cards stamp in, and reveals bump in.
+- Trams drive along the track.
+- Weather falls.
+
+Every one of them is skippable by a tap, and still under
+`prefers-reduced-motion`. The end card says what you earned and lists **what
+you carried**.
+
+### Measured (`node test/journey.mjs`: sixty fresh shifts, reader / left-tapper)
+
+| run | reader | left-tapper |
+|---|---|---|
+| EASY | 60/60 (60 on time) | 60/60 (58) |
+| MEDIUM | 57/60 (33) | 49/60 (15) |
+| HARD | 54/60 (15) | 41/60 (7) |
+| NIGHT | 40/60 (12) | 34/60 (4) |
+
+NIGHT is the very risky one. MEDIUM first measured *harder* than HARD for the
+left-tapper (39 against 41), because its jobs reached further, so its reach
+went from 20 to 16 minutes.
+
+### Gates
+
+- `test/journey.mjs` is now 180 checks: the deck's shape, tones and weather;
+  the odds; the stakes; a sale; the fee; the contents named on every drop; the
+  weather's effects; the tram models' rarity; the bands.
+- `test/play.cjs` checks, through the real buttons:
+  - the weather stamp;
+  - the landmark and the plate;
+  - the € pill and the fee on Take it;
+  - a risky button's stakes and its reveal;
+  - the tram model and its chip;
+  - the delivery stamp's contents;
+  - the end card's euros and what you carried;
+  - HARD's weather on the stop;
+  - NIGHT's glowing museum tram;
+  - all of it in Finnish with no misses.
+- `ship.cjs` no longer reads the page before a week's next day has booted (a
+  race it lost once under load).
+
+What it does not have yet:
+
+- New interiors for the old trams (the plates are the Artic's).
+- Sound.
+- The daily and the week as journeys.
+
 ## v3.0 — 2026-11-02
 
 **THE CARD JOURNEY** (owner: *"We need more of the new design, less of the old

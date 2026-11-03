@@ -11,7 +11,8 @@
 //               "Walk to Kamppi · +540 s". The price is THIS hop's, so the
 //               choice is where it leaves you, read off the board — the
 //               cheaper hop is not always the better one
-//   · A STORY   the deck's cards, at a stop or aboard, priced in seconds
+//   · A STORY   Act 1's deck (cards.js): Helsinki, funny, and since v3.1
+//               RISKY — a button can carry stakes, the odds as a word
 //   · A HALT    on HARD, a family stops; route round it or wait it out
 // The clock moves only by the prices you pick, so nothing happens while you
 // think. The network is REAL — 23 named places, the 33 line variants HSL runs
@@ -20,10 +21,17 @@
 // line's headway), never a timetable: "occasionally you should feel like the
 // trams have some realism".
 //
+// Since v3.1 (ACT1.md, signed off 2026-11-03) a job pays a FEE in euros, and
+// what happens to it multiplies it; the shift has a WEATHER (snow is slow
+// walking and full trams, rain is wet paper); a buyer can take the parcel off
+// your hands for big money and the job with it; every parcel has CONTENTS,
+// named by a buyer, by the rain, or by the drop.
+//
 // Pure: no DOM, no clock, deterministic from a seed (one integer of rng state),
 // which is what lets test/journey.mjs play hundreds of runs in bare node.
-import { ENCOUNTERS } from './events.js?v=10';
-import { pickWeighted, haltFamily, haltMinutes } from './mutators.js?v=2';
+import { CARDS, CONTENTS, TRAMS, ODDS, SLIPS, SOAKS } from './cards.js?v=1';
+import { haltFamily, haltMinutes } from './mutators.js?v=2';
+import { payFor } from './parcels.js?v=1';
 import { lineFamily } from './board.js?v=8';
 import { CARGO } from './deliveries.js?v=28';
 
@@ -36,6 +44,13 @@ export const WALK_KM = 1.3;                      // the furthest walk a card off
 export const GRACE = 1.35;                       // a deadline is the best route × this × the run's own
 export const REROLL_S = 60;                      // "Ask for another"
 export const STUCK_S = 300;                      // "Wait for the next one"
+// The weather a shift is dealt (runs.js `skies`): walks and the wait for a tram.
+export const WEATHER = { clear: { walk: 1, wait: 1 }, rain: { walk: 1.1, wait: 1 }, snow: { walk: 1.4, wait: 1.3 }, fog: { walk: 1.2, wait: 1 } };
+// The fee (ACT1.md §2): €8 plus about €1.10 a minute of the best route, times
+// the parcel's size pay; a streak adds a quarter a job up to ×2; late halves it.
+export function feeOf(job) { return Math.round((8 + (job.best / 60) * 1.1) * payFor(job.cargo)); }
+const PAPER = new Set(['documents', 'express']);
+export const SALE_TRUST = 0.85;
 
 // ── the network ───────────────────────────────────────────────────────────
 const RAD = Math.PI / 180;
@@ -91,23 +106,37 @@ export function bestTable(net, run = {}) {
 // mulberry32 with its state in the run, so a run is one serialisable value
 const rand = s => { s.rng = (s.rng + 0x6D2B79F5) >>> 0; let t = s.rng; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
 const round10 = s => Math.max(0, Math.round(s / 10) * 10);
-// The classic deck's costs are TICKS; one tick of the real-time game was 1.5
-// seconds of shift, so that is what a card costs here — "+150 s" to walk the
-// lady across, which is what it always cost, now said honestly.
-export const cardSeconds = o => round10((o?.cost || 0) * 1.5);
+const pickOf = (s, list) => list[Math.floor(rand(s) * list.length)];
+
+// The deck a run deals (ACT1.md §5): one card a job, from the run's own tones,
+// places and weather — a card that needs a weather the shift has not got is
+// not in it, and one that has it is twice as likely; one buyer a shift.
+export function dealDeck(s, run, weather) {
+  const tones = run.tones || { fun: 1 }, places = run.places || null;
+  const weight = c => (c.weather && !c.weather.includes(weather)) || (places && !places.includes(c.where) && c.where !== 'any') ? 0
+    : Math.max(...c.tone.map(t => tones[t] || 0)) * (c.weather ? 2 : 1);
+  const out = [];
+  for (let i = 0; i < (run.cards ?? 3); i++) {
+    const pool = CARDS.filter(c => !out.some(d => d.card.id === c.id) && !(c.sale && out.some(d => d.card.sale)) && weight(c) > 0);
+    if (!pool.length) break;
+    const total = pool.reduce((a, c) => a + weight(c), 0); let r = rand(s) * total, pick = pool[pool.length - 1];
+    for (const c of pool) { r -= weight(c); if (r < 0) { pick = c; break; } }
+    out.push({ card: pick, job: i });
+  }
+  return out;
+}
 
 export function newRun(net, run = {}, seed = 1, { start = 'lasipalatsi' } = {}) {
-  const s = { v: 3, seed, rng: seed >>> 0, run, clock: 0, at: net.nodes.has(start) ? start : [...net.nodes.keys()][0],
-    target: run.target || 3, done: 0, late: 0, score: 0, streak: 0, bestStreak: 0, job: null, offer: null,
-    phase: 'dispatch', deck: [], used: new Set(), halt: null, haltSeen: false, log: [], hop: null, pending: null, results: [] };
-  Object.defineProperty(s, 'best', { value: bestTable(net, run), enumerable: false });
-  // the story deck: the run's own count, moods and places (runs.js), one card a job
-  const places = run.places || null, deck = places ? ENCOUNTERS.filter(c => places.includes(c.where)) : ENCOUNTERS;
-  for (let i = 0; i < (run.encounters ?? 3) && deck.length; i++) {
-    let c = pickWeighted(deck, Math.floor(rand(s) * 65536), run.moods || null), guard = 0;
-    while (s.deck.some(d => d.card.id === c.id) && guard++ < deck.length) c = deck[(deck.indexOf(c) + 1) % deck.length];
-    s.deck.push({ card: c, job: i });
-  }
+  const s = { v: 4, seed, rng: seed >>> 0, run, clock: 0, at: net.nodes.has(start) ? start : [...net.nodes.keys()][0],
+    target: run.target || 3, done: 0, late: 0, sold: 0, trust: 1, score: 0, streak: 0, bestStreak: 0, job: null, offer: null, weather: 'clear',
+    phase: 'dispatch', deck: [], used: new Set(), halt: null, haltSeen: false, log: [], hop: null, pending: null, results: [], seen: [] };
+  // the shift's weather, and the run as the weather makes it: slower walks,
+  // fuller trams — the deadlines are set from THIS, so snow is slow, not unfair
+  s.weather = run.skies?.length ? pickOf(s, run.skies) : 'clear';
+  const W = WEATHER[s.weather] || WEATHER.clear;
+  s.run = { ...run, walkFactor: (run.walkFactor || 1) * W.walk, headway: (run.headway || 1) * W.wait };
+  Object.defineProperty(s, 'best', { value: bestTable(net, s.run), enumerable: false });
+  s.deck = dealDeck(s, run, s.weather);
   // HARD's halted family (runs.js halt): seeded, a tram, from its minute
   if (run.halt) { const fams = [...new Set(net.lines.filter(l => l.mode === 'tram').map(l => l.family))];
     const fam = haltFamily(seed, fams); if (fam) s.halt = { family: fam, from: run.halt.atMin * 60, until: run.halt.atMin * 60 + haltMinutes(seed, run) * 60, recoverJobs: run.halt.recoverJobs, startDone: null, lifted: false }; }
@@ -118,7 +147,8 @@ export function newRun(net, run = {}, seed = 1, { start = 'lasipalatsi' } = {}) 
 export const halted = (s, fam) => !!s.halt && !s.halt.lifted && s.halt.family === fam && s.clock >= s.halt.from && s.clock < s.halt.until;
 
 // A job offer from where the courier stands: a destination a run can carry
-// (EASY: one of the nearer ones), and a parcel from the run's pool.
+// (EASY: one of the nearer ones), a parcel from the run's pool, and what is
+// inside it, which nobody tells you.
 function dispatch(net, s, notTo = null) {
   const from = s.at, best = s.best[from], cands = [...net.nodes.keys()].filter(id => id !== from && id !== notTo && Number.isFinite(best[id]));
   cands.sort((a, b) => best[a] - best[b]);
@@ -126,7 +156,8 @@ function dispatch(net, s, notTo = null) {
   const pick = (pool.length ? pool : cands)[Math.floor(rand(s) * (pool.length || cands.length))];
   const keys = s.run.cargo?.length ? s.run.cargo : Object.keys(CARGO);
   const cargo = keys[Math.floor(rand(s) * keys.length)];
-  s.offer = { to: pick, cargo, best: best[pick] };
+  s.offer = { to: pick, cargo, best: best[pick], contents: pickOf(s, CONTENTS[cargo] || ['something']) };
+  s.offer.fee = Math.round(feeOf(s.offer) * s.trust);   // a sold parcel costs every fee after it (dispatch hears)
   s.phase = 'dispatch';
 }
 
@@ -135,7 +166,8 @@ function dispatch(net, s, notTo = null) {
 // way, to the stop along it that leaves the shortest way on; and the walks.
 // Two are offered — the best, and the best that differs in kind or in where it
 // leaves you — and the cheaper HOP is the left button, so tapping left is not
-// always the right answer.
+// always the right answer. The weather puts stakes on a walk: snow can slip
+// you, rain can soak a paper parcel (ACT1.md §4).
 export function routeOptions(net, s) {
   const to = s.job.to, best = s.best, here = s.at, cands = [];
   const rule = CARGO[s.job.cargo] || {}, allowMetro = !rule.modes || rule.modes.includes('metro'), allowWalk = !rule.heavy;
@@ -161,10 +193,11 @@ export function routeOptions(net, s) {
   // every way out is offered rather than none
   if (cands.some(c => c.progress)) for (let i = cands.length - 1; i >= 0; i--) if (!cands[i].progress) cands.splice(i, 1);
   // price each: a ride waits for its line (drawn from the headway; HARD's rush
-  // fills the first one now and then), a walk is its length
+  // and the snow fill the first one now and then), a walk is its length
+  const fullChance = (s.run.rush === 'max' ? 0.25 : 0) + (s.weather === 'snow' ? 0.15 : 0);
   for (const c of cands) {
     if (c.kind === 'ride') { const h = headwayS(c.line, s.run); let wait = 60 + rand(s) * Math.max(60, h - 60);
-      if (s.run.rush === 'max' && rand(s) < 0.25) { wait += h; c.full = true; }
+      if (fullChance && rand(s) < fullChance) { wait += h; c.full = true; }
       c.wait = wait; c.price = round10(wait + c.ride); }
     else c.price = round10(c.walk);
     c.total = c.price + c.rest;
@@ -176,7 +209,12 @@ export function routeOptions(net, s) {
   // the second is the best that leaves you somewhere else or another way; else
   // another line to the same stop (two lines, two waits, is still a choice)
   const first = uniq[0], second = uniq.find(c => c !== first && (c.kind !== first.kind || c.to !== first.to)) || uniq.find(c => c !== first) || null;
-  return (second ? [first, second] : [first]).sort((a, b) => a.price - b.price);
+  const out = (second ? [first, second] : [first]).sort((a, b) => a.price - b.price);
+  for (const c of out) if (c.kind === 'walk') {
+    if (s.weather === 'snow') c.risk = { odds: 'usually', win: { say: 'Not a single slip. You are basically a local.' }, lose: { time: 90, say: '@slip' } };
+    else if (s.weather === 'rain' && PAPER.has(s.job.cargo)) c.risk = { odds: 'maybe', win: { say: 'The bag holds. The paper stays paper.' }, lose: { pay: 0.7, say: '@soak' } };
+  }
+  return out;
 }
 
 export function optionLabel(net, o) {
@@ -185,29 +223,70 @@ export function optionLabel(net, o) {
   return `${o.line.mode === 'metro' ? 'Metro' : (o.line.family || o.line.label)} to ${net.name(o.to)}`;
 }
 
+// ── the stakes, as the button shows them (ACT1.md §3) ─────────────────────
+const clockOf = sec => `${Math.floor(sec / 60)}:${String(Math.round(sec % 60)).padStart(2, '0')}`;
+export function chips(e = {}) {
+  const out = [];
+  if (e.sell != null) out.push(e.sell > 0 ? `+€${e.sell}` : '€0', 'job gone', `fees ×${SALE_TRUST}`);
+  if (e.pay != null && e.pay !== 1) out.push(`×${+e.pay.toFixed(2)}`);
+  if (e.cash) out.push(e.cash > 0 ? `+€${e.cash}` : `−€${-e.cash}`);
+  if (e.time) out.push(`+${clockOf(e.time)}`);
+  return out;
+}
+// Arrays of chips, one word-group each, so the screen can set (and translate) them one by one.
+export function stakesOf(o) {
+  if (o.risk) { const w = chips(o.risk.win), l = chips(o.risk.lose); return { odds: o.risk.odds, win: w.length ? w : ['fine'], lose: l.length ? l : ['nothing'] }; }
+  const sure = chips({ ...o, time: 0 }); return sure.length ? { sure } : null;   // a sure option's time IS its price
+}
+
 const MOODS_FOR = { dispatch: 'info', halt: 'warning', route: 'info' };
+const eligible = (c, s) => c.options.filter(o => !o.needs || o.needs === s.job?.cargo).slice(0, 2);
 // The card the run is showing now. Every card is the same shape: a mood, one
-// line, and up to two buttons, each with its price in seconds.
+// line, and up to two buttons, each with its price in time and its stakes.
 export function card(net, s) {
   if (s.phase === 'end') return null;
   if (s.phase === 'dispatch') { const o = s.offer;
-    return { kind: 'dispatch', mood: MOODS_FOR.dispatch, text: `${cargoWord(o.cargo)} for ${net.name(o.to)}.`, options: [{ label: 'Take it', price: 0 }, { label: 'Ask for another', price: REROLL_S }] }; }
-  if (s.pending) { const p = s.pending, c = p.card;
-    const opts = c.options.filter(o => !o.needs || o.needs === s.job?.cargo).slice(0, 2);
-    return { kind: 'story', mood: c.mood || 'info', text: c.text, glyph: c.glyph, where: c.where, options: opts.map(o => ({ label: o.label, price: cardSeconds(o) })) }; }
+    return { kind: 'dispatch', mood: MOODS_FOR.dispatch, text: `${cargoWord(o.cargo)} for ${net.name(o.to)}.`, fee: o.fee,
+      options: [{ label: 'Take it', price: 0, stakes: { sure: [`€${o.fee}`] } }, { label: 'Ask for another', price: REROLL_S, stakes: null }] }; }
+  if (s.pending) { const c = s.pending.card;
+    return { kind: 'story', id: c.id, mood: c.mood || 'info', text: c.text, where: c.where, tram: c.tram || null, sale: !!c.sale,
+      options: eligible(c, s).map(o => ({ label: o.label, price: o.time || 0, stakes: stakesOf(o) })) }; }
   if (s.phase === 'halt') { const h = s.halt;
-    return { kind: 'halt', mood: MOODS_FOR.halt, text: `The ${h.family} is halted.`, options: [{ label: 'Find another way', price: 0 }, { label: 'Wait it out', price: round10(Math.max(0, h.until - s.clock)) }] }; }
+    return { kind: 'halt', mood: MOODS_FOR.halt, text: `The ${h.family} is halted.`, options: [{ label: 'Find another way', price: 0, stakes: null }, { label: 'Wait it out', price: round10(Math.max(0, h.until - s.clock)), stakes: null }] }; }
   const opts = s.options || [];
   // nowhere this parcel may go from here (a dead end for its rules): the next
   // one is always a way on, so the card never strands the courier
-  const options = opts.length ? opts.map(o => ({ label: optionLabel(net, o), price: o.price, hop: o })) : [{ label: 'Wait for the next one', price: STUCK_S }];
+  const options = opts.length ? opts.map(o => ({ label: optionLabel(net, o), price: o.price, hop: o, stakes: o.risk ? stakesOf(o) : null })) : [{ label: 'Wait for the next one', price: STUCK_S, stakes: null }];
   return { kind: 'route', mood: MOODS_FOR.route, at: net.name(s.at), text: `${cargoWord(s.job.cargo)} for ${net.name(s.job.to)}.`, options };
 }
 export const cargoWord = c => ({ documents: 'Documents', 'hot food': 'Hot food', parts: 'Parts', fragile: 'Something fragile', equipment: 'Equipment', express: 'An express parcel', 'fresh food': 'Fresh food', 'market goods': 'Market goods' })[c] || 'A parcel';
 
 // ── what a choice does ─────────────────────────────────────────────────────
 // Returns what happened, for the screen to act out: a hop to ride or walk, a
-// delivery, the end. The state is advanced in place.
+// reveal (the line and its chips), a sale, a delivery, the end. The state is
+// advanced in place.
+function say(s, line) {
+  const t = line === '@slip' ? pickOf(s, SLIPS) : line === '@soak' ? pickOf(s, SOAKS) : line || '';
+  return t.replace('{contents}', s.job?.contents || 'something');
+}
+// Apply an outcome; returns the reveal for the screen.
+function apply(net, s, e, how, odds = null) {
+  const r = { say: say(s, e.say), chips: chips(e), how, odds };
+  if (e.reveal && s.job) s.job.known = true;
+  if (e.pay != null && s.job) s.job.mult = Math.round(s.job.mult * e.pay * 1000) / 1000;
+  if (e.cash) s.score = Math.max(0, s.score + e.cash);
+  if (e.time) { s.log.push({ at: s.clock, kind: 'outcome', label: r.say, price: e.time }); advance(s, e.time); }   // the log stays the whole clock
+  if (e.sell != null && s.job) {
+    // the job is gone, and DISPATCH HEARS: every fee after this one is ×0.85 —
+    // without it a sale was free money on any clock with room in it
+    s.score += e.sell; s.sold++; s.streak = 0; s.trust = Math.round(s.trust * SALE_TRUST * 1000) / 1000;
+    s.seen.push({ contents: s.job.contents, how: 'sold' }); r.sold = { contents: s.job.contents, cash: e.sell, trust: s.trust };
+    s.job = null; s.options = null; if (s.phase !== 'end') dispatch(net, s);
+  }
+  return r;
+}
+const roll = (s, o) => { const win = rand(s) < (ODDS[o.risk.odds] ?? 0.5); return { e: win ? o.risk.win : o.risk.lose, how: win ? 'win' : 'lose' }; };
+
 export function choose(net, s, i) {
   const c = card(net, s); if (!c) return { error: 'the run is over' };
   const opt = c.options[i]; if (!opt) return { error: 'no such option' };
@@ -215,11 +294,15 @@ export function choose(net, s, i) {
   s.log.push({ at: s.clock, kind: c.kind, label: opt.label, price: opt.price });
   if (c.kind === 'dispatch') {
     if (i === 1) { advance(s, REROLL_S); if (s.phase !== 'end') dispatch(net, s, s.offer.to); return out; }
-    s.job = { ...s.offer, startedAt: s.clock, limit: Math.round(s.offer.best * GRACE * (s.run.deadline || 1)) }; s.offer = null;
+    s.job = { ...s.offer, startedAt: s.clock, limit: Math.round(s.offer.best * GRACE * (s.run.deadline || 1)), mult: 1, known: false }; s.offer = null;
     return nextMoment(net, s, out, 'stop');
   }
-  if (c.kind === 'story') { const p = s.pending, o = p.card.options.filter(x => !x.needs || x.needs === s.job?.cargo)[i];
-    if (o?.score) s.score += o.score; s.pending = null; advance(s, opt.price);
+  if (c.kind === 'story') { const p = s.pending, o = eligible(p.card, s)[i];
+    s.pending = null; advance(s, opt.price);
+    const { e, how } = o.risk ? roll(s, o) : { e: { ...o, time: 0 }, how: 'sure' };
+    out.reveal = apply(net, s, e, how, o.risk?.odds || null);
+    if (s.phase === 'end') return out;
+    if (out.reveal.sold) return out;                       // the job went with the buyer: the next dispatch is up
     if (p.thenArrive) return arrive(net, s, out);
     return nextMoment(net, s, out, 'stop', true); }
   if (c.kind === 'halt') { s.haltSeen = true; if (i === 1) { advance(s, opt.price); s.halt.lifted = true; }
@@ -227,9 +310,13 @@ export function choose(net, s, i) {
   // a hop (or, with nowhere to go, the wait for one)
   const hop = opt.hop;
   if (!hop) { advance(s, opt.price); return nextMoment(net, s, out, 'stop', true); }
-  s.hop = { kind: hop.kind, from: s.at, to: hop.to, line: hop.line ? { id: hop.line.id, label: hop.line.label, mode: hop.line.mode, family: hop.line.family, sourceId: hop.line.sourceId, nodes: hop.line.nodes, i: hop.i, k: hop.k } : null, price: hop.price, full: !!hop.full };
+  // a tram ride is drawn a model — LOOK ONLY (signed off): it rides the same
+  const model = hop.kind === 'ride' && hop.line.mode === 'tram' ? (() => { let r = rand(s) * 100; for (const t of TRAMS) { r -= t.w; if (r < 0) return t.id; } return TRAMS[0].id; })() : hop.kind === 'ride' ? 'metro' : null;
+  s.hop = { kind: hop.kind, from: s.at, to: hop.to, model, line: hop.line ? { id: hop.line.id, label: hop.line.label, mode: hop.line.mode, family: hop.line.family, sourceId: hop.line.sourceId, nodes: hop.line.nodes, i: hop.i, k: hop.k } : null, price: hop.price, full: !!hop.full };
   out.hop = s.hop; advance(s, hop.price); if (s.phase === 'end') return out;
   s.at = hop.to;
+  // the weather's stakes on a walk land on the way
+  if (hop.risk) { const { e, how } = roll(s, hop); out.reveal = apply(net, s, e, how, hop.risk.odds); if (s.phase === 'end') return out; }
   // a card that happens aboard (or on foot) plays out before the doors open
   const due = dueCard(s, hop.kind === 'walk' ? 'walking' : 'aboard');
   if (due) { s.pending = { card: due.card, thenArrive: true }; s.used.add(due.card.id); out.story = true; return out; }
@@ -239,10 +326,13 @@ export function choose(net, s, i) {
 function arrive(net, s, out) {
   if (s.phase === 'end') return out;
   if (s.at === s.job.to) {
-    const took = s.clock - s.job.startedAt, late = took > s.job.limit, base = 100 + Math.round(s.job.best / 6);
-    if (late) { s.late++; s.streak = 0; s.score += Math.round(base * 0.5); }
-    else { s.streak++; s.bestStreak = Math.max(s.bestStreak, s.streak); s.score += Math.round(base * (1 + 0.25 * Math.min(4, s.streak - 1))); }
-    s.done++; s.results.push(late ? 'late' : 'ok'); out.delivered = { to: s.job.to, late, took };
+    const took = s.clock - s.job.startedAt, late = took > s.job.limit;
+    let pay = s.job.fee;
+    if (late) { s.late++; s.streak = 0; pay *= 0.5; }
+    else { s.streak++; s.bestStreak = Math.max(s.bestStreak, s.streak); pay *= 1 + 0.25 * Math.min(4, s.streak - 1); }
+    pay = Math.max(0, Math.round(pay * s.job.mult));
+    s.score += pay; s.done++; s.results.push(late ? 'late' : 'ok'); s.seen.push({ contents: s.job.contents, how: 'delivered' });
+    out.delivered = { to: s.job.to, late, took, pay, contents: s.job.contents, mult: s.job.mult };
     if (s.halt && s.halt.startDone != null && s.done >= s.halt.startDone + s.halt.recoverJobs) s.halt.lifted = true;
     s.job = null;
     if (s.done >= s.target) { s.phase = 'end'; out.end = true; return out; }
@@ -259,17 +349,18 @@ function nextMoment(net, s, out, phase, skipStory = false) {
   if (s.halt && !s.haltSeen && halted(s, s.halt.family) && (net.at.get(s.at) || []).some(l => l.family === s.halt.family)) { s.phase = 'halt'; return out; }
   if (!skipStory) { const due = dueCard(s, 'stop'); if (due) { s.pending = { card: due.card }; s.used.add(due.card.id); return out; } }
   s.options = routeOptions(net, s);
-  if (!s.options.length) { s.options = []; }
   return out;
 }
 
 // The n-th story card belongs to the n-th job and happens at the first moment
-// of that job whose place is its own (a stop, aboard, on foot).
+// of that job whose place is its own (a stop, aboard, on foot) and whose
+// parcel it wants; a card that needs a job waits until there is one.
 function dueCard(s, place) {
-  return s.deck.find(d => !s.used.has(d.card.id) && d.job <= s.done && (d.card.where === place || d.card.where === 'any')) || null;
+  return s.deck.find(d => !s.used.has(d.card.id) && d.job <= s.done + s.sold && s.job && (d.card.where === place || d.card.where === 'any')
+    && (!d.card.cargo || d.card.cargo.includes(s.job.cargo))) || null;
 }
 
-function advance(s, sec) { s.clock += sec; if (s.clock >= SHIFT_SECONDS) { s.clock = SHIFT_SECONDS; s.phase = 'end'; s.job = s.job; } }
+function advance(s, sec) { s.clock += sec; if (s.clock >= SHIFT_SECONDS) { s.clock = SHIFT_SECONDS; s.phase = 'end'; } }
 
 // ── reading the run ────────────────────────────────────────────────────────
 export const complete = s => s.done >= s.target;

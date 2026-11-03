@@ -13,9 +13,12 @@ v3.0 shipped the frame of it. The bare address is the card journey
 (`js/journey.js` + `js/play.js`), and the real-time game is `?classic`. What
 is next, in order:
 
-1. **A deck written for the journey.** The classic encounters are re-priced
-   for now. The itch bible's CARDS.md story arcs come next: Same Morning, the
-   Inspector, the Other Courier, the Retired Number, the Dispatch arc.
+1. ~~**A deck written for the journey.**~~ Shipped in v3.1 (Act 1, `ACT1.md`):
+   36 Helsinki cards by tone, stakes with the odds in words, buyers and the
+   parcels' contents, the weather, six tram models (look only), and landmarks
+   at twelve key stations. Next for the deck: the itch bible's CARDS.md story
+   arcs (Same Morning, the Inspector, the Other Courier, the Retired Number,
+   the Dispatch arc), and interiors for the old trams.
 2. **The sealed parcel, the rival and the regulars on the journey.** They are
    run-modifiers, so each adds a card and never a screen.
 3. **The daily and the week as journeys.** Today they open the real-time game.
