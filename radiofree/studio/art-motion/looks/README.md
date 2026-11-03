@@ -25,3 +25,17 @@ All are code-drawn (three.js r167 from `clay/vendor`, or canvas 2D) and render t
 - **GL:** the 8-bit scientist is small; the 16-bit runner has stick limbs; the early-3D intro hooks late.
 
 **Next (owner, 3 Nov):** explore textures and VFX. See the GitHub survey below once it lands.
+
+## GitHub survey: textures and VFX (3 Nov, from search summaries; no code downloaded yet)
+
+| candidate | what it adds | licence | fit with our setup | verdict |
+|---|---|---|---|---|
+| **ambientCG / Poly Haven** PBR materials and HDRIs | real moss, bark, asphalt, grass and concrete surfaces (colour, normal, roughness, AO maps) | **CC0** (both sites) | plain JPG/PNG maps loaded by three's TextureLoader; vendor 1K maps, a few MB per material | **shortlist #1**: fixes the "game-like" forest and the plain road and site |
+| **three.quarks** ([github](https://github.com/Alchemist0823/three.quarks/)) | particle VFX engine: dust, falling leaves, sparks, smoke, rain, trails | **MIT** (per its docs) | ES module on npm; vendor one build file; works with stock three.js | **shortlist #2**: leaves and dust for the robot, dust or rain for the convoy |
+| **three-good-godrays** ([github](https://github.com/ameobea/three-good-godrays)) | screen-space raymarched god rays | not confirmed: check the LICENSE file | needs pmndrs/postprocessing alongside our own post.js | maybe: the robot demo already fakes god rays cheaply |
+| **N8AO** ([npm](https://npmjs.com/package/n8ao)) | ambient occlusion pass | not confirmed: check the LICENSE file | standalone N8AOPass | low priority: our post.js already runs GTAO |
+| **three-gpu-pathtracer** ([github](https://github.com/gkjohnson/three-gpu-pathtracer)) | physically based path tracing, for hero frames | **MIT** | needs real GPU throughput; under SwiftShader a single frame would take a very long time | parked: perhaps for a single still, not for films |
+
+**Next step, needs the owner's OK:** download and vendor shortlist #1 (a handful of CC0 materials) and #2 (three.quarks,
+MIT), each with its licence file next to it. Then show before/after stills on the robot and cars demos behind a `?fx=1`
+flag, so the approved looks stay reproducible.
