@@ -8,7 +8,7 @@ let GEO = null;
 export function auraBuild(ctx) {
   const { THREE } = ctx;
   GEO ||= new THREE.RingGeometry(0.82, 1, 40);
-  const mat = new THREE.MeshBasicNodeMaterial({ color: 0xffcc33, transparent: true, opacity: 0.6, side: THREE.DoubleSide, blending: THREE.AdditiveBlending, depthWrite: false });
+  const mat = new THREE.MeshBasicNodeMaterial({ color: 0xffcc33, transparent: true, opacity: 0.6, side: THREE.DoubleSide, depthWrite: false });
   const ring = new THREE.Mesh(GEO, mat);
   ring.rotation.x = -Math.PI / 2;
   ring.visible = false;

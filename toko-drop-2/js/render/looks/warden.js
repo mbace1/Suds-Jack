@@ -46,7 +46,7 @@ export default {
 
     const ringMat = new THREE.MeshBasicNodeMaterial({
       color: R.color, transparent: true, opacity: 0,
-      blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide,
+      depthWrite: false, side: THREE.DoubleSide,
     });
     const ring = new THREE.Mesh(new THREE.RingGeometry(S.aura - R.width, S.aura, R.segments), ringMat);
     ring.rotation.x = -Math.PI / 2;

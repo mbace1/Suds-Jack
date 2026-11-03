@@ -51,7 +51,7 @@ export default {
     // the boss aura: a unit ring (inner 0.82), scaled to 1.7 × the radius each frame
     const auraMat = new THREE.MeshBasicNodeMaterial({
       color: A.color, transparent: true, opacity: A.opacity0,
-      side: THREE.DoubleSide, blending: THREE.AdditiveBlending, depthWrite: false,
+      side: THREE.DoubleSide, depthWrite: false,
     });
     const aura = new THREE.Mesh(new THREE.RingGeometry(A.inner, 1, A.segs), auraMat);
     aura.rotation.x = -Math.PI / 2;

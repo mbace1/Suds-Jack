@@ -8,8 +8,8 @@
 // side. Every number TUNING.scenery.river; the water's own TUNING.worlds.floor.river
 import * as THREE from 'three/webgpu';
 import { Fn, float, vec2, vec3, fract, sin, abs, max, mix, smoothstep, length, atan, uv, clamp, positionWorld, positionGeometry, normalGeometry, normalWorld } from 'three/tsl';
-import { GEL_TIME } from '../gel.js?v=103';
-import { noise, hash, seeded, put, groundPlane, edgeLine, stoneGeometry, bladeClump, lilyPads, DRIFT, motes } from '../kit.js?v=103';
+import { GEL_TIME } from '../gel.js?v=104';
+import { noise, hash, seeded, put, groundPlane, edgeLine, stoneGeometry, bladeClump, lilyPads, DRIFT, motes } from '../kit.js?v=104';
 
 const v3 = (a) => vec3(...a);
 
@@ -117,7 +117,7 @@ export function river(sc, hx, hz) {
   piles.forEach(([x, z, h], i) => { const r = Pl.r[0] + rnd() * (Pl.r[1] - Pl.r[0]); put(pm, i, x, -0.1, z, r, h, r, (rnd() - 0.5) * 0.12, rnd() * 6, (rnd() - 0.5) * 0.12); });
   // the foam round everything standing in the water
   const Fm = V.foam, foamAt = [...piles.map(([x, z]) => [x, z, 0.5]), ...wetStones.map(([x, z, r]) => [x, z, r])];
-  const foamMat = new THREE.MeshBasicNodeMaterial({ transparent: true, depthWrite: false, blending: THREE.AdditiveBlending });
+  const foamMat = new THREE.MeshBasicNodeMaterial({ transparent: true, depthWrite: false });   // v104: foam is white water, not a glow
   foamMat.colorNode = v3(Fm.color);
   foamMat.opacityNode = Fn(() => {
     const d = length(uv().sub(0.5)).mul(2), ph = hash(positionWorld.xz.mul(0.73).floor());

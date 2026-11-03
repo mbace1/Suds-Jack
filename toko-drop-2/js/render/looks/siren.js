@@ -105,7 +105,7 @@ function makeRing(ctx) {
   const { THREE } = ctx, R = ctx.S.look.ring;
   const mat = new THREE.MeshBasicNodeMaterial({
     color: R.color, transparent: true, opacity: 0,
-    blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide,
+    depthWrite: false, side: THREE.DoubleSide,
   });
   const mesh = new THREE.Mesh(new THREE.RingGeometry(R.inner, R.outer, R.segments), mat);
   mesh.rotation.x = -Math.PI / 2;

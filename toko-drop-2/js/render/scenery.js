@@ -46,21 +46,21 @@
 // TUNING.scenery.
 import * as THREE from 'three/webgpu';
 import { Fn, float, vec2, vec3, fract, sin, dot, floor as tfloor, mix, smoothstep, abs, positionWorld, positionLocal, normalWorld, normalView, clamp, max, min, length, step, fwidth, uv, attribute } from 'three/tsl';
-import { GEL_TIME } from './gel.js?v=103';
-import { hash, noise, seeded, motes, phase } from './kit.js?v=103';
-import { SUN_AT } from './sun.js?v=103';
-import { boiler } from './sets/boiler.js?v=103';
-import { river } from './sets/river.js?v=103';
-import { ice } from './sets/ice.js?v=103';
-import { deep } from './sets/deep.js?v=103';
-import { core } from './sets/core.js?v=103';
+import { GEL_TIME } from './gel.js?v=104';
+import { hash, noise, seeded, motes, phase } from './kit.js?v=104';
+import { SUN_AT } from './sun.js?v=104';
+import { boiler } from './sets/boiler.js?v=104';
+import { river } from './sets/river.js?v=104';
+import { ice } from './sets/ice.js?v=104';
+import { deep } from './sets/deep.js?v=104';
+import { core } from './sets/core.js?v=104';
 
 // worlds 5-9 (v72): a set of their own each, built to its brief (render/sets/)
 const SETS = { boiler, river, ice, deep, core };
 
 // the noise, the cracks and the seeded numbers are the kit's (v72: render/kit.js),
 // and the floor still takes them from here
-export { noise, cells } from './kit.js?v=103';
+export { noise, cells } from './kit.js?v=104';
 
 // the storm drain's grate (v65, the owner's world-2 sheet), in its own units
 // (q, its frame's radius 1): x the grate, y a slot, z the frame. Rows of
@@ -520,6 +520,7 @@ export class Scenery {
     const haloMat = new THREE.MeshBasicNodeMaterial({ transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, color: new THREE.Color(...Lp.color) });
     haloMat.opacityNode = normalView.z.max(0).pow(3).mul(Lp.haloGain);   // bright in the middle, gone at the rim
     const halos = this._add(new THREE.InstancedMesh(new THREE.SphereGeometry(Lp.r * Lp.halo, 12, 8), haloMat, lamps.length));
+    halos.visible = false;   // v104 (owner: "No cheap effects like glow"): the bulb lights its pool on the water, and has no halo
     // v77: motes hanging in each lamp's light
     motes(this, lamps.map(([x, z]) => [x, z, C.motes.box, C.motes.box, 0.1]), C.motes);
     lamps.forEach(([x, z], i) => {

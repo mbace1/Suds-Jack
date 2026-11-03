@@ -15,19 +15,19 @@
 // that springs in and fades (splats.js). Views are pooled per species, so a
 // gel's material is built once and reused, never compiled mid-fight.
 import * as THREE from 'three/webgpu';
-import { TUNING } from '../tuning.js?v=103';
+import { TUNING } from '../tuning.js?v=104';
 import * as TSL from 'three/tsl';
-import { gelMaterial, domeGeometry, cubeGeometry, heroGeometry, GEL_TIME } from './gel.js?v=103';
-import { LOOKS } from './looks/index.js?v=103';
-import { styleName, setStyle as setStyleMode, styledBody } from './style.js?v=103';
-import { JellyBody } from './jelly.js?v=103';
-import { Juice } from './juice.js?v=103';
-import { ArenaLight } from './light.js?v=103';
-import { toSdf } from './sdf.js?v=103';
-import { PickupView } from './pickups.js?v=103';
-import { ChallengeView } from './challenge.js?v=103';
-import { Goo } from './goo.js?v=103';
-import { mult as heatMult } from '../sim/heat.js?v=103';
+import { gelMaterial, domeGeometry, cubeGeometry, heroGeometry, GEL_TIME } from './gel.js?v=104';
+import { LOOKS } from './looks/index.js?v=104';
+import { styleName, setStyle as setStyleMode, styledBody } from './style.js?v=104';
+import { JellyBody } from './jelly.js?v=104';
+import { Juice } from './juice.js?v=104';
+import { ArenaLight } from './light.js?v=104';
+import { toSdf } from './sdf.js?v=104';
+import { PickupView } from './pickups.js?v=104';
+import { ChallengeView } from './challenge.js?v=104';
+import { Goo } from './goo.js?v=104';
+import { mult as heatMult } from '../sim/heat.js?v=104';
 
 const T = TUNING;
 const B = T.blob, D = T.death;
@@ -66,7 +66,18 @@ export class Actors {
     this.goo = goo ? this.gooKit : null;
 
     const sphere = new THREE.SphereGeometry(1, 10, 8);
-    this.bullets = new THREE.InstancedMesh(sphere, new THREE.MeshBasicNodeMaterial(), T.bullets.maxHero + T.bullets.maxGel);
+    // v104 (owner: "No cheap effects like glow"): a bullet reads by its OWN shading — a white-hot core, its
+    // colour, a dark rim at its edge — where an additive halo and trail used to carry it (render/juice.js, off).
+    // Its colour rides its own attribute: an instance colour would multiply whatever the shader made of it
+    {
+      const cap = T.bullets.maxHero + T.bullets.maxGel, BL = T.bullets.look, geo = new THREE.SphereGeometry(1, 16, 12);
+      this.bCol = new THREE.InstancedBufferAttribute(new Float32Array(cap * 3), 3).setUsage(THREE.DynamicDrawUsage);
+      geo.setAttribute('bCol', this.bCol);
+      const mat = new THREE.MeshBasicNodeMaterial(), nz = TSL.normalView.z.abs(), bc = TSL.attribute('bCol', 'vec3');
+      const body = TSL.mix(bc.mul(BL.rim[2]), bc, TSL.smoothstep(BL.rim[0], BL.rim[1], nz));
+      mat.colorNode = TSL.mix(body, TSL.vec3(1, 1, 1), TSL.smoothstep(BL.core[0], BL.core[1], nz).mul(BL.core[2]));
+      this.bullets = new THREE.InstancedMesh(geo, mat, cap);
+    }
     // v76: the caustics — light focused through each body onto the floor round its foot
     // (TUNING.light.arena.caustic): an additive quad per body in its colour, a core under
     // it, a shimmering ring of arcs at its edge and a faint glow out to the quad's rim
@@ -85,7 +96,6 @@ export class Actors {
       scene.add(this.caustics);
     }
     this.bullets.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
-    this.bullets.setColorAt(0, new THREE.Color());
     this.bullets.count = 0; this.bullets.frustumCulled = false;
     scene.add(this.bullets);
     // v103: a corpse that bites warns first (sim/world.js plantSeed): a SEED on the corpse, swelling and
@@ -174,8 +184,14 @@ export class Actors {
     const muzzle = new THREE.Mesh(this.geo.eye, new THREE.MeshBasicNodeMaterial({ color: L.muzzle.color, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false }));
     muzzle.visible = false; this.scene.add(muzzle);
     // HEAT (v52): a soft halo on the floor under the hero, warmer and wider as the multiplier climbs
-    const haloMat = new THREE.MeshBasicNodeMaterial({ transparent: true, depthWrite: false, blending: THREE.AdditiveBlending });
-    haloMat.opacityNode = TSL.smoothstep(TSL.float(0.5), TSL.float(0.0), TSL.length(TSL.uv().sub(TSL.vec2(0.5, 0.5)))).pow(TSL.float(1.6));
+    // v104 (owner: "No cheap effects like glow"): a crisp RING on the floor, not an additive glow — the heat's
+    // colour and width say the same as the glow did, and the floor shows through its middle
+    const haloMat = new THREE.MeshBasicNodeMaterial({ transparent: true, depthWrite: false });
+    {
+      const R = T.heat.view.ring, d = TSL.length(TSL.uv().sub(TSL.vec2(0.5, 0.5))), aa = TSL.fwidth(d).mul(1.5);
+      const band = TSL.smoothstep(TSL.float(R.inner).sub(aa), TSL.float(R.inner).add(aa), d).mul(TSL.float(1).sub(TSL.smoothstep(TSL.float(0.5).sub(aa).sub(0.005), TSL.float(0.5).sub(0.005), d)));
+      haloMat.opacityNode = band.mul(TSL.materialOpacity);
+    }
     const halo = new THREE.Mesh(new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2), haloMat);
     halo.visible = false; halo.renderOrder = 1; this.scene.add(halo);
     // 1.x's black oval eyes, facing the last shot. 1.x sat them a little
@@ -523,7 +539,8 @@ export class Actors {
       const c = HV.colors[Math.min(HV.colors.length - 1, hk - 2)], into = m < top ? (w.heat || 0) - (m - 1) : 0, pulse = 0.85 + 0.15 * Math.sin(time * (4 + m));
       hv.halo.position.set(hv.root.position.x, 0.03, hv.root.position.z);
       hv.halo.scale.setScalar(HV.halo.r * 2 * (1 + HV.halo.per * (hk - 2 + into)));
-      hv.halo.material.color.setHex(c).lerp(_white, white).multiplyScalar((HV.halo.alpha + HV.halo.perAlpha * (hk - 2)) * pulse);
+      hv.halo.material.color.setHex(c).lerp(_white, white);
+      hv.halo.material.opacity = Math.min(1, (HV.ring.alpha + HV.ring.perAlpha * (hk - 2)) * pulse);
     }
     if (h.mercy > 0) hv.mat.emissive.setHex(L.flashColor);
     else if (hot) hv.mat.emissive.setHex(HV.colors[Math.min(HV.colors.length - 1, hk - 2)]).lerp(_white, white).multiplyScalar(HV.tint * (hk - 1));
@@ -569,17 +586,18 @@ export class Actors {
     // bullets
     const bm = this.bullets;
     let n = 0;
+    const BD = T.bullets.look.draw;
     for (const bl of w.bullets) {
       const x = bl.px + (bl.x - bl.px) * alpha, z = bl.pz + (bl.z - bl.pz) * alpha;
-      const s = bl.r * (bl.hero ? 1.05 : 1.15);
+      const s = bl.r * (bl.hero ? BD.hero : BD.gel);   // drawn bigger than it hits: what you dodge is never smaller than what hurts
       this._m.makeScale(s, s, s).setPosition(x, BULLET_Y, z);
       bm.setMatrixAt(n, this._m);
-      bm.setColorAt(n, this._c.setHex(bl.color));
+      this._c.setHex(bl.color); this.bCol.setXYZ(n, this._c.r, this._c.g, this._c.b);
       n++;
     }
     bm.count = n;
     bm.instanceMatrix.needsUpdate = true;
-    if (bm.instanceColor) bm.instanceColor.needsUpdate = true;
+    this.bCol.needsUpdate = true;
     // v103: the corpse fire waiting to bite: its seed, and a bar along each line it will fire down
     {
       const V = T.revenge.view, sm = this.seeds, tm = this.ticks, hm = this.heads, M = this._m;

@@ -41,7 +41,7 @@ export default {
     GEO ||= new THREE.BoxGeometry(Lt.width, Lt.thick, 1);
     const tmat = new THREE.MeshBasicNodeMaterial({
       color: Lt.color, transparent: true, opacity: 0,
-      blending: THREE.AdditiveBlending, depthWrite: false,
+      depthWrite: false,
     });
     const tether = new THREE.Mesh(GEO, tmat);
     tether.visible = false;

@@ -20,7 +20,7 @@
 // TUNING.juice.
 import * as THREE from 'three/webgpu';
 import { uv, float, vec2, length, smoothstep, clamp, abs, pow } from 'three/tsl';
-import { TUNING } from '../tuning.js?v=103';
+import { TUNING } from '../tuning.js?v=104';
 
 const T = TUNING, J = T.juice;
 const rand = (a, b) => a + Math.random() * (b - a);
@@ -53,6 +53,7 @@ export class Juice {
   }
 
   onEvent(e, w) {
+    if (!J.on) return;   // v104 (owner: "No cheap effects like glow"): the additive glows are off
     if (e.type === 'hit') {
       // sparks spray back out of the body, away from its centre: thrown into
       // it, half of them were hidden by the jelly they came off
@@ -95,6 +96,7 @@ export class Juice {
   }
 
   sync(w, alpha, bulletY) {
+    if (!J.on) { for (const m of [this.glows, this.streaks, this.rings]) m.count = 0; return; }
     const G = J.bullet;
     let ng = 0, ns = 0;
     // every bullet: a halo round it and a trail behind it. The gels' shots

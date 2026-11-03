@@ -2,7 +2,7 @@
 // with a tail fin that beats faster as it charges; while it lines up, its lane
 // is lit on the floor out to the wall it will hit (the sim's s.lx, lz), and
 // the boss ring is under it.
-import { auraBuild, auraUpdate, auraReset } from './bossaura.js?v=103';
+import { auraBuild, auraUpdate, auraReset } from './bossaura.js?v=104';
 
 export default {
   build(ctx) {
@@ -14,7 +14,7 @@ export default {
     fin.geometry.rotateX(Math.PI / 2); fin.geometry.scale(1.2, 0.25, 1);
     const dorsal = new THREE.Mesh(new THREE.ConeGeometry(0.22, 0.6, 4), finMat);
     const body = new THREE.Group(); body.add(fish, fin, dorsal);
-    const laneMat = new THREE.MeshBasicNodeMaterial({ color: L.lane, transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending });
+    const laneMat = new THREE.MeshBasicNodeMaterial({ color: L.lane, transparent: true, opacity: 0, depthWrite: false });
     const lane = new THREE.Mesh(new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2).translate(0, 0, 0.5), laneMat);
     lane.renderOrder = 2;
     return { body, mat, fish, fin, dorsal, lane, laneMat, laneIn: false, own: true, yaw: 0, ...auraBuild(ctx) };

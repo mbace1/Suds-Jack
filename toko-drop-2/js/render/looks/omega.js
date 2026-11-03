@@ -64,7 +64,7 @@ export default {
     const fx = new THREE.Group();
     const auraMat = new THREE.MeshBasicNodeMaterial({
       color: A.color, transparent: true, opacity: A.opacity0,
-      side: THREE.DoubleSide, blending: THREE.AdditiveBlending, depthWrite: false,
+      side: THREE.DoubleSide, depthWrite: false,
     });
     const aura = new THREE.Mesh(G.aura, auraMat);
     aura.rotation.x = -Math.PI / 2;

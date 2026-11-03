@@ -7,10 +7,10 @@
 // things that work"). The arena is 1.x's, so every 1.x number ports as it is
 // instead of through a rescale. Axes: x across the screen (right +), y up,
 // z toward the bottom of the screen. The arena is centred on the origin.
-import { SPECIES } from './tuning/species/index.js?v=103';
-import WAVES from './tuning/waves.js?v=103';
-import PICKUPS from './tuning/pickups.js?v=103';
-import MUSIC from './tuning/music.js?v=103';
+import { SPECIES } from './tuning/species/index.js?v=104';
+import WAVES from './tuning/waves.js?v=104';
+import PICKUPS from './tuning/pickups.js?v=104';
+import MUSIC from './tuning/music.js?v=104';
 
 export const TUNING = {
   render: {
@@ -31,7 +31,9 @@ export const TUNING = {
   // step after `up.windows` windows in a row under `up.late` %. The step is
   // remembered (toko2.qstep) so a slow phone starts where it ended, and the
   // play record's device line says `q0.72` for a run drawn at a lower step
-  quality: { steps: [1, 0.85, 0.72, 0.6], window: 3, down: { late: 25, sim: 0.9 }, up: { late: 4, windows: 5 } },
+  // v104 (owner: "more HD graphics"): no step under 0.8 — a remembered low step kept a phone that once ran
+  // late at 0.6 of its pixels (1.2 on a 2× cap) for good; a late frame now costs frames, not the picture
+  quality: { steps: [1, 0.9, 0.8], window: 3, down: { late: 25, sim: 0.9 }, up: { late: 4, windows: 5 } },
 
   // 1.x's arena presets (main.js:20-33), picked at the start of each run by
   // the screen's shape. Half sizes.
@@ -522,6 +524,9 @@ export const TUNING = {
     // hero, easing over `tau` s, and at a side shows `edge` m past the floor
     // (the curb, the lawn) — no further
     follow: { tau: 0.22, edge: 2.5 },
+    // v104 (owner, 2026-11-02: "We need a slight zoom in"): in play the camera fits this share of the run's
+    // arena, not all of it, and follows the hero over the rest (main.js viewBox), as it does over a bigger world
+    zoom: 0.88,
     // and the bodies it leaves off screen: an arrow on the edge, `inset` px in
     pips: { inset: 14, max: 40, fade: 0.8, minAlpha: 0.35 },
     searchMin: 5,
@@ -551,6 +556,7 @@ export const TUNING = {
     arena: {
       perMetre: 12, pow: 1.6, cap: 640, burstCap: 64,
       bullet: { hero: { r: 0.9, k: 0.10 }, gel: { r: 1.15, k: 0.16 } },
+      hero: { r: 3.6, k: 0.3, color: 0xfff0dc },   // v104: the light the hero carries — a pool on the floor round it, not a glow
       burst: {
         kill: { r: 4.0, k: 1.4, life: 0.32, big: 1.6, boss: 2.4 },   // a kill; a big or boss kill multiplies its strength (and its reach by the root)
         dash: { r: 4.5, k: 1.1, life: 0.3 },                          // the dash boom
@@ -911,6 +917,10 @@ export const TUNING = {
     heroDamage: 1,
     gelSpeed: 7,            // 1.x ENEMY_BULLET_SPEED; never escalates with the wave
     gelRadius: 0.15,
+    // v104 (owner: "No cheap effects like glow"): how a bullet looks without its halo — drawn `draw` × its
+    // radius (bigger than it hits), white toward its middle (`core`: from, to, how white) and darker at its
+    // edge (`rim`: from, to, how dark), so it reads crisp over any floor
+    look: { draw: { hero: 1.25, gel: 1.6 }, core: [0.55, 0.92, 0.8], rim: [0.08, 0.38, 0.32] },
     life: 4,
     maxHero: 200,           // separate pools, so a dense field never silences your gun
     maxGel: 300,            // 1.x's shared pool size
@@ -947,7 +957,8 @@ export const TUNING = {
     // the level; every kill's voice up `pitch` a level; a chime as a level is
     // crossed, a fall when a hit throws it away. Past ×8 (WHITE HEAT, v60) the
     // halo stops growing, and it and the tint go `white` of the way to white by the ceiling
-    view: { colors: [0xffc040, 0xffa030, 0xff8028, 0xff6020, 0xff4a20, 0xff3020, 0xff2050], halo: { r: 1.9, per: 0.22, alpha: 0.32, perAlpha: 0.05 }, tint: 0.07, white: 0.85 },
+    view: { colors: [0xffc040, 0xffa030, 0xff8028, 0xff6020, 0xff4a20, 0xff3020, 0xff2050], halo: { r: 1.9, per: 0.22, alpha: 0.32, perAlpha: 0.05 }, tint: 0.07, white: 0.85,
+            ring: { inner: 0.465, alpha: 0.5, perAlpha: 0.06 } },   // v104: the halo is a crisp ring, `inner`..0.5 of its quad (owner: no glow)
     sound: { pitch: 0.05 },
   },
 
@@ -1280,6 +1291,10 @@ export const TUNING = {
   // bloom). `white` lifts a glow toward white at its hot core; alpha is its
   // strength. The gels' shots glow harder than yours: they are what you read.
   juice: {
+    // v104 (owner, 2026-11-02: "No cheap effects like glow"): OFF. A bullet's halo and trail, a hit's sparks,
+    // a kill's flash and ring were additive quads; a bullet now reads by its own shading (`bullets.look`), a
+    // hit and a kill by their goo, and the light they throw is the floor's (render/light.js), as light is
+    on: false,
     glowCap: 600, streakCap: 760, ringCap: 48, glowPow: 1.3,   // a glow's falloff from its centre (1 = a cone; higher = tighter)
     bullet: {
       hero: { halo: 5.0, haloAlpha: 0.42, trail: 0.03, trailMax: 0.9, width: 1.6, trailAlpha: 0.5, white: 0.35 },   // halo/width × the bullet's radius; trail = seconds of flight behind it

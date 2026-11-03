@@ -27,9 +27,9 @@
 // go through the actors' own chunks.
 import * as THREE from 'three/webgpu';
 import { texture } from 'three/tsl';
-import { TUNING } from '../tuning.js?v=103';
-import { itemLook, gateLook, glyphOf, colorOf } from '../sim/pickups.js?v=103';
-import { t as say } from '../ui.js?v=103';
+import { TUNING } from '../tuning.js?v=104';
+import { itemLook, gateLook, glyphOf, colorOf } from '../sim/pickups.js?v=104';
+import { t as say } from '../ui.js?v=104';
 
 const T = TUNING, P = T.pickups, G = P.gate, C = P.convoy, B = P.bounty;
 const POOLS = 96;   // pools of light a frame: the drops, the beams, the moths
@@ -107,7 +107,7 @@ export class PickupView {
     // the bounty's ring and its countdown
     const R = B.ring;
     this.ring = new THREE.Mesh(new THREE.RingGeometry(R.inner, R.outer, R.segments).rotateX(-Math.PI / 2),
-      new THREE.MeshBasicNodeMaterial({ color: R.color, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide }));
+      new THREE.MeshBasicNodeMaterial({ color: R.color, transparent: true, depthWrite: false, side: THREE.DoubleSide }));   // v104: drawn, not added (no glow)
     this.ring.position.y = R.y; this.ring.visible = false; this.ring.renderOrder = 1;
     this.bountyLabel = sprite(6);
     this.ping = sprite(6); this.pingId = null; this.pingT = 0;
@@ -261,7 +261,8 @@ export class PickupView {
       v.root.visible = true; v.root.position.set(0, 0, 0); v.root.scale.setScalar(1);
       v.p1.position.set(x + dx, G.post.h / 2, z + dz); v.p2.position.set(x - dx, G.post.h / 2, z - dz);
       // the beam runs post to post, along (−sin a, cos a): three's +x turned by −(a + π/2) (main.js:1709-1712)
-      for (const m of [v.laser, v.glow]) { m.position.set(x, G.laser.y, z); m.rotation.y = -(g.angle + Math.PI / 2); m.visible = g.alive; }
+      // v104 (owner: "No cheap effects like glow"): the laser alone; its additive glow box stays dark
+      for (const m of [v.laser, v.glow]) { m.position.set(x, G.laser.y, z); m.rotation.y = -(g.angle + Math.PI / 2); m.visible = g.alive && m !== v.glow; }
       v.laserMat.color.setHex(look.color); v.glowMat.color.setHex(look.color);
       v.laserMat.opacity = look.laser; v.glowMat.opacity = look.glow;
       v.postMat.opacity = look.fade;

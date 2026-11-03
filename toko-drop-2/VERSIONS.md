@@ -19,6 +19,19 @@
     Never `--no-verify`.
 -->
 
+## v104 — 2026-11-02
+**A slight zoom-in, and light instead of glow (owner: "We need a slight zoom in and more HD graphics and light. No cheap effects like glow")**
+- THE ZOOM: in play the camera fits 88% of the run's arena (`camera.zoom`) and follows the hero over the rest, as it has always done over a world bigger than the screen — the bodies a little bigger on a phone everywhere, world 1 included, with the off-screen arrows when something is past the edge. The title still shows the whole floor; a run refits as it starts (the fit needed the run's world, which world 1 never refitted to).
+- NO GLOW, read as light: the additive glows go — every bullet's halo and trail, a hit's sparks, a kill's flash and its ring on the floor (render/juice.js, `juice.on`), the gates' glow boxes, the hero's HEAT halo, the cistern lamps' halos. Kept, because they are light falling on something: the floor's light map (a pool under every bullet, a kill's burst), the cistern's shafts, the caustics under the gels.
+- A BULLET READS BY ITS OWN SHADING now: a white-hot core, its colour, a darker rim at its edge, drawn a little bigger than it hits (`bullets.look`: a gel's ×1.6, yours ×1.25) — crisp over any floor, and never smaller than what hurts.
+- THE HEAT IS A RING: a crisp ring on the floor round the hero, its colour and width the heat's as the glow's were, the floor showing through its middle.
+- THE HERO CARRIES A LIGHT: a wide warm pool on the floor round it (`light.arena.hero`), the floor lit as a bullet lights it.
+- AURAS ARE DRAWN, not added: the WARDEN's shield, the MAGNA's field, the SIREN's call, the SHEPHERD's tether, the bosses' rings, a BAMBU's orb and a PIKE's lane in normal blending — the same shapes and reads, no glow; the river's foam is white water.
+- HD: the picture never steps below 0.8 of its pixels (`quality.steps` 1 / 0.9 / 0.8, was down to 0.6). A step is remembered, so a phone that ran late once was kept at 0.6 — 1.2 pixels a point on a 2× cap — for good; a late frame now costs frames, not the picture.
+- Cache tokens `?v=103` → `?v=104`; HUD label → `2.0 · v104`
+
+---
+
 ## v103 — 2026-11-02
 **HARDCADE's corpse fire warns first and aims where you stood (owner: "Revenge bullets on Hardcade ... needs certain predictability to stay fair")**
 - What was unpredictable: a corpse bloomed the step it died, from its middle, with no warning; a RING's turn was rolled at random; a point-blank kill (a dash through it) put the bloom on top of you before it could be seen; and whether a corpse fired at all hung on how many corpse bullets were already out, which nothing showed.

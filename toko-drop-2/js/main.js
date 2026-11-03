@@ -7,34 +7,34 @@
 // The rules live in sim/ and run on a fixed step; this file feeds them input,
 // hands their events to the view and the sound, and draws in between steps.
 import * as THREE from 'three/webgpu';
-import { TUNING } from './tuning.js?v=103';
-import { buildFloor } from './render/floor.js?v=103';
-import { fitCamera, screenToWorld, screenDown } from './render/view.js?v=103';
-import * as worldsSim from './sim/worlds.js?v=103';
-import { shapeAt as shiftShape } from './sim/floorshift.js?v=103';
-import * as reshapeSim from './sim/reshape.js?v=103';
-import { Scenery } from './render/scenery.js?v=103';
-import { DRIFT } from './render/kit.js?v=103';
-import { Transit } from './render/transit.js?v=103';
-import { Splats } from './render/splats.js?v=103';
-import { Actors } from './render/actors.js?v=103';
-import { GEL_TIME } from './render/gel.js?v=103';
-import { studioEnvironment } from './render/env.js?v=103';
-import { Specimen } from './render/specimen.js?v=103';
-import { createWorld, step, api as simApi } from './sim/world.js?v=103';
-import { stage as stagePk } from './sim/pickups.js?v=103';
-import { Input } from './input.js?v=103';
-import { UI, t, timeText, LANGS, getLang, setLang, goalText, bossName } from './ui.js?v=103';
-import { Announcer } from './announcer.js?v=103';
-import { rooms as campaignRooms, isOpen as roomOpen, better as betterGrade } from './sim/director/campaign.js?v=103';
-import { levelShape, slots as regionSlots } from './sim/shape.js?v=103';
-import { Sound } from './audio.js?v=103';
-import { Music, worldWant, cueFor, renderMusicWav } from './music.js?v=103';
-import { Intro, CUES as INTRO } from './intro/intro.js?v=103';
-import { scheduleIntroSfx, renderIntroSfxWav } from './intro/sfx.js?v=103';
-import { Readout } from './readout.js?v=103';
-import { Meter, device, Quality } from './meter.js?v=103';
-import * as record from './record.js?v=103';
+import { TUNING } from './tuning.js?v=104';
+import { buildFloor } from './render/floor.js?v=104';
+import { fitCamera, screenToWorld, screenDown } from './render/view.js?v=104';
+import * as worldsSim from './sim/worlds.js?v=104';
+import { shapeAt as shiftShape } from './sim/floorshift.js?v=104';
+import * as reshapeSim from './sim/reshape.js?v=104';
+import { Scenery } from './render/scenery.js?v=104';
+import { DRIFT } from './render/kit.js?v=104';
+import { Transit } from './render/transit.js?v=104';
+import { Splats } from './render/splats.js?v=104';
+import { Actors } from './render/actors.js?v=104';
+import { GEL_TIME } from './render/gel.js?v=104';
+import { studioEnvironment } from './render/env.js?v=104';
+import { Specimen } from './render/specimen.js?v=104';
+import { createWorld, step, api as simApi } from './sim/world.js?v=104';
+import { stage as stagePk } from './sim/pickups.js?v=104';
+import { Input } from './input.js?v=104';
+import { UI, t, timeText, LANGS, getLang, setLang, goalText, bossName } from './ui.js?v=104';
+import { Announcer } from './announcer.js?v=104';
+import { rooms as campaignRooms, isOpen as roomOpen, better as betterGrade } from './sim/director/campaign.js?v=104';
+import { levelShape, slots as regionSlots } from './sim/shape.js?v=104';
+import { Sound } from './audio.js?v=104';
+import { Music, worldWant, cueFor, renderMusicWav } from './music.js?v=104';
+import { Intro, CUES as INTRO } from './intro/intro.js?v=104';
+import { scheduleIntroSfx, renderIntroSfxWav } from './intro/sfx.js?v=104';
+import { Readout } from './readout.js?v=104';
+import { Meter, device, Quality } from './meter.js?v=104';
+import * as record from './record.js?v=104';
 
 const T = TUNING;
 const params = new URLSearchParams(location.search);
@@ -221,10 +221,12 @@ let fitHx = 0, fitHz = 0;   // the walls the camera was last fitted to
 // what the camera fits: the whole arena, or on a bigger world's floor, a
 // box the size of the run's own 1.x arena, which it then carries round
 // after the hero (camAt) — so the bodies are the size they were in world 1
+// v104 (owner: "We need a slight zoom in"): the box is the run's arena × `camera.zoom`, so in play the
+// camera sits a little closer everywhere and follows the hero over world 1's floor as over a bigger one
 function viewBox() {
-  const A = T.arena[arenaName];
-  if (!world || (world.hx <= A.hx + 1e-6 && world.hz <= A.hz + 1e-6)) return null;
-  return new THREE.Box3(new THREE.Vector3(-A.hx, 0, -A.hz), new THREE.Vector3(A.hx, T.floor.railHeight, A.hz));
+  const A = T.arena[arenaName], Z = T.camera.zoom ?? 1, zx = A.hx * Z, zz = A.hz * Z;
+  if (!world || (world.hx <= zx + 1e-6 && world.hz <= zz + 1e-6)) return null;
+  return new THREE.Box3(new THREE.Vector3(-zx, 0, -zz), new THREE.Vector3(zx, T.floor.railHeight, zz));
 }
 
 function resize() {
@@ -292,7 +294,7 @@ function follow(dt, a) {
   // end in any perspective view, which is where the world's surround stands,
   // so that side keeps the old rule. A floor shorter than the screen that way
   // stays centred
-  const [dx, dz] = screenDown(turn), ox = world.hx - A.hx + F.edge, oz = world.hz - A.hz + F.edge;
+  const Z = T.camera.zoom ?? 1, [dx, dz] = screenDown(turn), ox = world.hx - A.hx * Z + F.edge, oz = world.hz - A.hz * Z + F.edge;
   const side = (lo, hi, oLo, oHi, upLo, upHi) => { if (!seen.ok) return [oLo, oHi]; const a = upLo ? oLo : lo, b = upHi ? oHi : hi; return a > b ? [(a + b) / 2, (a + b) / 2] : [a, b]; };
   const [x0, x1] = side(-world.hx - F.edge - seen.x0, world.hx + F.edge - seen.x1, -ox, ox, dx === 1, dx === -1);
   const [z0, z1] = side(-world.hz - F.edge - seen.z0, world.hz + F.edge - seen.z1, -oz, oz, dz === 1, dz === -1);
@@ -500,9 +502,9 @@ const specimen = new Specimen(T, actors, scene.environment);
 // menu). It takes effect at run start; the menu also redraws the world left
 // behind the title in the new style. The HUD label says ' · sdf' while on.
 const GELS = ['classic', 'sdf'];
-import { STYLES } from './render/style.js?v=103';
-import { Lens } from './render/lens.js?v=103';
-import { setSceneSun } from './render/sun.js?v=103';
+import { STYLES } from './render/style.js?v=104';
+import { Lens } from './render/lens.js?v=104';
+import { setSceneSun } from './render/sun.js?v=104';
 let urlGels = GELS.includes(params.get('gels')) ? params.get('gels') : null;
 const gels = () => urlGels ?? (GELS.includes(store.str('toko2.gels')) ? store.str('toko2.gels') : 'classic');
 // The LENS switch (render/lens.js, v94): NONE or TILT-SHIFT, localStorage toko2.lens; ?lens=tilt|none for a link
@@ -615,6 +617,7 @@ function start(m, { intro: asked = false, room = null, resume = null } = {}) {
   if (world.room) useRoom(world);
   else if (world.world > 1) useWorld(world.world, world.hx, world.hz);
   if (world.shapeT) useSurvival();
+  resize();   // v104: fitted to the run (the zoomed view box needs the world: main.js viewBox), not to the title's arena
   splats.clear(); actors.reset(); trauma = 0; transit.reset(floor);
   acc = 0; pendingDash = false;
   sound.unlock();
@@ -648,7 +651,7 @@ const campaignProgress = (hard = false) => { try { return JSON.parse(store.str(h
 let lastRoom = null;   // AGAIN replays it
 const levels = new Map();
 async function loadLevel(id) {
-  if (!levels.has(id)) levels.set(id, fetch(new URL(`../levels/${id}.json?v=103`, import.meta.url)).then((r) => { if (!r.ok) throw new Error(`levels/${id}.json ${r.status}`); return r.json(); }));
+  if (!levels.has(id)) levels.set(id, fetch(new URL(`../levels/${id}.json?v=104`, import.meta.url)).then((r) => { if (!r.ok) throw new Error(`levels/${id}.json ${r.status}`); return r.json(); }));
   return levels.get(id);
 }
 // the list the room screen draws: worlds, their rooms, open or not, best grades

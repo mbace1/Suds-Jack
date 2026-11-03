@@ -83,7 +83,7 @@ export default {
     body.updateMatrixWorld = function (force) { dying(this.userData.view); base.call(this, force); };
 
     const orb = new THREE.Mesh(G.orb, new THREE.MeshBasicNodeMaterial({
-      color: S.bulletColor, transparent: true, opacity: L.orb.opacity, blending: THREE.AdditiveBlending, depthWrite: false,
+      color: S.bulletColor, transparent: true, opacity: L.orb.opacity, depthWrite: false,
     }));
     orb.visible = false;
     body.add(orb);
