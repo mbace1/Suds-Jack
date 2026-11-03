@@ -1,5 +1,40 @@
 # Toko Move — versions
 
+## v3.3 — 2026-11-03
+
+**THE OLD TRAMS FROM INSIDE** — step 3 of the Act 1 ship plan. v3.1 drew six
+tram models at the stop (look only, ACT1.md §6), and then every one of them
+was the same modern car inside. Now the museum tram is varnished wood with
+slatted benches, brass poles, leather straps and a bell rope along the
+ceiling; the Nr I and Nr II are the 1970s inside as well as out — orange
+ribbed vinyl, beige laminate, chrome. The Artic, the Variotram and the
+Nr II+ keep the car as painted. They still ride exactly the same.
+
+- `art/minimal-metro-look/make_interiors.py` makes them from the plate the
+  game already ships, so they cannot drift from it: the plate is flat
+  vector, so each colour family (seat, wall, pole, frame) is a handful of
+  tones, and each is moved to its target with its shading kept.
+- Two traps, both found by looking at a render, not by a check: the
+  antialiased seam where a blue seat meets a cream wall belongs to neither
+  family and came out as a white fringe round every seat (and the 1px
+  highlight along each seat back with it); and part of the seat was cut
+  WITH the riders, so blue cushion showed under them in a wooden car. The
+  people and courier layers are moved too, by a strict test, since the
+  courier's navy jacket is the seat's hue (it is more saturated).
+- And one a colour test cannot solve: where the seat shows through the gap
+  between the courier's knees it is LIT, and lit seat is exactly the
+  jacket's blue. Shape solves it: the jacket is a few large patches of blue
+  and the gap a small one. The first cut kept only the largest patch and
+  turned half the jacket brown (the strap and the shirt cut it in two); the
+  second kept the gap blue, because the seat pixels the strict test had
+  just moved were the bridge joining it to the jacket. Patches are found
+  after the strict test now, and only the small ones move.
+- `play.js` picks the car from the hop's model; the night car stays the
+  night car. Six new layers per format, about 570 KB in all.
+
+Gate: `test/play.cjs` plays seed 1197's EASY, which rides the museum tram
+and then an Nr II, and reads the car layer on screen for each (no 404s).
+
 ## v3.2 — 2026-11-03
 
 **SOUND FOR THE JOURNEY** — step 2 of the Act 1 ship plan (`ROADMAP.md`;

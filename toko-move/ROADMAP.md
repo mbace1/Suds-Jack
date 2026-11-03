@@ -30,7 +30,7 @@ and gated, each deployed before the next starts.
    kept mute): a tram bell when it pulls in, the ride, a card dealt, the
    stamp, euros counting up, a risk landing or not, a sale, the museum tram,
    quiet weather beds (rain, snow wind, night), and the end of a run.
-3. **v3.3 · The old trams from inside.** One interior serves all six models
+3. ~~**v3.3 · The old trams from inside.**~~ Shipped in v3.3. One interior serves all six models
    today; Nr I, Nr II and the museum tram get their own (wood, brass, the
    bell rope), the newer ones share theirs. Look only, like the outside.
 4. **v3.4 · Story arcs.** The itch bible's CARDS.md arcs (Same Morning, the
