@@ -7,7 +7,8 @@ const s = http.createServer((req, res) => { let p = path.join(ROOT, decodeURICom
 let pass=0,fail=0; const ok=(n,c,d)=>{c?(pass++,console.log('  ok   '+n)):(fail++,console.log('  FAIL '+n+(d?' → '+d:'')));};
 const PHONE={width:390,height:780};
 s.listen(0,'127.0.0.1',async()=>{const base='http://127.0.0.1:'+s.address().port,b=await chromium.launch(),p=await b.newPage({viewport:PHONE}),errs=[];p.on('pageerror',e=>errs.push('pageerror: '+e.message));p.on('console',m=>{if(m.type()==='error')errs.push('console: '+m.text());});
- await p.goto(base+'/toko-move/'); await p.waitForTimeout(1000);
+ // since Toko Move v3.0 the bare address is the card journey; the real-time flow game is ?classic
+ await p.goto(base+'/toko-move/?classic'); await p.waitForTimeout(1000);
  ok('boots with no errors',errs.length===0,errs.slice(0,2).join(' | '));
  ok('delivery handle is exposed',await p.evaluate(()=>!!window.__tm?.challenge));
  ok('real Helsinki graph is active',await p.evaluate(()=>{const ids=new Set([...window.__tm.flow.graph.nodes.keys()]),city=window.__tm.city;return ['pasila','ooppera','hakaniemi','kamppi','rautatientori','sornainen','kalasatama','kauppatori'].every(x=>ids.has(x))&&city?.source?.exactGeometry===true&&city.nodes.every(n=>Number.isFinite(n.lat)&&Number.isFinite(n.lon)&&n.hslStopId);}));
