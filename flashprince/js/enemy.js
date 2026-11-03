@@ -77,7 +77,8 @@ export class Sentry {
         }
         break;
       case 'hit':
-        if (this.f >= 18) this.go('aim');
+        // shot from behind, he comes round to whoever shot him
+        if (this.f >= 18) { if (!hero.dead) this.faceHero(hero); this.go('aim'); }
         break;
     }
     // touching one is not fatal — his gun is the threat, not his body
