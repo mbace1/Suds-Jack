@@ -13,9 +13,9 @@
 //   ball     the driveway's (v111): a beach ball in six panels and two white caps, rolling the way it goes
 // Reads the world, never writes it. Every number is TUNING.posts (sim) and the look's own below.
 import * as THREE from 'three/webgpu';
-import { Fn, float, vec2, vec3, smoothstep, positionWorld } from 'three/tsl';
-import { TUNING } from '../tuning.js?v=112';
-import { noise } from './kit.js?v=112';
+import { Fn, float, vec2, vec3, smoothstep, mix, positionWorld, positionLocal, normalWorld } from 'three/tsl';
+import { TUNING } from '../tuning.js?v=113';
+import { noise } from './kit.js?v=113';
 
 const T = TUNING;
 const std = (color, rough = 0.6, metal = 0, extra = {}) => new THREE.MeshStandardNodeMaterial({ color, roughness: rough, metalness: metal, ...extra });
@@ -54,7 +54,7 @@ function build(kind) {
     const jag = (a) => 0.2 * Math.sin(3 * a + 0.7) + 0.11 * Math.sin(7 * a + 2.1) + 0.05 * Math.sin(13 * a + 0.4);
     for (let i = 0; i < pos.count; i++) {
       const x = pos.getX(i), y = pos.getY(i), z = pos.getZ(i), a = Math.atan2(z, x), rim = Math.hypot(x, z) > 0.01;
-      if (y > H / 2 - 1e-6) pos.setY(i, rim ? y + jag(a) : y - 0.12);
+      if (y > H / 2 - 1e-6) pos.setY(i, rim ? y + jag(a) : y - 0.04);
       const k = rim ? 1 - 0.07 * (Math.cos(a * 12) * 0.5 + 0.5) : 1;
       pos.setX(i, x * k); pos.setZ(i, z * k);
     }
@@ -62,6 +62,10 @@ function build(kind) {
     add(new THREE.CylinderGeometry(1, 1.04, 0.3, 8).translate(0, 0.15, 0), step).rotation.y = Math.PI / 8;
     add(new THREE.CylinderGeometry(0.84, 0.88, 0.16, 8).translate(0, 0.38, 0), step).rotation.y = Math.PI / 8;
     add(shaft, [stone, fresh, stone]);   // CylinderGeometry's groups: the side, the top (the break), the bottom
+    // v113: rubble lying in the break, so its middle reads as broken stone rather than as a pinwheel of cut faces
+    [[0.16, 0.1, 0.17], [-0.2, -0.06, 0.14], [0.03, -0.24, 0.11], [-0.05, 0.27, 0.09]].forEach(([x, z, r], k) => {
+      const m = add(new THREE.DodecahedronGeometry(r, 0), fresh, 0.46 + H - 0.02 + r * 0.5, 1, 0.8, 1); m.position.x = x; m.position.z = z; m.rotation.set(k * 0.9, k * 1.3, k * 0.4);
+    });
   } else if (kind === 'drum') {
     const copper = std(0xd07a42, 0.34, 0.35), band = std(0x3f342c, 0.5, 0.5), brass = std(0xe2bb52, 0.28, 0.45);
     add(new THREE.CylinderGeometry(1, 1, 1.5, 32).translate(0, 0.75, 0), copper);
@@ -77,7 +81,18 @@ function build(kind) {
     // a hand-cut chunk of old blue ice, faceted (flat-shaded, so every cut face catches the light on its own), its
     // heart a deeper blue showing through, two shards broken off beside it. A deep enough blue to stand out on the
     // pale sheet: v108's first cut was the sheet's own colour, a little see-through, and all but vanished on it
+    // v113: and read as ICE, not blue plastic — every face that looks up is frosted pale where the sun catches it,
+    // the sides deepen toward the floor, and a little snow has drifted round its foot (its sides stay a deep blue,
+    // so it still stands out on the pale sheet from above)
     const ice = phys(0x3f93dc, { roughness: 0.05, transparent: true, opacity: 0.9, flatShading: true }), deep = phys(0x1a56a0, { roughness: 0.06, flatShading: true });
+    ice.colorNode = Fn(() => {
+      const side = mix(vec3(0.03, 0.2, 0.52), vec3(0.16, 0.45, 0.78), smoothstep(0.0, 1.2, positionLocal.y));
+      return mix(side, vec3(0.62, 0.84, 0.97), smoothstep(0.5, 0.9, normalWorld.y).mul(0.85));
+    })();
+    const snow = std(0xf4f8ff, 0.85, 0, { flatShading: true });
+    [[0.9, 0.05, 0.2, 0.34], [0.55, 0.06, -0.85, 0.3], [-0.95, 0.05, 0.1, 0.32], [-0.35, 0.05, 0.9, 0.26], [0.15, 0.04, -0.98, 0.2]].forEach(([x, y, z, r], k) => {
+      const m = add(new THREE.DodecahedronGeometry(r, 0), snow, y, 1.3, 0.32, 1); m.position.x = x; m.position.z = z; m.rotation.y = k * 1.7;
+    });
     const cut = (w, h, d, seed) => {
       const g2 = new THREE.BoxGeometry(w, h, d, 2, 2, 2).toNonIndexed(), cp = g2.attributes.position;
       const key = (x, y, z) => `${x.toFixed(3)},${y.toFixed(3)},${z.toFixed(3)}`, off = new Map();
@@ -135,16 +150,32 @@ function build(kind) {
 }
 
 // v110: a model folded to one mesh per material — its parts baked where they stand (a coral was sixteen draws, a
-// ram fifteen; on a phone a draw is the cost, not a triangle). A part drawn with several materials stays whole
+// ram fifteen; on a phone a draw is the cost, not a triangle)
 function byMaterial(g) {
   g.updateMatrixWorld(true);
-  const sets = new Map(), whole = [], out = new THREE.Group();
-  g.traverse((o) => { if (!o.isMesh) return; if (Array.isArray(o.material)) whole.push(o); else { if (!sets.has(o.material)) sets.set(o.material, []); sets.get(o.material).push(o); } });
+  const sets = new Map(), out = new THREE.Group();
   // an unindexed geometry is cloned, never converted (toNonIndexed() hands back the geometry itself, and baking a
   // part into it would move the shared original)
   const baked = (m) => (m.geometry.index ? m.geometry.toNonIndexed() : m.geometry.clone()).applyMatrix4(m.matrixWorld);
-  for (const [mat, ms] of sets) {
-    const parts = ms.map(baked), geo = new THREE.BufferGeometry();
+  const put = (mat, geo) => { if (!sets.has(mat)) sets.set(mat, []); sets.get(mat).push(geo); };
+  g.traverse((o) => {
+    if (!o.isMesh) return;
+    if (!Array.isArray(o.material)) { put(o.material, baked(o)); return; }
+    // v113: a part drawn with several materials (the pillar's shaft: its side, its break, its foot) is cut along
+    // its groups and each piece goes in with its material, so it costs no draw of its own
+    const b = baked(o);
+    for (const gr of b.groups) {
+      const piece = new THREE.BufferGeometry();
+      for (const name of ['position', 'normal', 'uv']) {
+        const A = b.attributes[name];
+        if (A) piece.setAttribute(name, new THREE.BufferAttribute(A.array.slice(gr.start * A.itemSize, (gr.start + gr.count) * A.itemSize), A.itemSize));
+      }
+      put(o.material[gr.materialIndex], piece);
+    }
+    b.dispose();
+  });
+  for (const [mat, parts] of sets) {
+    const geo = new THREE.BufferGeometry();
     for (const name of ['position', 'normal', 'uv']) {
       if (!parts.every((q) => q.attributes[name])) continue;
       const n = parts.reduce((a, q) => a + q.attributes[name].array.length, 0), arr = new Float32Array(n);
@@ -155,7 +186,6 @@ function byMaterial(g) {
     parts.forEach((q) => q.dispose());
     out.add(new THREE.Mesh(geo, mat));
   }
-  for (const m of whole) { const c = new THREE.Mesh(m.geometry.clone().applyMatrix4(m.matrixWorld), m.material); out.add(c); }
   out.traverse((o) => { if (o.isMesh) { o.castShadow = false; o.receiveShadow = false; } });
   return out;
 }

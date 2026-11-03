@@ -19,6 +19,16 @@
     Never `--no-verify`.
 -->
 
+## v113 — 2026-11-03
+**Polish: the ice reads as ice, the cistern's broken columns as broken stone, and the columns cost less to draw**
+- THE ICE'S BLOCKS (render/posts.js): they read as ice, not blue plastic — every face that looks up is frosted pale where the sun catches it, the sides deepen toward the floor, and a little snow has drifted round each one's foot. Their sides stay the deep blue v109 gave them, so they still stand out on the pale sheet from above.
+- THE CISTERN'S COLUMNS: the middle of a break lies flatter, with rubble lying in it, so it reads as broken stone rather than as a pinwheel of cut faces.
+- FEWER DRAWS: a part drawn with several materials (a column's shaft: its side, its break, its foot) is cut along its groups and folded in with the rest of its model (render/posts.js `byMaterial`): a column is three draws where it was four, the cistern's floor twelve where it was sixteen.
+- test/smoke.mjs: the floor's colour check reads the median of nine patches spread over the lower left of the floor — a big yellow cube had covered all four of v109's close ones, and taking the darkest instead let a patch past the floor's edge stand for the floor.
+- Cache tokens `?v=112` → `?v=113`; HUD label → `2.0 · v113`
+
+---
+
 ## v112 — 2026-11-03
 **The giant's slam: a giant's own attack, told and bullet-free (owner: "a bit less shooting and more unique patterns")**
 - THE SLAM (sim/slam.js, TUNING.sizes.slam): a GIANT (v105's size 5) now has an attack of its own, and it fires nothing for it. On its own beat — its first some 3 s in, staggered by the body so two giants never slam as one, then every 5½ s — it GATHERS: it stops where it is, squashes down onto the floor, and a ring on the floor shows exactly how far it reaches (its rim and 2.4 m more). 0.9 s later it SLAMS: inside the ring when it lands, you are hit (unless in a dash or your mercy, as any hit); outside it, nothing at all. The bodies in its reach are thrown outward — a giant clears its own crowd — and it rebounds off the slam.
