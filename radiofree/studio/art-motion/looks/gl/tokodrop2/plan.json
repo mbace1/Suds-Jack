@@ -1,0 +1,319 @@
+{
+ "bpm": 172,
+ "fps": 30,
+ "end": 33.4884,
+ "title": {
+  "src": "title",
+  "from": 0.0
+ },
+ "segs": [
+  {
+   "kind": "intro",
+   "t0": 0,
+   "t1": 3.8372,
+   "src": "intro",
+   "from": 0.45,
+   "note": "the Toko Midori Games lockup lands, Toko blinks, MIDORI goes, the camera pushes in, \"drop\" pops in letter by letter"
+  },
+  {
+   "kind": "intro",
+   "t0": 3.8372,
+   "t1": 5.9302,
+   "src": "intro",
+   "from": 5.95,
+   "note": "the drop lets go of the p, falls, lands; the grid rings out of it"
+  },
+  {
+   "kind": "intro",
+   "t0": 5.9302,
+   "t1": 8.3721,
+   "src": "intro",
+   "from": 8.61,
+   "note": "it opens its eyes; the camera pulls out to play; the HUD comes in; the run starts"
+  },
+  {
+   "kind": "play",
+   "t0": 8.3721,
+   "t1": 9.7674,
+   "src": "intro",
+   "label": "THE RUN STARTS",
+   "ver": "",
+   "punch": 0.035,
+   "note": "real play: the bot run that follows the intro (world 1)",
+   "from": 11.3
+  },
+  {
+   "kind": "play",
+   "t0": 9.7674,
+   "t1": 11.1628,
+   "src": "w2",
+   "label": "GATES",
+   "ver": "",
+   "punch": 0.035,
+   "note": "real play, world 2 driveway: gates (DASH THROUGH!), the rolling ball (v111)",
+   "from": 0.0
+  },
+  {
+   "kind": "play",
+   "t0": 11.1628,
+   "t1": 12.5581,
+   "src": "slam",
+   "label": "GIANTS SHED GOO",
+   "ver": "V114",
+   "punch": 0.035,
+   "note": "staged look-check: a size-5 giant under fire sheds goo and wears down",
+   "from": 1.0,
+   "crop": [
+    0.5,
+    0.45,
+    1.5
+   ]
+  },
+  {
+   "kind": "play",
+   "t0": 12.5581,
+   "t1": 13.2558,
+   "src": "slam",
+   "label": "STEP OUT!",
+   "ver": "V115",
+   "punch": 0.02,
+   "note": "staged: the giant gathers (v112), its ring and the STEP OUT! tag (v115); the hero steps out as it lands",
+   "from": 3.65,
+   "crop": [
+    0.5,
+    0.45,
+    1.5
+   ]
+  },
+  {
+   "kind": "play",
+   "t0": 13.2558,
+   "t1": 13.9535,
+   "src": "slam",
+   "label": "GIANT DOWN",
+   "ver": "",
+   "punch": 0.05,
+   "note": "staged: the slam has landed on an empty ring; the hero turns and the giant bursts into goo",
+   "from": 4.5,
+   "crop": [
+    0.5,
+    0.45,
+    1.5
+   ]
+  },
+  {
+   "kind": "play",
+   "t0": 13.9535,
+   "t1": 15.3488,
+   "src": "ram",
+   "label": "CLEAR THE LANE!",
+   "ver": "V115",
+   "punch": 0.035,
+   "note": "staged: world 3 sewer, a ram lane lit, the CLEAR THE LANE! tag",
+   "from": 0.15,
+   "crop": [
+    0.7,
+    0.42,
+    1.6
+   ]
+  },
+  {
+   "kind": "play",
+   "t0": 15.3488,
+   "t1": 16.0465,
+   "src": "ram",
+   "label": "SEWER RAMS",
+   "ver": "V110",
+   "punch": 0.05,
+   "note": "staged: the hero steps out, the ram punches the gels across the floor",
+   "from": 1.15,
+   "crop": [
+    0.7,
+    0.42,
+    1.6
+   ]
+  },
+  {
+   "kind": "play",
+   "t0": 16.0465,
+   "t1": 16.7442,
+   "src": "w3",
+   "label": "HOLD THE RING",
+   "ver": "",
+   "punch": 0.02,
+   "note": "real play, world 3: the HOLD THE RING challenge, gates, a bounty",
+   "from": 0.0
+  },
+  {
+   "kind": "play",
+   "t0": 16.7442,
+   "t1": 18.1395,
+   "src": "w4",
+   "label": "CISTERN",
+   "ver": "",
+   "punch": 0.035,
+   "note": "real play, world 4 (pillars, the sweep rule)",
+   "from": 0.0
+  },
+  {
+   "kind": "play",
+   "t0": 18.1395,
+   "t1": 19.5349,
+   "src": "w5",
+   "label": "BOILER",
+   "ver": "",
+   "punch": 0.035,
+   "note": "real play, world 5 (drums, updraft)",
+   "from": 0.0
+  },
+  {
+   "kind": "play",
+   "t0": 19.5349,
+   "t1": 20.2326,
+   "src": "w6",
+   "label": "RIVER",
+   "ver": "",
+   "punch": 0.02,
+   "note": "real play, world 6 (current; banks that breathe)",
+   "from": 0.0
+  },
+  {
+   "kind": "play",
+   "t0": 20.2326,
+   "t1": 20.9302,
+   "src": "w7",
+   "label": "ICE",
+   "ver": "V110",
+   "punch": 0.02,
+   "note": "real play, world 7 (slip; drifting blocks)",
+   "from": 0.0
+  },
+  {
+   "kind": "play",
+   "t0": 20.9302,
+   "t1": 21.6279,
+   "src": "w8",
+   "label": "THE DEEP",
+   "ver": "",
+   "punch": 0.02,
+   "note": "real play, world 8 (dark)",
+   "from": 0.0
+  },
+  {
+   "kind": "play",
+   "t0": 21.6279,
+   "t1": 22.3256,
+   "src": "w9",
+   "label": "CORE",
+   "ver": "",
+   "punch": 0.02,
+   "note": "real play, world 9 (crystals going round)",
+   "from": 0.0
+  },
+  {
+   "kind": "play",
+   "t0": 22.3256,
+   "t1": 23.7209,
+   "src": "boss",
+   "label": "BOSS",
+   "ver": "",
+   "punch": 0.05,
+   "note": "real play: a world boss (debug.bossWave jumps the run to it)",
+   "from": 0.0
+  },
+  {
+   "kind": "play",
+   "t0": 23.7209,
+   "t1": 25.1163,
+   "src": "boss",
+   "label": "WORLD CLEAR",
+   "ver": "",
+   "punch": 0.035,
+   "note": "real play: the boss down, the next world opens",
+   "from": 1.4
+  },
+  {
+   "kind": "play",
+   "t0": 25.1163,
+   "t1": 25.4651,
+   "src": "banner1",
+   "label": "",
+   "ver": "",
+   "punch": 0.05,
+   "note": "one-beat cuts: four wave banners from four worlds",
+   "from": 0.0
+  },
+  {
+   "kind": "play",
+   "t0": 25.4651,
+   "t1": 25.814,
+   "src": "banner2",
+   "label": "",
+   "ver": "",
+   "punch": 0.05,
+   "note": "",
+   "from": 0.0
+  },
+  {
+   "kind": "play",
+   "t0": 25.814,
+   "t1": 26.1628,
+   "src": "banner3",
+   "label": "",
+   "ver": "",
+   "punch": 0.05,
+   "note": "",
+   "from": 0.0
+  },
+  {
+   "kind": "play",
+   "t0": 26.1628,
+   "t1": 26.5116,
+   "src": "banner4",
+   "label": "",
+   "ver": "",
+   "punch": 0.05,
+   "note": "",
+   "from": 0.0
+  },
+  {
+   "kind": "play",
+   "t0": 26.5116,
+   "t1": 27.907,
+   "src": "escort",
+   "label": "GIANT + ESCORT",
+   "ver": "V106",
+   "punch": 0.035,
+   "note": "real play: a giant riding its escort of mites",
+   "from": 0.0
+  },
+  {
+   "kind": "play",
+   "t0": 27.907,
+   "t1": 29.3023,
+   "src": "dash",
+   "label": "DASH",
+   "ver": "",
+   "punch": 0.035,
+   "note": "a dash through a gate chain (the bot never dashes: staged with debug.act)",
+   "from": 0.0
+  },
+  {
+   "kind": "play",
+   "t0": 29.3023,
+   "t1": 30.6977,
+   "src": "finale",
+   "label": "",
+   "ver": "",
+   "punch": 0.035,
+   "note": "the last bar: the floor goo-splattered, the score climbing",
+   "from": 0.0
+  },
+  {
+   "kind": "card",
+   "t0": 30.6977,
+   "t1": 33.4884,
+   "note": "end card: card=gl (early-3D) or card=title (the game title screen)"
+  }
+ ]
+}
