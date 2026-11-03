@@ -10,11 +10,12 @@
 //   block    the ice's: a faceted block of deep blue ice and two shards
 //   coral    the deep's: a coral head on its rock, fingers leaning out to its edge
 //   crystal  the core's: a tall violet crystal, slowly turning
+//   ball     the driveway's (v111): a beach ball in six panels and two white caps, rolling the way it goes
 // Reads the world, never writes it. Every number is TUNING.posts (sim) and the look's own below.
 import * as THREE from 'three/webgpu';
 import { Fn, float, vec2, vec3, smoothstep, positionWorld } from 'three/tsl';
-import { TUNING } from '../tuning.js?v=110';
-import { noise } from './kit.js?v=110';
+import { TUNING } from '../tuning.js?v=111';
+import { noise } from './kit.js?v=111';
 
 const T = TUNING;
 const std = (color, rough = 0.6, metal = 0, extra = {}) => new THREE.MeshStandardNodeMaterial({ color, roughness: rough, metalness: metal, ...extra });
@@ -116,6 +117,14 @@ function build(kind) {
     add(new THREE.CylinderGeometry(0.9, 0.96, 0.1, 28).translate(0, 0.86, 0), face);
     for (let i = 0; i < 12; i++) { const a = (i / 12) * Math.PI * 2, m = add(new THREE.SphereGeometry(0.07, 8, 6), rivet); m.position.set(Math.cos(a) * 0.78, 0.92, Math.sin(a) * 0.78); }
     add(new THREE.CylinderGeometry(0.32, 0.32, 6, 16).rotateX(Math.PI / 2).translate(0, 0.45, -3.9), rod);
+  } else if (kind === 'ball') {
+    // v111: a beach ball — six panels, red, white, blue, white, yellow, white, between two white caps, glossy vinyl
+    // in the summer light. Centred on its own middle (the view stands it on the floor and rolls it)
+    const vinyl = (c) => new THREE.MeshPhysicalNodeMaterial({ color: c, roughness: 0.32, clearcoat: 0.7, clearcoatRoughness: 0.18 });
+    const M = [vinyl(0xe63b2e), vinyl(0xf4f1ea), vinyl(0x2f6fd8), vinyl(0xf4f1ea), vinyl(0xf5c518), vinyl(0xf4f1ea)], cap = 0.3;
+    M.forEach((m, k) => add(new THREE.SphereGeometry(1, 10, 18, (k * Math.PI) / 3, Math.PI / 3, cap, Math.PI - 2 * cap), m));
+    add(new THREE.SphereGeometry(1, 36, 4, 0, Math.PI * 2, 0, cap), M[1]);
+    add(new THREE.SphereGeometry(1, 36, 4, 0, Math.PI * 2, Math.PI - cap, cap), M[1]);
   } else if (kind === 'crystal') {
     // lit from inside, as the core's own lamps are: a surface that is its own light, not a halo round it (v104)
     const glass = phys(0xd2a6ff, { roughness: 0.06, sheen: 0.6, sheenColor: new THREE.Color(0xff8cf0), emissive: 0x7a3bd6, emissiveIntensity: 0.55 }), base = std(0x2a2240, 0.6, 0.4);
@@ -161,6 +170,8 @@ function stripes() {
   _stripes = new THREE.CanvasTexture(c); _stripes.wrapS = _stripes.wrapT = THREE.RepeatWrapping; _stripes.colorSpace = THREE.SRGBColorSpace;
   return _stripes;
 }
+
+const _ax = new THREE.Vector3(), _q = new THREE.Quaternion();
 
 // which way is into the floor for a ram (its model's +z), as a turn about y
 const ramYaw = (m) => (m.zWalls ? (m.side < 0 ? 0 : Math.PI) : (m.side < 0 ? Math.PI / 2 : -Math.PI / 2));
@@ -219,6 +230,14 @@ export class PostView {
       v.position.set(p.px + (p.x - p.px) * alpha, 0, p.pz + (p.z - p.pz) * alpha);
       if (p.kind === 'crystal') v.rotation.y = time * 0.4 + i * 1.3;
       else if (p.drift) v.rotation.y = v.userData.yaw + v.position.x * 0.12 - v.position.z * 0.09;   // a drifting block turns as it goes
+      else if (p.ball) {
+        // v111: on its bottom, rolling: turned about the level axis across its way by the way it went over its radius
+        v.position.y = p.r;
+        const U = v.userData, dx = v.position.x - (U.lx ?? v.position.x), dz = v.position.z - (U.lz ?? v.position.z), d = Math.hypot(dx, dz);
+        if (U.lx === undefined) v.quaternion.setFromAxisAngle(_ax.set(1, 0, 0.3).normalize(), 1.1);
+        else if (d > 1e-6 && d < 3) v.quaternion.premultiply(_q.setFromAxisAngle(_ax.set(dz / d, 0, -dx / d), d / p.r));
+        U.lx = v.position.x; U.lz = v.position.z;
+      }
     });
     // a ram's lane on the floor: faint, brighter and beating while it warns, held while it is out
     for (const L of this.lanes) {

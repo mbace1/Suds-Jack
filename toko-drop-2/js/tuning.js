@@ -7,10 +7,10 @@
 // things that work"). The arena is 1.x's, so every 1.x number ports as it is
 // instead of through a rescale. Axes: x across the screen (right +), y up,
 // z toward the bottom of the screen. The arena is centred on the origin.
-import { SPECIES } from './tuning/species/index.js?v=110';
-import WAVES from './tuning/waves.js?v=110';
-import PICKUPS from './tuning/pickups.js?v=110';
-import MUSIC from './tuning/music.js?v=110';
+import { SPECIES } from './tuning/species/index.js?v=111';
+import WAVES from './tuning/waves.js?v=111';
+import PICKUPS from './tuning/pickups.js?v=111';
+import MUSIC from './tuning/music.js?v=111';
 
 export const TUNING = {
   render: {
@@ -1143,7 +1143,12 @@ export const TUNING = {
   // the hero lands; an `orbit` goes round the middle once every `period` s
   posts: {
     worlds: {
-      2: { kind: 'bollard', r: 0.6, at: [[-0.42, -0.45], [0.42, -0.45], [-0.42, 0.45], [0.42, 0.45]] },
+      // v111: the driveway's BALL (sim/posts.js) — a light thing: radius `r`, put down at `at` rolling along `dir`,
+      // eased back to `speed` m/s at `ease` /s and never past `max`; it comes back off the rail, the posts and a gate's
+      // beam (a rod `rod` thick) with `bounce` of its speed; something walking into it sends it on at `carry` × the
+      // speed it came on, + `nudge`; a shot dying on it adds `shot` m/s its way; a bounce harder than `thud` is heard
+      2: { kind: 'bollard', r: 0.6, at: [[-0.42, -0.45], [0.42, -0.45], [-0.42, 0.45], [0.42, 0.45]],
+           ball: { kind: 'ball', r: 1.7, at: [-0.3, -0.2], dir: [0.8, 0.6], speed: 1.6, ease: 0.6, max: 6, bounce: 0.85, rod: 0.3, carry: 1.3, nudge: 0.6, shot: 0.12, thud: 1.2 } },
       // v110: the sewer's RAMS punch out of its long walls (the pair nearer the middle) by turns: `at` [along, side,
       // phase] — `along` a fraction of the long half, `side` which wall, `phase` of the beat; every `period` s a ram
       // shows its face in its slot for `warn` s (`peek` m out of the wall), punches out to `reach` m in `punch` s,
@@ -1383,7 +1388,7 @@ export const TUNING = {
   shake: { decay: 2.8, amp: [1.8, 1.2, 1.2], freq: [41, 37, 43], kill: 0.07, killPerRadius: 0.13, hurt: 0.38, bigKill: 0.1 },
   // v58: one sound at most this many times in `window` s (a pile-up's
   // rest is not heard), and the limiter on the master only a pile-up reaches
-  audio: { master: 0.5, gate: { window: 0.04, land: 3, spawn: 3, kill: 4, hit: 4, lobLand: 3, mothShot: 3, revengeSeed: 2, revengeFizzle: 2, escortScatter: 1, strandCut: 2 },
+  audio: { master: 0.5, gate: { window: 0.04, land: 3, spawn: 3, kill: 4, hit: 4, lobLand: 3, mothShot: 3, revengeSeed: 2, revengeFizzle: 2, escortScatter: 1, strandCut: 2, ballBounce: 2 },
     limit: { threshold: -3, ratio: 20, attack: 0.002, release: 0.12 } },
   // the music (tuning/music.js, v58): a song a world, layered by the heat
   music: MUSIC,

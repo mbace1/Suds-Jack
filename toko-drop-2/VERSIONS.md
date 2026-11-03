@@ -19,6 +19,20 @@
     Never `--no-verify`.
 -->
 
+## v111 — 2026-11-03
+**The driveway's ball: something rolls across the second world too (owner: "We need some dynamic elements")**
+- THE BALL (sim/posts.js `ball`, TUNING.posts.worlds[2]): world 2 was the one later world with nothing moving on its floor. A beach ball as big as four of you, at the driveway's Micro Machines scale, rolls across it at 1.6 m/s and comes back off its rail, its bollards and a gate's beam.
+- IT IS LIGHT, the one post that gives way: you and the bodies are heavier, so walking into it SHOVES it on (as hard as you came on, a dash into it sends it flying) and it NEVER moves you or pins you; standing in its road, it comes back off you. A shot — yours or a gel's — dies on it (cover both ways, as every post) and nudges it on its way, so it is moving cover you can steer. It never stops: a kick wears off back to its roll.
+- A spawn, a gate or a drop put down on it is moved off it, as off any post; a drifting gate glances off it.
+- HOW IT LOOKS (render/posts.js): six vinyl panels, red, white, blue, white, yellow, white, between two white caps, glossy in the summer light, standing on its own shadow and rolling the way it goes (turned about the level axis across its way by how far it went over its radius); four draws.
+- Sound (audio.js): `ballBounce` a hollow vinyl boing, louder the harder it came off something.
+- The bots read where the ball will be (scripts/bot.mjs `postAt`), as the drifting blocks.
+- MEASURED (scripts/curve.mjs, 48 seeds, against v110): the driveway is unchanged — the sharp bot clears 100% (98%), the average 79% (83%).
+- test/posts.mjs: the ball rolls on at about its cruise speed round the driveway, off its rail and bollards, never out of the floor nor into a post; standing in its road you are never moved; walking into it shoves it; a dash sends it flying no faster than its most; a body shoves it; a shot dies on it and nudges it; a gate's beam turns it back; a drop put down on it moves and the ball stays; a run replays.
+- Cache tokens `?v=110` → `?v=111`; HUD label → `2.0 · v111`
+
+---
+
 ## v110 — 2026-11-03
 **The floor moves: the sewer's rams punch out of its walls, the ice's blocks drift (owner: "We need some dynamic elements")**
 - THE SEWER'S RAMS (sim/posts.js `rams`, TUNING.posts.worlds[3]): two iron rams in its long walls punch out across a striped lane by turns, every 3¼ s one of them — told first: steam hisses in its slot and its lane on the floor beats yellow and black for 0.9 s while its face shows in the wall, then it punches 4.2 m out in a fifth of a second, holds 1.3 s and goes back. Out, it is a post like the others: it blocks, a bullet stops on it, and it SHOVES whatever is in its lane away from its wall, into the floor — never into the wall, so it only ever moves you, it never pins you. Its lane is marked on the floor all the time, faintly.

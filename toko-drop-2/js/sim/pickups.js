@@ -30,10 +30,10 @@
 // from its seed, and a pickup roll never shifts the wave's schedule: the
 // director's w.rng stays in lockstep with 1.x's own source
 // (test/director.mjs's oracle neutralises exactly these draws).
-import { TUNING } from '../tuning.js?v=110';
-import { makeRng } from './rng.js?v=110';
-import { equipWeapon, grantInvincibility, grantRapid } from './hero.js?v=110';
-import * as posts from './posts.js?v=110';
+import { TUNING } from '../tuning.js?v=111';
+import { makeRng } from './rng.js?v=111';
+import { equipWeapon, grantInvincibility, grantRapid } from './hero.js?v=111';
+import * as posts from './posts.js?v=111';
 
 const T = TUNING, P = T.pickups, H = T.hero, G = P.gate, C = P.convoy, B = P.bounty, FAM = G.family;
 
@@ -344,7 +344,7 @@ export function step(w, dt, api) {
       if (Math.abs(g.x) > w.hx - inset) g.dx *= -1;
       if (Math.abs(g.z) > w.hz - inset) g.dz *= -1;
       // v108: a drifting gate glances off what stands on the floor (sim/posts.js), as off a wall
-      const off = g.type === 'fence' ? null : posts.push(w, g, g.type === 'hoop' ? g.ring : G.half * 0.6);
+      const off = g.type === 'fence' ? null : posts.push(w, g, g.type === 'hoop' ? g.ring : G.half * 0.6, null, true);
       if (off) { const dn = g.dx * off.nx + g.dz * off.nz; if (dn < 0) { g.dx -= 2 * dn * off.nx; g.dz -= 2 * dn * off.nz; } }
     }
     if (g.cd > 0) g.cd -= dt;

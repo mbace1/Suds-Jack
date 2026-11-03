@@ -14,23 +14,23 @@
 // moves, then everything is tested, against post-move positions.
 //
 // Modes: 'arcade', 'hardcade' (corpses fire back) and 'survival'.
-import { TUNING } from '../tuning.js?v=110';
-import { press, pressReset } from './press.js?v=110';
-import { makeRng } from './rng.js?v=110';
-import { BEHAVIOUR } from './species/index.js?v=110';
-import { DIRECTORS } from './director/index.js?v=110';
-import * as fire from './fire.js?v=110';
-import { makeHero, heroStep, applyPull, hurtHero, invincible } from './hero.js?v=110';
-import { swarmForces, resolveCrowd } from './crowd.js?v=110';
-import { revengeColor } from './color.js?v=110';
-import * as pickups from './pickups.js?v=110';
-import * as worlds from './worlds.js?v=110';
-import * as reshape from './reshape.js?v=110';
-import { Arena, levelShape, levelMoves, levelEnvelope, KIND } from './shape.js?v=110';
-import * as rules from './rules.js?v=110';
-import * as heat from './heat.js?v=110';
-import * as formation from './formation.js?v=110';
-import * as posts from './posts.js?v=110';
+import { TUNING } from '../tuning.js?v=111';
+import { press, pressReset } from './press.js?v=111';
+import { makeRng } from './rng.js?v=111';
+import { BEHAVIOUR } from './species/index.js?v=111';
+import { DIRECTORS } from './director/index.js?v=111';
+import * as fire from './fire.js?v=111';
+import { makeHero, heroStep, applyPull, hurtHero, invincible } from './hero.js?v=111';
+import { swarmForces, resolveCrowd } from './crowd.js?v=111';
+import { revengeColor } from './color.js?v=111';
+import * as pickups from './pickups.js?v=111';
+import * as worlds from './worlds.js?v=111';
+import * as reshape from './reshape.js?v=111';
+import { Arena, levelShape, levelMoves, levelEnvelope, KIND } from './shape.js?v=111';
+import * as rules from './rules.js?v=111';
+import * as heat from './heat.js?v=111';
+import * as formation from './formation.js?v=111';
+import * as posts from './posts.js?v=111';
 
 const T = TUNING;
 
@@ -409,6 +409,7 @@ function milestones(w) {
 // ── bullets, lobs, hazards ─────────────────────────────────────────
 function bulletsStep(w, dt) {
   const h = w.hero, HX = w.hx + 1.5, HZ = w.hz + 1.5;
+  let q;   // v111: the post a shot died on (a ball takes a nudge from it)
   for (const b of w.bullets) {
     if (b.dead) continue;
     if (b.homing && !b.hero) {
@@ -421,7 +422,7 @@ function bulletsStep(w, dt) {
     b.x += b.vx * dt; b.z += b.vz * dt;
     if ((b.life -= dt) <= 0 || Math.abs(b.x) > HX || Math.abs(b.z) > HZ || (w.region && b.src !== 'sweep' && w.region.sdf(b.x, b.z) > 1.5)) b.dead = true;
     // v108: a post is cover, both ways: a bullet dies on it (a world's sweeping lines pass, as they pass a room's edge)
-    else if (w.posts.length && b.src !== 'sweep' && posts.inside(w, b.x, b.z, b.r)) { b.dead = true; w.events.push({ type: 'postHit', x: b.x, z: b.z, color: b.color, hero: b.hero }); }
+    else if (w.posts.length && b.src !== 'sweep' && (q = posts.hit(w, b.x, b.z, b.r))) { b.dead = true; posts.shot(w, q, b); w.events.push({ type: 'postHit', x: b.x, z: b.z, color: b.color, hero: b.hero, ball: !!q.ball }); }
   }
 }
 

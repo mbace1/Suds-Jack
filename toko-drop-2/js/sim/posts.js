@@ -12,13 +12,17 @@
 // the sewer's RAMS punch out of its long walls on a beat: hidden in the wall, their face showing in the slot for a
 // warning, out across their lane, held, and back — so a ram only ever pushes away from its wall, into the floor.
 // A spawn, a gate or a drop keeps clear of a ram's whole lane, not just of where it is now (`clear`).
+// v111: the driveway's BALL is a LIGHT thing, the one post that gives way: it rolls at its cruise speed and bounces
+// off the rail, the posts and the gates' beams; the hero and the bodies are heavier, so one walking into it SHOVES
+// it (as hard as it came on) and is never pushed by it, and a shot dying on it nudges it on. Moving cover you can
+// steer. (A spawn, a gate or a drop placed on it is moved, as off any post: `place`.)
 // Pure: no DOM, no clock but the run's, no Math.random.
 //
-//   w.posts  [{ x, z, r, kind, px, pz, orbit? { a0, R, w }, drift? { vx, vz }, ram? { ... } }]
+//   w.posts  [{ x, z, r, kind, px, pz, orbit? { a0, R, w }, drift? { vx, vz }, ram? { ... }, ball? { vx, vz, roll } }]
 //            none in world 1 (1.x's floor) or a campaign room
-import { TUNING } from '../tuning.js?v=110';
+import { TUNING } from '../tuning.js?v=111';
 
-const T = TUNING;
+const T = TUNING, G = T.pickups.gate;
 const smooth = (k) => k * k * (3 - 2 * k), _q = { x: 0, z: 0 };
 
 // a world's posts, laid out on its floor (`w.hx`, `w.hz` already its own)
@@ -42,6 +46,10 @@ export function layout(w) {
       const q = { kind: R.kind, r: R.r, x: 0, z: 0, px: 0, pz: 0, ram: { zWalls, side, along: along * long, half, phase, ext: R.hide, stage: 'rest', beat: -1 } };
       place(q, R.hide); w.posts.push(q);
     }
+  }
+  if (L.ball) {
+    const B = L.ball, n = Math.hypot(B.dir[0], B.dir[1]) || 1;
+    w.posts.push({ kind: B.kind, r: B.r, x: B.at[0] * w.hx, z: B.at[1] * w.hz, px: 0, pz: 0, ball: { vx: (B.dir[0] / n) * B.speed, vz: (B.dir[1] / n) * B.speed, roll: 0 } });
   }
   for (const p of w.posts) { p.px = p.x; p.pz = p.z; }
 }
@@ -93,7 +101,7 @@ export function step(w) {
         m.stage = stage;
       }
       place(p, ext);
-    }
+    } else if (p.ball) ballStep(w, p, L.ball, dt);
   }
   // drifting blocks glance off each other (equal weights: they trade what they had along the line between them)
   for (let i = 0; i < w.posts.length; i++) {
@@ -111,14 +119,69 @@ export function step(w) {
   }
 }
 
-// keep a circle of radius r at o out of every post; the push back, or null. `press` gets the shove (v82's squash)
-export function push(w, o, r, press = null) {
+// v111: the ball — back toward its cruise speed along the way it rolls (a breeze: it never stops, and a kick
+// wears off), on, and off whatever it meets: the rail, a shaped floor's edge, the posts, a gate's beam
+function ballStep(w, p, B, dt) {
+  const b = p.ball;
+  let sp = Math.hypot(b.vx, b.vz);
+  if (sp < 1e-6) { b.vx = B.speed; b.vz = 0; sp = B.speed; }
+  const f = Math.min(B.max, sp + (B.speed - sp) * Math.min(1, B.ease * dt)) / sp;
+  b.vx *= f; b.vz *= f;
+  p.x += b.vx * dt; p.z += b.vz * dt;
+  let hit = 0;
+  const mx = w.hx - p.r, mz = w.hz - p.r;
+  if (Math.abs(p.x) > mx) { const sx = Math.sign(p.x); p.x = sx * mx; hit = Math.max(hit, reflect(b, -sx, 0, B.bounce)); }
+  if (Math.abs(p.z) > mz) { const sz = Math.sign(p.z); p.z = sz * mz; hit = Math.max(hit, reflect(b, 0, -sz, B.bounce)); }
+  if (w.region && !w.region.contains(p.x, p.z, p.r)) {
+    const x0 = p.x, z0 = p.z, q = w.region.clamp(p.x, p.z, p.r, _q), nx = q.x - x0, nz = q.z - z0, n = Math.hypot(nx, nz);
+    p.x = q.x; p.z = q.z;
+    if (n > 1e-9) hit = Math.max(hit, reflect(b, nx / n, nz / n, B.bounce));
+  }
+  for (const q of w.posts) if (q !== p && !q.ball) hit = Math.max(hit, off(p, b, q.x, q.z, q.r, B.bounce));
+  // a gate's beam is a rod (a hoop is crossed, not hit: the ball goes by it)
+  for (const g of w.pk?.gates ?? []) {
+    if (!g.alive || g.type === 'hoop') continue;
+    const half = g.half ?? G.half, along = Math.max(-half, Math.min(half, (p.x - g.x) * g.ax + (p.z - g.z) * g.az));
+    hit = Math.max(hit, off(p, b, g.x + g.ax * along, g.z + g.az * along, B.rod, B.bounce));
+  }
+  if (hit > B.thud) w.events.push({ type: 'ballBounce', x: p.x, z: p.z, k: Math.min(1, hit / B.max) });
+  b.roll += Math.hypot(p.x - p.px, p.z - p.pz) / p.r;
+}
+// turn the ball's way back off a surface with normal (nx, nz) pointing back into the floor; how hard it came on
+function reflect(b, nx, nz, e) {
+  const vn = b.vx * nx + b.vz * nz;
+  if (vn >= 0) return 0;
+  b.vx -= (1 + e) * vn * nx; b.vz -= (1 + e) * vn * nz;
+  return -vn;
+}
+// the ball off a circle of radius r at (x, z): out of it, and turned
+function off(p, b, x, z, r, e) {
+  const dx = p.x - x, dz = p.z - z, d = Math.hypot(dx, dz), min = p.r + r;
+  if (d >= min) return 0;
+  const nx = d > 1e-6 ? dx / d : 1, nz = d > 1e-6 ? dz / d : 0;
+  p.x = x + nx * min; p.z = z + nz * min;
+  return reflect(b, nx, nz, e);
+}
+// something heavier walked into the ball: it gives way, out of o's road, and goes as hard as o came on (and a bit)
+function shove(w, p, o, ux, uz, k) {
+  const B = T.posts.worlds[w.world]?.ball, b = p.ball;
+  p.x += ux * k; p.z += uz * k;
+  if (!B) return;
+  const dt = T.sim.dt, came = o.px === undefined ? 0 : Math.max(0, ((o.x - o.px) * ux + (o.z - o.pz) * uz) / dt);
+  const want = Math.min(B.max, came * B.carry + B.nudge), vn = b.vx * ux + b.vz * uz;
+  if (vn < want) { b.vx += (want - vn) * ux; b.vz += (want - vn) * uz; }
+}
+
+// keep a circle of radius r at o out of every post; the push back, or null. `press` gets the shove (v82's squash).
+// v111: the ball gives way to what walks into it (it moves, o does not) — unless o is being PUT down (`place`)
+export function push(w, o, r, press = null, place = false) {
   if (!w.posts?.length) return null;
   let moved = null;
   for (const p of w.posts) {
     const dx = o.x - p.x, dz = o.z - p.z, d = Math.hypot(dx, dz), min = p.r + r;
     if (d >= min) continue;
     const nx = d > 1e-6 ? dx / d : 1, nz = d > 1e-6 ? dz / d : 0, k = min - d;
+    if (p.ball && !place) { shove(w, p, o, -nx, -nz, k); continue; }
     o.x += nx * k; o.z += nz * k;
     press?.(o, -nx * k, -nz * k);
     moved = { nx, nz };
@@ -129,7 +192,7 @@ export function push(w, o, r, press = null) {
 // keep a circle of radius r at o clear of every post, and of every ram's whole lane (where it will punch, not
 // only where it is now): a spawn, a gate, a drop. The push back, or null
 export function clear(w, o, r) {
-  let moved = push(w, o, r);
+  let moved = push(w, o, r, null, true);
   for (const p of w.posts ?? []) {
     if (!p.ram) continue;
     const m = p.ram, R = T.posts.worlds[w.world]?.rams;
@@ -142,6 +205,20 @@ export function clear(w, o, r) {
     moved = m.zWalls ? { nx: 0, nz: -m.side } : { nx: -m.side, nz: 0 };
   }
   return moved;
+}
+
+// the post (x, z) is inside, with a margin, or null
+export function hit(w, x, z, r = 0) {
+  if (!w.posts?.length) return null;
+  for (const p of w.posts) if (Math.hypot(x - p.x, z - p.z) < p.r + r) return p;
+  return null;
+}
+// a shot died on post p (v111): the ball takes a little of its way
+export function shot(w, p, b) {
+  const B = T.posts.worlds[w.world]?.ball;
+  if (!p.ball || !B) return;
+  const n = Math.hypot(b.vx, b.vz) || 1;
+  p.ball.vx += (b.vx / n) * B.shot; p.ball.vz += (b.vz / n) * B.shot;
 }
 
 // is (x, z) inside a post, with a margin
