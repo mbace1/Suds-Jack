@@ -677,3 +677,53 @@ Everything below comes from search summaries. No article was opened.
     needs a five-sixths majority. Keep held.
     [Edilex HE 148/2026](https://www.edilex.fi/he/20260148)
   - **Reader reaction:** not visible through search.
+
+### Check Tue 3 Nov 07:16 (search summaries only; nothing opened)
+- **HS (last ~2 days):** no new candidate. Data-centre searches return the old Viestikoekeskus results. The one HS-sourced
+  item seen is Minister Multala telling HS the Muhos project will likely be delayed, as reported by Yle; it may predate
+  this window (date not confirmed).
+  [Yle](https://yle.fi/a/74-20249970)
+- **Helsinki data-centre siting: DECIDED 2 Nov (hel.fi, STT, Helsingin Uutiset).** For the owner's "Five Pins" pitch.
+  - The City Board adopted the data-centre siting principles. The five possible areas are Heikinlaakso, Malmi,
+    Salmisaari, Östersundom and Myllypuro.
+  - Projects must follow the general plan and go primarily in business-premises, utility-infrastructure or future
+    workplace areas. Not in the most valuable nature areas, and not at public-transport hubs.
+  - Waste heat must be used substantially in the district-heating network. Power sufficiency and environmental and
+    vitality effects are also weighed.
+  - First construction possibly 2028. The same meeting approved the Hanasaari competition programme.
+  - For the pitch: "decided in public" holds, and the waste-heat rule and the nature exclusion are usable facts. The
+    decision record (paatokset.hel.fi) is blocked from here; the wording above is from the city's own news item.
+  [hel.fi](https://www.hel.fi/fi/uutiset/kaupunginhallitus-hyvaksyi-datakeskusperiaatteet),
+  [STT](https://www.sttinfo.fi/tiedote/72466598/helsingin-kaupunginhallitus-hyvaksyi-datakeskusperiaatteet?lang=fi),
+  [Helsingin Uutiset](https://www.helsinginuutiset.fi/paikalliset/9897346),
+  [paatokset.hel.fi](https://paatokset.hel.fi/en/node/267501) (blocked)
+- **Muhos facts for the owner's "Cut First" pitch** (each from reporting; no primary document opened):
+  - **~330 ha cleared: CONFIRMED as Google's own figure** (Fortune 26 Oct, Kainuun Sanomat, MT). Kajaani is just under
+    200 ha. SLL says over 300 ha, above the 200 ha EIA threshold.
+  - **Black-shale zone: CONFIRMED (LVV via Kaleva, SSS, Uutissuomalainen).** LVV places the site in the black-shale area
+    and says monitoring already shows changes pointing to acidification. The lvv.fi release title was seen; the page is
+    blocked.
+  - **6 Oct halt order: CONFIRMED (Kaleva, SSS).** LVV asked Tuike Finland to stop; the compliance deadline was 23 Oct.
+    No report yet of whether it was met.
+  - **5 Nov water-plan deadline: CONFIRMED (Kaleva, SSS, Uutissuomalainen).** The detailed water-management plan must
+    cover the acid-producing soils and extreme runoff; a conditional fine is possible. The same 5 Nov date covers added
+    information on maintenance, security and environmental measures at both sites. Check 5–6 Nov.
+  - **Replant 130 ha: CONFIRMED** by Google spokesperson Sondre Ronander (Kainuun Sanomat, MT, Fortune). Fortune notes
+    it is less than half of what was cleared.
+  - **"Fell short of its own standards": REPORTED, exact text NOT verified.** The reported Google wording is "fallen short
+    of our own high standards". Use it only as an attributed paraphrase, without quote marks, until the statement is read.
+  - Also on record: the ditching notice was late (due 60 days before) and the ditching needs a Water Act permit; LVV's
+    police investigation request stands.
+  [Kaleva](https://www.kaleva.fi/lvv-on-tehnyt-poliisille-tutkintapyynnon-googlen-m/13720712),
+  [SSS](https://www.sss.fi/2026/10/lupa-ja-valvontavirasto-teki-muhoksen-datakeskushankkeesta-tutkintapyynnon-poliisille/),
+  [lvv.fi](https://lvv.fi/-/lupa-ja-valvontavirasto-vaatii-tuike-finland-oy-lta-toimenpiteita) (blocked),
+  [Kainuun Sanomat](https://www.kainuunsanomat.fi/artikkeli/google-aikoo-istuttaa-130-hehtaaria-puuta-muhoksella-toimimme-viranomaisen-ohjeistuksen-mukaisest),
+  [MT](https://www.maaseuduntulevaisuus.fi/metsa/e9be2e96-844e-47c3-a07c-2bc580ca61d9),
+  [Fortune](https://fortune.com/2026/10/26/wolves-finland-google-1300-acres-data-center/),
+  [Yle timeline](https://yle.fi/a/74-20250334),
+  [SLL](https://www.sll.fi/ajankohtaista/datakeskusten-luontovaikutukset-nakyvat-jo-googlen-laittomat-hakkuut-paljastuivat/)
+- **Reactions:**
+  - **Count the Trees / Muhos:** the posted film still holds. Next checkpoint: the 5 Nov plan.
+  - **Trade Secret / Hamina:** no follow-up and no new official action.
+  - **Break Glass (HE 148/2026):** no plenary vote found. Keep held.
+  - **Reader reaction:** not visible through search.

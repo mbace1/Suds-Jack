@@ -464,3 +464,25 @@ All facts below come from search summaries; no article was opened.
 - **Count the Trees:** still right. The LVV water-plan deadline is **5 Nov**; check 5–6 Nov whether it was met.
   **Trade Secret:** no follow-up.
 - **Finland:** no new HS candidate. Helsinki's city board was due to decide on siting principles today; no report yet.
+
+## Daily check, Tue 3 Nov 07:16 (morning; search summaries only)
+- **Big development:** none (no S-1/A; Meridian unchanged).
+- **Helsinki ("Five Pins" pitch): DECIDED 2 Nov.** The City Board adopted the siting principles: five possible areas
+  (Heikinlaakso, Malmi, Salmisaari, Östersundom, Myllypuro); waste heat must go substantially into district heating;
+  not in the most valuable nature areas or at transport hubs; first construction possibly 2028. Source: the city's news
+  item and STT; the decision record is blocked from here.
+- **Muhos ("Cut First" pitch):** 330 ha (Google's own figure), black-shale zone (LVV), 6 Oct halt order, 5 Nov water
+  plan and 130 ha replant are all confirmed in reporting. The "fell short of our own high standards" wording is reported
+  but its exact text is unverified: paraphrase with attribution, no quote marks. Details in HS-SCOUT.
+- **Global 3, Short Supply (posted):** "HEARING 13 NOV 2026" still unconfirmed. The case is live (MTD 3 Sep, opposition
+  22 Sep); no hearing date in any source. A GCR "judge throws out DRAM complaint" headline is not this case. Needs the
+  docket before 13 Nov; if wrong, pin a correction.
+- **Coxon 13, Grade Your Own Homework (HOLD):** nothing new; option (a), past tense, stays the safe fix. Awaiting the
+  owner.
+- **Brink 4, The Panel (posted):** still true.
+- **The Round Trip:** HOLD (no S-1/A; roadshow not before 10 Nov).
+- **For Your Protection follow-up (NJ S4304):** still single-source; do not use. New background: a federal "No Data
+  Center NDAs Act" (Rep. Barrett, Newsweek).
+- **Ends in 3:** still true; next deadline digit 6 on 15 Nov. **Break Glass:** keep held. **Count the Trees:** still
+  right; check the 5 Nov plan on 5–6 Nov. **Trade Secret:** no follow-up.
+- **Films now wrong:** none found.

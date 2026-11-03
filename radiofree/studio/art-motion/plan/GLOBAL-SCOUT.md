@@ -991,3 +991,45 @@ Everything below comes from search summaries. No article was opened.
 - **Town NDAs (US):** no new November item. The most recent dated items are Bessemer, AL (Jul) and NPR Illinois (27 Aug).
   [WBHM](https://www.wbhm.org/local-news/2026-07-14/document-shows-bessemer-data-center-non-disclosure-agreement-required-officials-to-destroy-records),
   [NPR Illinois](https://www.nprillinois.org/2026-08-27/ndas-are-hiding-data-center-deals-drawing-ire-from-locals-and-attention-from-lawmakers)
+
+### Check Tue 3 Nov 07:16 (search summaries only; EDGAR, lvv.fi, pacermonitor and paatokset.hel.fi each tried once with a generic user agent and no personal data: proxy CONNECT 403; nothing opened)
+- **Big development:** none.
+- **12 The Round Trip (Anthropic S-1): still HOLD.** No S-1/A with a price range found; the cover range still reads blank
+  (Leverage Shares, 30 Oct). The roadshow cannot start before 10 Nov. The last confirmed private mark is $965B (Series H,
+  28 May 2026); $1T+ is reported talk, not a filing.
+  [Leverage Shares](https://leverageshares.com/us/insights/when-is-the-anthropic-ipo/),
+  [Allocations](https://www.allocations.com/insights/anthropic-s-1-cap-table-shares-outstanding-and-what-to-watch-before-the-ipo)
+- **Global 3, Short Supply (posted; on-screen "HEARING 13 NOV 2026"): still single-source.**
+  - Confirmed: Garciaguirre v. Samsung, N.D. Cal. 3:26-cv-06345, Judge Noel Wise. The motion to dismiss was filed 3 Sep
+    (MLex) and the plaintiffs opposed on 22 Sep (MLex, Law360 "Buyers Defend DRAM Price-Fixing Case"). Tech Times listed
+    a case-management conference for 23 Sep.
+  - **No 13 Nov hearing date appears in any result.** PacerMonitor is blocked from here.
+  - A GCR headline, "Judge throws out complaint against DRAM makers", surfaced in search. It is NOT tied to this case:
+    Law360's case page still shows it live. It is probably an older DRAM case (unverified). Do not treat it as a ruling.
+  - Needs the docket before 13 Nov. If the date is wrong, pin a correction.
+  [Law360](https://www.law360.com/cases/6a3d70d4893b66ba8de08a17),
+  [Tech Times](https://www.techtimes.com/articles/325856/20260828/mac-mini-m6-costs-more-because-of-alleged-price-fixing-federal-lawsuit-claims.htm),
+  [GCR](https://globalcompetitionreview.com/gcr-usa/article/judge-throws-out-complaint-against-dram-makers),
+  [PacerMonitor](https://www.pacermonitor.com/public/case/65375103/Garciaguirre_et_al_v_Samsung_Electronics_Co,_Ltd_et_al) (blocked)
+- **1 The Panel (Project Meridian):** nothing newer than NPR 6 Oct. NPR calls it a study of automated and AI-powered
+  weaponry. Musk's and Luckey's status is still undisclosed and there is no recusal; the DoD line (MITRE does the
+  analysis, with conflict-of-interest safeguards) and the GAO line (safeguards) are the only official ones. The posted
+  film stays true.
+  [OPB/NPR](https://www.opb.org/article/2026/10/06/pentagon-taps-elon-musk-and-palmer-luckey-for-strategy-study/)
+- **3 For Your Protection follow-up (NJ S4304/A2774): still UNCONFIRMED.** Still one tracker (PolicyRisk: 38–0 final
+  passage 22 Oct; sponsors Greenstein and Stack, Amato co-sponsor). FastDemocracy shows committee only. No Assembly action
+  on A2774 and no governor action. Do not use yet.
+  - New context, dated items: MLex on how trade-secret law could limit bans on data-centre NDAs; and a federal "No Data
+    Center NDAs Act" from Rep. Barrett (Newsweek). Both are background, not a story yet.
+  [PolicyRisk](https://policyrisk.com/state-bill/NJ-S4304-2026-2027),
+  [MLex](https://www.mlex.com/mlex/artificial-intelligence/articles/2537858/trade-secrets-could-constrain-us-legislative-push-to-open-data-center-deals),
+  [Newsweek](https://www.newsweek.com/data-centers-ndas-would-be-banned-new-bill-12496278)
+- **10 Meta / Grassley:** no Meta reply found to the July letter (DeFriez, Sevedge). These remain Grassley's allegations.
+  [Senate Judiciary](https://www.judiciary.senate.gov/press/rep/releases/grassley-probes-meta-on-disclosures-alleging-company-disregarded-child-safety-risks-and-retaliated-against-whistleblowers)
+- **Coxon 13 (Grade Your Own Homework, HOLD):** nothing new. Results are still the July 2025 award coverage (CDAO,
+  14 Jul 2025, ceilings up to $200M each). One account gives OpenAI's estimated completion as July 2026; no 2026 status
+  for OpenAI, Google or xAI found. The past-tense fix (a) stays the safe one; awaiting the owner.
+  [The Decoder](https://the-decoder.com/anthropic-openai-google-and-xai-have-landed-pentagon-contracts-worth-up-to-200-million/)
+- **11 AI Whistleblower Protection Act (S.1792):** no change; the Senate returns 9 Nov.
+- **New candidates:** none strong enough to add. The federal NDA bill (above) is the nearest; it would pair with For Your
+  Protection once a vote or a hearing is on record.
