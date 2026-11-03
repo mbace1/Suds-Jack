@@ -19,6 +19,15 @@
     Never `--no-verify`.
 -->
 
+## v114 — 2026-11-03
+**Bullet sponges you can see soaking it up: a big body sheds goo where it is hit, and wears down as its life goes (owner: "anything that pushes the gelatin look and behavior is great for enemies")**
+- A BRUTE, A TANK OR A GIANT (v105's sizes 3-5) HIT sheds a little of its own goo where the shot went in — a droplet every other hit from a brute, two from a tank, two on every hit from a giant — the droplets flying and melting into the floor as every chunk does (render/actors.js; TUNING.sizes.wear). Before, a body with four or six times the life took a stream of shots with nothing to show for it but the ripple every body shows.
+- And it WEARS: it draws up to 8% smaller as its life goes, losing goo it does not get back. The view's alone: what it reaches in the sim is its size's, whatever is left of it.
+- docs/ITCH.md: the page's ARCADE section says what v105–v112 added — the sizes and the giants, the formations, the floor's own things and what moves among them, the gate family.
+- Cache tokens `?v=113` → `?v=114`; HUD label → `2.0 · v114`
+
+---
+
 ## v113 — 2026-11-03
 **Polish: the ice reads as ice, the cistern's broken columns as broken stone, and the columns cost less to draw**
 - THE ICE'S BLOCKS (render/posts.js): they read as ice, not blue plastic — every face that looks up is frosted pale where the sun catches it, the sides deepen toward the floor, and a little snow has drifted round each one's foot. Their sides stay the deep blue v109 gave them, so they still stand out on the pale sheet from above.

@@ -7,10 +7,10 @@
 // things that work"). The arena is 1.x's, so every 1.x number ports as it is
 // instead of through a rescale. Axes: x across the screen (right +), y up,
 // z toward the bottom of the screen. The arena is centred on the origin.
-import { SPECIES } from './tuning/species/index.js?v=113';
-import WAVES from './tuning/waves.js?v=113';
-import PICKUPS from './tuning/pickups.js?v=113';
-import MUSIC from './tuning/music.js?v=113';
+import { SPECIES } from './tuning/species/index.js?v=114';
+import WAVES from './tuning/waves.js?v=114';
+import PICKUPS from './tuning/pickups.js?v=114';
+import MUSIC from './tuning/music.js?v=114';
 
 export const TUNING = {
   render: {
@@ -1137,6 +1137,10 @@ export const TUNING = {
     // slams: `reach` m past its rim you are hit, the bodies in reach thrown out at up to `push` m/s; the screen
     // shakes `shake`, and it rebounds at `rebound`
     slam: { first: 3, stagger: 0.45, every: 5.5, warn: 0.9, squash: 0.68, gather: 2.5, reach: 2.4, push: 9, shake: 0.22, rebound: 0.09 },
+    // v114 a big body WEARS: hit, a brute, tank or giant (size 3-5) sheds goo where the shot went in — `n` droplets of
+    // `size` every `every`th hit — and it draws up to `shrink` smaller as its life goes (the view's alone: its reach
+    // in the sim is its size's, whatever is left of it)
+    wear: { shrink: 0.08, every: { 3: 2, 4: 2, 5: 1 }, n: { 3: 1, 4: 2, 5: 2 }, size: [0.05, 0.11] },
     // how a class reads (render/actors.js _heavy): a mite `mite` of the way to white, a brute × `brute` (a tank
     // takes HEAVY's own darken), a giant its species' hue turned `hue`, saturated × `sat`, lightness × `light`
     look: { mite: 0.22, brute: 0.75, giant: { hue: 0.11, sat: 1.4, light: 0.58 } },

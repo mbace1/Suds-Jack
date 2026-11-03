@@ -15,25 +15,27 @@
 // that springs in and fades (splats.js). Views are pooled per species, so a
 // gel's material is built once and reused, never compiled mid-fight.
 import * as THREE from 'three/webgpu';
-import { TUNING } from '../tuning.js?v=113';
+import { TUNING } from '../tuning.js?v=114';
 import * as TSL from 'three/tsl';
-import { gelMaterial, domeGeometry, cubeGeometry, heroGeometry, GEL_TIME } from './gel.js?v=113';
-import { LOOKS } from './looks/index.js?v=113';
-import { styleName, setStyle as setStyleMode, styledBody } from './style.js?v=113';
-import { JellyBody } from './jelly.js?v=113';
-import { Juice } from './juice.js?v=113';
-import { ArenaLight } from './light.js?v=113';
-import { toSdf } from './sdf.js?v=113';
-import { PickupView } from './pickups.js?v=113';
-import { ChallengeView } from './challenge.js?v=113';
-import { PostView } from './posts.js?v=113';
-import { SlamView } from './slam.js?v=113';
-import { Goo } from './goo.js?v=113';
-import { mult as heatMult } from '../sim/heat.js?v=113';
-import { strands as liveStrands } from '../sim/formation.js?v=113';
+import { gelMaterial, domeGeometry, cubeGeometry, heroGeometry, GEL_TIME } from './gel.js?v=114';
+import { LOOKS } from './looks/index.js?v=114';
+import { styleName, setStyle as setStyleMode, styledBody } from './style.js?v=114';
+import { JellyBody } from './jelly.js?v=114';
+import { Juice } from './juice.js?v=114';
+import { ArenaLight } from './light.js?v=114';
+import { toSdf } from './sdf.js?v=114';
+import { PickupView } from './pickups.js?v=114';
+import { ChallengeView } from './challenge.js?v=114';
+import { PostView } from './posts.js?v=114';
+import { SlamView } from './slam.js?v=114';
+import { Goo } from './goo.js?v=114';
+import { mult as heatMult } from '../sim/heat.js?v=114';
+import { strands as liveStrands } from '../sim/formation.js?v=114';
 
 const T = TUNING;
 const B = T.blob, D = T.death;
+// v114: how much of itself a big body has lost — it draws a little smaller as its life goes (TUNING.sizes.wear)
+const worn = (g) => (g.size >= 3 && g.maxHp > 0 ? 1 - T.sizes.wear.shrink * (1 - Math.max(0, g.hp) / g.maxHp) : 1);
 const rand = (a, b) => a + Math.random() * (b - a);
 const BULLET_Y = 0.45;
 
@@ -441,6 +443,9 @@ export class Actors {
       const dx = e.x - g.x, dz = e.z - g.z, c = Math.cos(v.yaw), s = Math.sin(v.yaw);
       const lx = dx * c - dz * s, lz = dx * s + dz * c, l = Math.hypot(lx, lz) || 1;
       v.hit = 1; v.mat.gel.hitDir.value.set(lx / l, lz / l);
+      // v114: a big body hit sheds a little of its goo where the shot went in (a bullet sponge you can see soaking it up)
+      const Wr = T.sizes.wear, every = Wr.every[g.size];
+      if (every && ((v.shed = (v.shed ?? 0) + 1) % every === 0)) this.spray(e.x, e.z, Wr.n[g.size], T.species[g.kind].color, Wr.size);
     } else if (e.type === 'slam') {
       this.slams.onEvent(e);   // v112
     } else if (e.type === 'postHit') {
@@ -603,7 +608,7 @@ export class Actors {
       // the swell is the view's alone (the body is live from its first step): a
       // child never swells, and a brood still waiting out its parent's pop is not drawn
       v.root.visible = g.state !== 'appear';
-      const grow = g.child || !(g.t < T.gel.swell) ? 1 : 0.15 + 0.85 * smooth(g.t / T.gel.swell);
+      const grow = (g.child || !(g.t < T.gel.swell) ? 1 : 0.15 + 0.85 * smooth(g.t / T.gel.swell)) * worn(g);
       if (!v.own) this._shape(v, time, grow, g.tell);
       // 1.x's glow order (enemy.js:2650-2690): the hit flash, then a VOLATILE
       // body's smoulder, then a tell in the body's colour
@@ -667,7 +672,7 @@ export class Actors {
         if (!g.alive || (g.state === 'appear' && g.t < 0)) continue;
         const v = this.views.get(g.id);
         if (!v || !v.root.visible) continue;
-        const grow = g.child || !(g.t < T.gel.swell) ? 1 : smooth(g.t / T.gel.swell);
+        const grow = (g.child || !(g.t < T.gel.swell) ? 1 : smooth(g.t / T.gel.swell)) * worn(g);
         const spread = Math.max(0.6, Math.min(1.6, v.squash.scale.x));
         const r = g.r * C.r * grow * spread * (v.shadow ?? 1);
         if (r < 0.1) continue;
