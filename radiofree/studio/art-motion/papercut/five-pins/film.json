@@ -1,0 +1,52 @@
+{
+ "kind": "engine",
+ "engine": "fpn",
+ "bpm": 140,
+ "fps": 30,
+ "libs": [
+  "scenes/rfa_kit.js",
+  "scenes/toko_master.js",
+  "scenes/rfm_kit.js",
+  "scenes/rfp_kit.js",
+  "scenes/rfp_clean.js",
+  "scenes/bdf_kit.js",
+  "scenes/fpn_kit.js"
+ ],
+ "scenes": [],
+ "shots": [
+  {
+   "id": "fpn_hook",
+   "beats": 8,
+   "cues": {
+    "go": "word:pop"
+   }
+  },
+  {
+   "id": "fpn_pins",
+   "beats": 10,
+   "cues": {
+    "drop": 0.15,
+    "map": "word:pop"
+   }
+  },
+  {
+   "id": "fpn_heat",
+   "beats": 9,
+   "cues": {
+    "flow": 0.25,
+    "homes": "word:pop"
+   }
+  },
+  {
+   "id": "fpn_muhos",
+   "beats": 16,
+   "cues": {
+    "fall": 0.2,
+    "first": "word:pop",
+    "clip": 4.6
+   }
+  }
+ ],
+ "quiet": [],
+ "keep": []
+}
