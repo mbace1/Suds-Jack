@@ -26,12 +26,13 @@
 // rest is TUNING.pickups. The bits of goo a pickup, a gate or a moth throws
 // go through the actors' own chunks.
 import * as THREE from 'three/webgpu';
+import * as TSL from 'three/tsl';
 import { texture } from 'three/tsl';
-import { TUNING } from '../tuning.js?v=106';
-import { itemLook, gateLook, glyphOf, colorOf } from '../sim/pickups.js?v=106';
-import { t as say } from '../ui.js?v=106';
+import { TUNING } from '../tuning.js?v=107';
+import { itemLook, gateLook, glyphOf, colorOf } from '../sim/pickups.js?v=107';
+import { t as say } from '../ui.js?v=107';
 
-const T = TUNING, P = T.pickups, G = P.gate, C = P.convoy, B = P.bounty;
+const T = TUNING, P = T.pickups, G = P.gate, C = P.convoy, B = P.bounty, GL = G.look, FAM = G.family;
 const POOLS = 96;   // pools of light a frame: the drops, the beams, the moths
 const css = (hex) => '#' + hex.toString(16).padStart(6, '0');
 
@@ -96,9 +97,34 @@ export class PickupView {
     this.gates = [];      // gate views, pooled
     this.moths = [];      // moth views, pooled
     this.unit = new THREE.SphereGeometry(1, 14, 10);
-    this.postGeo = new THREE.CylinderGeometry(G.post.r, G.post.r, G.post.h, G.post.segments);
-    this.laserGeo = new THREE.BoxGeometry(G.half * 2, G.laser.w, G.laser.d);
-    this.glowGeo = new THREE.BoxGeometry(G.half * 2, G.laser.glow[0], G.laser.glow[1]);
+    // v107: every gate's parts, one draw a part however many stand (TUNING.pickups.gate.look)
+    {
+      const N = GL.max, inst = (geo, mat, n = N) => {
+        const m = new THREE.InstancedMesh(geo, mat, n);
+        m.instanceMatrix.setUsage(THREE.DynamicDrawUsage); m.count = 0; m.frustumCulled = false;
+        if (!geo.attributes.gCol) m.setColorAt(0, new THREE.Color());
+        scene.add(m); return m;
+      };
+      const metal = (hex, rough) => new THREE.MeshStandardNodeMaterial({ color: hex, roughness: rough, metalness: 0.65 });
+      const gel = new THREE.MeshPhysicalNodeMaterial({ color: 0xffffff, roughness: 0.14, clearcoat: 1, clearcoatRoughness: 0.05, sheen: 0.35 });
+      // the beam: its colour rides an attribute of its own, so the white-hot core is not multiplied by it (as v104's bullets)
+      const beamGeo = new THREE.CylinderGeometry(1, 1, 1, 12, 1, true).rotateZ(Math.PI / 2);
+      this.gCol = new THREE.InstancedBufferAttribute(new Float32Array(N * 3), 3).setUsage(THREE.DynamicDrawUsage);
+      beamGeo.setAttribute('gCol', this.gCol);
+      const beamMat = new THREE.MeshBasicNodeMaterial(), nz = TSL.normalView.z.abs(), gc = TSL.attribute('gCol', 'vec3'), BM = GL.beam;
+      const body = TSL.mix(gc.mul(BM.rim[2]), gc, TSL.smoothstep(BM.rim[0], BM.rim[1], nz));
+      beamMat.colorNode = TSL.mix(body, TSL.vec3(1, 1, 1), TSL.smoothstep(BM.core[0], BM.core[1], nz).mul(BM.core[2]));
+      this.gp = {
+        foot: inst(new THREE.CylinderGeometry(GL.foot.r[0], GL.foot.r[1], GL.foot.h, 14).translate(0, GL.foot.h / 2, 0), metal(GL.metal, 0.5)),
+        stem: inst(new THREE.CylinderGeometry(GL.stem.r, GL.stem.r, GL.stem.h, 10).translate(0, GL.foot.h + GL.stem.h / 2, 0), metal(GL.stemMetal, 0.3)),
+        cap: inst(new THREE.SphereGeometry(1, 16, 12), gel),
+        hub: inst(new THREE.CylinderGeometry(1, 1.1, 1, 18).translate(0, 0.5, 0), metal(GL.metal, 0.45)),
+        band: inst(new THREE.TorusGeometry(GL.band.r, GL.band.tube, 6, 16).rotateX(Math.PI / 2), metal(FAM.fuse.stripe, 0.6)),
+        hoop: inst(new THREE.TorusGeometry(1, FAM.hoop.tube / FAM.hoop.r, 10, 48).rotateX(Math.PI / 2), gel),
+        spark: inst(new THREE.SphereGeometry(1, 10, 8), new THREE.MeshBasicNodeMaterial({ color: GL.sparkColor })),
+        beam: inst(beamGeo, beamMat),
+      };
+    }
     this.wingGeo = new THREE.PlaneGeometry(C.wing.w, C.wing.h);
     // a moth is 1.x's satin gel (makeSatinMat, main.js:2342; TUNING.material), in gold
     const M = T.material;
@@ -131,7 +157,10 @@ export class PickupView {
     // actors.js warms the jelly the same way)
     const warm = (o) => { o.visible = true; o.position.set(0, -50, 0); o.scale.setScalar(1e-4); o.traverse((c) => { c.frustumCulled = false; }); };
     const iv = this._item(0), gv = this._gate(0);
-    for (const o of [iv.orb, iv.badge, gv.root, gv.hint, this._moth(0).root, this.ring, this.bountyLabel, this.ping]) warm(o);
+    for (const o of [iv.orb, iv.badge, gv.hint, this._moth(0).root, this.ring, this.bountyLabel, this.ping]) warm(o);
+    // and every gate part once, far under the floor, until the first sync draws (or clears) them
+    this._m.makeScale(1e-4, 1e-4, 1e-4).setPosition(0, -50, 0);
+    for (const m of Object.values(this.gp)) { m.setMatrixAt(0, this._m); m.count = 1; }
   }
 
   // ── pools ────────────────────────────────────────────────────────
@@ -146,19 +175,12 @@ export class PickupView {
     }
     return this.items[i];
   }
+  // a gate's own view is its teaching tag (v107: its parts are the shared instanced ones, this.gp) and what it drew
   _gate(i) {
     while (this.gates.length <= i) {
-      const root = new THREE.Group();
-      const postMat = new THREE.MeshStandardNodeMaterial({ color: G.post.color, roughness: G.post.roughness, metalness: G.post.metalness, transparent: true });
-      const p1 = new THREE.Mesh(this.postGeo, postMat), p2 = new THREE.Mesh(this.postGeo, postMat);
-      const laserMat = new THREE.MeshBasicNodeMaterial({ color: G.green, transparent: true, depthWrite: false });
-      const glowMat = new THREE.MeshBasicNodeMaterial({ color: G.green, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending });
-      const laser = new THREE.Mesh(this.laserGeo, laserMat), glow = new THREE.Mesh(this.glowGeo, glowMat);
-      root.add(p1, p2, laser, glow);
-      root.visible = false;
       const hint = sprite(6);
-      this.scene.add(root, hint);
-      this.gates.push({ root, p1, p2, laser, glow, postMat, laserMat, glowMat, hint });
+      this.scene.add(hint);
+      this.gates.push({ hint, drawn: false, beam: false });
     }
     return this.gates[i];
   }
@@ -178,7 +200,8 @@ export class PickupView {
 
   reset() {
     for (const v of this.items) { v.orb.visible = false; v.badge.visible = false; }
-    for (const v of this.gates) { v.root.visible = false; v.hint.visible = false; }
+    for (const v of this.gates) { v.drawn = false; v.beam = false; v.hint.visible = false; }
+    for (const m of Object.values(this.gp)) m.count = 0;
     for (const v of this.moths) v.root.visible = false;
     this.ring.visible = false; this.bountyLabel.visible = false;
     this.ping.visible = false; this.pingId = null; this.pingT = 0;
@@ -213,9 +236,16 @@ export class PickupView {
     if (e.type === 'pickup' && e.value > 0) this._float(`+${e.value}`, F.score, e.x, F.y, e.z);
     else if (e.type === 'pickup' && e.kind === 'scoremult') this._float('x2!', F.mult, e.x, F.y, e.z);
     else if (e.type === 'bountyPaid') this._float(`+${e.pay}`, F.bounty, e.x, (e.r ?? 0) * 2 + F.bountyLift, e.z);
+    else if (e.type === 'slalom' || e.type === 'threaded') this._float(`+${e.pay}`, F.score, e.x, F.y + (e.type === 'threaded' ? 0.8 : 0), e.z);
     else if (e.type === 'bounty') { this.pingId = e.id; this.pingT = B.ping.time; }
     if (e.type === 'pickup') a.spray(e.x, e.z, P.pop.count, e.color, [P.pop.size, P.pop.size]);
-    else if (e.type === 'gateDash' && !e.dud) { const S = G.shards; a.spray(e.x, e.z, S.count / 2, G.green, [S.size, S.size]); a.spray(e.x, e.z, S.count / 2, G.shard, [S.size, S.size]); }
+    else if (e.type === 'gateDash' && !e.dud) { const S = G.shards, hex = FAM.colors[e.kind] ?? G.green; a.spray(e.x, e.z, S.count / 2, hex, [S.size, S.size]); a.spray(e.x, e.z, S.count / 2, G.shard, [S.size, S.size]); }
+    // v107: a fuse's burst lights the floor out to its reach and throws its goo; a slalom gate and a threading pay their points
+    else if (e.type === 'fuse') {
+      const L = a.light, B2 = GL.burst;
+      if (L && L.bursts.length < T.light.arena.burstCap) L.bursts.push({ x: e.x, z: e.z, r: e.r, k: B2.k, life: B2.life, max: B2.life, hex: FAM.fuse.color });
+      a.spray(e.x, e.z, G.shards.count, FAM.fuse.color, [G.shards.size, G.shards.size * 1.6]);
+    }
     else if (e.type === 'mothShot') a.spray(e.x, e.z, C.burst.count, C.color, [C.burst.size, C.burst.size]);
   }
 
@@ -255,18 +285,50 @@ export class PickupView {
     // v48: the tag over the nearest live gate only; on every gate at once it crowded the HUD
     let near = null, nd = Infinity;
     if (hintTex) for (const g of k.gates) { const d = g.alive ? Math.hypot(g.x - w.hero.x, g.z - w.hero.z) : Infinity; if (d < nd) { nd = d; near = g; } }
+    // v107: each kind's shape from the shared parts — pylons at a beam's ends (a fence's along it too, a fuse's
+    // banded), a turnstile's hub and tip caps, a hoop's ring; a broken gate's pylons stand, capped dark, till it retires
+    const gp = this.gp, cnt = { foot: 0, stem: 0, cap: 0, hub: 0, band: 0, hoop: 0, spark: 0, beam: 0 };
+    const put = (part, x, y, z, sx, sy, sz, hex = null, yaw = 0) => {
+      const m = gp[part], j = cnt[part];
+      if (j >= GL.max) return;
+      this._m.compose(this._v.set(x, y, z), this._q.setFromAxisAngle(this._up, yaw), this._s.set(sx, sy, sz));
+      m.setMatrixAt(j, this._m);
+      if (hex != null) { if (part === 'beam') { this._c.setHex(hex); this.gCol.setXYZ(j, this._c.r, this._c.g, this._c.b); } else m.setColorAt(j, this._c.setHex(hex)); }
+      cnt[part]++;
+    };
+    const pylon = (x, z, hex, banded) => {
+      put('foot', x, 0, z, 1, 1, 1); put('stem', x, 0, z, 1, 1, 1);
+      put('cap', x, GL.cap.y, z, GL.cap.r, GL.cap.r, GL.cap.r, hex);
+      if (banded) for (const y of GL.band.y) put('band', x, y, z, 1, 1, 1);
+    };
     for (const g of k.gates) {
-      const v = this._gate(i++), look = gateLook(g, time), x = lerp(g, 'x'), z = lerp(g, 'z');
-      const dx = Math.cos(g.angle + Math.PI / 2) * G.half, dz = Math.sin(g.angle + Math.PI / 2) * G.half;
-      v.root.visible = true; v.root.position.set(0, 0, 0); v.root.scale.setScalar(1);
-      v.p1.position.set(x + dx, G.post.h / 2, z + dz); v.p2.position.set(x - dx, G.post.h / 2, z - dz);
-      // the beam runs post to post, along (−sin a, cos a): three's +x turned by −(a + π/2) (main.js:1709-1712)
-      // v104 (owner: "No cheap effects like glow"): the laser alone; its additive glow box stays dark
-      for (const m of [v.laser, v.glow]) { m.position.set(x, G.laser.y, z); m.rotation.y = -(g.angle + Math.PI / 2); m.visible = g.alive && m !== v.glow; }
-      v.laserMat.color.setHex(look.color); v.glowMat.color.setHex(look.color);
-      v.laserMat.opacity = look.laser; v.glowMat.opacity = look.glow;
-      v.postMat.opacity = look.fade;
-      if (g.alive) pool(x, z, P.light.laser.r, look.color, P.light.laser.k * look.fade, g.angle, G.half * 2 + P.light.laser.r);
+      const v = this._gate(i++), look = gateLook(g, time), x = lerp(g, 'x'), z = lerp(g, 'z'), kind = g.type ?? 'gate';
+      const half = g.half ?? G.half, ex = g.ax * half, ez = g.az * half, hex = look.color, capHex = g.alive ? hex : GL.dead;
+      v.drawn = true; v.beam = false;
+      if (kind === 'hoop') {
+        // a ring of gel lying on the floor, bobbing; dashed through, it is gone
+        if (g.alive) {
+          put('hoop', x, GL.hoopY + GL.hoopBob[0] * Math.sin(time * GL.hoopBob[1] + g.id), z, g.ring, g.ring, g.ring, hex);
+          pool(x, z, g.ring * 1.25, hex, P.light.laser.k);
+        } else v.drawn = false;
+      } else {
+        if (kind === 'turnstile') {
+          put('hub', x, 0, z, GL.hub.r, GL.hub.h, GL.hub.r);
+          put('cap', x, GL.hub.h + GL.cap.r * 0.6, z, GL.cap.r, GL.cap.r, GL.cap.r, capHex);
+          if (g.alive) for (const sg of [1, -1]) put('cap', x + ex * sg, GL.beam.y, z + ez * sg, GL.tipCap, GL.tipCap, GL.tipCap, capHex);
+        } else {
+          pylon(x + ex, z + ez, capHex, kind === 'fuse'); pylon(x - ex, z - ez, capHex, kind === 'fuse');
+          if (kind === 'fence') for (let p = 1; p <= FAM.fence.posts; p++) { const tt = (p / (FAM.fence.posts + 1)) * 2 - 1; pylon(x + ex * tt, z + ez * tt, capHex, false); }
+        }
+        if (g.alive) {
+          // the beam runs end to end, along (−sin a, cos a): three's +x turned by −(a + π/2) (main.js:1709-1712)
+          put('beam', x, GL.beam.y, z, half * 2, GL.beam.r, GL.beam.r, hex, -(g.angle + Math.PI / 2));
+          v.beam = true;
+          pool(x, z, P.light.laser.r, hex, P.light.laser.k * look.fade, g.angle, half * 2 + P.light.laser.r);
+          // a fuse's spark runs along its beam, end to end and back
+          if (kind === 'fuse') { const tt = Math.sin(time * GL.spark.hz * Math.PI); put('spark', x + ex * tt, GL.beam.y, z + ez * tt, GL.spark.r, GL.spark.r, GL.spark.r); }
+        }
+      }
       // the teaching tag (main.js:5891-5906), over the nearest live gate
       const tag = hintTex && g === near && w.hero.alive && this.playing;
       v.hint.visible = !!tag;
@@ -277,7 +339,9 @@ export class PickupView {
         v.hint.position.set(x, G.hint.y, z);
       }
     }
-    for (; i < this.gates.length; i++) { this.gates[i].root.visible = false; this.gates[i].hint.visible = false; }
+    for (; i < this.gates.length; i++) { const v = this.gates[i]; v.drawn = false; v.beam = false; v.hint.visible = false; }
+    for (const [part, m] of Object.entries(gp)) { m.count = cnt[part]; m.instanceMatrix.needsUpdate = true; if (m.instanceColor) m.instanceColor.needsUpdate = true; }
+    this.gCol.needsUpdate = true;
 
     // the convoy's moths
     i = 0;
@@ -341,10 +405,11 @@ export class PickupView {
     const vis = (list, f) => list.filter(f).length;
     return {
       items: vis(this.items, (v) => v.orb.visible), badges: vis(this.items, (v) => v.badge.visible),
-      gates: vis(this.gates, (v) => v.root.visible), beams: vis(this.gates, (v) => v.root.visible && v.laser.visible),
+      gates: vis(this.gates, (v) => v.drawn), beams: vis(this.gates, (v) => v.drawn && v.beam),
       hints: vis(this.gates, (v) => v.hint.visible), moths: vis(this.moths, (v) => v.root.visible),
       bounty: this.ring.visible && this.bountyLabel.visible, pools: this.pools?.count ?? 0,
       ping: this.ping.visible, floaters: this.floaters.filter((f) => f.s.visible).length,
+      parts: Object.fromEntries(Object.entries(this.gp).map(([k, m]) => [k, m.count])),   // v107: the gate family's drawn parts
     };
   }
 }

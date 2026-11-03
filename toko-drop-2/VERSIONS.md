@@ -19,6 +19,21 @@
     Never `--no-verify`.
 -->
 
+## v107 — 2026-11-03
+**The gate family: five more gates, and every gate redrawn (owner: "The gates are a good base concept but we need more similar ones … Gates get boring fast and look boring")**
+- From world 2 a wave's gate may stand as one of the family (sim/pickups.js family; TUNING.pickups.gate.family), the mix opening a world at a time and drawn from a stream of its own, so world 1's gates — and every draw the pickups make — stay 1.x's. Each keeps the gate's rule (walking through does nothing; a DASH through breaks it and pays; its beam cuts the bodies it touches) and changes its shape, how it moves or what it pays. None is a risk gate; each wears its own colour:
+  - TURNSTILE (from the driveway, lime): pinned on a hub at its middle and turning, a whole turn every 5–7 s either way — its beam sweeps a disc, cutting what it passes; you time the dash.
+  - SLALOM (from the sewer, cyan): three short gates in a line, 1.6 apart, standing together (and retiring together): each pays 300; all three in ONE dash — a plain dash from just before the first does it — pays 1,500 more and a prize. THREADED!
+  - FENCE (from the cistern, mint): a long beam across most of the floor's side, on five pylons, sliding across the floor and back — a moving wall that cuts what crosses it, and a prize for the dash through it.
+  - FUSE (from the boiler, orange): short, its stems banded dark and a spark running its beam; dashed, it BURSTS: 3 straight to every body (not a boss) within 5.5, the rest shoved out, the gel shots inside the ring gone — and no prize. FUSE!
+  - HOOP (from the river, gold): a ring of gel lying on the floor, wandering; dash across its middle for two prizes. It cuts nothing.
+- EVERY GATE REDRAWN (render/pickups.js): a pylon is a dark foot, a stem and a gel cap in the gate's colour; the beam a crisp filament, white-hot at its core and shading to its colour at the edge (the v104 bullets' shading — no halo, no additive glow); a broken gate's pylons stand capped dark until it retires. Every part is one instanced draw however many gates stand (eight parts), where 1.x's gate was five meshes each.
+- MEASURED (scripts/curve.mjs, 24 seeds a world, against v106's own 24): the sharp bot clears 69% of the worlds (v106 74%) losing 1.42 lives a world (1.38), the average bot 36% (34%) and 2.42 (2.39) — inside the noise: the bots go for gates only without a weapon pod, and a run carries one from world 2 on, so the family changes the floor a player crosses more than the weight a bot meets.
+- test/gates.mjs (new, in the gate): world 1's gates are all plain; from world 2 every kind stands, a slalom three to a group, the driveway only turnstiles; a turnstile turns at its rate, a fence slides and turns back off its inset; a slalom threaded in one dash pays and drops a prize, three broken in two dashes do not; a fuse kills what is small in its reach, hurts and shoves what is tough, clears the shots and drops nothing; a hoop cuts nothing, a dash past its rim does not count and one through its middle pays two prizes. The smoke stands one of each and counts their parts drawn.
+- Cache tokens `?v=106` → `?v=107`; HUD label → `2.0 · v107`
+
+---
+
 ## v106 — 2026-11-03
 **The enemy pool, step two: formations — bodies that come as one unit (owner: "more unique patterns and synergies")**
 - THE ESCORT (sim/formation.js): every GIANT brings its moons — 4 to 6 mites (its own kind if it can be one, else GLOBBO) queued right behind it, landing round it, riding an orbit just off its rim, all the same way round, a turn every 3.2 s. A rider's own behaviour waits while it rides: the formation moves it (so a knock, the crowd and the walls still take it). It peels off for good when you come within 4.5 of it — closing on the giant brings its moons at you — and when the giant dies every rider still on its orbit SCATTERS at you, surging ×1.5 for 3 s. They are paid on the wave's bill (half a body each), so an escort costs the wave what its mites weigh. A mite never fires, dead or alive: in HARDCADE its corpse does not bite back either (an escort's five would be five seeds at once).

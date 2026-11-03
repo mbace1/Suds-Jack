@@ -30,11 +30,11 @@
 // from its seed, and a pickup roll never shifts the wave's schedule: the
 // director's w.rng stays in lockstep with 1.x's own source
 // (test/director.mjs's oracle neutralises exactly these draws).
-import { TUNING } from '../tuning.js?v=106';
-import { makeRng } from './rng.js?v=106';
-import { equipWeapon, grantInvincibility, grantRapid } from './hero.js?v=106';
+import { TUNING } from '../tuning.js?v=107';
+import { makeRng } from './rng.js?v=107';
+import { equipWeapon, grantInvincibility, grantRapid } from './hero.js?v=107';
 
-const T = TUNING, P = T.pickups, H = T.hero, G = P.gate, C = P.convoy, B = P.bounty;
+const T = TUNING, P = T.pickups, H = T.hero, G = P.gate, C = P.convoy, B = P.bounty, FAM = G.family;
 
 // `gateUsed`: the player has dashed a gate in some earlier run (1.x
 // tokoDropGateUsed; main.js keeps it under toko2.gateUsed), so no gate
@@ -58,8 +58,10 @@ export const scoreMult = (w) => (w.pk && w.pk.multT > 0 ? P.scoremult.mult : 1);
 // within 2 of its centre, across it within 0.2 + r
 export function hitsGate(g, x, z, r) {
   if (!g.alive) return false;
+  // v107: a HOOP is crossed, not cut: through its middle
+  if (g.type === 'hoop') return Math.hypot(x - g.x, z - g.z) < g.ring * FAM.hoop.through + r;
   const dx = x - g.x, dz = z - g.z, along = dx * g.ax + dz * g.az;
-  return Math.abs(along) < G.half && Math.hypot(dx - along * g.ax, dz - along * g.az) < G.thick + r;
+  return Math.abs(along) < (g.half ?? G.half) && Math.hypot(dx - along * g.ax, dz - along * g.az) < G.thick + r;
 }
 
 // the colour a drop wears (WEAPON_PODS' L1 orb, NON_WEAPON_COLORS)
@@ -91,11 +93,14 @@ export function afterDirector(w, dt) {
 function startWave(w, k, e) {
   const wave = e.wave;
   if (wave >= G.from) {
-    // the oldest of two or more standing retires over 4 s, then a new one stands
-    const live = k.gates.filter((g) => g.retireT == null);
-    if (live.length >= G.keep) live[0].retireT = G.retire;
+    // the oldest of two or more standing retires over 4 s, then a new one stands (v107: a slalom's three stand,
+    // count and retire as one)
+    const live = k.gates.filter((g) => g.retireT == null && !g.follower);
+    if (live.length >= G.keep) for (const o of k.gates) if (o === live[0] || (o.group != null && o.group === live[0].group)) o.retireT = G.retire;
     const risk = wave >= G.risk.from && k.rng.next() < G.risk.chance;
-    k.gates.push(makeGate(w, k, risk, wave >= G.drift.from));
+    const g = makeGate(w, k, risk, wave >= G.drift.from);
+    k.gates.push(g);
+    family(w, k, g);
   }
   // an unclaimed bounty dies with its wave; every third wave from 4 arms one
   clearBounty(k.bounty);
@@ -118,6 +123,50 @@ function makeGate(w, k, risk, drift) {
   if (drift) { const da = r.next() * Math.PI * 2; g.dx = Math.cos(da) * G.drift.speed; g.dz = Math.sin(da) * G.drift.speed; }
   w.events.push({ type: 'gate', id: g.id, x, z, angle, risk, drift });
   return g;
+}
+
+// v107: THE GATE FAMILY (TUNING.pickups.gate.family). From world 2 a wave's gate may stand as one of its kinds,
+// drawn from a stream of its own (so the pickups' own draws, and world 1's gates, are 1.x's): it takes the
+// place and angle the gate was given and becomes a TURNSTILE (pinned, turning), a SLALOM (three short gates in
+// a line across the dash), a FENCE (a long beam sliding across the floor), a FUSE (short, striped, a burst when
+// dashed) or a HOOP (a ring on the floor, crossed through its middle)
+function family(w, k, g) {
+  if (!T.worlds.modes.includes(w.mode) || !(w.world >= 2)) return;
+  const r = (k.frng ??= makeRng((w.seed ^ 0x51ed270b) >>> 0));
+  const pool = Object.entries(FAM.weights).filter(([t]) => w.world >= (FAM.from[t] ?? 1));
+  let u = r.next() * pool.reduce((a, [, x]) => a + x, 0), type = 'gate';
+  for (const [t, x] of pool) if ((u -= x) < 0) { type = t; break; }
+  g.type = type;
+  if (type === 'gate') return;
+  g.risk = false; g.green = true;
+  const at = (x, z) => { const m = 1.5; return [Math.max(-w.hx + m, Math.min(w.hx - m, x)), Math.max(-w.hz + m, Math.min(w.hz - m, z))]; };
+  if (type === 'turnstile') {
+    const F = FAM.turnstile;
+    g.half = F.half; g.spin = (r.next() < 0.5 ? -1 : 1) * (2 * Math.PI) / (F.period[0] + r.next() * (F.period[1] - F.period[0]));
+    g.drift = false; g.dx = g.dz = 0;
+  } else if (type === 'slalom') {
+    // three, `gap` apart along the beam's normal (cos a, sin a), the middle one where the gate stood
+    const F = FAM.slalom, nx = Math.cos(g.angle), nz = Math.sin(g.angle), group = g.id;
+    g.half = F.half; g.group = group; g.drift = false; g.dx = g.dz = 0;
+    [g.x, g.z] = at(g.x, g.z); g.px = g.x; g.pz = g.z;
+    for (const s of [-1, 1]) {
+      const [x, z] = at(g.x + nx * F.gap * s, g.z + nz * F.gap * s);
+      k.gates.push({ ...g, id: k.nextId++, x, z, px: x, pz: z, follower: true });
+    }
+  } else if (type === 'fence') {
+    // along x or z (the floor's own axes), across most of that side, sliding along its normal
+    const F = FAM.fence, alongZ = r.next() < 0.5;
+    g.angle = alongZ ? 0 : Math.PI / 2; g.ax = -Math.sin(g.angle); g.az = Math.cos(g.angle);
+    g.half = F.frac * (alongZ ? w.hz : w.hx);
+    if (alongZ) { g.z = 0; g.dx = (r.next() < 0.5 ? -1 : 1) * F.speed; g.dz = 0; } else { g.x = 0; g.dz = (r.next() < 0.5 ? -1 : 1) * F.speed; g.dx = 0; }
+    g.px = g.x; g.pz = g.z; g.drift = true; g.inset = F.inset;
+  } else if (type === 'fuse') {
+    g.half = FAM.fuse.half;
+  } else if (type === 'hoop') {
+    const F = FAM.hoop, a = r.next() * Math.PI * 2;
+    g.ring = F.r; g.drift = true; g.dx = Math.cos(a) * F.drift; g.dz = Math.sin(a) * F.drift;
+  }
+  w.events.push({ type: 'gateKind', id: g.id, kind: type });
 }
 
 // a campaign room's own gate (sim/challenge.js): where and when the room says
@@ -283,10 +332,12 @@ export function step(w, dt, api) {
     g.px = g.x; g.pz = g.z;
     if (!g.alive) continue;
     if (g.risk) g.green = Math.floor(w.time / G.risk.cycle) % 2 === 0;
+    if (g.spin) { g.angle += g.spin * dt; g.ax = -Math.sin(g.angle); g.az = Math.cos(g.angle); }   // v107: a turnstile turns
     if (g.drift) {
       g.x += g.dx * dt; g.z += g.dz * dt;
-      if (Math.abs(g.x) > w.hx - G.drift.inset) g.dx *= -1;
-      if (Math.abs(g.z) > w.hz - G.drift.inset) g.dz *= -1;
+      const inset = g.inset ?? G.drift.inset;
+      if (Math.abs(g.x) > w.hx - inset) g.dx *= -1;
+      if (Math.abs(g.z) > w.hz - inset) g.dz *= -1;
     }
     if (g.cd > 0) g.cd -= dt;
   }
@@ -330,21 +381,29 @@ function gatesTouch(w, k, api) {
         w.events.push({ type: 'gateDash', id: g.id, x: g.x, z: g.z, dud: true, banner: G.banner.dud });
         break;                              // 1.x leaves the gate loop here (main.js:11173)
       }
-      w.events.push({ type: 'gateDash', id: g.id, x: g.x, z: g.z, green: g.risk, banner: g.risk ? G.banner.green : 0 });
+      w.events.push({ type: 'gateDash', id: g.id, x: g.x, z: g.z, green: g.risk, banner: g.risk ? G.banner.green : 0, kind: g.type ?? 'gate' });
       w.ch?.onGate?.(w);                  // a campaign room counting its gates (sim/challenge.js)
       w.events.push({ type: 'shake', amount: G.dashShake });
       const pick = () => ({ type: G.types[Math.floor(k.rng.next() * G.types.length)] });
-      drop(w, k, g.x, g.z, pick(), G.dropLife);
-      if (g.risk) drop(w, k, g.x + G.second, g.z, pick(), G.dropLife);
-      k.chain.n = k.chain.t > 0 ? k.chain.n + 1 : 1;
+      // v107: what the gate's kind pays (sim/pickups.js family): a slalom gate its points, and its prize only when
+      // all three went in one dash; a fuse its burst and no prize; a hoop two prizes; the rest one, as 1.x's
+      let chained = true;
+      if (g.type === 'slalom') chained = slalom(w, k, g, api, pick) === 1;   // a slalom chains once a dash, not three times
+      else if (g.type === 'fuse') fuse(w, g, api);
+      else {
+        drop(w, k, g.x, g.z, pick(), G.dropLife);
+        if (g.risk) drop(w, k, g.x + G.second, g.z, pick(), G.dropLife);
+        if (g.type === 'hoop') for (let i = 1; i < FAM.hoop.prizes; i++) drop(w, k, g.x + G.second * i, g.z, pick(), G.dropLife);
+      }
+      if (chained) k.chain.n = k.chain.t > 0 ? k.chain.n + 1 : 1;
       k.chain.t = G.chain.window;
-      if (k.chain.n >= 2) {
+      if (chained && k.chain.n >= 2) {
         const pay = G.chain.pay * k.chain.n * scoreMult(w);
         api.score(w, pay);
         w.events.push({ type: 'gateChain', n: k.chain.n, pay, banner: G.banner.chain });
       }
     }
-    if (g.cd <= 0) {
+    if (g.cd <= 0 && g.type !== 'hoop') {   // v107: a hoop cuts nothing
       for (const e of w.gels) {
         if (!e.alive || e.state !== 'active' || !hitsGate(g, e.x, e.z, e.r * G.zap.reach)) continue;
         zap(w, g, e, api);
@@ -353,6 +412,44 @@ function gatesTouch(w, k, api) {
       }
     }
   }
+}
+
+// v107: a SLALOM gate dashed: its points, and when all three of its group went in ONE dash, the threading pays
+// and drops a prize where the last one stood
+function slalom(w, k, g, api, pick) {
+  const F = FAM.slalom, h = w.hero, mult = scoreMult(w);
+  api.score(w, F.pay * mult);
+  const s = k.slalom && k.slalom.group === g.group && k.slalom.dash === h.dashId ? k.slalom : (k.slalom = { group: g.group, dash: h.dashId, n: 0 });
+  s.n++;
+  w.events.push({ type: 'slalom', x: g.x, z: g.z, pay: F.pay * mult, n: s.n });
+  const n = s.n;
+  if (n >= 3) {
+    api.score(w, F.threaded * mult);
+    drop(w, k, g.x, g.z, pick(), G.dropLife);
+    w.events.push({ type: 'threaded', x: g.x, z: g.z, pay: F.threaded * mult, banner: F.banner });
+    k.slalom = null;
+  }
+  return n;   // how far down its line this dash has come
+}
+
+// v107: a FUSE dashed: it bursts. Every body within `r` (never a boss) takes `damage` straight to its hp — an 'env'
+// kill, as the laser's — and what lives is shoved out; the gel shots inside the ring are gone
+function fuse(w, g, api) {
+  const F = FAM.fuse;
+  w.events.push({ type: 'fuse', x: g.x, z: g.z, r: F.r, banner: F.banner });
+  w.events.push({ type: 'shake', amount: F.shake });
+  for (const e of w.gels.slice()) {
+    if (!e.alive || e.state !== 'active' || e.isBoss) continue;
+    const dx = e.x - g.x, dz = e.z - g.z, d = Math.hypot(dx, dz);
+    if (d > F.r + e.r) continue;
+    e.hitAt = { x: e.x, z: e.z, by: 'env', tick: w.tick };
+    e.hp -= F.damage; e.flash = T.gel.flash; e.sqV += T.gel.sq.hit;
+    w.events.push({ type: 'hit', x: e.x, z: e.z, id: e.id, kind: e.kind, by: 'fuse' });
+    if (e.hp <= 0) { api.kill(w, e, 'env'); continue; }
+    const l = d || 1;
+    e.kx += (dx / l) * F.push; e.kz += (dz / l) * F.push;
+  }
+  for (const b of w.bullets) if (!b.hero && !b.dead && Math.hypot(b.x - g.x, b.z - g.z) < F.r) b.dead = true;
 }
 
 // one hit from the laser (1.x e.hit(), enemy.js:1603-1608): the flash and the
@@ -443,5 +540,7 @@ export function itemLook(it, t) {
 // fully live until it goes, so it looks it. `fade` stays 1 for the view.
 export function gateLook(g, t) {
   const L = G.laser, pulse = L.opacity.base + L.opacity.amp * Math.sin(t * L.opacity.rate);
-  return { color: g.risk && !g.green ? G.red : G.green, laser: g.alive ? pulse : 0, glow: g.alive ? L.glowOpacity.base + L.glowOpacity.amp * pulse : 0, fade: 1 };
+  // v107: a family gate wears its kind's own colour (it is never a risk gate)
+  const kind = g.type && g.type !== 'gate' ? FAM.colors[g.type] : null;
+  return { color: kind ?? (g.risk && !g.green ? G.red : G.green), laser: g.alive ? pulse : 0, glow: g.alive ? L.glowOpacity.base + L.glowOpacity.amp * pulse : 0, fade: 1 };
 }

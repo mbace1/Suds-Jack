@@ -2,13 +2,13 @@
 // crisp vector type on near-black (DIRECTION). Menus are pad-first — a d-pad
 // or arrow keys move a gold focus ring (1.x v134), A / Enter picks, B / Esc
 // backs out — and a tap or click works on every button just the same.
-import { TUNING } from './tuning.js?v=106';
-import { GEL_LINES } from './gels-said.js?v=106';
-import { goalOf, modsOf, speciesOf } from './sim/challenge.js?v=106';
-import { mult as heatMult } from './sim/heat.js?v=106';
-import { tiersFor, onCourse } from './sim/director/campaign.js?v=106';
-import { onCourse as fightCourse } from './sim/bossfight.js?v=106';
-import { roomChart, routeChart, goalGlyph, GRADE_COLORS } from './chart.js?v=106';
+import { TUNING } from './tuning.js?v=107';
+import { GEL_LINES } from './gels-said.js?v=107';
+import { goalOf, modsOf, speciesOf } from './sim/challenge.js?v=107';
+import { mult as heatMult } from './sim/heat.js?v=107';
+import { tiersFor, onCourse } from './sim/director/campaign.js?v=107';
+import { onCourse as fightCourse } from './sim/bossfight.js?v=107';
+import { roomChart, routeChart, goalGlyph, GRADE_COLORS } from './chart.js?v=107';
 
 const STR = {
   en: {
@@ -18,7 +18,7 @@ const STR = {
     best: 'BEST', hard: 'HARD', on: 'ON', off: 'OFF', hardSub: 'ARCADE becomes HARDCADE and CAMPAIGN becomes HARD PAIN: corpses shoot back', campaignHard: 'the same rooms, and every corpse shoots back — clear a room to open it here', hardTag: 'HARD', options: 'OPTIONS', optionsSub: 'dash, gels, worlds, sound, language', back: 'BACK', nextRun: 'from the next run', resume: 'RESUME', quit: 'QUIT', again: 'AGAIN', menu: 'MENU', paused: 'PAUSED',
     over: 'GAME OVER', gotyou: 'GOT YOU', lastHit: 'LAST HIT BY', lastShot: 'ITS LAST SHOT', itsStrand: 'ITS STRAND', by_curtain: 'THE CURTAIN', by_sweep: 'A SWEEPING LINE', time: 'TIME', newbest: 'NEW BEST', soon: 'SOON',
     wave: 'WAVE', clear: 'CLEAR', curtain: 'CURTAIN!', pod: 'POD', podUp: 'POD LV2!', podDown: 'POD KNOCKED DOWN TO LV1', soundOn: 'SOUND ON', volume: 'VOLUME', music: 'MUSIC', annOn: 'ANNOUNCER ON', annOff: 'ANNOUNCER OFF', annVol: 'ANNOUNCER VOL.', motionOn: 'REDUCE MOTION ON', motionOff: 'REDUCE MOTION OFF', motionOnH: 'no camera shake', motionOffH: 'full screen-shake', cont: 'CONTINUE', contSub: 'from the door of', fromWorld: 'FROM WORLD', fromStart: 'from the start', fromSub: 'scores kept apart from the real best', bestHere: 'best from here', handLeft: 'LEFT-HANDED', handRight: 'RIGHT-HANDED', handH: 'the left thumb aims, the right moves', handHR: 'the left thumb moves, the right aims', stick: 'STICK', dead: 'DEAD ZONE', szSmall: 'SMALL', szNormal: 'NORMAL', szLarge: 'LARGE', stickH: 'how far the thumb travels for full speed', deadH: 'how far the aim thumb moves before it fires', autoOn: 'AUTO QUALITY ON', autoOff: 'AUTO QUALITY OFF', autoH: 'a slow phone gets a smaller picture · now {q}', records: 'RECORDS', recordsSub: 'your bests and your last runs', recBests: 'BESTS', recRuns: 'LAST RUNS', recRooms: 'rooms cleared', recNone: 'nothing yet: play a room or a run first', recWon: 'WON', recQuit: 'quit', recWorld: 'W', recReached: 'reached', langName: 'LANGUAGE · ENGLISH', gooOn: 'SPLATTER ON', gooOff: 'SPLATTER OFF', soundOff: 'SOUND OFF', score: 'SCORE', kills: 'KILLS', grazes: 'GRAZES',
-    greenRush: 'GREEN RUSH! DOUBLE PRIZE', dud: 'DUD! GREEN MEANS GO', dashThrough: 'DASH THROUGH!', gateChain: 'GATE CHAIN', bounty: 'BOUNTY',
+    greenRush: 'GREEN RUSH! DOUBLE PRIZE', threaded: 'THREADED! ALL THREE', fuseBurst: 'FUSE!', dud: 'DUD! GREEN MEANS GO', dashThrough: 'DASH THROUGH!', gateChain: 'GATE CHAIN', bounty: 'BOUNTY',
     world2: 'WORLD 2 · THE DRIVEWAY', world3: 'WORLD 3 · THE SEWER', world4: 'WORLD 4 · THE CISTERN', world5: 'WORLD 5 · THE BOILER ROOM', world6: 'WORLD 6 · THE RIVER', world7: 'WORLD 7 · THE ICE SHEET', world8: 'WORLD 8 · THE DEEP', world9: 'WORLD 9 · THE CORE', won: 'RUN COMPLETE', wonSub: 'all nine worlds',
     dashUp: 'DASH UP', dashDown: 'DASH KNOCKED DOWN TO LV1', fxInv: 'INVINCIBLE', fxRapid: 'RAPID FIRE', fxMult: 'SCORE', fxDash: 'DASH',
     hintTouch: 'LEFT THUMB MOVES · RIGHT THUMB AIMS AND FIRES · FLICK TO DASH',
@@ -35,7 +35,7 @@ const STR = {
     best: 'ベスト', hard: 'ハード', on: 'オン', off: 'オフ', hardSub: 'アーケードはHARDCADEに、キャンペーンはHARD PAINに：残骸が撃ち返す', campaignHard: '同じ部屋で、倒した敵がすべて撃ち返す — 通常でクリアした部屋がここで開く', hardTag: 'ハード', options: 'オプション', optionsSub: 'ダッシュ・ゼリー・ワールド・サウンド・言語', back: '戻る', nextRun: '次のプレイから', resume: '再開', quit: 'やめる', again: 'もう一度', menu: 'メニュー', paused: '一時停止',
     over: 'ゲームオーバー', gotyou: 'やられた相手', lastHit: '最後に当てた相手', lastShot: '最後の一発', itsStrand: 'その糸', by_curtain: 'カーテン', by_sweep: 'なぎ払いの列', time: 'タイム', newbest: '新記録', soon: '近日',
     wave: 'ウェーブ', clear: 'クリア', curtain: 'カーテン！', pod: 'ポッド', podUp: 'ポッド LV2！', podDown: 'ポッドが LV1 に', soundOn: 'サウンド オン', volume: '音量', music: '音楽', annOn: 'アナウンサー オン', annOff: 'アナウンサー オフ', annVol: 'アナウンサー音量', motionOn: '手ぶれ軽減 オン', motionOff: '手ぶれ軽減 オフ', motionOnH: 'カメラ揺れなし', motionOffH: '画面揺れ演出あり', cont: 'つづきから', contSub: '入口から再開：', fromWorld: 'ワールドから開始', fromStart: '最初から', fromSub: 'スコアは通常のベストとは別に記録', bestHere: 'ここからのベスト', handLeft: '左利き', handRight: '右利き', handH: '左の親指で狙い、右で移動', handHR: '左の親指で移動、右で狙う', stick: 'スティック', dead: 'デッドゾーン', szSmall: '小', szNormal: '標準', szLarge: '大', stickH: '全速になるまでの親指の移動量', deadH: '撃ち始めるまでの親指の移動量', autoOn: '自動画質 オン', autoOff: '自動画質 オフ', autoH: '遅い端末では画面を小さく描く・現在 {q}', records: '記録', recordsSub: 'ベストと最近のプレイ', recBests: 'ベスト', recRuns: '最近のプレイ', recRooms: '部屋クリア', recNone: 'まだ記録なし：まず部屋かランを遊んで', recWon: '完走', recQuit: '中断', recWorld: 'W', recReached: '到達', langName: '言語 · 日本語', gooOn: 'しぶき オン', gooOff: 'しぶき オフ', soundOff: 'サウンド オフ', score: 'スコア', kills: '撃破', grazes: 'グレイズ',
-    greenRush: 'グリーンラッシュ！賞品2倍', dud: 'ハズレ！緑で行け', dashThrough: 'ダッシュで抜けろ！', gateChain: 'ゲートチェーン', bounty: '賞金首',
+    greenRush: 'グリーンラッシュ！賞品2倍', threaded: '三つ抜け！', fuseBurst: 'ヒューズ！', dud: 'ハズレ！緑で行け', dashThrough: 'ダッシュで抜けろ！', gateChain: 'ゲートチェーン', bounty: '賞金首',
     world2: 'ワールド2 · ドライブウェイ', world3: 'ワールド3 · 下水道', world4: 'ワールド4 · 貯水槽', world5: 'ワールド5 · ボイラー室', world6: 'ワールド6 · 川', world7: 'ワールド7 · 氷原', world8: 'ワールド8 · 深淵', world9: 'ワールド9 · コア', won: 'ラン完走', wonSub: '9ワールドすべて',
     dashUp: 'ダッシュ強化', dashDown: 'ダッシュが LV1 に', fxInv: '無敵', fxRapid: '連射', fxMult: 'スコア', fxDash: 'ダッシュ',
     hintTouch: '左手で移動 · 右手でエイムと射撃 · はじいてダッシュ',
@@ -52,7 +52,7 @@ const STR = {
     best: 'ENNÄTYS', hard: 'VAIKEA', on: 'PÄÄLLÄ', off: 'POIS', hardSub: 'arcadesta tulee HARDCADE ja kampanjasta HARD PAIN: raadot ampuvat takaisin', campaignHard: 'samat huoneet, ja jokainen raato ampuu takaisin — läpäise huone ensin tavallisena', hardTag: 'VAIKEA', options: 'ASETUKSET', optionsSub: 'syöksy, geelit, maailmat, ääni, kieli', back: 'TAKAISIN', nextRun: 'seuraavasta pelistä', resume: 'JATKA', quit: 'LOPETA', again: 'UUDESTAAN', menu: 'VALIKKO', paused: 'TAUKO',
     over: 'PELI OHI', gotyou: 'KAATAJA', lastHit: 'VIIMEKSI OSUI', lastShot: 'SEN VIIMEINEN LAUKAUS', itsStrand: 'SEN SÄIE', by_curtain: 'VERHO', by_sweep: 'PYYHKÄISEVÄ RIVI', time: 'AIKA', newbest: 'UUSI ENNÄTYS', soon: 'TULOSSA',
     wave: 'AALTO', clear: 'TYHJÄ', curtain: 'VERHO!', pod: 'KAPSELI', podUp: 'KAPSELI LV2!', podDown: 'KAPSELI PUTOSI LV1:EEN', soundOn: 'ÄÄNI PÄÄLLÄ', volume: 'ÄÄNENVOIMAKKUUS', music: 'MUSIIKKI', annOn: 'SELOSTAJA PÄÄLLÄ', annOff: 'SELOSTAJA POIS', annVol: 'SELOSTAJAN ÄÄNI', motionOn: 'VÄHENNÄ LIIKETTÄ PÄÄLLÄ', motionOff: 'VÄHENNÄ LIIKETTÄ POIS', motionOnH: 'ei kameran tärinää', motionOffH: 'täysi ruudun tärinä', cont: 'JATKA', contSub: 'ovelta:', fromWorld: 'MAAILMASTA', fromStart: 'alusta', fromSub: 'pisteet pidetään erillään oikeasta ennätyksestä', bestHere: 'ennätys täältä', handLeft: 'VASENKÄTINEN', handRight: 'OIKEAKÄTINEN', handH: 'vasen peukalo tähtää, oikea liikkuu', handHR: 'vasen peukalo liikkuu, oikea tähtää', stick: 'TATTI', dead: 'KUOLLUT ALUE', szSmall: 'PIENI', szNormal: 'TAVALLINEN', szLarge: 'SUURI', stickH: 'kuinka pitkälle peukalo liikkuu täyteen vauhtiin', deadH: 'kuinka pitkälle tähtäyspeukalo liikkuu ennen kuin se ampuu', autoOn: 'AUTOMAATTINEN LAATU PÄÄLLÄ', autoOff: 'AUTOMAATTINEN LAATU POIS', autoH: 'hidas puhelin saa pienemmän kuvan · nyt {q}', records: 'ENNÄTYKSET', recordsSub: 'ennätyksesi ja viime pelisi', recBests: 'ENNÄTYKSET', recRuns: 'VIIME PELIT', recRooms: 'huonetta läpi', recNone: 'ei vielä mitään: pelaa ensin huone tai kierros', recWon: 'LÄPI', recQuit: 'kesken', recWorld: 'M', recReached: 'saavutettu', langName: 'KIELI · SUOMI', gooOn: 'ROISKEET PÄÄLLÄ', gooOff: 'ROISKEET POIS', soundOff: 'ÄÄNI POIS', score: 'PISTEET', kills: 'KAATOJA', grazes: 'HIPAISUJA',
-    greenRush: 'VIHREÄ RYNTÄYS! TUPLAPALKINTO', dud: 'SUUTARI! VIHREÄLLÄ MENNÄÄN', dashThrough: 'SYÖKSY LÄPI!', gateChain: 'PORTTIKETJU', bounty: 'PALKKIO',
+    greenRush: 'VIHREÄ RYNTÄYS! TUPLAPALKINTO', threaded: 'PUJOTETTU! KAIKKI KOLME', fuseBurst: 'SYTYTIN!', dud: 'SUUTARI! VIHREÄLLÄ MENNÄÄN', dashThrough: 'SYÖKSY LÄPI!', gateChain: 'PORTTIKETJU', bounty: 'PALKKIO',
     world2: 'MAAILMA 2 · PIHATIE', world3: 'MAAILMA 3 · VIEMÄRI', world4: 'MAAILMA 4 · VESISÄILIÖ', world5: 'MAAILMA 5 · KATTILAHUONE', world6: 'MAAILMA 6 · JOKI', world7: 'MAAILMA 7 · JÄÄKENTTÄ', world8: 'MAAILMA 8 · SYVYYS', world9: 'MAAILMA 9 · YDIN', won: 'LÄPI PELATTU', wonSub: 'kaikki yhdeksän maailmaa',
     dashUp: 'SYÖKSY PARANI', dashDown: 'SYÖKSY PUTOSI LV1:EEN', fxInv: 'KUOLEMATON', fxRapid: 'PIKATULI', fxMult: 'PISTEET', fxDash: 'SYÖKSY',
     hintTouch: 'VASEN PEUKALO LIIKKUU · OIKEA TÄHTÄÄ JA AMPUU · SIPAISE SYÖKSYÄKSESI',

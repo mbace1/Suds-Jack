@@ -70,7 +70,41 @@ export default {
     post: { r: 0.25, h: 1.8, segments: 8, color: 0x888899, roughness: 0.4, metalness: 0.2 },   // 1.x's was Phong, shininess 60
     laser: { y: 0.9, w: 0.25, d: 0.5, glow: [0.7, 1.1], opacity: { base: 0.5, amp: 0.4, rate: 8 }, glowOpacity: { base: 0.12, amp: 0.18 } },
     green: 0x44ff88, red: 0xff4455, shard: 0x88ffcc,
-    hint: { y: 2.1, color: '#aaffcc', glow: '#44ff88', alpha: [0.75, 0.25], rate: 6 },   // "DASH THROUGH!", alpha 0.75 + 0.25 sin(6t), until a gate has ever been dashed (1.x key tokoDropGateUsed; here toko2.gateUsed)
+    hint: { y: 2.1, color: '#aaffcc', glow: '#44ff88', alpha: [0.75, 0.25], rate: 6 },
+    // v107 THE GATE FAMILY (owner: "the gates are a good base concept but we need more similar ones … gates get
+    // boring fast and look boring"). From world 2 a gate may stand as one of these, the mix opening a world at a
+    // time (`from`, by weight), drawn from a stream of its own so world 1's gates stay 1.x's. Each keeps the gate's
+    // rule — walking through does nothing, a DASH through breaks it and pays, its beam cuts the bodies it touches —
+    // and changes its shape, how it moves, or what it pays. Never a risk gate: its own rule is its risk
+    family: {
+      weights: { gate: 3, turnstile: 2, slalom: 2, fence: 1.5, fuse: 1.2, hoop: 1.5 },
+      from: { gate: 1, turnstile: 2, slalom: 3, fence: 4, fuse: 5, hoop: 6 },
+      // pinned at its middle and turning, a whole turn every `period` s either way: its beam sweeps a disc
+      turnstile: { half: 2.8, period: [5, 7], hub: 0.42 },
+      // three short gates in a line across the dash, `gap` apart: each pays `pay`; all three in ONE dash pay `threaded` and a prize
+      slalom: { half: 1.1, gap: 1.6, pay: 300, threaded: 1500, banner: 1.1 },
+      // a long beam, `frac` of the floor's side it runs along each way, sliding across the floor at `speed`, bouncing `inset` off the walls
+      fence: { frac: 0.55, speed: 1.1, inset: 2, posts: 3 },
+      // short and striped; dashed, it BURSTS: `damage` to every body (not a boss) within `r`, the rest shoved `push`, their shots on the floor gone
+      fuse: { half: 1.3, r: 5.5, damage: 3, push: 9, shake: 0.35, color: 0xff9a22, stripe: 0x231d1a, banner: 1.0 },
+      // a ring lying on the floor, wandering: dash ACROSS it (through its middle) for `prizes` prizes; it cuts nothing
+      hoop: { r: 1.5, through: 0.62, drift: 0.7, prizes: 2, tube: 0.13 },
+      // each kind's own colour, so a player learns them (the plain gate keeps 1.x's green, and red on a risk gate's red beat)
+      colors: { turnstile: 0xb6ff4a, slalom: 0x4ae0ff, fence: 0x6dffb0, fuse: 0xff9a22, hoop: 0xffd447 },
+    },
+    // v107: how every gate is drawn (render/pickups.js; owner: "gates … look boring"): a PYLON is a dark foot, a
+    // stem and a gel cap in the gate's colour; the beam a crisp filament between them, white-hot at its core and
+    // shading to its colour at the edge — no halo, no additive glow (v104); a turnstile stands on a hub, a fence
+    // on pylons along it, a fuse's stems carry dark bands and a spark runs along its beam, a hoop is a ring of gel
+    // on the floor. All of it is one draw a part, whatever stands
+    look: {
+      max: 64,                                 // parts of a kind on the floor at once
+      foot: { r: [0.2, 0.28], h: 0.24 }, stem: { r: 0.08, h: 1.1 }, cap: { r: 0.31, y: 1.45 },
+      beam: { y: 0.95, r: 0.07, core: [0.55, 0.9, 0.85], rim: [0.15, 0.6, 0.55] },   // core: white from |n·v| [a, b] × k; rim: its colour × k at the edge
+      hub: { r: 0.46, h: 0.85 }, tipCap: 0.2, band: { r: 0.12, tube: 0.035, y: [0.62, 1.0] }, spark: { r: 0.13, hz: 1.4 },
+      metal: 0x2c3036, stemMetal: 0x5a6068, sparkColor: 0xffe3a0, hoopY: 0.28, hoopBob: [0.06, 2.2], dead: 0x3a3f46,
+      burst: { k: 0.9, life: 0.45 },           // a fuse's burst: light on the floor out to its reach, in its colour
+    },   // "DASH THROUGH!", alpha 0.75 + 0.25 sin(6t), until a gate has ever been dashed (1.x key tokoDropGateUsed; here toko2.gateUsed)
   },
 
   // ── §6.5 the cargo convoy (CargoCluster main.js:2316-2395; loop 10757-10813, 10927-10951) ──

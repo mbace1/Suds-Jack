@@ -1,7 +1,7 @@
 // audio.js — synthesised, never sampled. Every voice goes through one master
 // gain, so mute really mutes and a sound added later inherits it. Browsers
 // keep audio asleep until a gesture; unlock() is called from the first one.
-import { TUNING } from './tuning.js?v=106';
+import { TUNING } from './tuning.js?v=107';
 
 const A = TUNING.audio;
 
@@ -146,6 +146,10 @@ export class Sound {
         if (e.dud) this._tone('triangle', 1900, 1400, 0.05, 0.10);
         else [392, 523, 659].forEach((f, i) => this._tone('sine', f, f, 0.13, 0.18, i * 0.06));
         break;
+      // v107: a fuse bursts (a thump under a hiss); a slalom gate pings, higher the further down the line; a threading rings out
+      case 'fuse': this._tone('sine', 140, 40, 0.45, 0.3); this._hiss(0.4, 0.22, 1800, 160, 1); break;
+      case 'slalom': this._tone('triangle', 660 * [1, 1.26, 1.5][Math.min(2, (e.n || 1) - 1)], 660 * [1, 1.26, 1.5][Math.min(2, (e.n || 1) - 1)], 0.09, 0.12); break;
+      case 'threaded': [784, 988, 1175, 1568].forEach((f, i) => this._tone('triangle', f, f, 0.12, 0.13, i * 0.06)); break;
       case 'gateChain': case 'bountyPaid': [523, 659, 784].forEach((f, i) => this._tone('triangle', f, f, 0.14, 0.18, i * 0.07)); break;
       case 'bounty': this._tone('square', 1150, 1150, 0.06, 0.13); this._tone('square', 1550, 1550, 0.07, 0.11, 0.075); break;
       case 'mothShot': this._tone('sine', 420, 75, 0.22, 0.22); break;
