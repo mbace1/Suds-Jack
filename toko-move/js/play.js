@@ -39,7 +39,7 @@ import { lineFamily } from './board.js?v=8';
 import { TRAMS } from './cards.js?v=1';
 import { mountAudio } from './audio.js?v=2';
 
-export const BUILD_VERSION = '3.2';
+export const BUILD_VERSION = '3.3';
 const $ = id => document.getElementById(id);
 const params = new URLSearchParams(location.search);
 const RUN = Runs.resolveRun(params);
@@ -233,7 +233,7 @@ const L = (name, l, cls = '', extra = '', style = '') => `<div class="L ${cls}" 
 // it, the tram is a layer of its own that comes and goes without a rebuild.
 let view = {};
 function paintScene(name, v = {}, force = false) {
-  const key = name === 'stop' ? `stop|${v.at || ''}` : name;
+  const key = name === 'stop' ? `stop|${v.at || ''}` : `${name}|${v.car || ''}`;
   view = v;
   if (key === sceneKey && !force) return 0;
   const sc = SCENES[name], first = !scene; scene = name; sceneKey = key;
@@ -251,7 +251,7 @@ function paintScene(name, v = {}, force = false) {
       html += L('stop', '02-street') + `<div class="L tram" id="v3tram" hidden><span class="chip" id="v3chip"></span></div>`
         + L('stop', '04-shelter') + L('stop', '05-people', 'shift') + L('stop', '06-courier', 'idle');
       html += plateHtml(v.at, !!land);
-    } else html = sc.layers.map((l, i) => L(name, l, i === 0 ? (sc.tile ? 'tile' : sc.drift ? 'drift' : '') : (i === 1 ? 'sway' : i === 2 ? 'sway lag' : 'bob'))).join('');
+    } else html = sc.layers.map((l, i) => L(name, i && v.car ? `${l}-${v.car}` : l, i === 0 ? (sc.tile ? 'tile' : sc.drift ? 'drift' : '') : (i === 1 ? 'sway' : i === 2 ? 'sway lag' : 'bob'))).join('');
     frameEl.innerHTML = html;
     place();
     frameEl.classList.remove('push'); if (!CALM) { void frameEl.offsetWidth; frameEl.classList.add('push'); }
@@ -436,6 +436,12 @@ function hint(t) { let h = stage.querySelector('.v3tap'); if (!t) { h?.remove();
 // ── the moment ─────────────────────────────────────────────────────────────
 let busy = false, pendingHop = null, skip = null, arrived = null;
 const interior = () => NIGHT ? 'night' : 'tram';
+// The old trams from inside (v3.3, look only like the outside): the museum
+// tram in varnished wood and brass, the Nr I and Nr II in their 1970s
+// orange and beige; the newer three are the car as painted
+// (art/minimal-metro-look/make_interiors.py). The night car is the night car.
+const CAR = { museum: 'museum', nr1: 'old', nr2: 'old' };
+const carOf = hop => (!NIGHT && CAR[hop?.model]) || '';
 const modelName = id => TRAMS.find(t => t.id === id)?.name || id;
 function tramFor(c) {
   if (c.kind === 'halt') return { model: S.hop?.model && S.hop.model !== 'metro' ? S.hop.model : 'nr2', family: S.halt.family, halted: true };
@@ -449,7 +455,7 @@ function render() {
   if (c.kind === 'story' && pendingHop) {
     // a card dealt on the way: aboard is the car, on foot is the board mid-walk
     if (pendingHop.kind === 'walk') { showBoard(pendingHop, 0.5); }
-    else { hideBoard(); paintScene(interior()); }
+    else { hideBoard(); paintScene(interior(), { car: carOf(pendingHop) }); }
   } else {
     hideBoard();
     const t = tramFor(c), leaving = !t && arrived;
@@ -531,7 +537,7 @@ async function pick(i) {
       // the tram you chose pulls in (look only: the model is drawn, the ride is the same)
       if (tram) { const wait = scene !== 'stop' ? paintScene('stop', { at: r.hop.from }) : 0; if (wait) await beat(wait); setTram({ model: r.hop.model, family: r.hop.line.family }); panel.innerHTML = ''; await drive('in'); }
       if (r.hop.model === 'museum') await rare();
-      if (r.hop.kind === 'ride') { hideBoard(); paintScene(interior()); sign(r.hop); }
+      if (r.hop.kind === 'ride') { hideBoard(); paintScene(interior(), { car: carOf(r.hop) }); sign(r.hop); }
       if (r.story) { pendingHop = r.hop; busy = false; return render(); }
       if (r.hop.kind === 'ride') await beat(1200);
       panel.innerHTML = '';

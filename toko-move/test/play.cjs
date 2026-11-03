@@ -71,16 +71,17 @@ const look = page => page.evaluate(() => {
     rev: panel.querySelector('.v3rev')?.textContent || '', wx: document.getElementById('v3wx').className,
     tram: (() => { const t = document.getElementById('v3tram'); return t && !t.hidden ? { model: t.dataset.model, chip: document.getElementById('v3chip').textContent, glow: t.classList.contains('glow') } : null; })(),
     land: document.querySelector('#v3frame .L.land')?.dataset.land || null, plate: document.querySelector('#v3frame .plate b')?.textContent || '',
+    car: (() => { for (const e of document.querySelectorAll('#v3frame .L')) { const m = getComputedStyle(e).backgroundImage.match(/(02-car(?:-[a-z]+)?)\.webp/); if (m) return m[1]; } return null; })(),
   };
 });
 // Play by tapping: the first button of every card; tap the scene to hurry a
 // hop or a stamp along. Returns everything it saw.
 async function playOut(page, { maxSteps = 600, pick = () => 0, onCard = null } = {}) {
-  const seen = { scenes: new Set(), kinds: new Set(), boards: 0, signs: [], stamps: [], cards: [], bad: [], clocks: [], strips: [], end: false, reveals: new Set(), trams: [], lands: new Set(), plates: new Set(), wx: new Set(), stakes: [] };
+  const seen = { scenes: new Set(), kinds: new Set(), boards: 0, signs: [], stamps: [], cards: [], bad: [], clocks: [], strips: [], end: false, reveals: new Set(), trams: [], lands: new Set(), plates: new Set(), wx: new Set(), stakes: [], cars: new Set() };
   for (let i = 0; i < maxSteps; i++) {
     const s = await look(page);
     seen.scenes.add(s.scene); if (s.board) seen.boards++; if (s.sign) seen.signs.push(s.sign); if (s.stamp) seen.stamps.push(s.stamp);
-    if (s.rev) seen.reveals.add(s.rev); if (s.tram) seen.trams.push(s.tram); if (s.land) seen.lands.add(s.land); if (s.plate) seen.plates.add(s.plate); seen.wx.add(s.wx); seen.stakes.push(...s.stakes);
+    if (s.rev) seen.reveals.add(s.rev); if (s.tram) seen.trams.push(s.tram); if (s.car) seen.cars.add(s.car); if (s.land) seen.lands.add(s.land); if (s.plate) seen.plates.add(s.plate); seen.wx.add(s.wx); seen.stakes.push(...s.stakes);
     if (s.overflow) seen.bad.push('the page scrolled or overflowed');
     if (s.end) { seen.end = true; break; }
     if (!s.busy && s.buttons.length) {
@@ -115,7 +116,7 @@ server.listen(0, '127.0.0.1', async () => {
         runs: [...document.querySelectorAll('#mutRow .run')].map(r => ({ id: r.dataset.run, open: !r.classList.contains('locked'), lit: r.classList.contains('on') })),
         goal: document.getElementById('titleGoal').textContent, play: document.getElementById('play').textContent,
         links: ['dailyLink', 'weekLink', 'liveLink'].filter(id => { const e = document.getElementById(id); return e && !e.hidden && getComputedStyle(e).display !== 'none'; }) }));
-      ok(`the bare address is the card journey, not the real-time game (v${t.v})`, !t.classic && t.v === '3.2' && /v3\.2/.test(t.hero));
+      ok(`the bare address is the card journey, not the real-time game (v${t.v})`, !t.classic && t.v === '3.3' && /v3\.3/.test(t.hero));
       ok(`it is Act 1, in Helsinki (${await page.evaluate(() => document.getElementById('titleWhen').textContent)})`, await page.evaluate(() => /^Act 1 · Helsinki · 07:00/.test(document.getElementById('titleWhen').textContent)));
       ok(`the ladder: EASY open and lit, three locked (${t.runs.map(r => r.id + (r.open ? '' : '🔒')).join(' ')})`, t.runs.map(r => r.id).join() === 'easy,medium,hard,night' && t.runs[0].open && t.runs[0].lit && t.runs.slice(1).every(r => !r.open) && t.run === 'easy');
       ok(`the goal and the button (${t.goal} · ${t.play})`, /^Three deliveries before 08:15/.test(t.goal) && t.play === 'START SHIFT');
@@ -225,6 +226,19 @@ server.listen(0, '127.0.0.1', async () => {
       ok(`a ride at night is the night car (${[...seen.scenes]})`, seen.scenes.has('night') && !seen.scenes.has('tram'));
       ok('the night hums under the city', await page.evaluate(() => window.__tm3.audio.log.some(e => e.name === 'bed:night')));
       ok('no page or network errors (NIGHT)', !errs.length, errs.slice(0, 3).join(' | '));
+      await ctx.close();
+    }
+    // ── the old trams from inside (v3.3): seed 1197's EASY rides the museum tram, then an Nr II
+    {
+      const ctx = await browser.newContext(PHONE), page = await ctx.newPage(), errs = watch(page);
+      await page.goto(`${base}/toko-move/?run=easy&seed=1197`, { waitUntil: 'load' }); await ready(page);
+      await page.tap('#play'); await page.waitForSelector('#v3panel .eventOpt', { timeout: 15000 });
+      const seen = await playOut(page, { maxSteps: 260 });
+      // the in-car sign names the model too, but a hurried tap skips it in a frame; the tram at the stop stays
+      const models = [...new Set(seen.trams.map(t => t.model))];
+      ok(`the museum tram is wood and brass inside (${[...seen.cars].join(' ')} · at the stop: ${models.join(', ')})`, seen.cars.has('02-car-museum') && models.includes('museum'));
+      ok('and an Nr II is its 1970s self inside', seen.cars.has('02-car-old'));
+      ok('every interior layer it asked for was there (no 404s)', !errs.length, errs.slice(0, 3).join(' | '));
       await ctx.close();
     }
     // ── a 320px phone: the pill still clears both corners, scaled if it must be
