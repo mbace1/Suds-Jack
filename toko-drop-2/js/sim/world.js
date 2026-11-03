@@ -14,23 +14,24 @@
 // moves, then everything is tested, against post-move positions.
 //
 // Modes: 'arcade', 'hardcade' (corpses fire back) and 'survival'.
-import { TUNING } from '../tuning.js?v=111';
-import { press, pressReset } from './press.js?v=111';
-import { makeRng } from './rng.js?v=111';
-import { BEHAVIOUR } from './species/index.js?v=111';
-import { DIRECTORS } from './director/index.js?v=111';
-import * as fire from './fire.js?v=111';
-import { makeHero, heroStep, applyPull, hurtHero, invincible } from './hero.js?v=111';
-import { swarmForces, resolveCrowd } from './crowd.js?v=111';
-import { revengeColor } from './color.js?v=111';
-import * as pickups from './pickups.js?v=111';
-import * as worlds from './worlds.js?v=111';
-import * as reshape from './reshape.js?v=111';
-import { Arena, levelShape, levelMoves, levelEnvelope, KIND } from './shape.js?v=111';
-import * as rules from './rules.js?v=111';
-import * as heat from './heat.js?v=111';
-import * as formation from './formation.js?v=111';
-import * as posts from './posts.js?v=111';
+import { TUNING } from '../tuning.js?v=112';
+import { press, pressReset } from './press.js?v=112';
+import { makeRng } from './rng.js?v=112';
+import { BEHAVIOUR } from './species/index.js?v=112';
+import { DIRECTORS } from './director/index.js?v=112';
+import * as fire from './fire.js?v=112';
+import { makeHero, heroStep, applyPull, hurtHero, invincible } from './hero.js?v=112';
+import { swarmForces, resolveCrowd } from './crowd.js?v=112';
+import { revengeColor } from './color.js?v=112';
+import * as pickups from './pickups.js?v=112';
+import * as worlds from './worlds.js?v=112';
+import * as reshape from './reshape.js?v=112';
+import { Arena, levelShape, levelMoves, levelEnvelope, KIND } from './shape.js?v=112';
+import * as rules from './rules.js?v=112';
+import * as heat from './heat.js?v=112';
+import * as formation from './formation.js?v=112';
+import * as posts from './posts.js?v=112';
+import * as slam from './slam.js?v=112';
 
 const T = TUNING;
 
@@ -255,6 +256,7 @@ function gelStep(w, g, dt) {
   // v106: a body riding a formation (an escort's mite) is moved by it, not by its species
   if (!(g.form && formation.ride(w, g, dt, api))) BEHAVIOUR[g.kind].step(w, g, dt, api);
   if (!g.alive) return;
+  if (g.size === 5) slam.step(w, g, dt, api);   // v112: a giant's own attack (sim/slam.js)
   const fr = Math.exp(-T.gel.knockFriction * dt);
   g.kx *= fr; g.kz *= fr;
   g.x += (g.vx + g.kx) * dt; g.z += (g.vz + g.kz) * dt;

@@ -19,6 +19,20 @@
     Never `--no-verify`.
 -->
 
+## v112 — 2026-11-03
+**The giant's slam: a giant's own attack, told and bullet-free (owner: "a bit less shooting and more unique patterns")**
+- THE SLAM (sim/slam.js, TUNING.sizes.slam): a GIANT (v105's size 5) now has an attack of its own, and it fires nothing for it. On its own beat — its first some 3 s in, staggered by the body so two giants never slam as one, then every 5½ s — it GATHERS: it stops where it is, squashes down onto the floor, and a ring on the floor shows exactly how far it reaches (its rim and 2.4 m more). 0.9 s later it SLAMS: inside the ring when it lands, you are hit (unless in a dash or your mercy, as any hit); outside it, nothing at all. The bodies in its reach are thrown outward — a giant clears its own crowd — and it rebounds off the slam.
+- Never aimed and never a surprise: it is the giant's own ground, told every time, so the answer is always the same — step out of the ring, or dash through the moment it lands.
+- HOW IT LOOKS (render/slam.js): the ring on the floor at the giant's reach, filling in as the moment comes (a sign, not a light: no glow); on landing it jumps out and fades, and the giant's own goo is thrown round it.
+- Sound (audio.js): `slamWarn` a low groan rising to the moment, `slam` a heavy thud under a burst of noise; the screen shakes a little.
+- The death screen names it: GOT YOU · ITS SLAM, with the giant's own card (main.js `killer`, ui.js `itsSlam` in all three languages).
+- The bots read the ring as a person does (scripts/bot.mjs: the ring at the moment it lands is a hazard).
+- MEASURED (scripts/curve.mjs, worlds 2-9, 24 seeds, against v111): the curve does not move — the sharp bot clears 69.6% of the worlds (68.8%), the average 25.6% (26%); in 810 lives lost not one went to a slam, while in real waves a giant does slam (31 giants, 111 slams in eighteen two-minute runs, an idle hero inside the ring for 10 of them). Read as the bots read it: told, and stepped out of. What it changes is how a giant is fought, not how hard.
+- test/slam.mjs (new, in the gate): a giant is told then slams on its own beat, the warning carrying its reach; it holds still and squashes while it gathers; inside the ring you are hit and named for it, outside nothing; the bodies in reach are thrown out and those past it untouched; a tank never slams, nor a boss; two giants do not slam as one.
+- Cache tokens `?v=111` → `?v=112`; HUD label → `2.0 · v112`
+
+---
+
 ## v111 — 2026-11-03
 **The driveway's ball: something rolls across the second world too (owner: "We need some dynamic elements")**
 - THE BALL (sim/posts.js `ball`, TUNING.posts.worlds[2]): world 2 was the one later world with nothing moving on its floor. A beach ball as big as four of you, at the driveway's Micro Machines scale, rolls across it at 1.6 m/s and comes back off its rail, its bollards and a gate's beam.

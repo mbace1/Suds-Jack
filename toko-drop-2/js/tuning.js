@@ -7,10 +7,10 @@
 // things that work"). The arena is 1.x's, so every 1.x number ports as it is
 // instead of through a rescale. Axes: x across the screen (right +), y up,
 // z toward the bottom of the screen. The arena is centred on the origin.
-import { SPECIES } from './tuning/species/index.js?v=111';
-import WAVES from './tuning/waves.js?v=111';
-import PICKUPS from './tuning/pickups.js?v=111';
-import MUSIC from './tuning/music.js?v=111';
+import { SPECIES } from './tuning/species/index.js?v=112';
+import WAVES from './tuning/waves.js?v=112';
+import PICKUPS from './tuning/pickups.js?v=112';
+import MUSIC from './tuning/music.js?v=112';
 
 export const TUNING = {
   render: {
@@ -1132,6 +1132,11 @@ export const TUNING = {
     // by its variant), never thinning its mob under `keep`
     cost: { 1: 0.5, 2: 1, 3: 2, 4: 4, 5: 10 }, pay: 0.6, keep: 0.5, worth: { elite: 2, elitelite: 1.5 },
     fireMult: 1.25,   // "a bit less shooting" (owner): the worlds' bodies run their fire clocks this much slower
+    // v112 a GIANT's SLAM (sim/slam.js; owner: "more unique patterns"): its first beat `first` s in (+ `stagger` × its
+    // id mod 5), then every `every` s, it gathers for `warn` s — still, squashed to `squash` by 1/`gather` of the way — and
+    // slams: `reach` m past its rim you are hit, the bodies in reach thrown out at up to `push` m/s; the screen
+    // shakes `shake`, and it rebounds at `rebound`
+    slam: { first: 3, stagger: 0.45, every: 5.5, warn: 0.9, squash: 0.68, gather: 2.5, reach: 2.4, push: 9, shake: 0.22, rebound: 0.09 },
     // how a class reads (render/actors.js _heavy): a mite `mite` of the way to white, a brute × `brute` (a tank
     // takes HEAVY's own darken), a giant its species' hue turned `hue`, saturated × `sat`, lightness × `light`
     look: { mite: 0.22, brute: 0.75, giant: { hue: 0.11, sat: 1.4, light: 0.58 } },
@@ -1388,7 +1393,7 @@ export const TUNING = {
   shake: { decay: 2.8, amp: [1.8, 1.2, 1.2], freq: [41, 37, 43], kill: 0.07, killPerRadius: 0.13, hurt: 0.38, bigKill: 0.1 },
   // v58: one sound at most this many times in `window` s (a pile-up's
   // rest is not heard), and the limiter on the master only a pile-up reaches
-  audio: { master: 0.5, gate: { window: 0.04, land: 3, spawn: 3, kill: 4, hit: 4, lobLand: 3, mothShot: 3, revengeSeed: 2, revengeFizzle: 2, escortScatter: 1, strandCut: 2, ballBounce: 2 },
+  audio: { master: 0.5, gate: { window: 0.04, land: 3, spawn: 3, kill: 4, hit: 4, lobLand: 3, mothShot: 3, revengeSeed: 2, revengeFizzle: 2, escortScatter: 1, strandCut: 2, ballBounce: 2, slamWarn: 2, slam: 2 },
     limit: { threshold: -3, ratio: 20, attack: 0.002, release: 0.12 } },
   // the music (tuning/music.js, v58): a song a world, layered by the heat
   music: MUSIC,

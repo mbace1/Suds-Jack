@@ -1,7 +1,7 @@
 // audio.js — synthesised, never sampled. Every voice goes through one master
 // gain, so mute really mutes and a sound added later inherits it. Browsers
 // keep audio asleep until a gesture; unlock() is called from the first one.
-import { TUNING } from './tuning.js?v=111';
+import { TUNING } from './tuning.js?v=112';
 
 const A = TUNING.audio;
 
@@ -150,6 +150,9 @@ export class Sound {
       case 'fuse': this._tone('sine', 140, 40, 0.45, 0.3); this._hiss(0.4, 0.22, 1800, 160, 1); break;
       case 'slalom': this._tone('triangle', 660 * [1, 1.26, 1.5][Math.min(2, (e.n || 1) - 1)], 660 * [1, 1.26, 1.5][Math.min(2, (e.n || 1) - 1)], 0.09, 0.12); break;
       case 'threaded': [784, 988, 1175, 1568].forEach((f, i) => this._tone('triangle', f, f, 0.12, 0.13, i * 0.06)); break;
+      // v112: a giant gathers (a low groan rising to the slam) and slams (a heavy thud under a burst of noise)
+      case 'slamWarn': this._tone('sawtooth', 55, 95, e.t || 0.9, 0.05); this._tone('sine', 70, 120, e.t || 0.9, 0.06); break;
+      case 'slam': this._tone('sine', 110, 32, 0.5, 0.36); this._hiss(0.35, 0.16, 700, 120, 1); break;
       // v111: the driveway's ball comes off something — a hollow vinyl boing, louder the harder it came on
       case 'ballBounce': this._tone('sine', 230 + 120 * (e.k || 0), 150, 0.16, 0.05 + 0.12 * (e.k || 0)); this._tone('triangle', 460, 300, 0.07, 0.03); break;
       // v110: a sewer ram — steam hissing in its slot as it warns, a heavy iron thump as it punches
