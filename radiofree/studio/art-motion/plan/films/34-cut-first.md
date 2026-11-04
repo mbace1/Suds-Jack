@@ -107,3 +107,43 @@ Accuracy choices in the picture:
   - a drip in the ditch;
   - the calendar tear.
 - Full render at `--jobs 3`, then QA from the film's own frames.
+
+## Built 4 Nov (en): Doodle 8
+
+**Owner, 4 Nov:** "All these are English for now. Proceed".
+
+- **The date line is neutral.** From 5 Nov the deadline has passed, and nobody has reported whether the plan was filed
+  (`plan/RFH-NEXT.md`, 4 Nov 17:16). The lines below are true either way:
+  - **calendar:** the head reads WATER PLAN DEADLINE, with the torn 4 NOV → 5 NOV page beat kept;
+  - **shot 5:** a new tag reads WATER PLAN WAS DUE 5 NOV · LVV (s5 + 1.0 to s5 + 2.75), before the replanting tag;
+  - **post:** "A detailed water plan was due 5 Nov."
+  Once the outcome is reported, switch to the "filed" or "not filed" lines drafted in RFH-NEXT.
+- **Black-shale shot rebuilt.** The camera is pulled back and raised over the ditch's east end and looks down its
+  length. The shot now shows stumps on the ground, the spoil heaps, the topsoil / till / black-shale layers in the far
+  wall and the rust water, instead of a wall filling the frame as stripes.
+- **Score:** new `score.py`. The film exports three more events for it: `tear`, `pageLand` and `rise`.
+  - RFH bed, light, under the whole film.
+  - **Shot 1:** a creak and a trunk crack as the spruce goes, air, a thump and a dust breath; the loaded trucks grind
+    away.
+  - **Shot 2:** the crossing bell from the gate, panned to the lit lamp. The convoy rumble sags with each brake, with
+    squeals, settles and two air-brake sighs.
+  - **Shot 3:** the police car's own engine, a brake and a settle. No siren.
+  - **Shot 4:** the bell far off and water trickling.
+  - **Shot 5:** the calendar page lifts, tears, flutters and lands; a long whoosh on the rise; the bell fades out; the
+    RFH sting.
+- **Files:**
+  - `films/04-11-Doodle8-Cut-First.mp4`: 25.41 s, with the papercut sign-off, 38 MB;
+  - `films/04-11-Doodle8-Cut-First-loop.mp4`: 22.40 s, film only, for IG Reels, 51 MB. The film grain and tilt-shift
+    make it expensive to encode; it is still 45 MB at CRF 17, so the master was kept;
+  - the preview, `previews/04-11-RFH-Cut-First-en.mp4` (6.3 MB).
+- **Checks:** the build PASSED with 0 fail and 3 warnings.
+  - Two warnings are the fi and ja native reads.
+  - The third: the ja subtitle file's first line needs 5.17 s against 3.70 s on this English cut. That matters only if
+    ja is posted.
+  - The sound passes all five checks at −13.9 LUFS and −3.0 dBTP. All 17 cues have a sound within 40 ms.
+  - The widest caption is 789 px ("Then the regulator / said [stop]."); every caption is in the safe area and clear of
+    the rail.
+  - Contact sheet: all five beats read at phone size.
+- **Post (en, 279 characters):** "In Muhos, Finland, Google cleared ~330 ha of forest for a data centre. The regulator ordered a
+  halt on 6 Oct; Oulu police are investigating. The site is in a black-shale zone. Google says it will replant 130 ha. A
+  detailed water plan was due 5 Nov. Shouldn't the plan come first?"
