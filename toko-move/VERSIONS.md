@@ -1,5 +1,38 @@
 # Toko Move — versions
 
+## v3.6 — 2026-11-04
+
+**THE DAILY AND THE WEEK, AS JOURNEYS** — step 6 of the Act 1 ship plan
+(ACT1.md §12). `?daily` and `?week` opened the real-time game; they are card
+journeys now, and `&classic` keeps the real-time versions.
+
+- **`js/modes.js`** says which shift a visit is: a run of the ladder,
+  today's daily (MEDIUM's rules on the date's seed, `&date=` to pin one), or
+  a day of the week (`week.js`'s seed for that day).
+- **The daily** has no memory and no regulars' standing, so it is the same
+  shift on every device. The first finish stands (`tokoMoveDaily`, shared
+  with `?classic`), and a replay says it is practice. The end card has the
+  grid, the euros, the streak and a line to copy.
+- **The week** banks each delivery as it lands, so leaving mid-shift
+  clocks out with it. The title shows the five days and the pace, and
+  Friday's end card is the rent. It has its own save (`tokoMoveWeek3`),
+  because a `?classic` week is scored in points; the real-time kit stays
+  there too.
+- **Routing:** `boot.js` no longer sends `daily`/`week` to the real-time
+  game. In the real-time game, its title links and its own week
+  navigation (A NEW WEEK, the next shift, a kit pick) carry `&classic`.
+  Otherwise a classic week would have walked into the journey on Tuesday.
+- **Gates moved with it:** `daily.cjs`, `week.cjs`, `ship.cjs`, `lang.cjs`
+  and `tools/stills.cjs` drive the real-time versions at `&classic`.
+- **Finnish:** a line with " · " is translated part by part. The first
+  patterns for "Daily 43 · 4 Nov · 07:00" were whole-line and never fired,
+  so the parts have their own patterns now.
+
+Gates: `test/play.cjs` 78 (`?daily` is the journey, ends on its grid, stands
+and shares, and a replay says what stands; `?week` seeded at Friday closes on
+the rent and leaves a classic week untouched); `daily.cjs` 20, `week.cjs` 31,
+`ship.cjs` 23 and `lang.cjs` 19 at `&classic`.
+
 ## v3.5 — 2026-11-04
 
 **THE RIVAL, THE REGULARS AND THE SEALED PARCEL** — step 5 of the Act 1 ship

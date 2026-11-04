@@ -116,7 +116,7 @@ server.listen(0, '127.0.0.1', async () => {
         runs: [...document.querySelectorAll('#mutRow .run')].map(r => ({ id: r.dataset.run, open: !r.classList.contains('locked'), lit: r.classList.contains('on') })),
         goal: document.getElementById('titleGoal').textContent, play: document.getElementById('play').textContent,
         links: ['dailyLink', 'weekLink', 'liveLink'].filter(id => { const e = document.getElementById(id); return e && !e.hidden && getComputedStyle(e).display !== 'none'; }) }));
-      ok(`the bare address is the card journey, not the real-time game (v${t.v})`, !t.classic && t.v === '3.5' && /v3\.5/.test(t.hero));
+      ok(`the bare address is the card journey, not the real-time game (v${t.v})`, !t.classic && t.v === '3.6' && /v3\.6/.test(t.hero));
       ok(`it is Act 1, in Helsinki (${await page.evaluate(() => document.getElementById('titleWhen').textContent)})`, await page.evaluate(() => /^Act 1 · Helsinki · 07:00/.test(document.getElementById('titleWhen').textContent)));
       ok(`the ladder: EASY open and lit, three locked (${t.runs.map(r => r.id + (r.open ? '' : '🔒')).join(' ')})`, t.runs.map(r => r.id).join() === 'easy,medium,hard,night' && t.runs[0].open && t.runs[0].lit && t.runs.slice(1).every(r => !r.open) && t.run === 'easy');
       ok(`the goal and the button (${t.goal} · ${t.play})`, /^Three deliveries before 08:15/.test(t.goal) && t.play === 'START SHIFT');
@@ -269,6 +269,34 @@ server.listen(0, '127.0.0.1', async () => {
       const note = await page.evaluate(() => JSON.parse(localStorage.getItem('tokoMoveNotebook') || '[]'));
       ok(`the race is settled on the stamp, and the sealed drop writes the notebook (${note[0]})`, seen.stamps.some(x => /You beat the other courier|She got there first/.test(x)) && note.length >= 1 && seen.stamps.some(x => x.includes(note[0].split(' · ').slice(1).join(' · '))));
       ok('no page or network errors (rival, sealed)', !errs.length, errs.slice(0, 3).join(' | '));
+      await ctx.close();
+    }
+    // ── the daily and the week on the journey (v3.6, ACT1.md §12)
+    {
+      const ctx = await browser.newContext(PHONE), page = await ctx.newPage(), errs = watch(page);
+      await page.goto(`${base}/toko-move/?daily&date=2026-11-04`, { waitUntil: 'load' }); await ready(page);
+      const t = await page.evaluate(() => ({ mode: window.__tm3.mode, when: document.getElementById('titleWhen').textContent, goal: document.getElementById('titleGoal').textContent, classic: !!window.__tm }));
+      ok(`?daily is the journey now: today's shift for everyone (${t.when} · ${t.goal.slice(0, 40)})`, t.mode === 'daily' && !t.classic && /^Daily \d+ · 4 Nov/.test(t.when) && /same shift for everyone/.test(t.goal));
+      await page.tap('#play'); await page.waitForSelector('#v3panel .eventOpt', { timeout: 15000 });
+      const seen = await playOut(page);
+      const end = await page.evaluate(() => ({ title: document.getElementById('endTitle').textContent, stats: document.getElementById('endStats').textContent, rec: JSON.parse(localStorage.getItem('tokoMoveDaily') || '{}')['2026-11-04'], share: document.getElementById('shareText')?.textContent || '' }));
+      ok(`the daily ends on its grid, stands as the day's result, and has a line to send (${end.share.split('\n').slice(0, 2).join(' / ')})`, seen.end && /^DAILY \d+/.test(end.title) && /day's result/.test(end.stats) && !!end.rec && /^Toko Move · Daily \d+ · 4 Nov\n[🟩🟨⬛]+ · €\d+/.test(end.share));
+      // a second finish the same day is practice: the first stands
+      await page.goto(`${base}/toko-move/?daily&date=2026-11-04`, { waitUntil: 'load' }); await ready(page);
+      const stands = await page.evaluate(() => document.getElementById('mutRow').textContent);
+      ok(`and the title says what stands (${stands.slice(0, 40)})`, /TODAY'S STANDS/.test(stands) && /practice/.test(stands));
+      // the week: seeded at Friday with four days banked, Friday decides the rent
+      await page.evaluate(() => { const days = ['none', 'none', 'match', 'market', 'helsinki']; const sh = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY'].map((name, i) => ({ name, day: days[i], score: 1000, euros: 100, results: ['ok', 'ok', 'ok', 'ok'], drops: 0, tips: 0, left: false, trail: [] }));
+        localStorage.setItem('tokoMoveWeek3', JSON.stringify({ seed: 4242, day: 4, days, shifts: sh, started: null, live: null, kit: [], nights: {} })); });
+      await page.goto(`${base}/toko-move/?week`, { waitUntil: 'load' }); await ready(page);
+      const wt = await page.evaluate(() => ({ mode: window.__tm3.mode, when: document.getElementById('titleWhen').textContent, goal: document.getElementById('titleGoal').textContent, strip: document.querySelector('.weekStrip')?.textContent || '' }));
+      ok(`?week is the journey now: Friday, €400 banked of the rent (${wt.when} · ${wt.goal})`, wt.mode === 'week' && /^Week 4242 · FRIDAY/.test(wt.when) && /€400 of the €400 rent/.test(wt.goal) && /MON€100/.test(wt.strip));
+      await page.tap('#play'); await page.waitForSelector('#v3panel .eventOpt', { timeout: 15000 });
+      const wk = await playOut(page);
+      const fri = await page.evaluate(() => ({ stats: document.getElementById('endStats').textContent, again: document.getElementById('again').textContent, w: JSON.parse(localStorage.getItem('tokoMoveWeek3') || 'null'), classic: localStorage.getItem('tokoMoveWeek') }));
+      ok(`Friday closes the week on the rent (${(fri.stats.match(/RENT PAID[^·]*· €\d+ over|SHORT €\d+ ON THE RENT/) || [])[0]} · ${fri.again})`, wk.end && /RENT PAID|SHORT/.test(fri.stats) && fri.w?.day === 5 && fri.again === 'A NEW WEEK');
+      ok('and a ?classic week is never touched', fri.classic === null);
+      ok('no page or network errors (daily, week)', !errs.length, errs.slice(0, 3).join(' | '));
       await ctx.close();
     }
     // ── a 320px phone: the pill still clears both corners, scaled if it must be

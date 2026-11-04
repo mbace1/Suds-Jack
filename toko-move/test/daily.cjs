@@ -27,8 +27,9 @@ server.listen(0, '127.0.0.1', async () => {
   const errs = [];
   const fresh = async () => { const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
     const page = await ctx.newPage(); page.on('pageerror', e => errs.push(String(e).slice(0, 140))); return { ctx, page }; };
-  // v2.73: the bare address is the ladder; the daily is ?daily
-  const boot = async (page, q = '?daily') => { await page.goto(`${base}/toko-move/${q}`, { waitUntil: 'load' });
+  // v2.73: the bare address is the ladder; the daily is ?daily (v3.6: the real-time
+  // daily is ?daily&classic — the bare ?daily is the journey's, held by play.cjs)
+  const boot = async (page, q = '?daily&classic') => { await page.goto(`${base}/toko-move/${q}`, { waitUntil: 'load' });
     await page.waitForFunction(() => window.__tm?.rival && window.__tm?.challenge?.offers?.length, null, { timeout: 30000 }); };
   // Run the day out without playing: the shift still ends, and ending is what is under test.
   const runOut = page => page.evaluate(() => { document.getElementById('play').click(); window.__tm.flow.runTicks(window.__tm.flow.clock.ticksPerDay + 50); });
