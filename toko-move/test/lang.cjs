@@ -91,7 +91,7 @@ server.listen(0, '127.0.0.1', async () => {
     }
 
     // ── play in Finnish, and read everything it said ─────────────────────
-    for (const q of ['?lang=fi&shift=1', '?lang=fi&shift=2&day=none', '?lang=fi&classic', '?lang=fi&week']) {
+    for (const q of ['?lang=fi&shift=1', '?lang=fi&shift=2&day=none', '?lang=fi&classic', '?lang=fi&week&classic']) {
       const ctx = await fresh(); const { page, errs } = await boot(ctx, q);
       await page.tap('#play'); await page.waitForTimeout(300);
       let end = null, sameButton = null, panel = false, taps = 0;

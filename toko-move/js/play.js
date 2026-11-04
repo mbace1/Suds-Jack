@@ -25,7 +25,7 @@
 // nothing happens while you read. Every animation is skippable by a tap and
 // none of them is a timer the game waits on to be fair: the state has already
 // moved when it starts.
-import { tr } from './lang.js?v=9';
+import { tr } from './lang.js?v=10';
 import * as J from './journey.js?v=3';
 import * as Runs from './runs.js?v=4';
 import { HopBoard } from './hopboard.js?v=1';
@@ -40,12 +40,16 @@ import { TRAMS } from './cards.js?v=3';
 import { mountAudio } from './audio.js?v=2';
 import { loadStanding, saveStanding } from './regulars.js?v=4';
 import { addNote } from './sealed.js?v=2';
+import { resolveMode, dailyShare, W } from './modes.js?v=1';
+import { recordDaily, todayRecord, streak } from './daily.js?v=2';
 
-export const BUILD_VERSION = '3.5';
+export const BUILD_VERSION = '3.6';
 const $ = id => document.getElementById(id);
 const params = new URLSearchParams(location.search);
-const RUN = Runs.resolveRun(params);
-const SEED = Number(params.get('seed')) || (1000 + Math.floor(Math.random() * 9000));
+// a run of the ladder, today's daily, or a day of the week (modes.js, ACT1.md §12)
+const MODE = resolveMode(params);
+const RUN = MODE.run;
+const SEED = MODE.seed || (1000 + Math.floor(Math.random() * 9000));
 const SKIN = skinFor({ mutator: RUN.skin || null });
 const NIGHT = SKIN.id === 'night';
 const CALM = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -342,6 +346,32 @@ function paintTitle() {
   const dl = $('dailyLink'); if (dl) dl.hidden = !extras;
   const wl = $('weekLink'); if (wl) { wl.hidden = !extras; wl.textContent = 'OR THE WEEK · five shifts, rent due Friday'; }
   const ll = $('liveLink'); if (ll) ll.hidden = !extras || STORE;
+  if (MODE.mode !== 'run') paintModeTitle(start, end);
+}
+// The daily and the week on the title card: what this shift is, what stands.
+function paintModeTitle(start, end) {
+  const set = (id, t) => { const e = $(id); if (e) e.textContent = t; };
+  for (const id of ['dailyLink', 'weekLink', 'liveLink']) { const e = $(id); if (e) e.hidden = true; }
+  const row = $('mutRow');
+  if (MODE.mode === 'daily') {
+    set('titleWhen', `Daily ${MODE.number} · ${MODE.label} · ${hhmm(start)}`);
+    set('titleGoal', `The same shift for everyone today. ${COUNT[RUN.target]} deliveries before ${hhmm(end)}. Your first finish stands.`);
+    const rec = todayRecord(MODE.key);
+    if (row) row.innerHTML = rec ? `<p class="mutHead">TODAY'S STANDS</p><div class="dailyBox"><p class="dailyGrid">${esc(dailyShare(MODE, rec.results, rec.target || RUN.target, rec.score).split('\n')[1])}</p><p class="hint">Play it again for practice; it will not count.</p></div>` : '';
+    return;
+  }
+  const w = MODE.week;
+  if (W.isOver(w)) {
+    const v = W.verdict(w);
+    set('titleWhen', `Week ${w.seed} · over`); set('titleGoal', v.paid ? `The rent is paid, with €${v.over} over.` : `The week came up €${-v.over} short of the rent.`);
+    const play = $('play'); if (play) { play.textContent = 'A NEW WEEK'; play.dataset.newWeek = '1'; }
+  } else {
+    const p = W.pace(w);
+    set('titleWhen', `Week ${w.seed} · ${MODE.day.name} · ${hhmm(start)}`);
+    set('titleGoal', `${MODE.day.name[0] + MODE.day.name.slice(1).toLowerCase()} of five. €${p.total} of the €${W.RENT} rent${p.done ? (p.need ? `, about €${p.perDay} a shift to go` : ', and the rent is covered') : ''}.`);
+  }
+  if (row) row.innerHTML = `<p class="mutHead">THE WEEK</p><div class="weekStrip">${W.DAY_NAMES.map((d, i) => { const sh = w.shifts[i];
+    return `<span class="wd${i === w.day ? ' now' : ''}${sh ? ' done' : ''}"><b>${d.slice(0, 3)}</b><i>${sh ? `€${sh.euros}` : i === w.day ? 'today' : '·'}</i></span>`; }).join('')}</div>`;
 }
 
 // ── the HUD: one pill and one strip ────────────────────────────────────────
@@ -571,6 +601,7 @@ async function pick(i) {
 async function stamp(d) {
   hideBoard(); paintScene('stop', { at: S.at, tram: arrived }); setTram(arrived); $('v3mini').hidden = true;
   sfx('stamp'); setTimeout(() => sfx(d.late ? 'late' : 'deliver'), 140);
+  if (MODE.mode === 'week') { W.progress(MODE.week, { score: S.score * W.PER_EURO, results: S.results }); W.saveWeek(MODE.week, MODE.store); }
   const note = d.sealed ? addNote(net.name(d.to)).split(' · ').slice(1).join(' · ') : '';
   const extra = (d.race ? `<span class="xtra">${d.race === 'won' ? 'You beat the other courier. ×1.3' : 'She got there first. ×0.6'}</span>` : '')
     + (d.tip ? `<span class="xtra">${esc(d.regular)} tips €${d.tip}</span>` : '') + (note ? `<span class="xtra note">${esc(note)}</span>` : '');
@@ -594,6 +625,7 @@ async function forecast() {
 // ── the end: the run's result (runs.js), and what you carried ─────────────
 function finish() {
   hideBoard(); $('v3mini').hidden = true; panel.innerHTML = ''; wxEl.className = ''; audio?.bed(null);
+  if (MODE.mode !== 'run') return finishMode();
   Runs.remember(S.keep);                                  // what the city remembers (ACT1.md §10)
   if (S.keep.regulars) saveStanding({ ...loadStanding(), ...S.keep.regulars });   // the regulars' standing (§11)
   const r = Runs.record(RUN.id, { delivered: S.done, target: S.target, late: S.late, score: S.score });
@@ -612,11 +644,47 @@ function finish() {
   game.result = r;
 }
 
+// The daily's end: the grid, the euros, whether this finish stands, the streak,
+// and the line to send. The week's: the day banked, the rent, and tomorrow.
+function finishMode() {
+  const done = S.done >= S.target, again = $('again');
+  if (MODE.mode === 'daily') {
+    const rec = recordDaily(MODE.key, { results: [...S.results], score: S.score, target: S.target, euros: true });
+    const text = dailyShare(MODE, S.results, S.target, S.score, location.href.split('#')[0].replace(/[?&](lang|seed)=[^&]*/g, ''));
+    $('endTitle').textContent = `DAILY ${MODE.number}${done ? ' COMPLETE' : ''}`;
+    $('endStats').innerHTML = `<div class="dailyBox runBox"><p class="dailyHead">${esc(MODE.label)} · the same shift for everyone</p><p class="dailyGrid">${esc(text.split('\n')[1])}</p>`
+      + `<p class="hint">${rec.first ? 'This finish is the day\'s result.' : `Today's result already stands: €${rec.record.score}. This one was practice.`} · ${streak(MODE.key)} day streak</p>`
+      + `<button class="btn prime wide" id="shareDaily" type="button">COPY THE RESULT</button><pre class="shareText" id="shareText" hidden>${esc(text)}</pre></div>`;
+    $('endNote').textContent = 'A new daily tomorrow.';
+    $('shareDaily').onclick = async () => { const pre = $('shareText'); pre.hidden = false; try { await navigator.clipboard.writeText(text); $('shareDaily').textContent = 'COPIED'; } catch { $('shareDaily').textContent = 'SELECT AND COPY'; } };
+    if (again) { again.textContent = 'PLAY IT AGAIN · PRACTICE'; again.classList.remove('prime'); again.classList.add('ghost'); again.onclick = () => { location.href = location.href; }; }
+    $('end').hidden = false; game.result = { mode: 'daily', first: rec.first, score: S.score, text };
+    return;
+  }
+  // the week: the day closes with what it banked (×PER_EURO: week.js counts points)
+  Runs.remember(S.keep); if (S.keep.regulars) saveStanding({ ...loadStanding(), ...S.keep.regulars });
+  const w = W.close(MODE.week, { score: S.score * W.PER_EURO, results: [...S.results] }); W.saveWeek(w, MODE.store);
+  const over = W.isOver(w), v = W.verdict(w), p = W.pace(w), day = w.shifts[w.shifts.length - 1];
+  $('endTitle').textContent = `${day.name} ${done ? 'DONE' : 'OVER'}`;
+  $('endStats').innerHTML = `<div class="dailyBox runBox"><p class="dailyHead">Week ${w.seed} · ${esc(day.name)}</p><p class="dailyGrid">${W.dayGrid(day.results, S.target)} · €${day.euros}</p>`
+    + `<div class="weekStrip">${W.DAY_NAMES.map((d, i) => `<span class="wd${w.shifts[i] ? ' done' : ''}"><b>${d.slice(0, 3)}</b><i>${w.shifts[i] ? `€${w.shifts[i].euros}` : '·'}</i></span>`).join('')}</div>`
+    + (over ? `<p class="weekVerdict ${v.paid ? 'paid' : 'short'}">${v.paid ? `RENT PAID · €${v.over} over` : `SHORT €${-v.over} ON THE RENT`}</p>` : `<p class="hint">€${p.total} of €${W.RENT} · about €${p.perDay} a shift to go</p>`)
+    + `</div>`;
+  $('endNote').textContent = over ? 'Friday night. The week is done.' : `${W.DAY_NAMES[w.day]} is next.`;
+  if (again) { again.textContent = over ? 'A NEW WEEK' : `NEXT · ${W.DAY_NAMES[w.day]}`; again.classList.add('prime'); again.classList.remove('ghost');
+    again.onclick = () => { if (over) W.clearWeek(MODE.store); location.href = location.href; }; }
+  $('end').hidden = false; game.result = { mode: 'week', day: day.name, euros: day.euros, over, paid: v.paid, total: v.total };
+  sfx(over ? (v.paid ? 'act' : 'miss') : 'end');
+}
+
 // ── start ──────────────────────────────────────────────────────────────────
 async function start() {
   await ready;
   $('title').hidden = true; stage.hidden = false;
-  S = J.newRun(net, RUN, SEED, { memory: Runs.memoryFor(), standing: loadStanding() }); shownMin = null; shownEur = 0; shownDone = 0; arrived = null;
+  if (MODE.mode === 'week' && W.isOver(MODE.week)) { W.clearWeek(MODE.store); location.href = location.href; return; }
+  const own = MODE.mode !== 'daily';   // the daily is the same shift for everyone: nothing of this device's in it
+  S = J.newRun(net, RUN, SEED, { memory: own ? Runs.memoryFor() : {}, standing: own ? loadStanding() : {} }); shownMin = null;
+  if (MODE.mode === 'week') { W.begin(MODE.week); W.saveWeek(MODE.week, MODE.store); } shownEur = 0; shownDone = 0; arrived = null;
   sizeFrame(); paintHud();
   busy = true; try { await forecast(); } finally { busy = false; }
   render();
@@ -630,6 +698,6 @@ sizeFrame();
 // takes is a tap on a real button.
 // `boards` counts the hops played on the board — a hurried player skips each
 // in a frame, so a gate counts them rather than hoping to sample one.
-const game = { version: BUILD_VERSION, run: RUN, seed: SEED, ready, state: () => S, net: () => net, card: () => (S ? J.card(net, S) : null), busy: () => busy, scene: () => scene, result: null, boards: 0 };
+const game = { version: BUILD_VERSION, mode: MODE.mode, run: RUN, seed: SEED, ready, state: () => S, net: () => net, card: () => (S ? J.card(net, S) : null), busy: () => busy, scene: () => scene, result: null, boards: 0 };
 globalThis.__tm3 = game;
 audio = mountAudio(game, { button: 'v3sound', clock: () => S?.clock ?? 0 });

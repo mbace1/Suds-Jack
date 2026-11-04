@@ -172,13 +172,13 @@ server.listen(0, '127.0.0.1', async () => {
     await page.context().close();
 
     // 05 the week: Monday played out, the rent on the end card
-    page = await fresh('?week');
+    page = await fresh('?week&classic');
     await page.tap('#play'); await page.waitForTimeout(400);
     await play(page, { end: '05-week' });
     await page.context().close();
 
     // 06 the daily: today's shift, the shareable result
-    page = await fresh('?daily');
+    page = await fresh('?daily&classic');
     await page.tap('#play'); await page.waitForTimeout(400);
     await play(page, { end: '06-daily' });
     await page.context().close();

@@ -519,6 +519,16 @@ export const FI = new Map(Object.entries({
   "a hat made of felt and regret": "hattu huovasta ja katumuksesta",
   "a sack of rye flour": "säkki ruisjauhoja",
   "a hand-knitted tram cosy": "käsin neulottu ratikkapipo",
+  // v3.6 — the daily and the week on the journey (ACT1.md §12)
+  "This finish is the day's result.": "Tämä tulos jää päivän tulokseksi.",
+  "COPY THE RESULT": "KOPIOI TULOS", "COPIED": "KOPIOITU", "SELECT AND COPY": "VALITSE JA KOPIOI",
+  "PLAY IT AGAIN · PRACTICE": "PELAA UUDESTAAN · HARJOITUS",
+  "A new daily tomorrow.": "Huomenna uusi päivän vuoro.",
+  "TODAY'S STANDS": "TÄMÄN PÄIVÄN TULOS",
+  "Play it again for practice; it will not count.": "Pelaa uudestaan harjoitukseksi; se ei lasketa.",
+  "THE WEEK": "VIIKKO",
+  "the same shift for everyone": "sama vuoro kaikille", "over": "ohi",
+  "Friday night. The week is done.": "Perjantai-ilta. Viikko on ohi.",
   // v3.5 — the rival, the regulars and the sealed parcel (ACT1.md §11)
   "A sealed parcel. No address, only a sticker.": "Sinetöity paketti. Ei osoitetta, vain tarra.",
   "The label says: you'll know the stop.": "Tarrassa lukee: tiedät kyllä pysäkin.",
@@ -578,6 +588,20 @@ export const FI = new Map(Object.entries({
 // Lines that carry names and numbers. Each is [regexp, replacement] and is
 // tried on one " · " segment at a time.
 const PATTERNS = [
+  // v3.6 — the daily and the week on the journey (ACT1.md §12)
+  [/^The same shift for everyone today\. (Three|Four|Five) deliveries before (\d\d:\d\d)\. Your first finish stands\.$/, (m, n, t) => `Sama vuoro kaikille tänään. ${({ Three: 'Kolme', Four: 'Neljä', Five: 'Viisi' })[n]} toimitusta ennen kello ${t}. Ensimmäinen tuloksesi jää voimaan.`],
+  [/^Today's result already stands: €(\d+)\. This one was practice\.$/, 'Tämän päivän tulos on jo voimassa: €$1. Tämä oli harjoitus.'],
+  [/^(\d+) day streak$/, '$1 päivän putki'],
+  // a line with ' · ' is translated part by part: each part has its own
+  [/^Daily (\d+)$/, 'Päivän vuoro $1'], [/^Week (\d+)$/, 'Viikko $1'],
+  [/^DAILY (\d+) COMPLETE$/, 'PÄIVÄN VUORO $1 SUORITETTU'],
+  [/^(Monday|Tuesday|Wednesday|Thursday|Friday) of five\. €(\d+) of the €(\d+) rent(, about €(\d+) a shift to go|, and the rent is covered)?\.$/, (m, d, a, b, rest, per) => `${DAYS_UP[d.toUpperCase()].trim().toLowerCase().replace(/^./, c => c.toUpperCase())}, viidestä. €${a} / €${b} vuokrasta${rest ? (per ? `, noin €${per} vuorolta loppuun` : ', ja vuokra on katettu') : ''}.`],
+  [/^The rent is paid, with €(\d+) over\.$/, 'Vuokra on maksettu, ja €$1 jäi yli.'],
+  [/^The week came up €(\d+) short of the rent\.$/, 'Viikosta puuttui vuokraan €$1.'],
+  [/^(MONDAY|TUESDAY|WEDNESDAY|THURSDAY|FRIDAY) (DONE|OVER)$/, (m, d, k) => `${DAYS_UP[d].trim()} ${k === 'DONE' ? 'VALMIS' : 'OHI'}`],
+  [/^NEXT · (MONDAY|TUESDAY|WEDNESDAY|THURSDAY|FRIDAY)$/, (m, d) => `SEURAAVA · ${DAYS_UP[d].trim()}`],
+  [/^(MONDAY|TUESDAY|WEDNESDAY|THURSDAY|FRIDAY) is next\.$/, (m, d) => `Seuraavaksi ${DAYS_UP[d].trim().toLowerCase()}.`],
+  [/^€(\d+) over$/, '€$1 yli'], [/^€(\d+) of €(\d+)$/, '€$1 / €$2'],
   // v3.5 — the rival, the regulars and the sealed parcel on the journey (ACT1.md §11)
   [/^(.+?\.) The other courier wants it too\.$/, (m, a) => `${tr(a)} Toinen lähetti haluaa sen myös.`],
   [/^(Documents|Hot food|Parts|Something fragile|Equipment|An express parcel|Fresh food|Market goods|A parcel) for (Riikka|Seppo|Mirja|Tuomas|Anneli|Kaarlo) at ([^.]+)\.$/, (m, a, b, c) => `${FI.get(a)} → ${b}, ${c}.`],

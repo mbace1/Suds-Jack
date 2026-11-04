@@ -96,7 +96,7 @@ server.listen(0, '127.0.0.1', async () => {
       await seed.evaluate(() => { localStorage.setItem('tokoMoveWeek', JSON.stringify({ days: [], shifts: [{}], day: 3, kit: 'z', nights: 5, seed: 1 }));
         localStorage.setItem('tokoMoveDaily', JSON.stringify({ x: { results: 5 } })); localStorage.setItem('tokoMoveRegulars', '[1,2]'); localStorage.setItem('tokoMoveVisited', '"x"'); });
       await seed.close();
-      const { page, errs } = await boot(ctx, '?week');
+      const { page, errs } = await boot(ctx, '?week&classic');
       await page.tap('#play'); const r = await play(page);
       const kit = await page.locator('.kitOffer').count();
       ok(`S3 a week save in the wrong shape is a fresh week that plays to its night (${r.phase}, ${kit} kit offers)`, r.phase === 'end' && kit > 0 && !errs.length, errs.slice(0, 2).join(' | '));
@@ -162,7 +162,7 @@ server.listen(0, '127.0.0.1', async () => {
     }
     // ── S1: the whole week, by tapping ───────────────────────────────────
     {
-      const ctx = await browser.newContext(phone); const { page, errs } = await boot(ctx, '?week');
+      const ctx = await browser.newContext(phone); const { page, errs } = await boot(ctx, '?week&classic');
       const days = []; let heap0 = null, heapN = null, nodes0 = null, nodesN = null;
       const size = () => page.evaluate(() => ({ heap: performance.memory?.usedJSHeapSize || 0, nodes: document.getElementsByTagName('*').length }));
       for (let d = 0; d < 5; d++) {

@@ -39,7 +39,7 @@ and gated, each deployed before the next starts.
    character and the funny moments live here.
 5. ~~**v3.5 · The rival, the regulars and the sealed parcel on the journey.**~~ Shipped in v3.5.
    Run modifiers, so each adds a card and never a screen.
-6. **v3.6 · The daily and the week as journeys.** Today they open the
+6. ~~**v3.6 · The daily and the week as journeys.**~~ Shipped in v3.6. Today they open the
    real-time game.
 7. **v3.7 · The ship bar on the journey, and the store pass.** `ship.cjs`'s
    S1–S7 re-run against the journey (a whole run by tapping, leaving

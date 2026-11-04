@@ -271,3 +271,37 @@ always did.
   line each name it). There is no rival on EASY or NIGHT.
 - `test/play.cjs`: a sealed run's card, strip and notebook line; a MEDIUM
   race on the strip.
+
+## 12. The daily and the week, as journeys (v3.6)
+
+The plan's step 6. The real-time game's two shared shapes, now played as card
+journeys. `&classic` keeps the real-time versions, and the real-time game's
+own links to them carry it, so a classic week stays a classic week.
+
+- **`?daily`:** today's shift, the same for everyone.
+  - It is MEDIUM's rules on the date's seed. There is **no memory and no
+    regulars' standing**, because nothing on one device may make it a
+    different shift from anyone else's.
+  - The first finish stands (`tokoMoveDaily`, shared with `?classic`). A
+    second play is practice and says so.
+  - The end card has the 🟩🟨⬛ grid, the euros, the streak, and the line to
+    send.
+  - `&date=YYYY-MM-DD` pins a day, for testers and for "try yesterday's".
+- **`?week`:** five shifts, Monday to Friday, banked towards the €400 rent
+  (`week.js`).
+  - It has its own save (`tokoMoveWeek3`), so a `?classic` week, scored in
+    points, is never mixed in.
+  - Every delivery is banked as it lands, so a reload mid-shift is the
+    clock-out, as it always was.
+  - The title shows the five days and the pace. Friday's end card is the
+    rent: paid with something over, or short by a number. Then: a new week.
+  - The real-time week's kit (the night offers) stays in `?classic`. It is
+    levers on the real-time engine, and the journey has none of them to pull.
+
+**Gates:**
+- `test/play.cjs`: `?daily` is the journey. It ends on its grid, stands as
+  the day's result, and has a share line; replaying it says what stands.
+  `?week` seeded at Friday closes on the rent and never touches a classic
+  week.
+- `daily.cjs`, `week.cjs`, `ship.cjs` and `lang.cjs` hold the real-time
+  versions at `&classic`.

@@ -2,7 +2,7 @@
 import {createFlow} from '../../flow-core/sim.js?v=2';
 import {FlowRenderer} from '../../flow-core/render.js?v=3';
 import {THEME} from './palette.js?v=1';
-import {tr} from './lang.js?v=9';
+import {tr} from './lang.js?v=10';
 const trLines=t=>String(t).split('\n').map(l=>tr(l)).join('\n');
 import {shareUrl,STORE} from './platform.js?v=1';
 import {DeliveryChallenge,DELIVERY_TARGET} from './deliveries.js?v=28';
@@ -24,13 +24,13 @@ import {skinFor,applySkin,CORAL as SK_CORAL} from './skin.js?v=1';
 import {rushWith,startMinute} from './mutators.js?v=2';
 import * as Runs from './runs.js?v=4';
 import {loadNotebook} from './sealed.js?v=2';
-import {drawPoster} from './poster.js?v=10';
+import {drawPoster} from './poster.js?v=11';
 import * as WalkPath from './walkpath.js?v=1';
 import * as Rush from './rush.js?v=1';
 import {colourOf,parcelHtml,bagHtml} from './parcels.js?v=1';
 
 const $=id=>document.getElementById(id);
-const BUILD_VERSION='3.5';
+const BUILD_VERSION='3.6';
 const MAP_THEME={...THEME,latent:THEME.paper,hideQueues:true,hideLoadMarks:true,hideCarriers:true,modeColours:{metro:'rgba(0,0,0,0)',tram:'rgba(0,0,0,0)',car:'rgba(0,0,0,0)'}};
 const cargoColour=colourOf;   // ONE palette: this file and the job board drew the same parcel in two different colours until v2.43
 const esc=s=>String(s??'').replace(/[&<>\"]/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[ch]||ch));
@@ -631,15 +631,15 @@ function kitChips(ids){return ids.length?`<span class="kitChips"><small>KIT</sma
 function kitPicker(){const n=Week.night(WEEK);if(!n||n.pick)return'';Week.saveWeek(WEEK);
   return `<div class="kitPick"><p class="kitHead">TONIGHT, TAKE ONE FOR ${esc(Week.DAY_NAMES[WEEK.day])}</p>${n.offers.map(id=>{const k=Kit.BY_ID[id];
     return `<button class="kitOffer" data-kit="${esc(id)}"><span class="kg">${k.glyph}</span><span class="kt"><b>${esc(k.name)}</b><small>${esc(k.line)}</small></span></button>`;}).join('')}</div>`;}
-function wireKitPicker(root){root.querySelectorAll('.kitOffer').forEach(b=>b.onclick=()=>{if(Week.choose(WEEK,b.dataset.kit)){Week.saveWeek(WEEK);location.href='?week';}});}
+function wireKitPicker(root){root.querySelectorAll('.kitOffer').forEach(b=>b.onclick=()=>{if(Week.choose(WEEK,b.dataset.kit)){Week.saveWeek(WEEK);location.href='?week&classic';}});}
 function weekTitle(){const w=WEEK,p=Week.pace(w),prev=w.shifts[w.shifts.length-1];
   return `${esc(shiftLabel())} · ${SHIFT_INFO.index+1} of ${Week.LENGTH}${weekStrip(w,SHIFT_INFO.index)}${kitChips(Week.owned(w))}<span class="weekPace">€${p.total} banked · rent €${Week.RENT} on Friday${p.need?` · about €${p.perDay} a shift to go`:' · covered'}</span>${prev?.left?`<br><span class="dailyDone">${esc(prev.name.toLowerCase())} was left mid-shift — it paid €${prev.euros}</span>`:''}`;}
 function paintWeek(box,again){const w=WEEK;
   Week.close(w,{score:challenge.score,results:challenge.results,drops:challenge.drops||0,tips:challenge.tips||0,trail:WEEK_TRAIL});Week.saveWeek(w);
   const x=w.shifts[SHIFT_INFO.index],over=Week.isOver(w),v=Week.verdict(w),p=Week.pace(w);
   const head=`<p class="dailyHead">${esc(SHIFT_INFO.name)}${cityDay?` · ${esc(cityDay.name)}`:''}</p><p class="dailyGrid">${Week.dayGrid(x.results)} <small>€${x.euros}</small></p>`;
-  const tail=over?`<p class="weekVerdict ${v.paid?'paid':'short'}">${v.paid?`RENT PAID · €${v.over} over`:`SHORT €${-v.over} ON THE RENT`}</p><canvas id="poster" class="poster" width="1080" height="1350" aria-label="the week as a poster: five routes on the map, each day's result, the rent"></canvas><button class="btn prime wide" id="savePoster">SAVE THE POSTER</button><button class="btn ghost wide" id="share">SHARE THE WEEK AS TEXT</button><pre class="shareText" id="shareText" hidden></pre><a class="btn ghost wide" href="?week" id="newWeek">A NEW WEEK</a>`
-    :`<p class="weekPace">€${p.total} of €${Week.RENT} · about €${p.perDay} a shift to go</p>${kitPicker()||`<a class="btn prime wide" href="?week" id="nextShift">${Week.DAY_NAMES[w.day]} →</a>`}`;
+  const tail=over?`<p class="weekVerdict ${v.paid?'paid':'short'}">${v.paid?`RENT PAID · €${v.over} over`:`SHORT €${-v.over} ON THE RENT`}</p><canvas id="poster" class="poster" width="1080" height="1350" aria-label="the week as a poster: five routes on the map, each day's result, the rent"></canvas><button class="btn prime wide" id="savePoster">SAVE THE POSTER</button><button class="btn ghost wide" id="share">SHARE THE WEEK AS TEXT</button><pre class="shareText" id="shareText" hidden></pre><a class="btn ghost wide" href="?week&classic" id="newWeek">A NEW WEEK</a>`
+    :`<p class="weekPace">€${p.total} of €${Week.RENT} · about €${p.perDay} a shift to go</p>${kitPicker()||`<a class="btn prime wide" href="?week&classic" id="nextShift">${Week.DAY_NAMES[w.day]} →</a>`}`;
   box.insertAdjacentHTML('afterbegin',`<div class="dailyBox weekBox">${head}${weekStrip(w)}${kitChips(Week.owned(w))}${tail}</div>`);wireKitPicker(box);
   // A shift of the week is played once: the card's replay button would be a
   // way round the one rule a run has.
