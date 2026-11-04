@@ -29,7 +29,7 @@
 //
 // Pure: no DOM, no clock, deterministic from a seed (one integer of rng state),
 // which is what lets test/journey.mjs play hundreds of runs in bare node.
-import { CARDS, CONTENTS, TRAMS, ODDS, SLIPS, SOAKS } from './cards.js?v=1';
+import { CARDS, CONTENTS, TRAMS, ODDS, SLIPS, SOAKS, CALLBACKS, ARCS } from './cards.js?v=2';
 import { haltFamily, haltMinutes } from './mutators.js?v=2';
 import { payFor } from './parcels.js?v=1';
 import { lineFamily } from './board.js?v=8';
@@ -126,10 +126,24 @@ export function dealDeck(s, run, weather) {
   return out;
 }
 
-export function newRun(net, run = {}, seed = 1, { start = 'lasipalatsi' } = {}) {
-  const s = { v: 4, seed, rng: seed >>> 0, run, clock: 0, at: net.nodes.has(start) ? start : [...net.nodes.keys()][0],
+// The arc step a run deals (ACT1.md §10): none on a first run, at most one,
+// and only the one the memory says is next. No rng: a run without a memory
+// deals exactly the deck it always did.
+export function arcStep(memory = {}, run = {}) {
+  if (!((memory.runs | 0) >= 1)) return null;
+  return ['ticket', 'dispatch'].map(arc => ARCS.find(a => a.arc === arc && (memory[arc] | 0) === a.at && (!a.runs || a.runs.includes(run.id)))).find(Boolean) || null;
+}
+// A card takes a job's card slot: the one already dealt for it, or a new one.
+function slot(s, card, job) {
+  const d = s.deck.find(x => x.job === job && !s.used.has(x.card.id));
+  if (d) d.card = card; else s.deck.push({ card, job });
+}
+
+export function newRun(net, run = {}, seed = 1, { start = 'lasipalatsi', memory = null } = {}) {
+  const s = { v: 5, seed, rng: seed >>> 0, run, clock: 0, at: net.nodes.has(start) ? start : [...net.nodes.keys()][0],
     target: run.target || 3, done: 0, late: 0, sold: 0, trust: 1, score: 0, streak: 0, bestStreak: 0, job: null, offer: null, weather: 'clear',
-    phase: 'dispatch', deck: [], used: new Set(), halt: null, haltSeen: false, log: [], hop: null, pending: null, results: [], seen: [] };
+    phase: 'dispatch', deck: [], used: new Set(), halt: null, haltSeen: false, log: [], hop: null, pending: null, results: [], seen: [],
+    memory: { ...(memory || {}) }, flags: new Set(), keep: {} };
   // the shift's weather, and the run as the weather makes it: slower walks,
   // fuller trams — the deadlines are set from THIS, so snow is slow, not unfair
   s.weather = run.skies?.length ? pickOf(s, run.skies) : 'clear';
@@ -137,6 +151,7 @@ export function newRun(net, run = {}, seed = 1, { start = 'lasipalatsi' } = {}) 
   s.run = { ...run, walkFactor: (run.walkFactor || 1) * W.walk, headway: (run.headway || 1) * W.wait };
   Object.defineProperty(s, 'best', { value: bestTable(net, s.run), enumerable: false });
   s.deck = dealDeck(s, run, s.weather);
+  const step = arcStep(s.memory, run); if (step) slot(s, step, step.job);
   // HARD's halted family (runs.js halt): seeded, a tram, from its minute
   if (run.halt) { const fams = [...new Set(net.lines.filter(l => l.mode === 'tram').map(l => l.family))];
     const fam = haltFamily(seed, fams); if (fam) s.halt = { family: fam, from: run.halt.atMin * 60, until: run.halt.atMin * 60 + haltMinutes(seed, run) * 60, recoverJobs: run.halt.recoverJobs, startDone: null, lifted: false }; }
@@ -301,6 +316,11 @@ export function choose(net, s, i) {
     s.pending = null; advance(s, opt.price);
     const { e, how } = o.risk ? roll(s, o) : { e: { ...o, time: 0 }, how: 'sure' };
     out.reveal = apply(net, s, e, how, o.risk?.odds || null);
+    // what the city remembers: across runs (`keep`), and for the rest of this
+    // one (`set`: its callback takes the next job's card slot)
+    Object.assign(s.keep, p.card.keep || {}, o.keep || {});
+    if (o.set && CALLBACKS[o.set] && !s.flags.has(o.set)) { s.flags.add(o.set); const j = s.done + s.sold + 1;
+      if (!s.deck.some(d => d.job === j && d.card.arc && !s.used.has(d.card.id))) slot(s, CALLBACKS[o.set], j); }   // an arc step keeps its slot
     if (s.phase === 'end') return out;
     if (out.reveal.sold) return out;                       // the job went with the buyer: the next dispatch is up
     if (p.thenArrive) return arrive(net, s, out);

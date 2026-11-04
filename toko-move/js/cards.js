@@ -24,6 +24,12 @@
 // anywhere; `weather` and `cargo`, when set, are what it needs; an option with
 // `needs` appears only for that parcel.
 //
+// `set` on an option is a FLAG for the rest of the run: its CALLBACK card
+// (below) takes the next job's card slot — the city remembers this morning.
+// ARCS are remembered across runs (ACT1.md §10): `keep` writes the device's
+// memory when the card is answered, and a step is dealt only when the memory
+// says it is next.
+//
 // Pure data: test/journey.mjs reads every card.
 
 export const ODDS = { usually: 0.75, maybe: 0.5, 'long shot': 0.25 };
@@ -32,9 +38,9 @@ export const CARDS = [
   // ── fun: the everyday city ────────────────────────────────────────────
   { id: 'gull', tone: ['fun'], where: 'stop', mood: 'opportunity', text: 'A seagull lands on your parcel and looks at you like you owe it money.',
     options: [{ label: 'Shoo it', time: 10, say: 'It leaves. It will remember this.' },
-      { label: 'Let it pose for a photo', time: 40, risk: { odds: 'maybe', win: { cash: 10, say: 'A tourist pays €10 for the photo. The gull takes a cut.' }, lose: { say: 'Nobody wants the photo. The gull keeps posing anyway.' } } }] },
+      { label: 'Let it pose for a photo', time: 40, set: 'gull', risk: { odds: 'maybe', win: { cash: 10, say: 'A tourist pays €10 for the photo. The gull takes a cut.' }, lose: { say: 'Nobody wants the photo. The gull keeps posing anyway.' } } }] },
   { id: 'granny', tone: ['fun'], where: 'stop', mood: 'opportunity', text: 'An old lady wants to cross Mannerheimintie. The lights are short, and so is she.',
-    options: [{ label: 'Walk her across', time: 90, pay: 1.1, say: 'She gives you a pulla. Morale is a multiplier.' },
+    options: [{ label: 'Walk her across', time: 90, pay: 1.1, set: 'granny', say: 'She gives you a pulla. Morale is a multiplier.' },
       { label: 'Walk on', time: 0, say: 'Someone else helps her. You feel it for the rest of the shift.' }] },
   { id: 'map', tone: ['fun'], where: 'stop', mood: 'info', text: 'A tourist is looking for the Moomin shop. Their paper map is of Stockholm.',
     options: [{ label: 'Show them the way', time: 40, cash: 5, say: 'They tip you five euros, in kronor. It counts.' },
@@ -43,7 +49,7 @@ export const CARDS = [
     options: [{ label: 'Stand and listen', time: 30, pay: 1.15, say: 'Goosebumps. Worth every second.' },
       { label: 'Change carriages', time: 20, say: 'The next carriage is also singing.' }] },
   { id: 'spruce', tone: ['fun'], where: 'aboard', mood: 'opportunity', text: 'A man gets on with a whole spruce. It takes three seats and most of yours.',
-    options: [{ label: 'Hold the top for him', time: 20, risk: { odds: 'usually', win: { cash: 10, say: 'He thanks you with a ten and a very firm handshake.' }, lose: { pay: 0.9, say: 'Needles in the parcel. Festive, though.' } } },
+    options: [{ label: 'Hold the top for him', time: 20, set: 'spruce', risk: { odds: 'usually', win: { cash: 10, say: 'He thanks you with a ten and a very firm handshake.' }, lose: { pay: 0.9, say: 'Needles in the parcel. Festive, though.' } } },
       { label: 'Stand by the door', time: 0, say: 'You and the spruce make eye contact all the way.' }] },
   { id: 'scratch', tone: ['fun'], where: 'stop', mood: 'opportunity', text: 'The R-kioski sells you a scratch card with your coffee.',
     options: [{ label: 'Scratch it', time: 10, risk: { odds: 'long shot', win: { cash: 50, say: 'Fifty euros! The cashier claps, once.' }, lose: { say: 'You win a free coffee. You are holding a coffee.' } } },
@@ -146,6 +152,42 @@ export const CARDS = [
 
 // What is inside. Drawn per job and kept from you until a buyer, the rain or
 // curiosity names it — or the drop does: "Signed for: …".
+// In a run: the card a flag brings back (ACT1.md §10).
+export const CALLBACKS = {
+  granny: { id: 'granny2', tone: ['fun', 'risky', 'scary'], where: 'aboard', mood: 'opportunity', text: 'The lady from Mannerheimintie is on this tram. She has saved you the seat by the door.',
+    options: [{ label: 'Sit with her', time: 30, pay: 1.15, say: 'She knows the person you are delivering to. "Tell her Aino says hello."' },
+      { label: 'Wave from the door', time: 0, say: 'She waves back the whole way, with the pulla bag.' }] },
+  spruce: { id: 'spruce2', tone: ['fun', 'risky', 'scary'], where: 'stop', mood: 'opportunity', text: 'The spruce man is back, without the spruce. He insists on carrying your parcel.',
+    options: [{ label: 'Let him', time: 30, risk: { odds: 'usually', win: { pay: 1.2, say: 'He carries it like a newborn. The parcel has never been safer.' }, lose: { time: 60, say: 'He takes the scenic route. The parcel enjoys it.' } } },
+      { label: "I've got it", time: 0, say: 'He salutes, and goes to buy another spruce.' }] },
+  gull: { id: 'gull2', tone: ['fun', 'risky', 'scary'], where: 'stop', mood: 'warning', text: 'The same seagull. It has brought a friend. They both look at the parcel.',
+    options: [{ label: 'Run', time: 30, say: 'You run. They walk. They are somehow faster.' },
+      { label: 'Stand your ground', time: 0, risk: { odds: 'maybe', win: { pay: 1.1, say: 'They leave. Respect has been earned.' }, lose: { cash: -3, say: 'One of them takes your pulla. The other takes notes.' } } }] },
+};
+// Across runs: the arcs (ACT1.md §10). A step is dealt when the memory says it
+// is next (`at`: the arc's count so far), never on a first run, one a run.
+// `job` is which job's card slot it takes; `runs` limits it to those runs.
+export const ARCS = [
+  { arc: 'dispatch', at: 0, job: 0, id: 'dispatch1', tone: ['fun', 'risky', 'scary'], where: 'stop', mood: 'info', keep: { dispatch: 1 }, text: "Dispatch here. Three today. Don't shake the blue one.",
+    options: [{ label: 'Noted', time: 0, say: 'Dispatch hangs up before you can ask which one is blue.' },
+      { label: "What's in it?", time: 20, say: '"Doesn\'t matter." Dispatch hangs up.' }] },
+  { arc: 'dispatch', at: 1, job: 0, id: 'dispatch2', tone: ['fun', 'risky', 'scary'], where: 'stop', mood: 'info', keep: { dispatch: 2 }, text: 'Dispatch here. Letters today. Same sender as Tuesday.',
+    options: [{ label: 'Deliver them', time: 0, say: 'Dispatch sounds relieved.' },
+      { label: 'Read the return address', time: 20, say: 'Aino, in Kallio. The same hand every week.' }] },
+  { arc: 'dispatch', at: 2, job: 0, id: 'dispatch3', tone: ['fun', 'risky', 'scary'], where: 'stop', mood: 'opportunity', keep: { dispatch: 3 }, text: 'Dispatch here. Just one, by hand. She asked for you.',
+    options: [{ label: 'Take it', time: 0, pay: 1.5, say: 'Aino was expecting you. There is coffee.' },
+      { label: 'Send the other courier', time: 0, keep: { sentOther: true }, say: 'Dispatch sighs. "She will be disappointed."' }] },
+  { arc: 'dispatch', at: 3, job: 0, id: 'dispatch4', tone: ['fun', 'risky', 'scary'], where: 'stop', mood: 'info', keep: { dispatch: 4 }, text: 'Dispatch here. Three today. And one for the east, if you ever find it.',
+    options: [{ label: 'Noted', time: 0, say: 'The line goes quiet for a moment longer than it should.' },
+      { label: 'East of where?', time: 20, say: '"No line goes there." Dispatch hangs up.' }] },
+  { arc: 'ticket', at: 0, job: 1, runs: ['night'], id: 'ticket1987', tone: ['scary'], where: 'aboard', mood: 'notice', text: 'A tram ticket from 1987 on the seat. Still warm.',
+    options: [{ label: 'Keep it', time: 0, keep: { ticket: 1 }, say: 'It is stamped for a line that does not run any more.' },
+      { label: 'Leave it', time: 0, say: 'When you look back, the seat is empty.' }] },
+  { arc: 'ticket', at: 1, job: 1, runs: ['easy', 'medium', 'hard'], id: 'inspector1987', tone: ['fun', 'risky'], where: 'aboard', mood: 'notice', keep: { ticket: 2 }, text: 'Tickets, please. That one is from 1987. Where did you get it?',
+    options: [{ label: 'The tram with no number', time: 30, risk: { odds: 'maybe', win: { pay: 1.3, say: 'He punches it anyway. "Long time no see."' }, lose: { time: 120, say: 'He keeps it, for the museum, and walks you off at the next stop.' } } },
+      { label: 'Lost and found', time: 0, say: 'He nods like he has heard that before.' }] },
+];
+
 export const CONTENTS = {
   documents: ['a contract for a sauna, signed in pencil', 'three copies of the same apology', 'a love letter, laminated', 'a building permit, eleven years late', 'the minutes of a meeting about meetings'],
   'hot food': ['salmon soup for one very specific grandmother', 'karjalanpiirakka, still warm', 'a pizza with pineapple and reindeer', 'a single meatball, gift-wrapped'],

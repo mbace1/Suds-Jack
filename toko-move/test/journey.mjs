@@ -71,7 +71,7 @@ const play = (run, seed, policy, watch = null) => { const s = J.newRun(net, run,
 { const a = play(BY_ID.hard, 4242, 'left').s, b = play(BY_ID.hard, 4242, 'left').s, c = play(BY_ID.hard, 4243, 'left').s;
   ok(JSON.stringify(a.log) === JSON.stringify(b.log) && a.score === b.score, 'the same seed plays the same shift');
   ok(JSON.stringify(a.log) !== JSON.stringify(c.log), 'another seed, another shift');
-  ok(Number.isInteger(a.rng) && a.v === 4, 'the whole rng state is one integer (a run serialises)'); }
+  ok(Number.isInteger(a.rng) && a.v === 5, 'the whole rng state is one integer (a run serialises)'); }
 
 // ── 6. dispatch: take it, or pay a minute for another
 { const s = J.newRun(net, BY_ID.medium, 77), first = s.offer.to; const c = J.card(net, s);
@@ -195,6 +195,42 @@ ok(RUNS.every(r => !r.cargo || r.cargo.every(c => CARGO[c])), 'every run deals r
 // ── 15. reading the run
 { const s = J.newRun(net, BY_ID.night, 1); ok(J.clockLabel(s) === '23:00', 'NIGHT starts at 23:00'); s.clock = 75 * 60; ok(J.clockLabel(s) === '00:15', 'and ends at 00:15');
   const d = J.newRun(net, BY_ID.easy, 1); ok(J.clockLabel(d) === '07:00' && J.timeLeft(d) === null, 'a day starts at 07:00; no job, no deadline'); }
+
+// ── 17. STORY ARCS (v3.4, ACT1.md §10): the city remembers
+{ const { CALLBACKS, ARCS } = await import('../js/cards.js');
+  // a run with no memory deals no arc step — the deck it always dealt
+  let arcless = true; for (const run of RUNS) for (let k = 1; k <= 30; k++) if (J.newRun(net, run, 900 + k).deck.some(d => d.card.arc)) arcless = false;
+  ok(arcless, 'a run with no memory deals no arc step');
+  const step = (m, id) => J.arcStep(m, BY_ID[id])?.id || null;
+  ok(step({ runs: 0 }, 'easy') === null && step({}, 'medium') === null, 'never on a first run');
+  ok(step({ runs: 1 }, 'easy') === 'dispatch1' && step({ runs: 4, dispatch: 1 }, 'hard') === 'dispatch2' && step({ runs: 4, dispatch: 2 }, 'medium') === 'dispatch3' && step({ runs: 9, dispatch: 4 }, 'easy') === null,
+    'Dispatch: one step a run, the one the memory says is next, and then it is over');
+  ok(step({ runs: 2 }, 'night') === 'ticket1987' && step({ runs: 2, ticket: 1 }, 'night') === 'dispatch1' && step({ runs: 2, ticket: 1 }, 'easy') === 'inspector1987' && step({ runs: 2, ticket: 2 }, 'easy') === 'dispatch1',
+    'the 1987 ticket: found on NIGHT, asked about by day, and then Dispatch again');
+  ok(ARCS.every(a => a.options.length === 2 && a.options.every(o => typeof o.time === 'number')) && Object.values(CALLBACKS).every(c => c.options.length === 2), 'every arc and callback card keeps the grammar');
+  // at most one arc step a run, in its own job's slot
+  let one = true; for (const run of RUNS) for (let k = 1; k <= 20; k++) { const s = J.newRun(net, run, 700 + k, { memory: { runs: 3, ticket: run.id === 'night' ? 0 : 1 } });
+    const arcs = s.deck.filter(d => d.card.arc); if (arcs.length !== 1 || arcs[0].job !== arcs[0].card.job) one = false; }
+  ok(one, 'with a memory, exactly one arc step, in its own job\'s slot');
+  // played: the step is met, answered, and kept for the next run
+  { const s = J.newRun(net, BY_ID.easy, 5, { memory: { runs: 3 } }); let met = null, steps = 0;
+    while (s.phase !== 'end' && steps++ < 500) { const c = J.card(net, s); if (!c) break; if (c.id === 'dispatch1') met = c; J.choose(net, s, c.id === 'dispatch1' ? 1 : 0); }
+    ok(!!met && s.keep.dispatch === 1, `Dispatch's first step is met on a second run, and kept (${JSON.stringify(s.keep)})`); }
+  { const s = J.newRun(net, BY_ID.easy, 5, { memory: { runs: 3, ticket: 1 } }); let met = false, steps = 0;
+    while (s.phase !== 'end' && steps++ < 500) { const c = J.card(net, s); if (!c) break; if (c.id === 'inspector1987') met = true; J.choose(net, s, 0); }
+    ok(met && s.keep.ticket === 2, 'the inspector asks about the ticket, once: the arc closes'); }
+  // in a run: a callback is dealt only after its choice, and then it comes
+  let after = 0, before = 0, granny = 0;
+  for (const run of RUNS) for (let k = 1; k <= 120; k++) { const s = J.newRun(net, run, 3000 + k); const seen = []; let steps = 0;
+    while (s.phase !== 'end' && steps++ < 500) { const c = J.card(net, s); if (!c) break; if (c.id) seen.push(c.id); J.choose(net, s, 0); }
+    for (const [flag, cb] of Object.entries(CALLBACKS)) { const i = seen.indexOf(cb.id); if (i < 0) continue; const j = seen.indexOf(flag); if (j >= 0 && j < i) after++; else before++; if (flag === 'granny') granny++; } }
+  ok(after > 0 && before === 0, `a callback comes back only after its choice (${after} came back, ${before} out of order)`);
+  ok(granny > 0, `the granny from Mannerheimintie turns up again (${granny} runs)`);
+  // a seed with a memory replays exactly
+  const a = J.newRun(net, BY_ID.medium, 77, { memory: { runs: 5, dispatch: 2 } }), b = J.newRun(net, BY_ID.medium, 77, { memory: { runs: 5, dispatch: 2 } });
+  for (const s of [a, b]) { let steps = 0; while (s.phase !== 'end' && steps++ < 500) { const c = J.card(net, s); if (!c) break; J.choose(net, s, c.options.length - 1); } }
+  ok(JSON.stringify(a.log) === JSON.stringify(b.log) && a.score === b.score, 'a seed with a memory replays exactly');
+}
 
 // ── 16. THE BANDS (runs.js quotes these): sixty fresh shifts of every run
 const SEEDS = Array.from({ length: 60 }, (_, k) => 1000 + (k + 1) * 37);

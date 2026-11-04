@@ -189,3 +189,44 @@ screen.
 - the weather layer;
 - the tram model at the stop, and the display naming it;
 - a landmark at a key station.
+
+## 10. Story arcs (v3.4)
+
+The plan's step 4 (owner, 2026-11-03: *"keep going with upgrading through a
+plan"*), adapted from the itch bible's twist cards (`art/itch-bible/CARDS.md`)
+to the journey. They give a card a **memory**: something you chose comes back.
+They use the same card grammar (a face, one line, two priced buttons), and
+the same rule: at most one story card per job.
+
+**In a run, the city remembers this morning.** Some choices set a flag, and a
+later card in the same run answers it, taking the next job's card slot:
+
+| you chose | later in the run |
+|---|---|
+| walk the granny across Mannerheimintie | she is on your tram and has saved you the seat by the door |
+| hold the top of the spruce | the spruce man, without the spruce, insists on carrying your parcel |
+| let the seagull pose for a photo | the same seagull, with a friend |
+
+**Across runs, the city remembers you.** Two arcs are kept on the device
+(`tokoMoveMemory`), passed into the run so a seed still replays. A run deals
+**at most one arc step**, never on a player's first run:
+
+- **Dispatch** (CARDS.md §6, the spine): one step a run, at the first job.
+  - **I:** *"Don't shake the blue one."* Asking what's in it gets *"Doesn't matter."*
+  - **II:** *"Letters today. Same sender as Tuesday."* The return address
+    names her: Aino, in Kallio.
+  - **III:** *"Just one. By hand. She asked for you."* Take it and she has coffee
+    waiting (×1.5); or send the other courier.
+  - **After:** *"And one for the east, if you ever find it."* No line goes
+    there. (The soft door to East of Piritori: a phrase, nothing more.)
+- **The 1987 ticket** (CARDS.md §4–5): on NIGHT, a ticket from 1987 on the
+  seat, still warm. Keep it, and a later day's ticket inspector asks where you
+  got it. *The tram with no number* is a *maybe*: he punches it anyway and
+  remembers you (×1.3), or he keeps it for the museum.
+
+**Gates:**
+- `test/journey.mjs`: a callback is dealt only after its choice; an arc step
+  only with its memory and never on a first run; at most one a run; and a
+  seed with a memory replays exactly.
+- `test/play.cjs`: Dispatch's first step on a second run, and its memory kept
+  after the run ends.
