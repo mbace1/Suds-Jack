@@ -1087,3 +1087,36 @@ Everything below comes from search summaries. No article was opened.
 - **11 AI Whistleblower Protection Act (S.1792):** no change; the Senate returns 9 Nov.
 - **Global follow-up from Finland (see HS-SCOUT):** Reuters, 29 Oct: Oulu police opened an investigation into the Muhos
   site. International pickup (Al Jazeera, Courthouse News, The Star), so it is a global story too.
+
+### Check Wed 4 Nov 07:16 (search summaries only; nothing opened, EDGAR not retried)
+- **Big development:** none.
+- **12 The Round Trip (Anthropic S-1): still HOLD.** No S-1/A with a price range; the 26 Oct S-1's cover range is
+  blank; the roadshow cannot start before 10 Nov. Listing-date and valuation talk remains reported, not filed.
+  [Leverage Shares](https://leverageshares.com/us/insights/anthropic-ipo-price/)
+- **Coxon 13 (Grade Your Own Homework, HOLD):** nothing new. Results are still the July 2025 award coverage (up to
+  $200M each to Anthropic, Google, OpenAI, xAI over two years, prototype phase; later phases depend on performance). No
+  modification, option or termination news for Google, OpenAI or xAI — "still in force" is unverified, not disproved.
+  Option (a), past tense, stays the safe fix; awaiting the owner.
+  [DefenseScoop](https://defensescoop.com/2025/07/14/pentagon-ai-contracts-musk-xai-google-openai-anthropic-cdao/),
+  [Biometric Update](https://www.biometricupdate.com/202507/pentagon-invests-1-billion-in-commercial-ai-for-national-security-missions)
+- **Global 3, Short Supply (posted; on-screen "HEARING 13 NOV 2026"): still unconfirmed.** Motion to dismiss filed
+  3 Sep (MLex); Judge Noel Wise (weak source); no hearing date in any result. Needs the N.D. Cal. docket before 13 Nov;
+  if the date is wrong, pin a correction.
+  [MLex](https://www.mlex.com/mlex/articles/2521308)
+- **1 The Panel (Project Meridian):** nothing newer than NPR 6 Oct (120-day study; SGE/contractor status undisclosed;
+  MITRE safeguards). The posted film stays true.
+  [OPB/NPR](https://www.opb.org/article/2026/10/06/pentagon-taps-elon-musk-and-palmer-luckey-for-strategy-study/)
+- **3 Data-centre NDAs:** nothing dated after 3 Nov. Background already on file (Salem, Lane County, Pennsylvania).
+  New to this file: **Beloit (WI) town board** requires board approval before staff sign a data-centre NDA (no blanket
+  ban, "to avoid deterring other projects"); **South Bend (IN)** council bill to bar officials from data-centre NDAs (first
+  reading 14 Sep; outcome not found). Background only.
+  [Beloit Daily News](https://www.beloitdailynews.com/news/local-news/town-of-beloit-passes-policy-requiring-board-approval-for-data-center-ndas/article_5de07819-6469-4886-b966-d3bbca5eb32a.html),
+  [WVPE](https://www.wvpe.org/wvpe-news/2026-09-08/south-bend-official-cites-data-center-nda-in-declining-council-meeting-invite)
+- **5 GPU/memory prices:** nothing dated November; latest is Nvidia's reported third 2026 bundle increase (~1 Aug) and
+  Samsung's reported Q3 DRAM rise. No new probe.
+- **Nvidia–OpenAI financing:** no new announcement; the mid-2026 WSJ/Bloomberg talks (guarantee up to $250B, $350B of
+  chip-purchase financing) are still described as early-stage. Q3 earnings late Nov.
+- **Chip smuggling:** no November charges found (latest: March 2026 cases).
+- **10/11 Whistleblowers:** no Meta reply to Grassley; no new testimony; S.1792 unchanged (Senate back 9 Nov).
+- **Finland → global:** the Muhos police inquiry keeps its international pickup (Reuters/AFP 29–30 Oct; a Guardian
+  visit per Kaleva). See HS-SCOUT.

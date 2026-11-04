@@ -505,3 +505,31 @@ All facts below come from search summaries; no article was opened.
 - **Finland:** no new HS story. Helsinki: no reaction beyond the 2 Nov decision. Muhos water plan: check 5–6 Nov.
   Kaleva headline: up to 20 million m³/yr from the Oulujoki (unverified). **Trade Secret:** no follow-up.
 - **Films now wrong:** none. Count the Trees understates the police count; follow-up, not a correction.
+
+## Daily check, Wed 4 Nov 07:16 (morning; search summaries only)
+- **Big development:** none on a global candidate (no S-1/A; Meridian unchanged; no Meta reply; nothing new on the
+  Pentagon lab deals).
+- **Cut First (Google · Muhos, awaiting approval): still true today, 4 Nov; dated from tomorrow.**
+  - LVV wants a *detailed* water-management plan by **5 Nov**, or it can demand one under a conditional fine (Kaleva).
+    No news yet on whether Tuike filed. If it posts after 4 Nov, the film's "WATER PLAN DUE 5 NOV" and the post's "is due
+    5 Nov" become wrong: past tense plus whether it was filed.
+  - The police step is an *esiselvitys* (preliminary inquiry, IL/MTV/Kaleva); the wires call it a criminal probe.
+    "Now the police are investigating" holds.
+  - The halt is LVV's *kehotus* to suspend (6 Oct); wires: "ordered a halt". "Said stop" is safe; the sign's "HALT ORDER"
+    follows the wires.
+- **Five Pins (Helsinki, awaiting approval):** no change since the 2 Nov City Board decision. New detail for the map:
+  city estimates ~40 MW Myllypuro, ~80 Malmi, ~100 Salmisaari, ~140 Heikinlaakso; Myllypuro first (~2028). The rule is
+  heat "substantially" into district heating (the Greens wanted full use), so "must warm homes" stays a simplification.
+  Heikinlaakso drew strong resident opposition.
+- **Coxon 13, Grade Your Own Homework (HOLD):** nothing new; the other three deals: no termination news (unverified).
+  Option (a) stays the safe fix. Awaiting the owner.
+- **Global 3, Short Supply (posted):** "HEARING 13 NOV 2026" still unconfirmed; no date in any source. Needs the docket
+  before 13 Nov; if wrong, pin a correction.
+- **The Round Trip:** HOLD (no S-1/A; roadshow not before 10 Nov). **The Panel:** still true.
+- **Ends in 3 (posted):** the digit-5 deadline (31 Oct) has passed; no suspension figure for 5s found; next is digit 6 on
+  15 Nov. The posted copy was true when posted. **Break Glass:** keep held (no 2026 plenary result found).
+  **Count the Trees:** still true; the police inquiry is the follow-up. **Trade Secret:** no follow-up.
+- **New, headlines only:** MTV "Pieni lipsahdus" (data-centre towns' leaders on Google's blunder; speaker not visible, do
+  not use until opened); a professor to The Guardian in Muhos: data centres are of no use to Finland (Kaleva).
+- **Films now wrong:** none. Cut First goes out of date tomorrow if not posted today.
+

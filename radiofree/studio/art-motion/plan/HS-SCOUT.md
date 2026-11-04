@@ -762,3 +762,56 @@ Everything below comes from search summaries. No article was opened.
   - **Count the Trees / Muhos:** still holds; police probe is the follow-up (above).
   - **Trade Secret / Hamina:** no follow-up and no new official action.
   - **Reader reaction:** not visible through search.
+
+### Check Wed 4 Nov 07:16 (search summaries only; nothing opened)
+- **Muhos (for "Cut First", awaiting the owner): nothing changes the copy if it posts today, 4 Nov.**
+  - **The 5 Nov water plan:** per Kaleva, LVV requires a *detailed* water-management plan by 5 Nov; if it is not filed,
+    LVV can demand it under a conditional fine (uhkasakko). LVV also says the ditching needs a water-act permit. No news
+    yet on whether Tuike filed. "WATER PLAN DUE 5 NOV" is true today; **from 5 Nov the film and post need the past tense**
+    and a check on whether it was filed.
+  - **The halt:** LVV's instrument is a *kehotus* (an instruction to suspend; Kaleva's headline: "must be suspended"),
+    issued 6 Oct, comply by 23 Oct at the latest; Tuike answered 11 Oct (Kaleva) / 14 Oct (search summary) that it would
+    comply, admitted it had failed, and said "stabilisation work" may still be done on site. English wire copy (Reuters,
+    AFP) calls it an order to halt. "Then the regulator said stop" is safe; the on-screen "HALT ORDER" follows the wires.
+  - **The police:** IL/MTV/Kaleva call it an **esiselvitys** (a preliminary inquiry into whether a crime is suspected),
+    opened on LVV's request; Reuters/AFP call it a criminal probe. Yle: the investigation is expected to finish next year;
+    Google says it will cooperate. "Now the police are investigating" holds in all three languages.
+  - **330 ha / 130 ha:** unchanged (LVV is reported as saying "over 300 ha"; Google's own figure 330; Google plans to
+    replant 130 ha). Campaigners' ~250,000 trees: not used.
+  - **New, headlines only (bodies not seen):** MTV, "Pieni lipsahdus" — data-centre towns' leaders comment on Google's
+    blunder (who said "a small slip" is not visible: do not use until the article is opened); Kaleva: a professor tells
+    The Guardian on a visit to Muhos that data centres are of no use to Finland; Kaleva: Vaala's data-centre felling is
+    being moved (detail not visible).
+  [Kaleva (water plan, LVV)](https://www.kaleva.fi/lupa-ja-valvontavirasto-kehottaa-keskeyttamaan-muh/13698075),
+  [Kaleva (Google's answer)](https://www.kaleva.fi/google-vastasi-viranomaiselle-tyomailla-saatetaan/13706132),
+  [Kaleva (police request)](https://kaleva.fi/lvv-on-tehnyt-poliisille-tutkintapyynnon-googlen-m/13720712),
+  [MTV (esiselvitys)](https://www.mtvuutiset.fi/artikkeli/il-poliisi-kaynnisti-esiselvityksen-googlen-datakeskuksesta/9403560),
+  [MTV ("pieni lipsahdus")](https://www.mtvuutiset.fi/artikkeli/pieni-lipsahdus-kaynyt-nain-datakeskuspaikkakuntien-pomot-kommentoivat-googlen-mokaa/9403546),
+  [Kaleva (Guardian)](https://www.kaleva.fi/professori-muhoksella-vierailleelle-the-guardianil/13721118),
+  [Kaleva (Vaala)](https://www.kaleva.fi/vaalan-datakeskushankkeen-hakkuut-siirtymassa-jopa/13712242),
+  [Yle](https://yle.fi/a/74-20254086),
+  [STT/LVV](https://www.sttinfo.fi/tiedote/72435808/lupa-ja-valvontavirasto-vaatii-tuike-finland-oylta-toimenpiteita)
+- **Helsinki (for "Five Pins", awaiting the owner):** no follow-up or council step found since the 2 Nov City Board
+  decision recorded on 3 Nov (hel.fi, STT). Today's searches did not resurface the hel.fi item, so the date tag rests on
+  the 3 Nov record; a Helsingin Uutiset headline, "Helsinki osoitti tarkat paikat uusille datakeskuksille", fits it.
+  - **New detail (Helsingin Uutiset/Yle, summaries):** the city's early estimates of energy-system impact are ~40 MW
+    Myllypuro, ~80 Malmi, ~100 Salmisaari, ~140 Heikinlaakso (Östersundom not given); Myllypuro could be first
+    (construction possibly 2028), Salmisaari ~2030, Heikinlaakso and Malmi ~2031. Myllypuro and Salmisaari sit on Helen
+    power-plant sites. Heikinlaakso began as a private developer's reservation (Brunswick, ~7.3 ha) and drew strong
+    resident opposition. The city aims for 2–3 projects, ~350 MW of usable heat by 2035 and ~500 MW by 2040.
+  - **Waste heat wording:** the city's principle is that heat goes **substantially** into district heating; the Greens
+    asked for **full** use. "Must warm homes" stays a simplification; the literal caption option stands.
+  [Helsingin Uutiset](https://www.helsinginuutiset.fi/paikalliset/9897346),
+  [Yle](https://yle.fi/a/74-20251993),
+  [Verkkouutiset](https://www.verkkouutiset.fi/a/naille-viidelle-helsingin-alueelle-voi-tulla-datakeskus),
+  [Greens (STT)](https://www.sttinfo.fi/tiedote/72457140/vihreat-vaatii-helsingin-datakeskusperiaatteisiin-tiukkoja-linjoja-ja-luonnon-suojaamista?lang=fi)
+- **No new HS candidate.** A Humppila follow-up (HS via Verkkouutiset: AI "replaced several officials", ~€150k saved) is
+  the existing #1 Two Directors, One Agent; no Ombudsman ruling found.
+- **Reactions:**
+  - **Count the Trees / Muhos:** still true; the police inquiry and the 5 Nov plan are the follow-up beats. International
+    pickup continues (Guardian visit, per Kaleva).
+  - **Trade Secret / Hamina:** no follow-up and no new official action.
+  - **Five Pins / Helsinki:** Heikinlaakso residents' opposition is the visible reaction; no comment counts visible.
+  - **Reader reaction:** comment counts not visible through search.
+- **Pattern note:** the day before an authority's deadline is quiet; the story moves on the deadline day or the day
+  after (expect Kaleva first, then Yle). Re-check Muhos on the evening of 5 Nov and the morning of 6 Nov.
