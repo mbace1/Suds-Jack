@@ -188,6 +188,12 @@ export const ARCS = [
       { label: 'Lost and found', time: 0, say: 'He nods like he has heard that before.' }] },
 ];
 
+// The sealed parcel's card (ACT1.md §11; CARDS.md §1): no address, only a
+// sticker and a line to ride. Asking names it; so does boarding that line.
+export const SEALED_CARD = { id: 'sealed', sealed: true, tone: ['fun', 'risky', 'scary'], where: 'stop', mood: 'info', text: "The label says: you'll know the stop.",
+  options: [{ label: 'Ride the {fam} and watch', time: 0, say: 'You watch every stop go by. One of them will look right.' },
+    { label: 'Ask at the kiosk', time: 40, unseal: true, say: 'The kiosk knows. It is {stop}.' }] };
+
 export const CONTENTS = {
   documents: ['a contract for a sauna, signed in pencil', 'three copies of the same apology', 'a love letter, laminated', 'a building permit, eleven years late', 'the minutes of a meeting about meetings'],
   'hot food': ['salmon soup for one very specific grandmother', 'karjalanpiirakka, still warm', 'a pizza with pineapple and reindeer', 'a single meatball, gift-wrapped'],

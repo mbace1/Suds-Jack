@@ -519,6 +519,15 @@ export const FI = new Map(Object.entries({
   "a hat made of felt and regret": "hattu huovasta ja katumuksesta",
   "a sack of rye flour": "säkki ruisjauhoja",
   "a hand-knitted tram cosy": "käsin neulottu ratikkapipo",
+  // v3.5 — the rival, the regulars and the sealed parcel (ACT1.md §11)
+  "A sealed parcel. No address, only a sticker.": "Sinetöity paketti. Ei osoitetta, vain tarra.",
+  "The label says: you'll know the stop.": "Tarrassa lukee: tiedät kyllä pysäkin.",
+  "You watch every stop go by. One of them will look right.": "Katsot jokaisen pysäkin ohi. Yksi niistä näyttää oikealta.",
+  "Ask at the kiosk": "Kysy kioskilta",
+  "Race her": "Kisaa hänen kanssaan",
+  "Let her have it": "Anna hänen ottaa se",
+  "You beat the other courier. ×1.3": "Ehdit ennen toista lähettiä. ×1.3",
+  "She got there first. ×0.6": "Hän ehti ensin. ×0.6",
   // v3.4 — the story arcs (ACT1.md §10)
   "The lady from Mannerheimintie is on this tram. She has saved you the seat by the door.": "Mannerheimintien rouva on samassa ratikassa. Hän on pitänyt sinulle paikan oven vieressä.",
   "Sit with her": "Istu hänen viereensä",
@@ -569,6 +578,16 @@ export const FI = new Map(Object.entries({
 // Lines that carry names and numbers. Each is [regexp, replacement] and is
 // tried on one " · " segment at a time.
 const PATTERNS = [
+  // v3.5 — the rival, the regulars and the sealed parcel on the journey (ACT1.md §11)
+  [/^(.+?\.) The other courier wants it too\.$/, (m, a) => `${tr(a)} Toinen lähetti haluaa sen myös.`],
+  [/^(Documents|Hot food|Parts|Something fragile|Equipment|An express parcel|Fresh food|Market goods|A parcel) for (Riikka|Seppo|Mirja|Tuomas|Anneli|Kaarlo) at ([^.]+)\.$/, (m, a, b, c) => `${FI.get(a)} → ${b}, ${c}.`],
+  [/^A sealed parcel\. Ride the (\S+)\.$/, 'Sinetöity paketti. Aja linjalla $1.'],
+  [/^Ride the (\S+) and watch$/, 'Aja linjalla $1 ja katso'],
+  [/^The kiosk knows\. It is (.+)\.$/, 'Kioski tietää. Se on $1.'],
+  [/^beat (\d\d:\d\d)$/, 'ehdi ennen $1'], [/^beat her by (\d\d:\d\d)$/, 'ehdi ennen $1'],
+  [/^Aboard the (\S+), the label makes sense: (.+)\.$/, 'Linjalla $1 tarra alkaa tehdä järkeä: $2.'],
+  [/^(Riikka|Seppo|Mirja|Tuomas|Anneli|Kaarlo) tips €(\d+)$/, '$1 antaa $2 € tippiä'],
+  [/^SEALED · (\S+)$/, 'SINETÖITY · $1'],
   // v3.1: Act 1's stakes and the third star in euros
   [/^fees ×([\d.]+)$/, 'palkkiot ×$1'],
   [/^€(\d+) for the third star$/, '€$1 kolmanteen tähteen'],

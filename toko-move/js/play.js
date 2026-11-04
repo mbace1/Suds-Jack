@@ -25,9 +25,9 @@
 // nothing happens while you read. Every animation is skippable by a tap and
 // none of them is a timer the game waits on to be fair: the state has already
 // moved when it starts.
-import { tr } from './lang.js?v=8';
-import * as J from './journey.js?v=2';
-import * as Runs from './runs.js?v=3';
+import { tr } from './lang.js?v=9';
+import * as J from './journey.js?v=3';
+import * as Runs from './runs.js?v=4';
 import { HopBoard } from './hopboard.js?v=1';
 import { skinFor } from './skin.js?v=1';
 import { moodFace, MOODS } from './events.js?v=10';
@@ -36,10 +36,12 @@ import { colourOf, parcelHtml } from './parcels.js?v=1';
 import { esc } from './ui.js?v=2';
 import { STORE } from './platform.js?v=1';
 import { lineFamily } from './board.js?v=8';
-import { TRAMS } from './cards.js?v=2';
+import { TRAMS } from './cards.js?v=3';
 import { mountAudio } from './audio.js?v=2';
+import { loadStanding, saveStanding } from './regulars.js?v=4';
+import { addNote } from './sealed.js?v=2';
 
-export const BUILD_VERSION = '3.4';
+export const BUILD_VERSION = '3.5';
 const $ = id => document.getElementById(id);
 const params = new URLSearchParams(location.search);
 const RUN = Runs.resolveRun(params);
@@ -178,6 +180,8 @@ const CSS = `
 .v3stamp.late{border-color:#e2683c}.v3stamp.late .big{color:#b34a36}
 .v3stamp .pts{font-size:16px;font-weight:800;color:#3f7a45}
 .v3stamp .inside{font-size:13px;color:#4d5a5e;font-style:italic}
+.v3stamp .xtra{font-size:12px;font-weight:700;color:#233d4d}.v3stamp .xtra.note{font-weight:400;font-style:italic;color:#6b5a2e}
+.v3strip .race{color:#b5532c;font-weight:700}.v3strip .race.late{text-decoration:line-through}
 .v3stamp.rare{border-color:#c9a24a;background:#fffaf0}.v3stamp.rare .big{color:#8a6802}
 .v3stamp.wxs{border-color:#33b2d2}.v3stamp.wxs .big{color:#176b73}
 .v3rev{display:flex;gap:12px;align-items:flex-start;padding:14px 16px;border-radius:16px;background:#fffdf7;border:2px solid #233d4d;box-shadow:0 6px 20px rgba(21,38,43,.22);animation:v3bump .4s cubic-bezier(.2,.9,.3,1.35) both}
@@ -363,7 +367,8 @@ function paintHud() {
   // the strip: the job, where it goes, what it pays, how long it has
   const strip = $('v3strip');
   if (job) { strip.hidden = false; const m = job.mult;
-    strip.innerHTML = `${parcelHtml(job.cargo, { max: 15 })}<span>${esc(J.cargoWord(job.cargo))}</span><span aria-hidden="true">→</span><b>${esc(net.name(job.to).toUpperCase())}</b><span class="fee">€${job.fee}</span>${m !== 1 ? `<span class="mult${m < 1 ? ' down' : ''}">×${+m.toFixed(2)}</span>` : ''}<span class="left${left < 0 ? ' late' : ''}">${left < 0 ? `late by ${Math.ceil(-left / 60)} min` : `${Math.max(1, Math.ceil(left / 60))} min left`}</span>`; }
+    const sealed = !dropOf(job), race = job.rival ? `<span class="left race${S.clock > job.rival.until ? ' late' : ''}">beat her by ${J.clockAt(S, job.rival.until)}</span>` : '';
+    strip.innerHTML = `${parcelHtml(job.cargo, { max: 15 })}<span>${esc(job.regular ? job.regular.name : J.cargoWord(job.cargo))}</span><span aria-hidden="true">→</span><b>${sealed ? `SEALED · ${esc(job.sealed.family)}` : esc(net.name(job.to).toUpperCase())}</b><span class="fee">€${job.fee}</span>${m !== 1 ? `<span class="mult${m < 1 ? ' down' : ''}">×${+m.toFixed(2)}</span>` : ''}${race || `<span class="left${left < 0 ? ' late' : ''}">${left < 0 ? `late by ${Math.ceil(-left / 60)} min` : `${Math.max(1, Math.ceil(left / 60))} min left`}</span>`}`; }
   else strip.hidden = true;
   fitTop();
 }
@@ -401,20 +406,23 @@ function stakesHtml(st) {
 let dealt = '';
 function paintCard(c) {
   const key = `${S.log.length}:${c.kind}:${c.id || ''}:${c.text}`;
-  if (key !== dealt) { dealt = key; sfx(c.kind === 'halt' ? 'event' : 'deal'); }
+  if (key !== dealt) { dealt = key; sfx(c.kind === 'halt' || c.rival ? 'event' : 'deal'); }
   const stack = c.options.some(o => String(tr(o.label)).length > 18 || o.stakes);
   panel.innerHTML = `<section class="eventCard mood-${esc(c.mood)}" data-kind="${c.kind}"${c.id ? ` data-card="${c.id}"` : ''}><div class="evHead">${face(c.mood)}<b class="evLine">${c.at ? `<span class="evAt">${esc(c.at.toUpperCase())}</span>` : ''}${esc(c.text)}</b></div><div class="evOpts${stack ? ' evStack' : ''}">${c.options.map((o, i) => `<button class="evBtn ${i === 0 ? 'evPrimary' : 'evGhost'} eventOpt" type="button" data-i="${i}"><span class="evLb"><span>${esc(o.label)}</span>${stakesHtml(o.stakes)}</span><span class="evCost">${price(o.price)}</span></button>`).join('')}</div></section>`;
   const armed = performance.now() + 300;
   panel.querySelectorAll('.eventOpt').forEach(b => b.addEventListener('click', () => { if (performance.now() >= armed) pick(Number(b.dataset.i)); }));
 }
 
+// Where the drop is — unless the parcel is sealed and its label has not made
+// sense yet (ACT1.md §11): the strip, the corner map and the board all ask here.
+const dropOf = job => job && !(job.sealed && !job.sealed.revealed) ? job.to : undefined;
 // the corner inset: here, the drop, and the hops on offer as their own paths
 function paintMini(c) {
   const btn = $('v3mini'), hops = c?.kind === 'route' ? c.options.map(o => o.hop).filter(Boolean) : [];
   // at dispatch the drop on offer is the job's; it shows where it is before you take it
-  const job = S.job || (S.offer ? { to: S.offer.to, cargo: S.offer.cargo } : null), show = !!job && c && c.kind !== 'story';
+  const job = S.job || (S.offer ? { to: S.offer.to, cargo: S.offer.cargo, sealed: S.offer.sealed } : null), show = !!job && c && c.kind !== 'story';
   btn.hidden = !show; if (!show) { still = null; return; }
-  still = () => { mini.resize(); mini.draw({ at: S.at, dest: job.to, destColour: colourOf(job.cargo), previews: hops, labels: false, lift: false, halted: haltedLayer }); };
+  still = () => { mini.resize(); mini.draw({ at: S.at, dest: dropOf(job), destColour: colourOf(job.cargo), previews: hops, labels: false, lift: false, halted: haltedLayer }); };
   still();
 }
 const haltedLayer = layer => !!S?.halt && String(layer.mode || '').toUpperCase() !== 'SUBWAY' && J.halted(S, lineFamily(layer.name));
@@ -425,8 +433,8 @@ function openBoard() {
   const c = J.card(net, S); if (!c || busy) return;
   boardOpen = true; panel.style.visibility = 'hidden'; $('v3mini').hidden = true;
   const cv = $('v3board'); cv.classList.add('on'); board.resize();
-  const job = S.job || (S.offer ? { to: S.offer.to, cargo: S.offer.cargo } : null);
-  board.draw({ at: S.at, dest: job?.to, destColour: job ? colourOf(job.cargo) : undefined, previews: c.kind === 'route' ? c.options.map(o => o.hop).filter(Boolean) : [], lift: false, halted: haltedLayer });
+  const job = S.job || (S.offer ? { to: S.offer.to, cargo: S.offer.cargo, sealed: S.offer.sealed } : null);
+  board.draw({ at: S.at, dest: dropOf(job), destColour: job ? colourOf(job.cargo) : undefined, previews: c.kind === 'route' ? c.options.map(o => o.hop).filter(Boolean) : [], lift: false, halted: haltedLayer });
   hint('TAP TO CLOSE'); weather();
 }
 $('v3mini').addEventListener('click', openBoard);
@@ -471,7 +479,7 @@ function render() {
 }
 
 // Play the board for a hop from t0 to t1; resolves when done or tapped past.
-function showBoard(hop, t = 1) { const cv = $('v3board'); cv.classList.add('on'); board.resize(); board.draw({ at: S.at, hop, t, dest: S.job?.to, destColour: S.job ? colourOf(S.job.cargo) : undefined, halted: haltedLayer }); weather(); }
+function showBoard(hop, t = 1) { const cv = $('v3board'); cv.classList.add('on'); board.resize(); board.draw({ at: S.at, hop, t, dest: dropOf(S.job), destColour: S.job ? colourOf(S.job.cargo) : undefined, halted: haltedLayer }); weather(); }
 function hideBoard() { $('v3board').classList.remove('on'); weather(); }
 function rideBoard(hop, t0 = 0, t1 = 1) {
   game.boards++; sfx(hop.kind === 'walk' ? 'walk' : 'ride');
@@ -479,7 +487,7 @@ function rideBoard(hop, t0 = 0, t1 = 1) {
     const cv = $('v3board'); cv.classList.add('on'); board.resize(); $('v3mini').hidden = true; weather();
     const dur = CALM ? 300 : (1300 + 700 * Math.min(1, hop.price / 900)) * (t1 - t0), start = performance.now();
     const ease = k => k < .5 ? 2 * k * k : 1 - (-2 * k + 2) ** 2 / 2;
-    const dest = S.job?.to, col = S.job ? colourOf(S.job.cargo) : undefined;
+    const dest = dropOf(S.job), col = S.job ? colourOf(S.job.cargo) : undefined;
     let over = false; const end = () => { if (over) return; over = true; skip = null; board.draw({ at: S.at, hop, t: t1, dest, destColour: col, halted: haltedLayer }); done(); };
     skip = end;
     const step = now => { if (over) return; const k = Math.min(1, (now - start) / dur);
@@ -538,6 +546,7 @@ async function pick(i) {
       if (tram) { const wait = scene !== 'stop' ? paintScene('stop', { at: r.hop.from }) : 0; if (wait) await beat(wait); setTram({ model: r.hop.model, family: r.hop.line.family }); panel.innerHTML = ''; await drive('in'); }
       if (r.hop.model === 'museum') await rare();
       if (r.hop.kind === 'ride') { hideBoard(); paintScene(interior(), { car: carOf(r.hop) }); sign(r.hop); }
+      if (r.unsealed) { await beat(900); await reveal({ say: `Aboard the ${r.unsealed.family}, the label makes sense: ${r.unsealed.stop}.`, chips: [], how: 'win' }); }
       if (r.story) { pendingHop = r.hop; busy = false; return render(); }
       if (r.hop.kind === 'ride') await beat(1200);
       panel.innerHTML = '';
@@ -562,7 +571,10 @@ async function pick(i) {
 async function stamp(d) {
   hideBoard(); paintScene('stop', { at: S.at, tram: arrived }); setTram(arrived); $('v3mini').hidden = true;
   sfx('stamp'); setTimeout(() => sfx(d.late ? 'late' : 'deliver'), 140);
-  panel.innerHTML = `<div class="v3stamp${d.late ? ' late' : ''}" role="status"><span class="big">${d.late ? 'DELIVERED LATE' : 'DELIVERED'}</span><span>${esc(net.name(d.to))}</span><span class="inside"><span>Signed for:</span> <span>${esc(d.contents)}</span></span><span class="pts">+€${d.pay}${d.mult !== 1 ? ` <small>(×${+d.mult.toFixed(2)})</small>` : ''}</span></div>`;
+  const note = d.sealed ? addNote(net.name(d.to)).split(' · ').slice(1).join(' · ') : '';
+  const extra = (d.race ? `<span class="xtra">${d.race === 'won' ? 'You beat the other courier. ×1.3' : 'She got there first. ×0.6'}</span>` : '')
+    + (d.tip ? `<span class="xtra">${esc(d.regular)} tips €${d.tip}</span>` : '') + (note ? `<span class="xtra note">${esc(note)}</span>` : '');
+  panel.innerHTML = `<div class="v3stamp${d.late ? ' late' : ''}" role="status"><span class="big">${d.late ? 'DELIVERED LATE' : 'DELIVERED'}</span><span>${esc(net.name(d.to))}</span><span class="inside"><span>Signed for:</span> <span>${esc(d.contents)}</span></span>${extra}<span class="pts">+€${d.pay}${d.mult !== 1 ? ` <small>(×${+d.mult.toFixed(2)})</small>` : ''}</span></div>`;
   paintHud();
   await beat(2200);
 }
@@ -583,6 +595,7 @@ async function forecast() {
 function finish() {
   hideBoard(); $('v3mini').hidden = true; panel.innerHTML = ''; wxEl.className = ''; audio?.bed(null);
   Runs.remember(S.keep);                                  // what the city remembers (ACT1.md §10)
+  if (S.keep.regulars) saveStanding({ ...loadStanding(), ...S.keep.regulars });   // the regulars' standing (§11)
   const r = Runs.record(RUN.id, { delivered: S.done, target: S.target, late: S.late, score: S.score });
   const i = Runs.ORDER.indexOf(RUN.id), next = Runs.RUNS[i + 1], star = n => '★'.repeat(n) + '☆'.repeat(3 - n);
   const why = r.done ? (r.stars === 1 ? 'every job delivered · some late' : r.stars === 2 ? `every job on time · €${RUN.par} for the third star` : 'every job on time, at par') : `deliver all ${S.target} to complete ${RUN.name}`;
@@ -603,7 +616,7 @@ function finish() {
 async function start() {
   await ready;
   $('title').hidden = true; stage.hidden = false;
-  S = J.newRun(net, RUN, SEED, { memory: Runs.memoryFor() }); shownMin = null; shownEur = 0; shownDone = 0; arrived = null;
+  S = J.newRun(net, RUN, SEED, { memory: Runs.memoryFor(), standing: loadStanding() }); shownMin = null; shownEur = 0; shownDone = 0; arrived = null;
   sizeFrame(); paintHud();
   busy = true; try { await forecast(); } finally { busy = false; }
   render();

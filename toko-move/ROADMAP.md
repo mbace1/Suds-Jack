@@ -37,7 +37,7 @@ and gated, each deployed before the next starts.
    Inspector, the Other Courier, the Retired Number, the Dispatch arc): a card
    that comes back later in the same run and remembers what you chose. The
    character and the funny moments live here.
-5. **v3.5 · The rival, the regulars and the sealed parcel on the journey.**
+5. ~~**v3.5 · The rival, the regulars and the sealed parcel on the journey.**~~ Shipped in v3.5.
    Run modifiers, so each adds a card and never a screen.
 6. **v3.6 · The daily and the week as journeys.** Today they open the
    real-time game.

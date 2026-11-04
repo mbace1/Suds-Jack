@@ -1,5 +1,43 @@
 # Toko Move — versions
 
+## v3.5 — 2026-11-04
+
+**THE RIVAL, THE REGULARS AND THE SEALED PARCEL** — step 5 of the Act 1 ship
+plan: the real-time game's three run-modifiers (`rival.js`, `regulars.js`,
+`sealed.js`) on the journey (ACT1.md §11). Each adds a line or a card, never a
+screen, and each keeps the memory `?classic` already writes.
+
+- **The race (MEDIUM and HARD).** One dispatch a run: *"The other courier
+  wants it too."* **Race her** shows her time on the button, which is the
+  best route at the run's pace (MEDIUM ×1.2, HARD ×1.1). The strip carries
+  *beat her by 07:33* in place of the minutes left. Beat it for ×1.3, or
+  she gets there first and it is ×0.6. There are no dice: the time your
+  choices took decides it. Over 40 MEDIUM runs the left-tapper wins 21
+  and loses 13.
+- **The regulars.** A job to Riikka's Ooppera (or Seppo's Hakaniemi, Mirja's
+  Länsiterminaali, Tuomas's Meilahti, Anneli's Kauppatori, Kaarlo's Arabia)
+  names her on the card and on the strip. On time, she tips from her
+  standing (12% of the fee a step) and the standing rises; late, it falls.
+  It is kept in `tokoMoveRegulars`, the same store `?classic` uses.
+- **The sealed parcel (from a fourth run, not EASY).** The second job has no
+  address, only a sticker (×1.5): *"The label says: you'll know the
+  stop."* You can **Ride the 12 and watch** (free) or **Ask at the kiosk**
+  (+0:40), which names it. Boarding that line names it too (*"Aboard the
+  12, the label makes sense: Kamppi."*). Until then, the strip says
+  *SEALED · 12*, and the corner map and the board draw no drop: `dropOf()`
+  in `play.js` is the one place that answers. Delivered, it writes a line
+  in the notebook `?classic` keeps, and the stamp shows it.
+- None of the three spends the run's rng (the race's job and the sealed line
+  come from a hash of the seed), so the bands did not move a job.
+
+Gates: `test/journey.mjs` 201 (no race on EASY or NIGHT; one on MEDIUM and
+HARD; the race card's clock; both outcomes, decided by time; a regular
+named, tipping, rising; the sealed parcel only from a fourth run and never
+on EASY, hidden on the route card, named by the kiosk and by its line;
+the notebook written). `test/play.cjs` 71 (a fourth MEDIUM run: the sealed
+card and SEALED strip, the race on the button, the race settled and the
+notebook line on the stamp). Finnish: 8 lines, 10 patterns.
+
 ## v3.4 — 2026-11-03
 
 **THE CITY REMEMBERS** — step 4 of the Act 1 ship plan: story arcs, adapted
