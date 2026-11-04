@@ -1,5 +1,47 @@
 # Toko Move — versions
 
+## v3.7 — 2026-11-04
+
+**ACT 1 IS READY TO SHIP** — the Act 1 ship plan's last step: the ship bar run
+on the journey, and the store pass. The upload to itch stays the owner's
+(roadmap M7).
+
+- **`test/ship3.cjs`** is `ship.cjs`'s bar held for the journey a stranger
+  now meets first. It is in `gates.yml` beside the real-time one. 19
+  checks, all passing on their first run:
+  - **S1:** a whole week by tapping, Monday to Friday's rent. Each day hands
+    on to the next. The page grows by ×0.94–1.13 through a shift, and every
+    card is ≥44px and on screen.
+  - **S2:** a hidden tab suspends the sound, and it comes back. Leaving
+    Monday mid-shift banks what it made and opens on Tuesday.
+  - **S3:** storage that throws still plays a run to its end card. Saves
+    in the wrong shape (the runs, the memory, the regulars, the week, the
+    daily, the notebook, the mute) are a fresh start on the ladder, the
+    daily and the week.
+  - **S4:** a 320px phone plays a whole run.
+  - **S5:** measured, not gated: 4 long tasks over a run, the longest
+    122 ms, under software compositing.
+  - **S6:** nothing sounds before the first touch.
+  - **S7:** the data credits are on the title card in English and Finnish.
+- **A number for the owner (the open rent question).** The rent came over
+  from the real-time week (€400, from points÷10). On the journey, a player
+  who always taps the first button pays it in 51 of 60 seeded weeks. €500
+  would be paid in 32 of 60 and €600 in 11, against a median week of €514.
+  The rent is left at €400 here, because it is the owner's call.
+- **The store pass.** `tools/stills3.cjs` shoots the store page from the
+  store build, every screen reached by tapping:
+  - twelve 1080×1920 stills: the title, a dispatch at Lasipalatsi, a risk
+    with its odds, the museum tram, the board, a delivery, the race, the
+    sealed parcel, the night's tram with no number, EASY complete, the
+    daily and the week's rent;
+  - the 630×500 cover: the game's own Kauppatori stop, composited, with the
+    wordmark on paper.
+
+  `store/ITCH.md` is rewritten for v3: a card game, Act 1 in Helsinki, the
+  description, the Finnish summary, controls, tags and media. The trailer
+  slot is left empty until a journey film exists. `tools/film.cjs` is still
+  the real-time game's.
+
 ## v3.6 — 2026-11-04
 
 **THE DAILY AND THE WEEK, AS JOURNEYS** — step 6 of the Act 1 ship plan
