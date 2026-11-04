@@ -519,6 +519,51 @@ export const FI = new Map(Object.entries({
   "a hat made of felt and regret": "hattu huovasta ja katumuksesta",
   "a sack of rye flour": "säkki ruisjauhoja",
   "a hand-knitted tram cosy": "käsin neulottu ratikkapipo",
+  // v3.4 — the story arcs (ACT1.md §10)
+  "The lady from Mannerheimintie is on this tram. She has saved you the seat by the door.": "Mannerheimintien rouva on samassa ratikassa. Hän on pitänyt sinulle paikan oven vieressä.",
+  "Sit with her": "Istu hänen viereensä",
+  "She knows the person you are delivering to. \"Tell her Aino says hello.\"": "Hän tuntee vastaanottajan. \"Sano hänelle, että Aino lähettää terveisiä.\"",
+  "Wave from the door": "Vilkuta ovelta",
+  "She waves back the whole way, with the pulla bag.": "Hän vilkuttaa takaisin koko matkan pullapussin kanssa.",
+  "The spruce man is back, without the spruce. He insists on carrying your parcel.": "Kuusimies on taas täällä, ilman kuusta. Hän vaatii saada kantaa pakettisi.",
+  "Let him": "Anna hänen kantaa",
+  "He carries it like a newborn. The parcel has never been safer.": "Hän kantaa sitä kuin vastasyntynyttä. Paketti ei ole koskaan ollut turvallisemmassa.",
+  "He takes the scenic route. The parcel enjoys it.": "Hän valitsee maisemareitin. Paketti nauttii.",
+  "I've got it": "Pärjään kyllä",
+  "He salutes, and goes to buy another spruce.": "Hän tekee kunniaa ja lähtee ostamaan uuden kuusen.",
+  "The same seagull. It has brought a friend. They both look at the parcel.": "Sama lokki. Se on tuonut kaverin. Molemmat katsovat pakettia.",
+  "Run": "Juokse",
+  "You run. They walk. They are somehow faster.": "Sinä juokset. Ne kävelevät. Ne ovat jotenkin nopeampia.",
+  "Stand your ground": "Pidä pintasi",
+  "They leave. Respect has been earned.": "Ne lähtevät. Kunnioitus on ansaittu.",
+  "One of them takes your pulla. The other takes notes.": "Toinen vie pullasi. Toinen tekee muistiinpanoja.",
+  "Dispatch here. Three today. Don't shake the blue one.": "Täällä ajojärjestely. Kolme tänään. Älä ravista sinistä.",
+  "Noted": "Selvä",
+  "Dispatch hangs up before you can ask which one is blue.": "Ajojärjestely sulkee puhelimen ennen kuin ehdit kysyä, mikä niistä on sininen.",
+  "What's in it?": "Mitä siinä on?",
+  "\"Doesn't matter.\" Dispatch hangs up.": "\"Ei sillä ole väliä.\" Ajojärjestely sulkee puhelimen.",
+  "Dispatch here. Letters today. Same sender as Tuesday.": "Täällä ajojärjestely. Tänään kirjeitä. Sama lähettäjä kuin tiistaina.",
+  "Deliver them": "Vie ne perille",
+  "Dispatch sounds relieved.": "Ajojärjestely kuulostaa helpottuneelta.",
+  "Read the return address": "Lue lähettäjän osoite",
+  "Aino, in Kallio. The same hand every week.": "Aino, Kalliossa. Sama käsiala joka viikko.",
+  "Dispatch here. Just one, by hand. She asked for you.": "Täällä ajojärjestely. Vain yksi, käsin. Hän pyysi sinua.",
+  "Aino was expecting you. There is coffee.": "Aino odotti sinua. Kahvi on keitetty.",
+  "Send the other courier": "Lähetä se toinen lähetti",
+  "Dispatch sighs. \"She will be disappointed.\"": "Ajojärjestely huokaa. \"Hän pettyy.\"",
+  "Dispatch here. Three today. And one for the east, if you ever find it.": "Täällä ajojärjestely. Kolme tänään. Ja yksi itään, jos joskus löydät sen.",
+  "The line goes quiet for a moment longer than it should.": "Linja on hiljaa hetken pidempään kuin pitäisi.",
+  "East of where?": "Minkä itäpuolelle?",
+  "\"No line goes there.\" Dispatch hangs up.": "\"Sinne ei mene mikään linja.\" Ajojärjestely sulkee puhelimen.",
+  "A tram ticket from 1987 on the seat. Still warm.": "Penkillä on ratikkalippu vuodelta 1987. Vielä lämmin.",
+  "It is stamped for a line that does not run any more.": "Se on leimattu linjalle, jota ei enää ajeta.",
+  "When you look back, the seat is empty.": "Kun katsot taaksesi, penkki on tyhjä.",
+  "Tickets, please. That one is from 1987. Where did you get it?": "Liput, kiitos. Tuo on vuodelta 1987. Mistä sait sen?",
+  "The tram with no number": "Ratikka ilman numeroa",
+  "He punches it anyway. \"Long time no see.\"": "Hän leimaa sen silti. \"Pitkästä aikaa.\"",
+  "He keeps it, for the museum, and walks you off at the next stop.": "Hän pitää sen museota varten ja saattaa sinut ulos seuraavalla pysäkillä.",
+  "Lost and found": "Löytötavaroista",
+  "He nods like he has heard that before.": "Hän nyökkää kuin olisi kuullut sen ennenkin.",
 }));
 
 // Lines that carry names and numbers. Each is [regexp, replacement] and is
@@ -685,8 +730,14 @@ function seg(s) {
   if (FI.has(s)) return FI.get(s);
   if (OUT.has(s)) return s;
   for (const [re, rep] of PATTERNS) if (re.test(s)) { const r = s.replace(re, rep); OUT.add(r); return r; }
+  // a line the table knows, SHOUTED: the test card's toast uppercases its
+  // mission ("✓ TESTED · CROSS THE CROWN BRIDGE · 1/5") and only some draws
+  // ever show it, so the Finnish gate caught it once in three runs
+  if (/[A-Z]/.test(s) && s === s.toUpperCase()) { const k = shouted().get(s); if (k != null) return FI.get(k).toUpperCase(); }
   return null;
 }
+let SHOUT = null;
+const shouted = () => SHOUT || (SHOUT = new Map([...FI.keys()].filter(k => k !== k.toUpperCase()).map(k => [k.toUpperCase(), k]).reverse()));
 // One fact: the table, then the same without its trailing full stop, colon or
 // dangling separator, then without a leading glyph (an event card's emoji).
 function one(p) {

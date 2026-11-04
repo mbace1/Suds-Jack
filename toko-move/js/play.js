@@ -25,9 +25,9 @@
 // nothing happens while you read. Every animation is skippable by a tap and
 // none of them is a timer the game waits on to be fair: the state has already
 // moved when it starts.
-import { tr } from './lang.js?v=7';
-import * as J from './journey.js?v=1';
-import * as Runs from './runs.js?v=2';
+import { tr } from './lang.js?v=8';
+import * as J from './journey.js?v=2';
+import * as Runs from './runs.js?v=3';
 import { HopBoard } from './hopboard.js?v=1';
 import { skinFor } from './skin.js?v=1';
 import { moodFace, MOODS } from './events.js?v=10';
@@ -36,10 +36,10 @@ import { colourOf, parcelHtml } from './parcels.js?v=1';
 import { esc } from './ui.js?v=2';
 import { STORE } from './platform.js?v=1';
 import { lineFamily } from './board.js?v=8';
-import { TRAMS } from './cards.js?v=1';
+import { TRAMS } from './cards.js?v=2';
 import { mountAudio } from './audio.js?v=2';
 
-export const BUILD_VERSION = '3.3';
+export const BUILD_VERSION = '3.4';
 const $ = id => document.getElementById(id);
 const params = new URLSearchParams(location.search);
 const RUN = Runs.resolveRun(params);
@@ -582,6 +582,7 @@ async function forecast() {
 // ── the end: the run's result (runs.js), and what you carried ─────────────
 function finish() {
   hideBoard(); $('v3mini').hidden = true; panel.innerHTML = ''; wxEl.className = ''; audio?.bed(null);
+  Runs.remember(S.keep);                                  // what the city remembers (ACT1.md §10)
   const r = Runs.record(RUN.id, { delivered: S.done, target: S.target, late: S.late, score: S.score });
   const i = Runs.ORDER.indexOf(RUN.id), next = Runs.RUNS[i + 1], star = n => '★'.repeat(n) + '☆'.repeat(3 - n);
   const why = r.done ? (r.stars === 1 ? 'every job delivered · some late' : r.stars === 2 ? `every job on time · €${RUN.par} for the third star` : 'every job on time, at par') : `deliver all ${S.target} to complete ${RUN.name}`;
@@ -602,7 +603,7 @@ function finish() {
 async function start() {
   await ready;
   $('title').hidden = true; stage.hidden = false;
-  S = J.newRun(net, RUN, SEED); shownMin = null; shownEur = 0; shownDone = 0; arrived = null;
+  S = J.newRun(net, RUN, SEED, { memory: Runs.memoryFor() }); shownMin = null; shownEur = 0; shownDone = 0; arrived = null;
   sizeFrame(); paintHud();
   busy = true; try { await forecast(); } finally { busy = false; }
   render();

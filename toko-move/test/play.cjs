@@ -116,7 +116,7 @@ server.listen(0, '127.0.0.1', async () => {
         runs: [...document.querySelectorAll('#mutRow .run')].map(r => ({ id: r.dataset.run, open: !r.classList.contains('locked'), lit: r.classList.contains('on') })),
         goal: document.getElementById('titleGoal').textContent, play: document.getElementById('play').textContent,
         links: ['dailyLink', 'weekLink', 'liveLink'].filter(id => { const e = document.getElementById(id); return e && !e.hidden && getComputedStyle(e).display !== 'none'; }) }));
-      ok(`the bare address is the card journey, not the real-time game (v${t.v})`, !t.classic && t.v === '3.3' && /v3\.3/.test(t.hero));
+      ok(`the bare address is the card journey, not the real-time game (v${t.v})`, !t.classic && t.v === '3.4' && /v3\.4/.test(t.hero));
       ok(`it is Act 1, in Helsinki (${await page.evaluate(() => document.getElementById('titleWhen').textContent)})`, await page.evaluate(() => /^Act 1 · Helsinki · 07:00/.test(document.getElementById('titleWhen').textContent)));
       ok(`the ladder: EASY open and lit, three locked (${t.runs.map(r => r.id + (r.open ? '' : '🔒')).join(' ')})`, t.runs.map(r => r.id).join() === 'easy,medium,hard,night' && t.runs[0].open && t.runs[0].lit && t.runs.slice(1).every(r => !r.open) && t.run === 'easy');
       ok(`the goal and the button (${t.goal} · ${t.play})`, /^Three deliveries before 08:15/.test(t.goal) && t.play === 'START SHIFT');
@@ -239,6 +239,21 @@ server.listen(0, '127.0.0.1', async () => {
       ok(`the museum tram is wood and brass inside (${[...seen.cars].join(' ')} · at the stop: ${models.join(', ')})`, seen.cars.has('02-car-museum') && models.includes('museum'));
       ok('and an Nr II is its 1970s self inside', seen.cars.has('02-car-old'));
       ok('every interior layer it asked for was there (no 404s)', !errs.length, errs.slice(0, 3).join(' | '));
+      await ctx.close();
+    }
+    // ── story arcs (v3.4, ACT1.md §10): a second run meets Dispatch, and the city remembers
+    {
+      const ctx = await browser.newContext(PHONE); await seedRuns(ctx, { easy: { done: true, stars: 2, plays: 1 } });
+      const page = await ctx.newPage(), errs = watch(page);
+      await page.goto(`${base}/toko-move/?run=easy&seed=1002`, { waitUntil: 'load' }); await ready(page);
+      const before = await page.evaluate(() => localStorage.getItem('tokoMoveMemory'));
+      await page.tap('#play'); await page.waitForSelector('#v3panel .eventOpt', { timeout: 15000 });
+      let met = null;
+      const seen = await playOut(page, { onCard: async c => { if (!met && /^Dispatch here\./.test(c.line)) met = c; } });
+      const kept = await page.evaluate(() => JSON.parse(localStorage.getItem('tokoMoveMemory') || '{}'));
+      ok(`a second run opens with Dispatch, a card like any other (${met?.line})`, !!met && met.kind === 'story' && met.buttons.length === 2);
+      ok(`and the city remembers it after the run (${before} → ${JSON.stringify(kept)})`, seen.end && !before && kept.dispatch === 1);
+      ok('no page or network errors (arcs)', !errs.length, errs.slice(0, 3).join(' | '));
       await ctx.close();
     }
     // ── a 320px phone: the pill still clears both corners, scaled if it must be

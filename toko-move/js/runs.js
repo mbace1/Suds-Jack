@@ -77,6 +77,24 @@ export function loadRuns(s = store()) {
 }
 function saveRuns(all, s = store()) { try { s?.setItem(KEY, JSON.stringify(all)); } catch {} }
 
+// ── the memory (v3.4, ACT1.md §10): what the city remembers across runs —
+// Dispatch's arc, the 1987 ticket. Its own key and an allow-list of counters,
+// so a save in the wrong shape is a city that has forgotten you, never a crash.
+const MKEY = 'tokoMoveMemory', MEM = ['dispatch', 'ticket', 'sentOther'];
+export function loadMemory(s = store()) {
+  let raw = {}; try { raw = JSON.parse(s?.getItem(MKEY) || '{}'); } catch { raw = {}; }
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) raw = {};
+  return Object.fromEntries(MEM.map(k => [k, Math.max(0, Math.min(9, Number(raw[k]) | 0))]));
+}
+// what a run kept, merged in; a counter only ever moves forward
+export function remember(keep, s = store()) {
+  const m = loadMemory(s); for (const k of MEM) if (keep?.[k] != null) m[k] = Math.max(m[k], Number(keep[k]) | 0);
+  try { s?.setItem(MKEY, JSON.stringify(m)); } catch {}
+  return m;
+}
+// the memory a run starts with: what is kept, and how many runs came before
+export function memoryFor(s = store()) { const all = loadRuns(s); return { ...loadMemory(s), runs: ORDER.reduce((n, id) => n + all[id].plays, 0) }; }
+
 // Which runs are open: Easy always, each other once the one before is done.
 export function unlocked(id, all = loadRuns()) {
   const i = ORDER.indexOf(id); if (i < 0) return false; if (i === 0) return true;

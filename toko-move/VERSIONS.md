@@ -1,5 +1,42 @@
 # Toko Move — versions
 
+## v3.4 — 2026-11-03
+
+**THE CITY REMEMBERS** — step 4 of the Act 1 ship plan: story arcs, adapted
+from the itch bible's twist cards (`art/itch-bible/CARDS.md`) to the
+journey and written into `ACT1.md` §10 before a line of code.
+
+- **In a run.** An option can `set` a flag, and its CALLBACK card takes the
+  next job's card slot: walk the granny across Mannerheimintie and she is on
+  your tram later with the seat by the door saved; hold the top of the
+  spruce and the spruce man, without the spruce, insists on carrying your
+  parcel; let the seagull pose and it comes back with a friend.
+- **Across runs.** Two ARCS are kept on the device (`tokoMoveMemory`, its own
+  key, an allow-list of counters) and passed into `newRun`, so a seed and a
+  memory replay exactly. A run deals at most one step, never on a first
+  run, and an arc step keeps its slot against a callback.
+  - **Dispatch** (the spine): four steps, one a run. *"Don't shake the blue
+    one."* → letters from the same sender → *"Just one, by hand. She asked
+    for you."* (Aino, in Kallio, with coffee: ×1.5) → *"And one for the
+    east, if you ever find it."* No line goes there.
+  - **The 1987 ticket:** found on NIGHT, still warm; keep it and a later
+    day's inspector asks where you got it (*maybe* ×1.3, or he keeps it for
+    the museum).
+- A run with no memory deals exactly the deck it always did (no rng is
+  spent on arcs). The bands move by a job or two where bots trigger the
+  callbacks: MEDIUM's left-tapper 49→48 completes of 60, HARD's 41→42.
+- **Fixed on the way:** `lang.cjs` failed on main one run in three with
+  "CROSS THE CROWN BRIDGE" left in English — the test card's toast
+  uppercases its mission title and only some draws show it. `lang.js` now
+  translates a line the table knows when it is SHOUTED.
+
+Gates: `test/journey.mjs` 191 (no arc without a memory; never on a first
+run; the step the memory says is next; one a run in its own slot; Dispatch
+met and kept; the inspector closes the ticket arc; a callback only after
+its choice, and the granny does come back; a seed with a memory replays);
+`test/play.cjs` 67 (a second EASY opens with Dispatch, and the memory is
+kept after the run). 47 new Finnish lines.
+
 ## v3.3 — 2026-11-03
 
 **THE OLD TRAMS FROM INSIDE** — step 3 of the Act 1 ship plan. v3.1 drew six

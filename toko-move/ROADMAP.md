@@ -33,7 +33,7 @@ and gated, each deployed before the next starts.
 3. ~~**v3.3 · The old trams from inside.**~~ Shipped in v3.3. One interior serves all six models
    today; Nr I, Nr II and the museum tram get their own (wood, brass, the
    bell rope), the newer ones share theirs. Look only, like the outside.
-4. **v3.4 · Story arcs.** The itch bible's CARDS.md arcs (Same Morning, the
+4. ~~**v3.4 · Story arcs.**~~ Shipped in v3.4 (Dispatch, the 1987 ticket and three in-run callbacks; the Other Courier and the Retired Number wait for v3.5's rival). The itch bible's CARDS.md arcs (Same Morning, the
    Inspector, the Other Courier, the Retired Number, the Dispatch arc): a card
    that comes back later in the same run and remembers what you chose. The
    character and the funny moments live here.
