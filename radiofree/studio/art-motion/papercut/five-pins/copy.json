@@ -1,6 +1,6 @@
 {
   "film": "five-pins",
-  "cut": "v1 stills (3 Nov): RFH Helsinki, papercut, VIRAL cut. Helsinki's City Board adopted its data-centre siting principles on 2 Nov 2026: five possible areas, waste heat into district heating, not in the most valuable nature. Frame 0 is the papercut Helsinki map with five red pins hanging over it; they drop one by one and are named; heat runs from them along pipes into the houses; then Muhos, where the last trees fall and the site's stake goes in afterwards. Map first there, forest first here. Google named plainly (owner, 2 Nov), no logo.",
+  "cut": "v2 build (4 Nov, en only): caption 3 literal ('must go to district heating'), heat tag carries the rule's own qualifier: SUBSTANTIALLY INTO DISTRICT HEATING. v1 stills (3 Nov): RFH Helsinki, papercut, VIRAL cut. Helsinki's City Board adopted its data-centre siting principles on 2 Nov 2026: five possible areas, waste heat into district heating, not in the most valuable nature. Frame 0 is the papercut Helsinki map with five red pins hanging over it; they drop one by one and are named; heat runs from them along pipes into the houses; then Muhos, where the last trees fall and the site's stake goes in afterwards. Map first there, forest first here. Google named plainly (owner, 2 Nov), no logo.",
   "series": "rfh",
   "captionSize": "big",
   "argument": "Helsinki decided in public where data centres may go and that their waste heat must warm homes; at Google's Muhos site, about 330 ha of forest was cleared before the assessment.",
@@ -49,11 +49,11 @@
       "until": "s4-0.3",
       "hold": "s4",
       "text": {
-        "en": "Their waste heat / must warm / [homes].",
+        "en": "Their waste heat / must go to / district [heating].",
         "fi": "Hukkalämpö / on käytettävä / [kaukolämpöön].",
         "ja": "排熱は / [家々を] / 暖めること。"
       },
-      "source": "hel.fi, 2 Nov 2026: the waste heat must be used substantially in the district-heating network (power sufficiency and environmental and vitality effects are also weighed). 'Must warm homes' is the station's plain reading of 'into district heating', which in Helsinki heats homes; the tag says it literally (WASTE HEAT → DISTRICT HEATING). The Finnish line says it literally."
+      "source": "hel.fi, 2 Nov 2026: the waste heat must be used substantially in the district-heating network (power sufficiency and environmental and vitality effects are also weighed). v2 (4 Nov, built en): the en caption now says it literally ('must go to district heating', owner's choice left open, literal taken); the tag gives the rule's own qualifier, 'used substantially'. The Finnish line says it literally."
     },
     {
       "id": "first",
@@ -116,7 +116,7 @@
       "ja": "ルール：最も貴重な自然は除く"
     },
     "heatTag": {
-      "en": "WASTE HEAT → DISTRICT HEATING",
+      "en": "SUBSTANTIALLY INTO DISTRICT HEATING",
       "fi": "HUKKALÄMPÖ → KAUKOLÄMPÖ",
       "ja": "排熱 → 地域暖房"
     },

@@ -98,3 +98,31 @@ environmental assessment. Map first or forest first?
   Heikinlaakso's spot before the full build.
 - **Muhos facts move:** the water plan is due 5 Nov and the police investigation is open. Neither is on screen, but
   re-check both before posting.
+
+## Built 4 Nov (en): Doodle 9
+
+**Owner, 4 Nov:** "All these are English for now. Proceed". They did not choose between the two caption-3 wordings, so the
+literal one was taken.
+
+- **What changed from the stills:**
+  - caption 3 is now "Their waste heat / must go to / district [heating]." (it was "must warm / [homes]");
+  - the heat tag now gives the rule's own qualifier: SUBSTANTIALLY INTO DISTRICT HEATING. The first build's "RULE: USED
+    SUBSTANTIALLY IN DISTRICT HEATING" had to shrink to fit and was too small at phone size, so it was shortened;
+  - fi and ja are unchanged and still need a native read.
+- **Files:**
+  - `films/04-11-Doodle9-Five-Pins.mp4`: 21.44 s, with the papercut sign-off;
+  - `films/04-11-Doodle9-Five-Pins-loop.mp4`: 18.43 s, film only, for IG Reels;
+  - the preview, `previews/04-11-RFH-Five-Pins-en.mp4`.
+- **Checks:** the build PASSED with 0 fail and 4 warnings.
+  - Two warnings are the fi and ja native reads.
+  - The other two are about the fi and ja subtitle files, whose first line needs longer than this English cut gives
+    it. That matters only if those languages are posted.
+  - The sound passes all five checks at −14.0 LUFS and −4.1 dBTP.
+  - The pop on "heating" still drives the map glow and the warm chord, because the `homes` cue is the pop word,
+    whichever word it is.
+- **Post (en, 278 characters), unchanged:** "Helsinki's city board named five possible data-centre areas: Heikinlaakso, Malmi,
+  Salmisaari, Östersundom, Myllypuro. Their waste heat must go to district heating. In Muhos, ~330 ha of forest was
+  cleared for Google before the environmental assessment. Map first or forest first?"
+- **Before posting:**
+  - re-check the Muhos facts;
+  - leave space after Cut First, since both end on the Muhos clearing.

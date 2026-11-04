@@ -87,3 +87,26 @@ so neither The Intercept's article, AI Now's note nor the CDAO release was opene
 5. **Neutrality cuts both ways.** The film names no company on screen, Anthropic included. Reported context, not in the
    film: Anthropic later clashed with the Pentagon over use restrictions and was labelled a supply-chain risk, which a
    court ruled unlawful. The owner may want a line on that in the post. It is left out here to keep the four alike.
+
+## Built 4 Nov (en): v2, past tense
+
+**Owner, 4 Nov:** "All these are English for now. Proceed" (option (a), the past-tense fix).
+
+- **Why:** Anthropic's July 2025 deal was cancelled in early 2026, after the Feb–Mar 2026 supply-chain-risk designation
+  (Fortune, NPR; see `plan/RFH-NEXT.md`, 31 Oct–1 Nov). No cancellation is reported for the other three.
+- **What changed:**
+  - caption 2 is now "Each had to / [forecast] the risks / of its own AI.";
+  - the disclosure reads MADE WITH ANTHROPIC'S TOOLS · ANTHROPIC WAS ONE OF THE FOUR;
+  - the post is in the past tense and adds "Anthropic's deal was cancelled in early 2026";
+  - the argument line is shortened to 33 words.
+  The v1 copy is kept as `copy-v1.json`, and the 30-10 v1 films are untouched.
+- **Files:**
+  - `films/04-11-Coxon13-Grade-Your-Own-Homework.mp4`: 23.14 s, with the papercut sign-off;
+  - `films/04-11-Coxon13-Grade-Your-Own-Homework-loop.mp4`: 20.13 s, film only, for IG Reels;
+  - the preview, `previews/04-11-RFH-Grade-Your-Own-Homework-en.mp4`.
+- **Checks:** the build PASSED with 0 fail and 2 warnings (fi and ja not yet read by a native speaker).
+  - The sound passes all five checks at −14.1 LUFS and −4.3 dBTP.
+  - Every caption is at most 800 px wide.
+- **Post (en, 280 characters):** "The Pentagon's July 2025 AI deals with OpenAI, Anthropic, Google and xAI (up to $200M each)
+  asked each to forecast its own AI's risks (The Intercept, via FOIA). Critics: a conflict of interest. Anthropic's deal
+  was cancelled in early 2026. Made with Anthropic's tools. Who checks?"

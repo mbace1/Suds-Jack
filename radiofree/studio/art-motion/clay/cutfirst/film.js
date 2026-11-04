@@ -392,6 +392,8 @@ const EV = {
   ...Object.fromEntries(CONVOY.flatMap((v, i) => [['brake' + i, +(T.s2 + v.tb).toFixed(3)], ['stop' + i, +(T.s2 + v.ts).toFixed(3)]])),
   gate: T.s2 + 0.2, copBrake: T.s3 + COP.tb, copStop: T.s3 + COP.ts, flip: T.s5 + 0.55,
 };
+// for the score (v2, 4 Nov): the page tears off at the end of its lift, lands after its fall; the camera starts to rise
+EV.tear = +(EV.flip + 0.28).toFixed(3); EV.pageLand = +(EV.tear + Math.sqrt(2 * (HINGE - 0.06) / 7)).toFixed(3); EV.rise = T.s5 + 1.5;
 function setWorld(t) {
   const d = DUSK(t);
   sun.intensity = lerp(2.3, 0.75, d); sun.color.copy(C3('#ffdcae')).lerp(C3('#ff8a6a'), d);
@@ -446,9 +448,10 @@ const SHOT = [
   { // 3 · from the site side, low, behind the booms: the police car rolls up to them
     t0: () => T.s3, wide: false, focus: () => V([-LANE, 1.2, BARRIER_Z + 5]),
     cam(lt, d) { const k = ease.io(lt / d); return { pos: V(lerp3([-15, 3.4, BARRIER_Z + 15], [-13.5, 3.0, BARRIER_Z + 13], k)), at: V(lerp3([0, 2.2, BARRIER_Z + 3], [-0.5, 2.0, BARRIER_Z + 3.5], k)), fov: 34 }; } },
-  { // 4 · low along the ditch: the black walls, the water turning
-    t0: () => T.s4, wide: false, focus: () => V([-22, -2, DITCH.z - 2.5]),
-    cam(lt, d) { const k = ease.io(lt / d); return { pos: V(lerp3([-15, 4.6, DITCH.z + 8.0], [-16.5, 3.6, DITCH.z + 6.6], k)), at: V(lerp3([-25, -2.0, DITCH.z - 2.5], [-26, -2.2, DITCH.z - 2.5], k)), fov: 36 }; } },
+  { // 4 · the ditch as a cut in the cleared site (v2, 4 Nov: pulled back from the wall, which read as abstract stripes):
+    //     from above its east end, looking down its length — stumps on the ground, the layers in the far wall, the water
+    t0: () => T.s4, wide: false, focus: () => V([-24, -2, DITCH.z - 1.5]),
+    cam(lt, d) { const k = ease.io(lt / d); return { pos: V(lerp3([-4, 7.6, DITCH.z + 10.5], [-6.5, 6.4, DITCH.z + 9.0], k)), at: V(lerp3([-27, -3.0, DITCH.z - 1.6], [-27, -3.1, DITCH.z - 1.8], k)), fov: 40 }; } },
   { // 5 · the calendar turns, then up and back over the whole clearing at dusk
     t0: () => T.s5, wide: true, focus: (t) => V(lerp3([-(BX + 4.2), 3.5, BARRIER_Z + 1.6], [-8, 0, BARRIER_Z - 30], smooth((t - T.s5 - 1.2) / 2.5))),
     cam(lt, d) { const k = ease.io((lt - 1.5) / (d - 1.7)); return { pos: V(lerp3([-2.2, 4.8, BARRIER_Z + 21], [10, 46, 52], k)), at: V(lerp3([-(BX + 4.2), 4.9, BARRIER_Z + 1.6], [-10, 0, BARRIER_Z - 46], k)), fov: lerp(34, 40, k) }; } },
@@ -484,7 +487,8 @@ function frame(t, captions = true) {
   tag(g2d, UI.tag2, tg(T.s2 + 2.2, T.s3 - 0.1));
   tag(g2d, UI.tag3, tg(T.s3 + 1.2, T.s4 - 0.1));
   tag(g2d, UI.tag4, tg(T.s4 + 1.4, T.s5 - 0.1));
-  tag(g2d, UI.tag5, tg(T.s5 + 2.6, T.end + 1));
+  tag(g2d, UI.tag5w, tg(T.s5 + 1.0, T.s5 + 2.75));   // v2: the date line, neutral (true whether or not the plan was filed)
+  tag(g2d, UI.tag5, tg(T.s5 + 2.9, T.end + 1));
   if (captions) CAP.draw(g2d, P, t, { busy: BUSY || {} });
   return out;
 }
