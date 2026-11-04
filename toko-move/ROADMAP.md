@@ -41,7 +41,7 @@ and gated, each deployed before the next starts.
    Run modifiers, so each adds a card and never a screen.
 6. ~~**v3.6 · The daily and the week as journeys.**~~ Shipped in v3.6. Today they open the
    real-time game.
-7. **v3.7 · The ship bar on the journey, and the store pass.** `ship.cjs`'s
+7. ~~**v3.7 · The ship bar on the journey, and the store pass.**~~ Shipped in v3.7 (`test/ship3.cjs`, `tools/stills3.cjs`, `store/ITCH.md`). Act 1 is ready for itch; the upload, the rent (€400 or €500: VERSIONS.md v3.7 has the numbers), the itch page URL and a real-phone pass are the owner's. `ship.cjs`'s
    S1–S7 re-run against the journey (a whole run by tapping, leaving
    mid-run, hostile storage, landscape and 320px, frame cost, sound and mute,
    credits), then the store copy, stills and cover re-shot from v3. Then Act 1

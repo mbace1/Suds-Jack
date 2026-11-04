@@ -514,6 +514,9 @@ jobs:
       - name: the ship bar — the week to the rent, leaving mid-shift, hostile storage, sideways phones, sound, credits
         run: NODE_PATH=$(npm root -g) node toko-move/test/ship.cjs
 
+      - name: the ship bar on the journey (v3) — the week by tapping, leaving mid-shift, hostile storage, a 320px phone, no sound before a touch, credits
+        run: NODE_PATH=$(npm root -g) node toko-move/test/ship3.cjs
+
       # Nothing had ever finished a shift. Forty random-but-sane bots through
       # the real timetable and the real challenge; the fleet or the dispatcher
       # is broken if fewer than 40% of them get three deliveries home.

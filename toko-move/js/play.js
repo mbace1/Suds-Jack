@@ -43,7 +43,7 @@ import { addNote } from './sealed.js?v=2';
 import { resolveMode, dailyShare, W } from './modes.js?v=1';
 import { recordDaily, todayRecord, streak } from './daily.js?v=2';
 
-export const BUILD_VERSION = '3.6';
+export const BUILD_VERSION = '3.7';
 const $ = id => document.getElementById(id);
 const params = new URLSearchParams(location.search);
 // a run of the ladder, today's daily, or a day of the week (modes.js, ACT1.md §12)
