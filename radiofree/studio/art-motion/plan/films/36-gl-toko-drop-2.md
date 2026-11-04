@@ -1,4 +1,4 @@
-# 36 · GL · Toko Drop 2.0 (v115): the game's own intro, then a fast compilation (stills checkpoint, 3 Nov)
+# 36 · GL · Toko Drop 2.0: the game's own intro, then a fast compilation (built 4 Nov; stills checkpoint 3 Nov)
 
 **Owner, 3 Nov**, in order, with each message overriding the one before where they differ:
 1. "I already mentioned that GL needs to be 3d, but also.. can we make one of Toko drop 2.0?"
@@ -22,6 +22,63 @@ has been fully rendered and nothing has been posted.
   - `score.py`, the music;
   - `tools/`, the capture scripts.
 - **Length:** 33.49 s = 24 bars at **172 BPM**. The intro runs for 6 bars, the compilation for 16 and the end card for 2.
+
+## Built 4 Nov (full film, English)
+
+**Owner, 4 Nov:** "All these are English for now. Proceed." End card **B** (the game's own title), as recommended.
+
+- **Files:**
+  - `films/04-11-GL1-Toko-Drop-2.mp4`: 1080×1920, 30 fps, 33.5 s, H.264 + AAC, no RFH sign-off;
+  - `previews/04-11-GL-Toko-Drop-2-en.mp4`: the phone preview;
+  - `previews/04-11-GL-Toko-Drop-2-sheet.jpg`: 12 frames across the film.
+- **No `-loop` master.** The film has no sign-off, so the master is already film-only. It ends on the title card, so a
+  loop is a hard cut back to the Toko Midori Games lockup.
+- **The build is the live v117, not v115.** gh-pages moved twice since the checkpoint: v116 is a phone shader pass, v117
+  a bot and balance pass. Every frame, the intro included, was recaptured from the deployed v117, so the HUD reads
+  `2.0 · v117`. Nothing on screen names a version: the strip's V114/V115 tags are dropped by default.
+- **Sound:** `score.py` (172 BPM), with the game's own v117 intro cues (`introWav`) under the intro. It is now mastered
+  to the house finish and measured by ffmpeg's ebur128: **−14.1 LUFS integrated, −3.3 dBFS true peak, LRA 5.6** on the
+  filed file. The intro builds from about −20 dB RMS to about −14 for the compilation. The quietest second is the
+  logo's (about −30 dB), and nothing drops out.
+
+### The cut list as built (every cut on a beat; `plan.json`, written by `tools/mkplan.py` from `tools/froms.json`)
+
+| # | t (s) | beats | tag | source | real play or staged |
+|---|---|---|---|---|---|
+| — | 0.00–8.37 | 24 | — | the v16 intro, three runs | the game's own intro, frame by frame |
+| 1 | 8.37 | 4 | ARCADE | world 8 | real play |
+| 2 | 9.77 | 4 | GATES | world 2 | real play |
+| 3 | 11.16 | 4 | GIANTS | world 6, `stage2.cjs g1` | staged: a giant and its escort, shot until it wears |
+| 4 | 12.56 | 2 | STEP OUT! | world 5, `stage2.cjs g2` | staged: the gather, the ring and tag, the step out, the slam |
+| 5 | 13.26 | 2 | SPLIT! | world 6, `g1` | staged: the giant bursts and splits |
+| 6 | 13.95 | 4 | CLEAR THE LANE! | world 3, `stage2.cjs ram` | staged: four gels pinned in a ram lane, the tag, the hero steps out |
+| 7 | 15.35 | 2 | SEWER RAMS | world 3, `ram` | staged: the punch |
+| 8 | 16.05 | 2 | HOLD THE RING | world 3 | real play |
+| 9–14 | 16.74–22.33 | 4,4,2,2,2,2 | CISTERN · BOILER · RIVER · ICE · THE DEEP · CORE | worlds 4–9 | real play |
+| 15 | 22.33 | 4 | BOSS | world 1 | real play, reached with `debug.bossWave()` (the Twin Prisms) |
+| 16 | 23.72 | 4 | WORLD CLEAR | world 1 | the bosses put down with `debug.killBosses()`; the game's own WORLD CLEAR follows |
+| 17–20 | 25.12 | 1 each | — | worlds 5–8 | real play, one beat each |
+| 21 | 26.51 | 4 | GIANT + ESCORT | world 9, `g1` (march only) | staged |
+| 22 | 27.91 | 4 | DASH | world 7, `stage2.cjs dash` | staged: two dashes through a line of bodies |
+| 23 | 29.30 | 4 | — | world 9 | real play |
+| card | 30.70–33.49 | 8 | — | the title screen | the game's own menu, with the band PLAY FREE IN THE ARCADE · MBACE1.GITHUB.IO/SUDS-JACK · GL GAMEPLAY LABORATORY |
+
+- **Real play** (`tools/take.cjs`) is the game's own simple bot, with each take started on a crowd (`busy:N`).
+  World 5–9 floors carry 25–40 bodies at once.
+- **Staged** (`tools/stage2.cjs`) uses `showcase` / `idle` / `act`, the game's own look-check hooks. All of it is real game
+  code and rendering; the script only sets where things stand and what the hero does.
+- **Capture aid, all takes:** the hero's lives are topped up every step, so the bot's run reaches the moment instead of
+  ending. The hearts in the HUD are therefore always full.
+- **Crops:** staged takes are captured at device scale 3.25–3.75 and cropped 1.3–1.8×, so a crop is never upscaled past
+  about 1.2×.
+- **Fixed against the checkpoint:**
+  - the empty-floor staged cuts now carry company: an escort of mites, gels around the slam, and four gels in the ram lane;
+  - the near-empty "THE RUN STARTS" opener is replaced by a busy world-8 floor;
+  - the GL mark uses the plain glyphs (the bold G read as a 6);
+  - the run-start ARCADE banner is cropped out of the staged cuts.
+- **The remaining tells of staging:** a staged cut opens on a fresh run, with a low score in the HUD's corner (cropped out
+  on most). SPLIT! and GIANTS share one giant.
+
 
 ## How it is made
 
@@ -55,7 +112,7 @@ has been fully rendered and nothing has been posted.
   intro frames plus about 670 compilation frames, roughly 35–45 minutes of capture in the background, then
   `pipeline/render.mjs` over `looks/gl/tokodrop2/index.html` with `--mount _clips=<capture dir>`.
 
-## The cut list (from `plan.json`, at 172 BPM; a beat is 0.349 s)
+## The checkpoint's cut list (3 Nov; superseded by "The cut list as built" above)
 
 - The **version** column is the build that introduced the thing, per `toko-drop-2/VERSIONS.md` and the tuning comments
   in the deployed v115.
@@ -148,4 +205,6 @@ has been fully rendered and nothing has been posted.
 
 ## Post draft
 
-> Toko Drop 2.0 (v115): giants that slam, sewer rams, goo everywhere. Free in the arcade: mbace1.github.io/Suds-Jack/toko-drop-2/
+> Toko Drop 2.0: nine worlds, giants that slam, sewer rams, goo everywhere. Free in the arcade: mbace1.github.io/Suds-Jack/toko-drop-2/
+
+(4 Nov: the version number is dropped from the post, because the game ships daily and a number in the copy dates it.)

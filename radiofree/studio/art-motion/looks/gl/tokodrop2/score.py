@@ -89,7 +89,7 @@ def music_bar(bar, intensity):
             at(t0 + s * S16, reese(root + o, l * S16 * 0.95, 700 if o == 0 else 1200), 0.34)
         for s in (2, 7, 10):                                       # stabs on the off-beats
             at(t0 + s * S16, stab(chord), 0.16, 0.25 if s % 2 else -0.25)
-    at(t0, pad(chord, BAR + 0.25), 0.10 if intensity >= 2 else 0.13, 0)
+    at(t0, pad(chord, BAR + 0.25), 0.10 if intensity >= 2 else 0.17, 0)
 
 # 1. under the intro: pad from the logo, a filtered break from bar 3, a riser through bar 6 and a roll at its end
 for b in range(6): music_bar(b, 1)
@@ -116,9 +116,25 @@ if SFX:
         fade = int(0.012 * SR); seg[:fade] *= np.linspace(0, 1, fade); seg[-fade:] *= np.linspace(1, 0, fade)
         at(s['t0'], seg, 0.9)
 
-# master: a soft clip, normalised to -1 dBFS peak, a short tail after the card
+# master: a soft clip and a short tail after the card, then the house finish (pipeline/sound/mix.py: -14 LUFS
+# integrated, at most -1 dBTP), measured by ffmpeg's ebur128 — independent of this file — and trimmed until it holds
+import re, subprocess, tempfile, os
+def measure(path):
+    p = subprocess.run(['ffmpeg', '-nostats', '-hide_banner', '-i', path, '-filter_complex', 'ebur128=peak=true', '-f', 'null', '-'], capture_output=True, text=True)
+    s = p.stderr[p.stderr.rindex('Summary:'):]; num = lambda k: float(re.search(k + r':\s+(-?[\d.]+|-inf)', s).group(1).replace('-inf', '-120'))
+    return {'I': num('I'), 'LRA': num('LRA'), 'TP': num('Peak')}
 mix = np.stack([L, R], 1); mix = np.tanh(mix * 1.1) / np.tanh(1.1)
 mix *= 10 ** (-1 / 20) / max(1e-9, np.abs(mix).max())
 tail = int(0.5 * SR); mix[-tail:] *= np.linspace(1, 0, tail)[:, None]
-sf.write(OUT, mix[:int((END + 0.5) * SR)], SR)
-print('score', OUT, f'{END:.2f}s at {BPM} BPM')
+mix = mix[:int((END + 0.5) * SR)]
+tmp = tempfile.mktemp(suffix='.wav')
+for k in range(6):
+    sf.write(tmp, mix, SR, subtype='FLOAT'); M = measure(tmp)
+    if abs(M['I'] + 14.0) <= 0.2 and M['TP'] <= -1.2: break
+    mix *= 10 ** ((-14.0 - M['I']) / 20)
+    pk = np.abs(mix).max(); lim = 10 ** (-1.6 / 20)
+    if pk > lim: mix = np.tanh(mix / lim) * lim                     # the lightest soft limit that keeps true peak under -1
+os.remove(tmp)
+sf.write(OUT, mix, SR, subtype='PCM_24'); M = measure(OUT)
+print('score', OUT, f'{END:.2f}s at {BPM} BPM', f"{M['I']:.1f} LUFS, {M['TP']:.1f} dBTP, LRA {M['LRA']:.1f}",
+      'PASS' if abs(M['I'] + 14.0) <= 0.5 and M['TP'] <= -1.0 else 'FAIL')

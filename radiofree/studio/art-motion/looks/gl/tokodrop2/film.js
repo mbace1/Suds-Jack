@@ -18,7 +18,7 @@ import { OUT_W, OUT_H, FPS, makeScreen, clamp } from '../common/film.js';
 import { drawText, textWidth, pixels } from '../common/font.js';
 
 const Q = new URLSearchParams(location.search);
-const CLIPS = Q.get('clips') || '/_clips/', CARD = Q.get('card') || 'gl';
+const CLIPS = Q.get('clips') || '/_clips/', CARD = Q.get('card') || 'title';   // owner, 4 Nov: card B, the game's own title, is the one built
 const PLAN = await (await fetch(Q.get('plan') || './plan.json')).json();
 const HAVE = await fetch(CLIPS + 'clips.json').then((r) => (r.ok ? r.json() : {})).catch(() => ({}));
 const BEAT = 60 / PLAN.bpm, END = PLAN.end;
@@ -45,8 +45,9 @@ function tag(g, s, t) {
   g.fillStyle = 'rgba(255,255,255,0.10)'; g.fillRect(0, y, OUT_W, 5);
   const P = 5, x0 = 40, ty = y + 40;
   // the GL mark: the voxel logo's own ramp, one row per colour
-  drawText(g, 'GL', x0, ty, { px: P, bold: true, fill: (x, yy) => ROWS[yy], outline: '#14081c' });
-  const xl = x0 + textWidth('GL', P, true) + 40, slide = Math.round((1 - k) * 60);
+  // the plain glyphs, not the bold: bold closes the G's gap and at this size it reads as a 6 (as on card A)
+  drawText(g, 'GL', x0, ty, { px: P, fill: (x, yy) => ROWS[yy], outline: '#14081c' });
+  const xl = x0 + textWidth('GL', P) + 40, slide = Math.round((1 - k) * 60);
   if (s.label) drawText(g, s.label, xl + slide, ty, { px: P, fill: '#f4f8ff', outline: '#05070c' });
   if (s.ver) { const xv = OUT_W - 40 - textWidth(s.ver, 4); drawText(g, s.ver, xv, ty + 8, { px: 4, fill: '#40ff90', outline: '#041a10' }); }
 }
@@ -140,7 +141,7 @@ async function drawTitleCard(g, tc, s) {
   const mid = (str, yy, o) => drawText(g, str, Math.round((OUT_W - textWidth(str, o.px, o.bold)) / 2), yy, o);
   if (tc >= BEAT * 1) mid('PLAY FREE IN THE ARCADE', y + 60, { px: 6, fill: '#f4f8ff', outline: '#05070c' });
   if (tc >= BEAT * 2) mid('MBACE1.GITHUB.IO/SUDS-JACK', y + 150, { px: 6, fill: '#40ff90', outline: '#041a10' });
-  if (tc >= BEAT * 3) { drawText(g, 'GL', 40, y + 245, { px: 5, bold: true, fill: (x, yy) => ROWS[yy], outline: '#14081c' }); drawText(g, 'GAMEPLAY LABORATORY', 40 + textWidth('GL', 5, true) + 40, y + 245, { px: 5, fill: '#a8b4c8', outline: '#05070c' }); }
+  if (tc >= BEAT * 3) { drawText(g, 'GL', 40, y + 245, { px: 5, fill: (x, yy) => ROWS[yy], outline: '#14081c' }); drawText(g, 'GAMEPLAY LABORATORY', 40 + textWidth('GL', 5) + 40, y + 245, { px: 5, fill: '#a8b4c8', outline: '#05070c' }); }
 }
 
 // ------------------------------------------------------------------ one frame
