@@ -40,11 +40,11 @@
 //   chStep   { what, n, of }   progress the HUD reads: a gate, a lit body, an orb
 //   heart    { hp, x, z }      the heart was hurt
 // Pure: no DOM, no clock, w.rng only.
-import { TUNING } from '../tuning.js?v=116';
-import { levelShape, KIND } from './shape.js?v=116';
-import * as pickups from './pickups.js?v=116';
-import * as rules from './rules.js?v=116';
-import * as heat from './heat.js?v=116';
+import { TUNING } from '../tuning.js?v=117';
+import { levelShape, KIND } from './shape.js?v=117';
+import * as pickups from './pickups.js?v=117';
+import * as rules from './rules.js?v=117';
+import * as heat from './heat.js?v=117';
 
 const T = TUNING, C = T.campaign, P = C.points, HG = T.heat.goal;
 // a room's goal taken pays its points × the heat, and heats you (v51)
@@ -186,7 +186,10 @@ export function step(w, dt, api) {
       if (!g.alive || g.state !== 'active' || Math.hypot(g.x - H.x, g.z - H.z) > g.r + H.r) continue;
       hurtHeart(w, H, 1); H.cd = C.heart.bite; break;
     }
-    for (const b of w.bullets ?? []) if (!b.hero && !b.dead && Math.hypot(b.x - H.x, b.z - H.z) < b.r + H.r) { b.dead = true; hurtHeart(w, H, 1); }
+    // v117: corpse fire passes through it. A corpse aims at where YOU stood (v103), so a line of it that crosses
+    // the heart is the heart standing between you and a body you killed — on HARD, where every corpse fires, that
+    // was most of what a heart lost (CLOT: 43 of 48 hits, and no bot got through), for kills you cannot aim away
+    for (const b of w.bullets ?? []) if (!b.hero && !b.dead && !b.revenge && Math.hypot(b.x - H.x, b.z - H.z) < b.r + H.r) { b.dead = true; hurtHeart(w, H, 1); }
   }
 
   // COLLECT: the orbs come out on their times; walking over one takes it; one

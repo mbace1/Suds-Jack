@@ -15,8 +15,8 @@ import {
   uniform, positionLocal, normalLocal, normalView, positionViewDirection, cameraViewMatrix,
   materialEmissive, modelScale, vec3, vec4, float, sin, cos, exp, dot, normalize, clamp, max, abs, smoothstep, length, materialColor, materialOpacity,
   materialReference } from 'three/tsl';
-import { TUNING } from '../tuning.js?v=116';
-import { styleName, styledBody } from './style.js?v=116';
+import { TUNING } from '../tuning.js?v=117';
+import { styleName, styledBody } from './style.js?v=117';
 
 const T = TUNING;
 

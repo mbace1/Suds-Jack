@@ -7,34 +7,34 @@
 // The rules live in sim/ and run on a fixed step; this file feeds them input,
 // hands their events to the view and the sound, and draws in between steps.
 import * as THREE from 'three/webgpu';
-import { TUNING } from './tuning.js?v=116';
-import { buildFloor } from './render/floor.js?v=116';
-import { fitCamera, screenToWorld, screenDown } from './render/view.js?v=116';
-import * as worldsSim from './sim/worlds.js?v=116';
-import { shapeAt as shiftShape } from './sim/floorshift.js?v=116';
-import * as reshapeSim from './sim/reshape.js?v=116';
-import { Scenery } from './render/scenery.js?v=116';
-import { DRIFT } from './render/kit.js?v=116';
-import { Transit } from './render/transit.js?v=116';
-import { Splats } from './render/splats.js?v=116';
-import { Actors } from './render/actors.js?v=116';
-import { GEL_TIME } from './render/gel.js?v=116';
-import { studioEnvironment } from './render/env.js?v=116';
-import { Specimen } from './render/specimen.js?v=116';
-import { createWorld, step, api as simApi } from './sim/world.js?v=116';
-import { stage as stagePk } from './sim/pickups.js?v=116';
-import { Input } from './input.js?v=116';
-import { UI, t, timeText, LANGS, getLang, setLang, goalText, bossName } from './ui.js?v=116';
-import { Announcer } from './announcer.js?v=116';
-import { rooms as campaignRooms, isOpen as roomOpen, better as betterGrade } from './sim/director/campaign.js?v=116';
-import { levelShape, slots as regionSlots } from './sim/shape.js?v=116';
-import { Sound } from './audio.js?v=116';
-import { Music, worldWant, cueFor, renderMusicWav } from './music.js?v=116';
-import { Intro, CUES as INTRO } from './intro/intro.js?v=116';
-import { scheduleIntroSfx, renderIntroSfxWav } from './intro/sfx.js?v=116';
-import { Readout } from './readout.js?v=116';
-import { Meter, device, Quality } from './meter.js?v=116';
-import * as record from './record.js?v=116';
+import { TUNING } from './tuning.js?v=117';
+import { buildFloor } from './render/floor.js?v=117';
+import { fitCamera, screenToWorld, screenDown } from './render/view.js?v=117';
+import * as worldsSim from './sim/worlds.js?v=117';
+import { shapeAt as shiftShape } from './sim/floorshift.js?v=117';
+import * as reshapeSim from './sim/reshape.js?v=117';
+import { Scenery } from './render/scenery.js?v=117';
+import { DRIFT } from './render/kit.js?v=117';
+import { Transit } from './render/transit.js?v=117';
+import { Splats } from './render/splats.js?v=117';
+import { Actors } from './render/actors.js?v=117';
+import { GEL_TIME } from './render/gel.js?v=117';
+import { studioEnvironment } from './render/env.js?v=117';
+import { Specimen } from './render/specimen.js?v=117';
+import { createWorld, step, api as simApi } from './sim/world.js?v=117';
+import { stage as stagePk } from './sim/pickups.js?v=117';
+import { Input } from './input.js?v=117';
+import { UI, t, timeText, LANGS, getLang, setLang, goalText, bossName } from './ui.js?v=117';
+import { Announcer } from './announcer.js?v=117';
+import { rooms as campaignRooms, isOpen as roomOpen, better as betterGrade } from './sim/director/campaign.js?v=117';
+import { levelShape, slots as regionSlots } from './sim/shape.js?v=117';
+import { Sound } from './audio.js?v=117';
+import { Music, worldWant, cueFor, renderMusicWav } from './music.js?v=117';
+import { Intro, CUES as INTRO } from './intro/intro.js?v=117';
+import { scheduleIntroSfx, renderIntroSfxWav } from './intro/sfx.js?v=117';
+import { Readout } from './readout.js?v=117';
+import { Meter, device, Quality } from './meter.js?v=117';
+import * as record from './record.js?v=117';
 
 const T = TUNING;
 const params = new URLSearchParams(location.search);
@@ -502,9 +502,9 @@ const specimen = new Specimen(T, actors, scene.environment);
 // menu). It takes effect at run start; the menu also redraws the world left
 // behind the title in the new style. The HUD label says ' · sdf' while on.
 const GELS = ['classic', 'sdf'];
-import { STYLES } from './render/style.js?v=116';
-import { Lens } from './render/lens.js?v=116';
-import { setSceneSun } from './render/sun.js?v=116';
+import { STYLES } from './render/style.js?v=117';
+import { Lens } from './render/lens.js?v=117';
+import { setSceneSun } from './render/sun.js?v=117';
 let urlGels = GELS.includes(params.get('gels')) ? params.get('gels') : null;
 const gels = () => urlGels ?? (GELS.includes(store.str('toko2.gels')) ? store.str('toko2.gels') : 'classic');
 // The LENS switch (render/lens.js, v94): NONE or TILT-SHIFT, localStorage toko2.lens; ?lens=tilt|none for a link
@@ -653,7 +653,7 @@ const campaignProgress = (hard = false) => { try { return JSON.parse(store.str(h
 let lastRoom = null;   // AGAIN replays it
 const levels = new Map();
 async function loadLevel(id) {
-  if (!levels.has(id)) levels.set(id, fetch(new URL(`../levels/${id}.json?v=116`, import.meta.url)).then((r) => { if (!r.ok) throw new Error(`levels/${id}.json ${r.status}`); return r.json(); }));
+  if (!levels.has(id)) levels.set(id, fetch(new URL(`../levels/${id}.json?v=117`, import.meta.url)).then((r) => { if (!r.ok) throw new Error(`levels/${id}.json ${r.status}`); return r.json(); }));
   return levels.get(id);
 }
 // the list the room screen draws: worlds, their rooms, open or not, best grades
