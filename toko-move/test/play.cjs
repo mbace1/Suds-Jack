@@ -116,7 +116,7 @@ server.listen(0, '127.0.0.1', async () => {
         runs: [...document.querySelectorAll('#mutRow .run')].map(r => ({ id: r.dataset.run, open: !r.classList.contains('locked'), lit: r.classList.contains('on') })),
         goal: document.getElementById('titleGoal').textContent, play: document.getElementById('play').textContent,
         links: ['dailyLink', 'weekLink', 'liveLink'].filter(id => { const e = document.getElementById(id); return e && !e.hidden && getComputedStyle(e).display !== 'none'; }) }));
-      ok(`the bare address is the card journey, not the real-time game (v${t.v})`, !t.classic && t.v === '3.4' && /v3\.4/.test(t.hero));
+      ok(`the bare address is the card journey, not the real-time game (v${t.v})`, !t.classic && t.v === '3.5' && /v3\.5/.test(t.hero));
       ok(`it is Act 1, in Helsinki (${await page.evaluate(() => document.getElementById('titleWhen').textContent)})`, await page.evaluate(() => /^Act 1 · Helsinki · 07:00/.test(document.getElementById('titleWhen').textContent)));
       ok(`the ladder: EASY open and lit, three locked (${t.runs.map(r => r.id + (r.open ? '' : '🔒')).join(' ')})`, t.runs.map(r => r.id).join() === 'easy,medium,hard,night' && t.runs[0].open && t.runs[0].lit && t.runs.slice(1).every(r => !r.open) && t.run === 'easy');
       ok(`the goal and the button (${t.goal} · ${t.play})`, /^Three deliveries before 08:15/.test(t.goal) && t.play === 'START SHIFT');
@@ -254,6 +254,21 @@ server.listen(0, '127.0.0.1', async () => {
       ok(`a second run opens with Dispatch, a card like any other (${met?.line})`, !!met && met.kind === 'story' && met.buttons.length === 2);
       ok(`and the city remembers it after the run (${before} → ${JSON.stringify(kept)})`, seen.end && !before && kept.dispatch === 1);
       ok('no page or network errors (arcs)', !errs.length, errs.slice(0, 3).join(' | '));
+      await ctx.close();
+    }
+    // ── the rival and the sealed parcel (v3.5, ACT1.md §11): a fourth run of MEDIUM
+    {
+      const ctx = await browser.newContext(PHONE); await seedRuns(ctx, { easy: { done: true, stars: 2, plays: 2 }, medium: { plays: 1 } });
+      const page = await ctx.newPage(), errs = watch(page);
+      await page.goto(`${base}/toko-move/?run=medium&seed=1002`, { waitUntil: 'load' }); await ready(page);
+      await page.tap('#play'); await page.waitForSelector('#v3panel .eventOpt', { timeout: 15000 });
+      const seen = await playOut(page);
+      const sealed = seen.cards.find(c => c.kind === 'dispatch' && /^A sealed parcel\./.test(c.line)), race = seen.cards.find(c => / The other courier wants it too\.$/.test(c.line));
+      ok(`a fourth run deals a sealed parcel, and its stop is hidden on the strip (${sealed?.line} · ${seen.strips.find(x => /SEALED/.test(x)) || 'no SEALED strip'})`, !!sealed && seen.strips.some(x => /SEALED · \S+/.test(x)));
+      ok(`MEDIUM deals a race, its clock on the button (${race?.stakes?.[0]})`, !!race && /^beat \d\d:\d\d /.test(race.stakes[0] || ''));
+      const note = await page.evaluate(() => JSON.parse(localStorage.getItem('tokoMoveNotebook') || '[]'));
+      ok(`the race is settled on the stamp, and the sealed drop writes the notebook (${note[0]})`, seen.stamps.some(x => /You beat the other courier|She got there first/.test(x)) && note.length >= 1 && seen.stamps.some(x => x.includes(note[0].split(' · ').slice(1).join(' · '))));
+      ok('no page or network errors (rival, sealed)', !errs.length, errs.slice(0, 3).join(' | '));
       await ctx.close();
     }
     // ── a 320px phone: the pill still clears both corners, scaled if it must be

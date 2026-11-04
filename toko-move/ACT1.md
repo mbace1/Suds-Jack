@@ -230,3 +230,44 @@ later card in the same run answers it, taking the next job's card slot:
   seed with a memory replays exactly.
 - `test/play.cjs`: Dispatch's first step on a second run, and its memory kept
   after the run ends.
+
+## 11. The rival, the regulars and the sealed parcel (v3.5)
+
+The plan's step 5: the real-time game's three run-modifiers (`rival.js`,
+`regulars.js`, `sealed.js`), brought onto the journey. Each one **adds a line
+or a card, never a screen**, and each keeps its own memory on the device, the
+same one `?classic` writes.
+
+- **The regulars:** six people at six stops (Riikka the florist at
+  Ooppera, Seppo's print shop at Hakaniemi, and so on).
+  - A job to one names them on the dispatch card: *"Parts for Riikka at
+    Ooppera."*
+  - On time, their standing goes up one (late, down one), kept in
+    `tokoMoveRegulars`.
+  - Standing pays a tip on the stamp: 12% of the fee a step, up to five.
+- **The rival (MEDIUM and HARD):** one dispatch a run.
+  - The card says: *"The other courier wants it too."*
+  - **Race her** is the job with a clock on it. Her time is the best route at
+    the run's pace, shown on the strip. Beat it and the fee is ×1.3; she gets
+    there first and it is ×0.6.
+  - No dice: the race is decided by the time your choices took.
+- **The sealed parcel (from a player's fourth run):** the second job has no
+  address, only a sticker and a line to ride.
+  - The card at the first stop (CARDS.md §1): *"The label says: you'll know
+    the stop."* You can **Ride the 6 and watch** (free), or **Ask at the
+    kiosk** (+0:40), which names it.
+  - Boarding that line names it too.
+  - Until then, the strip, the corner map and the board hide the drop.
+  - It pays ×1.5. Delivered, it writes one line in the same notebook
+    `?classic` keeps (`tokoMoveNotebook`), shown on the stamp.
+
+**Determinism:** none of the three spends the run's rng. The rival's job and
+the sealed line come from a hash of the seed, so a run deals the deck it
+always did.
+
+**Gates:**
+- `test/journey.mjs`: the race pays both ways, a regular's tip and standing,
+  and the sealed parcel only from the fourth run (the kiosk and the right
+  line each name it). There is no rival on EASY or NIGHT.
+- `test/play.cjs`: a sealed run's card, strip and notebook line; a MEDIUM
+  race on the strip.

@@ -29,7 +29,8 @@
 //
 // Pure: no DOM, no clock, deterministic from a seed (one integer of rng state),
 // which is what lets test/journey.mjs play hundreds of runs in bare node.
-import { CARDS, CONTENTS, TRAMS, ODDS, SLIPS, SOAKS, CALLBACKS, ARCS } from './cards.js?v=2';
+import { CARDS, CONTENTS, TRAMS, ODDS, SLIPS, SOAKS, CALLBACKS, ARCS, SEALED_CARD } from './cards.js?v=3';
+import { regularAt, standingOf, tipFor, MAX_STANDING } from './regulars.js?v=4';
 import { haltFamily, haltMinutes } from './mutators.js?v=2';
 import { payFor } from './parcels.js?v=1';
 import { lineFamily } from './board.js?v=8';
@@ -133,17 +134,18 @@ export function arcStep(memory = {}, run = {}) {
   if (!((memory.runs | 0) >= 1)) return null;
   return ['ticket', 'dispatch'].map(arc => ARCS.find(a => a.arc === arc && (memory[arc] | 0) === a.at && (!a.runs || a.runs.includes(run.id)))).find(Boolean) || null;
 }
+const hashOf = x => { let h = 2166136261; for (const c of String(x)) { h ^= c.charCodeAt(0); h = Math.imul(h, 16777619); } return h >>> 0; };
 // A card takes a job's card slot: the one already dealt for it, or a new one.
 function slot(s, card, job) {
   const d = s.deck.find(x => x.job === job && !s.used.has(x.card.id));
   if (d) d.card = card; else s.deck.push({ card, job });
 }
 
-export function newRun(net, run = {}, seed = 1, { start = 'lasipalatsi', memory = null } = {}) {
+export function newRun(net, run = {}, seed = 1, { start = 'lasipalatsi', memory = null, standing = null } = {}) {
   const s = { v: 5, seed, rng: seed >>> 0, run, clock: 0, at: net.nodes.has(start) ? start : [...net.nodes.keys()][0],
     target: run.target || 3, done: 0, late: 0, sold: 0, trust: 1, score: 0, streak: 0, bestStreak: 0, job: null, offer: null, weather: 'clear',
     phase: 'dispatch', deck: [], used: new Set(), halt: null, haltSeen: false, log: [], hop: null, pending: null, results: [], seen: [],
-    memory: { ...(memory || {}) }, flags: new Set(), keep: {} };
+    memory: { ...(memory || {}) }, flags: new Set(), keep: {}, standing: { ...(standing || {}) }, sealedJob: -1, rivalJob: -1 };
   // the shift's weather, and the run as the weather makes it: slower walks,
   // fuller trams — the deadlines are set from THIS, so snow is slow, not unfair
   s.weather = run.skies?.length ? pickOf(s, run.skies) : 'clear';
@@ -152,6 +154,12 @@ export function newRun(net, run = {}, seed = 1, { start = 'lasipalatsi', memory 
   Object.defineProperty(s, 'best', { value: bestTable(net, s.run), enumerable: false });
   s.deck = dealDeck(s, run, s.weather);
   const step = arcStep(s.memory, run); if (step) slot(s, step, step.job);
+  // the run-modifiers (ACT1.md §11), placed by a hash of the seed — no rng, so
+  // the deck is the one it always was: the sealed parcel from a fourth run (the
+  // second job, or the third when an arc step holds the second's card slot;
+  // never on EASY), the race (`race`, MEDIUM and HARD) on another middle job
+  if (run.sealed !== false && (s.memory.runs | 0) >= 3) { s.sealedJob = s.deck.some(d => d.job === 1 && d.card.arc) ? 2 : 1; slot(s, SEALED_CARD, s.sealedJob); }
+  if (run.race) { const js = [1, 2].filter(j => j !== s.sealedJob); s.rivalJob = js[hashOf(`rival:${seed}`) % js.length]; }
   // HARD's halted family (runs.js halt): seeded, a tram, from its minute
   if (run.halt) { const fams = [...new Set(net.lines.filter(l => l.mode === 'tram').map(l => l.family))];
     const fam = haltFamily(seed, fams); if (fam) s.halt = { family: fam, from: run.halt.atMin * 60, until: run.halt.atMin * 60 + haltMinutes(seed, run) * 60, recoverJobs: run.halt.recoverJobs, startDone: null, lifted: false }; }
@@ -173,6 +181,11 @@ function dispatch(net, s, notTo = null) {
   const cargo = keys[Math.floor(rand(s) * keys.length)];
   s.offer = { to: pick, cargo, best: best[pick], contents: pickOf(s, CONTENTS[cargo] || ['something']) };
   s.offer.fee = Math.round(feeOf(s.offer) * s.trust);   // a sold parcel costs every fee after it (dispatch hears)
+  const idx = s.done + s.sold, reg = regularAt(pick);
+  if (reg) s.offer.regular = { id: reg.id, name: reg.name };
+  if (idx === s.rivalJob) s.offer.rival = { eta: round10(s.offer.best * (s.run.race?.pace || 1.2)) };
+  if (idx === s.sealedJob) { const fams = [...new Set((net.at.get(pick) || []).filter(l => l.mode === 'tram').map(l => l.family))].sort();
+    if (fams.length) { s.offer.sealed = { family: fams[hashOf(`sealed:${s.seed}`) % fams.length], revealed: false }; s.offer.fee = Math.round(s.offer.fee * 1.5); } }
   s.phase = 'dispatch';
 }
 
@@ -261,18 +274,22 @@ const eligible = (c, s) => c.options.filter(o => !o.needs || o.needs === s.job?.
 export function card(net, s) {
   if (s.phase === 'end') return null;
   if (s.phase === 'dispatch') { const o = s.offer;
-    return { kind: 'dispatch', mood: MOODS_FOR.dispatch, text: `${cargoWord(o.cargo)} for ${net.name(o.to)}.`, fee: o.fee,
+    const base = o.sealed ? 'A sealed parcel. No address, only a sticker.' : o.regular ? `${cargoWord(o.cargo)} for ${o.regular.name} at ${net.name(o.to)}.` : `${cargoWord(o.cargo)} for ${net.name(o.to)}.`;
+    if (o.rival) return { kind: 'dispatch', mood: 'warning', text: `${base} The other courier wants it too.`, fee: o.fee, rival: true,
+      options: [{ label: 'Race her', price: 0, stakes: { odds: `beat ${clockAt(s, s.clock + o.rival.eta)}`, win: [`€${o.fee} ×1.3`], lose: ['×0.6'] } }, { label: 'Let her have it', price: REROLL_S, stakes: null }] };
+    return { kind: 'dispatch', mood: MOODS_FOR.dispatch, text: base, fee: o.fee, sealed: !!o.sealed,
       options: [{ label: 'Take it', price: 0, stakes: { sure: [`€${o.fee}`] } }, { label: 'Ask for another', price: REROLL_S, stakes: null }] }; }
   if (s.pending) { const c = s.pending.card;
-    return { kind: 'story', id: c.id, mood: c.mood || 'info', text: c.text, where: c.where, tram: c.tram || null, sale: !!c.sale,
-      options: eligible(c, s).map(o => ({ label: o.label, price: o.time || 0, stakes: stakesOf(o) })) }; }
+    return { kind: 'story', id: c.id, mood: c.mood || 'info', text: fill(s, c.text), where: c.where, tram: c.tram || null, sale: !!c.sale,
+      options: eligible(c, s).map(o => ({ label: fill(s, o.label), price: o.time || 0, stakes: stakesOf(o) })) }; }
   if (s.phase === 'halt') { const h = s.halt;
     return { kind: 'halt', mood: MOODS_FOR.halt, text: `The ${h.family} is halted.`, options: [{ label: 'Find another way', price: 0, stakes: null }, { label: 'Wait it out', price: round10(Math.max(0, h.until - s.clock)), stakes: null }] }; }
   const opts = s.options || [];
   // nowhere this parcel may go from here (a dead end for its rules): the next
   // one is always a way on, so the card never strands the courier
   const options = opts.length ? opts.map(o => ({ label: optionLabel(net, o), price: o.price, hop: o, stakes: o.risk ? stakesOf(o) : null })) : [{ label: 'Wait for the next one', price: STUCK_S, stakes: null }];
-  return { kind: 'route', mood: MOODS_FOR.route, at: net.name(s.at), text: `${cargoWord(s.job.cargo)} for ${net.name(s.job.to)}.`, options };
+  const text = s.job.sealed && !s.job.sealed.revealed ? `A sealed parcel. Ride the ${s.job.sealed.family}.` : `${cargoWord(s.job.cargo)} for ${net.name(s.job.to)}.`;
+  return { kind: 'route', mood: MOODS_FOR.route, at: net.name(s.at), text, options };
 }
 export const cargoWord = c => ({ documents: 'Documents', 'hot food': 'Hot food', parts: 'Parts', fragile: 'Something fragile', equipment: 'Equipment', express: 'An express parcel', 'fresh food': 'Fresh food', 'market goods': 'Market goods' })[c] || 'A parcel';
 
@@ -280,14 +297,17 @@ export const cargoWord = c => ({ documents: 'Documents', 'hot food': 'Hot food',
 // Returns what happened, for the screen to act out: a hop to ride or walk, a
 // reveal (the line and its chips), a sale, a delivery, the end. The state is
 // advanced in place.
+// a card's words, filled in: what is inside, where it goes, which line
+const fill = (s, t) => String(t || '').replace('{contents}', s.job?.contents || 'something').replace('{stop}', s.job?.toName || '').replace('{fam}', s.job?.sealed?.family || '');
 function say(s, line) {
-  const t = line === '@slip' ? pickOf(s, SLIPS) : line === '@soak' ? pickOf(s, SOAKS) : line || '';
-  return t.replace('{contents}', s.job?.contents || 'something');
+  return fill(s, line === '@slip' ? pickOf(s, SLIPS) : line === '@soak' ? pickOf(s, SOAKS) : line || '');
 }
+export const isSealed = s => !!(s?.job?.sealed && !s.job.sealed.revealed);
 // Apply an outcome; returns the reveal for the screen.
 function apply(net, s, e, how, odds = null) {
   const r = { say: say(s, e.say), chips: chips(e), how, odds };
   if (e.reveal && s.job) s.job.known = true;
+  if (e.unseal && s.job?.sealed) s.job.sealed.revealed = true;
   if (e.pay != null && s.job) s.job.mult = Math.round(s.job.mult * e.pay * 1000) / 1000;
   if (e.cash) s.score = Math.max(0, s.score + e.cash);
   if (e.time) { s.log.push({ at: s.clock, kind: 'outcome', label: r.say, price: e.time }); advance(s, e.time); }   // the log stays the whole clock
@@ -309,7 +329,8 @@ export function choose(net, s, i) {
   s.log.push({ at: s.clock, kind: c.kind, label: opt.label, price: opt.price });
   if (c.kind === 'dispatch') {
     if (i === 1) { advance(s, REROLL_S); if (s.phase !== 'end') dispatch(net, s, s.offer.to); return out; }
-    s.job = { ...s.offer, startedAt: s.clock, limit: Math.round(s.offer.best * GRACE * (s.run.deadline || 1)), mult: 1, known: false }; s.offer = null;
+    s.job = { ...s.offer, startedAt: s.clock, limit: Math.round(s.offer.best * GRACE * (s.run.deadline || 1)), mult: 1, known: false, toName: net.name(s.offer.to) }; s.offer = null;
+    if (s.job.rival) s.job.rival.until = s.clock + s.job.rival.eta;
     return nextMoment(net, s, out, 'stop');
   }
   if (c.kind === 'story') { const p = s.pending, o = eligible(p.card, s)[i];
@@ -333,7 +354,10 @@ export function choose(net, s, i) {
   // a tram ride is drawn a model — LOOK ONLY (signed off): it rides the same
   const model = hop.kind === 'ride' && hop.line.mode === 'tram' ? (() => { let r = rand(s) * 100; for (const t of TRAMS) { r -= t.w; if (r < 0) return t.id; } return TRAMS[0].id; })() : hop.kind === 'ride' ? 'metro' : null;
   s.hop = { kind: hop.kind, from: s.at, to: hop.to, model, line: hop.line ? { id: hop.line.id, label: hop.line.label, mode: hop.line.mode, family: hop.line.family, sourceId: hop.line.sourceId, nodes: hop.line.nodes, i: hop.i, k: hop.k } : null, price: hop.price, full: !!hop.full };
-  out.hop = s.hop; advance(s, hop.price); if (s.phase === 'end') return out;
+  out.hop = s.hop;
+  // the sealed label makes sense aboard the right line (ACT1.md §11)
+  if (isSealed(s) && hop.line?.family === s.job.sealed.family) { s.job.sealed.revealed = true; out.unsealed = { family: hop.line.family, stop: s.job.toName }; }
+  advance(s, hop.price); if (s.phase === 'end') return out;
   s.at = hop.to;
   // the weather's stakes on a walk land on the way
   if (hop.risk) { const { e, how } = roll(s, hop); out.reveal = apply(net, s, e, how, hop.risk.odds); if (s.phase === 'end') return out; }
@@ -350,9 +374,16 @@ function arrive(net, s, out) {
     let pay = s.job.fee;
     if (late) { s.late++; s.streak = 0; pay *= 0.5; }
     else { s.streak++; s.bestStreak = Math.max(s.bestStreak, s.streak); pay *= 1 + 0.25 * Math.min(4, s.streak - 1); }
-    pay = Math.max(0, Math.round(pay * s.job.mult));
+    pay = pay * s.job.mult;
+    // the race (the rival), the regular's tip and standing, the sealed note
+    let race = null, tip = 0;
+    if (s.job.rival) { race = s.clock <= s.job.rival.until ? 'won' : 'lost'; pay *= race === 'won' ? 1.3 : 0.6; }
+    if (s.job.regular) { const id = s.job.regular.id, st = standingOf(s.standing, id); tip = late ? 0 : tipFor(s.job.fee, st);
+      s.standing[id] = Math.max(0, Math.min(MAX_STANDING, st + (late ? -1 : 1))); s.keep.regulars = { ...(s.keep.regulars || {}), [id]: s.standing[id] }; }
+    if (s.job.sealed) s.keep.notes = (s.keep.notes || 0) + 1;
+    pay = Math.max(0, Math.round(pay)) + tip;
     s.score += pay; s.done++; s.results.push(late ? 'late' : 'ok'); s.seen.push({ contents: s.job.contents, how: 'delivered' });
-    out.delivered = { to: s.job.to, late, took, pay, contents: s.job.contents, mult: s.job.mult };
+    out.delivered = { to: s.job.to, late, took, pay, contents: s.job.contents, mult: s.job.mult, race, eta: s.job.rival?.eta ?? null, tip, regular: s.job.regular?.name || null, sealed: !!s.job.sealed };
     if (s.halt && s.halt.startDone != null && s.done >= s.halt.startDone + s.halt.recoverJobs) s.halt.lifted = true;
     s.job = null;
     if (s.done >= s.target) { s.phase = 'end'; out.end = true; return out; }
@@ -376,7 +407,7 @@ function nextMoment(net, s, out, phase, skipStory = false) {
 // of that job whose place is its own (a stop, aboard, on foot) and whose
 // parcel it wants; a card that needs a job waits until there is one.
 function dueCard(s, place) {
-  return s.deck.find(d => !s.used.has(d.card.id) && d.job <= s.done + s.sold && s.job && (d.card.where === place || d.card.where === 'any')
+  return s.deck.find(d => !s.used.has(d.card.id) && d.job <= s.done + s.sold && s.job && (d.card.where === place || d.card.where === 'any') && (!d.card.sealed || isSealed(s))
     && (!d.card.cargo || d.card.cargo.includes(s.job.cargo))) || null;
 }
 
@@ -385,6 +416,7 @@ function advance(s, sec) { s.clock += sec; if (s.clock >= SHIFT_SECONDS) { s.clo
 // ── reading the run ────────────────────────────────────────────────────────
 export const complete = s => s.done >= s.target;
 export const timeLeft = s => s.job ? s.job.limit - (s.clock - s.job.startedAt) : null;
+export function clockAt(s, sec) { const m = (s.run.startHour ?? 7) * 60 + Math.floor(sec / 60); return `${String(Math.floor(m / 60) % 24).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`; }
 export function clockLabel(s) { const m = (s.run.startHour ?? 7) * 60 + Math.floor(s.clock / 60); return `${String(Math.floor(m / 60) % 24).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`; }
 // Where a line goes from a stop, for the sign over the door: its last stop that way.
 export function terminus(net, hop) { const l = hop.line; if (!l) return null; return net.name(l.nodes[hop.line.k > hop.line.i ? l.nodes.length - 1 : 0]); }

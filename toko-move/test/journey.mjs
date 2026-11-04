@@ -232,6 +232,40 @@ ok(RUNS.every(r => !r.cargo || r.cargo.every(c => CARGO[c])), 'every run deals r
   ok(JSON.stringify(a.log) === JSON.stringify(b.log) && a.score === b.score, 'a seed with a memory replays exactly');
 }
 
+// ── 18. THE RIVAL, THE REGULARS, THE SEALED PARCEL (v3.5, ACT1.md §11)
+{ const runTo = (s, pick = c => 0, max = 500) => { const outs = []; let steps = 0; while (s.phase !== 'end' && steps++ < max) { const c = J.card(net, s); if (!c) break; outs.push({ c, r: J.choose(net, s, pick(c, s)) }); } return outs; };
+  // the race: MEDIUM and HARD only, on one of the middle jobs, both ways
+  ok([...Array(20)].every((_, k) => J.newRun(net, BY_ID.easy, k + 1).rivalJob === -1 && J.newRun(net, BY_ID.night, k + 1).rivalJob === -1), 'no race on EASY or NIGHT');
+  ok([...Array(20)].every((_, k) => [1, 2].includes(J.newRun(net, BY_ID.medium, k + 1).rivalJob) && [1, 2].includes(J.newRun(net, BY_ID.hard, k + 1).rivalJob)), 'one race a run on MEDIUM and HARD, on a middle job');
+  let card = null, won = 0, lost = 0, fair = true;
+  for (const run of [BY_ID.medium, BY_ID.hard]) for (let k = 1; k <= 40; k++) for (const o of runTo(J.newRun(net, run, 4000 + k), (c, s) => POLICIES[k % 2 ? 'reader' : 'left'](c, s))) {
+    if (o.c.rival && !card) card = o.c;
+    const d = o.r.delivered; if (d?.race) { if (d.race === 'won') won++; else lost++; if ((d.race === 'won') !== (d.took <= d.eta)) fair = false; } }
+  ok(!!card && /The other courier wants it too\.$/.test(card.text) && card.options[0].label === 'Race her' && /^beat \d\d:\d\d$/.test(card.options[0].stakes.odds), `the race is a card with its clock on the button (${card?.options[0].stakes.odds})`);
+  ok(won > 0 && lost > 0 && fair, `the race pays both ways, decided by the time your choices took (${won} won, ${lost} lost)`);
+  // the regulars: named on the card, a tip from their standing, standing kept
+  let named = null, tipped = null;
+  for (let k = 1; k <= 200 && !(named && tipped); k++) { const st = { flor: 3, print: 3, dock: 3, lab: 3, cafe: 3, shop: 3 }, s = J.newRun(net, BY_ID.easy, 5000 + k, { standing: st });
+    for (const o of runTo(s)) { if (o.c.kind === 'dispatch' && / for (Riikka|Seppo|Mirja|Tuomas|Anneli|Kaarlo) at /.test(o.c.text)) named = named || o.c.text;
+      const d = o.r.delivered; if (d?.regular && !d.late && !tipped) tipped = { d, keep: { ...s.keep.regulars } }; } }
+  ok(!!named, `a job to a regular names them (${named})`);
+  ok(!!tipped && tipped.d.tip > 0 && Object.values(tipped.keep).includes(4), `on time, a regular tips from their standing and it rises (tip €${tipped?.d.tip}, ${JSON.stringify(tipped?.keep)})`);
+  // the sealed parcel: from a fourth run, never on EASY, named by the kiosk or the line
+  ok(J.newRun(net, BY_ID.medium, 9, { memory: { runs: 2 } }).sealedJob === -1 && J.newRun(net, BY_ID.easy, 9, { memory: { runs: 9 } }).sealedJob === -1 && J.newRun(net, BY_ID.medium, 9, { memory: { runs: 3 } }).sealedJob === 1,
+    'a sealed parcel from a fourth run, never on EASY');
+  let sealedCard = null, routeText = null, kiosk = null, aboard = null, notes = 0;
+  for (let k = 1; k <= 60; k++) { const s = J.newRun(net, BY_ID.medium, 6000 + k, { memory: { runs: 4 } });
+    for (const o of runTo(s, (c, st) => c.id === 'sealed' ? k % 2 : 0)) {
+      if (o.c.kind === 'dispatch' && o.c.sealed) sealedCard = sealedCard || o.c.text;
+      if (o.c.kind === 'route' && /^A sealed parcel\. Ride the \S+\.$/.test(o.c.text)) routeText = routeText || o.c.text;
+      if (o.c.id === 'sealed' && o.r.reveal && /^The kiosk knows\. It is \S/.test(o.r.reveal.say)) kiosk = kiosk || o.r.reveal.say;
+      if (o.r.unsealed) aboard = aboard || o.r.unsealed; }
+    notes += s.keep.notes || 0; }
+  ok(!!sealedCard && !!routeText, `the sealed parcel hides its stop: "${sealedCard}" · "${routeText}"`);
+  ok(!!kiosk && !!aboard, `the kiosk names it (${kiosk}), and so does boarding its line (${aboard?.family} → ${aboard?.stop})`);
+  ok(notes > 0, `a sealed drop writes the notebook (${notes} lines over the runs)`);
+}
+
 // ── 16. THE BANDS (runs.js quotes these): sixty fresh shifts of every run
 const SEEDS = Array.from({ length: 60 }, (_, k) => 1000 + (k + 1) * 37);
 const band = {};
