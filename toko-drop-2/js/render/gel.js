@@ -13,9 +13,10 @@
 import * as THREE from 'three/webgpu';
 import {
   uniform, positionLocal, normalLocal, normalView, positionViewDirection, cameraViewMatrix,
-  materialEmissive, modelScale, vec3, vec4, float, sin, cos, exp, dot, normalize, clamp, max, abs, smoothstep, length, materialColor, materialOpacity } from 'three/tsl';
-import { TUNING } from '../tuning.js?v=115';
-import { styleName, styledBody } from './style.js?v=115';
+  materialEmissive, modelScale, vec3, vec4, float, sin, cos, exp, dot, normalize, clamp, max, abs, smoothstep, length, materialColor, materialOpacity,
+  materialReference } from 'three/tsl';
+import { TUNING } from '../tuning.js?v=116';
+import { styleName, styledBody } from './style.js?v=116';
 
 const T = TUNING;
 
@@ -63,9 +64,6 @@ export function gelMaterial(hex, fam, radius, { wobble, jelly = T.material.jelly
     attenuationColor: jelly ? deep : col, attenuationDistance: 1.2,
     dispersion: jelly ? J.dispersion : 0,
   });
-  // absorption scales with the body: the views are pooled at unit size and
-  // scaled, so the distance is in radii of the mesh as it stands
-  if (jelly) m.attenuationDistanceNode = float(J.attenuation).mul(modelScale.x);
   const u = {
     phase: uniform(Math.random() * Math.PI * 2),
     wobble: uniform(wobble ?? (fam === 'blob' ? 1.0 : 0.35)),
@@ -87,25 +85,19 @@ export function gelMaterial(hex, fam, radius, { wobble, jelly = T.material.jelly
     corePow: uniform(J.corePow),
     coreColor: uniform(deep.clone()),
   };
-  // ── the vertex graph: lumps, hit ripple, death thrash, stretch ──
-  // (the displacement is gelDisplacement, shared with the SDF field, sdf.js)
-  let p = positionLocal.add(normalLocal.mul(gelDisplacement(positionLocal.div(u.radius), u).mul(u.radius)));
-  // pressure before the pop: the death thrash inflates the body about its floor contact
-  p = p.mul(float(1.0).add(u.tear.mul(DISP.inflate)));
-  const sdir = vec3(u.stretchDir.x, 0.0, u.stretchDir.y);
-  p = p.add(sdir.mul(dot(p, sdir)).mul(u.stretch));
-  m.positionNode = vec3(p.x, p.y.mul(float(1.0).sub(u.stretch.mul(0.4))), p.z);
-
-  // ── the glow and the dome's refraction depth ──
-  m.emissiveNode = gelGlow(u, materialEmissive);
-  m.thicknessNode = gelThickness(u, positionLocal.y);
+  // the graph: one a kind of gel, shared (see graphOf), reading this body's numbers off userData.u as it is drawn
+  const G = graphOf(fam, jelly, style);
+  if (G.attenuationDistanceNode) m.attenuationDistanceNode = G.attenuationDistanceNode;
+  m.positionNode = G.positionNode;
+  m.emissiveNode = G.emissiveNode;
+  m.thicknessNode = G.thicknessNode;
   // v92: a CEL-SHADED or WATERCOLOR body (render/style.js) paints itself with a fragment of its own, from the
   // same displaced body: the physical lighting and the transmission pass are skipped; the hit flash (emissive)
   // and the hero's blink (opacity) still read the material's own fields, and the colour is the lifted hue
   if (style !== 'physical') {
     m.transmission = 0;
     m.color.copy(col);
-    m.fragmentNode = vec4(styledBody(style, materialColor, positionLocal.xz.div(u.radius), u.lightDir).add(materialEmissive), materialOpacity);
+    m.fragmentNode = G.fragmentNode;
   }
   m.userData.style = style;
   m.gel = u;
@@ -114,6 +106,45 @@ export function gelMaterial(hex, fam, radius, { wobble, jelly = T.material.jelly
   // swaps `mat.gel` for stand-ins after build, and a custom look clears it
   m.userData.u = u; m.userData.fam = fam;
   return m;
+}
+
+// v116: ONE GRAPH A KIND OF GEL, shared by every body's material. three keys a compiled graph by its nodes, so
+// fresh nodes a body were a fresh shader build a body: a purp splitting into minis built every mini in that frame,
+// and an arcade run builds a body for each of the most of a kind ever on the floor at once (purp's minis: 45),
+// each a few ms here and tens on a phone, mid-fight. The graph is built once per family, jelly and style, and
+// reads the body's own numbers off the material it is drawing (materialReference → material.userData.u, the
+// uniforms each body has always had: mat.gel, the looks and the SDF bodies read and write them as before), so a
+// new body is a material, not a build. The numbers and their types:
+const U_TYPES = { phase: 'float', wobble: 'float', radius: 'float', hit: 'float', hitDir: 'vec2', tear: 'float', stretch: 'float',
+  stretchDir: 'vec2', contact: 'vec4', sss: 'float', sssColor: 'color', lightDir: 'vec3', thick: 'float', rim: 'float',
+  rimPow: 'float', rimColor: 'color', core: 'float', corePow: 'float', coreColor: 'color' };
+const GRAPHS = new Map();
+export function graphOf(fam, jelly, style) {
+  const key = `${fam}|${jelly ? 1 : 0}|${style}`;
+  let G = GRAPHS.get(key);
+  if (G) return G;
+  const r = {};
+  for (const [k, type] of Object.entries(U_TYPES)) r[k] = materialReference(`userData.u.${k}.value`, type);
+  const J = { ...T.material.jelly, ...(T.material.families[fam]?.jelly || {}) };
+  // ── the vertex graph: lumps, hit ripple, death thrash, stretch ──
+  // (the displacement is gelDisplacement, shared with the SDF field, sdf.js)
+  let p = positionLocal.add(normalLocal.mul(gelDisplacement(positionLocal.div(r.radius), r).mul(r.radius)));
+  // pressure before the pop: the death thrash inflates the body about its floor contact
+  p = p.mul(float(1.0).add(r.tear.mul(DISP.inflate)));
+  const sdir = vec3(r.stretchDir.x, 0.0, r.stretchDir.y);
+  p = p.add(sdir.mul(dot(p, sdir)).mul(r.stretch));
+  G = {
+    positionNode: vec3(p.x, p.y.mul(float(1.0).sub(r.stretch.mul(0.4))), p.z),
+    // ── the glow and the dome's refraction depth ──
+    emissiveNode: gelGlow(r, materialEmissive),
+    thicknessNode: gelThickness(r, positionLocal.y),
+    // absorption scales with the body: the views are pooled at unit size and
+    // scaled, so the distance is in radii of the mesh as it stands
+    attenuationDistanceNode: jelly ? float(J.attenuation).mul(modelScale.x) : null,
+    fragmentNode: style !== 'physical' ? vec4(styledBody(style, materialColor, positionLocal.xz.div(r.radius), r.lightDir).add(materialEmissive), materialOpacity) : null,
+  };
+  GRAPHS.set(key, G);
+  return G;
 }
 
 // ── the displacement law, shared by the mesh (above) and the SDF field ──

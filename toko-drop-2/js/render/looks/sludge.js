@@ -61,6 +61,19 @@ function sharedFor(ctx) {
   };
   mesh.onBeforeRender = () => stepFumes(sh.fumes);
   ctx.scene.add(mesh);
+  // v116: every cube's trails drawn by ONE instanced mesh, each droplet carrying its trail's opacity (aAlpha). three
+  // keys an instanced mesh by the mesh itself, so the two meshes each cube used to carry were two shader builds and
+  // two GPU pipelines for every new cube on the floor, mid-fight (up to 12 cubes at once, measured)
+  const RCAP = R.max * R.pool, alpha = new THREE.InstancedBufferAttribute(new Float32Array(RCAP), 1).setUsage(THREE.DynamicDrawUsage);
+  sh.blobGeo.setAttribute('aAlpha', alpha);
+  const rMat = new THREE.MeshBasicNodeMaterial({ color: R.color, transparent: true, depthWrite: false });
+  rMat.opacityNode = (ctx.TSL ?? THREE.TSL).attribute('aAlpha', 'float');
+  const rMesh = new THREE.InstancedMesh(sh.blobGeo, rMat, RCAP);
+  rMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+  rMesh.position.y = R.y; rMesh.frustumCulled = false; rMesh.count = 0;
+  sh.ribbons = { mesh: rMesh, alpha, cap: RCAP, m: new THREE.Matrix4() };
+  rMesh.onBeforeRender = () => drawRibbons(sh);
+  ctx.scene.add(rMesh);
   shared.set(ctx.scene, sh);
   return sh;
 }
@@ -114,19 +127,14 @@ function stepFumes(f) {
   f.mesh.instanceMatrix.needsUpdate = true;
 }
 
+// a trail is its points and its clock; the scene's ribbon mesh draws it (v116)
 function makeTrail(ctx, sh) {
-  const { THREE } = ctx, R = ctx.S.look.ribbon;
-  const mat = new THREE.MeshBasicNodeMaterial({ color: R.color, transparent: true, opacity: R.fadeOpacity, depthWrite: false });
-  const mesh = new THREE.InstancedMesh(sh.blobGeo, mat, R.max);
-  mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
-  mesh.position.y = R.y; mesh.frustumCulled = false; mesh.count = 0;
+  const R = ctx.S.look.ribbon;
   const tr = {
-    mesh, mat, R, sh, Fu: ctx.S.look.fumes, m: new THREE.Matrix4(),
+    R, sh, Fu: ctx.S.look.fumes,
     n: 0, x: new Float32Array(R.max), z: new Float32Array(R.max), age: new Float32Array(R.max),
     hw: 0, seen: -Infinity, seenAt: 0, t: 0, last: null, world: null,
   };
-  mesh.onBeforeRender = () => drawTrail(tr);
-  ctx.scene.add(mesh);
   sh.trails.push(tr);
   return tr;
 }
@@ -136,38 +144,51 @@ function makeTrail(ctx, sh) {
 // (main.js:7167, 7171).
 function newRun(sh, w) {
   sh.world = w;
-  for (const tr of sh.trails) if (tr.world !== w) { tr.n = 0; tr.mesh.count = 0; }
+  for (const tr of sh.trails) if (tr.world !== w) tr.n = 0;
   const f = sh.fumes;
   f.active.fill(0); f.mesh.count = 0;
 }
 
-// 1.x SludgeRibbon.update (main.js:1630-1671)
-function drawTrail(tr) {
+// every trail in the scene into the one ribbon mesh, once a frame (v116)
+function drawRibbons(sh) {
+  const B = sh.ribbons;
+  let k = 0;
+  for (const tr of sh.trails) k = drawTrail(tr, B, k);
+  B.mesh.count = k;
+  if (k) { B.mesh.instanceMatrix.needsUpdate = true; B.alpha.needsUpdate = true; }
+}
+
+// 1.x SludgeRibbon.update (main.js:1630-1671): a trail's droplets from the `k`th of the ribbon mesh's on, at its
+// opacity (pulsing while its cube lives, fading after); the next free one back
+function drawTrail(tr, B, k) {
   const R = tr.R, sh = tr.sh, now = tick(sh), dt = tr.last == null ? 0 : now - tr.last;
   tr.last = now;
   tr.t += dt;                                     // the ribbon's own clock
-  if (!tr.n) { tr.mesh.count = 0; return; }
+  tr.drawn = 0;
+  if (!tr.n) return k;
   const alive = tr.seen === sh.wall.value;        // its body's view was updated this frame
-  if (alive) tr.mat.opacity = R.pulse[0] + R.pulse[1] * Math.abs(Math.sin(tr.t * R.pulse[2]));
+  let a;
+  if (alive) a = R.pulse[0] + R.pulse[1] * Math.abs(Math.sin(tr.t * R.pulse[2]));
   else {
-    const k = 1 - (now - tr.seenAt) / R.fade;
-    if (k <= 0) { tr.n = 0; tr.mesh.count = 0; return; }
-    tr.mat.opacity = R.fadeOpacity * k;
+    const f = 1 - (now - tr.seenAt) / R.fade;
+    if (f <= 0) { tr.n = 0; return k; }
+    a = R.fadeOpacity * f;
   }
-  for (let i = 0; i < tr.n; i++) {
+  tr.alpha = a; tr.at = k;                        // where it went in the ribbon mesh, and how strong (the look's test reads them)
+  for (let i = 0; i < tr.n && k < B.cap; i++, k++) {
     const age = alive ? tr.age[i] : R.deadAge;
     const r = tr.hw * (R.base + R.amp * Math.sin(i * R.perIndex + tr.t * R.rate)) * (1 - age * R.dry);
-    tr.m.makeScale(r, r * R.flat, r).setPosition(tr.x[i], 0, tr.z[i]);
-    tr.mesh.setMatrixAt(i, tr.m);
+    B.m.makeScale(r, r * R.flat, r).setPosition(tr.x[i], 0, tr.z[i]);
+    B.mesh.setMatrixAt(k, B.m); B.alpha.setX(k, a);
   }
-  tr.mesh.count = tr.n;
-  tr.mesh.instanceMatrix.needsUpdate = true;
+  tr.drawn = k - tr.at;
   // fumes off a live trail (1.x main.js:1665-1669)
   const Fu = tr.Fu;
   if (alive && tr.n >= Fu.minPoints && Math.random() < dt * Fu.rate) {
     const i = Math.floor(Math.random() * tr.n);
     spawnFume(sh.fumes, tr.x[i] + (Math.random() - 0.5) * tr.hw, tr.z[i] + (Math.random() - 0.5) * tr.hw);
   }
+  return k;
 }
 
 export default {
@@ -251,7 +272,7 @@ export default {
     const [a, b] = v.trails;
     v.cur = a.seen <= b.seen ? 0 : 1;
     const tr = v.trails[v.cur];
-    tr.n = 0; tr.seen = -Infinity; tr.t = 0; tr.mesh.count = 0;
+    tr.n = 0; tr.seen = -Infinity; tr.t = 0;
     v.st.seen = -Infinity; v.st.dead = false; v.st.flop = false;
     v.tip.quaternion.identity(); v.body.scale.set(1, 1, 1);
   },

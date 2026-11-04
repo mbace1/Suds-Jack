@@ -27,10 +27,9 @@
 // go through the actors' own chunks.
 import * as THREE from 'three/webgpu';
 import * as TSL from 'three/tsl';
-import { texture } from 'three/tsl';
-import { TUNING } from '../tuning.js?v=115';
-import { itemLook, gateLook, glyphOf, colorOf } from '../sim/pickups.js?v=115';
-import { t as say } from '../ui.js?v=115';
+import { TUNING } from '../tuning.js?v=116';
+import { itemLook, gateLook, glyphOf, colorOf } from '../sim/pickups.js?v=116';
+import { t as say } from '../ui.js?v=116';
 
 const T = TUNING, P = T.pickups, G = P.gate, C = P.convoy, B = P.bounty, GL = G.look, FAM = G.family;
 const POOLS = 96;   // pools of light a frame: the drops, the beams, the moths
@@ -76,18 +75,17 @@ export function labelTexture(text, color, glow) {
   return tex;
 }
 
-// a sprite whose picture can change without a new material: its colour is a
-// texture node whose value is swapped
+// a sprite whose picture can change without a new material: its picture is the
+// material's map, swapped (v116: the map, not a texture node a sprite — a node
+// a sprite was a shader build a sprite, as a new tag, badge or number came up
+// mid-run; through the map every sprite draws with one compiled shader)
 export function sprite(order = 5) {
-  const node = texture(glyphTexture(' ', 0xffffff));
-  const mat = new THREE.SpriteNodeMaterial({ transparent: true, depthTest: false, depthWrite: false });
-  mat.colorNode = node;
+  const mat = new THREE.SpriteNodeMaterial({ map: glyphTexture(' ', 0xffffff), transparent: true, depthTest: false, depthWrite: false });
   const s = new THREE.Sprite(mat);
   s.renderOrder = order; s.visible = false; s.frustumCulled = false;
-  s.userData.node = node;
   return s;
 }
-export const setPicture = (s, tex) => { if (s.userData.node.value !== tex) s.userData.node.value = tex; };
+export const setPicture = (s, tex) => { if (s.material.map !== tex) s.material.map = tex; };
 
 export class PickupView {
   // `actors` lends its chunks (actors.spray) and the arena's light map

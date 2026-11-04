@@ -112,6 +112,7 @@ export default {
     ribbon: {
       color: 0x88cc00,     // MeshBasicMaterial, transparent, no depth write (1.x main.js:1616-1618)
       segments: [10, 7],   // SphereGeometry(1, 10, 7), shared (1.x main.js:1604)
+      pool: 48,            // v116: trails the scene's one ribbon mesh draws (two a cube; at most 12 cubes at once, measured)
       y: 0.02,             // the group's height (1.x main.js:1627)
       width: 1.5,          // hw = 1.5 × the body's radius (1.x main.js:1652)
       // r = hw × (base + amp·sin(perIndex·i + rate·t)) × (1 − dry × age),

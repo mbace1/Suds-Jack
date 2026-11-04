@@ -20,7 +20,7 @@
 // TUNING.light.arena.
 import * as THREE from 'three/webgpu';
 import { uv, vec2, vec3, float, length, clamp, pow } from 'three/tsl';
-import { TUNING } from '../tuning.js?v=115';
+import { TUNING } from '../tuning.js?v=116';
 
 const T = TUNING, A = T.light.arena, _Y = new THREE.Vector3(0, 1, 0);
 const smooth = (t) => { t = Math.min(1, Math.max(0, t)); return t * t * (3 - 2 * t); };
@@ -171,6 +171,16 @@ export class ArenaLight {
 
   reset() { this.bursts.length = 0; }
 
-  // no run on the floor: no light and no shadow (the menu's arena is bare)
-  clear() { this.pools.count = 0; this.shades.count = 0; }
+  // no run on the floor: no light and no shadow (the menu's arena is bare) — but while the title's warm-up holds
+  // one of each (v116, warm), they stay
+  clear() { if (this.warming) return; this.pools.count = 0; this.shades.count = 0; }
+
+  // v116: one pool and one shadow drawn at nothing's size for a frame on the title (actors.warmStep), so the first
+  // light and the first shadow of a run do not compile their shaders mid-fight
+  warm(on) {
+    this.warming = on;
+    if (!on) { this.clear(); return; }
+    this._m.makeScale(0, 0, 0);
+    for (const m of [this.pools, this.shades]) { m.setMatrixAt(0, this._m); m.count = 1; m.instanceMatrix.needsUpdate = true; }
+  }
 }

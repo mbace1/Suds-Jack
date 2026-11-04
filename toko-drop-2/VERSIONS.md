@@ -19,6 +19,20 @@
     Never `--no-verify`.
 -->
 
+## v116 — 2026-11-04
+**A phone pass: no shader is built mid-fight any more for a body, a trail, a tag or a ghost — one compiled graph a kind of thing, and the rest compiled on the title**
+- MEASURED FIRST (the real game loop under its own bot, Chrome's profiler and three's builder counted): the steady frame was fine, the HITCHES were not. three keys a compiled shader by the graph's nodes, and every gel body made its own nodes — so every body past the most of its kind the run had yet seen was a fresh shader build (a few ms here, tens on a phone), in the frame it arrived: a purp splitting into minis built every mini at once. A bot through every world, six seeds, puts the most of a kind on the floor at once at 45 purp minis, 32 redd minis, 19 YELAs, 12 SLUDGEs, 227 bodies' worth of builds a run in all. After the title's warm-up, a burst of 16 bodies of five kinds cost 14 builds (and 2 GPU pipelines) on v115; it costs 0 now.
+- ONE GRAPH A KIND OF GEL (render/gel.js `graphOf`): built once per family, jelly and style, shared by every body's material, reading the body's own numbers (its phase, the hit it took, its tear, its squash) off its own material as it is drawn (three's `materialReference` → `userData.u`, the uniforms each body always had, so the core, the looks and the SDF bodies read and write them as before). The same frozen frame on v115 and v116 differs no more than two renders of one build do.
+- SLUDGE's trails were two instanced meshes a cube, and three keys an instanced mesh by the mesh itself: every new cube compiled two GPU pipelines. Every trail in the scene is now drawn by one mesh, each droplet carrying its trail's opacity (`aAlpha`): 3 sludges pouring cost 6 builds and 4 pipelines on v115, 0 now.
+- A label (DASH THROUGH!, BOUNTY, a pickup's badge, a floating number, v115's tags) is its material's map now, not a texture node a sprite: one shader for every sprite. The dash ghosts share one graph and read their own fade.
+- THE TITLE COMPILES THE REST: the light map's first pool and shadow, the goo's first stamp on the floor and the wall, the heat ring, a ghost and the muzzle are drawn once there at nothing's size; and when the title's warm-up ends, everything the scene holds that no frame has drawn yet — pools at no count (the trails, the fumes, the lobs, the chunks) — is compiled off the frame loop (three's `compileAsync`: the builds yield, the pipelines are made on their own time, and nothing is drawn before its pipeline is ready).
+- Counted through the first minute of each of worlds 1–3 of a first run under the bot, after the title: shader builds while playing went 20, 4 and 3 on v115 to 0, 0 and 1 (a plate BULWARK shows only when it blocks). The set, the posts and the rams still compile under the dark of each world change, as v74 meant them to.
+- Per frame, with 30 bodies on the floor: three's own script time and the game's are where they were (inside the profiler's run-to-run noise). The reference costs nothing you can measure; the builds it saves were the stutter.
+- Tests: test/view.mjs checks two bodies of one gel kind share one graph and one program key but not their numbers, and that every label sprite shares one program key (both fail on v115's code); test/species/sludge.mjs reads the trails off the one ribbon mesh (120 checks); the smoke's check of v115's tags reads a sprite's picture off its map.
+- Cache tokens `?v=115` → `?v=116`; HUD label → `2.0 · v116`
+
+---
+
 ## v115 — 2026-11-03
 **The floor teaches its own attacks: STEP OUT! over a giant gathering for its slam, CLEAR THE LANE! by a sewer ram's lit lane — until you have once got out in time**
 - v112's slam and v110's rams are told every time — a ring at the slam's reach, a striped lane that beats before the punch — but a first look at a ring on the floor says nothing about what it means. As DASH THROUGH! does for a gate, a line of text now says it: STEP OUT! over a giant gathering with you in its ring or within 2 m of it, CLEAR THE LANE! by a ram's lane that warns with you in it or near it (sim/teach.js decides, render/hints.js draws; TUNING.hints).

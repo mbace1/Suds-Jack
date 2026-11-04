@@ -13,7 +13,7 @@
 //   g.form   { kind: 'escort', lead, slot, n, phase }      a rider (cleared when it peels off)
 //   w.links  [{ id, a, b, kind, cut }]                      the strands, cut ones kept a step for the view
 //   events   escortScatter { id } · strand { id, a, b } · strandCut { id, x, z, by: 'dash' | 'death' }
-import { TUNING } from '../tuning.js?v=115';
+import { TUNING } from '../tuning.js?v=116';
 
 const T = TUNING;
 const byId = (w, id) => { for (const g of w.gels) if (g.id === id) return g; return null; };

@@ -15,23 +15,23 @@
 // that springs in and fades (splats.js). Views are pooled per species, so a
 // gel's material is built once and reused, never compiled mid-fight.
 import * as THREE from 'three/webgpu';
-import { TUNING } from '../tuning.js?v=115';
+import { TUNING } from '../tuning.js?v=116';
 import * as TSL from 'three/tsl';
-import { gelMaterial, domeGeometry, cubeGeometry, heroGeometry, GEL_TIME } from './gel.js?v=115';
-import { LOOKS } from './looks/index.js?v=115';
-import { styleName, setStyle as setStyleMode, styledBody } from './style.js?v=115';
-import { JellyBody } from './jelly.js?v=115';
-import { Juice } from './juice.js?v=115';
-import { ArenaLight } from './light.js?v=115';
-import { toSdf } from './sdf.js?v=115';
-import { PickupView } from './pickups.js?v=115';
-import { ChallengeView } from './challenge.js?v=115';
-import { PostView } from './posts.js?v=115';
-import { SlamView } from './slam.js?v=115';
-import { HintView } from './hints.js?v=115';
-import { Goo } from './goo.js?v=115';
-import { mult as heatMult } from '../sim/heat.js?v=115';
-import { strands as liveStrands } from '../sim/formation.js?v=115';
+import { gelMaterial, domeGeometry, cubeGeometry, heroGeometry, GEL_TIME } from './gel.js?v=116';
+import { LOOKS } from './looks/index.js?v=116';
+import { styleName, setStyle as setStyleMode, styledBody } from './style.js?v=116';
+import { JellyBody } from './jelly.js?v=116';
+import { Juice } from './juice.js?v=116';
+import { ArenaLight } from './light.js?v=116';
+import { toSdf } from './sdf.js?v=116';
+import { PickupView } from './pickups.js?v=116';
+import { ChallengeView } from './challenge.js?v=116';
+import { PostView } from './posts.js?v=116';
+import { SlamView } from './slam.js?v=116';
+import { HintView } from './hints.js?v=116';
+import { Goo } from './goo.js?v=116';
+import { mult as heatMult } from '../sim/heat.js?v=116';
+import { strands as liveStrands } from '../sim/formation.js?v=116';
 
 const T = TUNING;
 const B = T.blob, D = T.death;
@@ -193,10 +193,13 @@ export class Actors {
     // 1.x's dash ghosts and muzzle pop (player.js:70-78, 99-108), pooled
     // v76: a ghost is lit at its rim (the fresnel × `rim` over its opacity), so it reads as
     // the body's outline left behind rather than a blue blot, and keeps the body's squash
+    // v116: one graph for every ghost, reading its own fade off its material (a graph a ghost was a shader build
+    // a ghost: the run's first dash built one, a later dash the next)
     const ghostMat = new THREE.MeshBasicNodeMaterial({ color: L.ghost.color, transparent: true, opacity: 0, depthWrite: false });
+    const ghostOpacity = TSL.materialReference('userData.fade.value', 'float').mul(TSL.float(1).add(TSL.float(1).sub(TSL.normalView.z.abs()).pow(2).mul(L.ghost.rim)));
     const ghosts = Array.from({ length: L.ghost.count }, () => {
       const mat = ghostMat.clone(), fade = TSL.uniform(0);
-      mat.opacityNode = fade.mul(TSL.float(1).add(TSL.float(1).sub(TSL.normalView.z.abs()).pow(2).mul(L.ghost.rim)));
+      mat.userData.fade = fade; mat.opacityNode = ghostOpacity;
       const m = new THREE.Mesh(this.geo.hero, mat); m.visible = false; m.scale.setScalar(r); this.scene.add(m);
       return { mesh: m, life: 0, fade, sq: new THREE.Vector3(1, 1, 1) };
     });
@@ -359,7 +362,8 @@ export class Actors {
       if (held.v) { held.v.root.traverse((o) => { if (o.userData.warmCull !== undefined) { o.frustumCulled = o.userData.warmCull; delete o.userData.warmCull; } }); this._release(held.v); }
       else held.off();
     }
-    if (!this.warmQueue) this.warmQueue = [...Object.keys(T.species).map((kind) => ({ kind })), { on: () => this.challenge.warm(true), off: () => this.challenge.warm(false) }, ...extra];
+    if (!this.warmQueue) this.warmQueue = [...Object.keys(T.species).map((kind) => ({ kind })), { on: () => this.challenge.warm(true), off: () => this.challenge.warm(false) },
+      { on: () => this._warmFx(true), off: () => this._warmFx(false) }, ...extra];
     const step = this.warmQueue.shift();
     if (!step) return false;
     try {
@@ -371,6 +375,19 @@ export class Actors {
       } else { step.on(); this.warmHeld = step; }
     } catch (e) { console.warn('warm-up step skipped:', e); this.warmHeld = null; }
     return true;
+  }
+
+  // v116: what a run's first seconds draw for the first time — the light map's first pool and shadow, the goo's
+  // first stamp on the floor and the wall, the hero's heat ring, a dash ghost, the muzzle pop — drawn once on the
+  // title at nothing's size or opacity, so their shaders compile here and not on the run's first shot, kill or dash
+  // (measured: a first run compiled them in world 1's first second, and the first dash's ghost at its own)
+  _warmFx(on) {
+    const hv = this.hero;
+    this.light.warm(on);
+    for (const m of [hv.halo, hv.muzzle, hv.ghosts[0].mesh]) m.visible = on;
+    if (!on) return;
+    hv.halo.material.opacity = 0; hv.muzzle.material.opacity = 0; hv.ghosts[0].fade.value = 0;
+    this.goo?.warm();
   }
 
   // The title's GELS switch: every view on the floor goes back to its pool and

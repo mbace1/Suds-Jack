@@ -50,9 +50,9 @@ import {
   Fn, uniform, attribute, texture, uv, vec2, vec3, vec4, float, normalize, dot, length, max, min, clamp, pow, sqrt,
   mix, cameraViewMatrix, varying, select, positionGeometry, step, smoothstep, mrt, fwidth, dFdx, dFdy, exp, abs, normalLocal, cameraPosition, positionWorld,
 } from 'three/tsl';
-import { TUNING } from '../tuning.js?v=115';
-import { GooSim, BODY, STAMP, wallLen, WALL_N, WALL_T } from './goo-sim.js?v=115';
-import { pickStyle, grainAt } from './style.js?v=115';
+import { TUNING } from '../tuning.js?v=116';
+import { GooSim, BODY, STAMP, wallLen, WALL_N, WALL_T } from './goo-sim.js?v=116';
+import { pickStyle, grainAt } from './style.js?v=116';
 
 const T = TUNING, G = T.goo;
 const MAX_BODIES = 256;
@@ -72,6 +72,11 @@ export class Goo {
   }
 
   get n() { return this.sim.n; }
+
+  // v116: one stamp, too thin to see and off the film, on the floor's film and the wall's (actors.warmStep), and
+  // the film's clock put past its step so the next frame draws it (on the title nothing steps the film): their
+  // stamping shaders compile on the title, not at the run's first kill
+  warm() { for (const f of [this.film, this.wall]) if (f) { f.add(1e4, 1e4, 1, 0, 0, 0.01, 1e-6, 1, 1, 1); f.dt = 1; } }
 
   setArena(hx, hz) { this.hx = hx; this.hz = hz; this.sim.setArena(hx, hz); this.film.setArena(hx, hz); if (this.wall) { this.wall.setArena(hx, hz); this._fitWall(hx, hz); } }
 
