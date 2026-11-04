@@ -815,3 +815,37 @@ Everything below comes from search summaries. No article was opened.
   - **Reader reaction:** comment counts not visible through search.
 - **Pattern note:** the day before an authority's deadline is quiet; the story moves on the deadline day or the day
   after (expect Kaleva first, then Yle). Re-check Muhos on the evening of 5 Nov and the morning of 6 Nov.
+
+### Check Wed 4 Nov 17:16 (search summaries only; nothing opened)
+- **Muhos (for "Cut First"): no news yet on the 5 Nov water plan.** Summaries repeat the LVV requirement (a detailed
+  water-management plan by 5 Nov; a water-act permit for the ditching) and the police detail: five requests to Oulu
+  police, handled in one inquiry, the suspected offence environmental damage (*ympäristön turmeleminen*, per AfterDawn's
+  headline). No change to the halt, 330 ha or 130 ha. Past-tense date lines for the copy are in RFH-NEXT (4 Nov 17:16).
+  [Yle (police)](https://yle.fi/a/74-20252848),
+  [AfterDawn](https://dawn.fi/uutiset/2026/10/29/poliisi-tutkinta-google-tuike-finland-muhos-datakeskus),
+  [Maaseudun Tulevaisuus](https://www.maaseuduntulevaisuus.fi/uutiset/656d00a6-6a46-4479-a214-0a73c03a8ee2)
+- **MTV "Pieni lipsahdus":** probably not new. One summary dates it 7 Oct; its article id sits next to the 29 Oct police
+  item, so ~29 Oct is likelier. Speakers still not visible: do not use until opened.
+  [MTV](https://www.mtvuutiset.fi/artikkeli/pieni-lipsahdus-kaynyt-nain-datakeskuspaikkakuntien-pomot-kommentoivat-googlen-mokaa/9403546)
+- **The Guardian in Muhos:** the professor is still unnamed in every summary. New detail, single-source through a
+  summary: a petition for tighter rules and a community fee had over 93,000 signatures by the Guardian's count. Which
+  petition is not identified (a search of Finnish initiatives found only a Yle item on grid conditions, with no count).
+  Verify on kansalaisaloite.fi before use.
+  [TNW (Guardian pickup)](https://thenextweb.com/news/google-finland-data-centre-250000-trees-muhos),
+  [LBC](https://www.lbc.co.uk/article/google-apologises-after-forest-cleared-for-finnish-ai-data-centres-as-residents-5Hjdkgj_2/),
+  [Yle (grid conditions)](https://yle.fi/a/74-20246995)
+- **Helsinki (for "Five Pins"):** no follow-up or council step found. Background only, undated: a hel.fi item on a
+  planned data centre beside Lahdenväylä (motorway noise zone; the centre itself makes some noise).
+  [hel.fi](https://www.hel.fi/fi/uutiset/lahdenvaylan-varteen-suunnitellaan-uutta-datakeskusta)
+- **Background, not new:** the "Google re-evaluating Kajaani and Muhos" headline (Ground News) is the 2025 HS story about
+  the plans being on ice over the electricity tax, not a new step.
+  [Yle (HS, 2025)](https://yle.fi/a/74-20189941)
+- **No new HS candidate.** Humppila (#1): nothing beyond what is logged.
+- **Reactions:**
+  - **Count the Trees / Muhos:** still true. International pickup continues (Guardian, TNW, LBC). The petition count is
+    the only new reader-side signal, unverified.
+  - **Trade Secret / Hamina:** no follow-up; Hamina results are all older (56 ha purchase, already logged).
+  - **Five Pins / Helsinki:** no new reaction visible.
+  - **Reader comments:** counts not visible through search.
+- **Pattern note:** confirmed again: the evening before a deadline is silent. The water-plan story will move on 5–6 Nov,
+  most likely via Kaleva or an LVV/STT release. Re-check Muhos on the evening of 5 Nov and the morning of 6 Nov.

@@ -1120,3 +1120,27 @@ Everything below comes from search summaries. No article was opened.
 - **10/11 Whistleblowers:** no Meta reply to Grassley; no new testimony; S.1792 unchanged (Senate back 9 Nov).
 - **Finland → global:** the Muhos police inquiry keeps its international pickup (Reuters/AFP 29–30 Oct; a Guardian
   visit per Kaleva). See HS-SCOUT.
+
+### Check Wed 4 Nov 17:16 (search summaries only; nothing opened, EDGAR not retried)
+- **Big development:** none.
+- **12 The Round Trip (Anthropic S-1): still HOLD.** No S-1/A with a price range. New reporting, not filings: the
+  roadshow could start the week of 9 Nov with a debut before Thanksgiving (implicator.ai); another source puts it at the
+  week of 16 Nov. Reported valuation and raise figures are press estimates.
+  [implicator.ai](https://www.implicator.ai/anthropic-could-start-ipo-roadshow-week-of-nov-9-putting-debut-before-thanksgiving/),
+  [Leverage Shares](https://leverageshares.com/us/insights/when-is-the-anthropic-ipo/)
+- **Coxon 13 (Grade Your Own Homework, HOLD):** nothing new; results are still the July 2025 award coverage. Several
+  outlets give two-year terms. No option, modification or termination news for Google, OpenAI or xAI.
+  [Breaking Defense](https://breakingdefense.com/2025/07/anthropic-google-and-xai-win-200m-each-from-pentagon-ai-chief-for-agentic-ai)
+- **Global 3, Short Supply (posted):** the case number 3:26-cv-06345 resolves only to the June filing coverage (14
+  consumers and 3 small businesses; Bathaee Dunne; Judge Noel Wise). No hearing date anywhere. Still needs the docket
+  before 13 Nov.
+  [allthings.how](https://allthings.how/samsung-sk-hynix-and-micron-face-dram-price-fixing-class-action-in-california/)
+- **1 The Panel (Project Meridian):** nothing dated November; still the 30 Sep announcement and the 120-day study.
+- **3 Data-centre NDAs:** no November item. **NJ S4304:** FastDemocracy lists it as introduced 18 May with no passage
+  recorded, which conflicts with the single-source 22 Oct Senate vote. Keep unused.
+  [FastDemocracy](https://fastdemocracy.com/bill/nj/2026-2027/bills/NJB00075280/)
+- **5 GPU/memory prices:** no November 2026 contract figures; one report says Samsung's contracts were to be finalised
+  mid-November. Nothing new to pitch.
+- **Nvidia–OpenAI financing:** no new announcement this week found.
+- **10/11 Whistleblowers:** nothing new (no Meta reply to Grassley; S.1792 unchanged).
+- **Finland → global:** the Guardian's Muhos visit is being picked up (TNW: "Google cleared 250,000 trees"). See HS-SCOUT.

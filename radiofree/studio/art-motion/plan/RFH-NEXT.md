@@ -533,3 +533,38 @@ All facts below come from search summaries; no article was opened.
   not use until opened); a professor to The Guardian in Muhos: data centres are of no use to Finland (Kaleva).
 - **Films now wrong:** none. Cut First goes out of date tomorrow if not posted today.
 
+
+## Daily check, Wed 4 Nov 17:16 (evening; search summaries only)
+- **Big development:** none on a global candidate. Little moved since 07:16.
+- **Cut First (Google · Muhos, awaiting approval): no news yet on the 5 Nov water plan.** Coverage still says LVV wants a
+  *detailed* water-management plan by 5 Nov (or it can demand one under a conditional fine) and that the ditching needs a
+  water-act permit. Nothing on filing, and nothing new on the halt, the police inquiry (five requests to Oulu police, one
+  inquiry, the suspected offence being environmental damage), 330 ha, the black shale or the 130 ha replanting.
+  - **From 5 Nov the date line must change.** Three versions, to be picked only once the outcome is reported; until then
+    use the neutral one, which is true either way:
+    - **Neutral (use until reported):** tag "WATER PLAN WAS DUE 5 NOV"; post "…A detailed water plan was due 5 Nov.
+      Shouldn't the plan come first?" (279 chars).
+    - **If filed:** tag "WATER PLAN FILED 5 NOV · AFTER THE FELLING"; post "…A water plan was filed on 5 Nov, after
+      the felling. Plan first?" (275).
+    - **If not filed:** tag "5 NOV DEADLINE PASSED · NO PLAN"; post "…The 5 Nov water-plan deadline passed unmet. Plan
+      first?" (267).
+  - In the picture, the calendar's torn 4 NOV → 5 NOV beat still works with the neutral tag; "Cut first. / Plan last."
+    stays true in all three cases.
+- **Five Pins (Helsinki, awaiting approval):** no follow-up to the 2 Nov City Board principles found this evening.
+- **The two Muhos side items from this morning:** speakers still not identifiable.
+  - MTV "Pieni lipsahdus": one search summary dates it 7 Oct, but its MTV article id (9403546) sits next to the 29 Oct
+    police item (9403560), so it is probably ~29 Oct rather than new. Who said "a small slip" is still not visible.
+  - The Guardian's Muhos piece: picked up as "Google cleared 250,000 trees" (TNW); the professor is not named in any
+    summary. New, single-source detail via a summary of it: a petition for tighter rules and a community fee had over
+    93,000 signatures by the Guardian's count (which petition is not identified; check kansalaisaloite.fi before use).
+- **Coxon 13, Grade Your Own Homework (HOLD):** nothing new; still only the July 2025 award coverage for Google, OpenAI
+  and xAI (two-year terms per several outlets, so they near their end in mid-2027 at the latest). No termination news.
+  Option (a) stays the safe fix.
+- **Global 3, Short Supply (posted):** no hearing date in any result for Garciaguirre v. Samsung (3:26-cv-06345). Still
+  unconfirmed; needs the docket before 13 Nov.
+- **The Round Trip:** HOLD; no S-1/A. New reporting (not filings): the roadshow could start the week of 9 Nov with a
+  debut before Thanksgiving (implicator.ai); another source says the week of 16 Nov.
+- **Break Glass:** keep held (no 2026 plenary result). **Count the Trees:** still true. **Trade Secret:** no follow-up.
+  **For Your Protection follow-up (NJ S4304):** FastDemocracy lists it as introduced 18 May with no passage recorded,
+  which conflicts with the single-source 22 Oct 38–0 Senate vote; keep it unused.
+- **Films now wrong:** none today. Cut First needs the neutral date line from 5 Nov if it has not posted.
