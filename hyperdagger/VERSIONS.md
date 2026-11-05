@@ -1,4 +1,4 @@
-## v59 — in progress
+## v59 — 2026-10-19
 **The menu is the season (HD-019)**
 
 Mikael, 18 Oct 2026: *"Redesign menu. Make it look very different and nicer.
