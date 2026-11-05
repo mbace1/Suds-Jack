@@ -1,6 +1,6 @@
 {
   "film": "cut-first",
-  "cut": "v2 build (4 Nov, en only): the date line is NEUTRAL (from 5 Nov the deadline has passed and nobody has reported whether the plan was filed): the calendar head reads WATER PLAN DEADLINE, a tag in shot 5 says WATER PLAN WAS DUE 5 NOV · LVV, the post says 'A detailed water plan was due 5 Nov'. The black-shale shot pulled back to read as a cut in the cleared site. v1 stills (3 Nov): five beats in the approved 3D cars look; for the owner's approval, not for posting",
+  "cut": "v3 build (5 Nov, en only): the regulator (LVV) EXTENDED the 5 Nov deadline for the detailed water-management plan (Kaleva, 5 Nov, single source; the new date is not reported), so the shot-5 tag reads WATER PLAN: DEADLINE EXTENDED · LVV and the post says 'Its water plan was due 5 Nov; it got more time.' The calendar beat (WATER PLAN DEADLINE, 4 NOV → 5 NOV) stays: 5 Nov was the deadline, and the tag says it moved. The fi and ja tag5w and posts are STALE (still the v2 neutral or v1 wording) and must be rewritten before either language is built. v2 build (4 Nov, en only): the date line is NEUTRAL (from 5 Nov the deadline has passed and nobody has reported whether the plan was filed): the calendar head reads WATER PLAN DEADLINE, a tag in shot 5 says WATER PLAN WAS DUE 5 NOV · LVV, the post says 'A detailed water plan was due 5 Nov'. The black-shale shot pulled back to read as a cut in the cleared site. v1 stills (3 Nov): five beats in the approved 3D cars look; for the owner's approval, not for posting",
   "series": "rfh",
   "captionSize": "big",
   "argument": "Google cleared about 330 hectares at Muhos first; then the regulator ordered a halt, police opened an investigation, the ground is black shale, and the water plan is due 5 Nov.",
@@ -79,7 +79,7 @@
         "fi": "Ensin kaadetaan. / Suunnitelma / [myöhemmin].",
         "ja": "まず 伐って、 / 計画は [後回し]。"
       },
-      "source": "The station's line. The detailed water-management plan, covering the acid-producing soils and extreme runoff, is due on 5 Nov 2026, after the clearing (Kaleva; Satakunnan Kansa; Uutissuomalainen); a conditional fine is possible. The tag beside it is Google's side: a spokesperson said it will replant 130 ha (Kainuun Sanomat; MT; Fortune, which notes that is less than half of what was cleared)."
+      "source": "The station's line. LVV required a detailed water-management plan, covering the acid-producing soils and extreme runoff, by 5 Nov 2026, after the clearing (Kaleva; Satakunnan Kansa; Uutissuomalainen); a conditional fine was possible. v3, 5 Nov: Kaleva reports LVV extended that deadline (kaleva.fi/google-sai-lisaaikaa-muhoksen-vesienhallintaselvit/13742874; single source, from search summaries; the new date is not reported). 'Plan last' holds: the clearing came first and the plan is still not in. The tag beside it is Google's side: a spokesperson said it will replant 130 ha (Kainuun Sanomat; MT; Fortune, which notes that is less than half of what was cleared)."
     }
   ],
   "ui": {
@@ -144,13 +144,13 @@
       "ja": "Google：130ヘクタールを植林予定"
     },
     "tag5w": {
-      "en": "WATER PLAN WAS DUE 5 NOV · LVV",
+      "en": "WATER PLAN: DEADLINE EXTENDED · LVV",
       "fi": "GOOGLE: AIKOO ISTUTTAA 130 HA",
       "ja": "Google：130ヘクタールを植林予定"
     }
   },
   "post": {
-    "en": "In Muhos, Finland, Google cleared ~330 ha of forest for a data centre. The regulator ordered a halt on 6 Oct; Oulu police are investigating. The site is in a black-shale zone. Google says it will replant 130 ha. A detailed water plan was due 5 Nov. Shouldn't the plan come first?",
+    "en": "In Muhos, Finland, Google cleared ~330 ha of forest for a data centre. The regulator ordered a halt on 6 Oct; Oulu police are investigating. The site is in a black-shale zone. Google says it will replant 130 ha. Its water plan was due 5 Nov; it got more time. Plan first?",
     "fi": "Muhoksella Google kaatoi noin 330 hehtaaria metsää datakeskuksen tieltä. Lupa- ja valvontavirasto määräsi työt keskeytettäviksi 6.10., ja Oulun poliisi tutkii asiaa. Alue on mustaliuskealuetta. Google kertoo istuttavansa 130 hehtaaria. Vesisuunnitelma on jätettävä 5.11. Eikö suunnitelman pitäisi tulla ensin?",
     "ja": "フィンランドのムホスで、Googleはデータセンターのために約330ヘクタールの森を伐採した。当局は10月6日に作業の停止を命じ、オウル警察が調べている。現場は黒色頁岩地帯。Googleは130ヘクタールを植林するとしている。水管理計画の期限は11月5日。計画が先では？"
   }

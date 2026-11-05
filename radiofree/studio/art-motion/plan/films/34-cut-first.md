@@ -147,3 +147,22 @@ Accuracy choices in the picture:
 - **Post (en, 279 characters):** "In Muhos, Finland, Google cleared ~330 ha of forest for a data centre. The regulator ordered a
   halt on 6 Oct; Oulu police are investigating. The site is in a black-shale zone. Google says it will replant 130 ha. A
   detailed water plan was due 5 Nov. Shouldn't the plan come first?"
+
+## Fixed 5 Nov (deadline extended)
+
+- **The news:** Kaleva reports (5 Nov) that LVV extended the 5 Nov deadline for Google's detailed water-management plan.
+  The new date is not reported. Kaleva is the only source so far, read from search summaries:
+  [kaleva.fi](https://www.kaleva.fi/google-sai-lisaaikaa-muhoksen-vesienhallintaselvit/13742874).
+- **Why it had to change:** the neutral tag "WATER PLAN WAS DUE 5 NOV · LVV" read as a missed deadline. The filed and
+  not-filed lines drafted on 4 Nov were both wrong.
+- **What changed (en only):**
+  - The shot-5 tag reads **WATER PLAN: DEADLINE EXTENDED · LVV**.
+  - The calendar beat stays as it was (WATER PLAN DEADLINE, 4 NOV → 5 NOV): 5 Nov was the deadline, and the tag says it
+    moved.
+  - "Cut first. / Plan last." holds: the clearing came first and the plan is still not in.
+  - The plan caption's source note and the copy's `cut` note say all this.
+- **Post (en, 271 characters):** "In Muhos, Finland, Google cleared ~330 ha of forest for a data centre. The regulator ordered a
+  halt on 6 Oct; Oulu police are investigating. The site is in a black-shale zone. Google says it will replant 130 ha. Its
+  water plan was due 5 Nov; it got more time. Plan first?"
+- **fi and ja are stale** (tag5w and post); they must be rewritten before either language is built.
+- **Re-check before posting:** whether a second outlet confirms the extension, and whether the new date is reported.

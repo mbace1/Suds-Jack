@@ -487,7 +487,7 @@ function frame(t, captions = true) {
   tag(g2d, UI.tag2, tg(T.s2 + 2.2, T.s3 - 0.1));
   tag(g2d, UI.tag3, tg(T.s3 + 1.2, T.s4 - 0.1));
   tag(g2d, UI.tag4, tg(T.s4 + 1.4, T.s5 - 0.1));
-  tag(g2d, UI.tag5w, tg(T.s5 + 1.0, T.s5 + 2.75));   // v2: the date line, neutral (true whether or not the plan was filed)
+  tag(g2d, UI.tag5w, tg(T.s5 + 1.0, T.s5 + 2.75));   // v3 (5 Nov): the date line; LVV extended the 5 Nov deadline (Kaleva)
   tag(g2d, UI.tag5, tg(T.s5 + 2.9, T.end + 1));
   if (captions) CAP.draw(g2d, P, t, { busy: BUSY || {} });
   return out;
