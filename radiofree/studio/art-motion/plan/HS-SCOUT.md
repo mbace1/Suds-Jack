@@ -873,3 +873,26 @@ Everything below comes from search summaries. No article was opened.
   - **Reader comments:** counts not visible through search.
 - **Pattern note:** deadline day itself is also quiet in the morning. LVV tends to speak through STT releases a day or
   more after a deadline; the outcome is likelier on the evening of 5 Nov or on 6 Nov.
+
+### Check Thu 5 Nov 17:16 (search summaries only; nothing opened)
+- **Muhos (for "Cut First"): the water-plan deadline was EXTENDED.** Kaleva (5 Nov): Tuike Finland got more time for the
+  water-management plan and the other supplementary reports LVV requested on 22 Oct; LVV said the extension was
+  justified by how demanding the plan is and the applicant's stated need for time. **No new date in any result.** Only
+  Kaleva so far; no LVV/STT release or Yle item surfaced, and English coverage still says "due 5 Nov".
+  [Kaleva](https://www.kaleva.fi/google-sai-lisaaikaa-muhoksen-vesienhallintaselvit/13742874),
+  [LVV, 22 Oct](https://lvv.fi/-/lupa-ja-valvontavirasto-vaatii-tuike-finland-oy-lta-toimenpiteita)
+  - Also in the same coverage: the drainage notification describes about 9 km of new ditches, most already dug; LVV
+    says it should have been filed 60 days before work began.
+- **Helsinki (for "Five Pins"):** no follow-up beyond the 2 Nov releases and the Greens' statement.
+  [STT/city](https://www.sttinfo.fi/tiedote/72466598/helsingin-kaupunginhallitus-hyvaksyi-datakeskusperiaatteet?lang=fi)
+- **Hamina, Kajaani-Otanmäki:** nothing new.
+- **No new HS candidate.**
+- **Reactions:**
+  - **Count the Trees / Muhos:** still true. The extension is a follow-up to the story, not a correction.
+  - **Trade Secret / Hamina:** no follow-up.
+  - **Five Pins / Helsinki:** no new reaction visible.
+  - **Reader comments:** counts not visible through search.
+- **Pattern note:** the regulator's deadline moved quietly on the day, reported first by the regional paper (Kaleva)
+  rather than through an LVV release or Yle. For Muhos, Kaleva's Google tag is the fastest source; a "due on X" line in a
+  film is only as safe as the last check before posting.
+

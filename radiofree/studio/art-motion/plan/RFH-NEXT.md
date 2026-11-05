@@ -595,3 +595,38 @@ All facts below come from search summaries; no article was opened.
   **Trade Secret / Hamina:** no follow-up (results are the 56 ha purchase and the eighth-hall permit application).
 - **Films now wrong:** none. Re-check Muhos this evening (17:16) and tomorrow morning: the water-plan outcome is the
   one fact due to move.
+
+## Daily check, Thu 5 Nov 17:16 (evening; search summaries only, nothing opened)
+- **Big development:** none on a global candidate. The one fact that moved is Muhos, and it moved against the neutral line.
+- **Doodle 8, Cut First (finished, awaiting the owner's final approval): the water-plan deadline was EXTENDED.**
+  - Kaleva, 5 Nov ("Google sai lisäaikaa Muhoksen vesienhallintaselvityksen toimittamiseen"): Tuike Finland got more time
+    for the water-management plan and the other supplementary reports LVV asked for on 22 Oct. LVV's reasoning, as
+    quoted: the plan is demanding to prepare, and the applicant asked for time to prepare it carefully. **The new date
+    is not in any result.** Single source so far (Kaleva, via search summaries); no LVV/STT release or Yle item found
+    yet, and English coverage still says "due 5 Nov".
+  - **So the neutral line no longer stands on its own.** "WATER PLAN WAS DUE 5 NOV" is literally true but now misleading:
+    it reads as a missed deadline when the regulator moved it. The filed / not-filed versions (4 Nov 17:16) are both
+    wrong now. A fourth version, **extended**:
+    - **Tag (shot 5):** "WATER PLAN: DEADLINE EXTENDED · LVV" (or, if the new date surfaces, "WATER PLAN NOW DUE <date> ·
+      LVV").
+    - **Post (271 chars):** "In Muhos, Finland, Google cleared ~330 ha of forest for a data centre. The regulator ordered a
+      halt on 6 Oct; Oulu police are investigating. The site is in a black-shale zone. Google says it will replant 130
+      ha. Its water plan was due 5 Nov; it got more time. Plan first?"
+    - **Picture:** the torn 4 NOV → 5 NOV calendar under WATER PLAN DEADLINE can stay (5 Nov was the deadline); with the
+      tag it reads as the deadline passing on to a later date. "Cut first. / Plan last." holds, if anything more so.
+  - **Do not post Cut First with the current tag.** It needs a re-render of the shot-5 tag and the post swap (en only).
+    Confirm the extension against LVV or a second outlet first if possible; Kaleva quoting LVV's reasons is a
+    reasonable basis on its own.
+  - Halt, police inquiry (aim: 2027, update in December), 330 ha, black shale, 130 ha replanting: unchanged.
+- **Doodle 9, Five Pins (finished, awaiting approval):** no follow-up to the 2 Nov City Board principles. Its punchline
+  ("In Muhos, / the forest went / [first].") and post are unaffected by the extension.
+- **Coxon 13, Grade Your Own Homework v2:** nothing dated November on the CDAO awards; v2 stays the safe version.
+- **Global 3, Short Supply (posted):** still no hearing date found. Tom's Hardware names the case Garciaguirre v. Samsung
+  Electronics before **Judge Noel Wise** (N.D. Cal.); the Cousins name seen this morning is not in tonight's results. The
+  "HEARING 13 NOV" line still needs the docket before 13 Nov.
+- **The Round Trip:** HOLD. New from one tracker summary: an **S-1/A on 2 Nov** (adds Q3 results, names retail brokers),
+  still with **no price range or share count**. Reported valuation expectations fell to ~$1.5–1.6T (WSJ, 2 Nov, via a
+  secondary site). Earliest roadshow 10 Nov.
+- **Break Glass:** keep held; no 2026 plenary result found. **Count the Trees:** still true. **Trade Secret / Hamina:**
+  no follow-up.
+- **Films now wrong:** **Cut First's date line** (above), before it posts. Nothing posted is wrong.

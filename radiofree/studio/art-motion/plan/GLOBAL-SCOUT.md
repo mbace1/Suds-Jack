@@ -1168,3 +1168,22 @@ Everything below comes from search summaries. No article was opened.
   water infrastructure) is from June 2026. It is a possible contrast for a later Muhos film (a pledge vs a regulator
   demanding a water plan), not a story on its own.
   [E&E News](https://www.eenews.net/articles/google-vows-500m-for-local-water-projects-amid-data-center-push/)
+
+### Check Thu 5 Nov 17:16 (search summaries only; nothing opened, EDGAR not retried)
+- **Big development:** none.
+- **12 The Round Trip (Anthropic S-1): still HOLD.** One tracker summary reports an **S-1/A filed 2 Nov** that adds Q3
+  results and names retail brokers; it still carries **no price range or share count**. Not seen on EDGAR (not
+  retried). Reported valuation expectations fell to about $1.5–1.6T (attributed to the WSJ, 2 Nov, via a secondary
+  site). The 15-day rule puts the earliest roadshow at 10 Nov.
+  [Leverage Shares tracker](https://leverageshares.com/us/anthropic-ipo-tracker/),
+  [CNBC 30 Oct](https://www.cnbc.com/2026/10/30/anthropic-ipo-s1-revenue-compute.html)
+- **Coxon 13 (Grade Your Own Homework v2):** nothing dated November; results are all the July 2025 awards.
+- **Global 3, Short Supply (posted):** no hearing date in any result. Tom's Hardware: Garciaguirre v. Samsung Electronics,
+  N.D. Cal., **Judge Noel Wise**. The judge conflict from this morning is not repeated tonight; the docket is still the
+  only way to confirm 13 Nov.
+  [Tom's Hardware](https://www.tomshardware.com/tech-industry/samsung-sk-hynix-and-micron-sued-over-alleged-dram-price-fixing-amid-record-memory-costs)
+- **10/11 Whistleblowers:** no November item. Watch **9 Nov**: the Senate returns, and Grassley could ask for unanimous
+  consent on the AI Whistleblower Protection Act (Punchbowl, Sep). No Meta reply to Grassley found.
+  [Punchbowl](https://punchbowl.news/article/tech/grassley-focus-on-ai-whistleblower/)
+- **1 Meridian, 3 NDAs, 5 GPU/memory, Nvidia–OpenAI:** nothing new since the morning.
+
