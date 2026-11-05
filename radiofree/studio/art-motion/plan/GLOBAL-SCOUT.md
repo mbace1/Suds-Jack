@@ -1144,3 +1144,27 @@ Everything below comes from search summaries. No article was opened.
 - **Nvidia–OpenAI financing:** no new announcement this week found.
 - **10/11 Whistleblowers:** nothing new (no Meta reply to Grassley; S.1792 unchanged).
 - **Finland → global:** the Guardian's Muhos visit is being picked up (TNW: "Google cleared 250,000 trees"). See HS-SCOUT.
+
+### Check Thu 5 Nov 07:16 (search summaries only; nothing opened, EDGAR not retried)
+- **Big development:** none.
+- **12 The Round Trip (Anthropic S-1): still HOLD.** No S-1/A with a price range in any result; the public S-1 (26 Oct)
+  leaves the range blank. Earliest roadshow 10 Nov. Size figures (up to $100B) are press reports, not the filing.
+  [Leverage Shares](https://leverageshares.com/us/insights/anthropic-ipo-price/)
+- **Coxon 13 (Grade Your Own Homework v2):** nothing dated November on the CDAO frontier-AI awards; no modification or
+  termination news for Google, OpenAI or xAI.
+- **Global 3, Short Supply (posted):** still no hearing date. Motion to dismiss confirmed (MLex, 3 Sep: the plaintiffs
+  "recycle" claims the Ninth Circuit dismissed). New wrinkle: sources disagree on the judge (Noel Wise vs Nathanael
+  Cousins). Needs the docket before 13 Nov.
+  [MLex](https://www.mlex.com/mlex/antitrust/articles/2521308)
+- **1 The Panel (Project Meridian):** nothing dated November. Report due late January / early 2027; the DoD still has
+  not answered the conflict-of-interest questions.
+- **3 Data-centre NDAs:** no November item; only the 2025–26 run (Wisconsin, Bessemer, Oklahoma, Farmington, Michigan).
+- **5 GPU/memory prices:** no November contract figures yet (TrendForce's monthly report lands at month end; the
+  September one said "stable").
+- **Nvidia–OpenAI / circular deals:** nothing new this week.
+- **10/11 Whistleblowers:** no Meta reply to Grassley found (latest is the July 2026 letter on DeFriez and Sevedge, who
+  went public themselves). S.1792 unchanged.
+- **Background, not new:** Google's water pledge (replenish more than its data centres use by 2030, $500M+ for local
+  water infrastructure) is from June 2026. It is a possible contrast for a later Muhos film (a pledge vs a regulator
+  demanding a water plan), not a story on its own.
+  [E&E News](https://www.eenews.net/articles/google-vows-500m-for-local-water-projects-amid-data-center-push/)

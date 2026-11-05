@@ -849,3 +849,27 @@ Everything below comes from search summaries. No article was opened.
   - **Reader comments:** counts not visible through search.
 - **Pattern note:** confirmed again: the evening before a deadline is silent. The water-plan story will move on 5–6 Nov,
   most likely via Kaleva or an LVV/STT release. Re-check Muhos on the evening of 5 Nov and the morning of 6 Nov.
+
+### Check Thu 5 Nov 07:16 (search summaries only; nothing opened)
+- **Muhos (for "Cut First"): deadline day, no report yet.** Nothing says Tuike Finland filed the detailed water plan,
+  missed it or got more time. New detail only: Yle lists what the plan must contain (planned structures, timelines,
+  independent water monitoring; heavy rain, snowmelt and the acidic black shale), and the police aim to finish in 2027
+  and say more in December. LVV's release also asks for supplementary reports on maintenance, safety and environmental
+  protection by 5 Nov. Tuike told LVV on 14 Oct it had suspended work at both sites.
+  [Yle](https://yle.fi/a/74-20254086),
+  [LVV via STT](https://www.sttinfo.fi/tiedote/72435808/lupa-ja-valvontavirasto-vaatii-tuike-finland-oylta-toimenpiteita?lang=fi),
+  [TNW](https://thenextweb.com/news/google-finland-data-centre-police-investigation-muhos)
+- **Kajaani-Otanmäki:** nothing new since the October halt (about 405 ha, eight server buildings planned).
+- **Helsinki (for "Five Pins"):** no follow-up. Only the 2 Nov releases (city, STT) and the Greens' pre-vote statement.
+  [hel.fi](https://www.hel.fi/fi/uutiset/kaupunginhallitus-hyvaksyi-datakeskusperiaatteet),
+  [Greens via STT](https://www.sttinfo.fi/tiedote/72457140/vihreat-vaatii-helsingin-datakeskusperiaatteisiin-tiukkoja-linjoja-ja-luonnon-suojaamista?lang=fi)
+- **The Guardian petition (93,000+):** still unidentified. A search for a Finnish data-centre citizens' initiative found
+  nothing; it may not be a kansalaisaloite at all. Keep unused.
+- **No new HS candidate.** No HS data-centre item dated November surfaced.
+- **Reactions:**
+  - **Count the Trees / Muhos:** still true ("two requests" is understated against five, not wrong).
+  - **Trade Secret / Hamina:** no follow-up.
+  - **Five Pins / Helsinki:** no new reaction visible.
+  - **Reader comments:** counts not visible through search.
+- **Pattern note:** deadline day itself is also quiet in the morning. LVV tends to speak through STT releases a day or
+  more after a deadline; the outcome is likelier on the evening of 5 Nov or on 6 Nov.

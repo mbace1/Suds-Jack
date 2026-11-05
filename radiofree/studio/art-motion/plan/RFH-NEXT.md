@@ -568,3 +568,30 @@ All facts below come from search summaries; no article was opened.
   **For Your Protection follow-up (NJ S4304):** FastDemocracy lists it as introduced 18 May with no passage recorded,
   which conflicts with the single-source 22 Oct 38–0 Senate vote; keep it unused.
 - **Films now wrong:** none today. Cut First needs the neutral date line from 5 Nov if it has not posted.
+
+## Daily check, Thu 5 Nov 07:16 (morning; search summaries only)
+- **Big development:** none on a global candidate. Overnight was quiet; today is the Muhos water-plan deadline.
+- **Doodle 8, Cut First (finished, awaiting the owner's final approval): no report yet on the water plan.** Today is
+  the deadline itself, and nothing says it was filed, missed or extended. Keep the **neutral** line as built: the tag
+  "WATER PLAN WAS DUE 5 NOV · LVV" and the post "…A detailed water plan was due 5 Nov." are true from today whatever
+  happened. Do not switch to the filed / not-filed versions (4 Nov 17:16) until a report says which.
+  - New detail, not a change (Yle, via a summary): the plan must cover planned structures, timelines and *independent*
+    water monitoring, and allow for heavy rain, snowmelt and the acidic black shale. The 5 Nov date also covers
+    supplementary reports on maintenance, safety and environmental-protection measures (LVV's STT release). The police
+    aim to finish the inquiry in 2027 and plan to say more in December.
+  - Halt, police inquiry (five requests, one inquiry), 330 ha, black shale, 130 ha replanting: unchanged.
+- **Doodle 9, Five Pins (finished, awaiting approval):** no follow-up to the 2 Nov City Board principles. Only the
+  city's and STT's 2 Nov releases, plus the Greens' pre-vote statement (protect nearby nature and climate goals).
+- **Coxon 13, Grade Your Own Homework v2 (finished, awaiting approval):** nothing dated November. Still no modification
+  or termination news for Google, OpenAI or xAI; the v2 copy (past tense, "Anthropic was one of the four", "cancelled
+  in early 2026") stays the safe version.
+- **GL1 Toko Drop 2.0:** nothing in the repo says the cabinet moved; it is still listed at `toko-drop-2/` in the
+  site's catalogue (gh-pages `hub/games.js`, read 3 Nov). The site was not fetched.
+- **Global 3, Short Supply (posted):** still no hearing date in any result. The motion to dismiss (MLex, 3 Sep) is
+  confirmed; sources now also disagree on the judge (Noel Wise vs Nathanael Cousins). The "HEARING 13 NOV" line still
+  needs the docket before 13 Nov.
+- **The Round Trip:** HOLD; no S-1/A with a price range in any result. The roadshow cannot start before 10 Nov.
+- **Break Glass:** keep held (no 2026 plenary result; the act runs to 31 Dec 2026). **Count the Trees:** still true.
+  **Trade Secret / Hamina:** no follow-up (results are the 56 ha purchase and the eighth-hall permit application).
+- **Films now wrong:** none. Re-check Muhos this evening (17:16) and tomorrow morning: the water-plan outcome is the
+  one fact due to move.
