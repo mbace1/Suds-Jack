@@ -70,11 +70,11 @@ stickers, a stamp, a note, a phone. It is not the road kit.
 
 | # | beat | caption | picture | tag |
 |---|---|---|---|---|
-| 1 | 0–4.4 | About [65,000] claims / allege Roundup / caused cancer. | The bench: the jug, heaps of CLAIM folders, a red phone, a window on a field | PLAINTIFFS ALLEGE · BAYER SAYS IT'S SAFE, then EPA, EFSA: NOT LIKELY CARCINOGENIC · IARC 2015: PROBABLY |
-| 2 | 4.4–8.8 | The Supreme Court ruled: / no state cancer / [warning] on it. | A STATE CANCER WARNING sticker flies to the empty warning box, is stamped PREEMPTED, peels and falls | MONSANTO v. DURNELL · 25 JUNE 2026 · 7–2 |
+| 1 | 0–4.4 | [65,000] claims / allege Roundup / caused cancer. | The bench: the jug, heaps of CLAIM folders, a red phone, a window on a field | ABOUT 65,000 · PLAINTIFFS ALLEGE · BAYER SAYS IT'S SAFE, then EPA, EFSA: NOT LIKELY CARCINOGENIC · IARC 2015: PROBABLY |
+| 2 | 4.4–8.8 | Supreme Court: / no state cancer / [warning] on it. | A STATE CANCER WARNING sticker flies to the empty warning box, is stamped PREEMPTED, peels and falls | MONSANTO v. DURNELL · 25 JUNE 2026 · 7–2 |
 | 3 | 8.8–13.2 | The White House / made it a / [defense] priority. | A rubber stamp slams NATIONAL DEFENSE PRIORITY across the label | EXECUTIVE ORDER · DEFENSE PRODUCTION ACT · 18 FEB 2026 |
-| 4 | 13.2–17.6 | An ex-adviser alleges / the health secretary / wasn't [asked]. | A NONNEGOTIABLE sticky note slaps onto the jug; the red phone beside it stays silent | CALLEY MEANS ALLEGES · ON A PODCAST · 6 NOV, then HHS: KENNEDY AND TRUMP 'WILL KEEP FIGHTING' |
-| 5 | 17.6–22 | On the label: / still no cancer [warning]. | A slow push to the label: stamped, no warning, the empty box | $7.25B SETTLEMENT: RULING EXPECTED BY CHRISTMAS (BAYER CEO) |
+| 4 | 13.2–17.6 | An ex-adviser / alleges RFK Jr. / wasn't [asked]. | A NONNEGOTIABLE sticky note slaps onto the jug; the red phone beside it stays silent | CALLEY MEANS ALLEGES · ON A PODCAST · 6 NOV, then HHS: KENNEDY AND TRUMP 'WILL KEEP FIGHTING' |
+| 5 | 17.6–22 | On the label: / still no / cancer [warning]. | A slow push to the label: stamped, no warning, the empty box | $7.25B SETTLEMENT: RULING EXPECTED BY CHRISTMAS (BAYER CEO) |
 
 **Post (en, 275 chars):** "States can't require a cancer warning on Roundup, the Supreme Court ruled (7–2). A February
 order made glyphosate a defense priority. An ex-adviser alleges RFK Jr. wasn't consulted; HHS says they'll keep
@@ -96,3 +96,24 @@ fighting. Bayer says it's safe, as the EPA found. Who writes the label?"
 - **The settlement is still moving:** a final approval may land before posting (expected "before Christmas"). Re-check
   that and Means's coverage on posting day.
 - **The Miller/Wiles change** must not be implied as a consequence.
+
+## Stills, 7 Nov (what the renders showed and what was fixed)
+
+`previews/07-11-RFH-Roundup-stills.jpg` holds five frames, one per beat, at 2.2, 6.6, 11.7, 15.6 and 20.8 s. Three
+render passes:
+
+**Pass 1:**
+- Four of five captions were over 800 px. They were re-broken (now 610–709 px, all in the safe area) and "About" moved
+  into tag 1.
+- The PREEMPTED stamp covered the sticker's own words. The sticker is now taller, with the stamp on its lower half.
+- The rubber stamp's knob hid the label. The stills now catch it after it lifts, and it leaves sooner.
+- Portrait framing lost the folders and the phone. The layout was restacked: folders behind, phone beside the jug.
+
+**Pass 2:** the phone sat between the lens and the jug in beats 2 and 3, so it moved back beside the jug. The
+sticky note was too faint, so it is now two lines (NON- / NEGOTIABLE) in darker ink.
+
+**To fix in the full build:**
+- In beat 5 the note sits under the caption block; lower the note or end the push wider.
+- The CLAIM folders read as yellow tiles at phone size; make them bigger and nearer.
+- The window is barely seen.
+- Add a score (bench foley: the sticker slap, the stamp thud, the note slap, a phone that does not ring).
