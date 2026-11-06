@@ -47,6 +47,10 @@ and gated, each deployed before the next starts.
    credits), then the store copy, stills and cover re-shot from v3. Then Act 1
    is ready for itch — the upload stays the owner's.
 
+After the plan (2026-11-06): **the trailer.** `tools/film3.cjs` films the
+journey from the store build with its own sound, in 9:16 and 16:9.
+`store/ITCH.md` says which cut goes where.
+
 ## Owner direction, 2026-10-24 — publish Toko Move first; Piritori is its spin-off
 
 *"Toko Move is the thing we publish first and then Piritori is a spin-off that

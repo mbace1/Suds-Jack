@@ -41,6 +41,41 @@ on the journey, and the store pass. The upload to itch stays the owner's
   description, the Finnish summary, controls, tags and media. The trailer
   slot is left empty until a journey film exists. `tools/film.cjs` is still
   the real-time game's.
+- **After the release, tools only (2026-11-06): the trailer.** No game byte
+  changed, so the build is still 3.7. `tools/film3.cjs` films the journey
+  from the store build, so the trailer slot has a film:
+  - **What it shows** (47.1 s):
+    - the title on the Kauppatori stop;
+    - a first delivery whole: Dispatch, a tram, a risk in words that lands,
+      the board, DELIVERED;
+    - the museum tram from outside and in, with an inspector and an €80 fine;
+    - the night's tram with no number, which goes to the depot;
+    - the other courier's race;
+    - the lady from Mannerheimintie, saving the seat she was helped to;
+    - the end card.
+
+    Four one-line captions sit between the beats. Portrait is 1080×1920;
+    `--landscape` is 1920×1080. Both are 30 fps, H.264 + AAC, about 10 MB,
+    and take about 10 minutes each under SwiftShader.
+  - **Virtual time.** A frame costs a second or more to capture, so the page
+    runs on a clock the film steps:
+    - an init script swaps out `performance.now`, `Date.now`, timers and
+      `requestAnimationFrame`;
+    - the DevTools animation timeline is held at rate 0, and every
+      animation's `currentTime` is set from the film clock each frame.
+
+    So a transition ends, and its promise resolves, on the frame it should.
+    The two cuts are the same film: every take lands at the same second in
+    both.
+  - **The game's own sound.** Every cue and weather bed is logged at film
+    time, then `js/audio.js` itself renders into an OfflineAudioContext that
+    suspends at each moment. One fixed gain (6 dB past a −3 dB peak) and a
+    limiter keep the kit's own balance. Found on the way: cues in the same
+    render quantum must run in the order they were laid down. A bed stopped
+    and the next one started at a cut ran the other way round, and faded
+    the fresh bed from its default gain of 1, which is a half-second burst.
+    The game itself can't reach that, because its stop and start are always
+    at least a frame apart.
 
 ## v3.6 — 2026-11-04
 
