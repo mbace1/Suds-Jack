@@ -119,3 +119,5 @@ within the safe area, outside the rail and within their reading time. No holds w
   at risk. The regulator asked for a pause and opened an inquiry. Google paused; it says a 30 m corridor stays. In 2018–19,
   1.3 ha of squirrel forest was cut without a permit. Right of way?"
 - **Still true:** everything rests on search summaries; open the two Yle pieces before posting if the session can. No fi/ja.
+
+- **US spelling, 6 Nov (owner):** "US spelling from now on, fix both". The site sign reads GOOGLE DATA CENTER · HAMINA; the post says data-center; re-rendered en, same files overwritten.

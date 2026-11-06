@@ -108,3 +108,5 @@ company isn't charged. Who checks the boxes?"
   sign-off −14.1 LUFS, −2.2 dBTP). Contact sheet: all five beats read; the map labels clear the caption and the tag.
 - **Still open:** the indictment and the plea filing have not been opened (court sites blocked here); everything rests on
   consistent reporting. Space it from the next Google-in-Finland film.
+
+- **US spelling, 6 Nov (owner):** "US spelling from now on, fix both". licence → license in caption 1, the gate sign (LICENSE NEEDED FOR CHINA) and tag 1 (A LICENSE IS NEEDED); re-rendered en, same files overwritten.
