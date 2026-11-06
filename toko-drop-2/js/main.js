@@ -7,35 +7,35 @@
 // The rules live in sim/ and run on a fixed step; this file feeds them input,
 // hands their events to the view and the sound, and draws in between steps.
 import * as THREE from 'three/webgpu';
-import { TUNING } from './tuning.js?v=119';
-import { buildFloor } from './render/floor.js?v=119';
-import { fitCamera, screenToWorld, screenDown } from './render/view.js?v=119';
-import * as worldsSim from './sim/worlds.js?v=119';
-import { shapeAt as shiftShape } from './sim/floorshift.js?v=119';
-import * as reshapeSim from './sim/reshape.js?v=119';
-import { Scenery } from './render/scenery.js?v=119';
-import { DRIFT } from './render/kit.js?v=119';
-import { Transit } from './render/transit.js?v=119';
-import { Splats } from './render/splats.js?v=119';
-import { Actors } from './render/actors.js?v=119';
-import { GEL_TIME } from './render/gel.js?v=119';
-import { studioEnvironment } from './render/env.js?v=119';
-import { Specimen } from './render/specimen.js?v=119';
-import { createWorld, step, api as simApi } from './sim/world.js?v=119';
-import { stage as stagePk } from './sim/pickups.js?v=119';
-import { Input } from './input.js?v=119';
-import { UI, t, timeText, LANGS, getLang, setLang, goalText, bossName } from './ui.js?v=119';
-import { Announcer } from './announcer.js?v=119';
-import { rooms as campaignRooms, isOpen as roomOpen, better as betterGrade } from './sim/director/campaign.js?v=119';
-import { levelShape, slots as regionSlots } from './sim/shape.js?v=119';
-import { Sound } from './audio.js?v=119';
-import { Music, worldWant, cueFor, renderMusicWav } from './music.js?v=119';
-import { Intro, CUES as INTRO } from './intro/intro.js?v=119';
-import { scheduleIntroSfx, renderIntroSfxWav } from './intro/sfx.js?v=119';
-import { Readout } from './readout.js?v=119';
-import { Meter, device, Quality } from './meter.js?v=119';
-import * as record from './record.js?v=119';
-import { dailySeed } from './sim/rng.js?v=119';
+import { TUNING } from './tuning.js?v=120';
+import { buildFloor } from './render/floor.js?v=120';
+import { fitCamera, screenToWorld, screenDown } from './render/view.js?v=120';
+import * as worldsSim from './sim/worlds.js?v=120';
+import { shapeAt as shiftShape } from './sim/floorshift.js?v=120';
+import * as reshapeSim from './sim/reshape.js?v=120';
+import { Scenery } from './render/scenery.js?v=120';
+import { DRIFT } from './render/kit.js?v=120';
+import { Transit } from './render/transit.js?v=120';
+import { Splats } from './render/splats.js?v=120';
+import { Actors } from './render/actors.js?v=120';
+import { GEL_TIME } from './render/gel.js?v=120';
+import { studioEnvironment } from './render/env.js?v=120';
+import { Specimen } from './render/specimen.js?v=120';
+import { createWorld, step, api as simApi } from './sim/world.js?v=120';
+import { stage as stagePk } from './sim/pickups.js?v=120';
+import { Input } from './input.js?v=120';
+import { UI, t, timeText, LANGS, getLang, setLang, goalText, bossName } from './ui.js?v=120';
+import { Announcer } from './announcer.js?v=120';
+import { rooms as campaignRooms, isOpen as roomOpen, better as betterGrade } from './sim/director/campaign.js?v=120';
+import { levelShape, slots as regionSlots } from './sim/shape.js?v=120';
+import { Sound } from './audio.js?v=120';
+import { Music, worldWant, cueFor, renderMusicWav } from './music.js?v=120';
+import { Intro, CUES as INTRO } from './intro/intro.js?v=120';
+import { scheduleIntroSfx, renderIntroSfxWav } from './intro/sfx.js?v=120';
+import { Readout } from './readout.js?v=120';
+import { Meter, device, Quality } from './meter.js?v=120';
+import * as record from './record.js?v=120';
+import { dailySeed } from './sim/rng.js?v=120';
 
 const T = TUNING;
 const params = new URLSearchParams(location.search);
@@ -527,9 +527,9 @@ const specimen = new Specimen(T, actors, scene.environment);
 // menu). It takes effect at run start; the menu also redraws the world left
 // behind the title in the new style. The HUD label says ' · sdf' while on.
 const GELS = ['classic', 'sdf'];
-import { STYLES } from './render/style.js?v=119';
-import { Lens } from './render/lens.js?v=119';
-import { setSceneSun } from './render/sun.js?v=119';
+import { STYLES } from './render/style.js?v=120';
+import { Lens } from './render/lens.js?v=120';
+import { setSceneSun } from './render/sun.js?v=120';
 let urlGels = GELS.includes(params.get('gels')) ? params.get('gels') : null;
 const gels = () => urlGels ?? (GELS.includes(store.str('toko2.gels')) ? store.str('toko2.gels') : 'classic');
 // The LENS switch (render/lens.js, v94): NONE or TILT-SHIFT, localStorage toko2.lens; ?lens=tilt|none for a link
@@ -680,7 +680,7 @@ const campaignProgress = (hard = false) => { try { return JSON.parse(store.str(h
 let lastRoom = null;   // AGAIN replays it
 const levels = new Map();
 async function loadLevel(id) {
-  if (!levels.has(id)) levels.set(id, fetch(new URL(`../levels/${id}.json?v=119`, import.meta.url)).then((r) => { if (!r.ok) throw new Error(`levels/${id}.json ${r.status}`); return r.json(); }));
+  if (!levels.has(id)) levels.set(id, fetch(new URL(`../levels/${id}.json?v=120`, import.meta.url)).then((r) => { if (!r.ok) throw new Error(`levels/${id}.json ${r.status}`); return r.json(); }));
   return levels.get(id);
 }
 // the list the room screen draws: worlds, their rooms, open or not, best grades
@@ -701,6 +701,22 @@ function campaignDone(p, hard, played) {
   for (const r of all) { const g = p[r.id]?.grade; if (g in tally) tally[g]++; }
   const pts = all.reduce((n, r) => n + (p[r.id]?.pts || 0), 0);
   ui.campaignDone({ hard, tally, pts, rooms: all.length }, () => showCampaign(played));
+}
+// v120: the campaign's end, previewed (?ending, or ?ending=hard for HARD PAIN's): the screen clearing all thirty-six
+// rooms brings, so it can be judged without clearing them. A room this phone has cleared shows its own grade and
+// points; every other is drawn at a sample grade (a third S, a third A, the rest B and C), paid at its own line.
+// Marked PREVIEW, and nothing is saved
+async function endingPreview(hard = false) {
+  const all = campaignRooms(), real = campaignProgress(hard), p = {};
+  const lv = await Promise.all(all.map((r) => loadLevel(r.id).catch(() => null)));
+  all.forEach((r, i) => {
+    if (real[r.id]?.grade && real[r.id].grade !== 'F') { p[r.id] = real[r.id]; return; }
+    const g = i % 3 === 0 ? 'S' : i % 3 === 1 ? 'A' : i % 6 === 2 ? 'B' : 'C', L = lv[r.index], lines = (hard ? L?.tiersHard : null) ?? L?.tiers;
+    p[r.id] = { grade: g, pts: lines?.[g] ?? 0 };
+  });
+  const tally = { S: 0, A: 0, B: 0, C: 0 };
+  for (const r of all) tally[p[r.id].grade]++;
+  ui.campaignDone({ hard, tally, pts: all.reduce((n, r) => n + (p[r.id].pts || 0), 0), rooms: all.length, preview: true }, () => showCampaign());
 }
 async function showCampaign(played = null) {
   if (world && state !== 'menu') { state = 'menu'; input.enabled = false; ui.setHud(false); }
@@ -1019,6 +1035,7 @@ const debug = {
   start, pause, resume, toMenu, specimen,
   finish,   // v85: a run ended now, for a check of what it leaves behind (the death beat is paced by frames, slow under a software GPU)
   get daily() { return daily; }, dailySeed, dayOf,   // v118: the DAILY this run is, for the smoke
+  endingPreview,   // v120: ?ending, for the smoke
   quality, applyQuality, meter,   // v86: the quality step and the frame meter, for the smoke
   // ?nointro, switched at run time: the smoke turns the film back on to check it plays from the title only
   get nointro() { return introOff; }, set nointro(v) { introOff = !!v; }, room: (id) => startRoom(id), get rule() { return world?.rule ?? null; },
@@ -1111,6 +1128,7 @@ window.__toko = debug;
 
 let last = performance.now();
 toMenu();
+if (params.has('ending')) endingPreview(params.get('ending') === 'hard');   // v120: ?ending — the campaign's end, previewed
 function frame(now, dtFixed) {
   const wall = now - last, dt = dtFixed ?? Math.min(0.1, wall / 1000), time = now / 1000;
   last = now;

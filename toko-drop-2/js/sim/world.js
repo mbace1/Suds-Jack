@@ -14,24 +14,24 @@
 // moves, then everything is tested, against post-move positions.
 //
 // Modes: 'arcade', 'hardcade' (corpses fire back) and 'survival'.
-import { TUNING } from '../tuning.js?v=119';
-import { press, pressReset } from './press.js?v=119';
-import { makeRng } from './rng.js?v=119';
-import { BEHAVIOUR } from './species/index.js?v=119';
-import { DIRECTORS } from './director/index.js?v=119';
-import * as fire from './fire.js?v=119';
-import { makeHero, heroStep, applyPull, hurtHero, invincible } from './hero.js?v=119';
-import { swarmForces, resolveCrowd } from './crowd.js?v=119';
-import { revengeColor } from './color.js?v=119';
-import * as pickups from './pickups.js?v=119';
-import * as worlds from './worlds.js?v=119';
-import * as reshape from './reshape.js?v=119';
-import { Arena, levelShape, levelMoves, levelEnvelope, KIND } from './shape.js?v=119';
-import * as rules from './rules.js?v=119';
-import * as heat from './heat.js?v=119';
-import * as formation from './formation.js?v=119';
-import * as posts from './posts.js?v=119';
-import * as slam from './slam.js?v=119';
+import { TUNING } from '../tuning.js?v=120';
+import { press, pressReset } from './press.js?v=120';
+import { makeRng } from './rng.js?v=120';
+import { BEHAVIOUR } from './species/index.js?v=120';
+import { DIRECTORS } from './director/index.js?v=120';
+import * as fire from './fire.js?v=120';
+import { makeHero, heroStep, applyPull, hurtHero, invincible } from './hero.js?v=120';
+import { swarmForces, resolveCrowd } from './crowd.js?v=120';
+import { revengeColor } from './color.js?v=120';
+import * as pickups from './pickups.js?v=120';
+import * as worlds from './worlds.js?v=120';
+import * as reshape from './reshape.js?v=120';
+import { Arena, levelShape, levelMoves, levelEnvelope, KIND } from './shape.js?v=120';
+import * as rules from './rules.js?v=120';
+import * as heat from './heat.js?v=120';
+import * as formation from './formation.js?v=120';
+import * as posts from './posts.js?v=120';
+import * as slam from './slam.js?v=120';
 
 const T = TUNING;
 

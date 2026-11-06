@@ -20,7 +20,7 @@
 //
 //   w.posts  [{ x, z, r, kind, px, pz, orbit? { a0, R, w }, drift? { vx, vz }, ram? { ... }, ball? { vx, vz, roll } }]
 //            none in world 1 (1.x's floor) or a campaign room
-import { TUNING } from '../tuning.js?v=119';
+import { TUNING } from '../tuning.js?v=120';
 
 const T = TUNING, G = T.pickups.gate;
 const smooth = (k) => k * k * (3 - 2 * k), _q = { x: 0, z: 0 };
