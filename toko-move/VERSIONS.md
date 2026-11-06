@@ -19,7 +19,7 @@ game already shipped and the journey never loaded.
   - `test/sea.mjs` asks geography, not geometry: the South Harbour,
     Töölönlahti and Eläintarhanlahti are water; Senaatintori, Kamppi and
     Korkeasaari are land; no stop stands in the sea; and the sea is a sane
-    share of the extract. 17 checks.
+    share of the extract.
 - **The land is no longer empty.**
   - The real-time board's ground (`ground.js`) is now under the journey's
     board: the real streets in the centre extract, HSL's corridors beyond
@@ -27,6 +27,19 @@ game already shipped and the journey never loaded.
     at their stops.
   - The corner mini map stays plain (`detail: false`): at 164 px, streets
     are noise.
+- **The district names stand where the places are** (owner, the same day:
+  *"Kluuvi looks to be in the wrong place on the map"*).
+  - The pack gives each quarter the centre of its sub-district polygon. The
+    polygons run over water, rail yards and parks, so Kluuvi's centre was in
+    the tracks north of the station, and five more (Katajanokka,
+    Kruununhaka, Kaivopuisto, Hernesaari, Lapinlahti) stood in the sea.
+  - Snapping each one to the nearest street was tried and put three on the
+    wrong neighbour (Kaivopuisto went to Katajanokka), because the street
+    extract stops north of them. So the six are placed by hand in `sea.js`'s
+    `LABEL_AT`, each with its reason.
+  - `test/sea.mjs` holds that no name the board writes stands in the water,
+    that every hand placement says why, and that Kluuvi is written between
+    the station and the Esplanadi. 21 checks.
 - **The line you ride has weight.**
   - While a hop plays, the network sits at half strength. The hop's line is
     bold: solid behind the courier and faint ahead.

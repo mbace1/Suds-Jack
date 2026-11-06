@@ -88,3 +88,25 @@ function crossing(ring, lat, lon) {
   }
   return c;
 }
+
+// DISTRICT NAMES, WHERE THE PLACE IS (v3.8; owner, 2026-11-06: "Kluuvi looks
+// to be in the wrong place on the map").
+//
+// The districts pack gives each quarter one point: the centre of the city's
+// sub-district (osa-alue) polygon. Those polygons run over water, rail yards
+// and parks, so a centre can land where no one would write the name. Five of
+// the forty-one stand in the sea, and Kluuvi's stands in the tracks north of
+// the station. A street-snapping fix was tried and put three of them on the
+// wrong neighbour (Kaivopuisto's went to Katajanokka): there are no streets in
+// the extract that far south. So these are placed BY HAND, each with its
+// reason, and test/sea.mjs holds that no name the board writes stands in the
+// water — a pack that brings a new one fails there, not on a screen.
+export const LABEL_AT = {
+  Kluuvi:      [60.1700, 24.9447, 'the osa-alue runs north over the rail yard and Kaisaniemi park, so its centre is in the tracks; the name is the station square and the streets down to the Esplanadi'],
+  Katajanokka: [60.1675, 24.9700, 'the centre was in the water east of the island'],
+  Kruununhaka: [60.1725, 24.9560, 'the centre was in the North Harbour'],
+  Kaivopuisto: [60.1567, 24.9590, 'the centre was off the shore by the skerries; this is the park'],
+  Hernesaari:  [60.1500, 24.9240, 'the centre was in the water west of the pier'],
+  Lapinlahti:  [60.1678, 24.9165, 'the centre was in Lapinlahdenlahti; this is the old hospital grounds'],
+};
+export const labelAt = q => (LABEL_AT[q.name] ? LABEL_AT[q.name].slice(0, 2) : q.at);

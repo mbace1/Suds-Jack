@@ -8,7 +8,7 @@
 //   node toko-move/test/sea.mjs
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import { seaRings, isSea } from '../js/sea.js';
+import { seaRings, isSea, labelAt, LABEL_AT } from '../js/sea.js';
 
 let n = 0; const ok = (c, m) => { assert.ok(c, m); n++; };
 const read = f => JSON.parse(fs.readFileSync(new URL(f, import.meta.url), 'utf8'));
@@ -32,6 +32,17 @@ ok(stops.length > 100 && wet.length / stops.length < 0.02, `${stops.length - wet
 // well short of half, and well above nothing
 let w = 0, all = 0; for (let la = bb.s + 0.001; la < bb.n; la += 0.0025) for (let lo = bb.w + 0.001; lo < bb.e; lo += 0.005) { all++; if (isSea(sea, la, lo, water.areas)) w++; }
 ok(w / all > 0.12 && w / all < 0.45, `sea is ${(100 * w / all).toFixed(0)}% of the extract`);
+// the district names (owner: "Kluuvi looks to be in the wrong place"): no
+// name the board writes stands in the water, every hand placement says why,
+// and Kluuvi is written where Kluuvi is — between the station and the Esplanadi
+const districts = read('../cities/ground/helsinki-districts.json').districts;
+const inSea = districts.filter(q => { const [la, lo] = labelAt(q); return la > bb.s && la < bb.n && lo > bb.w && lo < bb.e && isSea(sea, la, lo, water.areas); });
+ok(!inSea.length, `no district name in the sea (${districts.length} names${inSea.length ? '; in the water: ' + inSea.map(q => q.name).join(', ') : ''})`);
+const raw = districts.filter(q => { const [la, lo] = q.at; return isSea(sea, la, lo, water.areas); }).map(q => q.name);
+ok(raw.length >= 1 && raw.every(n => LABEL_AT[n]), `the pack's own centres in the sea are each placed by hand (${raw.join(', ')})`);
+ok(Object.entries(LABEL_AT).every(([n, v]) => districts.some(q => q.name === n) && typeof v[2] === 'string' && v[2].length > 20), 'every hand placement names a district in the pack and says why');
+const [kla, klo] = labelAt(districts.find(q => q.name === 'Kluuvi'));
+ok(kla > 60.1675 && kla < 60.1712 && klo > 24.9395 && klo < 24.9490, `Kluuvi is written between the station and the Esplanadi (${kla}, ${klo}), not in the rail yard`);
 // a water pack with no coastline is no sea, not a crash
 ok(seaRings({ edges: [] }).sea.length === 0, 'no coastline, no sea');
 console.log(`sea: ${n} checks passed`);

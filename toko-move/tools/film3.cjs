@@ -27,12 +27,12 @@
 // Headless Chromium has no H.264 encoder, so ffmpeg stitches it (a capture-only
 // dependency, never vendored):
 //
-//   FFMPEG=ffmpeg NODE_PATH=$(npm root -g) node toko-move/tools/film3.cjs [out.mp4] [--landscape] [--draft] [--url=…]
+//   FFMPEG=ffmpeg NODE_PATH=$(npm root -g) node toko-move/tools/film3.cjs [out.mp4] [--landscape] [--draft] [--url=…] [--progress]
 //
 // Portrait is 1080×1920 (405×720 CSS), --landscape 1920×1080 (960×540 CSS);
 // both 30 fps, ~40 s, H.264 + AAC, faststart. --draft captures at 1× as JPEG
 // to check the cut quickly. --url sets the end card's address (the itch page,
-// once it exists).
+// once it exists). --progress stamps the build and what is new in it (VERSIONS.md).
 const { chromium } = require('playwright');
 const { execFileSync } = require('child_process');
 const http = require('http'), fs = require('fs'), path = require('path'), os = require('os');
@@ -41,6 +41,14 @@ const args = process.argv.slice(2), flag = f => args.includes(f), opt = (k, d) =
 const LAND = flag('--landscape'), DRAFT = flag('--draft');
 const OUT = path.resolve(args.find(a => !a.startsWith('--')) || (LAND ? 'toko-move-trailer-169.mp4' : 'toko-move-trailer.mp4'));
 const URL_TEXT = opt('url', 'mbace1.github.io/Suds-Jack/toko-move');
+// --progress: the cut that SHOWS PROGRESS (owner, 2026-11-06: "The trailer is
+// great way to communicate progress"). The title wears the build's number and
+// the end card says what is new in it — both read from VERSIONS.md's top
+// entry, its `## vX` heading and its bold headline, so the film cannot claim a
+// release the log does not.
+const PROGRESS = flag('--progress') ? (() => { const log = fs.readFileSync(path.join(__dirname, '..', 'VERSIONS.md'), 'utf8');
+  const m = log.match(/^## v([0-9.]+)[^\n]*\n+\*\*([^*]+)\*\*/m); if (!m) throw new Error('--progress: no "## vX" + **HEADLINE** at the top of VERSIONS.md');
+  const head = m[2].trim().toLowerCase().replace(/^\w/, c => c.toUpperCase()); return { v: m[1], what: head }; })() : null;
 const FFMPEG = process.env.FFMPEG || 'ffmpeg';
 const FPS = 30, FADE = 0.3, DT = 1000 / FPS;
 const W = LAND ? 960 : 405, H = LAND ? 540 : 720, DPR = DRAFT ? 1 : (LAND ? 2 : 1080 / 405);
@@ -104,7 +112,7 @@ const CARDS = () => `<!doctype html><html><head><meta charset="utf-8"><meta name
 html,body{margin:0;width:${W}px;height:${H}px;background:#f4f1e8;overflow:hidden}canvas{display:block;width:${W}px;height:${H}px}</style></head><body><canvas id="c"></canvas>
 <script type="module">
 import { drawLockup } from '/toko/js/lockup.js';
-const W = ${W}, H = ${H}, d = ${DPR}, LAND = ${LAND};
+const W = ${W}, H = ${H}, d = ${DPR}, LAND = ${LAND}, PROGRESS = ${JSON.stringify(PROGRESS)};
 const c = document.getElementById('c'); c.width = Math.round(W * d); c.height = Math.round(H * d);
 const x = c.getContext('2d'), w = c.width, h = c.height;
 const INK = '#15262b', SOFT = '#3a474c', PAPER = '#f4f1e8', CYAN = '#33b2d2';
@@ -144,6 +152,9 @@ window.paint = (kind, t, line = '') => {
     text('Act 1 · Helsinki', LAND ? 22 : 18, X, Y + (LAND ? 38 : 32), INK, { weight: 800, font: FONT, alpha: a, rise: (1 - a) * 8 });
     const b = out3((t - 1.3) / 0.4);
     text("A courier's shift, one card at a time.", LAND ? 17 : 14.5, X, Y + (LAND ? 66 : 56), SOFT, { weight: 600, font: FONT, alpha: b, rise: (1 - b) * 8 });
+    if (PROGRESS) { const a2 = out3((t - 0.6) / 0.35), lbl = 'v' + PROGRESS.v, px2 = LAND ? 18 : 15; x.font = '800 ' + px2 * d + 'px ' + MONO; const tw2 = x.measureText(lbl).width / d;
+      x.globalAlpha = a2; x.fillStyle = INK; x.beginPath(); x.roundRect(X * d, (Y - px2 * (LAND ? 4.2 : 3.9)) * d, (tw2 + 20) * d, (px2 + 14) * d, 8 * d); x.fill(); x.globalAlpha = 1;
+      text(lbl, px2, X + 10, Y - px2 * (LAND ? 4.2 : 3.9) + px2 + 3, PAPER, { weight: 800, alpha: a2 }); }
   } else if (kind === 'cap') {
     const a = out3(t / 0.32), px = LAND ? 40 : 27, words = line.split(' '), lines = [];
     x.font = '800 ' + px * d + 'px ' + FONT;
@@ -157,8 +168,11 @@ window.paint = (kind, t, line = '') => {
     wordmark(X - tw / 2 - px * 0.15, mid, px, t, 0.1);
     const a = out3((t - 0.55) / 0.4), b = out3((t - 0.85) / 0.4), e = out3((t - 1.15) / 0.4);
     text('Act 1 · Helsinki', LAND ? 24 : 19, X, mid + (LAND ? 46 : 38), INK, { weight: 800, font: FONT, align: 'center', alpha: a });
-    text('Play free', LAND ? 20 : 16, X, mid + (LAND ? 110 : 96), SOFT, { weight: 600, font: FONT, align: 'center', alpha: b });
-    text(${JSON.stringify(URL_TEXT)}, LAND ? 22 : 15, X, mid + (LAND ? 140 : 122), CYAN, { weight: 800, font: MONO, align: 'center', alpha: b });
+    if (PROGRESS) { const p2 = out3((t - 0.7) / 0.4); text('NEW IN v' + PROGRESS.v, LAND ? 15 : 12.5, X, mid + (LAND ? 82 : 68), CYAN, { weight: 800, font: MONO, align: 'center', alpha: p2, ls: 1.5 });
+      text(PROGRESS.what, LAND ? 22 : 17, X, mid + (LAND ? 110 : 92), INK, { weight: 800, font: FONT, align: 'center', alpha: p2 }); }
+    const shift = PROGRESS ? (LAND ? 52 : 46) : 0;
+    text('Play free', LAND ? 20 : 16, X, mid + (LAND ? 110 : 96) + shift, SOFT, { weight: 600, font: FONT, align: 'center', alpha: b });
+    text(${JSON.stringify(URL_TEXT)}, LAND ? 22 : 15, X, mid + (LAND ? 140 : 122) + shift, CYAN, { weight: 800, font: MONO, align: 'center', alpha: b });
     const fh = LAND ? 64 : 54, lw = drawLockup(new OffscreenCanvas(8, 8).getContext('2d'), 0, 0, fh * d).w;
     x.globalAlpha = e; drawLockup(x, w / 2 - lw / 2, (H - (LAND ? 160 : 210)) * d, fh * d, { color: INK }); x.globalAlpha = 1;
     text('Transit data: HSL (CC BY 4.0) · Map: © OpenStreetMap contributors (ODbL)', LAND ? 12 : 9.5, X, H - (LAND ? 34 : 30), '#7b8589', { weight: 500, font: FONT, align: 'center', alpha: e });

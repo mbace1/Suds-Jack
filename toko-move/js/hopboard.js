@@ -37,7 +37,7 @@
 // the ground fades out instead of stopping at a ruled edge.
 import { TransitLayers } from './transit-layers.js?v=11';
 import { applySkin, TOKO_CYAN } from './skin.js?v=1';
-import { seaRings } from './sea.js?v=1';
+import { seaRings, labelAt } from './sea.js?v=1';
 import { landmarkPoints, drawLandmarks } from './landmarks.js?v=3';
 
 const kxAt = lat => Math.cos(lat * Math.PI / 180);
@@ -207,7 +207,7 @@ export class HopBoard {
     const keep = [...named.values()].map(n => fit(n.lat, n.lon)), placed = [];
     ctx.save(); ctx.font = `600 ${Math.round(10 * d)}px Inter, system-ui, sans-serif`; ctx.letterSpacing = `${2.2 * d}px`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.fillStyle = this.skin.district || this.skin.labelDim; ctx.globalAlpha = 0.85;
-    for (const q of list) { const at = q.at; if (!at) continue; const p = fit(at[0], at[1]), txt = String(q.name).toUpperCase(), w = ctx.measureText(txt).width;
+    for (const q of list) { const at = labelAt(q); if (!at) continue; const p = fit(at[0], at[1]), txt = String(q.name).toUpperCase(), w = ctx.measureText(txt).width;
       if (p.x - w / 2 < 8 * d || p.x + w / 2 > W - 8 * d || p.y < 60 * d || p.y > H - 40 * d) continue;
       if (keep.some(k => Math.abs(k.x + 60 * d - p.x) < w / 2 + 70 * d && Math.abs(k.y - 12 * d - p.y) < 22 * d)) continue;
       if (placed.some(o => Math.abs(o.x - p.x) < (o.w + w) / 2 + 10 * d && Math.abs(o.y - p.y) < 22 * d)) continue;
