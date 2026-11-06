@@ -896,3 +896,52 @@ Everything below comes from search summaries. No article was opened.
   rather than through an LVV release or Yle. For Muhos, Kaleva's Google tag is the fastest source; a "due on X" line in a
   film is only as safe as the last check before posting.
 
+
+### Check Fri 6 Nov 07:16 (search summaries and result headlines only; nothing opened; hs.fi, is.fi and iltalehti.fi refuse the search tool's crawler, so HS was not searchable directly this morning)
+- **NEW, Hamina (follow-up to Trade Secret): LVV asked Google to pause expansion work at the Hamina data-centre site.**
+  - What the results say (headlines from several outlets plus one extended search summary, about 4 Nov): LVV asked
+    Tuike Finland to pause expansion work and refrain from measures in the area until the matter is resolved (a request
+    dated 23 Oct is mentioned). The trigger was an urgent request from the Nature League's south-eastern chapter (Suomen
+    luonnonsuojeluliitto, Kaakkois-Suomi): the work threatened the last green corridor the flying squirrels (liito-orava)
+    use there, and may already have cut it at one point. **Google: "olemme keskeyttäneet työt Haminassa, jotta voimme
+    keskustella LVV:n kanssa"** (we have paused work in Hamina so we can talk with LVV), and says it took the squirrels
+    into account. A second Yle headline: **LVV has begun examining whether Tuike Finland broke the nature conservation
+    act** at the Hamina expansion site.
+  - Outlets (headlines seen): Yle ×2, Kymen Sanomat (first to report, per the summaries), and the Uutissuomalainen network
+    (Kouvolan Sanomat, Savon Sanomat, Hämeen Sanomat, SSS), plus Maaseudun Tulevaisuus. **Not opened**; the three earlier
+    checks this week missed it.
+  - **Why it matters:** it is the first official action at Hamina since the 2018–19 felling that Trade Secret (Doodle 6,
+    posted 24 Oct) is about, and it is the same species. It makes three Google sites under LVV scrutiny at once (Muhos,
+    Kajaani-Otanmäki, Hamina). Candidate shape: a short Trade Secret follow-up, or fold it into the Doodle strand's next
+    film. Needs the Yle pieces opened (dates, the exact request, whether it is a "request" or an order) before any copy.
+  [Yle, LVV asks Google to pause](https://yle.fi/a/74-20254899?origin=rss),
+  [Yle, LVV examining the nature act](https://yle.fi/a/74-20255224?origin=rss),
+  [Kymen Sanomat](https://www.kymensanomat.fi/paikalliset/9923744),
+  [Kouvolan Sanomat](https://www.kouvolansanomat.fi/paikalliset/9924506),
+  [SSS](https://www.sss.fi/2026/11/kymen-sanomat-lvv-pyysi-googlea-keskeyttamaan-laajennustoita-haminan-datakeskustyomaalla/),
+  [MT](https://www.maaseuduntulevaisuus.fi/metsa/653646a8-0d7d-450a-bdc6-c4c567dd52e2)
+- **Muhos (for "Cut First", posted IG + X 6 Nov ~00:51): the extension still has ONE source, but nothing contradicts it.**
+  - An extended search returned a fuller summary of the same Kaleva piece: the 5 Nov deadline (set 22 Oct) was moved
+    for the water-management plan and the other supplementary reports, and **"LVV:n mukaan lisäajan myöntäminen oli
+    perusteltua"** (per LVV, granting more time was justified) because the plan is demanding and the applicant asked for
+    time to prepare it carefully. **No new date in any result.**
+  - Searches of lvv.fi, STT, Yle, MT and MTV for "lisäaika" found no release or second report. English coverage still
+    describes 5 Nov as the deadline (pre-dates it). **No result says the plan was filed on 5 Nov or that LVV moved to
+    enforcement.** No correction is needed; keep looking for LVV's own word or a second outlet.
+  [Kaleva](https://www.kaleva.fi/google-sai-lisaaikaa-muhoksen-vesienhallintaselvit/13742874),
+  [LVV, 22 Oct](https://lvv.fi/-/lupa-ja-valvontavirasto-vaatii-tuike-finland-oy-lta-toimenpiteita)
+- **Helsinki (for "Five Pins"):** no follow-up. The principles were a City Board (kaupunginhallitus) decision; the council
+  (valtuusto) meets 18 Nov on the 2027 budget, and nothing says the principles go to the council. The Greens' statement
+  pressing for stricter lines and protecting nearby nature is the visible reaction.
+  [hel.fi](https://www.hel.fi/fi/uutiset/kaupunginhallitus-hyvaksyi-datakeskusperiaatteet),
+  [Greens, STT](https://www.sttinfo.fi/tiedote/72457140/vihreat-vaatii-helsingin-datakeskusperiaatteisiin-tiukkoja-linjoja-ja-luonnon-suojaamista?lang=fi)
+- **Reactions:**
+  - **Cut First (Doodle 8):** posted IG + X 6 Nov ~00:51–00:52 (YouTube pending the RFH Google sign-in). Too early for
+    visible reaction; counts are not visible through search.
+  - **Count the Trees / Muhos:** still true.
+  - **Trade Secret / Hamina:** **follow-up (above)**: LVV has asked for a pause and is examining the nature act. It does
+    not contradict the film (which is about the 2018–19 felling and the secrecy); it extends it.
+  - **Reader comments:** not visible through search.
+- **Pattern note:** three regional checks in a row missed the Hamina story because the searches were Muhos-shaped; the
+  Hamina news ran through Kymen Sanomat and the Uutissuomalainen network, then Yle. Add a standing Hamina search
+  ("Hamina Google LVV", "Haminan datakeskus liito-orava") to every check, not only Muhos.

@@ -630,3 +630,30 @@ All facts below come from search summaries; no article was opened.
 - **Break Glass:** keep held; no 2026 plenary result found. **Count the Trees:** still true. **Trade Secret / Hamina:**
   no follow-up.
 - **Films now wrong:** **Cut First's date line** (above), before it posts. Nothing posted is wrong.
+
+## Daily check, Fri 6 Nov 07:16 (morning; search summaries and headlines only, nothing opened)
+- **Big development:** none on a global candidate. **The big Finnish one is Hamina**, and three checks this week missed it.
+- **NEW, Hamina (follow-up to Trade Secret, Doodle 6):** about 4 Nov, LVV asked Tuike Finland to pause expansion work at
+  the Hamina data-centre site after an urgent request from the Nature League's south-eastern chapter (a flying-squirrel
+  corridor at risk, possibly already cut). Google says it has paused work to talk with LVV. A second Yle headline: LVV is
+  examining whether the nature conservation act was broken. Yle ×2, Kymen Sanomat, the Uutissuomalainen network and MT
+  carry it (headlines plus one extended summary; nothing opened). It extends Trade Secret rather than correcting it.
+  **Candidate:** a short follow-up ("Same squirrels. Same site. Now the regulator asked.") or the next Doodle film; open
+  the Yle pieces first. Details and links: HS-SCOUT, Check Fri 6 Nov 07:16.
+- **Doodle 8, Cut First: POSTED** IG + X 6 Nov ~00:51–00:52 (Grok Bot; YouTube pending the RFH Google sign-in).
+  - **Extension check:** still **one source** (Kaleva). A fuller summary of the same piece says LVV called the extension
+    justified ("lisäajan myöntäminen oli perusteltua") because the plan is demanding. No LVV/STT release, Yle or other
+    report found either way; **nothing contradicts it**; no new date reported. **No correction needed.** Keep searching
+    LVV and Yle each check; if anything contradicts it, the pinned correction would be: "Correction: we said Google's
+    Muhos water-plan deadline was extended. [What LVV says]. The rest stands: ~330 ha cleared, a halt order, a police
+    inquiry." (fill in only from LVV or a named outlet).
+- **Doodle 9, Five Pins (awaiting approval):** no change. Council meets 18 Nov on the budget; the principles were the City
+  Board's call. If Five Pins goes out after Cut First, Hamina now gives a third Google site under the regulator; the
+  film's Muhos punchline stays true.
+- **Coxon 13, Grade Your Own Homework v2 (awaiting approval):** nothing new; past tense stays safe.
+- **Global 3, Short Supply (posted):** still no hearing date; Judge Noel Wise. Docket needed before 13 Nov; if not
+  confirmed by 12 Nov, consider a pinned note that the date is unconfirmed.
+- **The Round Trip:** HOLD; no price range; the 2 Nov S-1/A still only in aggregators. Earliest roadshow 10 Nov.
+- **Break Glass:** keep held; no 2026 plenary result found (results are still the June 2025 168–29 vote).
+  **Count the Trees:** still true. **Trade Secret:** follow-up above.
+- **Films now wrong:** none.

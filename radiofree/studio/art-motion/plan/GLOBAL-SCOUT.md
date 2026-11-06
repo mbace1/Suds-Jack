@@ -1187,3 +1187,27 @@ Everything below comes from search summaries. No article was opened.
   [Punchbowl](https://punchbowl.news/article/tech/grassley-focus-on-ai-whistleblower/)
 - **1 Meridian, 3 NDAs, 5 GPU/memory, Nvidia–OpenAI:** nothing new since the morning.
 
+
+### Check Fri 6 Nov 07:16 (search summaries only; nothing opened, EDGAR not retried)
+- **Big development:** none.
+- **12 The Round Trip (Anthropic S-1): still HOLD.** No result shows a price range. The reported 2 Nov S-1/A (Q3 results,
+  no price range) is still seen only in aggregator summaries (Leverage Shares, Digg); not confirmed on EDGAR or by a
+  major outlet. A Fox report via Newsquawk (undated in the result) floated pricing around 19–20 Nov. Earliest roadshow
+  10 Nov.
+  [Leverage Shares](https://leverageshares.com/us/insights/when-is-the-anthropic-ipo/),
+  [Newsquawk](https://www.newsquawk.com/headlines/anthropic-will-drop-its-s-1-at-9am-et-and-that-while-market-conditions-have-shifted-the-plan-for-a-mid-november-ipo-fox-reports-citing-a-source)
+- **Coxon 13 (Grade Your Own Homework v2):** nothing dated November; every result is the July 2025 awards. The other three
+  contracts: no cancellation reported, not confirmed in force. v2's past tense stays the safe version.
+- **Global 3, Short Supply (posted):** still no hearing date. Case: Garciaguirre et al. v. Samsung Electronics, N.D.
+  Cal., filed 25 Jun 2026, **Judge Noel Wise**; motion to dismiss filed (MLex, 3 Sep). The "HEARING 13 NOV" line still
+  needs the docket before 13 Nov; if it cannot be confirmed by 12 Nov, pin a softer line ("a hearing is scheduled") or
+  none.
+  [MLex](https://www.mlex.com/mlex/antitrust/articles/2521308)
+- **10/11 Whistleblowers:** no November item. 9 Nov still the date to watch (Senate returns; possible UC request on
+  S. 1792). Latest coverage is September (Deseret).
+  [Deseret](https://www.deseret.com/politics/2026/09/25/john-curtis-back-bill-protecting-ai-whistleblower/)
+- **3 NDAs:** nothing dated November; the latest items are Bessemer (Jul) and Wisconsin/Minnesota roundups.
+- **5 GPU/memory:** no November price data in results.
+- **1 Meridian panel, Nvidia–OpenAI:** nothing new.
+- **Cross-reference (Finnish):** LVV has asked Google to pause expansion work at **Hamina** and is examining the nature
+  conservation act (HS-SCOUT, 6 Nov 07:16). Three Google sites in Finland are now under the regulator at once.
