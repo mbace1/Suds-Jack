@@ -1,0 +1,92 @@
+{
+  "film": "unmarked-boxes",
+  "cut": "v1 stills (6 Nov, en only): the ART test the owner asked for after Cut First did well (6 Nov: 'maybe it's the art, maybe the topic, maybe both'). Same 3D toy-world cars look as Cut First, a different, non-Finnish topic: AI servers under US export controls reaching China anyway, per prosecutors. Five beats: the export gate says no; a ship takes the long way round a toy sea (Taiwan, Southeast Asia); the labelled crates go through a repack line and come out plain; a hair dryer moves a serial sticker from a real server onto a dummy; the inspectors are shown a row of dummies while the ship heads for China. For the owner's approval, not for posting.",
+  "series": "rfh",
+  "captionSize": "big",
+  "argument": "Prosecutors say about $2.5B of AI servers that need a licence for China were routed there via Taiwan and Southeast Asia, repacked in unmarked boxes, with dummies shown to inspectors.",
+  "langs": ["en"],
+  "native_read": { "en": true },
+  "syntax": "'/' breaks a line, [word] is the pop word",
+  "captions": [
+    {
+      "id": "licence",
+      "role": "setup",
+      "at": "s1+0.4",
+      "until": "s2-0.3",
+      "hold": "s2",
+      "text": { "en": "These AI servers / can't go to China / without a [licence]." },
+      "source": "US export controls require a licence to export advanced AI chips, and servers built with them, to China. Under the rules in force in 2024-25 (the period of the alleged scheme) licences were presumptively denied; since 15 Jan 2026 BIS reviews H200-class licences case by case (Federal Register 2026-00789; Mayer Brown, Jan 2026). 'Without a licence' is true under both regimes."
+    },
+    {
+      "id": "anyway",
+      "role": "evidence",
+      "at": "s2+0.4",
+      "until": "s3-0.3",
+      "hold": "s3",
+      "text": { "en": "Prosecutors say / [$2.5 billion] / went anyway." },
+      "source": "Indictment unsealed in the Southern District of New York, 19 Mar 2026: three people charged with conspiring to divert about $2.5B of servers with Nvidia AI chips to China, sales in 2024-25 (Bloomberg Government, The Register 20 Mar, Al Jazeera 20 Mar, eWeek, Tom's Hardware). Attributed to prosecutors; nobody convicted at trial. From search summaries; the indictment itself was not opened."
+    },
+    {
+      "id": "unmarked",
+      "role": "evidence",
+      "at": "s3+0.4",
+      "until": "s4-0.3",
+      "hold": "s4",
+      "text": { "en": "Repacked / in [unmarked] / boxes." },
+      "source": "Prosecutors say servers went from the US to facilities in Taiwan, then to a Southeast Asian company that repackaged them in unmarked boxes for China (eWeek; itnews; The Register; Fox News 'dummy servers'). From search summaries."
+    },
+    {
+      "id": "dryer",
+      "role": "evidence",
+      "at": "s4+0.4",
+      "until": "s5-0.3",
+      "hold": "s5",
+      "text": { "en": "Serial stickers / moved by / [hair dryer]." },
+      "source": "Prosecutors cite surveillance footage of a hair dryer used to move labels and serial-number stickers from real servers onto dummy servers (Tom's Hardware; The Stack 'the SVP, the hairdryer and the $2.5 billion'; The Next Web 'The dummy server and the chip war'). Attributed; from search summaries."
+    },
+    {
+      "id": "dummies",
+      "role": "punchline",
+      "at": "s5+0.5",
+      "until": "end-0.4",
+      "hold": "end",
+      "text": { "en": "The inspectors / were shown / [dummies]." },
+      "source": "Prosecutors say thousands of non-working dummy servers were staged to deceive the manufacturer's compliance team, ahead of a US Commerce Department inspection, and during a visit by a US export control officer (Fox News; itnews; The Next Web; The Stack). 'Were shown' (not 'checked') because that is what is alleged. Attributed; from search summaries."
+    }
+  ],
+  "ui": {
+    "stop": { "en": "STOP" },
+    "halt": { "en": "LICENCE NEEDED FOR CHINA" },
+    "site": { "en": "EXPORT GATE · US PORT" },
+    "crate": { "en": "AI SERVERS" },
+    "crate2": { "en": "EXPORT CONTROLLED" },
+    "taiwan": { "en": "TAIWAN" },
+    "sea": { "en": "SOUTHEAST ASIA" },
+    "china": { "en": "CHINA" },
+    "us": { "en": "US" },
+    "repack": { "en": "REPACK" },
+    "check": { "en": "EXPORT CHECK" },
+    "tag1": { "en": "US EXPORT CONTROLS · A LICENCE IS NEEDED" },
+    "tag2": { "en": "INDICTMENT · NEW YORK · MARCH 2026" },
+    "tag3": { "en": "PROSECUTORS SAY · VIA TAIWAN AND SE ASIA" },
+    "tag4": { "en": "PROSECUTORS CITE SURVEILLANCE FOOTAGE" },
+    "tag5": { "en": "CHARGED, NOT CONVICTED · 1 OF 3 PLEADED GUILTY" }
+  },
+  "props": {
+    "names": {
+      "en": "no company and no person is named on screen: crates read AI SERVERS · EXPORT CONTROLLED, the gate EXPORT GATE · US PORT",
+      "why": "the people are charged, not convicted; the server maker is not a defendant and says it cooperated; the chip maker is not accused. Names (Super Micro, Nvidia) appear only in the post, where the record supports them"
+    },
+    "places": {
+      "en": "four toy shores labelled US, TAIWAN, SOUTHEAST ASIA, CHINA; the route as a dashed line on the water",
+      "why": "the route is the one prosecutors describe; Southeast Asia stays a region because the reported intermediary is not named on screen"
+    },
+    "dummies": {
+      "en": "a dummy server is the same grey box with no lights",
+      "why": "prosecutors describe non-working physical replicas"
+    }
+  },
+  "post": {
+    "en": "US prosecutors say three people linked to Super Micro sent ~$2.5B of servers with Nvidia AI chips to China via Taiwan and Southeast Asia, in unmarked boxes, and showed inspectors dummies. One has pleaded guilty; the company isn't charged. Who checks the boxes?"
+  }
+}
