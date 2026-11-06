@@ -207,7 +207,7 @@ const bellL = new THREE.PointLight('#ff3a20', 0, 16, 1.8); bellL.position.set(0,
 // WORK PAUSED: a placard hung from the left boom once it is down (Google's own word: "keskeyttäneet", paused)
 const pausedTex = canvasTex(640, 220, (g, w, h) => { g.fillStyle = '#f6f3ea'; g.fillRect(0, 0, w, h); g.strokeStyle = '#1d1b19'; g.lineWidth = 14; g.strokeRect(7, 7, w - 14, h - 14);
   g.fillStyle = '#1d1b19'; g.textAlign = 'center'; g.textBaseline = 'middle'; fit(g, UI.paused, 150, w - 70); g.fillText(UI.paused, w / 2, h / 2 + 6); });
-const PLACARD = new THREE.Group(); BOOMS[0].pivot.add(PLACARD); PLACARD.position.set(BOOMS[0].len / 2, -0.75, 0.0);
+const PLACARD = new THREE.Group(); BOOMS[0].pivot.add(PLACARD); PLACARD.position.set(BOOMS[0].len * 0.78, -0.75, 0.0);   // v2: nearer the middle of the lane, so shot 4 holds it
 for (const s of [-1, 1]) mesh(new THREE.CylinderGeometry(0.025, 0.025, 0.6, 4), M.chassis, { pos: [s * 0.9, 0.42, 0], parent: PLACARD, cast: false });
 for (const r of [0, Math.PI]) mesh(new THREE.PlaneGeometry(2.6, 0.9), new THREE.MeshStandardMaterial({ map: pausedTex, roughness: 0.7 }), { pos: [0, 0, r ? -0.01 : 0.01], rot: [0, r, 0], parent: PLACARD, cast: false });
 // the STOP sign, right of the track at the barrier: STOP, then the request and who made it
@@ -441,7 +441,7 @@ const SHOT = [
     cam(lt, d) { const k = ease.io(lt / d); return { pos: V(lerp3([12, 16.5, 50], [10, 14.5, 42], k)), at: V(lerp3([1.0, 4.2, -22], [1.0, 4.4, -24], k)), fov: 32 }; } },
   { // 4 · from inside the strip, between the aspens: the machines stand still, the digger lowers its arm, WORK PAUSED
     t0: () => T.s4, wide: false, focus: () => V([LANE, 1.5, BARRIER_Z + 5]),
-    cam(lt, d) { const k = ease.io(lt / d); return { pos: V(lerp3([-5.2, 4.6, CZ - 4.5], [-4.6, 4.2, CZ - 3.0], k)), at: V(lerp3([-0.4, 1.1, BARRIER_Z + 6], [-0.2, 1.0, BARRIER_Z + 6.5], k)), fov: 40 }; } },
+    cam(lt, d) { const k = ease.io(lt / d); return { pos: V(lerp3([-2.7, 4.6, CZ - 4.5], [-2.3, 4.2, CZ - 3.0], k)), at: V(lerp3([0.2, 1.1, BARRIER_Z + 6], [0.4, 1.0, BARRIER_Z + 6.5], k)), fov: 44 }; } },   // v2: from the gap's edge, not inside a spruce (v1's camera sat in a row-0 tree and the frame went green)
   { // 5 · low in the empty lane, the stopped digger cropped at the right edge: the squirrel glides back across, then up and back
     t0: () => T.s5, wide: true, focus: (t) => t < EV.rise ? SQ.position.clone() : V(lerp3([0, 4, CZ], [-4, 0, -30], smooth((t - EV.rise) / 1.5))),
     cam(lt, d) { const k = ease.io((lt - 2.4) / (d - 2.5)); return { pos: V(lerp3([-9.5, 2.6, BARRIER_Z + 20], [16, 44, 54], k)), at: V(lerp3([1.0, 5.4, CZ + 2.4], [-4, 0, -55], k)), fov: lerp(40, 40, k) }; } },   // v2: ends on the halls under the caption, the far land behind it
