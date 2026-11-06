@@ -1,0 +1,84 @@
+{
+  "film": "we-are-aware",
+  "cut": "v1 stills (6–7 Nov, en only, US spelling): the first film in the ROOM kit (looks/room/kit.js; plan/3D-LOOKS.md, owner 6 Nov: \"make other 3d than trucks\"). A cut-away toy site office on the Muhos clearing in Cut First's grade: an email from the regulator arrives, the reply types itself in Finnish (\"Kyllä, olemme tietoisia :(\"), the last trees outside the window come down, the camera rises over the stumps at dusk. The quote rests on search summaries of the STT story (6 Nov 17:16 check): it must be opened and checked verbatim before a full build. The sender is never named: 'a Google email, released to STT'. For the owner's approval, not for posting.",
+  "series": "rfh",
+  "captionSize": "big",
+  "argument": "Emails released to STT show Google knew its Muhos felling needed an environmental assessment (\"Yes, we are aware :(\"); about 330 ha was cleared before it. Google says the felling was lawful.",
+  "langs": ["en"],
+  "native_read": { "en": true },
+  "syntax": "'/' breaks a line, [word] is the pop word",
+  "captions": [
+    {
+      "id": "emails",
+      "role": "setup",
+      "at": "s1+0.4",
+      "until": "s2-0.3",
+      "hold": "s2",
+      "text": { "en": "Reporters got / Google's Muhos / [emails]." },
+      "source": "STT (the Finnish News Agency), carried ~5–6 Nov 2026 by Demokraatti (the STT text), Kaleva, Maaseudun Tulevaisuus and Keskisuomalainen/Uutissuomalainen: emails about the Muhos site, obtained through a records request (plan/HS-SCOUT.md, check of 6 Nov 17:16). From search summaries only; the STT text did not open from this session (proxy 403, 6 Nov ~22:10 UTC), and two re-searches that night surfaced the story's other coverage but not the quote itself."
+    },
+    {
+      "id": "needs",
+      "role": "evidence",
+      "at": "s2+0.4",
+      "until": "s3-0.3",
+      "hold": "s3",
+      "text": { "en": "The regulator said / it needs an / [assessment]." },
+      "source": "LVV (the permit and supervision agency): the Muhos project needs an environmental impact assessment (YVA) on the felled hectares alone (the law's threshold is 200 ha of regeneration felling; 300+ ha was cut) — per the same STT coverage; LVV's 6 Oct order stopped the preparatory work until the assessments are done (AFP, Al Jazeera, Yle). The on-screen email from LVV shows its sender and a subject only: the body is blank bars, because the email's wording is not known."
+    },
+    {
+      "id": "aware",
+      "role": "evidence",
+      "at": "s3+0.3",
+      "until": "s4-0.3",
+      "hold": "s4",
+      "text": { "en": "Google replied: / “Yes, we are / aware [:(]”" },
+      "source": "A Google employee's reply in the released emails, as quoted in the STT coverage: \"Kyllä, olemme tietoisia :( Tämä tulee todella viivästyttämään projektiamme\" (\"Yes, we are aware :( This will really delay our project\"). The employee is a private individual and is never named: 'a Google email, released to STT'. The screen shows the Finnish; the caption is the station's translation. QUOTE STATUS: from search summaries (6 Nov 17:16), not re-confirmed on 6–7 Nov; open the STT text and match it word for word before the full build."
+    },
+    {
+      "id": "first",
+      "role": "evidence",
+      "at": "s4+0.4",
+      "until": "s5-0.3",
+      "hold": "s5",
+      "text": { "en": "The forest / came down / [first]." },
+      "source": "About 330 ha was cleared at Muhos before the environmental assessment (Google's own figure; LVV says over 300 ha; Fortune 26 Oct, Kainuun Sanomat, MT, Kaleva). The posted Cut First rests on the same facts. Kaleva/MT also report Tuike Finland asked LVV in April for an exception so permits could be issued before the YVA was complete. The film's order (email, then trees) is shorthand: the email's date relative to the felling is not reported; 'first' means before the assessment."
+    },
+    {
+      "id": "anyway",
+      "role": "punchline",
+      "at": "s5+0.5",
+      "until": "end-0.4",
+      "hold": "end",
+      "text": { "en": "Aware. / Cut [anyway]." },
+      "source": "The station's line: the company knew an assessment was required (the email; its April exception request) and the felling went ahead before it was done. Google's side rides on the tag: it believed the felling could lawfully go ahead under forest-use notices and the building act while the YVA was pending (its response to LVV, SSS, Oct 2026), and its spokesperson denies any unlawful conduct."
+    }
+  ],
+  "ui": {
+    "tag1": { "en": "STT, FINLAND'S NEWS AGENCY · A RECORDS REQUEST" },
+    "tag2": { "en": "LVV, FINLAND'S PERMIT REGULATOR · EIA (YVA)" },
+    "tag3": { "en": "A GOOGLE EMAIL, RELEASED TO STT · OUR TRANSLATION" },
+    "tag4": { "en": "~330 HA CLEARED BEFORE THE EIA · GOOGLE'S FIGURE" },
+    "tag5": { "en": "GOOGLE: IT BELIEVED THE FELLING WAS LAWFUL · DENIES WRONGDOING" },
+    "sign": { "en": "SITE OFFICE · MUHOS" },
+    "inbox": { "en": "Inbox" },
+    "lvvFrom": { "en": "Lupa- ja valvontavirasto (LVV)" },
+    "lvvSubj": { "en": "Muhos · YVA" },
+    "replyTo": { "en": "To: LVV" },
+    "replyFrom": { "en": "From: Google" },
+    "replySubj": { "en": "Re: Muhos · YVA" },
+    "reply1": { "en": "Kyllä, olemme tietoisia :(" },
+    "reply2": { "en": "Tämä tulee todella viivästyttämään projektiamme." },
+    "send": { "en": "Send" },
+    "sent": { "en": "Sent" },
+    "board": { "en": "MUHOS · SITE PLAN" }
+  },
+  "props": {
+    "screen": { "en": "a laptop email client: an inbox of blank grey rows; a new email from LVV (sender and subject only, body blank bars); a reply that types itself in Finnish, the documented words only", "why": "only the quoted reply is verbatim; nothing else on the screen claims to be anyone's words" },
+    "board": { "en": "MUHOS · SITE PLAN: a hand-drawn outline of a cleared area with a few pins", "why": "set dressing, illustrative; no figures on it" },
+    "sign": { "en": "SITE OFFICE · MUHOS on the cabin's outer wall", "why": "says where we are; no logo, no company name" }
+  },
+  "post": {
+    "en": "Emails released to Finland's STT: told its Muhos data-center site needed an environmental assessment, a Google reply read \"Yes, we are aware :( This will really delay our project.\" ~330 ha was cleared first. Google says the felling was lawful and denies wrongdoing. Aware?"
+  }
+}
