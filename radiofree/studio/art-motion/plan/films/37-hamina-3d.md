@@ -77,3 +77,45 @@ within the safe area, outside the rail and within their reading time. No holds w
 - **No fi/ja yet,** at the owner's direction.
 - **The new score** would follow Cut First's: crossing bell, brakes, the digger's arm settling, a soft whoosh for each
   glide and the RFH sting.
+
+## Built 6 Nov (en): Doodle 10
+
+**Owner, Fri 6 Nov ~19:30:** "2 great" — approved for the full film. English only.
+
+- **Google's side is on screen.** Shot 4 ("Google / paused.") now carries **GOOGLE SAYS A 30 M WOODED CORRIDOR IS KEPT** for
+  the whole shot (Yle, Kymen Sanomat, Uutissuomalainen papers, per the 6 Nov 17:16 check). LVV's next step moved to the start
+  of shot 5: **LVV: AN URGENT INQUIRY · NATURE ACT · YLE** (s5 + 0.3 to s5 + 2.25), then the 2018–19 tag. "PAUSE, PLEASE"
+  stays: it was a request. The conservationists' "~50 m" is not on screen (one summary's figure, and two different measures
+  side by side would confuse).
+- **The route is drawn.** Shot 2 draws the squirrels' route over the picture along the strip, mid-canopy: white dashes run in
+  from the left, and the stretch over the gap the haul track cuts turns **red and blinks**. A first try with 3D dashes floated
+  above the strip and went soft in the tilt-shift; the 2D line is sharp. The squirrel is drawn at 2.6× in this wide shot only,
+  so it reads on a phone.
+- **Fixes from the stills and the first build:**
+  - **Shot 1:** aimed higher, and the hall sign made narrower and moved left, so GOOGLE DATA CENTRE · HAMINA sits whole under the
+    three-line caption instead of behind it.
+  - **Shot 4 went solid green in the first full build.** v1's camera sat inside a row-0 spruce of the strip, so the "Google
+    paused" frame was one tree. The camera moved to the gap's edge (x −2.7 → −2.3), aims a little further over and widens to
+    fov 44; WORK PAUSED hangs nearer the middle of the lane (0.78 of the boom) so the shot holds it, the digger and the arm
+    coming down. Caught on the build's own contact sheet, not in the stills.
+  - **Shot 5:** the rise now ends looking further out (aim z −40 → −55), so the halls sit under the caption, the far land behind
+    it, and the last frame is the whole site at dusk.
+- **Score:** new `clay/hamina/score.py` (house manner, as Cut First): RFH bed, light; each glide a push-off, the air across the
+  gap, a landing and claws on bark; shot 2 a tick per stretch of the route and a wrong-note chip where it turns red, the convoy
+  far off and the digger's tracks clanking at its speed; shot 3 the bell from the lamps, the booms' motor and a thunk, the
+  convoy braking (tracks grinding, the tipper's squeal and air brake, the van's squeal, a settle at each stop); shot 4 WORK
+  PAUSED's hooks clinking, the arm down on its hydraulics and the bucket meeting the ground; shot 5 the second glide, the rise
+  and the RFH sting. film.js exports the events it needs: `routeIn`, `routeEnd`, `routeRed`, `boomsDown`, `bellEnd`,
+  `placard`, `restEnd`.
+- **Files:**
+  - `films/06-11-Doodle10-Right-of-Way.mp4`: 25.41 s with the papercut sign-off, 35.8 MB;
+  - `films/06-11-Doodle10-Right-of-Way-loop.mp4`: 22.40 s, film only, for IG Reels, 26.8 MB (re-encoded from the CRF 17 build,
+    48.6 MB, at CRF 19 with the audio copied: SSIM 0.986, PSNR 46.6 dB against it);
+  - the preview, `previews/06-11-RFH-Right-of-Way-en.mp4` (5.5 MB).
+- **Checks:** PASSED, 79 pass, 0 warn, 0 fail. Sound passes all five at −14.0 LUFS, −2.8 dBTP (−2.6 delivered; −14.1 / −2.2
+  with the sign-off), 18/18 cues covered. Widest caption 734 px; every caption in the safe area, clear of the rail and within
+  its reading time. Contact sheet: all five beats read at phone size.
+- **Post (en, 280 characters):** "Hamina, Finland: conservationists said Google's data-centre work put a flying-squirrel route
+  at risk. The regulator asked for a pause and opened an inquiry. Google paused; it says a 30 m corridor stays. In 2018–19,
+  1.3 ha of squirrel forest was cut without a permit. Right of way?"
+- **Still true:** everything rests on search summaries; open the two Yle pieces before posting if the session can. No fi/ja.
