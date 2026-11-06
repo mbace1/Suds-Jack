@@ -153,8 +153,9 @@ window.paint = (kind, t, line = '') => {
     const b = out3((t - 1.3) / 0.4);
     text("A courier's shift, one card at a time.", LAND ? 17 : 14.5, X, Y + (LAND ? 66 : 56), SOFT, { weight: 600, font: FONT, alpha: b, rise: (1 - b) * 8 });
     if (PROGRESS) { const a2 = out3((t - 0.6) / 0.35), lbl = 'v' + PROGRESS.v, px2 = LAND ? 18 : 15; x.font = '800 ' + px2 * d + 'px ' + MONO; const tw2 = x.measureText(lbl).width / d;
-      x.globalAlpha = a2; x.fillStyle = INK; x.beginPath(); x.roundRect(X * d, (Y - px2 * (LAND ? 4.2 : 3.9)) * d, (tw2 + 20) * d, (px2 + 14) * d, 8 * d); x.fill(); x.globalAlpha = 1;
-      text(lbl, px2, X + 10, Y - px2 * (LAND ? 4.2 : 3.9) + px2 + 3, PAPER, { weight: 800, alpha: a2 }); }
+      const cy = Y - px * 0.95 - (px2 + 14) - 10;   // above the wordmark's cap height, clear of it
+      x.globalAlpha = a2; x.fillStyle = INK; x.beginPath(); x.roundRect(X * d, cy * d, (tw2 + 20) * d, (px2 + 14) * d, 8 * d); x.fill(); x.globalAlpha = 1;
+      text(lbl, px2, X + 10, cy + px2 + 3, PAPER, { weight: 800, alpha: a2 }); }
   } else if (kind === 'cap') {
     const a = out3(t / 0.32), px = LAND ? 40 : 27, words = line.split(' '), lines = [];
     x.font = '800 ' + px * d + 'px ' + FONT;
