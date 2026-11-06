@@ -7,35 +7,35 @@
 // The rules live in sim/ and run on a fixed step; this file feeds them input,
 // hands their events to the view and the sound, and draws in between steps.
 import * as THREE from 'three/webgpu';
-import { TUNING } from './tuning.js?v=118';
-import { buildFloor } from './render/floor.js?v=118';
-import { fitCamera, screenToWorld, screenDown } from './render/view.js?v=118';
-import * as worldsSim from './sim/worlds.js?v=118';
-import { shapeAt as shiftShape } from './sim/floorshift.js?v=118';
-import * as reshapeSim from './sim/reshape.js?v=118';
-import { Scenery } from './render/scenery.js?v=118';
-import { DRIFT } from './render/kit.js?v=118';
-import { Transit } from './render/transit.js?v=118';
-import { Splats } from './render/splats.js?v=118';
-import { Actors } from './render/actors.js?v=118';
-import { GEL_TIME } from './render/gel.js?v=118';
-import { studioEnvironment } from './render/env.js?v=118';
-import { Specimen } from './render/specimen.js?v=118';
-import { createWorld, step, api as simApi } from './sim/world.js?v=118';
-import { stage as stagePk } from './sim/pickups.js?v=118';
-import { Input } from './input.js?v=118';
-import { UI, t, timeText, LANGS, getLang, setLang, goalText, bossName } from './ui.js?v=118';
-import { Announcer } from './announcer.js?v=118';
-import { rooms as campaignRooms, isOpen as roomOpen, better as betterGrade } from './sim/director/campaign.js?v=118';
-import { levelShape, slots as regionSlots } from './sim/shape.js?v=118';
-import { Sound } from './audio.js?v=118';
-import { Music, worldWant, cueFor, renderMusicWav } from './music.js?v=118';
-import { Intro, CUES as INTRO } from './intro/intro.js?v=118';
-import { scheduleIntroSfx, renderIntroSfxWav } from './intro/sfx.js?v=118';
-import { Readout } from './readout.js?v=118';
-import { Meter, device, Quality } from './meter.js?v=118';
-import * as record from './record.js?v=118';
-import { dailySeed } from './sim/rng.js?v=118';
+import { TUNING } from './tuning.js?v=119';
+import { buildFloor } from './render/floor.js?v=119';
+import { fitCamera, screenToWorld, screenDown } from './render/view.js?v=119';
+import * as worldsSim from './sim/worlds.js?v=119';
+import { shapeAt as shiftShape } from './sim/floorshift.js?v=119';
+import * as reshapeSim from './sim/reshape.js?v=119';
+import { Scenery } from './render/scenery.js?v=119';
+import { DRIFT } from './render/kit.js?v=119';
+import { Transit } from './render/transit.js?v=119';
+import { Splats } from './render/splats.js?v=119';
+import { Actors } from './render/actors.js?v=119';
+import { GEL_TIME } from './render/gel.js?v=119';
+import { studioEnvironment } from './render/env.js?v=119';
+import { Specimen } from './render/specimen.js?v=119';
+import { createWorld, step, api as simApi } from './sim/world.js?v=119';
+import { stage as stagePk } from './sim/pickups.js?v=119';
+import { Input } from './input.js?v=119';
+import { UI, t, timeText, LANGS, getLang, setLang, goalText, bossName } from './ui.js?v=119';
+import { Announcer } from './announcer.js?v=119';
+import { rooms as campaignRooms, isOpen as roomOpen, better as betterGrade } from './sim/director/campaign.js?v=119';
+import { levelShape, slots as regionSlots } from './sim/shape.js?v=119';
+import { Sound } from './audio.js?v=119';
+import { Music, worldWant, cueFor, renderMusicWav } from './music.js?v=119';
+import { Intro, CUES as INTRO } from './intro/intro.js?v=119';
+import { scheduleIntroSfx, renderIntroSfxWav } from './intro/sfx.js?v=119';
+import { Readout } from './readout.js?v=119';
+import { Meter, device, Quality } from './meter.js?v=119';
+import * as record from './record.js?v=119';
+import { dailySeed } from './sim/rng.js?v=119';
 
 const T = TUNING;
 const params = new URLSearchParams(location.search);
@@ -527,9 +527,9 @@ const specimen = new Specimen(T, actors, scene.environment);
 // menu). It takes effect at run start; the menu also redraws the world left
 // behind the title in the new style. The HUD label says ' · sdf' while on.
 const GELS = ['classic', 'sdf'];
-import { STYLES } from './render/style.js?v=118';
-import { Lens } from './render/lens.js?v=118';
-import { setSceneSun } from './render/sun.js?v=118';
+import { STYLES } from './render/style.js?v=119';
+import { Lens } from './render/lens.js?v=119';
+import { setSceneSun } from './render/sun.js?v=119';
 let urlGels = GELS.includes(params.get('gels')) ? params.get('gels') : null;
 const gels = () => urlGels ?? (GELS.includes(store.str('toko2.gels')) ? store.str('toko2.gels') : 'classic');
 // The LENS switch (render/lens.js, v94): NONE or TILT-SHIFT, localStorage toko2.lens; ?lens=tilt|none for a link
@@ -632,7 +632,7 @@ function start(m, { intro: asked = false, room = null, resume = null, daily: wan
   const startWorld = daily ? 1 : Math.max(1, Math.min(T.worlds.list.length, resume ? resume.world : Number(params.get('world')) || ((mode === 'arcade' || mode === 'hardcade') && !room ? startAtOf(mode) : 1)));   // v118: a DAILY from the start
   startedAt = resume ? 1 : startWorld;   // a taken-up run is the run it was: its scores are real
   const turnRoom = arenaName === 'portrait';   // a room lies along the phone, either way up
-  world = createWorld({ seed: daily ? daily.seed : (Math.random() * 2 ** 32) >>> 0, fixedWaves: !!daily, mode, arena, shape: arenaName, world: mode === 'campaign' ? 1 : startWorld, dashMode: test.dash, hpMult: test.hp, gateUsed: store.num('toko2.gateUsed') === 1,
+  world = createWorld({ seed: daily ? daily.seed : capture.seed ?? ((Math.random() * 2 ** 32) >>> 0), fixedWaves: !!daily, mode, arena, shape: arenaName, world: mode === 'campaign' ? 1 : startWorld, dashMode: test.dash, hpMult: test.hp, gateUsed: store.num('toko2.gateUsed') === 1,
     room: mode === 'campaign' ? { ...room, turn: turnRoom } : null });
   lost = []; meter.reset(); input.resetCounts();
   if (resume && !world.room) {   // v80: what the kept run had at that door
@@ -680,7 +680,7 @@ const campaignProgress = (hard = false) => { try { return JSON.parse(store.str(h
 let lastRoom = null;   // AGAIN replays it
 const levels = new Map();
 async function loadLevel(id) {
-  if (!levels.has(id)) levels.set(id, fetch(new URL(`../levels/${id}.json?v=118`, import.meta.url)).then((r) => { if (!r.ok) throw new Error(`levels/${id}.json ${r.status}`); return r.json(); }));
+  if (!levels.has(id)) levels.set(id, fetch(new URL(`../levels/${id}.json?v=119`, import.meta.url)).then((r) => { if (!r.ok) throw new Error(`levels/${id}.json ${r.status}`); return r.json(); }));
   return levels.get(id);
 }
 // the list the room screen draws: worlds, their rooms, open or not, best grades
@@ -978,7 +978,9 @@ function botInput(w) {
 // capture.on stops the animation loop, and debug.capFrame(seconds) draws the
 // frame at that time since the run was started (the intro, then the run under
 // the bot). debug.introWav(seconds) renders the intro's cues offline.
-const capture = { on: false, bot: false, t0: 0 };
+// v119: a clip (scripts/itch-clips.mjs) is played by a player of its own (`think`, the look-ahead bot the curve is
+// measured with) on a seed of its own (`seed`), so the same clip can be made again
+const capture = { on: false, bot: false, t0: 0, think: null, seed: null };
 
 // ── the loop ───────────────────────────────────────────────────────
 const debug = {
@@ -1079,6 +1081,8 @@ const debug = {
   get tuning() { return T; },   // the live numbers, for a look check's A/B (v82)
   capBegin(m = 'arcade') { capture.on = true; capture.bot = true; start(m, { intro: true }); introT0 = 0; last = 0; return state; },
   capFrame(t) { frame(t * 1000, 1 / 30); return { state, t }; },
+  // v119: a clip's player and seed (scripts/itch-clips.mjs): think(world) → the input, as scripts/bot.mjs gives it
+  capPlay(think = null, seed = null) { capture.bot = true; capture.think = think; capture.seed = seed; },
   // a song rendered offline (music.js renderMusicWav), as base64 WAV: the review films and marketing cuts
   async musicWav(id, o) { const b = await renderMusicWav(id, o); let s = ''; for (let i = 0; i < b.length; i += 0x8000) s += String.fromCharCode(...b.subarray(i, i + 0x8000)); return btoa(s); },
   async introWav(seconds = INTRO.end + 0.5) { const b = await renderIntroSfxWav(seconds, T.audio.master); let s = ''; for (let i = 0; i < b.length; i += 0x8000) s += String.fromCharCode(...b.subarray(i, i + 0x8000)); return btoa(s); },
@@ -1131,11 +1135,12 @@ function frame(now, dtFixed) {
         const [dx, dz] = screenToWorld(turn, inp.dash.dirX, inp.dash.dirY);
         pendingDash = { kind: inp.dash.kind, sL: inp.dash.sL, sV: inp.dash.sV, dx, dz };
       } else pendingDash ||= inp.dash;
-      const w = capture.bot ? botInput(world) : toWorld(inp);
+      const w = capture.bot ? (capture.think?.(world) ?? botInput(world)) : toWorld(inp);
+      const botDash = capture.think ? !!w.dash : false;   // v119: a clip's player dashes for itself, once a frame
       acc += dt;
       let steps = 0;
       while (acc >= T.sim.dt && steps < T.sim.maxSteps && !world.over) {
-        w.dash = pendingDash; pendingDash = false;
+        w.dash = capture.think ? botDash && steps === 0 : pendingDash; pendingDash = false;
         step(world, w);
         for (const e of world.events) onEvent(e);
         acc -= T.sim.dt; steps++;

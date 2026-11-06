@@ -19,6 +19,16 @@
     Never `--no-verify`.
 -->
 
+## v119 — 2026-11-06
+**Clips for the itch page: the real game, filmed frame by frame, played by the look-ahead bot, under its own music**
+- `scripts/itch-clips.mjs` makes short films of the game itself. Every frame is the game's own, drawn at an exact thirty a second (debug `capFrame`: a slow software GPU still makes a smooth film), played by the look-ahead bot the curve is measured with on a seed of its own (the same clip comes out again), under the world's own song as the game renders it offline (debug `musicWav`), and cut and encoded by ffmpeg into an MP4 (1280 × 720, H.264, AAC) and a GIF of its first seconds. One page of the game makes every clip, its shaders warmed once; each piece of a clip opens on a busy floor, never a lull between waves, and a few frames go unkept first so whatever came on screen has its pipelines built.
+- Four to start: NINE WORLDS (every world mid-fight, two seconds each, the logo coming up over the end — the page's trailer), CURB KING (world 2's boss landing on the driveway, and the fight), HARDCADE (the sewer: every biter's corpse warns, then fires back), CLOT (a campaign room: protect the heart).
+- The game: debug `capPlay(think, seed)` — a capture's player and seed (the capture's own player only backed away and shot). Nothing a player can reach.
+- docs/ITCH.md says how to make them again and where they go on the page (itch takes a trailer as a link, GIFs among the screenshots).
+- Cache tokens `?v=118` → `?v=119`; HUD label → `2.0 · v119`
+
+---
+
 ## v118 — 2026-11-06
 **DAILY: one run a day, the same waves for everyone — its own best and tries, and a line to share**
 - On the title, above MENU: DAILY, with the day (UTC) and your best today. It is ARCADE's run from world 1 — HARDCADE's with the HARD switch on — on the day's seed (sim/rng.js `dailySeed`, written for DIRECTION's itch plan and used by nothing until now), as often as you like.

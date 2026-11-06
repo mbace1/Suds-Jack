@@ -3,8 +3,8 @@
 // when it lands, the ring jumps out and fades, and the giant's own goo is thrown round it (actors.spray).
 // Reads the world, never writes it.
 import * as THREE from 'three/webgpu';
-import { TUNING } from '../tuning.js?v=118';
-import { reach } from '../sim/slam.js?v=118';
+import { TUNING } from '../tuning.js?v=119';
+import { reach } from '../sim/slam.js?v=119';
 
 const T = TUNING, MAX = 6;
 
