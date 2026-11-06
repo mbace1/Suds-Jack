@@ -159,8 +159,8 @@ window.paint = (kind, t, line = '') => {
     text('Act 1 · Helsinki', LAND ? 24 : 19, X, mid + (LAND ? 46 : 38), INK, { weight: 800, font: FONT, align: 'center', alpha: a });
     text('Play free', LAND ? 20 : 16, X, mid + (LAND ? 110 : 96), SOFT, { weight: 600, font: FONT, align: 'center', alpha: b });
     text(${JSON.stringify(URL_TEXT)}, LAND ? 22 : 15, X, mid + (LAND ? 140 : 122), CYAN, { weight: 800, font: MONO, align: 'center', alpha: b });
-    const fh = LAND ? 50 : 40, lw = drawLockup(new OffscreenCanvas(8, 8).getContext('2d'), 0, 0, fh * d).w;
-    x.globalAlpha = e; drawLockup(x, w / 2 - lw / 2, (H - (LAND ? 150 : 190)) * d, fh * d, { color: INK }); x.globalAlpha = 1;
+    const fh = LAND ? 64 : 54, lw = drawLockup(new OffscreenCanvas(8, 8).getContext('2d'), 0, 0, fh * d).w;
+    x.globalAlpha = e; drawLockup(x, w / 2 - lw / 2, (H - (LAND ? 160 : 210)) * d, fh * d, { color: INK }); x.globalAlpha = 1;
     text('Transit data: HSL (CC BY 4.0) · Map: © OpenStreetMap contributors (ODbL)', LAND ? 12 : 9.5, X, H - (LAND ? 34 : 30), '#7b8589', { weight: 500, font: FONT, align: 'center', alpha: e });
   }
 };
@@ -172,14 +172,25 @@ const AUDIO = () => `<!doctype html><html><head><meta charset="utf-8"></head><bo
 window.render = async (cues, dur) => {
   const SR = 44100, off = new OfflineAudioContext(2, Math.ceil(SR * dur), SR);
   globalThis.AudioContext = function () { return off; };
-  // applyBed tidies a faded bed away on a real-time timer; offline, it is
-  // silent by then and a wall-clock timer means nothing, so it is dropped
-  window.setTimeout = () => 0;
+  // one queue of moments, in render quanta: the cues, and any timer the kit
+  // sets while playing one (applyBed stops a faded bed 0.7 s later — the
+  // snow and fog beds' LFO would otherwise hum on under the next scene), so
+  // a timer fires at its FILM time, not the wall clock's
+  const Q = t => Math.max(1, Math.round(t * SR / 128)), events = [];
+  let cur = 0;
+  window.setTimeout = (fn, ms) => { events.push({ q: Math.max(cur + 1, Q(off.currentTime + (Number(ms) || 0) / 1000)), run: fn }); return 0; };
   const { mountAudio } = await import('/toko-move/js/audio.js');
   const a = mountAudio({}, { button: '__none' });
-  const at = new Map();
-  for (const cue of cues) { const q = Math.max(1, Math.round(cue.t * SR / 128)); (at.get(q) || at.set(q, []).get(q)).push(cue.n); }
-  for (const [q, names] of at) off.suspend(q * 128 / SR).then(() => { for (const n of names) n.startsWith('bed:') ? a.bed(n.slice(4) || null) : a.play(n); off.resume(); });
+  for (const cue of cues) events.push({ q: Q(cue.t), run: () => cue.n.startsWith('bed:') ? a.bed(cue.n.slice(4) || null) : a.play(cue.n) });
+  const last = Math.floor(off.length / 128) - 1;
+  function next() {
+    const q = Math.min(...events.map(e => e.q).filter(v => v > cur && v <= last)); if (!isFinite(q)) return;
+    // in the order they were laid down: a bed stopped and the next one started
+    // in the same quantum must not run the other way round (fading out a bed
+    // that has not rendered yet fades it from its default gain, 1 — a burst)
+    off.suspend(q * 128 / SR).then(() => { cur = q; const due = events.filter(e => e.q <= q); for (const e of due) events.splice(events.indexOf(e), 1); for (const e of due) { try { e.run(); } catch {} } next(); off.resume(); });
+  }
+  next();
   const buf = await off.startRendering(), L = buf.getChannelData(0), Rt = buf.getChannelData(1), n = L.length;
   const wav = new DataView(new ArrayBuffer(44 + n * 4)), S = (o, s) => [...s].forEach((ch, i) => wav.setUint8(o + i, ch.charCodeAt(0)));
   S(0, 'RIFF'); wav.setUint32(4, 36 + n * 4, true); S(8, 'WAVEfmt '); wav.setUint32(16, 16, true); wav.setUint16(20, 1, true); wav.setUint16(22, 2, true);
@@ -274,7 +285,9 @@ async function take(browser, name, url, { save = null, ff = () => false, done, t
     await step(DT); await snap(page, dir, n++);
     if (endAt != null && n >= endAt) break;
   }
-  const cues = (await page.evaluate(() => window.__cues)).filter(c => c.t >= t0).map(c => ({ n: c.n, t: (c.t - t0) / 1000 }));
+  // a cue up to a quarter second before the take began is what triggered it
+  // (the museum bell as it drives in): it is kept, at the take's first frame
+  const cues = (await page.evaluate(() => window.__cues)).filter(c => c.t >= t0 || (c.t >= t0 - 250 && c.n !== 'tap')).map(c => ({ n: c.n, t: Math.max(0, (c.t - t0) / 1000) }));
   if (errs.length) throw new Error(`${name}: page errors: ${errs.join(' | ')}`);
   await ctx.close();
   clips.push({ name, dir, frames: n, cues, bed: bed0 });
@@ -294,10 +307,10 @@ server.listen(0, '127.0.0.1', async () => {
     await card(browser, 'cap', 1.6, [{ n: 'deal', t: 0 }], 'Real trams. Some of them very old.');
     await take(browser, 'museum tram', '?run=easy&seed=1197', { ff: s => s.scene === 'stop' && s.tram === 'museum', done: (s, taps) => s.scene === 'tram' && taps >= 1, tail: 2.0, max: 12 });
     await card(browser, 'cap', 1.6, [{ n: 'deal', t: 0 }], 'On the night shift, a tram with no number.');
-    await take(browser, 'night', '?run=night&seed=60', { save: { tokoMoveRuns: ladder }, ff: s => s.glow && s.scene === 'stop', done: () => true, tail: 3.4 });
+    await take(browser, 'night', '?run=night&seed=60', { save: { tokoMoveRuns: ladder }, ff: s => s.glow && s.scene === 'stop', done: (s, taps) => taps >= 1, tail: 2.0, max: 8 });
     await card(browser, 'cap', 1.6, [{ n: 'deal', t: 0 }], 'Another courier wants your jobs.');
     await take(browser, 'race', '?run=medium&seed=1002', { save: { tokoMoveRuns: { easy: { done: true, stars: 2, plays: 2 }, medium: { plays: 1 } } },
-      ff: s => s.btn && !s.busy && /other courier wants it too/.test(s.line), done: (s, taps) => taps >= 1, tail: 1.6, max: 8 });
+      ff: s => s.btn && !s.busy && /other courier wants it too/.test(s.line), done: (s, taps) => taps >= 1, tail: 1.3, max: 8 });
     await card(browser, 'cap', 1.6, [{ n: 'deal', t: 0 }], 'And the city remembers you.');
     await take(browser, 'the lady again', '?run=easy&seed=1125', { ff: s => s.card === 'granny2' && s.btn, done: (s, taps) => taps >= 1, tail: 2.0, max: 9 });
     await card(browser, 'end', 3.8, [{ n: 'act', t: 0.15 }]);
@@ -313,6 +326,7 @@ server.listen(0, '127.0.0.1', async () => {
     });
     const total = at + FADE;
     cues.sort((a, b) => a.t - b.t);
+    if (DEBUG) console.log('cues', JSON.stringify(cues.map(c => [c.n, +c.t.toFixed(2)])));
     const ap = await browser.newPage(); await ap.goto(`${BASE}/__audio`); await ap.waitForFunction(() => window.__ready, null, { timeout: 30000 });
     const snd = await ap.evaluate(([c, d]) => window.render(c, d), [cues, total + 0.4]);
     const wav = path.join(TMP, 'sound.wav'); fs.writeFileSync(wav, Buffer.from(snd.b64, 'base64'));
@@ -320,10 +334,11 @@ server.listen(0, '127.0.0.1', async () => {
     clips.forEach((c, k) => { inputs.push('-framerate', String(FPS), '-i', path.join(c.dir, `%05d.${EXT}`)); chain.push(`[${k}:v]scale=${VW}:${VH},setsar=1,format=yuv420p[v${k}]`); });
     let last = 'v0';
     for (let k = 1; k < clips.length; k++) { const o = k === clips.length - 1 ? 'v' : `x${k}`; chain.push(`[${last}][v${k}]xfade=transition=fade:duration=${FADE}:offset=${clips[k].start.toFixed(3)}[${o}]`); last = o; }
-    // one fixed gain to a −3 dB peak, so the kit's own balance (a tap quieter
-    // than a stamp, a bed under both) survives; a loudness filter would pump it
-    const gain = Math.min(24, -3 - 20 * Math.log10(Math.max(1e-4, snd.peak)));
-    chain.push(`[${clips.length}:a]volume=${gain.toFixed(1)}dB,aresample=48000[a]`);
+    // one fixed gain, so the kit's own balance (a tap quieter than a stamp, a
+    // bed under both) survives — a loudness filter would pump it — set 6 dB
+    // past a −3 dB peak, with a limiter taking only the bells' first strike
+    const gain = Math.min(30, 3 - 20 * Math.log10(Math.max(1e-4, snd.peak)));
+    chain.push(`[${clips.length}:a]volume=${gain.toFixed(1)}dB,alimiter=limit=0.89:attack=4:release=60:level=false,aresample=48000[a]`);
     execFileSync(FFMPEG, ['-y', '-loglevel', 'error', ...inputs, '-i', wav, '-filter_complex', chain.join(';'), '-map', clips.length === 1 ? '[v0]' : '[v]', '-map', '[a]',
       '-c:v', 'libx264', '-profile:v', 'high', '-crf', DRAFT ? '26' : '19', '-preset', DRAFT ? 'veryfast' : 'slow', '-pix_fmt', 'yuv420p', '-r', String(FPS),
       '-c:a', 'aac', '-b:a', '192k', '-shortest', '-movflags', '+faststart', OUT]);

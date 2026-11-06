@@ -108,8 +108,22 @@ desktop, click works the same, and Space or Enter hurries.
     - `11-week-rent`
 
   Upload the cover and any five. `01`, `02`, `03`, `05` and `08` say the most.
-- **Trailer:** not yet re-shot. `tools/film.cjs` is the real-time game's, so
-  leave the trailer slot empty until a journey film exists.
+- **Trailer:** `tools/film3.cjs` films the journey from the store build,
+  with the game's own sound. It runs about 47 s: the title, a first delivery
+  whole, the museum tram, the night's tram with no number, the other courier
+  and the lady from Mannerheimintie, then the end card.
+  - `toko-move-trailer.mp4` is 1080×1920, for phones (Shorts, Reels,
+    TikTok, and the page itself).
+  - `--landscape` gives 1920×1080, for YouTube. itch's trailer slot takes a
+    YouTube or Vimeo link, so upload the landscape cut there and paste the
+    link.
+  - `--url=<the itch page>` puts the store's address on the end card once it
+    exists. Until then it reads `mbace1.github.io/Suds-Jack/toko-move`.
+
+  ```
+  FFMPEG=ffmpeg NODE_PATH=$(npm root -g) node toko-move/tools/film3.cjs toko-move-trailer.mp4
+  FFMPEG=ffmpeg NODE_PATH=$(npm root -g) node toko-move/tools/film3.cjs toko-move-trailer-169.mp4 --landscape
+  ```
 
 ## Credits (must appear on the page)
 
