@@ -1211,3 +1211,38 @@ Everything below comes from search summaries. No article was opened.
 - **1 Meridian panel, Nvidia–OpenAI:** nothing new.
 - **Cross-reference (Finnish):** LVV has asked Google to pause expansion work at **Hamina** and is examining the nature
   conservation act (HS-SCOUT, 6 Nov 07:16). Three Google sites in Finland are now under the regulator at once.
+
+### Check Fri 6 Nov 17:16 (search summaries only; nothing opened, EDGAR not retried)
+- **Big development:** none.
+- **12 The Round Trip (Anthropic S-1): still HOLD.** No price range in any result. WSJ, via AI Weekly: institutional
+  investors told Anthropic its Nasdaq IPO should price at **$1.5–1.6T**, down from the ~$2T floated. The 2 Nov S-1/A is
+  still only in aggregators. Earliest roadshow 10 Nov; one report says trading could start before 26 Nov (unconfirmed).
+  [AI Weekly (WSJ)](https://aiweekly.co/alerts/anthropic-ipo-buyers-push-valuation-to-15t-after-tech-selloff),
+  [Leverage Shares](https://leverageshares.com/us/insights/anthropic-ipo-price/)
+- **8 Unmarked Boxes (3D pitch, awaiting approval): three updates since March, none changes the film.**
+  - Trial postponed from 2 Nov 2026 to **March 2027**, after the defence disclosed Super Micro had received an SDNY
+    grand-jury subpoena (Fortune, Aug 2026).
+  - Super Micro's board-led internal probe (Aug 2026): no senior manager knew of the diversion; it did not address the
+    SDNY subpoena, a separate SEC subpoena, or Taiwan.
+  - Taiwan raided Super Micro's Taiwan office and partners on 29 Jun 2026 (false customs declarations alleged); the
+    company says it is cooperating and is not charged in Taiwan.
+  - **Source warning:** a Taiwan News summary names the chief executive as charged; all others name the co-founder.
+    Do not use it for names.
+  [Fortune, Aug 2026](https://fortune.com/2026/08/20/supermicro-investigation-ceo-nvidia-smuggling/),
+  [Super Micro release](https://ir.supermicro.com/news/news-details/2026/Supermicro-Announces-Completion-of-Independent-Investigation-and-Continued-Enhancement-of-Export-Compliance-Program/default.aspx),
+  [Tom's Hardware, Taiwan raid](https://www.tomshardware.com/tech-industry/taiwan-raids-super-micro-and-two-supply-chain-partners-in-widening-nvidia-smuggling-probe),
+  [DCD](https://www.datacenterdynamics.com/en/news/supermicros-taiwan-office-raided-in-ongoing-nvidia-smuggling-probe-more-employees-detained-by-prosecutors-report/),
+  [Tom's Hardware, not-guilty plea](https://tomshardware.com/tech-industry/super-micro-co-founder-wally-liaw-pleads-not-guilty-to-nvidia-smuggling-charges)
+- **Global 3, Short Supply (posted): the 13 Nov hearing looks CONFIRMED.** Docket listings (via search summaries):
+  motion to dismiss reset to **13 Nov 2026, 9:00, San Jose, Courtroom 3, Judge Noël Wise** (entered 8 Oct; was 21 Oct);
+  opposition and reply filed. No softer line needed; re-check 12 Nov.
+  [CourtListener](https://www.courtlistener.com/docket/73532135/garciaguirre-v-samsung-electronics-co-ltd/),
+  [PacerMonitor](https://www.pacermonitor.com/public/case/65376986/Garciaguirre_et_al_v_Samsung_Electronics_Co,_Ltd_et_al)
+- **Coxon 13:** nothing dated November on the four contracts (results are the July 2025 awards).
+- **1 Meridian panel:** nothing new since the October ethics coverage; still no word on employment status.
+- **10/11 Whistleblowers:** no November item on S. 1792; 9 Nov still the date to watch.
+- **3 NDAs:** nothing dated November (latest: Bessemer, Hubbard, Beloit, Salem; Bloomberg Law's 25-of-31).
+- **5 GPU/memory:** no dated November street prices; Samsung's contract pricing reportedly slipped to mid-November (PC
+  Gamer). Nothing usable yet.
+- **Cross-reference (Finnish):** STT's records request shows Google knew the Muhos felling needed an EIA ("Yes, we are
+  aware :("); see HS-SCOUT, 6 Nov 17:16.

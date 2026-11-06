@@ -657,3 +657,57 @@ All facts below come from search summaries; no article was opened.
 - **Break Glass:** keep held; no 2026 plenary result found (results are still the June 2025 168–29 vote).
   **Count the Trees:** still true. **Trade Secret:** follow-up above.
 - **Films now wrong:** none.
+
+## Daily check, Fri 6 Nov 17:16 (evening; search summaries only, nothing opened)
+- **Big development:** none on a global candidate. The biggest move is Finnish: an **STT records request** (~5–6 Nov)
+  shows Google knew the Muhos felling needed an environmental assessment (details below and in HS-SCOUT).
+- **Doodle 8, Cut First (POSTED IG + X 6 Nov ~00:51–00:52; YouTube still pending the RFH Google sign-in):**
+  - **Extension:** still **one source** (Kaleva, "Google sai lisäaikaa Muhoksen vesienhallintaselvityksen
+    toimittamiseen"). A fresh extended search found no LVV/STT release and no second outlet; nothing contradicts it; **no
+    new deadline reported**. No correction needed.
+  - **New, and it strengthens the film:** STT's records request (carried by Kaleva, MT, KSML, Demokraatti): the Muhos
+    municipality knew of the site's stormwater trouble by 12 Aug; LVV heard of it in late August; and Google's emails show
+    it knew the felling needed an EIA (YVA), while its public line is that the work could lawfully go ahead under
+    forest-use notices and the building act while the YVA was pending (Google denies unlawful conduct). "Cut first. /
+    Plan last." reads stronger, not weaker.
+  - **Standing wording note (unchanged):** the 6 Oct step is LVV's *kehotus* to suspend; English wires call it an order.
+    The on-screen "HALT ORDER" and the post's "ordered a halt" follow the wires.
+  - **Reaction:** counts not visible through search; the owner says it is doing well. Grok Bot's links are in POSTED.md.
+- **Right of Way (Google · Hamina, 3D pitch, awaiting approval): the facts hold.**
+  - **Request, not order:** Yle ("on pyytänyt"), Kymen Sanomat, Kouvolan Sanomat and Hämeen Sanomat all say LVV *asked*
+    (pyysi) Tuike Finland to pause the expansion work, in **October**. One MT headline says "keskeytti" (halted); it is the
+    outlier. "Asked Google to pause" and the sign's "PAUSE, PLEASE" are right.
+  - **The trigger:** an urgent request from the Nature League's south-eastern chapter for coercive proceedings under the
+    nature conservation act: the flying squirrels' corridor **risks being cut over ~50 m**, and aerial images suggest more
+    suitable trees were felled in the south of the area than planned. "Their route was at risk" is right.
+  - **LVV:** has opened an **urgent inquiry** (kiireellinen selvitys) into how the corridors were handled, and may send
+    inspectors after hearing Tuike. "LVV is examining the nature act" holds.
+  - **Google's side:** it paused to talk with LVV; says the squirrels were taken into account and **a 30 m wooded corridor
+    is kept** across the area. **Suggestion for the build:** carry Google's side on screen too (e.g. a tag "GOOGLE: A 30 M
+    CORRIDOR IS KEPT") so the film is fair; the post can say it.
+  - Nothing found on work resuming, a formal order, or police at Hamina.
+- **Unmarked Boxes (3D pitch, awaiting approval): the core holds; three things moved since March.**
+  - **Trial postponed** from 2 Nov 2026 to **March 2027** (Fortune, Aug 2026), after the defence said Super Micro had
+    received an SDNY grand-jury subpoena (documents on the defendants).
+  - **Super Micro's board-led internal probe (Aug 2026)** found no senior manager knew of the diversion; coverage notes it
+    did not address the SDNY grand-jury subpoena, a separate SEC subpoena, or Taiwan.
+  - **Taiwan raided** Super Micro's Taiwan office and two partners on 29 Jun 2026 (servers allegedly exported with false
+    customs declarations; several detained or questioned); Super Micro says it is cooperating and is not charged there.
+  - **Careful:** one Taiwan News summary names the chief executive as charged; every other source names the co-founder.
+    Do not use that source for names. The film names nobody, so nothing changes on screen.
+  - The post's "the company isn't charged" stays true. If the owner keeps the company's name in the post, add its side:
+    "it says an internal probe cleared its management".
+- **Doodle 9, Five Pins (awaiting approval):** no follow-up.
+- **Coxon 13, Grade Your Own Homework v2 (awaiting approval):** nothing dated November on the four contracts; past tense
+  stays safe.
+- **Global 3, Short Supply (posted): the 13 Nov hearing now looks CONFIRMED.** Docket listings (CourtListener, PacerMonitor,
+  via search summaries; not opened) show the defendants' motion to dismiss reset to **13 Nov 2026, 9:00, San Jose,
+  Courtroom 3, Judge Noël Wise** (reset entered 8 Oct; originally 21 Oct); opposition and reply are filed. The posted
+  "Hearing: 13 Nov" is right; **no softer pinned line needed**. Re-check 12 Nov in case it is vacated or taken on the
+  papers.
+- **The Round Trip:** HOLD. Still no price range. WSJ (via AI Weekly): institutional investors told Anthropic to price at
+  **$1.5–1.6T**, down from the ~$2T floated. The 2 Nov S-1/A is still only in aggregators. Earliest roadshow 10 Nov.
+- **9 Nov, AI Whistleblower Protection Act (S. 1792):** no November item; latest is September. **Break Glass:** no 2026
+  plenary result found. **Count the Trees:** still true (the STT records add to it). **Trade Secret:** Hamina follow-up
+  above.
+- **Films now wrong:** none.

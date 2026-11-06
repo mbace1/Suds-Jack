@@ -945,3 +945,57 @@ Everything below comes from search summaries. No article was opened.
 - **Pattern note:** three regional checks in a row missed the Hamina story because the searches were Muhos-shaped; the
   Hamina news ran through Kymen Sanomat and the Uutissuomalainen network, then Yle. Add a standing Hamina search
   ("Hamina Google LVV", "Haminan datakeskus liito-orava") to every check, not only Muhos.
+
+### Check Fri 6 Nov 17:16 (search summaries only; nothing opened)
+- **NEW, Muhos: STT's records request: "Yes, we are aware :(".** Carried ~5–6 Nov by Kaleva, MT, Keskisuomalainen
+  (Uutissuomalainen) and Demokraatti (the STT text).
+  - The Muhos municipality knew of the site's stormwater trouble by **12 Aug** (the municipal manager emailed the
+    technical director); **LVV first heard in late August**, and was told on 2 Sep that drainage work had begun. The
+    rain caused signs of acidification.
+  - Google's emails show it **knew the felling needed an EIA (YVA)**: in one, a Google employee answers LVV's position
+    with "Kyllä, olemme tietoisia :( Tämä tulee todella viivästyttämään projektiamme" ("Yes, we are aware :( This will
+    really delay our project"). Another email: LVV said the project still needs a YVA on the hectares alone (the law's
+    threshold is 200 ha of regeneration felling; 300+ ha was cut).
+  - **Google's side:** it believed the felling could lawfully go ahead under forest-use notices and building act §109
+    while the YVA was pending (its response to LVV, SSS Oct); its spokesperson denies any unlawful conduct. Kaleva/MT add
+    that Tuike asked LVV in April for an exception so permits could be issued before the YVA was complete.
+  - **Why it matters:** the strongest documented line yet for the Doodle strand, and a direct follow-up to Cut First
+    (posted 6 Nov). The emoticon line is a film by itself. **Rules if used:** open the STT text first (quote verbatim
+    from the article, not a summary); do not name the employee (a private individual): attribute to "a Google email,
+    released to STT"; carry Google's position and denial.
+  [Demokraatti (STT)](https://demokraatti.fi/stt-muhos-ja-google-olivat-hyvin-perilla-tyomaansa-ymparistopulmista),
+  [Kaleva](https://www.kaleva.fi/muhoksen-kunta-tiesi-etta-datakeskustyomaa-oli-vai/13743731),
+  [MT](https://www.maaseuduntulevaisuus.fi/metsa/09c5d051-6331-4079-868c-1c1feac620eb),
+  [KSML](https://www.ksml.fi/uutissuomalainen/9931291),
+  [SSS, Google's response to LVV](https://www.sss.fi/2026/10/google-vastineessaan-lvvlle-katsoimme-etta-datakeskusalueiden-hakkuut-ja-valmistelutyot-voitaisiin-toteuttaa-yva-menettelyn-ollessa-viela-kesken/)
+- **Hamina (for the "Right of Way" pitch): verified, request not order.**
+  - LVV **asked** (pyysi) Tuike Finland in **October** to pause the expansion work (Yle, Kymen Sanomat, Kouvolan
+    Sanomat, Hämeen Sanomat). One MT headline says "keskeytti" (halted): the outlier.
+  - The Nature League's south-eastern chapter asked for urgent coercive proceedings: the corridor risks being cut over
+    **~50 m**; aerial images suggest more suitable trees were felled in the south than planned.
+  - LVV has opened an **urgent inquiry** and may send inspectors after hearing Tuike (Kymen Sanomat, citing Yle).
+  - Google: paused to talk with LVV; says the squirrels were considered and **a 30 m wooded corridor** is kept.
+  - Nothing on resumption, an order, or police.
+  [Yle, LVV asked](https://yle.fi/a/74-20254899?origin=rss),
+  [Yle, nature act](https://yle.fi/a/74-20255224?origin=rss),
+  [Kymen Sanomat, the inquiry](https://kymensanomat.fi/paikalliset/9932630),
+  [Kouvolan Sanomat](https://www.kouvolansanomat.fi/paikalliset/9924506),
+  [Hämeen Sanomat](https://www.hameensanomat.fi/uutissuomalainen/9923744),
+  [MT](https://www.maaseuduntulevaisuus.fi/metsa/653646a8-0d7d-450a-bdc6-c4c567dd52e2)
+- **Muhos extension (Cut First):** still Kaleva only; no LVV release, no second outlet, no new date. Nothing contradicts it.
+  [Kaleva](https://www.kaleva.fi/google-sai-lisaaikaa-muhoksen-vesienhallintaselvit/13742874)
+- **Secondary, older:** Microsoft's Vaasa–Mustasaari site: Yle reports LVV decided the project needs no full EIA, while
+  environmental authorities would have wanted one; the result shows no date, so it may be older. Low priority; watch.
+  [Yle](https://yle.fi/a/74-20232883)
+- **HS:** nothing new dated November surfaced (hs.fi refuses the crawler; the Verkkouutiset/HS AI items in results are
+  older: Humppila, the mayor interview, the JSN ruling).
+- **Reactions:**
+  - **Cut First (Doodle 8):** posted IG + X 6 Nov ~00:51–00:52; counts not visible through search; the owner reports it
+    doing well.
+  - **Count the Trees / Muhos:** still true; the STT records extend it.
+  - **Trade Secret / Hamina:** extended by the LVV pause request and inquiry (above); nothing contradicts the film.
+  - **Five Pins / Helsinki:** no follow-up.
+  - **Reader comments:** not visible through search.
+- **Pattern note:** the records-request story ran through STT's syndication (Uutissuomalainen papers, Demokraatti, MT)
+  before Yle. Add `STT tietopyyntö Google` and `Muhos sähköpostit Google` to the standing searches, alongside the Hamina
+  ones.
