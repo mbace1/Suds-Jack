@@ -24,6 +24,9 @@ offers two or three devices.
 | **Caption vs picture** | the caption says one thing and the picture shows another; the gap is the joke | The Panel ("two sellers will advise their customer") |
 | **Game grammar** | levels, bosses, high scores and respawns (it ties RFH to GL) | ideas |
 | **Rule of three** | three beats, the third one breaks | most films |
+| **The label** | the product's own packaging is the stage: stickers go on, get stamped, fall off, and the record is read off the box | On the Label (Roundup: a cancer-warning sticker that can't stick, a national-defense stamp, an empty warning box) |
+| **Brand pun, taken literally** | the product's name made into the scene (a round-up as a rodeo); strong when the pun carries the fact, not just the joke | Roundup runner-up: claims lassoed into one settlement pen, with empty stalls for future claims |
+| **Ransom note** | an answer assembled from cut-up newspaper headlines, so the cutting is the argument | idea: EU court adviser on chatbots reusing press content (Like Company v Google, 3 Nov 2026) |
 
 ## How a pitch is made now
 

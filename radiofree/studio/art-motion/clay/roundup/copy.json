@@ -4,8 +4,12 @@
   "series": "rfh",
   "captionSize": "big",
   "argument": "In 2026 the fight over Roundup moved onto its label: the Supreme Court held federal law preempts state cancer-warning claims, the White House made glyphosate a defense priority, and a former adviser alleges the health secretary was not consulted; Bayer says Roundup is safe, as the EPA has found.",
-  "langs": ["en"],
-  "native_read": { "en": true },
+  "langs": [
+    "en"
+  ],
+  "native_read": {
+    "en": true
+  },
   "syntax": "'/' breaks a line, [word] is the pop word",
   "captions": [
     {
@@ -14,7 +18,9 @@
       "at": "s1+0.4",
       "until": "s2-0.3",
       "hold": "s2",
-      "text": { "en": "About [65,000] claims / allege Roundup / caused cancer." },
+      "text": {
+        "en": "[65,000] claims / allege Roundup / caused cancer."
+      },
       "source": "About 65,000 Roundup claims (Reuters via Insurance Journal, 3 Nov 2026; Bayer, Mar 2026): plaintiffs allege glyphosate caused their non-Hodgkin lymphoma. Bayer says Roundup is safe; the EPA (and EFSA) did not find glyphosate likely carcinogenic; IARC classified it 'probably carcinogenic to humans' in 2015. One verb for the allegation: 'allege'. Search summaries only."
     },
     {
@@ -23,7 +29,9 @@
       "at": "s2+0.4",
       "until": "s3-0.3",
       "hold": "s3",
-      "text": { "en": "The Supreme Court ruled: / no state cancer / [warning] on it." },
+      "text": {
+        "en": "Supreme Court: / no state cancer / [warning] on it."
+      },
       "source": "Monsanto Co. v. Durnell, No. 24-1068, decided 25 Jun 2026, 7–2 (Kavanaugh; Jackson and Gorsuch dissenting): FIFRA preempts a Missouri failure-to-warn claim that would have required a cancer warning on Roundup's label; a jury award of about $1.25M was reversed (Mayer Brown, Faegre Drinker, National Ag Law Center summaries). 'No state cancer warning on it' = a state-law claim cannot require one; the label is set under federal law (EPA). Search summaries only."
     },
     {
@@ -32,7 +40,9 @@
       "at": "s3+0.4",
       "until": "s4-0.3",
       "hold": "s4",
-      "text": { "en": "The White House / made it a / [defense] priority." },
+      "text": {
+        "en": "The White House / made it a / [defense] priority."
+      },
       "source": "Executive order of 18 Feb 2026, 'Promoting the National Defense by Ensuring an Adequate Supply of Elemental Phosphorus and Glyphosate-Based Herbicides', invoking the Defense Production Act (Washington Times, Fresh Fruit Portal, ADN, Feb 2026). MAHA activists objected; Kennedy backed it publicly and later told Rogan he was not 'particularly happy' with it (Feb 2026). Search summaries only."
     },
     {
@@ -41,7 +51,9 @@
       "at": "s4+0.4",
       "until": "s5-0.3",
       "hold": "s5",
-      "text": { "en": "An ex-adviser alleges / the health secretary / wasn't [asked]." },
+      "text": {
+        "en": "An ex-adviser / alleges RFK Jr. / wasn't [asked]."
+      },
       "source": "Calley Means, former White House adviser (left 22 Oct 2026), on The Joe Rogan Experience #2578 (reported 6 Nov 2026, Axios; Yahoo News): he alleges Kennedy was not consulted when the White House backed the glyphosate makers at the Supreme Court or on the executive order, and that Wiles's deputies pushed the order as 'nonnegotiable'. Attributed allegation; HHS pointed Axios to a Kennedy post saying he and Trump would keep fighting for policies driven by the public, not corporate influence. A White House aide's rebuttal is reported by the coordinator's sources (Yahoo) but not seen by this fork: verify before the full build. Not used: Stephen Miller replacing Susie Wiles (6 Nov, NPR/CNN/AP) — no causal link is claimed or shown. Search summaries only."
     },
     {
@@ -50,29 +62,63 @@
       "at": "s5+0.5",
       "until": "end-0.4",
       "hold": "end",
-      "text": { "en": "On the label: / still no cancer [warning]." },
+      "text": {
+        "en": "On the label: / still no / cancer [warning]."
+      },
       "source": "The station's line, true as a description: Roundup's US label carries no cancer warning; after Durnell a state claim cannot require one. The EPA's position is that glyphosate is not likely carcinogenic. Bayer's $7.25B class settlement for current and future claims awaits final approval in St. Louis; Bayer's CEO said on 3 Nov he expects it before Christmas (Reuters via Insurance Journal)."
     }
   ],
   "ui": {
-    "jugHead": { "en": "WEEDKILLER" },
-    "jugSub": { "en": "GLYPHOSATE HERBICIDE" },
-    "warnBox": { "en": "WARNING" },
-    "sticker": { "en": "STATE CANCER WARNING" },
-    "preempted": { "en": "PREEMPTED" },
-    "stamp1": { "en": "NATIONAL DEFENSE" },
-    "stamp2": { "en": "PRIORITY" },
-    "note": { "en": "NONNEGOTIABLE" },
-    "folder": { "en": "CLAIM" },
-    "tag1": { "en": "PLAINTIFFS ALLEGE · BAYER SAYS IT'S SAFE" },
-    "tag1b": { "en": "EPA, EFSA: NOT LIKELY CARCINOGENIC · IARC 2015: PROBABLY" },
-    "tag2": { "en": "MONSANTO v. DURNELL · 25 JUNE 2026 · 7–2" },
-    "tag3": { "en": "EXECUTIVE ORDER · DEFENSE PRODUCTION ACT · 18 FEB 2026" },
-    "tag4": { "en": "CALLEY MEANS ALLEGES · ON A PODCAST · 6 NOV" },
-    "tag4b": { "en": "HHS: KENNEDY AND TRUMP 'WILL KEEP FIGHTING'" },
-    "tag5": { "en": "$7.25B SETTLEMENT: RULING EXPECTED BY CHRISTMAS (BAYER CEO)" }
+    "jugHead": {
+      "en": "WEEDKILLER"
+    },
+    "jugSub": {
+      "en": "GLYPHOSATE HERBICIDE"
+    },
+    "warnBox": {
+      "en": "WARNING"
+    },
+    "sticker": {
+      "en": "STATE CANCER WARNING"
+    },
+    "preempted": {
+      "en": "PREEMPTED"
+    },
+    "stamp1": {
+      "en": "NATIONAL DEFENSE"
+    },
+    "stamp2": {
+      "en": "PRIORITY"
+    },
+    "note": {
+      "en": "NONNEGOTIABLE"
+    },
+    "folder": {
+      "en": "CLAIM"
+    },
+    "tag1": {
+      "en": "ABOUT 65,000 · PLAINTIFFS ALLEGE · BAYER SAYS IT'S SAFE"
+    },
+    "tag1b": {
+      "en": "EPA, EFSA: NOT LIKELY CARCINOGENIC · IARC 2015: PROBABLY"
+    },
+    "tag2": {
+      "en": "MONSANTO v. DURNELL · 25 JUNE 2026 · 7–2"
+    },
+    "tag3": {
+      "en": "EXECUTIVE ORDER · DEFENSE PRODUCTION ACT · 18 FEB 2026"
+    },
+    "tag4": {
+      "en": "CALLEY MEANS ALLEGES · ON A PODCAST · 6 NOV"
+    },
+    "tag4b": {
+      "en": "HHS: KENNEDY AND TRUMP 'WILL KEEP FIGHTING'"
+    },
+    "tag5": {
+      "en": "$7.25B SETTLEMENT: RULING EXPECTED BY CHRISTMAS (BAYER CEO)"
+    }
   },
   "post": {
-    "en": "The Supreme Court ruled states can't require a cancer warning on Roundup (7–2). A February order made glyphosate a defense priority. An ex-adviser alleges on a podcast that RFK Jr. wasn't consulted; HHS says they'll keep fighting. Bayer says it's safe, as the EPA found. Who writes the label?"
+    "en": "States can't require a cancer warning on Roundup, the Supreme Court ruled (7–2). A February order made glyphosate a defense priority. An ex-adviser alleges RFK Jr. wasn't consulted; HHS says they'll keep fighting. Bayer says it's safe, as the EPA found. Who writes the label?"
   }
 }
