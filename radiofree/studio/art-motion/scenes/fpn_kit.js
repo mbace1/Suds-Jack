@@ -236,6 +236,31 @@
       { d: 0.07, fn: (g, ox, oy) => { g.save(); g.translate(ox, oy); over(g); g.restore(); } }], cam);
     c.restore();
   }
+  /** v2 (owner, 6 Nov: "nature line should be longer, maybe highlighted"): the City Board's nature rule is no longer a
+   *  corner tag for two seconds but a highlighted note pinned onto the sea corner of the map, the empty water below the
+   *  pins. It arrives once the five pins are down and stays through the heat shot, until the cut to Muhos. */
+  const NOTE = { x: 585, y: 1066, w: 404, h: 240 };
+  function leaf(g, x, y, sc) {
+    g.save(); g.translate(x, y); g.rotate(0.55); g.fillStyle = '#3f7a3a'; g.beginPath(); g.ellipse(0, 0, 10 * sc, 19 * sc, 0, 0, TAU); g.fill();
+    g.strokeStyle = '#dcebb4'; g.lineWidth = 2.4 * sc; g.beginPath(); g.moveTo(0, -16 * sc); g.lineTo(0, 17 * sc); g.stroke(); g.restore();
+  }
+  function natureNote(g, k, glow = 0) {
+    if (k <= 0) return;
+    const { x, y, w, h } = NOTE, cx = x + w / 2, cy = y + h / 2;
+    const head = ui('natureHead', 'CITY RULE'), body = ui('natureBody', 'NO DATA CENTRES / IN THE MOST VALUABLE / NATURE AREAS').split('/').map((t) => t.trim());
+    if (glow > 0.01) R.glow(g, cx, cy, 300, 'rgba(255,214,110,', 0.45 * glow);
+    g.save(); g.globalAlpha = clamp(k * 3, 0, 1); g.translate(cx, cy); g.rotate(0.028); const sc = lerp(1.2, 1, ease.out(k)); g.scale(sc, sc);
+    g.shadowColor = 'rgba(0,0,0,.55)'; g.shadowBlur = 16 * sc; g.shadowOffsetX = 8; g.shadowOffsetY = 12;
+    g.fillStyle = '#f4c542'; g.beginPath(); g.roundRect(-w / 2, -h / 2, w, h, 10); g.fill(); g.shadowColor = 'transparent';
+    g.strokeStyle = '#b8862a'; g.lineWidth = 4; g.beginPath(); g.roundRect(-w / 2 + 6, -h / 2 + 6, w - 12, h - 12, 7); g.stroke();
+    leaf(g, -w / 2 + 40, -h / 2 + 46, 1.1);
+    g.fillStyle = '#2f5a24'; g.textAlign = 'left'; fitFont(g, head, 30, w - 110, `$px "ArchivoBlack-400", ${JP}`); g.fillText(head, -w / 2 + 66, -h / 2 + 57);
+    let fs = 40; body.forEach((t) => { fs = Math.min(fs, fitFont(g, t, 40, w - 44, `$px "ArchivoBlack-400", ${JP}`)); });
+    g.font = `${fs}px "ArchivoBlack-400", ${JP}`; g.fillStyle = C.ink; g.textAlign = 'center';
+    body.forEach((t, i) => g.fillText(t, 0, -h / 2 + 112 + i * (fs + 12)));
+    g.restore();
+    if (k > 0.55) { const q = clamp((k - 0.55) / 0.45, 0, 1); g.save(); g.globalAlpha = q; put(g, PIN(), cx + 14, y + 30 - (1 - q) * 30, { lift: 0.5 }); g.restore(); }
+  }
   const hov = (p, lt, i) => p.hx + Math.sin(lt * 1.6 + i * 1.3) * 10;   // a hanging pin's height, swaying
   const BYDEPTH = PINS.map((p, i) => i).sort((a, b) => PINS[a].xy[1] - PINS[b].xy[1]);   // back (north) to front
 
@@ -269,8 +294,9 @@
       });
       PINS.forEach((p, i) => flag(g, p, (lt - landOf(tD, i) - 0.04) / 0.28));
       if (lt > tM) PINS.forEach((p) => R.glow(g, p.xy[0] - 10, p.xy[1] - 50, 60, 'rgba(255,120,90,', 0.3 * Math.exp(-(lt - tM) * 4)));
+      const tN = Math.max(1.75, landOf(tD, PINS.length - 1) + 0.15);                 // v2: the nature rule, pinned once the five are down
+      natureNote(g, (lt - tN) / 0.4, lt > tN + 0.4 ? Math.exp(-(lt - tN - 0.4) * 2.2) : 0);
     } });
-    tag(c, ui('rulesTag', 'RULE: NOT IN THE MOST VALUABLE NATURE'), lt, dd, 110, 1.9);
     box(c);
   } };
 
@@ -284,6 +310,7 @@
       CLUSTERS.forEach((cl) => pipe(g, pipePts(PINS[cl.pin], cl), ease.out(pk(cl)), lt));
       PINS.forEach((p) => drawPin(g, p, 0));
       PINS.forEach((p) => flag(g, p, 1));
+      natureNote(g, 1);                                                              // v2: the nature rule stays pinned through the heat shot
       if (lt > tH) { const f = Math.exp(-(lt - tH) * 3); R.glow(g, 600, 900, 520, 'rgba(255,170,80,', 0.22 * f); }
     } });
     flash(c, lt, tH, 0.12);

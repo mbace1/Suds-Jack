@@ -110,10 +110,15 @@
       "fi": "ÖSTERSUNDOM",
       "ja": "エステルスンドム"
     },
-    "rulesTag": {
-      "en": "RULE: NOT IN THE MOST VALUABLE NATURE",
-      "fi": "EI ARVOKKAIMMILLE LUONTOALUEILLE",
-      "ja": "ルール：最も貴重な自然は除く"
+    "natureHead": {
+      "en": "CITY RULE",
+      "fi": "KAUPUNGIN LINJAUS",
+      "ja": "市の方針"
+    },
+    "natureBody": {
+      "en": "NO DATA CENTRES / IN THE MOST VALUABLE / NATURE AREAS",
+      "fi": "EI DATAKESKUKSIA / ARVOKKAIMMILLE / LUONTOALUEILLE",
+      "ja": "最も価値の高い / 自然地域には / 建てない"
     },
     "heatTag": {
       "en": "SUBSTANTIALLY INTO DISTRICT HEATING",
