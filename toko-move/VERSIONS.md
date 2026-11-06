@@ -1,5 +1,66 @@
 # Toko Move — versions
 
+## v3.8 — 2026-11-06
+
+**THE BOARD, POLISHED** — step 1 of the plan for the owner's direction of
+2026-11-06 (ROADMAP.md): *"the top down view can use some polish."* Read off
+the trailer's board frames, it had three faults. Each is fixed with data the
+game already shipped and the journey never loaded.
+
+- **The sea is filled.**
+  - OpenStreetMap carries the sea as coastline, which is a line. The board
+    stroked a band along it, so a harbour read as blue tubes over paper.
+  - `js/sea.js` solves it the way the bible's stills do, as vector: ways
+    joined into chains, each chain closed along a frame walked clockwise,
+    and the islands cut out even-odd.
+  - The board fills it, draws a lighter shallows band inside the shore and
+    a hairline coast. Where the water pack ends (24.995 E) the ground fades
+    out instead of stopping on a ruled line.
+  - `test/sea.mjs` asks geography, not geometry: the South Harbour,
+    Töölönlahti and Eläintarhanlahti are water; Senaatintori, Kamppi and
+    Korkeasaari are land; no stop stands in the sea; and the sea is a sane
+    share of the extract.
+- **The land is no longer empty.**
+  - The real-time board's ground (`ground.js`) is now under the journey's
+    board: the real streets in the centre extract, HSL's corridors beyond
+    it, the district names spaced and quiet, and the six origami landmarks
+    at their stops.
+  - The corner mini map stays plain (`detail: false`): at 164 px, streets
+    are noise.
+- **The district names stand where the places are** (owner, the same day:
+  *"Kluuvi looks to be in the wrong place on the map"*).
+  - The pack gives each quarter the centre of its sub-district polygon. The
+    polygons run over water, rail yards and parks, so Kluuvi's centre was in
+    the tracks north of the station, and five more (Katajanokka,
+    Kruununhaka, Kaivopuisto, Hernesaari, Lapinlahti) stood in the sea.
+  - Snapping each one to the nearest street was tried and put three on the
+    wrong neighbour (Kaivopuisto went to Katajanokka), because the street
+    extract stops north of them. So the six are placed by hand in `sea.js`'s
+    `LABEL_AT`, each with its reason.
+  - `test/sea.mjs` holds that no name the board writes stands in the water,
+    that every hand placement says why, and that Kluuvi is written between
+    the station and the Esplanadi. 21 checks.
+- **The line you ride has weight.**
+  - While a hop plays, the network sits at half strength. The hop's line is
+    bold: solid behind the courier and faint ahead.
+  - The pill is bigger and carries the line's family number ("4", not "4H")
+    on its tail, so the courier on its nose never covers it.
+  - The drop breathes while you ride, and the board settles in as it opens
+    (none under reduced motion).
+- **Cheaper, not dearer.**
+  - Everything that holds still for a hop is drawn once into a base canvas:
+    16–28 ms under software rendering.
+  - Each frame of the hop then blits the base and draws only the line, the
+    pill and the names. Before, every frame redrew the whole board.
+- **Gates.**
+  - `test/play.cjs` reads the board's own pixels at real places across the
+    first hop's frame. On seed 1002, 30 sea points paint blue (100%) and 168
+    land points don't (97%). It also checks the board stands on the ground:
+    a solved sea, 3,731 streets and 6 landmarks.
+  - Two read-only hooks serve those checks: `__tm3.board()` and
+    `__tm3.probe(lat, lon)`.
+  - play.cjs passes 81 of 81.
+
 ## v3.7 — 2026-11-04
 
 **ACT 1 IS READY TO SHIP** — the Act 1 ship plan's last step: the ship bar run
@@ -41,6 +102,41 @@ on the journey, and the store pass. The upload to itch stays the owner's
   description, the Finnish summary, controls, tags and media. The trailer
   slot is left empty until a journey film exists. `tools/film.cjs` is still
   the real-time game's.
+- **After the release, tools only (2026-11-06): the trailer.** No game byte
+  changed, so the build is still 3.7. `tools/film3.cjs` films the journey
+  from the store build, so the trailer slot has a film:
+  - **What it shows** (47.1 s):
+    - the title on the Kauppatori stop;
+    - a first delivery whole: Dispatch, a tram, a risk in words that lands,
+      the board, DELIVERED;
+    - the museum tram from outside and in, with an inspector and an €80 fine;
+    - the night's tram with no number, which goes to the depot;
+    - the other courier's race;
+    - the lady from Mannerheimintie, saving the seat she was helped to;
+    - the end card.
+
+    Four one-line captions sit between the beats. Portrait is 1080×1920;
+    `--landscape` is 1920×1080. Both are 30 fps, H.264 + AAC, about 10 MB,
+    and take about 10 minutes each under SwiftShader.
+  - **Virtual time.** A frame costs a second or more to capture, so the page
+    runs on a clock the film steps:
+    - an init script swaps out `performance.now`, `Date.now`, timers and
+      `requestAnimationFrame`;
+    - the DevTools animation timeline is held at rate 0, and every
+      animation's `currentTime` is set from the film clock each frame.
+
+    So a transition ends, and its promise resolves, on the frame it should.
+    The two cuts are the same film: every take lands at the same second in
+    both.
+  - **The game's own sound.** Every cue and weather bed is logged at film
+    time, then `js/audio.js` itself renders into an OfflineAudioContext that
+    suspends at each moment. One fixed gain (6 dB past a −3 dB peak) and a
+    limiter keep the kit's own balance. Found on the way: cues in the same
+    render quantum must run in the order they were laid down. A bed stopped
+    and the next one started at a cut ran the other way round, and faded
+    the fresh bed from its default gain of 1, which is a half-second burst.
+    The game itself can't reach that, because its stop and start are always
+    at least a frame apart.
 
 ## v3.6 — 2026-11-04
 

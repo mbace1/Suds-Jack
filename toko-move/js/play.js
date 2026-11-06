@@ -28,7 +28,8 @@
 import { tr } from './lang.js?v=10';
 import * as J from './journey.js?v=3';
 import * as Runs from './runs.js?v=4';
-import { HopBoard } from './hopboard.js?v=1';
+import { HopBoard } from './hopboard.js?v=2';
+import { loadGround } from './ground.js?v=12';
 import { skinFor } from './skin.js?v=1';
 import { moodFace, MOODS } from './events.js?v=10';
 import { buildRealHelsinki } from './real-helsinki.js?v=5';
@@ -43,7 +44,7 @@ import { addNote } from './sealed.js?v=2';
 import { resolveMode, dailyShare, W } from './modes.js?v=1';
 import { recordDaily, todayRecord, streak } from './daily.js?v=2';
 
-export const BUILD_VERSION = '3.7';
+export const BUILD_VERSION = '3.8';
 const $ = id => document.getElementById(id);
 const params = new URLSearchParams(location.search);
 // a run of the ladder, today's daily, or a day of the week (modes.js, ACT1.md §12)
@@ -129,7 +130,8 @@ const CSS = `
 @keyframes v3fog{from{background-position:0 0,0 0,0 0}to{background-position:0 0,-60% 0,40% 0}}
 #v3.night #v3wx.fog{background:linear-gradient(180deg,rgba(40,52,70,0),rgba(70,84,104,.5) 45%,rgba(40,52,70,.1)),radial-gradient(60% 30% at 30% 55%,rgba(110,124,146,.4),transparent);background-size:100% 100%,200% 100%}
 #v3board{position:absolute;inset:0;width:100%;height:100%;opacity:0;transition:opacity .22s;pointer-events:none}
-#v3board.on{opacity:1;pointer-events:auto}
+#v3board.on{opacity:1;pointer-events:auto;animation:v3settle .55s cubic-bezier(.2,.7,.2,1)}
+@keyframes v3settle{from{transform:scale(1.045)}to{transform:none}}
 #v3top{position:absolute;left:0;right:0;top:calc(env(safe-area-inset-top) + 10px);display:flex;flex-direction:column;align-items:center;gap:6px;pointer-events:none;z-index:3}
 #v3top .v3pill{transform-origin:50% 50%}   /* fitTop() places it between the HUB button and ♪ */
 #v3sound{position:absolute;top:calc(env(safe-area-inset-top) + 8px);right:calc(env(safe-area-inset-right) + 8px);z-index:4;width:44px;height:44px;border-radius:50%;border:0;background:#fff;color:#233d4d;font:700 19px/44px system-ui,sans-serif;box-shadow:0 0 0 1px rgba(21,38,43,.12),0 2px 6px rgba(21,38,43,.14);cursor:pointer;padding:0}
@@ -200,7 +202,7 @@ const CSS = `
 #v3.night .v3tap{color:rgba(246,249,252,.6)}
 .carried{margin-top:10px;text-align:left}.carried h3{font-size:11px;letter-spacing:1.5px;color:var(--dim,#69777a)}.carried li{font-size:12.5px;margin:4px 0 0 18px}
 .carried li small{color:var(--dim,#69777a)}
-@media (prefers-reduced-motion:reduce){#v3 .L,#v3 .sway,#v3 .bob,#v3 .shift,#v3 .idle,#v3 .frame.push,#v3wx,#v3 .chip.halted{animation:none!important}}
+@media (prefers-reduced-motion:reduce){#v3 .L,#v3 .sway,#v3 .bob,#v3 .shift,#v3 .idle,#v3 .frame.push,#v3wx,#v3 .chip.halted,#v3board.on{animation:none!important}}
 `;
 
 // ── the page ───────────────────────────────────────────────────────────────
@@ -317,10 +319,12 @@ let net = null, board = null, mini = null, S = null, still = null;
 const getJson = async url => { const r = await fetch(url, { cache: 'no-store' }); if (!r.ok) throw new Error(`${url} ${r.status}`); return r.json(); };
 const ready = (async () => {
   const play = $('play'); if (play) { play.disabled = true; play.textContent = 'LOADING HELSINKI…'; }
-  const [pack, water, act] = await Promise.all([getJson('./cities/helsinki.json'), getJson('./cities/ground/helsinki-water.json').catch(() => null), getJson('./scenes/stop/act1.json').catch(() => null)]);
+  // the ground (v3.8): the water, the streets, the quarters and the landmarks
+  // the real-time board already drew — the journey's board stands on it now
+  const [pack, ground, act] = await Promise.all([getJson('./cities/helsinki.json'), loadGround('./cities/ground/').catch(() => null), getJson('./scenes/stop/act1.json').catch(() => null)]);
   net = J.network(buildRealHelsinki(pack)); ACT = act;
-  board = new HopBoard($('v3board'), { pack, water, skin: SKIN, net }); board.label = tr;
-  mini = new HopBoard($('v3minic'), { pack, water, skin: SKIN, net }); mini.label = tr;
+  board = new HopBoard($('v3board'), { pack, ground, skin: SKIN, net }); board.label = tr;
+  mini = new HopBoard($('v3minic'), { pack, water: ground?.water, skin: SKIN, net, detail: false }); mini.label = tr;
   if (play) { play.disabled = false; play.textContent = 'START SHIFT'; }
 })().catch(err => { const p = $('play'); if (p) p.textContent = 'MAP LOAD FAILED'; console.error(err); throw err; });
 
@@ -698,6 +702,11 @@ sizeFrame();
 // takes is a tap on a real button.
 // `boards` counts the hops played on the board — a hurried player skips each
 // in a frame, so a gate counts them rather than hoping to sample one.
-const game = { version: BUILD_VERSION, mode: MODE.mode, run: RUN, seed: SEED, ready, state: () => S, net: () => net, card: () => (S ? J.card(net, S) : null), busy: () => busy, scene: () => scene, result: null, boards: 0 };
+// `board()` (v3.8) says what the board stands on, and `probe(lat, lon)` reads
+// the colour it painted at a real place — so a gate can ask whether the South
+// Harbour is water without knowing anything about the projection.
+const game = { version: BUILD_VERSION, mode: MODE.mode, run: RUN, seed: SEED, ready, state: () => S, net: () => net, card: () => (S ? J.card(net, S) : null), busy: () => busy, scene: () => scene, result: null, boards: 0,
+  board: () => ({ ground: !!board?.ground, sea: board?.sea?.sea.length || 0, islands: board?.sea?.islands.length || 0, streets: board?.streets.length || 0, marks: board?.marks.length || 0, ms: board?.baseMs ?? null, view: board?.view || null }),
+  probe: (lat, lon) => { if (Array.isArray(lat)) return lat.map(([a, o]) => game.probe(a, o)); if (!board?.fit || !$('v3board').classList.contains('on')) return null; const p = board.fit(lat, lon), c = $('v3board'); if (p.x < 0 || p.y < 0 || p.x >= c.width || p.y >= c.height) return null; return [...c.getContext('2d').getImageData(Math.round(p.x), Math.round(p.y), 1, 1).data].slice(0, 3); } };
 globalThis.__tm3 = game;
 audio = mountAudio(game, { button: 'v3sound', clock: () => S?.clock ?? 0 });
