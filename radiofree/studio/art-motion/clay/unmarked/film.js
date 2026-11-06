@@ -1,4 +1,4 @@
-// UNMARKED BOXES (RFH, Brink · AI-server export controls), v1 stills, 6 Nov. The ART test the owner asked for after Cut
+// UNMARKED BOXES (RFH, Global 4 · AI-server export controls), v2 full build, 6 Nov (v1 stills, 6 Nov). The ART test the owner asked for after Cut
 // First did well (6 Nov: "maybe it's the art, maybe the topic, maybe both"): the SAME approved 3D cars look (looks/cars,
 // clay/cutfirst) on a non-Finnish story. A tilt-shift toy world, soft anime grade, extruded toys whose wheels really roll.
 // Five shots, one thing happening in each:
@@ -118,7 +118,9 @@ function island(x, z, r, seed, pier) {
     const s = 0.8 + R() * 0.7; mesh(trunk, M.trunk, { pos: [tx, 1.1 * s, tz] }).scale.setScalar(s);
     mesh(crown, R() < 0.5 ? M.tree : M.tree2, { pos: [tx, 2.9 * s, tz], rot: [R(), R(), 0] }).scale.setScalar(s); }
 }
-const TW = { x: -30, z: -62, r: 15 }, SEAS = { x: 30, z: -112, r: 24 }, CN_Z = -172;
+// v2: the map is 0.85 as deep as the stills' (MZ), so US and China both clear the caption block and the tag in shot 2
+const MZ = (z) => QUAY_Z + (z - QUAY_Z) * 0.85;
+const TW = { x: -30, z: MZ(-62), r: 15 }, SEAS = { x: 30, z: MZ(-112), r: 24 }, CN_Z = MZ(-172);
 island(TW.x, TW.z, TW.r, 11, [TW.x + TW.r + 3.5, TW.z, 8, 0]);
 island(SEAS.x, SEAS.z, SEAS.r, 13, [SEAS.x - SEAS.r - 3.5, SEAS.z + 14, 9, 0]);
 // China: a coastline across the top of the map, with its own quay
@@ -141,11 +143,11 @@ function board(text, x, z, w, face, color = '#1d1b19') {
   mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshStandardMaterial({ map: tex, roughness: 0.6 }), { pos: [0, 0, 0], parent: faceG, cast: false });
   return grp;
 }
-const MAPCAM = [4, 260, 150];
-board(UI.us, -28, QUAY_Z + 8, 28, MAPCAM, '#1f3b57');
-board(UI.taiwan, TW.x - 6, TW.z - 2, 42, MAPCAM);
-board(UI.sea, SEAS.x + 2, SEAS.z - 18, 58, MAPCAM);
-board(UI.china, -36, CN_Z - 3, 50, MAPCAM, '#b3261e');
+const MAPCAM = [4, 250, 125];                                                   // v2: the labels 1.3x the stills', CHINA on its own sand
+board(UI.us, -28, QUAY_Z + 8, 36, MAPCAM, '#1f3b57');
+board(UI.taiwan, TW.x - 6, TW.z - 2, 54, MAPCAM);
+board(UI.sea, SEAS.x + 2, SEAS.z - 18, 72, MAPCAM);
+board(UI.china, -36, CN_Z + 2, 64, MAPCAM, '#b3261e');
 
 // ------------------------------------------------------------------ the crates: labelled, and the same crates plain
 const crateTex = canvasTex(512, 512, (g, w, h) => { g.fillStyle = '#2f6fd6'; g.fillRect(0, 0, w, h);
@@ -291,8 +293,8 @@ function drive(v, z, z0, u) {
 const LANE = 1.85;
 
 // the route: from the US quay, round by Taiwan, to the Southeast Asia pier, then on to China
-const STOPS = { tw: [-2, -60], sea: [-6, -98] };
-const ROUTE = new THREE.CatmullRomCurve3([[8, -26], [3, -42], STOPS.tw, [3, -80], STOPS.sea, [-13, -120], [-14, -142], [-10, -158], [-8, -167]].map(([x, z]) => new THREE.Vector3(x, SEA_Y, z)), false, 'catmullrom', 0.4);
+const STOPS = { tw: [-2, MZ(-60)], sea: [-6, MZ(-98)] };
+const ROUTE = new THREE.CatmullRomCurve3([[8, -26], [3, -42], [-2, -60], [3, -80], [-6, -98], [-13, -120], [-14, -142], [-10, -158], [-8, -167]].map(([x, z]) => new THREE.Vector3(x, SEA_Y, z < -26 ? MZ(z) : z)), false, 'catmullrom', 0.4);
 /** where along the route (0..1, by arc length) a stop sits */
 const uNear = ([x, z]) => { let best = 0, bd = 1e9; for (let i = 0; i <= 600; i++) { const p = ROUTE.getPointAt(i / 600), dd = (p.x - x) ** 2 + (p.z - z) ** 2; if (dd < bd) { bd = dd; best = i / 600; } } return best; };
 const U_TW = uNear(STOPS.tw), U_SEA = uNear(STOPS.sea);
@@ -321,11 +323,20 @@ const BELT_Y = 1.25, BELT_Z = SH.z - 1.5, BX0 = SH.x - 10.5, BX1 = SH.x + 10.5;
 mesh(rbox(BX1 - BX0, 0.3, 2.9, 0.1), M.belt, { pos: [SH.x, BELT_Y - 0.15, BELT_Z] });
 for (let x = BX0 + 0.5; x < BX1; x += 1.6) for (const s of [-1, 1]) mesh(new THREE.BoxGeometry(0.2, BELT_Y - 0.3, 0.2), M.steel, { pos: [x, (BELT_Y - 0.3) / 2, BELT_Z + s * 1.3] });
 const repackTex = canvasTex(512, 128, (g, w, h) => { g.fillStyle = '#f2c230'; g.fillRect(0, 0, w, h); g.fillStyle = '#1d1b19'; g.textAlign = 'center'; g.textBaseline = 'middle'; fit(g, UI.repack, 100, w - 30); g.fillText(UI.repack, w / 2, h / 2 + 4); });
-for (const s of [-1, 1]) mesh(rbox(0.4, 3.8, 0.4, 0.1), M.steel, { pos: [SH.x, 1.9, BELT_Z + s * 1.75] });
-mesh(rbox(0.6, 0.7, 4.0, 0.12), paint('#f2c230'), { pos: [SH.x, 3.9, BELT_Z] });
-mesh(rbox(3.9, 1.15, 0.14, 0.05), paint('#1d1b19'), { pos: [SH.x, 4.75, BELT_Z + 1.9] });
-mesh(new THREE.PlaneGeometry(3.6, 0.9), new THREE.MeshStandardMaterial({ map: repackTex, roughness: 0.6 }), { pos: [SH.x, 4.75, BELT_Z + 1.98], cast: false });
-const CURTAIN = []; for (let k = 0; k < 7; k++) CURTAIN.push(mesh(new THREE.BoxGeometry(0.06, 2.2, 0.38), matte('#2b2d33'), { pos: [SH.x, 2.45, BELT_Z - 1.2 + k * 0.4], cast: false }));
+// v2: a HOOD over the belt, open at both ends: labelled crates go in at the left, plain boxes come out at the right, and
+// the change happens out of sight inside it (the stills' open arch put its front post across a passing crate)
+const HOOD_W = 3.8, HOOD_Y = 3.45, HOOD = paint('#f2c230');
+mesh(rbox(HOOD_W, HOOD_Y - BELT_Y + 0.2, 0.3, 0.08), HOOD, { pos: [SH.x, (HOOD_Y + BELT_Y) / 2 - 0.05, BELT_Z + 1.85] });       // front
+mesh(rbox(HOOD_W, HOOD_Y - BELT_Y + 0.2, 0.3, 0.08), HOOD, { pos: [SH.x, (HOOD_Y + BELT_Y) / 2 - 0.05, BELT_Z - 1.85] });       // back
+mesh(rbox(HOOD_W + 0.3, 0.35, 4.1, 0.12), HOOD, { pos: [SH.x, HOOD_Y + 0.12, BELT_Z] });                                        // roof
+mesh(rbox(3.4, 1.0, 0.14, 0.05), paint('#1d1b19'), { pos: [SH.x, 2.45, BELT_Z + 2.05] });
+mesh(new THREE.PlaneGeometry(3.1, 0.78), new THREE.MeshStandardMaterial({ map: repackTex, roughness: 0.6 }), { pos: [SH.x, 2.45, BELT_Z + 2.13], cast: false });
+const CURTAIN = []; for (const s of [-1, 1]) for (let k = 0; k < 7; k++) { const m = mesh(new THREE.BoxGeometry(0.06, 2.3, 0.38), matte('#2b2d33'), { pos: [SH.x + s * (HOOD_W / 2 + 0.05), 2.35, BELT_Z - 1.2 + k * 0.4], cast: false }); m.userData.x = SH.x + s * (HOOD_W / 2 + 0.05); CURTAIN.push(m); }
+// v2: the floor in front of the line, so shot 3's lower half is not empty: a pallet of labelled crates waiting (left), a
+// pallet of plain boxes ready to ship (right), both low enough to leave the belt in view (shot 3 only)
+const YARD = [];
+for (const [dx, plain] of [[-2.4, false], [2.4, true]]) { YARD.push(mesh(rbox(2.9, 0.22, 2.9, 0.05), M.pallet, { pos: [SH.x + dx, 0.41, SH.z + 3.6] }));
+  YARD.push(mesh(CRATE_G, plain ? BOX_M : CRATE_M, { pos: [SH.x + dx, 0.52 + 0.95, SH.z + 3.6] })); }
 const LINE_N = 8, LINE_GAP = (BX1 - BX0 + 3) / LINE_N, LINE_V = 2.6;
 const ITEMS = Array.from({ length: LINE_N }, () => ({ crate: mesh(CRATE_G, CRATE_M, {}), box: mesh(CRATE_G, BOX_M, {}) }));
 // the workbench, front-left in the shed: a real server, a dummy, and a hair dryer on a clamp stand between them
@@ -343,6 +354,9 @@ function server(x, real) {
   return grp;
 }
 const REAL = server(BENCH.x - 1.6, true), DUMMY = server(BENCH.x + 1.6, false);
+// v2: a lower shelf under the bench, two more dummies waiting on it (the stills' shot 4 had empty floor in its lower third)
+mesh(rbox(7.2, 0.16, 2.5, 0.05), M.bench, { pos: [BENCH.x, 0.62, BENCH.z] });
+for (const dx of [-1.8, 1.8]) mesh(serverGeo, M.dummy, { pos: [BENCH.x + dx, 0.7 + 0.475, BENCH.z + 0.05] });
 const stickerTex = canvasTex(256, 128, (g, w, h) => { g.fillStyle = '#fbfaf5'; g.fillRect(0, 0, w, h); const R = rng(21);
   g.fillStyle = '#1d1b19'; for (let x = 16; x < w - 16;) { const bw = 2 + Math.floor(R() * 5); g.fillRect(x, 14, bw, 66); x += bw + 2 + Math.floor(R() * 4); }
   g.font = '700 30px Inter'; g.textAlign = 'center'; g.fillText('SN 7C41-0921', w / 2, 114); });
@@ -385,8 +399,8 @@ function shadowsAt(cx, cz, e) {
 const DUSK = (t) => t < T.s5 ? lerp(0, 0.25, t / T.s5) : lerp(0.25, 0.8, smooth((t - T.s5 - 0.8) / (T.end - T.s5 - 1.2)));
 const fogA = C3('#aec4e8'), fogB = C3('#c39cc4');
 
-const EV = { gate: T.s1 + 0.2, brake: +(T.s1 + TRUCK.tb).toFixed(3), stop: +(T.s1 + TRUCK.ts).toFixed(3), depart: T.s2 + 0.3, sweep: T.s3 + 0.4,
-  peel: T.s4 + 1.2, stick: T.s4 + 2.6, tick0: T.s5 + 0.8, tickN: T.s5 + 2.4, sail: T.s5 + 0.6, arrive: T.end - 0.3 };
+const EV = { gate: T.s1 + 0.2, boomsDown: T.s1 + 1.3, brake: +(T.s1 + TRUCK.tb).toFixed(3), stop: +(T.s1 + TRUCK.ts).toFixed(3), depart: T.s2 + 0.3, dock: T.s3 - 0.4, sweep: T.s3 + 0.4,
+  blow: T.s4 + 0.3, blowEnd: T.s5 + 0.2, peel: T.s4 + 1.2, stick: T.s4 + 2.6, tick0: T.s5 + 0.8, tickN: T.s5 + 2.4, sail: T.s5 + 0.6, rise: T.s5 + 2.1, arrive: T.end - 0.3 };
 const tmpP = new THREE.Vector3(), tmpD = new THREE.Vector3();
 function setWorld(t) {
   const d = DUSK(t);
@@ -411,7 +425,8 @@ function setWorld(t) {
   ITEMS.forEach((it, i) => { const x = BX0 - 1.5 + ((i * LINE_GAP + (t - T.s3 + 30) * LINE_V) % (LINE_GAP * LINE_N));
     const y = BELT_Y + 0.95, z = BELT_Z, plain = x > SH.x;
     it.crate.position.set(x, y, z); it.box.position.set(x, y, z); it.crate.visible = !plain && x < BX1 + 1; it.box.visible = plain && x < BX1 + 1; });
-  CURTAIN.forEach((c, k) => { const near = ITEMS.reduce((m, it) => Math.min(m, Math.abs(it.crate.position.x - SH.x)), 9); c.rotation.z = near < 1.4 ? -0.5 * (1 - near / 1.4) * (1 + 0.2 * Math.sin(k * 1.7 + t * 9)) : 0; });
+  CURTAIN.forEach((c, k) => { const near = ITEMS.reduce((m, it) => Math.min(m, Math.abs(it.crate.position.x - c.userData.x)), 9); c.rotation.z = near < 1.4 ? -0.5 * (1 - near / 1.4) * (1 + 0.2 * Math.sin(k * 1.7 + t * 9)) : 0; });
+  YARD.forEach((m) => { m.visible = t >= T.s3 && t < T.s4; });
   // 4 · the hair dryer: it blows from shot 4's start, the sticker peels off the real server, flutters, lands on the dummy
   { const head = DRYER.userData.head, aim = new THREE.Vector3().lerpVectors(STK_A, STK_B, 0.15);
     head.position.x = 0; DRYER.updateMatrixWorld(true); head.lookAt(aim); head.updateMatrixWorld(true); const blowing = t > T.s4 + 0.3 && t < T.s5 + 0.2;
@@ -438,17 +453,17 @@ const SHOT = [
     t0: () => T.s1, sh: [0, -4, 40], fog: [140, 560], focus: (t) => V([LANE, 1, Math.max(zAt(TRUCK, t - T.s1), BARRIER_Z + 10)]),
     cam(lt, d) { const k = ease.io(lt / d); return { pos: V(lerp3([11, 17.5, 78], [9, 15, 69], k)), at: V(lerp3([1.6, 6.2, -2], [1.6, 6.2, -4], k)), fov: 32 }; } },
   { // 2 · high over the map: the ship takes the long way round
-    t0: () => T.s2, sh: [0, -95, 130], fog: [420, 1300], focus: () => V([0, 0, -95]),
-    cam(lt, d) { const k = ease.io(lt / d); return { pos: V(lerp3(MAPCAM, [4, 252, 140], k)), at: V(lerp3([0, 0, -110], [0, 0, -112], k)), fov: 40 }; } },
+    t0: () => T.s2, sh: [0, -82, 120], fog: [420, 1300], focus: () => V([0, 0, -82]),
+    cam(lt, d) { const k = ease.io(lt / d); return { pos: V(lerp3(MAPCAM, [4, 244, 118], k)), at: V(lerp3([0, 0, -84], [0, 0, -86], k)), fov: 42 }; } },
   { // 3 · in the shed, front-on and a little above: the repack line
     t0: () => T.s3, sh: [SH.x, SH.z, 26], fog: [200, 900], focus: () => V([SH.x, BELT_Y + 1, BELT_Z]),
-    cam(lt, d) { const k = ease.io(lt / d); return { pos: V(lerp3([SH.x + 1.6, 9.6, FRONT + 12], [SH.x + 0.8, 8.8, FRONT + 10.5], k)), at: V(lerp3([SH.x, 1.6, BELT_Z + 1], [SH.x, 1.7, BELT_Z + 1], k)), fov: 40 }; } },
+    cam(lt, d) { const k = ease.io(lt / d); return { pos: V(lerp3([SH.x + 1.6, 9.8, FRONT + 15], [SH.x + 0.8, 9.0, FRONT + 13.5], k)), at: V(lerp3([SH.x, 1.3, BELT_Z + 1.6], [SH.x, 1.4, BELT_Z + 1.6], k)), fov: 40 }; } },
   { // 4 · the workbench, close: the dryer, the real server, the dummy, the sticker's flight
     t0: () => T.s4, sh: [BENCH.x, BENCH.z, 14], fog: [200, 900], focus: () => V([BENCH.x, BENCH.y + 0.8, BENCH.z + 1]),
     cam(lt, d) { const k = ease.io(lt / d); return { pos: V(lerp3([BENCH.x + 0.1, BENCH.y + 6.4, BENCH.z + 12.8], [BENCH.x - 0.2, BENCH.y + 5.8, BENCH.z + 11.6], k)), at: V(lerp3([BENCH.x - 0.9, BENCH.y + 1.3, BENCH.z], [BENCH.x - 0.9, BENCH.y + 1.3, BENCH.z], k)), fov: 40 }; } },
   { // 5 · the dummies on the apron and the EXPORT CHECK van; then up and back: the ship heads for China
-    t0: () => T.s5, sh: [SH.x - 10, SH.z - 25, 80], fog: [300, 1200], focus: (t) => V(lerp3([SH.x + 1, 1.0, FRONT + 10], [-10, 0, -150], smooth((t - T.s5 - 2.2) / 2.0))),
-    cam(lt, d) { const k = ease.io((lt - 2.1) / (d - 2.3)); return { pos: V(lerp3([SH.x + 2.6, 17, FRONT + 46], [44, 190, -24], k)), at: V(lerp3([SH.x + 1.5, 0.8, FRONT + 10], [-8, 0, -160], k)), fov: 40 }; } },
+    t0: () => T.s5, sh: [SH.x - 10, SH.z - 25, 80], fog: [300, 1200], focus: (t) => V(lerp3([SH.x + 1, 1.0, FRONT + 10], [-10, 0, CN_Z + 16], smooth((t - T.s5 - 2.2) / 2.0))),
+    cam(lt, d) { const k = ease.io((lt - 2.1) / (d - 2.3)); return { pos: V(lerp3([SH.x + 2.6, 17, FRONT + 46], [44, 180, -16], k)), at: V(lerp3([SH.x + 1.5, 0.8, FRONT + 10], [-8, 0, CN_Z + 10], k)), fov: 40 }; } },
 ];
 const shotAt = (t) => { for (let i = SHOT.length - 1; i >= 0; i--) if (t >= SHOT[i].t0()) return i; return 0; };
 const SHOT_END = (i) => i + 1 < SHOT.length ? SHOT[i + 1].t0() : T.end;
@@ -470,7 +485,7 @@ function frame(t, captions = true) {
   const L = S.cam(t - t0, d); camera.fov = L.fov; camera.position.copy(L.pos); camera.lookAt(L.at); camera.updateProjectionMatrix(); scene.updateMatrixWorld(true);
   tmp.copy(S.focus(t)).project(camera); const cy = clamp((tmp.y + 1) / 2, 0.15, 0.85);
   const dk = DUSK(t);
-  post.render(scene, camera, { focus: 60, aperture: 0, maxBlur: 26, tilt: 10, tiltCenter: cy, tiltBand: i === 1 ? 0.92 : i === 4 ? lerp(0.62, 0.9, smooth((t - T.s5 - 2) / 1.5)) : 0.6,
+  post.render(scene, camera, { focus: 60, aperture: 0, maxBlur: 26, tilt: 10, tiltCenter: cy, tiltBand: i === 1 ? 0.92 : i === 2 ? 0.8 : i === 4 ? lerp(0.62, 0.9, smooth((t - T.s5 - 2) / 1.5)) : 0.6,
     threshold: 0.95, knee: 0.45, bloomA: 0.4, bloomB: 0.35, exposure: lerp(1.04, 1.0, dk), vignette: 0.3, grain: 0.022, seed: Math.floor(t * 24),
     sat: 1.16, contrast: 1.06, toe: 0.0, lift: [0.012, 0.008, 0.034], gain: [1.03, 1.0, 0.97] });
   g2d.setTransform(1, 0, 0, 1, 0, 0); g2d.drawImage(renderer.domElement, 0, 0);
@@ -478,8 +493,8 @@ function frame(t, captions = true) {
   const tg = (a0, a1) => clamp((t - a0) / 0.3) * clamp((a1 - t) / 0.3);
   tag(g2d, UI.tag1, tg(T.s1 + 1.2, T.s2 - 0.1));
   tag(g2d, UI.tag2, tg(T.s2 + 1.2, T.s3 - 0.1));
-  tag(g2d, UI.tag3, tg(T.s3 + 1.2, T.s4 - 0.1));
-  tag(g2d, UI.tag4, tg(T.s4 + 1.4, T.s5 - 0.1));
+  tag(g2d, UI.tag3, tg(T.s3 + 0.45, T.s4 - 0.1));                                   // v2: the attribution lands with the caption
+  tag(g2d, UI.tag4, tg(T.s4 + 0.45, T.s5 - 0.1));
   tag(g2d, UI.tag5, tg(T.s5 + 1.4, T.end + 1));
   if (captions) CAP.draw(g2d, P, t, { busy: BUSY || {} });
   return out;

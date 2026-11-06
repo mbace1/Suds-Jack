@@ -1,6 +1,6 @@
 {
   "film": "right-of-way",
-  "cut": "v1 stills (6 Nov, en only; owner, 6 Nov: 'The 3d Muhos video is doing well, we should consider more similar ones. Maybe it's the art, maybe the topic, maybe both' -- this is the 'both' test: the same 3D cars look as Cut First, the same family of story). Hamina, the sequel to Doodle 6 Trade Secret: the regulator (LVV) asked Google's Finnish company to pause expansion work at the Hamina data-centre site after conservationists said flying-squirrel routes were at risk; Google says it paused; LVV is examining the nature conservation act. Five beats; for the owner's approval, not for posting. fi and ja not written (owner: English for now).",
+  "cut": "v2 full build (6 Nov, en only; owner, Fri 6 Nov ~19:30: '2 great'). Google's side is on screen for fairness: shot 4 carries GOOGLE SAYS A 30 M WOODED CORRIDOR IS KEPT, and shot 5 opens with LVV's urgent inquiry before the 2018-19 tag. Shot 2 draws the squirrels' route as a dashed line along the strip, broken red where the haul track cuts it. v1 stills (6 Nov, en only; owner, 6 Nov: 'The 3d Muhos video is doing well, we should consider more similar ones. Maybe it's the art, maybe the topic, maybe both' -- this is the 'both' test: the same 3D cars look as Cut First, the same family of story). Hamina, the sequel to Doodle 6 Trade Secret: the regulator (LVV) asked Google's Finnish company to pause expansion work at the Hamina data-centre site after conservationists said flying-squirrel routes were at risk; Google says it paused; LVV is examining the nature conservation act. Five beats; for the owner's approval, not for posting. fi and ja not written (owner: English for now).",
   "series": "rfh",
   "captionSize": "big",
   "argument": "At Google's Hamina data-centre site, conservationists said the expansion work put flying squirrels' routes at risk; the regulator asked for a pause, Google paused, and the regulator is examining the nature conservation act.",
@@ -54,7 +54,7 @@
       "text": {
         "en": "Google / [paused]."
       },
-      "source": "Google, quoted by Yle and Kymen Sanomat: 'olemme keskeyttaneet tyot Haminassa, jotta voimme keskustella LVV:n kanssa' (we have paused work in Hamina so we can talk with LVV); Tuike Finland said it agreed to the pause. The tag gives the next step: LVV has begun an urgent examination of whether Tuike Finland acted against the nature conservation act, in particular how the flying squirrels' routes were taken into account (Yle, yle.fi/a/74-20255224). Verified from search summaries only."
+      "source": "Google, quoted by Yle and Kymen Sanomat: 'olemme keskeyttaneet tyot Haminassa, jotta voimme keskustella LVV:n kanssa' (we have paused work in Hamina so we can talk with LVV); Tuike Finland said it agreed to the pause. The tag gives the next step: LVV has begun an urgent examination of whether Tuike Finland acted against the nature conservation act, in particular how the flying squirrels' routes were taken into account (Yle, yle.fi/a/74-20255224). Verified from search summaries only. v2 (6 Nov): Google's side on screen as the shot-4 tag: Google says the flying squirrels were taken into account and a 30 m wooded corridor is kept across the area (Yle; Kymen Sanomat; Uutissuomalainen papers, per search summaries, 6 Nov 17:16 check). LVV's step moves to a tag at the start of shot 5: LVV has opened an urgent inquiry (kiireellinen selvitys) into how the corridors were handled under the nature conservation act, and may send inspectors after hearing Tuike (Yle). The conservationists' claim is that the corridor risks being cut over ~50 m; not on screen (one figure from summaries, and two different measures side by side would confuse)."
     },
     {
       "id": "right",
@@ -88,7 +88,7 @@
       "en": "LVV, FINLAND'S PERMIT REGULATOR · YLE"
     },
     "tag4": {
-      "en": "LVV IS EXAMINING THE NATURE ACT · YLE"
+      "en": "GOOGLE SAYS A 30 M WOODED CORRIDOR IS KEPT"
     },
     "tag5": {
       "en": "2018–19: 1.3 HA OF SQUIRREL FOREST FELLED"
@@ -98,9 +98,12 @@
     },
     "crossing": {
       "en": "FLYING SQUIRRELS"
+    },
+    "tag4b": {
+      "en": "LVV: AN URGENT INQUIRY · NATURE ACT · YLE"
     }
   },
   "post": {
-    "en": "Hamina, Finland: conservationists said work at Google's data centre put flying squirrels' routes at risk. The regulator asked for a pause. Google paused; the regulator is checking the nature act. In 2018–19, 1.3 ha of squirrel forest was cut there without a permit. Right of way?"
+    "en": "Hamina, Finland: conservationists said Google's data-centre work put a flying-squirrel route at risk. The regulator asked for a pause and opened an inquiry. Google paused; it says a 30 m corridor stays. In 2018–19, 1.3 ha of squirrel forest was cut without a permit. Right of way?"
   }
 }

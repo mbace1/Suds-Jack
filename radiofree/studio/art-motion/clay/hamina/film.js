@@ -1,4 +1,4 @@
-// RIGHT OF WAY (RFH, Google · Hamina), v1 stills, 6 Nov. The sequel to Doodle 6 Trade Secret, in the approved 3D cars
+// RIGHT OF WAY (RFH, Google · Hamina), v2 full build, 6 Nov (v1 stills the same day). The sequel to Doodle 6 Trade Secret, in the approved 3D cars
 // look that Cut First used (owner, 6 Nov: "The 3d Muhos video is doing well ... Maybe it's the art, maybe the topic, maybe
 // both" — this is the "both" test). A tilt-shift toy world, soft anime grade, toy machines that roll and brake for real.
 // Five shots, one thing happening in each:
@@ -150,7 +150,7 @@ for (const [x, w] of [[-44, 34], [0, 38], [44, 34]]) {
 }
 const hallSignTex = canvasTex(1600, 200, (g, w, h) => { g.fillStyle = '#1f3b57'; g.fillRect(0, 0, w, h); g.fillStyle = '#f2efe8'; g.textAlign = 'center'; g.textBaseline = 'middle';
   fit(g, UI.site, 140, w - 90); g.fillText(UI.site, w / 2, h / 2 + 6); });
-mesh(new THREE.PlaneGeometry(30, 3.75), new THREE.MeshStandardMaterial({ map: hallSignTex, roughness: 0.6 }), { pos: [0, 7.6, HALLS.z0 - 5.95], cast: false });
+mesh(new THREE.PlaneGeometry(25, 3.125), new THREE.MeshStandardMaterial({ map: hallSignTex, roughness: 0.6 }), { pos: [-6.5, 7.6, HALLS.z0 - 5.95], cast: false });   // v2: left of centre, so shot 1 holds all of it
 
 // ------------------------------------------------------------------ trees: spruce, and aspen (the squirrels' tree: they nest in old aspens)
 const spruceGeo = mergeGeometries([0, 1, 2].map((i) => new THREE.ConeGeometry(2.1 - i * 0.55, 3.0, 7).translate(0, 1.8 + i * 1.7, 0)).concat([new THREE.CylinderGeometry(0.22, 0.28, 1.4, 6).translate(0, 0.7, 0)]).map((g) => g.toNonIndexed()));
@@ -402,7 +402,11 @@ const EV = {
   launch1: T.s1 + GL1.t0, land1: T.s1 + GL1.t0 + GL1.dur, barrier: T.s3, gate: T.s3 + 0.2,
   ...Object.fromEntries(CONVOY.flatMap((v, i) => [['brake' + i, +(T.s3 + v.tb).toFixed(3)], ['stop' + i, +(T.s3 + v.ts).toFixed(3)]])),
   rest: T.s4 + 0.7, launch2: T.s5 + GL2.t0, land2: T.s5 + GL2.t0 + GL2.dur, rise: T.s5 + 2.4,
+  routeIn: T.s2 + 0.3, routeEnd: T.s2 + 1.9, boomsDown: T.s3 + 1.4, bellEnd: T.s4 + 1.2, placard: T.s4,
 };
+EV.restEnd = EV.rest + 1.6;
+// when the route's line reaches the red stretch over the gap (drawRoute eases xMax out: 1 − (1 − k)³)
+EV.routeRed = +(EV.routeIn + (1 - Math.cbrt(1 - (-GAP - 0.6 - SITE.x0) / (SITE.x1 - SITE.x0))) * (EV.routeEnd - EV.routeIn)).toFixed(3);
 function setWorld(t) {
   const d = DUSK(t);
   sun.intensity = lerp(2.3, 0.75, d); sun.color.copy(C3('#ffdcae')).lerp(C3('#ff8a6a'), d);
@@ -410,7 +414,7 @@ function setWorld(t) {
   SKY.material.color.copy(C3('#ffffff')).lerp(C3('#f0a8c0'), d * 0.8); CLOUDS.forEach((c) => c.material.color.copy(C3('#ffffff')).lerp(C3('#f4b0b8'), d));
   scene.environmentIntensity = lerp(0.55, 0.3, d); scene.fog.color.copy(fogA).lerp(fogB, d);
   winMat.emissiveIntensity = lerp(0.3, 2.4, d);
-  squirrelAt(t);
+  squirrelAt(t); SQ.scale.setScalar(t >= T.s2 && t < T.s3 ? 2.6 : SQ_SCALE);
   // the barrier arrives with the request (shot 3): lamps alternate, booms come down, WORK PAUSED hangs from shot 4
   BARRIER.visible = t >= T.s3;
   const ug = t - T.s3, on = t >= EV.gate, ph = Math.floor((t - EV.gate) * 3.2) % 2, quiet = t >= T.s4 + 1.2;
@@ -428,7 +432,7 @@ const sqPos = new THREE.Vector3();
 const SHOT = [
   { // 1 · from above and to the right: both aspens, the squirrel's back as it glides down across the gap, the halls behind
     t0: () => T.s1, wide: false, focus: () => SQ.position.clone(),
-    cam(lt, d) { const k = ease.io(lt / d); return { pos: V(lerp3([3.6, 14.0, CZ + 31], [3.0, 13.2, CZ + 28], k)), at: V(lerp3([-0.6, 4.4, CZ + 2.4], [-0.4, 4.2, CZ + 2.4], k)), fov: 40 }; } },
+    cam(lt, d) { const k = ease.io(lt / d); return { pos: V(lerp3([3.6, 14.0, CZ + 31], [3.0, 13.2, CZ + 28], k)), at: V(lerp3([-0.6, 8.6, CZ + 2.4], [-0.4, 8.4, CZ + 2.4], k)), fov: 40 }; } },   // v2: aimed higher, so the hall sign sits under the caption, not behind it
   { // 2 · high and wide: the strip with its gap, bare ground both sides, the halls above, the machines rolling in below
     t0: () => T.s2, wide: true, focus: () => V([0, 0, CZ]),
     cam(lt, d) { const k = ease.io(lt / d); return { pos: V(lerp3([8, 66, 60], [6, 60, 52], k)), at: V(lerp3([0, 0, -29], [0, 0, -31], k)), fov: 40 }; } },
@@ -440,7 +444,7 @@ const SHOT = [
     cam(lt, d) { const k = ease.io(lt / d); return { pos: V(lerp3([-5.2, 4.6, CZ - 4.5], [-4.6, 4.2, CZ - 3.0], k)), at: V(lerp3([-0.4, 1.1, BARRIER_Z + 6], [-0.2, 1.0, BARRIER_Z + 6.5], k)), fov: 40 }; } },
   { // 5 · low in the empty lane, the stopped digger cropped at the right edge: the squirrel glides back across, then up and back
     t0: () => T.s5, wide: true, focus: (t) => t < EV.rise ? SQ.position.clone() : V(lerp3([0, 4, CZ], [-4, 0, -30], smooth((t - EV.rise) / 1.5))),
-    cam(lt, d) { const k = ease.io((lt - 2.4) / (d - 2.5)); return { pos: V(lerp3([-9.5, 2.6, BARRIER_Z + 20], [16, 44, 54], k)), at: V(lerp3([1.0, 5.4, CZ + 2.4], [-4, 0, -40], k)), fov: lerp(40, 40, k) }; } },
+    cam(lt, d) { const k = ease.io((lt - 2.4) / (d - 2.5)); return { pos: V(lerp3([-9.5, 2.6, BARRIER_Z + 20], [16, 44, 54], k)), at: V(lerp3([1.0, 5.4, CZ + 2.4], [-4, 0, -55], k)), fov: lerp(40, 40, k) }; } },   // v2: ends on the halls under the caption, the far land behind it
 ];
 const shotAt = (t) => { for (let i = SHOT.length - 1; i >= 0; i--) if (t >= SHOT[i].t0()) return i; return 0; };
 const SHOT_END = (i) => i + 1 < SHOT.length ? SHOT[i + 1].t0() : T.end;
@@ -455,7 +459,22 @@ function tag(g, text, a) {
   g.fillStyle = '#1e1c1a'; g.textBaseline = 'middle'; g.fillText(text, x + 22, y + 32); g.restore();
 }
 
-const tmp = new THREE.Vector3();
+const tmp = new THREE.Vector3(), rp = new THREE.Vector3();
+/** v2 · shot 2: the squirrels' route, drawn over the picture along the strip (mid-canopy): white dashes that run in from the
+ *  left, and RED, blinking, where the haul track cuts the strip. A diagram over the toy, sharp where the tilt-shift is soft. */
+function drawRoute(g, t) {
+  if (t < T.s2 || t >= T.s3) return;
+  const k = clamp((t - EV.routeIn) / (EV.routeEnd - EV.routeIn)), a = clamp((T.s3 - 0.12 - t) / 0.3), xMax = lerp(SITE.x0, SITE.x1, ease.out(k));
+  const pts = []; for (let x = SITE.x0; x <= SITE.x1; x += 0.5) { rp.set(x, 5.6, CZ).project(camera); pts.push([(rp.x + 1) / 2 * W, (1 - rp.y) / 2 * H, x]); }
+  const seg = (cond, color, dash) => { g.beginPath(); let on = false;
+    for (const [px, py, x] of pts) { if (x > xMax || !cond(x)) { on = false; continue; } if (!on) { g.moveTo(px, py); on = true; } else g.lineTo(px, py); }
+    g.setLineDash(dash); g.strokeStyle = 'rgba(25,20,18,.6)'; g.lineWidth = 17; g.stroke(); g.strokeStyle = color; g.lineWidth = 9; g.stroke(); };
+  g.save(); g.globalAlpha = a; g.lineCap = 'round';
+  seg((x) => Math.abs(x) > GAP + 0.6, '#ffffff', [30, 22]);
+  const blink = t < EV.routeEnd + 0.3 || Math.floor((t - EV.routeEnd) * 3.5) % 2 === 0;
+  if (blink) seg((x) => Math.abs(x) <= GAP + 0.6, '#ff3b2a', [12, 14]);
+  g.restore();
+}
 function frame(t, captions = true) {
   setWorld(t);
   const i = shotAt(t), S = SHOT[i], t0 = S.t0(), d = SHOT_END(i) - t0;
@@ -467,12 +486,14 @@ function frame(t, captions = true) {
     threshold: 0.95, knee: 0.45, bloomA: 0.4, bloomB: 0.35, exposure: lerp(1.04, 1.0, dk), vignette: 0.3, grain: 0.022, seed: Math.floor(t * 24),
     sat: 1.16, contrast: 1.06, toe: 0.0, lift: [0.012, 0.008, 0.034], gain: [1.03, 1.0, 0.97] });
   g2d.setTransform(1, 0, 0, 1, 0, 0); g2d.drawImage(renderer.domElement, 0, 0);
+  drawRoute(g2d, t);
   CAP.bug(g2d);
   const tg = (a0, a1) => clamp((t - a0) / 0.3) * clamp((a1 - t) / 0.3);
   tag(g2d, UI.tag1, tg(T.s1 + 2.6, T.s2 - 0.1));
   tag(g2d, UI.tag2, tg(T.s2 + 1.6, T.s3 - 0.1));
   tag(g2d, UI.tag3, tg(T.s3 + 2.2, T.s4 - 0.1));
-  tag(g2d, UI.tag4, tg(T.s4 + 1.2, T.s5 - 0.1));
+  tag(g2d, UI.tag4, tg(T.s4 + 0.9, T.s5 - 0.1));        // v2: Google's side (it says a 30 m corridor is kept)
+  tag(g2d, UI.tag4b, tg(T.s5 + 0.3, T.s5 + 2.25));      // v2: LVV's urgent inquiry
   tag(g2d, UI.tag5, tg(T.s5 + 2.4, T.end + 1));
   if (captions) CAP.draw(g2d, P, t, { busy: BUSY || {} });
   return out;
