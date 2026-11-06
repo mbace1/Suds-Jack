@@ -21,12 +21,12 @@
 // runs down in its enemy loop — the same sequence 1.x runs, with the seam in
 // a different place. test/director.mjs holds all of it in lockstep with 1.x's
 // own loop source.
-import { TUNING } from '../../tuning.js?v=117';
-import * as worlds from '../worlds.js?v=117';
-import * as challenge from '../challenge.js?v=117';
-import { makeRng } from '../rng.js?v=117';
-import * as bossfight from '../bossfight.js?v=117';
-import * as floorshift from '../floorshift.js?v=117';
+import { TUNING } from '../../tuning.js?v=118';
+import * as worlds from '../worlds.js?v=118';
+import * as challenge from '../challenge.js?v=118';
+import { makeRng } from '../rng.js?v=118';
+import * as bossfight from '../bossfight.js?v=118';
+import * as floorshift from '../floorshift.js?v=118';
 
 const T = TUNING, W = T.waves, TAU = Math.PI * 2;
 
@@ -281,12 +281,17 @@ export function armCurtain(wave, kind, rng) {
 function startWave(w, d, carry) {
   d.wave++;
   w.wave = d.wave;
+  // v118: a DAILY run (w.fixedWaves) draws each wave — its plan, its layout, its curtain, its sizes — from dice of
+  // its own, keyed by the run's seed and the wave, so the waves are the same for everyone who plays the day: on the
+  // run's one stream, every shot a body fired before (and so how the player played) would move them
+  const wr = w.fixedWaves ? (d.wr = waveRng(w, d.wave)) : w.rng;
+  if (w.fixedWaves) w.rngSize = waveRng(w, d.wave, SIZE_SALT);
   // the world's own boss only in a run that has one (the 1.x oracle's has no w.world)
   const bossWorld = worlds.on(w) && w.world ? w.world : 0;
   // a moving-floor wave holds fewer bodies on the smaller floor it leaves (v59, the shift's
   // `room`); a world's own `room` is a trial knob for scripts/curve.mjs --rooms, unset (1)
   const shift = floorshift.shiftFor(w, d.wave), own = worlds.on(w) ? T.worlds.list[w.world - 1]?.room ?? 1 : 1;
-  const plan = schedule(d.wave, w.rng, w.seed, worlds.on(w) ? w.world : 1, bossWorld, pressure(w, d.wave), own * (shift?.room ?? 1));
+  const plan = schedule(d.wave, wr, w.seed, worlds.on(w) ? w.world : 1, bossWorld, pressure(w, d.wave), own * (shift?.room ?? 1));
   d.kind = plan.kind; d.plan = plan;
   // v105: a GIANT (size class 5) is a wave's event, from world `giant.from` on: rolled once a wave, never on a
   // boss wave, from the sizes' own stream (so the waves draw as they did)
@@ -297,11 +302,11 @@ function startWave(w, d, carry) {
   // a carry removes the dead and keeps the living (main.js:7201-7202), so no
   // death still playing can hold the next clear
   d.dying = 0; d.present = carry && aliveCount(w) > 0;
-  d.queue = layout(plan, w.rng);
+  d.queue = layout(plan, wr);
   // v105: every plain body's SIZE CLASS, drawn for the whole wave as it is laid out, and the mob THINNED to pay
   // for its big ones — fewer, bigger bodies, never a full wave with tanks on top
   if (worlds.on(w)) sizeWave(w, d);
-  Object.assign(d.curtain, armCurtain(d.wave, plan.kind, w.rng), { warnT: 0, cross: null });
+  Object.assign(d.curtain, armCurtain(d.wave, plan.kind, wr), { warnT: 0, cross: null });
 
   const B = W.banner[plan.kind] ?? W.banner.normal, K = W.calls;
   const call = d.wave >= K.from ? (plan.kind === 'curtain' ? 'curtain' : K.archs[(d.wave + w.seed) % K.archs.length]) : null;
@@ -373,7 +378,10 @@ function pump(w, d, dt, api) {
 }
 
 // v105: the sizes' own random stream, so drawing a size never moves the waves' draws
-const sizeRng = (w) => (w.rngSize ??= makeRng((w.seed ^ 0x6f1d3a27) >>> 0));
+const SIZE_SALT = 0x6f1d3a27;
+const sizeRng = (w) => (w.rngSize ??= makeRng((w.seed ^ SIZE_SALT) >>> 0));
+// v118: a wave's own dice in a DAILY run, from the run's seed and the wave alone
+const waveRng = (w, wave, salt = 0) => makeRng((Math.imul(((w.seed ^ salt) >>> 0) + 0x632be5ab, 0x9e3779b1) ^ Math.imul(wave + 1, 0x85ebca6b)) >>> 0);
 // A wave's sizes, where a later world's share of HEAVY bodies was: drawn from the sizes' own stream, so the
 // waves themselves draw exactly as they did (world 1 as 1.x's). The world's HEAVY share becomes its brutes and
 // tanks; a mite is only ever a body that does not fire. Then the bill: a class-c body costs `cost[c]` ordinary
@@ -450,7 +458,7 @@ function drawSize(w, d, kind) {
 
 // fireArenaCurtain (main.js:2645-2670): a wall from one side, marching across
 function fireCurtain(w, api, style, forceSide) {
-  const A = W.arenaCurtain, rng = w.rng;
+  const A = W.arenaCurtain, rng = (w.fixedWaves && w.dir?.wr) || w.rng;   // v118: a DAILY wave's curtain on that wave's dice
   const side = forceSide ?? Math.floor(rng.next() * 4);
   const horiz = side === 1 || side === 3;            // from a ±z wall
   const span = horiz ? w.hx : w.hz;

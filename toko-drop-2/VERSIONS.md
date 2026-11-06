@@ -19,6 +19,18 @@
     Never `--no-verify`.
 -->
 
+## v118 — 2026-11-06
+**DAILY: one run a day, the same waves for everyone — its own best and tries, and a line to share**
+- On the title, above MENU: DAILY, with the day (UTC) and your best today. It is ARCADE's run from world 1 — HARDCADE's with the HARD switch on — on the day's seed (sim/rng.js `dailySeed`, written for DIRECTION's itch plan and used by nothing until now), as often as you like.
+- THE SAME WAVES FOR EVERYONE. An ordinary run draws everything from one stream, so every shot a body fired before moves what the next wave is. A daily run draws each wave — its plan, where its bodies come from, their sizes and formations, its curtain — from dice of its own, keyed by the day and the wave (sim/director/arcade.js `waveRng`), so two players who play the day differently meet the same waves; what the bodies do once they land still answers to how you play. Ordinary runs draw exactly as before.
+- Its results say DAILY and the day, TODAY'S BEST and TRIES, and SHARE hands the day's line to a message (the clipboard, else the share sheet, else a file, as PLAY RECORD does): `TOKO DROP · DAILY 2026-11-06` / `23,456 — world 5 · try 3` / the game's link. AGAIN is the day again.
+- A daily run counts for the mode's best too (it is a whole run from world 1). It is never kept at a world's door for CONTINUE, and it leaves a kept run alone. RECORDS shows today's daily bests and marks a daily in the last runs; the play record marks one with its day (`dy`). Thirty days of daily bests are kept.
+- On a phone held sideways, CONTINUE, FROM WORLD, DAILY and MENU share the right column without a scroll. In English, Finnish and Japanese.
+- Tests: test/daily.mjs (one seed a UTC day; two players who play a daily differently meet the same seven waves, where an ordinary run's come apart: the control), in the gate; the smoke starts a DAILY from the title, finishes it, reads its try, its best and SHARE, and plays AGAIN. The smoke's count of floating numbers (a nugget and a ×2 make two) clears the run's own first: a pickup the run had taken a moment before was still floating its number, and the count read three.
+- Cache tokens `?v=117` → `?v=118`; HUD label → `2.0 · v118`
+
+---
+
 ## v117 — 2026-11-04
 **Every level played by bots: corpse fire now passes through a heart (on HARD, CLOT could not be won), and the bots read the warning lines a person reads**
 - THE BOT TEST (owner, 2026-11-04: "Test all the levels with bots"): the soak (972 runs over every mode and world: nothing broke, 66 bodies and 275 bullets on the floor at the most), the arcade world by world in both modes (eight bots, 24 seeds a world), all 36 campaign rooms on both routes (three bots, 24 seeds a room), and the real game in a browser through every world and every room on both routes (every world in ARCADE and HARDCADE and every room on both routes, the game's own bot playing: all 90 reached and drawing, no page error, no fault box).

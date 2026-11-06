@@ -157,6 +157,9 @@
     /* v80: CONTINUE, a kept run's door under the start row: between the big buttons and MENU in weight */
     #menu .item.cont { display: block; width: max-content; max-width: 100%; box-sizing: border-box; min-width: 240px; min-height: 48px; margin: 10px auto 0; padding: 9px 24px; text-align: center; border-color: rgba(255,255,255,.45); }
     #menu .item.cont .label { font-size: 15px; letter-spacing: .22em; }
+    /* v118: DAILY, a CONTINUE-weight button in the day's amber */
+    #menu .item.cont.daily { border-color: rgba(240,192,64,.5); }
+    #menu .item.cont.daily .label { color: var(--amber); }
     /* a phone held upright: the stack is the width of the panel, so the big buttons sit a little lower and tighter */
     @media (max-width: 560px) {
       #menu .stack .item.big { min-height: 76px; padding: 12px 14px; }
@@ -193,7 +196,8 @@
       #menu > .logo, #menu > .hint, #menu > h2, #menu > .mode, #menu > .stats, #menu > .world, #menu > .played, #menu > .gelcard, #menu > .grid, #menu > .route-wrap, #menu > .goal, #menu > canvas.chart, #menu > .teaches, #menu > .skills, #menu > .tiers, #menu > .best, #menu > .hardtag { grid-column: 1 / -1; }
       /* v89: on a phone held sideways the stack takes the left column and CONTINUE, FROM WORLD and MENU the right, so nothing scrolls */
       #menu > .stack { grid-column: 1; grid-row: 2 / span 4; }
-      #menu > .item.small, #menu > .item.cont { grid-column: 2; justify-self: stretch; width: auto; min-width: 0; margin: 6px 0 0; }
+      #menu > .item.small, #menu > .item.cont { grid-column: 2; justify-self: stretch; width: auto; min-width: 0; margin: 4px 0 0; }
+      #menu > .item.cont { padding-top: 7px; padding-bottom: 7px; }   /* v118: CONTINUE, FROM WORLD, DAILY and MENU fit the column without a scroll */
       #menu > .item.small { align-self: start; }
       #menu > .hint { grid-row: 6; }
       #menu .stack .item.big { min-height: 64px; padding: 10px 14px; margin: 4px 0; }
@@ -257,7 +261,7 @@
   <div id="card" hidden><div class="t"></div><div class="s"></div></div>
   <div id="vignette" aria-hidden="true"></div>
   <div id="menu" class="menu" hidden></div>
-  <div id="ver">2.0 · v117<span id="backend"></span></div>
+  <div id="ver">2.0 · v118<span id="backend"></span></div>
   <pre id="fault" hidden></pre>
   <script>
     // A failure must be visible on the phone: there is no console there.
@@ -366,6 +370,6 @@
       });
     })();
   </script>
-  <script type="module" src="js/main.js?v=117"></script>
+  <script type="module" src="js/main.js?v=118"></script>
 </body>
 </html>

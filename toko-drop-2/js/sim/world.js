@@ -14,24 +14,24 @@
 // moves, then everything is tested, against post-move positions.
 //
 // Modes: 'arcade', 'hardcade' (corpses fire back) and 'survival'.
-import { TUNING } from '../tuning.js?v=117';
-import { press, pressReset } from './press.js?v=117';
-import { makeRng } from './rng.js?v=117';
-import { BEHAVIOUR } from './species/index.js?v=117';
-import { DIRECTORS } from './director/index.js?v=117';
-import * as fire from './fire.js?v=117';
-import { makeHero, heroStep, applyPull, hurtHero, invincible } from './hero.js?v=117';
-import { swarmForces, resolveCrowd } from './crowd.js?v=117';
-import { revengeColor } from './color.js?v=117';
-import * as pickups from './pickups.js?v=117';
-import * as worlds from './worlds.js?v=117';
-import * as reshape from './reshape.js?v=117';
-import { Arena, levelShape, levelMoves, levelEnvelope, KIND } from './shape.js?v=117';
-import * as rules from './rules.js?v=117';
-import * as heat from './heat.js?v=117';
-import * as formation from './formation.js?v=117';
-import * as posts from './posts.js?v=117';
-import * as slam from './slam.js?v=117';
+import { TUNING } from '../tuning.js?v=118';
+import { press, pressReset } from './press.js?v=118';
+import { makeRng } from './rng.js?v=118';
+import { BEHAVIOUR } from './species/index.js?v=118';
+import { DIRECTORS } from './director/index.js?v=118';
+import * as fire from './fire.js?v=118';
+import { makeHero, heroStep, applyPull, hurtHero, invincible } from './hero.js?v=118';
+import { swarmForces, resolveCrowd } from './crowd.js?v=118';
+import { revengeColor } from './color.js?v=118';
+import * as pickups from './pickups.js?v=118';
+import * as worlds from './worlds.js?v=118';
+import * as reshape from './reshape.js?v=118';
+import { Arena, levelShape, levelMoves, levelEnvelope, KIND } from './shape.js?v=118';
+import * as rules from './rules.js?v=118';
+import * as heat from './heat.js?v=118';
+import * as formation from './formation.js?v=118';
+import * as posts from './posts.js?v=118';
+import * as slam from './slam.js?v=118';
 
 const T = TUNING;
 
@@ -46,7 +46,7 @@ const T = TUNING;
 // `room` (mode 'campaign', sim/director/campaign.js) is an authored level:
 // its region sets the walls — its box in w.hx / w.hz, and when it is not a
 // rectangle, the shape itself in `w.region`, which every wall clamps to too.
-export function createWorld({ seed = 1, mode = 'arcade', arena = T.arena.landscape, shape = 'landscape', world = 1, dashMode = 'pass', hpMult = 1, gateUsed = false, room = null } = {}) {
+export function createWorld({ seed = 1, mode = 'arcade', arena = T.arena.landscape, shape = 'landscape', world = 1, dashMode = 'pass', hpMult = 1, gateUsed = false, room = null, fixedWaves = false } = {}) {
   if (world > 1) arena = worlds.arenaFor(world, shape);
   let region = null;
   if (room) {
@@ -64,6 +64,7 @@ export function createWorld({ seed = 1, mode = 'arcade', arena = T.arena.landsca
     heroBullets: 0, gelBullets: 0, refused: 0,
     nextId: 1, score: 0, streak: 0, kills: 0, grazes: 0, nextMilestone: T.score.milestone, killedBy: null,
     wave: 1, dir: null, room, region, hits: 0,
+    fixedWaves: !!fixedWaves,   // v118: DAILY — every wave drawn from dice of its own (sim/director/arcade.js waveRng)
   };
   // the hero starts at the middle, or where a room's region has room for it
   if (region && !region.contains(0, 0, T.hero.radius)) { const p = region.clamp(0, 0, T.hero.radius + 0.05, { x: 0, z: 0 }); w.hero.x = w.hero.px = p.x; w.hero.z = w.hero.pz = p.z; }

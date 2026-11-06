@@ -7,34 +7,35 @@
 // The rules live in sim/ and run on a fixed step; this file feeds them input,
 // hands their events to the view and the sound, and draws in between steps.
 import * as THREE from 'three/webgpu';
-import { TUNING } from './tuning.js?v=117';
-import { buildFloor } from './render/floor.js?v=117';
-import { fitCamera, screenToWorld, screenDown } from './render/view.js?v=117';
-import * as worldsSim from './sim/worlds.js?v=117';
-import { shapeAt as shiftShape } from './sim/floorshift.js?v=117';
-import * as reshapeSim from './sim/reshape.js?v=117';
-import { Scenery } from './render/scenery.js?v=117';
-import { DRIFT } from './render/kit.js?v=117';
-import { Transit } from './render/transit.js?v=117';
-import { Splats } from './render/splats.js?v=117';
-import { Actors } from './render/actors.js?v=117';
-import { GEL_TIME } from './render/gel.js?v=117';
-import { studioEnvironment } from './render/env.js?v=117';
-import { Specimen } from './render/specimen.js?v=117';
-import { createWorld, step, api as simApi } from './sim/world.js?v=117';
-import { stage as stagePk } from './sim/pickups.js?v=117';
-import { Input } from './input.js?v=117';
-import { UI, t, timeText, LANGS, getLang, setLang, goalText, bossName } from './ui.js?v=117';
-import { Announcer } from './announcer.js?v=117';
-import { rooms as campaignRooms, isOpen as roomOpen, better as betterGrade } from './sim/director/campaign.js?v=117';
-import { levelShape, slots as regionSlots } from './sim/shape.js?v=117';
-import { Sound } from './audio.js?v=117';
-import { Music, worldWant, cueFor, renderMusicWav } from './music.js?v=117';
-import { Intro, CUES as INTRO } from './intro/intro.js?v=117';
-import { scheduleIntroSfx, renderIntroSfxWav } from './intro/sfx.js?v=117';
-import { Readout } from './readout.js?v=117';
-import { Meter, device, Quality } from './meter.js?v=117';
-import * as record from './record.js?v=117';
+import { TUNING } from './tuning.js?v=118';
+import { buildFloor } from './render/floor.js?v=118';
+import { fitCamera, screenToWorld, screenDown } from './render/view.js?v=118';
+import * as worldsSim from './sim/worlds.js?v=118';
+import { shapeAt as shiftShape } from './sim/floorshift.js?v=118';
+import * as reshapeSim from './sim/reshape.js?v=118';
+import { Scenery } from './render/scenery.js?v=118';
+import { DRIFT } from './render/kit.js?v=118';
+import { Transit } from './render/transit.js?v=118';
+import { Splats } from './render/splats.js?v=118';
+import { Actors } from './render/actors.js?v=118';
+import { GEL_TIME } from './render/gel.js?v=118';
+import { studioEnvironment } from './render/env.js?v=118';
+import { Specimen } from './render/specimen.js?v=118';
+import { createWorld, step, api as simApi } from './sim/world.js?v=118';
+import { stage as stagePk } from './sim/pickups.js?v=118';
+import { Input } from './input.js?v=118';
+import { UI, t, timeText, LANGS, getLang, setLang, goalText, bossName } from './ui.js?v=118';
+import { Announcer } from './announcer.js?v=118';
+import { rooms as campaignRooms, isOpen as roomOpen, better as betterGrade } from './sim/director/campaign.js?v=118';
+import { levelShape, slots as regionSlots } from './sim/shape.js?v=118';
+import { Sound } from './audio.js?v=118';
+import { Music, worldWant, cueFor, renderMusicWav } from './music.js?v=118';
+import { Intro, CUES as INTRO } from './intro/intro.js?v=118';
+import { scheduleIntroSfx, renderIntroSfxWav } from './intro/sfx.js?v=118';
+import { Readout } from './readout.js?v=118';
+import { Meter, device, Quality } from './meter.js?v=118';
+import * as record from './record.js?v=118';
+import { dailySeed } from './sim/rng.js?v=118';
 
 const T = TUNING;
 const params = new URLSearchParams(location.search);
@@ -358,32 +359,32 @@ function copyByCommand(text) {
   t.remove();
   return ok;
 }
+// text handed to a message: the clipboard first, else the phone's share sheet, else a file; what happened, as
+// the string key the button says it with (null: the share sheet was closed)
+async function handOver(text, title, file) {
+  let copied = false;
+  try { await navigator.clipboard.writeText(text); copied = true; } catch { copied = copyByCommand(text); }
+  if (copied) return 'recordCopied';
+  try { await navigator.share({ title, text }); return 'recordShared'; }
+  catch (e) {
+    if (e?.name === 'AbortError') return null;   // the share sheet was closed
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([text], { type: 'text/plain' })); a.download = file;
+    document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    return 'recordSaved';
+  }
+}
 async function shareRecord() {
   const list = record.read(store);
   if (!list.length) { recordSaid = 'recordEmpty'; refreshMenu(); return; }
-  const text = record.pack(list, new Date());
-  let copied = false;
-  try { await navigator.clipboard.writeText(text); copied = true; } catch { copied = copyByCommand(text); }
-  if (copied) recordSaid = 'recordCopied';
-  else {
-    try { await navigator.share({ title: 'Toko Drop 2.0 · play record', text }); recordSaid = 'recordShared'; }
-    catch (e) {
-      if (e?.name === 'AbortError') recordSaid = null;   // the share sheet was closed
-      else {
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(new Blob([text], { type: 'text/plain' })); a.download = 'toko-drop-play-record.txt';
-        document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
-        recordSaid = 'recordSaved';
-      }
-    }
-  }
+  recordSaid = await handOver(record.pack(list, new Date()), 'Toko Drop 2.0 · play record', 'toko-drop-play-record.txt');
   refreshMenu();
 }
 // how this attempt was played, for its entry: the input, which way up, and
 // (v63, js/meter.js) how the phone ran it
 const meter = new Meter();
 const recordHow = () => ({
-  input: input.source, screen: arenaName, date: new Date(), frames: meter.summary(), letGos: input.letGos, cont: continuedFrom, from: startedAt > 1 ? startedAt : 0,
+  input: input.source, screen: arenaName, date: new Date(), frames: meter.summary(), letGos: input.letGos, cont: continuedFrom, from: startedAt > 1 ? startedAt : 0, daily: daily?.day ?? null,
   device: device({ ua: navigator.userAgent, touchPoints: navigator.maxTouchPoints, width: renderer.domElement.width, height: renderer.domElement.height,
     ratio: renderer.getPixelRatio(), backend, gels: actors.gels, goo: gooOn(), q: autoQ() ? quality.share : 1 }),
 });
@@ -397,11 +398,30 @@ const CONT_KEY = 'toko2.continue';
 let continuedFrom = 0;
 const contSnap = () => { try { const s = JSON.parse(store.str(CONT_KEY) || 'null'); return s && s.world > 1 && MODES.includes(s.mode) ? s : null; } catch { return null; } };
 function saveContinue() {
-  if (!world || world.room || world.over || !(mode === 'arcade' || mode === 'hardcade')) return;
+  if (!world || world.room || world.over || daily || !(mode === 'arcade' || mode === 'hardcade')) return;   // v118: a DAILY is never kept
   const h = world.hero;
   store.set(CONT_KEY, JSON.stringify({ mode, world: world.world, score: world.score, kills: world.kills, heat: world.heat || 0, lives: h.lives, weapon: h.weapon ? { ...h.weapon } : null, dashLevel: h.dashLevel || 0, when: Date.now(), v: T.version ?? null }));
 }
 const clearContinue = () => { try { localStorage.removeItem(CONT_KEY); } catch { /* private mode */ } };
+// v118: DAILY — the day's seed (sim/rng.js dailySeed: the UTC day) for everyone, ARCADE's rules (HARDCADE's with
+// the title's HARD switch on), from world 1, every wave drawn from dice of its own so that how a player played
+// cannot move what comes next (sim/director/arcade.js waveRng). Its best and tries are kept a day at a time
+// (`toko2.daily.<mode>.<day>`, `T.daily.keep` days); a daily run is never kept at a world's door (CONTINUE) and
+// never clears the run that is — it is played through or not at all, as often as you like
+const dayOf = (date = new Date()) => date.toISOString().slice(0, 10);
+const dailyKey = (m, day) => `toko2.daily.${m}.${day}`;
+const dailyGet = (m, day = dayOf()) => { try { const v = JSON.parse(store.str(dailyKey(m, day)) || 'null'); return { best: v?.best || 0, tries: v?.tries || 0 }; } catch { return { best: 0, tries: 0 }; } };
+let daily = null;   // the day this run is the DAILY of, { day, seed }, or null
+(function pruneDailies() {
+  try {
+    const keep = new Set(Array.from({ length: T.daily.keep }, (_, i) => dayOf(new Date(Date.now() - i * 864e5))));
+    for (let i = localStorage.length - 1; i >= 0; i--) { const k = localStorage.key(i); if (k?.startsWith('toko2.daily.') && !keep.has(k.slice(-10))) localStorage.removeItem(k); }
+  } catch { /* private mode */ }
+})();
+// the line SHARE hands over: the day, the score, how far, which try, and where to play it
+function dailyText(day, m, w, tries) {
+  return `TOKO DROP · DAILY ${day}${m === 'hardcade' ? ' · HARD' : ''}\n${w.score.toLocaleString('en-US')} — ${w.won ? 'all nine worlds' : `world ${w.world || 1}`} · try ${tries}\n${T.daily.url}`;
+}
 // v87 (the owner's fourth QoL pick): RECORDS — what this phone has done, on
 // one page in OPTIONS: the bests (the real ones, and each from-world best),
 // the campaigns' rooms cleared and S grades, the last dozen rooms and runs
@@ -413,7 +433,8 @@ function recordsData() {
     const p = campaignProgress(hard), all = campaignRooms(), got = all.filter((r) => p[r.id]?.grade);
     return { played: got.length > 0, cleared: got.filter((r) => p[r.id].grade !== 'F').length, total: all.length, s: got.filter((r) => p[r.id].grade === 'S').length };
   };
-  return { best: bests(), reached: { arcade: reachedOf('arcade'), hardcade: reachedOf('hardcade') }, from, campaign: camp(false), hard: camp(true), recent: list.slice(-12).reverse(), phone: record.lastFrames(list) };
+  return { best: bests(), reached: { arcade: reachedOf('arcade'), hardcade: reachedOf('hardcade') }, from, campaign: camp(false), hard: camp(true), recent: list.slice(-12).reverse(), phone: record.lastFrames(list),
+    daily: { day: dayOf(), arcade: dailyGet('arcade'), hardcade: dailyGet('hardcade') } };   // v118
 }
 // a room or a run left from the pause menu goes in the record as a quit (js/record.js)
 function recordQuit() {
@@ -455,7 +476,11 @@ const ui = new UI({
   onHard: () => { store.set('toko2.hard', store.str('toko2.hard') === 'on' ? 'off' : 'on'); showTitle(true); },
   onResume: () => resume(),
   onPause: () => pause(),
-  onAgain: () => start(mode, { room: lastRoom }),
+  onAgain: () => start(mode, { room: lastRoom, daily: !!daily }),   // v118: AGAIN after a DAILY is the day again
+  // v118: DAILY on the title (the HARD switch makes it HARDCADE's), and SHARE on its results
+  dailyInfo: () => ({ day: dayOf(), ...dailyGet(hardOn() ? 'hardcade' : 'arcade') }),
+  onDaily: () => start(hardOn() ? 'hardcade' : 'arcade', { intro: true, daily: true }),
+  onShare: (text) => handOver(text, 'Toko Drop 2.0 · daily', 'toko-drop-daily.txt'),
   onMenu: () => { recordQuit(); toMenu(); },
   onSound: () => { sound.setVolume(sound.volume > 0 ? 0 : 1); store.set('toko2.volume', sound.volume); refreshMenu(); },
   onVolume: () => { sound.setVolume(next(VOLUMES, sound.volume)); store.set('toko2.volume', sound.volume); sound.unlock(); sound.event?.({ type: 'pickup', kind: 'score' }); refreshMenu(); },
@@ -502,9 +527,9 @@ const specimen = new Specimen(T, actors, scene.environment);
 // menu). It takes effect at run start; the menu also redraws the world left
 // behind the title in the new style. The HUD label says ' · sdf' while on.
 const GELS = ['classic', 'sdf'];
-import { STYLES } from './render/style.js?v=117';
-import { Lens } from './render/lens.js?v=117';
-import { setSceneSun } from './render/sun.js?v=117';
+import { STYLES } from './render/style.js?v=118';
+import { Lens } from './render/lens.js?v=118';
+import { setSceneSun } from './render/sun.js?v=118';
 let urlGels = GELS.includes(params.get('gels')) ? params.get('gels') : null;
 const gels = () => urlGels ?? (GELS.includes(store.str('toko2.gels')) ? store.str('toko2.gels') : 'classic');
 // The LENS switch (render/lens.js, v94): NONE or TILT-SHIFT, localStorage toko2.lens; ?lens=tilt|none for a link
@@ -588,11 +613,13 @@ function toMenu() {
   showTitle();
 }
 
-function start(m, { intro: asked = false, room = null, resume = null } = {}) {
+function start(m, { intro: asked = false, room = null, resume = null, daily: wantDaily = false } = {}) {
   debug.hold = false; debug.freeCam = false;
   mode = MODES.includes(m) ? m : 'arcade';
+  const now = new Date();
+  daily = wantDaily && !room && !resume && (mode === 'arcade' || mode === 'hardcade') ? { day: dayOf(now), seed: dailySeed(now) } : null;   // v118
   continuedFrom = resume ? resume.world : 0;
-  if (!resume && !room && (mode === 'arcade' || mode === 'hardcade')) clearContinue();   // v80: a fresh run lets the kept one go
+  if (!resume && !room && !daily && (mode === 'arcade' || mode === 'hardcade')) clearContinue();   // v80: a fresh run lets the kept one go (v118: a DAILY leaves it)
   if (mode === 'campaign' && !room) room = lastRoom;
   if (mode === 'campaign' && !room) { showCampaign(); return; }
   lastRoom = room;
@@ -602,10 +629,10 @@ function start(m, { intro: asked = false, room = null, resume = null } = {}) {
   // is not shown again (1.x's tokoDropGateUsed, main.js:5310, 11166)
   // ?world=2 or 3 starts the run in a later world (a test on the phone)
   // v80: or the kept run's door; v85: or the world the title was set to start at
-  const startWorld = Math.max(1, Math.min(T.worlds.list.length, resume ? resume.world : Number(params.get('world')) || ((mode === 'arcade' || mode === 'hardcade') && !room ? startAtOf(mode) : 1)));
+  const startWorld = daily ? 1 : Math.max(1, Math.min(T.worlds.list.length, resume ? resume.world : Number(params.get('world')) || ((mode === 'arcade' || mode === 'hardcade') && !room ? startAtOf(mode) : 1)));   // v118: a DAILY from the start
   startedAt = resume ? 1 : startWorld;   // a taken-up run is the run it was: its scores are real
   const turnRoom = arenaName === 'portrait';   // a room lies along the phone, either way up
-  world = createWorld({ seed: (Math.random() * 2 ** 32) >>> 0, mode, arena, shape: arenaName, world: mode === 'campaign' ? 1 : startWorld, dashMode: test.dash, hpMult: test.hp, gateUsed: store.num('toko2.gateUsed') === 1,
+  world = createWorld({ seed: daily ? daily.seed : (Math.random() * 2 ** 32) >>> 0, fixedWaves: !!daily, mode, arena, shape: arenaName, world: mode === 'campaign' ? 1 : startWorld, dashMode: test.dash, hpMult: test.hp, gateUsed: store.num('toko2.gateUsed') === 1,
     room: mode === 'campaign' ? { ...room, turn: turnRoom } : null });
   lost = []; meter.reset(); input.resetCounts();
   if (resume && !world.room) {   // v80: what the kept run had at that door
@@ -653,7 +680,7 @@ const campaignProgress = (hard = false) => { try { return JSON.parse(store.str(h
 let lastRoom = null;   // AGAIN replays it
 const levels = new Map();
 async function loadLevel(id) {
-  if (!levels.has(id)) levels.set(id, fetch(new URL(`../levels/${id}.json?v=117`, import.meta.url)).then((r) => { if (!r.ok) throw new Error(`levels/${id}.json ${r.status}`); return r.json(); }));
+  if (!levels.has(id)) levels.set(id, fetch(new URL(`../levels/${id}.json?v=118`, import.meta.url)).then((r) => { if (!r.ok) throw new Error(`levels/${id}.json ${r.status}`); return r.json(); }));
   return levels.get(id);
 }
 // the list the room screen draws: worlds, their rooms, open or not, best grades
@@ -762,7 +789,7 @@ document.addEventListener('visibilitychange', () => { if (document.hidden) pause
 function finish() {
   state = 'over'; input.enabled = false;
   ui.setHud(false);
-  if (!world.room) clearContinue();   // v80: a run that ended is not taken up again
+  if (!world.room && !daily) clearContinue();   // v80: a run that ended is not taken up again (v118: a DAILY never held it)
   // the play record (js/record.js, v61): every finished room and run, on this phone only
   record.add(store, record.entryFor(world, mode, lost, recordHow()), T.record.cap);
   // a room: its grade is kept; a clear goes back to the rooms, a death to the death screen
@@ -785,12 +812,19 @@ function finish() {
   // v85: a run started past world 1 keeps its best apart, per starting world
   const k = startedAt > 1 ? bestFromKey(mode, startedAt) : bestKey(mode), best = store.num(k), newBest = world.score > best;
   if (newBest) store.set(k, world.score);
+  // v118: a DAILY run counts for the day too: its best and its tries, and the line SHARE hands over
+  let dailyR = null;
+  if (daily) {
+    const was = dailyGet(mode, daily.day), tries = was.tries + 1, dbest = Math.max(was.best, world.score);
+    store.set(dailyKey(mode, daily.day), JSON.stringify({ best: dbest, tries }));
+    dailyR = { day: daily.day, best: dbest, tries, newBest: world.score > was.best, text: dailyText(daily.day, mode, world, tries) };
+  }
   ui.results({
     won: !!world.won, from: startedAt > 1 ? startedAt : 0,
     room: R ? { ...world.room, name: world.room.level.name, grade: R.grade, outcome: R.outcome, why: R.why, value: R.score } : null,
     mode, score: world.score, best: Math.max(best, world.score), newBest,
     time: timeText(world.time), ...(({ kind, name, revenge }) => ({ gotYou: name, gotYouKind: world.won ? null : kind, gotYouRevenge: revenge }))(killer(world.killedBy)),
-    kills: world.kills, grazes: world.grazes,
+    kills: world.kills, grazes: world.grazes, daily: dailyR,
   });
 }
 
@@ -982,6 +1016,7 @@ const debug = {
   loop(on) { capture.on = !on; },
   start, pause, resume, toMenu, specimen,
   finish,   // v85: a run ended now, for a check of what it leaves behind (the death beat is paced by frames, slow under a software GPU)
+  get daily() { return daily; }, dailySeed, dayOf,   // v118: the DAILY this run is, for the smoke
   quality, applyQuality, meter,   // v86: the quality step and the frame meter, for the smoke
   // ?nointro, switched at run time: the smoke turns the film back on to check it plays from the title only
   get nointro() { return introOff; }, set nointro(v) { introOff = !!v; }, room: (id) => startRoom(id), get rule() { return world?.rule ?? null; },
