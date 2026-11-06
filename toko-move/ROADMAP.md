@@ -1,5 +1,45 @@
 # Toko Move — roadmap after v2.36
 
+## Owner direction, 2026-11-06 — more art, more scenarios, a polished board
+
+*"We need to add lots more art and scenarios in these styles and the tip
+down view can use some polish. The trailer is great way to communicate
+progress."*
+
+The plan reads this as three things. First, more of the minimal-metro look:
+the iso stop, the close interiors and the flat-vector people. Second, more
+situations to put in it. Third, the board between moments ("the top down
+view") brought up to the scenes. Every step ends in a re-filmed trailer
+(`tools/film3.cjs`), because that is how progress is shown.
+
+1. **v3.8 · The board, polished.** Six changes, on Day, Night and Snow:
+   - The sea is filled. The board only stroked the coastline, so a harbour
+     read as blue tubes. The sea is now solved from the coastline, as the
+     bible's stills already do, and drawn with a shore.
+   - The real streets and the district names go under the lines.
+   - The network is quiet. The line you ride is bold and inked behind you
+     as you go.
+   - The landmarks appear on the board.
+   - The pill is bigger and carries the line number.
+   - The camera eases between hops instead of cutting.
+2. **v3.9 · Scenarios in the scene.** A card's subject appears in the scene
+   it is played in: the gull on the parcel, the lady at the crossing, the
+   tourist and the map, the busker, the choir, the inspector, the dog and
+   the rest. Each one is a flat-vector cutout in the people's style
+   (featureless faces, tapered limbs) on one layer that comes and goes with
+   its card.
+3. **v3.10 · More places.** Landmarks for more stations than today's twelve,
+   and weather on the scene: snow on the shelter roof, puddles and autumn
+   leaves.
+4. **v3.11 · More interiors.** A rush-hour car, the empty last tram and the
+   metro. Pass 3's interiors were cut from generated plates, so this step
+   needs the Nano Banana key (`GEMINI_API_KEY`), which this environment
+   does not have. Without the key, the interiors are drawn in code in pass
+   2's manner.
+
+Each step is measured, gated and deployed, and the trailer is re-filmed with
+what changed.
+
 ## Owner direction, 2026-11-02 — the card journey (v3.0)
 
 *"We need more of the new design, less of the old map with visible trams on a

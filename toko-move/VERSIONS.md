@@ -1,5 +1,53 @@
 # Toko Move — versions
 
+## v3.8 — 2026-11-06
+
+**THE BOARD, POLISHED** — step 1 of the plan for the owner's direction of
+2026-11-06 (ROADMAP.md): *"the top down view can use some polish."* Read off
+the trailer's board frames, it had three faults. Each is fixed with data the
+game already shipped and the journey never loaded.
+
+- **The sea is filled.**
+  - OpenStreetMap carries the sea as coastline, which is a line. The board
+    stroked a band along it, so a harbour read as blue tubes over paper.
+  - `js/sea.js` solves it the way the bible's stills do, as vector: ways
+    joined into chains, each chain closed along a frame walked clockwise,
+    and the islands cut out even-odd.
+  - The board fills it, draws a lighter shallows band inside the shore and
+    a hairline coast. Where the water pack ends (24.995 E) the ground fades
+    out instead of stopping on a ruled line.
+  - `test/sea.mjs` asks geography, not geometry: the South Harbour,
+    Töölönlahti and Eläintarhanlahti are water; Senaatintori, Kamppi and
+    Korkeasaari are land; no stop stands in the sea; and the sea is a sane
+    share of the extract. 17 checks.
+- **The land is no longer empty.**
+  - The real-time board's ground (`ground.js`) is now under the journey's
+    board: the real streets in the centre extract, HSL's corridors beyond
+    it, the district names spaced and quiet, and the six origami landmarks
+    at their stops.
+  - The corner mini map stays plain (`detail: false`): at 164 px, streets
+    are noise.
+- **The line you ride has weight.**
+  - While a hop plays, the network sits at half strength. The hop's line is
+    bold: solid behind the courier and faint ahead.
+  - The pill is bigger and carries the line's family number ("4", not "4H")
+    on its tail, so the courier on its nose never covers it.
+  - The drop breathes while you ride, and the board settles in as it opens
+    (none under reduced motion).
+- **Cheaper, not dearer.**
+  - Everything that holds still for a hop is drawn once into a base canvas:
+    16–28 ms under software rendering.
+  - Each frame of the hop then blits the base and draws only the line, the
+    pill and the names. Before, every frame redrew the whole board.
+- **Gates.**
+  - `test/play.cjs` reads the board's own pixels at real places across the
+    first hop's frame. On seed 1002, 30 sea points paint blue (100%) and 168
+    land points don't (97%). It also checks the board stands on the ground:
+    a solved sea, 3,731 streets and 6 landmarks.
+  - Two read-only hooks serve those checks: `__tm3.board()` and
+    `__tm3.probe(lat, lon)`.
+  - play.cjs passes 81 of 81.
+
 ## v3.7 — 2026-11-04
 
 **ACT 1 IS READY TO SHIP** — the Act 1 ship plan's last step: the ship bar run

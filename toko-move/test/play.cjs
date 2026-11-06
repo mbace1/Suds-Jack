@@ -116,7 +116,7 @@ server.listen(0, '127.0.0.1', async () => {
         runs: [...document.querySelectorAll('#mutRow .run')].map(r => ({ id: r.dataset.run, open: !r.classList.contains('locked'), lit: r.classList.contains('on') })),
         goal: document.getElementById('titleGoal').textContent, play: document.getElementById('play').textContent,
         links: ['dailyLink', 'weekLink', 'liveLink'].filter(id => { const e = document.getElementById(id); return e && !e.hidden && getComputedStyle(e).display !== 'none'; }) }));
-      ok(`the bare address is the card journey, not the real-time game (v${t.v})`, !t.classic && t.v === '3.7' && /v3\.7/.test(t.hero));
+      ok(`the bare address is the card journey, not the real-time game (v${t.v})`, !t.classic && t.v === '3.8' && /v3\.8/.test(t.hero));
       ok(`it is Act 1, in Helsinki (${await page.evaluate(() => document.getElementById('titleWhen').textContent)})`, await page.evaluate(() => /^Act 1 · Helsinki · 07:00/.test(document.getElementById('titleWhen').textContent)));
       ok(`the ladder: EASY open and lit, three locked (${t.runs.map(r => r.id + (r.open ? '' : '🔒')).join(' ')})`, t.runs.map(r => r.id).join() === 'easy,medium,hard,night' && t.runs[0].open && t.runs[0].lit && t.runs.slice(1).every(r => !r.open) && t.run === 'easy');
       ok(`the goal and the button (${t.goal} · ${t.play})`, /^Three deliveries before 08:15/.test(t.goal) && t.play === 'START SHIFT');
@@ -336,6 +336,29 @@ server.listen(0, '127.0.0.1', async () => {
       const seen = await playOut(page, { maxSteps: 60 });
       ok(`sideways, every card fits beside the scene ${seen.bad.slice(0, 2).join(' | ')}`, !seen.bad.length && seen.cards.length >= 4);
       ok('no page or network errors (sideways)', !errs.length, errs.slice(0, 3).join(' | '));
+      await ctx.close();
+    }
+    // ── the board, polished (v3.8): it stands on the ground — the sea filled
+    // where sea.js says the sea is, paper where the land is — read off the
+    // pixels at real places across the whole frame of the first hop
+    {
+      const ctx = await browser.newContext(PHONE), page = await ctx.newPage(), errs = watch(page);
+      await page.goto(`${base}/toko-move/?run=easy&seed=1002`, { waitUntil: 'load' }); await ready(page);
+      const info0 = await page.evaluate(() => window.__tm3.board());
+      ok(`the board stands on the ground: a solved sea, ${info0.streets} streets, ${info0.marks} landmarks`, info0.ground && info0.sea >= 1 && info0.islands >= 40 && info0.streets > 1000 && info0.marks >= 6);
+      await page.tap('#play');
+      for (let i = 0; i < 400; i++) { const s = await look(page); if (s.board && s.busy) break; if (!s.busy && s.buttons.length) { await page.tap('#v3panel .eventOpt[data-i="0"]').catch(() => {}); await page.waitForTimeout(250); } else await page.waitForTimeout(40); }
+      await page.waitForTimeout(150);
+      const { view, ms } = await page.evaluate(() => window.__tm3.board());
+      const { seaRings, isSea } = await import(require('url').pathToFileURL(path.join(ROOT, 'toko-move/js/sea.js')).href);
+      const water = JSON.parse(fs.readFileSync(path.join(ROOT, 'toko-move/cities/ground/helsinki-water.json'), 'utf8')), sea = seaRings(water), bb = water.boundingBox;
+      const pts = []; if (view) for (let i = 1; i < 12; i++) for (let j = 2; j < 20; j++) { const lat = view.n + (view.s - view.n) * j / 22, lon = view.w + (view.e - view.w) * i / 12;
+        if (lat > bb.s + 0.003 && lat < bb.n - 0.003 && lon > bb.w + 0.004 && lon < bb.e - 0.004) pts.push([lat, lon]); }
+      const px = await page.evaluate(p => window.__tm3.probe(p), pts), blue = c => !!c && c[2] - c[0] > 12;
+      const wet = pts.map((p, k) => [isSea(sea, p[0], p[1], water.areas), blue(px[k])]), sw = wet.filter(w => w[0]), sl = wet.filter(w => !w[0]);
+      const hitW = sw.filter(w => w[1]).length / Math.max(1, sw.length), hitL = sl.filter(w => !w[1]).length / Math.max(1, sl.length);
+      ok(`where the sea is, the board paints water (${sw.length} sea points, ${(100 * hitW).toFixed(0)}% blue; ${sl.length} land points, ${(100 * hitL).toFixed(0)}% not) · base drawn in ${ms?.toFixed(0)} ms`, sw.length >= 8 && sl.length >= 30 && hitW >= 0.85 && hitL >= 0.9);
+      ok('no page or network errors (the board)', !errs.length, errs.slice(0, 3).join(' | '));
       await ctx.close();
     }
     // ── ?classic is still the real-time game

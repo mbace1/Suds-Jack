@@ -375,6 +375,9 @@ jobs:
       - name: the journey (v3) — the network, the card grammar, the clock, the halt, the ladder's bands
         run: node toko-move/test/journey.mjs
 
+      - name: the sea (v3.8) — solved from the coastline, the harbours water, the squares land, no stop in the sea
+        run: node toko-move/test/sea.mjs
+
       - name: the sealed parcel — which offer, the notebook, its store, the Finnish
         run: node toko-move/test/sealed.mjs
 
