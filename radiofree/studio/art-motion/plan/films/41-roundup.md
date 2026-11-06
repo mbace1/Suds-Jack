@@ -117,3 +117,75 @@ sticky note was too faint, so it is now two lines (NON- / NEGOTIABLE) in darker 
 - The CLAIM folders read as yellow tiles at phone size; make them bigger and nearer.
 - The window is barely seen.
 - Add a score (bench foley: the sticker slap, the stamp thud, the note slap, a phone that does not ring).
+
+## Built 7 Nov (en): Coxon 14, On the Label
+
+**Owner, 7 Nov ~00:50:** "Approved, render it".
+
+**Files:**
+- `films/07-11-Coxon14-On-the-Label.mp4`: 25.0 s with the papercut sign-off, 27 MB.
+- `films/07-11-Coxon14-On-the-Label-loop.mp4`: 22.0 s, film only, for Reels, 40 MB.
+- Preview: `previews/07-11-RFH-On-the-Label-en.mp4`.
+- Score: `clay/roundup/score.py`.
+
+**What moved in the record (7 Nov, search summaries only):**
+- **The settlement:** no final ruling yet from Judge Boyer (Claims Journal, Global Agriculture, Settlement Insight). Tag 5
+  now reads $7.25B SETTLEMENT · RULING PENDING.
+- **Kennedy's own account**, E&E News, 5 Mar 2026: "I did know about the executive order, and I made my opinions about it
+  clear to the administration." It answers Means's allegation directly, so it is the second tag on beat 4: KENNEDY, MARCH:
+  HE KNEW OF THE ORDER. The post carries it too. HHS's generic reply is dropped from the screen for it.
+- **Not used:**
+  - A rebuttal attributed to White House aide James Blair appears only in search summaries, with no named outlet.
+  - "Told RFK Jr. not to call the president" appears only in an advocacy group's clip (MAHA Action on X).
+  - Stephen Miller replacing Susie Wiles is not mentioned or implied.
+
+**Fixes from the stills:**
+- **Pop words:** every action now lands on its caption's pop word, with times read from the caption plan:
+  - the files drop on "65,000";
+  - PREEMPTED stamps on "warning";
+  - the big stamp lands on "defense";
+  - the note slaps on "consulted".
+- **The claims read as files:** two banker's boxes labeled CLAIMS hold upright manila files with CLAIM tabs. A flat stack
+  sits in front, and three more files drop onto it.
+- **The note** now slaps onto the front of the phone, which never rings. It no longer sits under the closing caption.
+  Shot 4 looks down on the phone so the handset and dial read.
+- **The window** is gone.
+- **Shot 1** is wider, so the jug and both boxes are whole.
+- **Tags** are shortened to about 40 characters, so they set at full size.
+- **Caption 4** says "consulted", the sources' own word.
+
+**Captions (en):**
+1. [65,000] claims / allege Roundup / caused cancer.
+2. Supreme Court: / no state cancer / [warning] on it.
+3. The White House / made it a / [defense] priority.
+4. An ex-adviser / alleges RFK Jr. / wasn't [consulted].
+5. On the label: / still no / cancer [warning].
+
+**Tags:**
+1. PLAINTIFFS ALLEGE · BAYER SAYS IT'S SAFE
+2. EPA: NOT LIKELY CARCINOGENIC · IARC: PROBABLY
+3. MONSANTO v. DURNELL · 25 JUNE 2026 · 7–2
+4. ORDER OF 18 FEB 2026 · DEFENSE PRODUCTION ACT
+5. CALLEY MEANS ALLEGES · ON A PODCAST · 6 NOV
+6. KENNEDY, MARCH: HE KNEW OF THE ORDER
+7. $7.25B SETTLEMENT · RULING PENDING
+
+**Post (280 characters):** "States can't require a cancer warning on Roundup, the Supreme Court ruled (7–2). A February
+order made glyphosate a defense priority. An ex-adviser alleges RFK Jr. wasn't consulted; Kennedy said in March he knew of
+it. Bayer says it's safe, as the EPA found. Who writes the label?"
+
+**QA:**
+- **Build:** passed, 0 fail and 1 warning. The warning was the argument line at 49 words; it is cut to 33 in `copy.json`
+  after the build, and nothing on screen changes.
+- **Captions:** 665–753 px wide, all in the safe area, each shown longer than its reading time.
+- **Sound:** passes all five checks at −14.0 LUFS, −3.0 dBTP, LRA 2.2. All 15 timed cues have a sound within 40 ms.
+- **Held breath:** a −12 dB duck after the note, while the phone stays silent.
+- **Contact sheet:** checked; every beat reads.
+
+**Risks:**
+- **Search summaries only.** Open the E&E News piece and a primary report of Means's interview before posting.
+- **The settlement may be approved before this posts.** Then tag 5 and the last beat's meaning change, so re-check on
+  posting day.
+- **One person's claim.** Means's allegation comes from a single podcast. It is shown as an allegation, with Kennedy's own
+  words beside it.
+- **The NATIONAL DEFENSE PRIORITY stamp** paraphrases the order's title. Tag 3 gives the real title and the act.
