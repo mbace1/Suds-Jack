@@ -1,6 +1,6 @@
 {
   "film": "five-pins",
-  "cut": "v2 build (4 Nov, en only): caption 3 literal ('must go to district heating'), heat tag carries the rule's own qualifier: SUBSTANTIALLY INTO DISTRICT HEATING. v1 stills (3 Nov): RFH Helsinki, papercut, VIRAL cut. Helsinki's City Board adopted its data-centre siting principles on 2 Nov 2026: five possible areas, waste heat into district heating, not in the most valuable nature. Frame 0 is the papercut Helsinki map with five red pins hanging over it; they drop one by one and are named; heat runs from them along pipes into the houses; then Muhos, where the last trees fall and the site's stake goes in afterwards. Map first there, forest first here. Google named plainly (owner, 2 Nov), no logo.",
+  "cut": "v3 (6 Nov, en only; owner: \"Why are you spelling it 'centre'? Also the previous was longer and more clear\"): US spelling in every English line (center/centers), and the CITY RULE card carries the fuller wording, NO DATA CENTERS / IN HELSINKI'S / MOST VALUABLE / NATURE AREAS. fi/ja untouched. v2 build (4 Nov, en only): caption 3 literal ('must go to district heating'), heat tag carries the rule's own qualifier: SUBSTANTIALLY INTO DISTRICT HEATING. v1 stills (3 Nov): RFH Helsinki, papercut, VIRAL cut. Helsinki's City Board adopted its data-centre siting principles on 2 Nov 2026: five possible areas, waste heat into district heating, not in the most valuable nature. Frame 0 is the papercut Helsinki map with five red pins hanging over it; they drop one by one and are named; heat runs from them along pipes into the houses; then Muhos, where the last trees fall and the site's stake goes in afterwards. Map first there, forest first here. Google named plainly (owner, 2 Nov), no logo.",
   "series": "rfh",
   "captionSize": "big",
   "argument": "Helsinki decided in public where data centres may go and that their waste heat must warm homes; at Google's Muhos site, about 330 ha of forest was cleared before the assessment.",
@@ -23,7 +23,7 @@
       "until": "s2-0.3",
       "hold": "s2",
       "text": {
-        "en": "Helsinki chose / where data / centres may [go].",
+        "en": "Helsinki chose / where data / centers may [go].",
         "fi": "Helsinki päätti, / mihin saa tulla / [datakeskuksia].",
         "ja": "ヘルシンキが / データセンターの / [場所を] 決めた。"
       },
@@ -116,7 +116,7 @@
       "ja": "市の方針"
     },
     "natureBody": {
-      "en": "NO DATA CENTRES / IN THE MOST / VALUABLE / NATURE AREAS",
+      "en": "NO DATA CENTERS / IN HELSINKI'S / MOST VALUABLE / NATURE AREAS",
       "fi": "EI DATAKESKUKSIA / KAUPUNGIN / ARVOKKAIMMILLE / LUONTOALUEILLE",
       "ja": "最も価値の高い / 自然地域には / 建てない"
     },
@@ -131,7 +131,7 @@
       "ja": "GOOGLE"
     },
     "stake2": {
-      "en": "DATA CENTRE SITE",
+      "en": "DATA CENTER SITE",
       "fi": "DATAKESKUSALUE",
       "ja": "データセンター用地"
     },
@@ -165,7 +165,7 @@
       "why": "the waste-heat rule; the houses are generic, no address is meant"
     },
     "stake": {
-      "en": "a survey stake with marking tape and a cream board: GOOGLE / DATA CENTRE SITE",
+      "en": "a survey stake with marking tape and a cream board: GOOGLE / DATA CENTER SITE",
       "why": "the station's label for the Muhos site (Google named plainly, owner 2 Nov; no logo); not a photographed sign. It goes in AFTER the trees fall, which is the film's point"
     },
     "stumps": {
@@ -174,7 +174,7 @@
     }
   },
   "post": {
-    "en": "Helsinki's city board named five possible data-centre areas: Heikinlaakso, Malmi, Salmisaari, Östersundom, Myllypuro. Their waste heat must go to district heating. In Muhos, ~330 ha of forest was cleared for Google before the environmental assessment. Map first or forest first?",
+    "en": "Helsinki's city board named five possible data-center areas: Heikinlaakso, Malmi, Salmisaari, Östersundom, Myllypuro. Their waste heat must go to district heating. In Muhos, ~330 ha of forest was cleared for Google before the environmental assessment. Map first or forest first?",
     "fi": "Helsingin kaupunginhallitus nimesi viisi mahdollista datakeskusaluetta: Heikinlaakso, Malmi, Salmisaari, Östersundom, Myllypuro. Hukkalämpö on käytettävä kaukolämpöön. Muhoksella Googlen alueelta hakattiin ~330 ha metsää ennen YVA-arviointia. Ensin kartta vai ensin metsä?",
     "ja": "ヘルシンキ市参事会が、データセンターの候補地を5か所示した：ヘイキンラークソ、マルミ、サルミサーリ、エステルスンドム、ミュッリュプロ。排熱は地域暖房に使うこと。ムホスでは、Googleの用地で約330ヘクタールの森が環境影響評価の前に伐採された。地図が先か、森が先か？"
   }

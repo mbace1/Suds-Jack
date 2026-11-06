@@ -239,7 +239,7 @@
   /** v2 (owner, 6 Nov: "nature line should be longer, maybe highlighted"): the City Board's nature rule is no longer a
    *  corner tag for two seconds but a highlighted note pinned onto the sea corner of the map, the empty water below the
    *  pins. It arrives once the five pins are down and stays through the heat shot, until the cut to Muhos. */
-  const NOTE = { x: 572, y: 1046, w: 420, h: 292 };
+  const NOTE = { x: 526, y: 1044, w: 466, h: 304 };   // v3: wider, so the fuller rule sets larger
   function leaf(g, x, y, sc) {
     g.save(); g.translate(x, y); g.rotate(0.55); g.fillStyle = '#3f7a3a'; g.beginPath(); g.ellipse(0, 0, 10 * sc, 19 * sc, 0, 0, TAU); g.fill();
     g.strokeStyle = '#dcebb4'; g.lineWidth = 2.4 * sc; g.beginPath(); g.moveTo(0, -16 * sc); g.lineTo(0, 17 * sc); g.stroke(); g.restore();
@@ -247,7 +247,7 @@
   function natureNote(g, k, glow = 0) {
     if (k <= 0) return;
     const { x, y, w, h } = NOTE, cx = x + w / 2, cy = y + h / 2;
-    const head = ui('natureHead', 'CITY RULE'), body = ui('natureBody', 'NO DATA CENTRES / IN THE MOST / VALUABLE / NATURE AREAS').split('/').map((t) => t.trim());
+    const head = ui('natureHead', 'CITY RULE'), body = ui('natureBody', 'NO DATA CENTERS / IN HELSINKI\'S / MOST VALUABLE / NATURE AREAS').split('/').map((t) => t.trim());
     if (glow > 0.01) R.glow(g, cx, cy, 300, 'rgba(255,214,110,', 0.45 * glow);
     g.save(); g.globalAlpha = clamp(k * 3, 0, 1); g.translate(cx, cy); g.rotate(0.028); const sc = lerp(1.2, 1, ease.out(k)); g.scale(sc, sc);
     g.shadowColor = 'rgba(0,0,0,.55)'; g.shadowBlur = 16 * sc; g.shadowOffsetX = 8; g.shadowOffsetY = 12;
@@ -349,7 +349,7 @@
     g.fillStyle = C.flag; g.beginPath(); g.roundRect(-150, -318, 300, 130, 8); g.fill();
     g.fillStyle = 'rgba(0,0,0,.08)'; g.fillRect(-150, -214, 300, 26);
     g.fillStyle = C.ink; g.textAlign = 'center'; fitFont(g, ui('stake1', 'GOOGLE'), 64, 270, `400 $px "Anton-400", ${JP}`); g.fillText(ui('stake1', 'GOOGLE'), 0, -246);
-    fitFont(g, ui('stake2', 'DATA CENTRE SITE'), 26, 270, `$px "ArchivoBlack-400", ${JP}`); g.fillText(ui('stake2', 'DATA CENTRE SITE'), 0, -204);
+    fitFont(g, ui('stake2', 'DATA CENTER SITE'), 26, 270, `$px "ArchivoBlack-400", ${JP}`); g.fillText(ui('stake2', 'DATA CENTER SITE'), 0, -204);
   }, 8);
   function tape(c, x, y, lt) {
     const sw = Math.sin(lt * 5) * 0.15;
@@ -359,7 +359,7 @@
   }
 
   // ═════════ 4 · fpn_muhos: Muhos, the clearing: the last standing spruces fall in a front, left to right, the last one
-  //            lands on "first"; each leaves a stump. THEN the stake goes in: GOOGLE / DATA CENTRE SITE. The clipping
+  //            lands on "first"; each leaves a stump. THEN the stake goes in: GOOGLE / DATA CENTER SITE. The clipping
   //            rises on "clip": MUHOS · CLEARED BEFORE THE ASSESSMENT / ~330 ha ═════════
   SCENES.fpn_muhos = { draw(c, lt) {
     const id = 'fpn_muhos', dd = dur(id), tF = at(id, 'fall', 0.2), tFi = at(id, 'first', 1.2), tC = at(id, 'clip', dd - 2.2);

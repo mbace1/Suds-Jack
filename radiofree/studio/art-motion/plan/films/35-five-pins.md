@@ -146,3 +146,18 @@ literal one was taken.
   only), preview `previews/04-11-RFH-Five-Pins-en.mp4`, still of the note `previews/06-11-RFH-Five-Pins-nature-line.jpg`.
 - **Checks:** PASSED, 0 fail, 4 warn (the fi/ja native reads and the fi/ja `hook` sidecars, which only matter if those
   languages are posted). Sound 5/5 at −14.0 LUFS; delivered −14.0 LUFS, −3.5 dBTP.
+
+## v3, 6 Nov (en): US spelling, and the fuller rule
+
+**Owner, 6 Nov ~21:30:** "Why are you spelling it 'centre'? Also the previous was longer and more clear I think."
+
+- **US spelling** in every English line of this film: caption 1 "Helsinki chose / where data / centers may [go]."
+  (686 px), the Muhos stake DATA CENTER SITE, the props notes, and the post ("data-center areas", 278 chars). fi/ja
+  untouched. The house had no written spelling rule; British spellings were simply the default so far.
+- **The CITY RULE card carries the fuller wording proposed to the owner:** NO DATA CENTERS / IN HELSINKI'S / MOST
+  VALUABLE / NATURE AREAS. The card is wider (466 × 304, was 420 × 292) so the four lines set larger; same gold card,
+  leaf, pin, glow and timing (~6 s, through the heat shot).
+- **Files (overwritten):** `films/04-11-Doodle9-Five-Pins.mp4` (21.44 s with the sign-off), `-loop.mp4` (18.43 s),
+  preview `previews/04-11-RFH-Five-Pins-en.mp4`; still of the card `previews/06-11-RFH-Five-Pins-nature-line-v3.jpg`.
+- **Checks:** PASSED, 0 fail, 4 warn (fi/ja native reads and fi/ja hook sidecars only). Captions all ≤ 707 px, in the
+  safe area, shown longer than their reading time. Sound 5/5 at −14.0 LUFS, −4.1 dBTP.

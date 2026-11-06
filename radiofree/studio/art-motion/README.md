@@ -151,6 +151,12 @@ Still no invented quote in a real person's mouth, no invented claim attached to 
 real name, and the joke stays on the language. This is the studio's rule: the daily
 wire (`EDITORIAL.md`, enforced in `tools/generate-wire.mjs`) still runs invented names.
 
+## Spelling: US English (owner, 2026-11-06)
+
+All English copy (captions, tags, signs and props in the picture, and post copy) uses **US spelling**: center, license,
+color, -ize. Owner, 6 Nov: "US spelling from now on". Earlier films used British spellings by default; Five Pins,
+Unmarked Boxes and Right of Way were corrected before posting. Films already posted keep their spelling.
+
 ## Captions: the house style (owner, 2026-10-13)
 
 "Outline with occasionally pops on important words." TikTok-sized white Poppins
