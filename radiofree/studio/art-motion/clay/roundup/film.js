@@ -1,12 +1,14 @@
-// ON THE LABEL (RFH · Roundup / glyphosate), v1 STILLS for the owner's approval, 7 Nov 2026. The device: THE LABEL.
+// ON THE LABEL (RFH · Roundup / glyphosate), v2 FULL FILM (approved 7 Nov 2026, en). The device: THE LABEL.
 // One generic weedkiller jug (no brand, no logo, no trade dress; Roundup is named only in captions and tags) stands on a
 // toy shed workbench, and each beat of the 2026 record happens TO ITS LABEL:
-//   1 the jug, a pile of CLAIM folders, a red desk phone, a window onto a field;
+//   1 the jug, two banker's boxes of CLAIMS files, a red desk phone; on "65,000" three more files drop on the stack;
 //   2 a STATE CANCER WARNING sticker flies at the label's empty warning box, is stamped PREEMPTED and falls off (Durnell);
 //   3 a rubber stamp brands the label NATIONAL DEFENSE PRIORITY (the 18 Feb executive order, Defense Production Act);
-//   4 a NONNEGOTIABLE sticky note slaps onto the jug; the phone beside it never rings (Means alleges; attributed);
+//   4 a NON-NEGOTIABLE sticky note slaps onto the phone, which never rings (Means alleges; attributed; Kennedy's own
+//     March line beside it);
 //   5 a slow push to the label: the warning box is still empty.
 // The 3D toy-world look from looks/cars and clay/cutfirst (soft anime grade, tilt-shift, grain); a new subject: a bench.
+// v2 (full build): every action lands on its caption's pop word; the files read as files; the window is gone.
 // 1080×1920, 30 fps. film.html?lang=en
 
 import * as THREE from 'three';
@@ -55,6 +57,11 @@ await CAP.loadFonts(FONT_DIR);
 const COPY = await CAP.loadCopy('copy.json');
 const BEATS = [['s1', 0], ['s2', 4.4], ['s3', 8.8], ['s4', 13.2], ['s5', 17.6], ['end', 22.0]];
 const P = CAP.plan(COPY, LANG, BEATS, { snap: 0.5 }), T = P.T, DUR = T.end, UI = P.ui;
+// every action lands on its caption's pop word
+const popT = (id) => { const c = P.captions.find((c) => c.id === id); return (c.words.find((w) => w.pop) || c.words[0]).t; };
+const EV = { folderDrop: popT('claims'), stickStamp: popT('court'), stampDown: popT('order'), noteSlap: popT('asked'), settle: popT('label') };
+EV.stickHit = EV.stickStamp - 0.55; EV.stickFall = EV.stickStamp + 0.7; EV.stickLand = EV.stickFall + 0.9;
+for (let i = 0; i < 3; i++) EV['folder' + i] = EV.folderDrop + 0.03 + i * 0.13;
 
 // ------------------------------------------------------------------ the shed: bench, pegboard wall, a window on a field
 const WOOD = canvasTex(512, 512, (g, w, h) => { g.fillStyle = '#c8955f'; g.fillRect(0, 0, w, h); const r = rng(3);
@@ -64,24 +71,12 @@ WOOD.wrapS = WOOD.wrapT = THREE.RepeatWrapping; WOOD.repeat.set(2, 1);
 const PEG = canvasTex(512, 512, (g, w, h) => { g.fillStyle = '#d9c39c'; g.fillRect(0, 0, w, h); g.fillStyle = 'rgba(70,50,30,.55)';
   for (let y = 16; y < h; y += 32) for (let x = 16; x < w; x += 32) { g.beginPath(); g.arc(x, y, 3.6, 0, TAU); g.fill(); } });
 PEG.wrapS = PEG.wrapT = THREE.RepeatWrapping; PEG.repeat.set(4, 2.4);
-const FIELD = canvasTex(512, 512, (g, w, h) => {
-  const sky = g.createLinearGradient(0, 0, 0, h * 0.55); sky.addColorStop(0, '#5b8fe0'); sky.addColorStop(1, '#bcd3f2'); g.fillStyle = sky; g.fillRect(0, 0, w, h * 0.55);
-  g.fillStyle = '#86a35a'; g.fillRect(0, h * 0.55, w, h * 0.45);
-  for (let i = 0; i < 14; i++) { const y = h * 0.55 + Math.pow(i / 14, 1.6) * h * 0.45; g.fillStyle = i % 2 ? '#d8bd5e' : '#c9ad4f'; g.fillRect(0, y, w, 4 + i * 2.2); }
-  g.fillStyle = '#4f7a52'; for (let i = 0; i < 12; i++) { const x = i * 46 + 10, s = 18 + (i % 3) * 6; g.beginPath(); g.moveTo(x, h * 0.55); g.lineTo(x + s / 2, h * 0.55 - s * 1.6); g.lineTo(x + s, h * 0.55); g.fill(); }
-  g.fillStyle = 'rgba(255,255,255,.9)'; for (const [x, y, r] of [[120, 90, 30], [150, 80, 36], [185, 95, 26], [360, 60, 24], [388, 52, 30]]) { g.beginPath(); g.arc(x, y, r, 0, TAU); g.fill(); } });
 
 const BENCH_Y = 0;
 mesh(rbox(46, 1.6, 18, 0.35), matte('#c8955f', { map: WOOD }), { pos: [0, BENCH_Y - 0.8, 0] });
 mesh(new THREE.PlaneGeometry(120, 120).rotateX(-Math.PI / 2), matte('#5b4a3f'), { pos: [0, -14, 0], cast: false });
 for (const x of [-21, 21]) mesh(rbox(1.6, 14, 1.6, 0.2), matte('#a9774a'), { pos: [x, -7.6, 6.5] });
 mesh(new THREE.PlaneGeometry(70, 34), matte('#d9c39c', { map: PEG }), { pos: [0, 15, -9.2], cast: false });
-// the window, upper left: a frame, four panes of field and sky, its light falling across the bench
-{ const WX = -13, WY = 14.5;
-  mesh(new THREE.PlaneGeometry(13, 10.5), new THREE.MeshBasicMaterial({ map: FIELD, fog: false }), { pos: [WX, WY, -9.15], cast: false, recv: false });
-  const fr = matte('#f1ece2');
-  for (const [w, h, x, y] of [[14, 0.8, 0, 5.6], [14, 0.8, 0, -5.6], [0.8, 12, -6.6, 0], [0.8, 12, 6.6, 0], [13, 0.4, 0, 0], [0.4, 11, 0, 0]]) mesh(rbox(w, h, 0.6, 0.12), fr, { pos: [WX + x, WY + y, -8.9] });
-  mesh(rbox(15, 0.7, 2.2, 0.15), fr, { pos: [WX, WY - 6.2, -8.2] }); }
 // a pegboard's tools: a hand trowel and a coil of hose, so the wall is a shed's
 mesh(rbox(0.5, 4.5, 0.4, 0.2), matte('#7a4f2a'), { pos: [9, 16, -8.9] }); mesh(rbox(1.6, 2.6, 0.2, 0.3), paint('#9aa3ad', { metalness: 0.5 }), { pos: [9, 13, -8.9] });
 mesh(new THREE.TorusGeometry(2.6, 0.38, 10, 32), paint('#3d8c4a'), { pos: [15.5, 15, -8.7] });
@@ -141,7 +136,6 @@ function drawSticker(stampK) { const g = SC.getContext('2d'), w = SC.width, h = 
 drawSticker(0);
 const STICK = new THREE.Group(); scene.add(STICK);
 mesh(new THREE.PlaneGeometry(4.2, 1.97), new THREE.MeshStandardMaterial({ map: stickerTex, roughness: 0.5, side: THREE.DoubleSide }), { parent: STICK, cast: true });
-const EV = { stickHit: T.s2 + 1.25, stickStamp: T.s2 + 1.85, stickFall: T.s2 + 2.5, stampDown: T.s3 + 1.2, noteSlap: T.s4 + 0.9 };
 function stickerAt(t) {
   const target = labelPt(0.5, (BOX.y + BOX.h / 2) / 640, 0.06), start = V([target.x + 7, target.y + 7, target.z + 6]);
   if (t < EV.stickHit) { const k = ease.out((t - (EV.stickHit - 0.85)) / 0.85); STICK.position.copy(start.clone().lerp(target, k)); STICK.rotation.set(0, JUG.rotation.y, lerp(0.9, 0, k) * (1 - k * 0)); STICK.visible = t > EV.stickHit - 0.85; return; }
@@ -169,7 +163,7 @@ function stampAt(t) {
 }
 
 // ------------------------------------------------------------------ the phone (it never rings) and the sticky note
-const PHONE = new THREE.Group(); scene.add(PHONE); PHONE.position.set(8.2, BENCH_Y, 0.9); PHONE.rotation.y = -0.45;
+const PHONE = new THREE.Group(); scene.add(PHONE); PHONE.position.set(8.2, BENCH_Y, 0.9); PHONE.rotation.y = -0.22;
 mesh(rbox(4.6, 1.6, 3.6, 0.5), paint('#c42b2b'), { pos: [0, 0.8, 0], parent: PHONE });
 mesh(rbox(3.6, 0.9, 2.4, 0.4), paint('#c42b2b'), { pos: [0, 1.9, -0.2], rot: [-0.25, 0, 0], parent: PHONE });
 mesh(new THREE.CylinderGeometry(1.05, 1.05, 0.14, 28), paint('#f2efe8'), { pos: [0, 2.32, 0.6], rot: [-0.25, 0, 0], parent: PHONE });
@@ -183,19 +177,46 @@ const noteTex = canvasTex(360, 360, (g, w, h) => { g.fillStyle = '#ffe35c'; g.fi
   g.strokeStyle = '#121a52'; g.lineWidth = 7; g.beginPath(); g.moveTo(50, 300); g.lineTo(310, 288); g.stroke(); });
 const NOTE = new THREE.Group(); scene.add(NOTE);
 mesh(new THREE.PlaneGeometry(2.3, 2.3), new THREE.MeshStandardMaterial({ map: noteTex, roughness: 0.8, side: THREE.DoubleSide }), { parent: NOTE });
-function noteAt(t) { const p = labelPt(0.8, 0.12, 0.08); NOTE.visible = t > EV.noteSlap - 0.3;
-  const k = ease.back((t - (EV.noteSlap - 0.3)) / 0.3); NOTE.position.copy(p.clone().add(V([0, 0, (1 - clamp(k)) * 3]))); NOTE.rotation.set(0, JUG.rotation.y, 0.14);
-  const s = lerp(1.4, 1, clamp(k)); NOTE.scale.setScalar(s); }
+function noteAt(t) {   // slapped onto the front of the phone that never rings
+  NOTE.visible = t > EV.noteSlap - 0.3; const k = ease.back((t - (EV.noteSlap - 0.3)) / 0.3);
+  NOTE.position.copy(PHONE.localToWorld(V([0, 1.15, 1.86 + (1 - clamp(k)) * 3])));
+  NOTE.rotation.set(-0.06, PHONE.rotation.y, 0.1); NOTE.scale.setScalar(lerp(1.1, 0.78, clamp(k))); }
 
-// ------------------------------------------------------------------ the claims: a heap of manila CLAIM folders, left
-const folderTex = canvasTex(256, 192, (g, w, h) => { g.fillStyle = '#e7c278'; g.fillRect(0, 0, w, h); g.fillStyle = '#f7f1e2'; g.fillRect(40, 70, 176, 56);
-  g.fillStyle = '#1d1b19'; g.textAlign = 'center'; g.textBaseline = 'middle'; fit(g, UI.folder, 44, 160); g.fillText(UI.folder, w / 2, 100); });
-const folderGeo = new THREE.BoxGeometry(3.2, 0.16, 2.4), folderMat = [matte('#d9b46a'), matte('#d9b46a'), matte('#e7c278', { map: folderTex }), matte('#c9a45c'), matte('#d9b46a'), matte('#d9b46a')];
-{ const r = rng(19); let y = 0.08;
-  for (let i = 0; i < 26; i++) { mesh(folderGeo, folderMat, { pos: [-5.2 + (r() - 0.5) * 1.6, y, -5.2 + (r() - 0.5) * 1.6], rot: [0, (r() - 0.5) * 0.9, 0] }); y += 0.17; }
-  for (let i = 0; i < 14; i++) { const a = r() * TAU, d = 3 + r() * 3.5; mesh(folderGeo, folderMat, { pos: [-5.2 + Math.cos(a) * d, 0.09 + r() * 0.05, -3.8 + Math.sin(a) * d * 0.5], rot: [0, r() * TAU, 0] }); } }
-// a second pile behind, higher, slumped against the wall
-{ const r = rng(23); let y = 0.08; for (let i = 0; i < 34; i++) { mesh(folderGeo, folderMat, { pos: [-9.5 + (r() - 0.5) * 1.2, y, -7.2 + (r() - 0.5) * 1.2], rot: [0, (r() - 0.5) * 0.6, 0] }); y += 0.17; } }
+// ------------------------------------------------------------------ the claims: banker's boxes of upright CLAIM files, left
+const boxLabel = canvasTex(512, 200, (g, w, h) => { g.fillStyle = '#f7f1e2'; g.fillRect(0, 0, w, h); g.strokeStyle = '#1d1b19'; g.lineWidth = 8; g.strokeRect(10, 10, w - 20, h - 20);
+  g.fillStyle = '#1d1b19'; g.textAlign = 'center'; g.textBaseline = 'middle'; fit(g, UI.boxLabel, 150, w - 60); g.fillText(UI.boxLabel, w / 2, h / 2 + 6); });
+const tabTex = canvasTex(128, 48, (g, w, h) => { g.fillStyle = '#e7c278'; g.fillRect(0, 0, w, h); g.fillStyle = '#1d1b19'; g.textAlign = 'center'; g.textBaseline = 'middle';
+  fit(g, UI.folder, 34, w - 12, 12, 'ArchivoBlack-400'); g.fillText(UI.folder, w / 2, h / 2 + 2); });
+const card = matte('#d8c3a0'), manila = matte('#e3bd72'), manila2 = matte('#d9b066');
+function bankerBox(x, z, ry, seed) {
+  const B = new THREE.Group(); scene.add(B); B.position.set(x, BENCH_Y, z); B.rotation.y = ry;
+  const BW = 5.2, BH = 3.0, BD = 3.8, th = 0.14;
+  mesh(rbox(BW, th, BD, 0.05), card, { pos: [0, th / 2, 0], parent: B });
+  for (const sx of [-1, 1]) mesh(rbox(th, BH, BD, 0.05), card, { pos: [sx * (BW / 2 - th / 2), BH / 2, 0], parent: B });
+  mesh(rbox(BW, BH, th, 0.05), card, { pos: [0, BH / 2, -BD / 2 + th / 2], parent: B });
+  mesh(rbox(BW, BH, th, 0.05), card, { pos: [0, BH / 2, BD / 2 - th / 2], parent: B });
+  mesh(new THREE.PlaneGeometry(3.6, 1.4), matte('#ffffff', { map: boxLabel }), { pos: [0, BH * 0.55, BD / 2 + 0.01], parent: B, cast: false });
+  const r = rng(seed), tabGeo = new THREE.BoxGeometry(1.15, 0.5, 0.06), tabMat = [manila, manila, manila, manila, matte('#e7c278', { map: tabTex }), manila];
+  for (let i = 0; i < 13; i++) {
+    const z0 = -BD / 2 + 0.35 + i * 0.25, hgt = BH + 0.25 + r() * 0.35, F = new THREE.Group(); B.add(F); F.position.set((r() - 0.5) * 0.15, 0, z0); F.rotation.x = (r() - 0.5) * 0.12;
+    mesh(new THREE.BoxGeometry(BW - 0.5, hgt, 0.05), i % 2 ? manila : manila2, { pos: [0, hgt / 2 + th, 0], parent: F });
+    mesh(tabGeo, tabMat, { pos: [[-1.5, 0, 1.5][i % 3], hgt + th + 0.24, 0], parent: F });
+  }
+  return B;
+}
+bankerBox(-6.0, -3.6, 0.3, 19); bankerBox(-11.4, -5.2, 0.18, 23);
+// a flat stack in front, and three more that drop onto it on "65,000"
+const flatTex = canvasTex(320, 240, (g, w, h) => { g.fillStyle = '#e3bd72'; g.fillRect(0, 0, w, h); g.fillStyle = '#d9b066'; g.fillRect(0, 0, w, 26);
+  g.fillStyle = '#f7f1e2'; g.fillRect(36, 74, 248, 92); g.fillStyle = '#1d1b19'; g.textAlign = 'center'; g.textBaseline = 'middle'; fit(g, UI.folder, 74, 220); g.fillText(UI.folder, w / 2, 122); });
+const flatGeo = new THREE.BoxGeometry(3.4, 0.12, 2.5), flatMat = [manila2, manila2, matte('#e3bd72', { map: flatTex }), manila2, manila2, manila2];
+const STACK = { x: -4.2, z: 1.6, y: 0 };
+{ const r = rng(29); let y = 0.06; for (let i = 0; i < 9; i++) { mesh(flatGeo, flatMat, { pos: [STACK.x + (r() - 0.5) * 0.5, y, STACK.z + (r() - 0.5) * 0.4], rot: [0, 0.3 + (r() - 0.5) * 0.5, 0] }); y += 0.125; } STACK.y = y; }
+const DROPS = [0, 1, 2].map((i) => mesh(flatGeo, flatMat, { rot: [0, 0.3 + (i - 1) * 0.35, 0] }));
+function dropsAt(t) {
+  DROPS.forEach((m, i) => { const t0 = EV['folder' + i] - 0.38, k = clamp((t - t0) / 0.38), land = STACK.y + i * 0.125;
+    m.visible = t > t0; m.position.set(STACK.x + (i - 1) * 0.25, lerp(land + 6.5, land, k * k), STACK.z + (i - 1) * 0.15);
+    m.rotation.z = (1 - k) * (i - 1) * 0.5; });
+}
 
 // ------------------------------------------------------------------ light: daylight through the window, a warm practical
 const hemi = new THREE.HemisphereLight('#d6e2f6', '#8a6a58', 1.0); scene.add(hemi);
@@ -208,10 +229,10 @@ const lamp = new THREE.PointLight('#ffcf8a', 30, 40, 1.8); lamp.position.set(8, 
 // ------------------------------------------------------------------ shots
 const JC = () => labelPt(0.5, 0.45);
 const SHOT = [
-  { t0: () => T.s1, focus: () => JC(), cam(lt, d) { const k = ease.io(lt / d); return { pos: V(lerp3([7, 17, 30], [6, 15.5, 27], k)), at: V([-0.5, 3.4, -0.5]), fov: 36 }; } },
+  { t0: () => T.s1, focus: () => JC(), cam(lt, d) { const k = ease.io(lt / d); return { pos: V(lerp3([4.4, 16.5, 32], [3.8, 15, 29], k)), at: V([-2.3, 3.0, -1.0]), fov: 40 }; } },
   { t0: () => T.s2, focus: () => labelPt(0.5, 0.75), cam(lt, d) { const k = ease.io(lt / d); return { pos: V(lerp3([7, 6.2, 21], [6, 5.6, 19], k)), at: V([2.2, 3.1, 1.2]), fov: 30 }; } },
   { t0: () => T.s3, focus: () => labelPt(0.5, 0.45), cam(lt, d) { const k = ease.io(lt / d); return { pos: V(lerp3([-3.5, 7.0, 20], [-2.5, 6.5, 18.5], k)), at: V([1.8, 3.6, 1.0]), fov: 31 }; } },
-  { t0: () => T.s4, focus: () => labelPt(0.85, 0.15), cam(lt, d) { const k = ease.io(lt / d); return { pos: V(lerp3([10, 9, 23], [9, 8.4, 21], k)), at: V([3.4, 3.2, 2.0]), fov: 34 }; } },
+  { t0: () => T.s4, focus: () => PHONE.localToWorld(V([0, 1.15, 1.9])), cam(lt, d) { const k = ease.io(lt / d); return { pos: V(lerp3([8.5, 10.5, 23], [8.0, 9.6, 20.5], k)), at: V([5.4, 2.3, 1.2]), fov: 34 }; } },
   { t0: () => T.s5, focus: () => labelPt(0.5, 0.75), cam(lt, d) { const k = ease.io(lt / d); return { pos: V(lerp3([3.5, 6.2, 22], [3.0, 4.6, 15.5], k)), at: V(lerp3([2.0, 3.6, 0.5], [2.2, 2.9, 1.4], k)), fov: lerp(32, 30, k) }; } },
 ];
 const shotAt = (t) => { for (let i = SHOT.length - 1; i >= 0; i--) if (t >= SHOT[i].t0()) return i; return 0; };
@@ -229,7 +250,7 @@ const tmp = new THREE.Vector3();
 function frame(t, captions = true) {
   // the sticker's PREEMPTED stamp lands once; redraw its canvas only on change
   const ss = t >= EV.stickStamp ? 1 : 0; if (ss !== (frame.ss ?? -1)) { frame.ss = ss; drawSticker(ss); }
-  stickerAt(t); stampAt(t); noteAt(t);
+  stickerAt(t); stampAt(t); noteAt(t); dropsAt(t);
   const i = shotAt(t), S = SHOT[i], t0 = S.t0(), d = SHOT_END(i) - t0;
   const L = S.cam(t - t0, d); camera.fov = L.fov; camera.position.copy(L.pos); camera.lookAt(L.at); camera.updateProjectionMatrix(); scene.updateMatrixWorld(true);
   tmp.copy(S.focus(t)).project(camera); const cy = clamp((tmp.y + 1) / 2, 0.15, 0.85);
