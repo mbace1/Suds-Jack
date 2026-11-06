@@ -1,6 +1,6 @@
 {
   "film": "right-of-way",
-  "cut": "v2 full build (6 Nov, en only; owner, Fri 6 Nov ~19:30: '2 great'). Google's side is on screen for fairness: shot 4 carries GOOGLE SAYS A 30 M WOODED CORRIDOR IS KEPT, and shot 5 opens with LVV's urgent inquiry before the 2018-19 tag. Shot 2 draws the squirrels' route as a dashed line along the strip, broken red where the haul track cuts it. v1 stills (6 Nov, en only; owner, 6 Nov: 'The 3d Muhos video is doing well, we should consider more similar ones. Maybe it's the art, maybe the topic, maybe both' -- this is the 'both' test: the same 3D cars look as Cut First, the same family of story). Hamina, the sequel to Doodle 6 Trade Secret: the regulator (LVV) asked Google's Finnish company to pause expansion work at the Hamina data-centre site after conservationists said flying-squirrel routes were at risk; Google says it paused; LVV is examining the nature conservation act. Five beats; for the owner's approval, not for posting. fi and ja not written (owner: English for now).",
+  "cut": "v2 full build (6 Nov, en only; owner, Fri 6 Nov ~19:30: '2 great'). Google's side is on screen for fairness: shot 4 carries GOOGLE SAYS A 30 M WOODED CORRIDOR IS KEPT, and shot 5 opens with LVV's urgent inquiry before the 2018-19 tag. Shot 2 draws the squirrels' route as a dashed line along the strip, broken red where the haul track cuts it. v1 stills (6 Nov, en only; owner, 6 Nov: 'The 3d Muhos video is doing well, we should consider more similar ones. Maybe it's the art, maybe the topic, maybe both' -- this is the 'both' test: the same 3D cars look as Cut First, the same family of story). Hamina, the sequel to Doodle 6 Trade Secret: the regulator (LVV) asked Google's Finnish company to pause expansion work at the Hamina data-centre site after conservationists said flying-squirrel routes were at risk; Google says it paused; LVV is examining the nature conservation act. Five beats; for the owner's approval, not for posting. fi and ja not written (owner: English for now). US spelling, 6 Nov (owner: 'US spelling from now on'): GOOGLE DATA CENTER · HAMINA on the sign; data-center in the post.",
   "series": "rfh",
   "captionSize": "big",
   "argument": "At Google's Hamina data-centre site, conservationists said the expansion work put flying squirrels' routes at risk; the regulator asked for a pause, Google paused, and the regulator is examining the nature conservation act.",
@@ -76,7 +76,7 @@
       "en": "PAUSE, PLEASE · LVV"
     },
     "site": {
-      "en": "GOOGLE DATA CENTRE · HAMINA"
+      "en": "GOOGLE DATA CENTER · HAMINA"
     },
     "tag1": {
       "en": "PROTECTED SPECIES · FINLAND'S NATURE ACT"
@@ -104,6 +104,6 @@
     }
   },
   "post": {
-    "en": "Hamina, Finland: conservationists said Google's data-centre work put a flying-squirrel route at risk. The regulator asked for a pause and opened an inquiry. Google paused; it says a 30 m corridor stays. In 2018–19, 1.3 ha of squirrel forest was cut without a permit. Right of way?"
+    "en": "Hamina, Finland: conservationists said Google's data-center work put a flying-squirrel route at risk. The regulator asked for a pause and opened an inquiry. Google paused; it says a 30 m corridor stays. In 2018–19, 1.3 ha of squirrel forest was cut without a permit. Right of way?"
   }
 }

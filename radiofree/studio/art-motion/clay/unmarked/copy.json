@@ -1,6 +1,6 @@
 {
   "film": "unmarked-boxes",
-  "cut": "v2 full build (6 Nov, en only; owner 6 Nov: \"1 great\"): the stills' fixes (map 0.85 as deep and its labels 1.3x so US and CHINA clear the caption block and the tag; a REPACK hood instead of the open arch; a pallet of crates and one of plain boxes in shot 3's foreground; a lower shelf of dummies under the bench in shot 4; tags 3 and 4 land with their captions so each beat carries 'prosecutors say') and a score. The post names Super Micro and Nvidia only with 'linked to', 'the company isn't charged' and its own probe's finding (Aug 2026: no senior manager knew). Trial moved to March 2027. v1 stills (6 Nov): the ART test the owner asked for after Cut First did well ('maybe it's the art, maybe the topic, maybe both'): the same 3D toy-world cars look on a non-Finnish story. Five beats: the export gate says no; a ship takes the long way round a toy sea (Taiwan, Southeast Asia); labelled crates go into a repack hood and come out plain; a hair dryer moves a serial sticker from a real server onto a dummy; the inspectors are shown a row of dummies while the ship heads for China.",
+  "cut": "v2 full build (6 Nov, en only; owner 6 Nov: \"1 great\"): the stills' fixes (map 0.85 as deep and its labels 1.3x so US and CHINA clear the caption block and the tag; a REPACK hood instead of the open arch; a pallet of crates and one of plain boxes in shot 3's foreground; a lower shelf of dummies under the bench in shot 4; tags 3 and 4 land with their captions so each beat carries 'prosecutors say') and a score. The post names Super Micro and Nvidia only with 'linked to', 'the company isn't charged' and its own probe's finding (Aug 2026: no senior manager knew). Trial moved to March 2027. v1 stills (6 Nov): the ART test the owner asked for after Cut First did well ('maybe it's the art, maybe the topic, maybe both'): the same 3D toy-world cars look on a non-Finnish story. Five beats: the export gate says no; a ship takes the long way round a toy sea (Taiwan, Southeast Asia); labelled crates go into a repack hood and come out plain; a hair dryer moves a serial sticker from a real server onto a dummy; the inspectors are shown a row of dummies while the ship heads for China. US spelling, 6 Nov (owner: 'US spelling from now on'): licence → license in caption 1, the gate sign and tag 1.",
   "series": "rfh",
   "captionSize": "big",
   "argument": "Prosecutors say about $2.5B of AI servers that need a licence for China were routed there via Taiwan and Southeast Asia, repacked in unmarked boxes, with dummies shown to inspectors.",
@@ -19,7 +19,7 @@
       "until": "s2-0.3",
       "hold": "s2",
       "text": {
-        "en": "These AI servers / can't go to China / without a [licence]."
+        "en": "These AI servers / can't go to China / without a [license]."
       },
       "source": "US export controls require a licence to export advanced AI chips, and servers built with them, to China. Under the rules in force in 2024-25 (the period of the alleged scheme) licences were presumptively denied; since 15 Jan 2026 BIS reviews H200-class licences case by case (Federal Register 2026-00789; Mayer Brown, Jan 2026). 'Without a licence' is true under both regimes."
     },
@@ -73,7 +73,7 @@
       "en": "STOP"
     },
     "halt": {
-      "en": "LICENCE NEEDED FOR CHINA"
+      "en": "LICENSE NEEDED FOR CHINA"
     },
     "site": {
       "en": "EXPORT GATE · US PORT"
@@ -103,7 +103,7 @@
       "en": "EXPORT CHECK"
     },
     "tag1": {
-      "en": "US EXPORT CONTROLS · A LICENCE IS NEEDED"
+      "en": "US EXPORT CONTROLS · A LICENSE IS NEEDED"
     },
     "tag2": {
       "en": "INDICTMENT · NEW YORK · MARCH 2026"
@@ -128,7 +128,7 @@
       "why": "the route is the one prosecutors describe; Southeast Asia stays a region because the reported intermediary is not named on screen"
     },
     "dummies": {
-      "en": "a dummy server is the same grey box with no lights",
+      "en": "a dummy server is the same gray box with no lights",
       "why": "prosecutors describe non-working physical replicas"
     }
   },

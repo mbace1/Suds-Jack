@@ -2,7 +2,7 @@
 // First did well (6 Nov: "maybe it's the art, maybe the topic, maybe both"): the SAME approved 3D cars look (looks/cars,
 // clay/cutfirst) on a non-Finnish story. A tilt-shift toy world, soft anime grade, extruded toys whose wheels really roll.
 // Five shots, one thing happening in each:
-//   1 · the export gate at a US port: a truck of AI SERVERS crates brakes at the booms; STOP · LICENCE NEEDED FOR CHINA
+//   1 · the export gate at a US port: a truck of AI SERVERS crates brakes at the booms; STOP · LICENSE NEEDED FOR CHINA
 //   2 · high over a toy sea, four shores: the ship takes the long way round, US → TAIWAN → SOUTHEAST ASIA, dashed  "went anyway"
 //   3 · the repack line in a shed: labelled crates go under an arch and come out plain cardboard               "unmarked"
 //   4 · the workbench: a hair dryer blows a serial sticker off a real server onto a dummy                        "hair dryer"
