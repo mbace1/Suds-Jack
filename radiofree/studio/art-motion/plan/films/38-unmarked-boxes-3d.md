@@ -101,3 +101,10 @@ company isn't charged. Who checks the boxes?"
   line's hum with a knock in and a box out; the hair dryer's whine, the sticker's peel, flutter and landing; a tick per
   dummy, the horn far off as the ship sails for China, the rise, the sting. `film.js` exports the events it needs
   (`boomsDown`, `dock`, `blow`, `blowEnd`, `rise`).
+- **Files:** `films/06-11-Global4-Unmarked-Boxes.mp4` (25.41 s with the papercut sign-off, 33.7 MB) and
+  `films/06-11-Global4-Unmarked-Boxes-loop.mp4` (22.40 s, film only, for IG Reels, 46.3 MB), preview
+  `previews/06-11-RFH-Unmarked-Boxes-en.mp4` (5.3 MB).
+- **Checks:** PASSED, 0 fail, 0 warn (text 74/74; sound 5/5 at −13.9 LUFS; delivered −14.0 LUFS, −3.4 dBTP; with the
+  sign-off −14.1 LUFS, −2.2 dBTP). Contact sheet: all five beats read; the map labels clear the caption and the tag.
+- **Still open:** the indictment and the plea filing have not been opened (court sites blocked here); everything rests on
+  consistent reporting. Space it from the next Google-in-Finland film.
