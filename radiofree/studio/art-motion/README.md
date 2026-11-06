@@ -151,6 +151,13 @@ Still no invented quote in a real person's mouth, no invented claim attached to 
 real name, and the joke stays on the language. This is the studio's rule: the daily
 wire (`EDITORIAL.md`, enforced in `tools/generate-wire.mjs`) still runs invented names.
 
+## Story first (owner, 2026-11-06)
+
+"Look at all options to innovate on the storytelling. See an idea, then create around it." Every pitch starts from one
+storytelling device (order as the joke, a closed loop, the object speaks, rewind, a borrowed format...), and the medium
+and kit are chosen after, to serve it. Pitches offer two or three devices where there is a real choice. The device bank
+and the method are in `plan/STORY-DEVICES.md`.
+
 ## Spelling: US English (owner, 2026-11-06)
 
 All English copy (captions, tags, signs and props in the picture, and post copy) uses **US spelling**: center, license,
