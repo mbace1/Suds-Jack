@@ -126,3 +126,23 @@ literal one was taken.
 - **Before posting:**
   - re-check the Muhos facts;
   - leave space after Cut First, since both end on the Muhos clearing.
+
+## Fixed 6 Nov (en): the nature line, longer and highlighted
+
+**Owner, 6 Nov ~19:30:** "nature line should be longer, maybe highlighted".
+
+- **Before:** a small corner tag, RULE: NOT IN THE MOST VALUABLE NATURE, up for about 2.3 s late in shot 2.
+- **Now:** a highlighted note pinned onto the empty sea corner of the map (`natureNote` in `scenes/fpn_kit.js`): a gold
+  card with a dark-gold rule round it, a green leaf, **CITY RULE**, then **NO DATA CENTRES / IN THE MOST / VALUABLE /
+  NATURE AREAS** in large type (about 40 px at 1080 wide). It drops in once the fifth pin is down (shot 2, ~1.9 s in),
+  a red pin goes in, it glows once, and it **stays pinned through the whole heat shot until the cut to Muhos**: about
+  6 s on screen instead of 2.3. It moves with the board, so it reads as part of the map rather than a caption. The old
+  corner tag is gone from shot 2; shot 3 keeps its own SUBSTANTIALLY INTO DISTRICT HEATING tag below the map.
+- **Wording:** the city's news item says the projects are not to be placed in the most valuable nature areas (nor at
+  public-transport hubs). "No data centres in the most valuable nature areas" is that sense, not a stronger claim. The
+  fi and ja note texts are drafts, unread.
+- **Score:** the note lands with a card drop and its pin goes in with a knock (`score.py`, after the five pins).
+- **Files:** `films/04-11-Doodle9-Five-Pins.mp4` (21.44 s with the sign-off, 6.5 MB) and `-loop.mp4` (18.43 s, film
+  only), preview `previews/04-11-RFH-Five-Pins-en.mp4`, still of the note `previews/06-11-RFH-Five-Pins-nature-line.jpg`.
+- **Checks:** PASSED, 0 fail, 4 warn (the fi/ja native reads and the fi/ja `hook` sidecars, which only matter if those
+  languages are posted). Sound 5/5 at −14.0 LUFS; delivered −14.0 LUFS, −3.5 dBTP.
