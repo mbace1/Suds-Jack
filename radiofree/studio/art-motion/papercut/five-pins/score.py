@@ -71,6 +71,9 @@ for i in range(NPIN):
     t0, tl, pan = tD + i * GAP, tD + i * GAP + FALL, -0.6 + 0.3 * i
     s.fx(glide(1400 - i * 60, 500, FALL), t0, 0.08, pan, name=f'pin {i + 1} falls')
     s.fx(foley('card', 'tap', 0.9), tl, 0.45, pan, name=f'pin {i + 1} lands'); s.fx(knock(0.6, f=300 + 40 * i), tl + 0.005, 0.3, pan)
+# v2: the City Board's nature rule is pinned onto the sea corner once the five are down (kit: natureNote, 0.4 s in)
+tN = S[1] + max(1.75, tD - S[1] + (NPIN - 1) * GAP + FALL + 0.15)
+s.fx(foley('card', 'drop', 0.8), tN + 0.3, 0.32, 0.4, name='the nature rule: the note lands'); s.fx(knock(0.7, f=420), tN + 0.38, 0.3, 0.4, name='its pin goes in')
 tM = c('fpn_pins.map')
 s.fx(chime(88, 0.5), tM, 0.18, 0.1, name='"map"'); accent(s, tM, S[0], 0.26, S=RFHV, name='map')
 

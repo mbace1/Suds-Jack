@@ -70,3 +70,34 @@ company isn't charged. Who checks the boxes?"
    crate. None blocks reading the beat; all are fixable in the full build.
 7. **No score yet** (`score.py` comes after approval, modelled on `clay/cutfirst/score.py`: the gate bell, the ship's
    horn, the repack line, the dryer, the ticks).
+
+## Built 6 Nov (en): Global 4
+
+**Owner, 6 Nov ~19:30:** "1 great" (the stills). Full English build, with the stills' weaknesses fixed and a score.
+
+- **Fixes from the stills:**
+  - **Map (shot 2).** The map is 0.85 as deep (`MZ` in `film.js`: Taiwan, Southeast Asia, China and the route all moved
+    towards the US quay) and its four labels are 1.3x the stills' size. CHINA now stands on its own sand, clear of the
+    caption block, and US sits above the tag instead of behind it. The camera was re-aimed to fit the shorter map.
+  - **Repack (shot 3).** An open-ended **REPACK hood** replaces the arch: labelled crates go in at the left, plain boxes
+    come out at the right, and the change happens out of sight inside it. The stills' arch put its front post across a
+    passing crate. A pallet of labelled crates (left) and a pallet of plain boxes (right) stand in front of the line, so
+    the lower half is not empty floor. The camera is a little further back.
+  - **Workbench (shot 4).** A lower shelf under the bench holds two more dummies; the lower third was empty floor.
+  - **Attribution.** Tags 3 (PROSECUTORS SAY · VIA TAIWAN AND SE ASIA) and 4 (PROSECUTORS CITE SURVEILLANCE FOOTAGE)
+    now land with their captions (0.45 s in) instead of a second after, so every beat from 2 to 5 carries its
+    attribution while the caption is up. The captions themselves are unchanged.
+- **Post (279 chars):** "US prosecutors say three people linked to Super Micro sent ~$2.5B of servers with Nvidia AI chips to
+  China via Taiwan and SE Asia in unmarked boxes, showing inspectors dummies. One pleaded guilty. The company isn't
+  charged; its own probe found no senior manager knew. Who checks?" The owner did not answer the naming question, so
+  the names stay in the post only, with the record's qualifiers; nothing on screen names a company or a person.
+- **Facts moved since the stills** (`plan/RFH-NEXT.md`, 6 Nov 17:16, search summaries): the **trial moved from 2 Nov
+  2026 to March 2027** (Fortune, Aug 2026, after the defence said Super Micro had received an SDNY grand-jury subpoena);
+  Super Micro's board-led internal probe (Aug 2026) found no senior manager knew of the diversion (coverage notes it did
+  not address the SDNY or SEC subpoenas or Taiwan); Taiwan raided its Taiwan office and two partners on 29 Jun 2026. None
+  changes anything on screen.
+- **Score:** new `clay/unmarked/score.py` on the RFH bed: the gate's bell and the booms' motor, the lorry's rumble,
+  brakes and air-brake sigh; the ship's horn, the sea and its engine to the Southeast Asia pier (a hull bump); the repack
+  line's hum with a knock in and a box out; the hair dryer's whine, the sticker's peel, flutter and landing; a tick per
+  dummy, the horn far off as the ship sails for China, the rise, the sting. `film.js` exports the events it needs
+  (`boomsDown`, `dock`, `blow`, `blowEnd`, `rise`).

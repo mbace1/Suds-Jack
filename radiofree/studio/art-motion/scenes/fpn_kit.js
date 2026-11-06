@@ -239,7 +239,7 @@
   /** v2 (owner, 6 Nov: "nature line should be longer, maybe highlighted"): the City Board's nature rule is no longer a
    *  corner tag for two seconds but a highlighted note pinned onto the sea corner of the map, the empty water below the
    *  pins. It arrives once the five pins are down and stays through the heat shot, until the cut to Muhos. */
-  const NOTE = { x: 585, y: 1066, w: 404, h: 240 };
+  const NOTE = { x: 572, y: 1046, w: 420, h: 292 };
   function leaf(g, x, y, sc) {
     g.save(); g.translate(x, y); g.rotate(0.55); g.fillStyle = '#3f7a3a'; g.beginPath(); g.ellipse(0, 0, 10 * sc, 19 * sc, 0, 0, TAU); g.fill();
     g.strokeStyle = '#dcebb4'; g.lineWidth = 2.4 * sc; g.beginPath(); g.moveTo(0, -16 * sc); g.lineTo(0, 17 * sc); g.stroke(); g.restore();
@@ -247,7 +247,7 @@
   function natureNote(g, k, glow = 0) {
     if (k <= 0) return;
     const { x, y, w, h } = NOTE, cx = x + w / 2, cy = y + h / 2;
-    const head = ui('natureHead', 'CITY RULE'), body = ui('natureBody', 'NO DATA CENTRES / IN THE MOST VALUABLE / NATURE AREAS').split('/').map((t) => t.trim());
+    const head = ui('natureHead', 'CITY RULE'), body = ui('natureBody', 'NO DATA CENTRES / IN THE MOST / VALUABLE / NATURE AREAS').split('/').map((t) => t.trim());
     if (glow > 0.01) R.glow(g, cx, cy, 300, 'rgba(255,214,110,', 0.45 * glow);
     g.save(); g.globalAlpha = clamp(k * 3, 0, 1); g.translate(cx, cy); g.rotate(0.028); const sc = lerp(1.2, 1, ease.out(k)); g.scale(sc, sc);
     g.shadowColor = 'rgba(0,0,0,.55)'; g.shadowBlur = 16 * sc; g.shadowOffsetX = 8; g.shadowOffsetY = 12;
@@ -255,9 +255,9 @@
     g.strokeStyle = '#b8862a'; g.lineWidth = 4; g.beginPath(); g.roundRect(-w / 2 + 6, -h / 2 + 6, w - 12, h - 12, 7); g.stroke();
     leaf(g, -w / 2 + 40, -h / 2 + 46, 1.1);
     g.fillStyle = '#2f5a24'; g.textAlign = 'left'; fitFont(g, head, 30, w - 110, `$px "ArchivoBlack-400", ${JP}`); g.fillText(head, -w / 2 + 66, -h / 2 + 57);
-    let fs = 40; body.forEach((t) => { fs = Math.min(fs, fitFont(g, t, 40, w - 44, `$px "ArchivoBlack-400", ${JP}`)); });
+    let fs = 48; body.forEach((t) => { fs = Math.min(fs, fitFont(g, t, 48, w - 48, `$px "ArchivoBlack-400", ${JP}`)); });
     g.font = `${fs}px "ArchivoBlack-400", ${JP}`; g.fillStyle = C.ink; g.textAlign = 'center';
-    body.forEach((t, i) => g.fillText(t, 0, -h / 2 + 112 + i * (fs + 12)));
+    body.forEach((t, i) => g.fillText(t, 0, -h / 2 + 116 + i * (fs + 9)));
     g.restore();
     if (k > 0.55) { const q = clamp((k - 0.55) / 0.45, 0, 1); g.save(); g.globalAlpha = q; put(g, PIN(), cx + 14, y + 30 - (1 - q) * 30, { lift: 0.5 }); g.restore(); }
   }
