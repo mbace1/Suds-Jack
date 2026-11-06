@@ -1,0 +1,106 @@
+{
+  "film": "right-of-way",
+  "cut": "v1 stills (6 Nov, en only; owner, 6 Nov: 'The 3d Muhos video is doing well, we should consider more similar ones. Maybe it's the art, maybe the topic, maybe both' -- this is the 'both' test: the same 3D cars look as Cut First, the same family of story). Hamina, the sequel to Doodle 6 Trade Secret: the regulator (LVV) asked Google's Finnish company to pause expansion work at the Hamina data-centre site after conservationists said flying-squirrel routes were at risk; Google says it paused; LVV is examining the nature conservation act. Five beats; for the owner's approval, not for posting. fi and ja not written (owner: English for now).",
+  "series": "rfh",
+  "captionSize": "big",
+  "argument": "At Google's Hamina data-centre site, conservationists said the expansion work put flying squirrels' routes at risk; the regulator asked for a pause, Google paused, and the regulator is examining the nature conservation act.",
+  "langs": [
+    "en"
+  ],
+  "native_read": {
+    "en": true
+  },
+  "syntax": "'/' breaks a line, [word] is the pop word",
+  "captions": [
+    {
+      "id": "squirrels",
+      "role": "setup",
+      "at": "s1+0.4",
+      "until": "s2-0.3",
+      "hold": "s2",
+      "text": {
+        "en": "Flying squirrels / live by Google's / [Hamina] site."
+      },
+      "source": "Flying squirrel (liito-orava) habitat at the Hamina data-centre site is documented: HS and Yle (Oct 2026) report that about 1.3 ha of flying-squirrel forest was felled there without a permit in 2018-19, and the authority's own detailed-plan drawing marks the areas not to be felled (see papercut/trade-secret/copy.json). The present case is about the squirrels' movement routes (kulkuyhteydet) at the expansion site (Yle; Kymen Sanomat, Nov 2026). 'Around' rather than 'in' because the routes and the habitat run through and beside the site. Verified from search summaries only."
+    },
+    {
+      "id": "route",
+      "role": "evidence",
+      "at": "s2+0.4",
+      "until": "s3-0.3",
+      "hold": "s3",
+      "text": {
+        "en": "Conservationists / warned: their / [route] was at risk."
+      },
+      "source": "Kymen Sanomat (first to report), then Yle and STT, about 4 Nov 2026: the local association of the Finnish Association for Nature Conservation (Suomen luonnonsuojeluliitto, its Kaakkois-Kymi association per the summaries) made an urgent request to LVV: the flying squirrels' movement routes may have been endangered, with earthworks and tree removal on the site. Attributed ('said'): it is their claim, which LVV is examining. Verified from search summaries only."
+    },
+    {
+      "id": "pause",
+      "role": "evidence",
+      "at": "s3+0.4",
+      "until": "s4-0.3",
+      "hold": "s4",
+      "text": {
+        "en": "The regulator / asked Google / to [pause]."
+      },
+      "source": "Yle (yle.fi/a/74-20254899), confirmed by email with LVV's environment department: LVV asked Tuike Finland (Google's Finnish company) to pause the expansion work at the Hamina data-centre site until the matter is resolved; press reports date the request 23 Oct 2026. 'Asked' because LVV's step is a request (pyysi), not an order; Maaseudun Tulevaisuus's headline says LVV 'halted' the felling. Google is named because Google's own statement speaks for the site (owner, 3 Nov: 'use Google for the Finland data centers'). Verified from search summaries only."
+    },
+    {
+      "id": "paused",
+      "role": "evidence",
+      "at": "s4+0.4",
+      "until": "s5-0.3",
+      "hold": "s5",
+      "text": {
+        "en": "Google / [paused]."
+      },
+      "source": "Google, quoted by Yle and Kymen Sanomat: 'olemme keskeyttaneet tyot Haminassa, jotta voimme keskustella LVV:n kanssa' (we have paused work in Hamina so we can talk with LVV); Tuike Finland said it agreed to the pause. The tag gives the next step: LVV has begun an urgent examination of whether Tuike Finland acted against the nature conservation act, in particular how the flying squirrels' routes were taken into account (Yle, yle.fi/a/74-20255224). Verified from search summaries only."
+    },
+    {
+      "id": "right",
+      "role": "punchline",
+      "at": "s5+0.5",
+      "until": "end-0.4",
+      "hold": "end",
+      "text": {
+        "en": "Right of way: / the [squirrel]."
+      },
+      "source": "The station's line, a metaphor for the pause: the work stopped where the squirrels cross. Not a claim about any ruling; LVV's examination is open. The tag recalls the same site's history: about 1.3 ha of flying-squirrel forest felled without a permit in 2018-19 (HS, Yle; Doodle 6 Trade Secret)."
+    }
+  ],
+  "ui": {
+    "stop": {
+      "en": "STOP"
+    },
+    "halt": {
+      "en": "PAUSE, PLEASE · LVV"
+    },
+    "site": {
+      "en": "GOOGLE DATA CENTRE · HAMINA"
+    },
+    "tag1": {
+      "en": "PROTECTED SPECIES · FINLAND'S NATURE ACT"
+    },
+    "tag2": {
+      "en": "URGENT REQUEST: LOCAL NATURE ASSOCIATION"
+    },
+    "tag3": {
+      "en": "LVV, FINLAND'S PERMIT REGULATOR · YLE"
+    },
+    "tag4": {
+      "en": "LVV IS EXAMINING THE NATURE ACT · YLE"
+    },
+    "tag5": {
+      "en": "2018–19: 1.3 HA OF SQUIRREL FOREST FELLED"
+    },
+    "paused": {
+      "en": "WORK PAUSED"
+    },
+    "crossing": {
+      "en": "FLYING SQUIRRELS"
+    }
+  },
+  "post": {
+    "en": "Hamina, Finland: conservationists said work at Google's data centre put flying squirrels' routes at risk. The regulator asked for a pause. Google paused; the regulator is checking the nature act. In 2018–19, 1.3 ha of squirrel forest was cut there without a permit. Right of way?"
+  }
+}
