@@ -44,7 +44,7 @@ import { addNote } from './sealed.js?v=2';
 import { resolveMode, dailyShare, W } from './modes.js?v=1';
 import { recordDaily, todayRecord, streak } from './daily.js?v=2';
 
-export const BUILD_VERSION = '3.10';
+export const BUILD_VERSION = '3.11';
 const $ = id => document.getElementById(id);
 const params = new URLSearchParams(location.search);
 // a run of the ladder, today's daily, or a day of the week (modes.js, ACT1.md §12)
@@ -64,6 +64,8 @@ const CALM = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const SCENES = {
   tram: { layers: ['01-outside-tile', '02-car', '03-people', '04-courier'], tile: { '916': 1222 / 1920, '169': 1670 / 1080 }, face: { '916': [.53, .34], '169': [.43, .22] }, focus: { '916': [.5, .5], '169': [.5, .45] } },
   night: { layers: ['01-outside-tile', '02-car', '03-people', '04-courier'], drift: true, face: { '916': [.29, .59], '169': [.29, .25] }, focus: { '916': [.42, .55], '169': [.45, .5] } },
+  // the metro by day (v3.11): the tram's car in the metro's colours, a tunnel for a window (make_cars.py)
+  metro: { layers: ['01-outside-tile', '02-car', '03-people', '04-courier'], tile: { '916': 1222 / 1920, '169': 1670 / 1080 }, face: { '916': [.53, .34], '169': [.43, .22] }, focus: { '916': [.5, .5], '169': [.5, .45] } },
   stop: { layers: ['01-backdrop', '02-street', '04-shelter', '05-people', '06-courier'], face: { '916': [.89, .32], '169': [.59, .33] }, focus: { '916': [.68, .4], '169': [.55, .45] } },
 };
 // The key stations (ACT1.md §7): their plate is the bold one. Since v3.10 every
@@ -262,7 +264,7 @@ const L = (name, l, cls = '', extra = '', style = '') => `<div class="L ${cls}" 
 // it, the tram is a layer of its own that comes and goes without a rebuild.
 let view = {};
 function paintScene(name, v = {}, force = false) {
-  const key = name === 'stop' ? `stop|${v.at || ''}|${S?.weather || ''}` : `${name}|${v.car || ''}`;
+  const key = name === 'stop' ? `stop|${v.at || ''}|${S?.weather || ''}` : `${name}|${v.car || ''}|${v.crowd || ''}|${S?.weather || ''}`;
   view = v;
   if (key === sceneKey && !force) return 0;
   const sc = SCENES[name], first = !scene; scene = name; sceneKey = key;
@@ -283,7 +285,10 @@ function paintScene(name, v = {}, force = false) {
         + ((ACT?.wx || []).includes(S?.weather) ? L('stop', `05b-wx-${S.weather}`, 'wxl') : '')
         + L('stop', '06-courier', 'idle');
       html += plateHtml(v.at, LANDMARKS.has(v.at));
-    } else html = sc.layers.map((l, i) => L(name, i && v.car ? `${l}-${v.car}` : l, i === 0 ? (sc.tile ? 'tile' : sc.drift ? 'drift' : '') : (i === 1 ? 'sway' : i === 2 ? 'sway lag' : 'bob'))).join('');
+    } else html = sc.layers.map((l, i) => {
+      const cls = i === 0 ? (sc.tile ? 'tile' : sc.drift ? 'drift' : '') : (i === 1 ? 'sway' : i === 2 ? 'sway lag' : 'bob');
+      return (l = carLayer(name, l, v)) && L(name, l, cls);
+    }).join('');
     frameEl.innerHTML = html;
     place();
     frameEl.classList.remove('push'); if (!CALM) { void frameEl.offsetWidth; frameEl.classList.add('push'); }
@@ -500,13 +505,28 @@ function hint(t) { let h = stage.querySelector('.v3tap'); if (!t) { h?.remove();
 
 // ── the moment ─────────────────────────────────────────────────────────────
 let busy = false, pendingHop = null, skip = null, arrived = null;
-const interior = () => NIGHT ? 'night' : 'tram';
+const interior = hop => NIGHT ? 'night' : hop?.model === 'metro' ? 'metro' : 'tram';
 // The old trams from inside (v3.3, look only like the outside): the museum
 // tram in varnished wood and brass, the Nr I and Nr II in their 1970s
 // orange and beige; the newer three are the car as painted
 // (art/minimal-metro-look/make_interiors.py). The night car is the night car.
 const CAR = { museum: 'museum', nr1: 'old', nr2: 'old' };
 const carOf = hop => (!NIGHT && CAR[hop?.model]) || '';
+// WHO ELSE IS IN THE CAR, AND WHAT THE WINDOW SHOWS (v3.11; owner, 2026-11-06:
+// "lots more art and scenarios in these styles", and 2026-11-07 on the night
+// window's rain). The car fills when the card says so — the crush, or a tram
+// you had to let go by because it was full — and empties for the humming at
+// the back. The window carries the day's weather, which the stop's own rain
+// never could (it is never drawn inside a car). A layer the art does not have
+// (a rush car in the museum tram, rain in a tunnel) is the plain one.
+const crowdOf = (hop, card) => card === 'humming' ? 'empty' : NIGHT || CAR[hop?.model] ? '' : card === 'crush' || hop?.full ? 'rush' : '';
+const WINDOW_WX = { tram: ['rain', 'snow', 'fog'], night: ['snow', 'fog'] };   // the night window already rains
+function carLayer(name, l, v) {
+  if (l === '01-outside-tile') return (WINDOW_WX[name] || []).includes(S?.weather) ? `${l}-${S.weather}` : l;
+  if (v.crowd === 'empty' && l === '03-people') return '';
+  if (v.crowd === 'rush' && (l === '03-people' || l === '04-courier')) return `${l}-rush`;
+  return v.car ? `${l}-${v.car}` : l;
+}
 const modelName = id => TRAMS.find(t => t.id === id)?.name || id;
 function tramFor(c) {
   if (c.kind === 'halt') return { model: S.hop?.model && S.hop.model !== 'metro' ? S.hop.model : 'nr2', family: S.halt.family, halted: true };
@@ -521,7 +541,7 @@ function render() {
     // a card dealt on the way: aboard is the car, on foot is the board mid-walk
     setActor(null);
     if (pendingHop.kind === 'walk') { showBoard(pendingHop, 0.5, c.id); }   // what you walk past rides beside you (v3.9)
-    else { hideBoard(); paintScene(interior(), { car: carOf(pendingHop) }); }
+    else { hideBoard(); paintScene(interior(pendingHop), { car: carOf(pendingHop), crowd: crowdOf(pendingHop, c.id) }); }
   } else {
     hideBoard();
     const t = tramFor(c), leaving = !t && arrived;
@@ -604,7 +624,7 @@ async function pick(i) {
       // the tram you chose pulls in (look only: the model is drawn, the ride is the same)
       if (tram) { const wait = scene !== 'stop' ? paintScene('stop', { at: r.hop.from }) : 0; if (wait) await beat(wait); setTram({ model: r.hop.model, family: r.hop.line.family }); panel.innerHTML = ''; await drive('in'); }
       if (r.hop.model === 'museum') await rare();
-      if (r.hop.kind === 'ride') { hideBoard(); paintScene(interior(), { car: carOf(r.hop) }); sign(r.hop); }
+      if (r.hop.kind === 'ride') { hideBoard(); paintScene(interior(r.hop), { car: carOf(r.hop), crowd: crowdOf(r.hop) }); sign(r.hop); }
       if (r.unsealed) { await beat(900); await reveal({ say: `Aboard the ${r.unsealed.family}, the label makes sense: ${r.unsealed.stop}.`, chips: [], how: 'win' }); }
       if (r.story) { pendingHop = r.hop; busy = false; return render(); }
       if (r.hop.kind === 'ride') await beat(1200);

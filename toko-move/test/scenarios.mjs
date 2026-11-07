@@ -11,6 +11,8 @@
 //     pixels (the card covers the bottom of 9:16 and the lower right of 16:9)
 //   · every card played on foot has a picture, and no picture is for a card
 //     that does not exist
+//   · (v3.11) every interior layer the car can ask for exists, and the rain in
+//     the window falls one way — measured, with the old two-way plate as control
 //
 //   node toko-move/test/scenarios.mjs
 import assert from 'node:assert/strict';
@@ -66,4 +68,41 @@ const ferries = Object.entries(act.land || {}).filter(([, v]) => v['916']?.ferry
 ok(ferries.includes('olympiaterminaali') && ferries.includes('lansiterminaali'), `both ferry terminals carry the bobbing ferry (${ferries.join(', ')})`);
 const wx = act.wx || [], wxMissing = wx.flatMap(w => ['916', '169'].map(f => `05b-wx-${w}`).filter((x, i) => !fs.existsSync(at(`../scenes/stop/${['916', '169'][i]}/${x}.webp`))));
 ok(wx.includes('snow') && wx.includes('rain') && !wxMissing.length, `the weather lies on the stop: ${wx.join(', ')}, both formats`);
+// MORE INTERIORS (v3.11): every layer the car can ask for is drawn — the metro
+// by day, the rush car, and the window in every weather play.js lists
+const src = fs.readFileSync(at('../js/play.js'), 'utf8');
+const winWx = Object.fromEntries([...(src.match(/const WINDOW_WX = \{([^}]*)\}/)?.[1] || '').matchAll(/(\w+): \[([^\]]*)\]/g)].map(([, k, v]) => [k, v.match(/'(\w+)'/g).map(x => x.slice(1, -1))]));
+const want = ['01-outside-tile', '02-car', '03-people', '04-courier', '03-people-rush', '04-courier-rush'].map(l => `metro/${l}`)
+  .concat(['tram/03-people-rush', 'tram/04-courier-rush'], Object.entries(winWx).flatMap(([sc, ws]) => ws.map(w => `${sc}/01-outside-tile-${w}`)));
+const gone = want.flatMap(l => ['916', '169'].map(f => l.replace('/', `/${f}/`))).filter(l => !fs.existsSync(at(`../scenes/${l}.webp`)));
+ok(winWx.tram?.includes('rain') && winWx.night?.includes('snow') && !gone.length, `the metro, the rush car and the window's weather are drawn, both formats (${want.length * 2} layers)${gone.length ? '; missing ' + gone.join(', ') : ''}`);
+// ...and the rain falls ONE way (owner, 2026-11-07: "Rain seems to be falling into 2
+// different directions here"). The window is a tile whose two halves once were
+// mirror images, rain included. The slant of a streak is read off the image
+// gradient — Σgx·gy over Σ|gx·gy| in the sky, per half: + is down-and-left, − the
+// other way — and the painted plate it came from is the control: the same ruler
+// has to SEE its two directions, or a pass here means nothing.
+if (hasFfmpeg) {
+  const slant = file => {
+    const [W, H] = execFileSync('ffprobe', ['-v', 'error', '-select_streams', 'v:0', '-show_entries', 'stream=width,height', '-of', 'csv=p=0', file]).toString().trim().split(',').map(Number);
+    const raw = execFileSync('ffmpeg', ['-v', 'error', '-i', file, '-f', 'rawvideo', '-pix_fmt', 'gray', '-'], { maxBuffer: 1 << 27 });
+    const half = [[0, 0], [0, 0]], y1 = Math.floor(H * 0.42);
+    for (let y = 1; y < y1; y++) for (let x = 1; x < W - 1; x++) {
+      const p = (raw[y * W + x + 1] - raw[y * W + x - 1]) * (raw[(y + 1) * W + x] - raw[(y - 1) * W + x]); half[x < W / 2 ? 0 : 1][0] += p; half[x < W / 2 ? 0 : 1][1] += Math.abs(p);
+    }
+    return { m: half.map(([s_, a]) => (a ? s_ / a : 0)), e: (half[0][1] + half[1][1]) / (W * y1) };
+  };
+  const ctl = slant(at('../art/minimal-metro-look/_prev/night-916-tile-painted.webp').pathname);
+  ok(ctl.m[0] > 0.5 && ctl.m[1] < -0.5, `the ruler sees the old window's two directions (${ctl.m.map(v => v.toFixed(2)).join(' / ')})`);
+  const bad = [], read = [];
+  // the day's rain variant, and the night window, which always rains (the night run is always 'clear')
+  for (const [sc, l] of [['tram', '01-outside-tile-rain'], ['night', '01-outside-tile']]) for (const f of ['916', '169']) {
+    const r = slant(at(`../scenes/${sc}/${f}/${l}.webp`).pathname); read.push(`${sc}@${f} ${r.m.map(v => v.toFixed(2)).join('/')}`);
+    if (!(r.m[0] > 0.5 && r.m[1] > 0.5)) bad.push(sc + '@' + f);
+  }
+  ok(!bad.length, `the rain in every window falls one way, down and to the left (${read.join(' · ')})`);
+  // and the night's snow and fog are made from the DRIED plate: no painted rain left under them
+  const dry = ['snow', 'fog'].map(w => slant(at(`../scenes/night/916/01-outside-tile-${w}.webp`).pathname)), wet = slant(at('../art/minimal-metro-look/_prev/night-916-tile-painted.webp').pathname);
+  ok(dry.every(r => Math.abs(r.m[0]) < 0.4 && Math.abs(r.m[1]) < 0.4), `a snowy or foggy night has no painted rain under it (slant ${dry.map(r => r.m.map(v => v.toFixed(2)).join('/')).join(', ')} against the plate's ${wet.m.map(v => v.toFixed(2)).join('/')})`);
+}
 console.log(`scenarios: ${n} checks passed`);
