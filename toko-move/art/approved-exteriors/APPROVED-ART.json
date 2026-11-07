@@ -436,18 +436,102 @@
         "sunny-open-perspectives/layers/doorway/00-integrated-plate.png",
         "sunny-open-perspectives/layers/doorway/10-exact-courier-identity.png"
       ]
+    },
+    {
+      "pack": "encounters-weather-studies",
+      "scene_variant": "tourist",
+      "approval_context": "pt150u: These are approved \u2014 all four encounters/weather pairs.",
+      "destination": "PR632",
+      "landscape": "encounters-weather-studies/crops/tourist-169.png",
+      "landscape_size": [
+        1024,
+        576
+      ],
+      "portrait": "encounters-weather-studies/crops/tourist-916.png",
+      "portrait_size": [
+        576,
+        1024
+      ],
+      "master": "encounters-weather-studies/masters/tourist-master.png",
+      "composite_layers": [
+        "encounters-weather-studies/layers/tourist/00-integrated-plate.png",
+        "encounters-weather-studies/layers/tourist/10-exact-courier-identity.png"
+      ]
+    },
+    {
+      "pack": "encounters-weather-studies",
+      "scene_variant": "wallet",
+      "approval_context": "pt150u: These are approved \u2014 all four encounters/weather pairs.",
+      "destination": "PR632",
+      "landscape": "encounters-weather-studies/crops/wallet-169.png",
+      "landscape_size": [
+        1024,
+        576
+      ],
+      "portrait": "encounters-weather-studies/crops/wallet-916.png",
+      "portrait_size": [
+        576,
+        1024
+      ],
+      "master": "encounters-weather-studies/masters/wallet-master.png",
+      "composite_layers": [
+        "encounters-weather-studies/layers/wallet/00-integrated-plate.png",
+        "encounters-weather-studies/layers/wallet/10-exact-courier-identity.png"
+      ]
+    },
+    {
+      "pack": "encounters-weather-studies",
+      "scene_variant": "wind",
+      "approval_context": "pt150u: These are approved \u2014 all four encounters/weather pairs.",
+      "destination": "PR632",
+      "landscape": "encounters-weather-studies/crops/wind-169.png",
+      "landscape_size": [
+        1024,
+        576
+      ],
+      "portrait": "encounters-weather-studies/crops/wind-916.png",
+      "portrait_size": [
+        576,
+        1024
+      ],
+      "master": "encounters-weather-studies/masters/wind-master.png",
+      "composite_layers": [
+        "encounters-weather-studies/layers/wind/00-integrated-plate.png",
+        "encounters-weather-studies/layers/wind/10-exact-courier-identity.png"
+      ]
+    },
+    {
+      "pack": "encounters-weather-studies",
+      "scene_variant": "snow",
+      "approval_context": "pt150u: These are approved \u2014 all four encounters/weather pairs.",
+      "destination": "PR632",
+      "landscape": "encounters-weather-studies/crops/snow-169.png",
+      "landscape_size": [
+        1024,
+        576
+      ],
+      "portrait": "encounters-weather-studies/crops/snow-916.png",
+      "portrait_size": [
+        576,
+        1024
+      ],
+      "master": "encounters-weather-studies/masters/snow-master.png",
+      "composite_layers": [
+        "encounters-weather-studies/layers/snow/00-integrated-plate.png",
+        "encounters-weather-studies/layers/snow/10-exact-courier-identity.png"
+      ]
     }
   ],
   "counts": {
-    "unique_variants": 21,
-    "landscape_outputs": 21,
-    "portrait_outputs": 16,
-    "previously_in_pr632": 4,
-    "newly_added_variants": 17,
-    "pack_files": 162,
+    "unique_variants": 25,
+    "landscape_outputs": 25,
+    "portrait_outputs": 20,
+    "previously_in_pr632": 21,
+    "newly_added_variants": 4,
+    "pack_files": 195,
     "audit_files": 5,
-    "total_pr_files": 167,
-    "new_files_this_update": 136
+    "total_pr_files": 200,
+    "new_files_this_update": 33
   },
   "files_by_pack": {
     "outdoor-weather-tests": [
@@ -627,6 +711,41 @@
       "sunny-open-perspectives/sources/kiosk.jpg",
       "sunny-open-perspectives/sources/master-shapes.json",
       "sunny-open-perspectives/sources/metro.jpg"
+    ],
+    "encounters-weather-studies": [
+      "encounters-weather-studies/CONTACT.png",
+      "encounters-weather-studies/MOTION.md",
+      "encounters-weather-studies/README.md",
+      "encounters-weather-studies/SCENES-GAMEPLAY.md",
+      "encounters-weather-studies/approval-record.json",
+      "encounters-weather-studies/asset-sha256.json",
+      "encounters-weather-studies/crop-metadata.json",
+      "encounters-weather-studies/crops/snow-169.png",
+      "encounters-weather-studies/crops/snow-916.png",
+      "encounters-weather-studies/crops/tourist-169.png",
+      "encounters-weather-studies/crops/tourist-916.png",
+      "encounters-weather-studies/crops/wallet-169.png",
+      "encounters-weather-studies/crops/wallet-916.png",
+      "encounters-weather-studies/crops/wind-169.png",
+      "encounters-weather-studies/crops/wind-916.png",
+      "encounters-weather-studies/layers/snow/00-integrated-plate.png",
+      "encounters-weather-studies/layers/snow/10-exact-courier-identity.png",
+      "encounters-weather-studies/layers/tourist/00-integrated-plate.png",
+      "encounters-weather-studies/layers/tourist/10-exact-courier-identity.png",
+      "encounters-weather-studies/layers/wallet/00-integrated-plate.png",
+      "encounters-weather-studies/layers/wallet/10-exact-courier-identity.png",
+      "encounters-weather-studies/layers/wind/00-integrated-plate.png",
+      "encounters-weather-studies/layers/wind/10-exact-courier-identity.png",
+      "encounters-weather-studies/masters/snow-master.png",
+      "encounters-weather-studies/masters/tourist-master.png",
+      "encounters-weather-studies/masters/wallet-master.png",
+      "encounters-weather-studies/masters/wind-master.png",
+      "encounters-weather-studies/sources/compose.py",
+      "encounters-weather-studies/sources/master-shapes.json",
+      "encounters-weather-studies/sources/snow.jpg",
+      "encounters-weather-studies/sources/tourist.jpg",
+      "encounters-weather-studies/sources/wallet.jpg",
+      "encounters-weather-studies/sources/wind.jpg"
     ]
   }
 }

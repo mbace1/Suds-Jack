@@ -49,3 +49,7 @@ Five older variants have landscape only (three outdoor dry + two camera studies)
 Run `python3 toko-move/art/approved-exteriors/reproduce.py`; optional `--output /tmp/toko-rebuilt` reconstructs copies. Requires Python 3 and Pillow. This validates all hashes, registered layers, masters and all final crops pixel-for-pixel. Sources include selected generated plates and trace geometry; generative image creation itself is not deterministic. Fully approved packs retain original composers as provenance; approved-only universal reproduction is preferred for partial packs and needs no excluded images, OpenCV, sibling references or absolute checkout path.
 
 Original illustrations remain byte-identical. Only partial CONTACT sheets are rebuilt as approved-only indexes; all original illustration PNG/JPG files are unchanged. Asset hashes distinguish indexes from output identity. All bodies/environments remain integrated rasters, not rigs. Courier identity is independently registered where visible; camera 03 includes original hand holdout. No weather or body-motion readiness is inferred. Future development PRs should use/ship these approved assets with consuming implementation. No gameplay/build/deployment change here.
+
+
+## Latest approved addition — pt150u
+Four encounters-weather-studies pairs added: tourist, wallet, wind, snow. Current totals **25 variants, 25 landscape +20 portrait outputs**. See ../encounters-weather-studies/SCENES-GAMEPLAY.md for existing choices and decorative-weather limitations. Earlier 21-count text describes initial audit.
