@@ -1,3 +1,108 @@
+## v60 — in progress
+**SDF on the live menu: RENDER · CLASSIC | SDF (HD-020)**
+
+Mikael, 22 Oct 2026: *"Can you make an SDF toggle in the main menu?"*, then
+*"It should also work"*. Codex's SDF builds 1–3 (the three entries below,
+#626) raymarch the skull family, and since build 3 the Watcher and the Totem,
+as signed distance fields with carved wounds, behind a Classic / SDF Preview
+pair on the menu, but only on the separate `/hyperdagger-sdf/` preview. On a
+phone held sideways that pair and its two-line note pushed START off the
+bottom of the screen. This takes that work to the live game:
+
+- **One row, not two plus a note.** RENDER, then CLASSIC and SDF as the two
+  halves of one segmented switch, 44 px tall, in the season's colour. It sits
+  between the rules card and START, and START fits all three views (desktop,
+  phone upright, phone on its side). The controls line names the keys: R on a
+  keyboard, ▲▼ on a pad. (The label was SKULLS until build 3 made the Watcher
+  and the Totem SDF too.)
+- **Build 3's test arena is a chip in the header** (TEST ARENA · WATCHER +
+  TOTEM, shown while SDF is on), where the panel has room, rather than a
+  44 px row above START that broke the sideways fit again.
+- **Picked the way a season is.** One press on the menu, saved
+  (`hyperDaggerRenderer`), never a start. The bodies built from then on wear
+  it. CLASSIC is the default, so the game nobody switched is the game it was:
+  build 3's floor inlays and SDF lighting are off under CLASSIC.
+- **It works in play, and a gate says so** (`test/sdf-play.cjs`, through the
+  real menu by touch, in all three seasons):
+  - the skulls the season's own director spawns are SDF skulls, never skinned;
+  - skull, splitter and dread come up as their own profiles with their own
+    health;
+  - an SDF skull in front of the eye is drawn;
+  - a kill throws its voxels and releases the shader, and a splitter splits
+    into SDF minis;
+  - in season 3 the look locks an SDF skull and the missiles kill it;
+  - END RUN, CLASSIC, START gives voxel skulls again.
+- With the Meshy skins loaded (the real page, not `?assets=0`), a CLASSIC
+  skull wears its skin and an SDF skull never does. The skins are attached
+  lazily and skip a body that already has an SDF one.
+
+Tokens: `main.js` 114 and `sw.js` 114, worker cache `hyperdagger-v84`, above
+the 113 / v83 that this branch and build 3 had each taken separately for
+different bytes. `enemy.js`, `truck.js` and `convoy.js` stay at build 3's 113
+and `sdf-skull.js` at its 3; their bytes here are build 3's.
+
+## SDF build 3 — carved damage, living machinery and floor inlays
+- Shots cut actual through-holes along their trajectories. Six recent cuts
+  are stored per enemy; dark rims and hit flash make wounds readable. The
+  cap replaces oldest cuts and avoids unbounded shader work.
+- Watcher: an orbital bone ring and recessed iris. Its existing 0.7-second
+  warning brightens/swells the iris before the same aimed three-orb volley.
+- Totem: a dark open helical shell around a breathing core. Existing spawn
+  timers drive its pulse; HP, rings, spawning, hit radius and scoring persist.
+- Skull family remains converted. SDF normals now light in world space from
+  the season's sun direction, with its horizon supplying the lower fill.
+- The arena gains broken annular engravings from 2D signed-distance fields.
+  These are material grooves on the existing floor, not raymarched terrain
+  or new collision. Classic mode disables them.
+- The menu/gallery include a TEST WATCHER + TOTEM arena: the legacy VOID
+  director begins with both enemies, with separate best/history/run-log keys
+  and no daily board. The three standard seasons retain their wave tables.
+- Gallery includes Watcher/Totem and a CARVE WOUND control. Start menu labels
+  SDF BUILD 3. The separate preview remains online-only.
+
+This is an authorized expansion of the experimental renderer; physical GPU
+and iPad frame budgets still gate default rollout. It does not claim that
+the whole scene is SDF, that physics uses SDFs, or that visual parity is 95%.
+Tokens: enemy/main/truck/convoy 113, SDF module 3; source worker 83.
+
+## SDF build 2 — experimental menu build
+**Classic or SDF, chosen before START.** The saved renderer choice is available
+through mouse/touch buttons, R, or gamepad up/down. The three seasons and their
+controls remain the same. A URL `?skull=sdf` explicitly opens the SDF preview;
+`?skull=classic` returns to the baseline. Making a menu choice removes the URL
+override so reload agrees with the selection.
+
+The conversion now covers the skull family: regular, crowned Wraith, cleft
+Splitter, small hornless Mini and crowned Dread. Each keeps its own health,
+radius, speed, scoring and death/split behavior. Season palettes tint the bone
+and eyes. SDF wounds currently flash; visual bullet-hole erosion remains a
+later step. The gallery cycles all five profiles.
+
+The separate `/hyperdagger-sdf/` preview is online-only and registers no worker.
+The current cabinet and its offline caches are preserved. Detailed physical
+GPU/iPad performance is still unverified. Expansion gates and targets are in
+`ROADMAP.md`; this release does not claim full SDF conversion or 95% parity.
+
+Tokens: enemy/main/truck/convoy 112, SDF module 2; source worker 82.
+
+## SDF skull pilot — review build after v59
+**One enemy, two rendering paths.** Open `?skull=sdf` to raymarch the regular
+chaser's skull inside a bounded proxy. Default play and the rest of the roster
+keep their existing visuals. `sdf-preview.html` compares the current voxel skull
+and the SDF skull, with rotation and 12/40-enemy swarm views.
+
+- Sculpted cranium, tapered horns, carved eye/nose cavities, individual teeth,
+  ember eyes and a lower jaw driven by the existing bite animation.
+- Surface depth is written for geometry occlusion. Each camera gets its own
+  local ray origin, including the game's cube-camera passes.
+- Same one-hit health, radius, movement, scoring and voxel death debris.
+  The SDF proxy does not participate in gameplay raycasts; enemy death disposes
+  the per-enemy shader material. Derived skulls keep their own identities.
+- Opt-in experiment, not a full renderer migration or a parity certification.
+  The shading is a local bone/ember rig, not a new physically lit arena pipeline.
+- Module tokens: changed enemy/main/truck/convoy imports at 111; new SDF module
+  at 1; worker cache 81 and generated precache (71 entries).
+
 ## v59 — in progress
 **The menu is the season (HD-019)**
 

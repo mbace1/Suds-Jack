@@ -121,6 +121,15 @@ Note, 18 Oct (HD-018, v58): there is no haul scoring any more, and the missiles 
 
 The menu offers seasons 1-3 only, as three tabs. Picking one builds that season's arena behind the menu, live, and shows its rules; START underneath starts it. Picking no longer starts a run. The mode row goes (the season declares its mode, v50), and RUN FREE / DAILY moves to the pause menu, applying from the next run (HD-004's daily runs keep their way in).
 
+### HD-020 — SDF on the live menu: RENDER · CLASSIC | SDF
+
+- status: In progress
+- size: S
+- blocked-by: —
+- design: Mikael, 22 Oct 2026 — *"Can you make an SDF toggle in the main menu?"*, *"It should also work"*; the SDF builds are #626 (`ROADMAP.md`, the SDF conversion track)
+
+#626's SDF builds (the skull family, and since build 3 the Watcher and the Totem, with carved wounds) and their Classic / SDF choice move from the separate `/hyperdagger-sdf/` preview onto the live game's menu. The choice becomes one segmented row, RENDER · CLASSIC | SDF, so START fits a phone held sideways. Build 3's test-arena link becomes a header chip. CLASSIC stays the default, and `test/sdf-play.cjs` proves the choice reaches play in all three seasons.
+
 ## Landed
 
 ### HD-001 — short press jumps, hold fires
