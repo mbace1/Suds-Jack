@@ -384,6 +384,9 @@ jobs:
       - name: the moments (v3.12) — the owner's approved art pack untouched, the game's copies are its crops, each at its beat of the job
         run: node toko-move/test/moments.mjs
 
+      - name: the missions (v3.14) — real places and cards with art, a version per seed, the perk draft, strikes, unlocks, the runs untouched
+        run: node toko-move/test/missions.mjs
+
       - name: the sealed parcel — which offer, the notebook, its store, the Finnish
         run: node toko-move/test/sealed.mjs
 

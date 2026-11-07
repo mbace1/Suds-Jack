@@ -25,8 +25,8 @@
 // nothing happens while you read. Every animation is skippable by a tap and
 // none of them is a timer the game waits on to be fair: the state has already
 // moved when it starts.
-import { tr } from './lang.js?v=11';
-import * as J from './journey.js?v=3';
+import { tr } from './lang.js?v=12';
+import * as J from './journey.js?v=4';
 import * as Runs from './runs.js?v=4';
 import { HopBoard } from './hopboard.js?v=3';
 import { loadGround } from './ground.js?v=12';
@@ -41,11 +41,12 @@ import { TRAMS } from './cards.js?v=3';
 import { mountAudio } from './audio.js?v=2';
 import { loadStanding, saveStanding } from './regulars.js?v=4';
 import { addNote } from './sealed.js?v=2';
-import { MOMENTS, faceIn, keepIn, pickupMoment, deliveryMoment, boardMoment, walkMoment, cardMoment, choiceMoment } from './moments.js?v=2';
-import { resolveMode, dailyShare, W } from './modes.js?v=1';
+import { MISSIONS, PERKS, STRIKES, loadMissions, missionOpen, recordMission } from './missions.js?v=1';
+import { MOMENTS, faceIn, keepIn, pickupMoment, deliveryMoment, boardMoment, walkMoment, cardMoment, choiceMoment } from './moments.js?v=3';
+import { resolveMode, dailyShare, W } from './modes.js?v=2';
 import { recordDaily, todayRecord, streak } from './daily.js?v=2';
 
-export const BUILD_VERSION = '3.13';
+export const BUILD_VERSION = '3.14';
 const $ = id => document.getElementById(id);
 const params = new URLSearchParams(location.search);
 // a run of the ladder, today's daily, or a day of the week (modes.js, ACT1.md §12)
@@ -198,7 +199,7 @@ const CSS = `
 .v3stamp.late{border-color:#e2683c}.v3stamp.late .big{color:#b34a36}
 .v3stamp .pts{font-size:16px;font-weight:800;color:#3f7a45}
 .v3stamp .inside{font-size:13px;color:#4d5a5e;font-style:italic}
-.v3stamp .xtra{font-size:12px;font-weight:700;color:#233d4d}.v3stamp .xtra.note{font-weight:400;font-style:italic;color:#6b5a2e}
+.v3stamp .xtra{font-size:12px;font-weight:700;color:#233d4d}.v3stamp .xtra.strike{color:#b34a36;letter-spacing:1px;font-weight:900}.v3stamp .xtra.note{font-weight:400;font-style:italic;color:#6b5a2e}
 .v3strip .race{color:#b5532c;font-weight:700}.v3strip .race.late{text-decoration:line-through}
 .v3stamp.rare{border-color:#c9a24a;background:#fffaf0}.v3stamp.rare .big{color:#8a6802}
 .v3stamp.wxs{border-color:#33b2d2}.v3stamp.wxs .big{color:#176b73}
@@ -362,7 +363,7 @@ const ready = (async () => {
   net = J.network(buildRealHelsinki(pack)); ACT = act;
   board = new HopBoard($('v3board'), { pack, ground, skin: SKIN, net }); board.label = tr;
   mini = new HopBoard($('v3minic'), { pack, water: ground?.water, skin: SKIN, net, detail: false }); mini.label = tr;
-  if (play) { play.disabled = false; play.textContent = 'START SHIFT'; }
+  if (play) { play.disabled = false; play.textContent = MODE.mode === 'mission' ? 'START THE ERRAND' : 'START SHIFT'; }
 })().catch(err => { const p = $('play'); if (p) p.textContent = 'MAP LOAD FAILED'; console.error(err); throw err; });
 
 // ── the title card: Act 1, the ladder (runs.js) ───────────────────────────
@@ -380,7 +381,7 @@ function paintTitle() {
     const open = Runs.unlocked(r.id, all), rec = all[r.id], prev = Runs.RUNS[i - 1];
     return open ? `<a class="run${r.id === RUN.id ? ' on' : ''}" href="${Runs.runHref(r.id, location.search)}" data-run="${r.id}"${r.id === RUN.id ? ' aria-current="true"' : ''}><span class="runG" aria-hidden="true">${r.glyph}</span><span class="runT"><b>${esc(r.name)}</b><small>${esc(r.title)} · ${r.target} jobs</small></span><span class="runS" title="${rec.stars} stars">${rec.done ? star(rec.stars) : ''}</span></a>`
       : `<span class="run locked" data-run="${r.id}" aria-disabled="true"><span class="runG" aria-hidden="true">🔒</span><span class="runT"><b>${esc(r.name)}</b><small>finish ${esc(prev.name)} to open</small></span></span>`;
-  }).join('')}</div><p class="hint mutBlurb">${esc(RUN.blurb)}</p>`;
+  }).join('')}</div>${missionList(all)}<p class="hint mutBlurb">${esc(RUN.blurb)}</p>`;
   // the daily, the week and LIVE are still the real-time game, and still the
   // reward for clearing NIGHT (owner: ladder first)
   const extras = Runs.extrasOpen(all);
@@ -389,11 +390,26 @@ function paintTitle() {
   const ll = $('liveLink'); if (ll) ll.hidden = !extras || STORE;
   if (MODE.mode !== 'run') paintModeTitle(start, end);
 }
+// MISSIONS (v3.14, missions.js): the errands, the first open once EASY is done,
+// each after the one before; a locked one says what opens it
+function missionList(all = Runs.loadRuns()) {
+  const ms = loadMissions(), easy = all.easy?.done, on = MODE.mode === 'mission' ? MODE.mission.id : null;
+  return `<p class="mutHead">MISSIONS</p><div class="runList missionList">${MISSIONS.map((m, i) => missionOpen(m.id, ms, easy)
+    ? `<a class="run${m.id === on ? ' on' : ''}" href="?mission=${m.id}" data-mission="${m.id}"><span class="runG" aria-hidden="true">${m.glyph}</span><span class="runT"><b>${esc(m.name)}</b><small>${esc(m.title)} · ${m.steps.length} jobs</small></span><span class="runS">${ms[m.id].done ? '✓' : ''}</span></a>`
+    : `<span class="run locked" data-mission="${m.id}" aria-disabled="true"><span class="runG" aria-hidden="true">🔒</span><span class="runT"><b>${esc(m.name)}</b><small>${i ? `finish ${esc(MISSIONS[i - 1].name)} to open` : 'finish EASY to open'}</small></span></span>`).join('')}</div>`;
+}
 // The daily and the week on the title card: what this shift is, what stands.
 function paintModeTitle(start, end) {
   const set = (id, t) => { const e = $(id); if (e) e.textContent = t; };
   for (const id of ['dailyLink', 'weekLink', 'liveLink']) { const e = $(id); if (e) e.hidden = true; }
   const row = $('mutRow');
+  if (MODE.mode === 'mission') {
+    set('titleWhen', `Mission · ${MODE.mission.name} · ${hhmm(start)}`);
+    set('titleGoal', `${MODE.mission.blurb} ${COUNT[RUN.target]} jobs. Two late drops and the errand is lost; between jobs, pick a perk.`);
+    if (row) row.innerHTML = missionList() + `<p class="hint mutBlurb"><a href="?">← the runs</a></p>`;
+    const p = $('play'); if (p) p.textContent = 'START THE ERRAND';
+    return;
+  }
   if (MODE.mode === 'daily') {
     set('titleWhen', `Daily ${MODE.number} · ${MODE.label} · ${hhmm(start)}`);
     set('titleGoal', `The same shift for everyone today. ${COUNT[RUN.target]} deliveries before ${hhmm(end)}. Your first finish stands.`);
@@ -670,6 +686,9 @@ async function pick(i) {
       panel.innerHTML = '';
       await rideBoard(wasHop, wasHop.kind === 'walk' ? 0.5 : 0, 1);
       if (wasHop.kind === 'ride' && wasHop.model && wasHop.model !== 'metro') arrived = { model: wasHop.model, family: wasHop.line.family };
+    } else if (r.perk) {
+      // a perk drafted (v3.14): kept for the rest of the errand
+      await reveal({ say: `${PERKS[r.perk].name}, for the rest of the errand.`, chips: [PERKS[r.perk].line], how: 'win' });
     } else if (r.reveal) {
       // a choice with its consequence drawn (v3.13): walking the lady across is the crossing
       const cm = before?.kind === 'story' ? choiceMoment(before.id, before.options[i]?.label, fmt, sky()) : null;
@@ -693,7 +712,8 @@ async function stamp(d) {
   if (MODE.mode === 'week') { W.progress(MODE.week, { score: S.score * W.PER_EURO, results: S.results }); W.saveWeek(MODE.week, MODE.store); }
   const note = d.sealed ? addNote(net.name(d.to)).split(' · ').slice(1).join(' · ') : '';
   const extra = (d.race ? `<span class="xtra">${d.race === 'won' ? 'You beat the other courier. ×1.3' : 'She got there first. ×0.6'}</span>` : '')
-    + (d.tip ? `<span class="xtra">${esc(d.regular)} tips €${d.tip}</span>` : '') + (note ? `<span class="xtra note">${esc(note)}</span>` : '');
+    + (d.strike ? `<span class="xtra strike">STRIKE ${d.strike} OF ${STRIKES}${d.strike >= STRIKES ? ' · THE ERRAND IS LOST' : ''}</span>` : '')
+    + (d.tip ? `<span class="xtra">${esc(d.regular || 'A regular')} tips €${d.tip}</span>` : '') + (note ? `<span class="xtra note">${esc(note)}</span>` : '');
   panel.innerHTML = `<div class="v3stamp${d.late ? ' late' : ''}" role="status"><span class="big">${d.late ? 'DELIVERED LATE' : 'DELIVERED'}</span><span>${esc(net.name(d.to))}</span><span class="inside"><span>Signed for:</span> <span>${esc(d.contents)}</span></span>${extra}<span class="pts">+€${d.pay}${d.mult !== 1 ? ` <small>(×${+d.mult.toFixed(2)})</small>` : ''}</span></div>`;
   paintHud();
   await beat(2200);
@@ -737,6 +757,21 @@ function finish() {
 // and the line to send. The week's: the day banked, the rent, and tomorrow.
 function finishMode() {
   const done = S.done >= S.target, again = $('again');
+  if (MODE.mode === 'mission') {
+    const m = MODE.mission, rec = recordMission(m.id, { done, score: S.score }), next = MISSIONS[MISSIONS.indexOf(m) + 1];
+    const why = done ? 'Every errand run.' : S.strikes >= STRIKES ? `Two late drops: ${m.name.toLowerCase()} is lost.` : 'The errand did not get done.';
+    $('endTitle').textContent = done ? 'MISSION COMPLETE' : 'MISSION LOST';
+    $('endStats').innerHTML = `<div class="dailyBox runBox"><p class="dailyHead">${esc(m.name)} · ${esc(m.title)}</p><p class="hint">${esc(why)}</p>`
+      + (S.perks.length ? `<p class="hint">your build: ${S.perks.map(p => esc(PERKS[p].name)).join(' · ')}</p>` : '')
+      + (rec.opened ? `<p class="runOpened">${esc(next.name)} IS OPEN</p>` : '') + (rec.perk ? `<p class="runOpened">A NEW PERK: ${esc(PERKS[rec.perk].name.toUpperCase())}</p>` : '')
+      + (done && next && rec.all && missionOpen(next.id, rec.all, true) ? `<a class="btn prime wide" id="nextRun" href="?mission=${next.id}">NEXT · ${esc(next.name)}</a>` : '')
+      + `</div><p>earned <b>€${S.score}</b></p><p>deliveries <b>${S.done}/${S.target}</b></p><p>strikes <b>${S.strikes}/${STRIKES}</b></p>`;
+    $('endNote').textContent = done ? 'A new version of it every time you run it.' : 'Every attempt is a different errand.';
+    if (again) { again.textContent = done ? `${m.name} AGAIN · A NEW VERSION` : `TRY ${m.name} AGAIN`; again.classList.toggle('prime', !done); again.classList.toggle('ghost', done); again.onclick = () => { location.href = location.href.replace(/[?&]seed=\d+/, ''); }; }
+    $('end').hidden = false; sfx(done ? 'end' : 'miss');
+    game.result = { mode: 'mission', id: m.id, done, strikes: S.strikes, perks: [...S.perks], opened: rec.opened };
+    return;
+  }
   if (MODE.mode === 'daily') {
     const rec = recordDaily(MODE.key, { results: [...S.results], score: S.score, target: S.target, euros: true });
     const text = dailyShare(MODE, S.results, S.target, S.score, location.href.split('#')[0].replace(/[?&](lang|seed)=[^&]*/g, ''));

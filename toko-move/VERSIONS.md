@@ -1,5 +1,81 @@
 # Toko Move — versions
 
+## v3.14 — 2026-11-07
+
+**MISSIONS, THE WALLET, AND A RUN THAT CARRIES SOMETHING** — the owner's
+direction: *"Add wallet menu and UI based on base simple UX look that's
+already used for choices. Also start adding the art and locations, build
+missions and all the events in those missions with correct art. Add
+roguelike elements."*
+
+- **The wallet**, in the journey's own choice card (one line, two buttons,
+  a price on each, the stakes under them). It is a card made for missions
+  (`MISSION_CARDS` in `js/missions.js`):
+  - *Hand it in at the kiosk* (+1:00, ×1.1) shows the approved kiosk scene.
+  - *Pocket it* is a risk: maybe +€40, or −€20 for the fright.
+  - Handing it in brings the owner back aboard on a later job (`wallet2`).
+  - The classic deck's third option, *Leave it*, is not on it: the bible's
+    card has at most two buttons.
+
+  The wallet scene is in the game now; the demonstration is still held.
+- **Four missions** (`?mission=<id>`, listed on the title under the runs).
+  Each is three jobs across real places, with its own briefs, drops and
+  events:
+  - **AINO'S MORNING**: Lasipalatsi → the Opera → Kamppi or Eira → the
+    station. The crossing, then the saved seat if you helped.
+  - **LOST AND FOUND**: Kauppatori → Katajanokka → a ferry terminal → the
+    station. The wallet, then its owner.
+  - **EAST OF THE BRIDGE**: Hakaniemi → Kalasatama (heavy: transit only) →
+    Arabia or Sörnäinen → back for the market.
+  - **THE HARBOUR ROUND**: Olympiaterminaali → the market quay → along the
+    shore → the canal at Ruoholahti.
+
+  Every event card a mission deals has its art: a stop actor, or an
+  approved scene. The pickup, delivery and boarding moments play in
+  missions as everywhere.
+
+  No buyer cards are dealt. A first cut dealt four, and selling the
+  errand's parcel ended most left-tapping runs. That was a trap, not a
+  choice.
+- **The roguelike parts**, each a lever the journey already had:
+  - **A version per seed.** The drops and events of each step are drawn,
+    so 30 seeds of EAST give 6+ versions. The same seed is the same
+    version.
+  - **Strikes.** The second late drop loses the errand.
+  - **The draft.** Between jobs, pick one of two perks for the rest of the
+    errand: good shoes (walks −20%), a season pass (waits −30%), a paper
+    map (deadlines +20%), a lucky coin (risks +15%), a regular's number
+    (+€4 a drop), an umbrella (the weather leaves the parcel alone). The
+    end card shows your build.
+  - **Meta.** The first mission opens with EASY, each after the one before.
+    Each first finish adds a perk to the pool: three from the start, six
+    with three missions done.
+- **The runs are untouched.** Everything is behind `run.mission`.
+  `journey.mjs`'s measured bands read exactly as before (easy 60/60 (60) ·
+  60/60 (58) … night 40/60 (12) · 34/60 (4)), and the seed-pinned browser
+  checks still deal what they dealt.
+- **Measured.** A board-reader finishes every mission (EAST, the hard one,
+  on a 1.25 clock). A left-tapper collects 12–35 strikes per 60 runs and
+  loses some.
+- **Finnish** for the missions' title, cards, perks, briefs and end card.
+- **Gates.**
+  - `test/missions.mjs` (19 checks):
+    - real places and cards, and no buyers;
+    - every event has art;
+    - one version per seed;
+    - the draft: two different perks, never one already held, each doing
+      what it says;
+    - two strikes lose the errand;
+    - readers finish, left-tappers collect strikes;
+    - the wallet's two buttons and its callback;
+    - the save, the unlocks and the perk pool;
+    - the runs untouched.
+  - `test/moments.mjs` adds the wallet's kiosk scene.
+  - `test/play.cjs` (browser):
+    - the title lists the missions, the first open after EASY;
+    - LOST AND FOUND plays through: the wallet handed in at the kiosk, a
+      perk drafted from two, the end card with the build.
+
 ## v3.13 — 2026-11-07
 
 **THE CARDS HAVE THEIR SCENES, AND THE SNOW HAS ONE** — PR #632's next two

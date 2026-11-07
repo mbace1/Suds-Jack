@@ -115,10 +115,10 @@ server.listen(0, '127.0.0.1', async () => {
       const ctx = await browser.newContext(PHONE), page = await ctx.newPage(), errs = watch(page);
       await page.goto(`${base}/toko-move/`, { waitUntil: 'load' }); await ready(page);
       const t = await page.evaluate(() => ({ classic: !!window.__tm, v: window.__tm3.version, hero: document.querySelector('.versionHero')?.textContent || '', run: window.__tm3.run.id,
-        runs: [...document.querySelectorAll('#mutRow .run')].map(r => ({ id: r.dataset.run, open: !r.classList.contains('locked'), lit: r.classList.contains('on') })),
+        runs: [...document.querySelectorAll('#mutRow .run[data-run]')].map(r => ({ id: r.dataset.run, open: !r.classList.contains('locked'), lit: r.classList.contains('on') })),
         goal: document.getElementById('titleGoal').textContent, play: document.getElementById('play').textContent,
         links: ['dailyLink', 'weekLink', 'liveLink'].filter(id => { const e = document.getElementById(id); return e && !e.hidden && getComputedStyle(e).display !== 'none'; }) }));
-      ok(`the bare address is the card journey, not the real-time game (v${t.v})`, !t.classic && t.v === '3.13' && /v3\.13/.test(t.hero));
+      ok(`the bare address is the card journey, not the real-time game (v${t.v})`, !t.classic && t.v === '3.14' && /v3\.14/.test(t.hero));
       ok(`it is Act 1, in Helsinki (${await page.evaluate(() => document.getElementById('titleWhen').textContent)})`, await page.evaluate(() => /^Act 1 · Helsinki · 07:00/.test(document.getElementById('titleWhen').textContent)));
       ok(`the ladder: EASY open and lit, three locked (${t.runs.map(r => r.id + (r.open ? '' : '🔒')).join(' ')})`, t.runs.map(r => r.id).join() === 'easy,medium,hard,night' && t.runs[0].open && t.runs[0].lit && t.runs.slice(1).every(r => !r.open) && t.run === 'easy');
       ok(`the goal and the button (${t.goal} · ${t.play})`, /^Three deliveries before 08:15/.test(t.goal) && t.play === 'START SHIFT');
@@ -294,6 +294,28 @@ server.listen(0, '127.0.0.1', async () => {
       ok('walking the lady across is the crossing', ms.includes('crossing'));
       ok('and the seat she saved you is her callback\'s scene', ms.includes('saved-seat'));
       ok('no page or network errors (card scenes)', !errs.length, errs.slice(0, 3).join(' | '));
+      await ctx.close();
+    }
+    // ── missions (v3.14): the title lists them (the first open after EASY), and LOST AND
+    // FOUND plays through: the wallet handed in at the kiosk, a perk drafted between jobs,
+    // the owner aboard, the end card with the build
+    {
+      const ctx = await browser.newContext(PHONE); await seedRuns(ctx, { easy: { done: true, stars: 2, plays: 1 } });
+      const page = await ctx.newPage(), errs = watch(page);
+      await page.goto(`${base}/toko-move/`, { waitUntil: 'load' }); await ready(page);
+      const list = await page.evaluate(() => [...document.querySelectorAll('[data-mission]')].map(e => `${e.dataset.mission}:${e.tagName === 'A' ? 'open' : 'locked'}`));
+      ok(`the title lists the missions, the first open after EASY (${list.join(' ')})`, list[0] === 'aino:open' && list.slice(1).every(x => x.endsWith('locked')) && list.length >= 4);
+      await page.goto(`${base}/toko-move/?mission=wallet&seed=11`, { waitUntil: 'load' }); await ready(page);
+      const t = await page.evaluate(() => ({ when: document.getElementById('titleWhen').textContent, play: document.getElementById('play').textContent }));
+      ok(`?mission=wallet is the errand (${t.when} · ${t.play})`, /LOST AND FOUND/.test(t.when) && t.play === 'START THE ERRAND');
+      await page.tap('#play'); await page.waitForSelector('#v3panel .eventOpt', { timeout: 15000 });
+      let perkCard = null;
+      const seen = await playOut(page, { maxSteps: 400, onCard: async c => { if (c.kind === 'perk' && !perkCard) perkCard = c.buttons.map(b => b.t).join(' | '); } });
+      const ms = [...seen.scenes].filter(x => x.startsWith('m-')).map(x => x.slice(2)), res = await page.evaluate(() => window.__tm3.result);
+      ok(`the wallet is handed in at the kiosk, in its picture (${ms.join(', ')})`, ms.includes('wallet'));
+      ok(`between jobs a perk is drafted from two (${perkCard})`, !!perkCard && perkCard.split(' | ').length === 2);
+      ok(`and the errand ends on its card, with the build (${JSON.stringify(res)})`, seen.end && res?.mode === 'mission' && res.perks.length >= 1);
+      ok('no page or network errors (missions)', !errs.length, errs.slice(0, 3).join(' | '));
       await ctx.close();
     }
     // ── story arcs (v3.4, ACT1.md §10): a second run meets Dispatch, and the city remembers

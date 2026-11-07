@@ -35,6 +35,7 @@ import { haltFamily, haltMinutes } from './mutators.js?v=2';
 import { payFor } from './parcels.js?v=1';
 import { lineFamily } from './board.js?v=8';
 import { CARGO } from './deliveries.js?v=28';
+import { MISSION_CARDS, MISSION_CALLBACKS, PERKS, STRIKES } from './missions.js?v=1';
 
 export const SHIFT_SECONDS = 75 * 60;            // 07:00–08:15, or 23:00–00:15
 export const SPEED_KMH = { tram: 14, metro: 34, walk: 4.8 };
@@ -127,6 +128,11 @@ export function dealDeck(s, run, weather) {
   return out;
 }
 
+// A mission's cards (missions.js) are the journey's own, by id: the deck's,
+// a callback, or one made for a mission (the wallet)
+const CARD_BY_ID = id => CARDS.find(c => c.id === id) || Object.values(CALLBACKS).find(c => c.id === id) || MISSION_CARDS[id] || null;
+const callbackOf = flag => CALLBACKS[flag] || MISSION_CALLBACKS[flag] || null;
+
 // The arc step a run deals (ACT1.md §10): none on a first run, at most one,
 // and only the one the memory says is next. No rng: a run without a memory
 // deals exactly the deck it always did.
@@ -146,6 +152,8 @@ export function newRun(net, run = {}, seed = 1, { start = 'lasipalatsi', memory 
     target: run.target || 3, done: 0, late: 0, sold: 0, trust: 1, score: 0, streak: 0, bestStreak: 0, job: null, offer: null, weather: 'clear',
     phase: 'dispatch', deck: [], used: new Set(), halt: null, haltSeen: false, log: [], hop: null, pending: null, results: [], seen: [],
     memory: { ...(memory || {}) }, flags: new Set(), keep: {}, standing: { ...(standing || {}) }, sealedJob: -1, rivalJob: -1 };
+  // a mission (missions.js): where it starts, its perks and strikes
+  if (run.mission) { s.at = net.nodes.has(run.mission.start) ? run.mission.start : s.at; s.perks = []; s.strikes = 0; s.mods = { deadline: 1, luck: 0, tip: 0, dry: false }; s.perkOffer = null; s.picks = []; }
   // the shift's weather, and the run as the weather makes it: slower walks,
   // fuller trams — the deadlines are set from THIS, so snow is slow, not unfair
   s.weather = run.skies?.length ? pickOf(s, run.skies) : 'clear';
@@ -153,7 +161,11 @@ export function newRun(net, run = {}, seed = 1, { start = 'lasipalatsi', memory 
   s.run = { ...run, walkFactor: (run.walkFactor || 1) * W.walk, headway: (run.headway || 1) * W.wait };
   Object.defineProperty(s, 'best', { value: bestTable(net, s.run), enumerable: false });
   s.deck = dealDeck(s, run, s.weather);
-  const step = arcStep(s.memory, run); if (step) slot(s, step, step.job);
+  // a mission deals its own: one event a step, drawn from the step's few — and
+  // the drop each step sends you to, drawn now, so a seed IS a version of it
+  if (run.mission) run.mission.steps.forEach((st, i) => { const ok = (st.cards || []).map(CARD_BY_ID).filter(c => c && (!c.weather || c.weather.includes(s.weather)));
+    if (ok.length) slot(s, pickOf(s, ok), i); s.picks.push(pickOf(s, st.to)); });
+  const step = run.mission ? null : arcStep(s.memory, run); if (step) slot(s, step, step.job);
   // the run-modifiers (ACT1.md §11), placed by a hash of the seed — no rng, so
   // the deck is the one it always was: the sealed parcel from a fourth run (the
   // second job, or the third when an arc step holds the second's card slot;
@@ -173,6 +185,7 @@ export const halted = (s, fam) => !!s.halt && !s.halt.lifted && s.halt.family ==
 // (EASY: one of the nearer ones), a parcel from the run's pool, and what is
 // inside it, which nobody tells you.
 function dispatch(net, s, notTo = null) {
+  if (s.run.mission) return missionDispatch(net, s);
   const from = s.at, best = s.best[from], cands = [...net.nodes.keys()].filter(id => id !== from && id !== notTo && Number.isFinite(best[id]));
   cands.sort((a, b) => best[a] - best[b]);
   const pool = s.run.board === 'short' ? cands.slice(0, Math.max(3, Math.ceil(cands.length / 3))) : cands.filter(id => best[id] <= (s.run.reach || 20) * 60);
@@ -186,6 +199,19 @@ function dispatch(net, s, notTo = null) {
   if (idx === s.rivalJob) s.offer.rival = { eta: round10(s.offer.best * (s.run.race?.pace || 1.2)) };
   if (idx === s.sealedJob) { const fams = [...new Set((net.at.get(pick) || []).filter(l => l.mode === 'tram').map(l => l.family))].sort();
     if (fams.length) { s.offer.sealed = { family: fams[hashOf(`sealed:${s.seed}`) % fams.length], revealed: false }; s.offer.fee = Math.round(s.offer.fee * 1.5); } }
+  s.phase = 'dispatch';
+}
+
+// A mission's job: the step's own drop (drawn at the start), parcel and brief.
+// There is no "ask for another": an errand is the errand.
+function missionDispatch(net, s) {
+  const st = s.run.mission.steps[s.done + s.sold], from = s.at;
+  if (!st) { s.phase = 'end'; s.offer = null; return; }            // a parcel sold to a buyer used its step: the errand is over
+  let to = s.picks[s.done + s.sold]; if (to === from) to = st.to.find(t => t !== from) || [...net.nodes.keys()].find(t => t !== from);
+  const best = s.best[from][to];
+  s.offer = { to, cargo: st.cargo, best, contents: pickOf(s, CONTENTS[st.cargo] || ['something']), brief: st.brief.replace('{stop}', net.name(to)) };
+  s.offer.fee = Math.round(feeOf(s.offer) * s.trust);
+  const reg = regularAt(to); if (reg) s.offer.regular = { id: reg.id, name: reg.name };
   s.phase = 'dispatch';
 }
 
@@ -273,6 +299,10 @@ const eligible = (c, s) => c.options.filter(o => !o.needs || o.needs === s.job?.
 // line, and up to two buttons, each with its price in time and its stakes.
 export function card(net, s) {
   if (s.phase === 'end') return null;
+  if (s.phase === 'perk') return { kind: 'perk', mood: 'opportunity', text: `Job ${s.done} of ${s.target} done. Pick one for the rest of the errand.`,
+    options: s.perkOffer.map(id => ({ label: PERKS[id].name, price: 0, perk: id, stakes: { sure: [PERKS[id].line] } })) };
+  if (s.phase === 'dispatch' && s.offer?.brief) { const o = s.offer;
+    return { kind: 'dispatch', mood: MOODS_FOR.dispatch, text: o.brief, fee: o.fee, mission: true, options: [{ label: 'Take it', price: 0, stakes: { sure: [`€${o.fee}`] } }] }; }
   if (s.phase === 'dispatch') { const o = s.offer;
     const base = o.sealed ? 'A sealed parcel. No address, only a sticker.' : o.regular ? `${cargoWord(o.cargo)} for ${o.regular.name} at ${net.name(o.to)}.` : `${cargoWord(o.cargo)} for ${net.name(o.to)}.`;
     if (o.rival) return { kind: 'dispatch', mood: 'warning', text: `${base} The other courier wants it too.`, fee: o.fee, rival: true,
@@ -320,7 +350,7 @@ function apply(net, s, e, how, odds = null) {
   }
   return r;
 }
-const roll = (s, o) => { const win = rand(s) < (ODDS[o.risk.odds] ?? 0.5); return { e: win ? o.risk.win : o.risk.lose, how: win ? 'win' : 'lose' }; };
+const roll = (s, o) => { const win = rand(s) < Math.min(0.95, (ODDS[o.risk.odds] ?? 0.5) + (s.mods?.luck || 0)); return { e: win ? o.risk.win : o.risk.lose, how: win ? 'win' : 'lose' }; };
 
 export function choose(net, s, i) {
   const c = card(net, s); if (!c) return { error: 'the run is over' };
@@ -329,7 +359,7 @@ export function choose(net, s, i) {
   s.log.push({ at: s.clock, kind: c.kind, label: opt.label, price: opt.price });
   if (c.kind === 'dispatch') {
     if (i === 1) { advance(s, REROLL_S); if (s.phase !== 'end') dispatch(net, s, s.offer.to); return out; }
-    s.job = { ...s.offer, startedAt: s.clock, limit: Math.round(s.offer.best * GRACE * (s.run.deadline || 1)), mult: 1, known: false, toName: net.name(s.offer.to) }; s.offer = null;
+    s.job = { ...s.offer, startedAt: s.clock, limit: Math.round(s.offer.best * GRACE * (s.run.deadline || 1) * (s.mods?.deadline || 1)), mult: 1, known: false, toName: net.name(s.offer.to) }; s.offer = null;
     if (s.job.rival) s.job.rival.until = s.clock + s.job.rival.eta;
     return nextMoment(net, s, out, 'stop');
   }
@@ -340,12 +370,14 @@ export function choose(net, s, i) {
     // what the city remembers: across runs (`keep`), and for the rest of this
     // one (`set`: its callback takes the next job's card slot)
     Object.assign(s.keep, p.card.keep || {}, o.keep || {});
-    if (o.set && CALLBACKS[o.set] && !s.flags.has(o.set)) { s.flags.add(o.set); const j = s.done + s.sold + 1;
-      if (!s.deck.some(d => d.job === j && d.card.arc && !s.used.has(d.card.id))) slot(s, CALLBACKS[o.set], j); }   // an arc step keeps its slot
+    if (o.set && callbackOf(o.set) && !s.flags.has(o.set)) { s.flags.add(o.set); const j = s.done + s.sold + 1;
+      if (j < s.target && !s.deck.some(d => d.job === j && d.card.arc && !s.used.has(d.card.id))) slot(s, callbackOf(o.set), j); }   // an arc step keeps its slot
     if (s.phase === 'end') return out;
     if (out.reveal.sold) return out;                       // the job went with the buyer: the next dispatch is up
     if (p.thenArrive) return arrive(net, s, out);
     return nextMoment(net, s, out, 'stop', true); }
+  if (c.kind === 'perk') { const id = opt.perk; s.perks.push(id); PERKS[id].apply(s); s.perkOffer = null; out.perk = id;
+    dispatch(net, s); return out; }
   if (c.kind === 'halt') { s.haltSeen = true; if (i === 1) { advance(s, opt.price); s.halt.lifted = true; }
     return nextMoment(net, s, out, 'stop', true); }
   // a hop (or, with nowhere to go, the wait for one)
@@ -360,7 +392,7 @@ export function choose(net, s, i) {
   advance(s, hop.price); if (s.phase === 'end') return out;
   s.at = hop.to;
   // the weather's stakes on a walk land on the way
-  if (hop.risk) { const { e, how } = roll(s, hop); out.reveal = apply(net, s, e, how, hop.risk.odds); if (s.phase === 'end') return out; }
+  if (hop.risk && !s.mods?.dry) { const { e, how } = roll(s, hop); out.reveal = apply(net, s, e, how, hop.risk.odds); if (s.phase === 'end') return out; }
   // a card that happens aboard (or on foot) plays out before the doors open
   const due = dueCard(s, hop.kind === 'walk' ? 'walking' : 'aboard');
   if (due) { s.pending = { card: due.card, thenArrive: true }; s.used.add(due.card.id); out.story = true; return out; }
@@ -381,12 +413,19 @@ function arrive(net, s, out) {
     if (s.job.regular) { const id = s.job.regular.id, st = standingOf(s.standing, id); tip = late ? 0 : tipFor(s.job.fee, st);
       s.standing[id] = Math.max(0, Math.min(MAX_STANDING, st + (late ? -1 : 1))); s.keep.regulars = { ...(s.keep.regulars || {}), [id]: s.standing[id] }; }
     if (s.job.sealed) s.keep.notes = (s.keep.notes || 0) + 1;
+    if (s.mods?.tip) tip += s.mods.tip;
     pay = Math.max(0, Math.round(pay)) + tip;
     s.score += pay; s.done++; s.results.push(late ? 'late' : 'ok'); s.seen.push({ contents: s.job.contents, how: 'delivered' });
     out.delivered = { to: s.job.to, late, took, pay, contents: s.job.contents, mult: s.job.mult, race, eta: s.job.rival?.eta ?? null, tip, regular: s.job.regular?.name || null, sealed: !!s.job.sealed };
     if (s.halt && s.halt.startDone != null && s.done >= s.halt.startDone + s.halt.recoverJobs) s.halt.lifted = true;
     s.job = null;
+    // a mission's strikes: an errand someone waits on is lost on the second late drop
+    if (s.run.mission && late && ++s.strikes >= STRIKES) { s.phase = 'end'; out.end = true; out.failed = true; out.delivered.strike = s.strikes; return out; }
+    if (s.run.mission && late) out.delivered.strike = s.strikes;
     if (s.done >= s.target) { s.phase = 'end'; out.end = true; return out; }
+    // between a mission's jobs, the draft: two of the pool you do not have yet
+    if (s.run.mission) { const pool = (s.run.perkPool || []).filter(p => !s.perks.includes(p));
+      if (pool.length >= 2) { const a = pickOf(s, pool), b = pickOf(s, pool.filter(p => p !== a)); s.perkOffer = [a, b]; s.phase = 'perk'; return out; } }
     dispatch(net, s); return out;
   }
   return nextMoment(net, s, out, 'stop');
