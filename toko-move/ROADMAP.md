@@ -45,7 +45,14 @@ view") brought up to the scenes. Every step ends in a re-filmed trailer
    v3.13 added the next approvals: the cards' own scenes (the tourist, the
    sealed parcel, the saved seat), the crossing as the consequence of
    helping, and the snow. Held for the owner: the wallet (no journey card)
-   and the demonstration (its cause is a new proposal). Further packs land the same way: the
+   and the demonstration (its cause is a new proposal).
+6. ~~**v3.14 · Missions, the wallet, roguelike runs.**~~ Shipped: four
+   three-job missions across real places, each event with its art; the
+   wallet as a two-button choice card with a callback; a version per seed,
+   strikes, a perk draft between jobs, and unlocks (missions and perks).
+   Next: more missions as art lands (one per approved scene set), a mission
+   that strings the sealed parcel and the race, and the perks on the runs
+   too if the owner wants them there (it would move the measured bands). Further packs land the same way: the
    approved crops as they are, at the beat they draw.
 
 Each step is measured, gated and deployed, and the trailer is re-filmed with

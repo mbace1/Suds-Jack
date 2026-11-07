@@ -1,6 +1,6 @@
 // Toko Move v3.12–v3.13 — THE MOMENTS (the owner's approved exterior art,
 // PR #632: 29 scenes, art/approved-exteriors/APPROVED-ART.json is the inventory;
-// 27 are in the game and two are HELD, below, each with its reason).
+// 28 are in the game and one is HELD, below, with its reason).
 //
 // Illustrations of the job itself, each standing full frame at the beat it
 // draws, under the panel that beat already has:
@@ -68,10 +68,11 @@ export const MOMENTS = {
   crossing:  { src: ['choice-consequence-studies', 'crossing'], fmts: BOTH },
   'saved-seat': { src: ['choice-consequence-studies', 'saved-seat'], fmts: BOTH, keep: { '916': [.6, .5] } },
   'sealed-place': { src: ['choice-consequence-studies', 'sealed-place'], fmts: BOTH },
+  // v3.14: the wallet, handed in at the kiosk (the mission card's first option)
+  wallet:    { src: ['encounters-weather-studies', 'wallet'], fmts: BOTH },
 };
 // approved, and NOT in the game yet — each waiting on a decision that is not the art's
 export const HELD = {
-  wallet: [['encounters-weather-studies', 'wallet'], 'the journey has no wallet card: the scene is the classic deck\'s encounter, and adding a card to the journey\'s deck is a design change (it moves every deal)'],
   demonstration: [['choice-consequence-studies', 'demonstration'], 'its pack approves the art and calls the cause a NEW PROPOSAL: a march as the reason a line is halted needs the owner\'s design sign-off first'],
 };
 const frac = (m, fmt, p) => { const [x0, y0, x1, y1] = m.crop[fmt]; return [+((p[0] - x0) / (x1 - x0)).toFixed(3), +((p[1] - y0) / (y1 - y0)).toFixed(3)]; };
@@ -111,7 +112,7 @@ export const deliveryMoment = (d, fmt, sky) => (!d ? null : sky === 'clear' ? pl
 export const walkMoment = (hop, fmt, sky) => (sky === 'snow' && hop?.kind === 'walk' ? pick(['snow'], fmt, hop.to) : null);
 // a card's scene while it is played, and a choice's consequence
 export const CARD_SCENE = { map: ['tourist', 'clear'], sealed: ['sealed-place', 'clear'], granny2: ['saved-seat', 'day'] };
-export const CHOICE_SCENE = { granny: { 'Walk her across': 'crossing' } };
+export const CHOICE_SCENE = { granny: { 'Walk her across': 'crossing' }, wallet: { 'Hand it in at the kiosk': 'wallet' } };
 const under = (want, sky) => (want === 'day' ? sky !== 'night' : sky === want);
 export const cardMoment = (id, fmt, sky) => { const c = CARD_SCENE[id]; return c && under(c[1], sky) ? pick([c[0]], fmt, id) : null; };
 export const choiceMoment = (id, label, fmt, sky) => { const m = CHOICE_SCENE[id]?.[label]; return m && sky === 'clear' ? pick([m], fmt, id) : null; };
