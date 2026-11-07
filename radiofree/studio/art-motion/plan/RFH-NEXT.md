@@ -772,3 +772,43 @@ All facts below come from search summaries; no article was opened.
   posted that Google wants to build in Finland because US permitting is hard and that he is "not happy"; Newsweek dates
   that to September, so it is old, not a November item. No new HS candidate.
 - **Films now wrong:** none.
+
+## Daily check, Sat 7 Nov 17:16 (evening, run ~21:20 after a restart; search summaries only, nothing opened)
+- **Big development:** none on a global candidate. **The Anthropic IPO** still has no price range: the 2 Nov S-1/A
+  added Q3 results with the cover page blank, and no price-range amendment was on EDGAR as of 5 Nov (trackers). Reuters
+  (5 Nov) says investors questioned a roadshow the week of 9 Nov and pricing before Thanksgiving at $1.5T; later talk
+  clusters at $1.2–1.3T; one report says a listing the week of 16 Nov. **The Round Trip stays HOLD.**
+- **Posted today, all still true:**
+  - **Coxon 13 Grade Your Own Homework v2** (IG + X + YouTube ~06:44): nothing new on the four contracts.
+  - **Global 4 Unmarked Boxes** (~12:45): nothing new; the not-guilty pleas and the postponed trial (Fortune, Aug: "set
+    for next year") stand; the post's "one pleaded guilty; the company isn't charged" holds.
+  - **Coxon 14 On the Label v2** (IG ~18:50, X ~18:52, YouTube ~18:54): **the $7.25B settlement is still unruled** (no
+    ruling found as of tonight; the "RULING PENDING" tag holds; if Boyer rules, pin a comment). Means's claims now also
+    carried by yournews.com (7 Nov) and others; a **transcript of Rogan #2578** exists (singjupost.com), which would let
+    the quotes be checked verbatim if anyone challenges the film. Nothing new from the White House beyond Schuster's
+    "extensive victories" statement (STAT). Kennedy's March "I did know" stands. No new Roundup verdict found.
+  - Reaction counts on all three: not visible through search.
+- **Sun ~12:52, Doodle 10 Right of Way: CLEAR, one item to check in the morning.** No resumption, order or inspection
+  result found tonight. A Yle headline surfaced in the results, **"Google hakkasi liito-oravien puut Haminassa"**
+  (yle.fi/a/74-20252354; its id sits between the mid-October and ~4 Nov Hamina items). Only the title was seen; whether it
+  is new 2026 felling or a recap of 2018–19 is not known. The film's tags ("2018–19: 1.3 ha felled") and post stay true
+  either way; if it reports new felling, the post's last line could be strengthened. **Re-check before the slot.** Also
+  in the Yle set: Google bought 56 ha more land in Hamina for €10.7M (yle.fi/a/74-20253285); not in the film.
+- **Tue 10 Nov, Doodle 9 Five Pins: CLEAR.** No council step found.
+- **Found in Pasila (Helsinki 1, in production, awaiting the owner): the record holds.**
+  - **Helsinki's goal** is confirmed from the decision record itself in the results (paatokset.hel.fi HEL-2020-000554,
+    the city environment board's division statement on the Rantala et al. motion): the city has cut pesticide use in parks
+    for over ten years and aims to give up glyphosate in parks and built areas, using mechanical methods, boiling water,
+    pelargonic acid and hot steam. The film's "goal", not "ban", is right.
+  - **Tukes:** a 2018 Tukes restriction on certain glyphosate products in sensitive areas (children's playgrounds, play
+    parks, daycare yards) appears only in a Pargas municipal document (Swedish, snippet cut off). It supports "any kid could
+    pick it up" in spirit, but **do not put it on screen** without Tukes's own register or notice. A 2024 Tukes letter says
+    25 glyphosate products were on the Finnish market (8 Apr 2024).
+  - No new Finnish glyphosate news and no Yle item or reaction found tonight.
+- **Global 3 Short Supply (posted):** this sweep did not re-find the 13 Nov hearing listing (yesterday's CourtListener/
+  PacerMonitor entries stand: 13 Nov, 9:00, San Jose, Judge Noël Wise). **Re-check 12 Nov.**
+- **Doodle 8 Cut First (posted):** the extension is still Kaleva only; no new deadline in any result. No correction.
+- **9 Nov, AI Whistleblower Protection Act (S. 1792):** no November action found; still in HELP. Deseret (Sep) said
+  Grassley might seek unanimous consent when the Senate returns 9 Nov. Watch Monday.
+- **Break Glass:** no plenary result; the act still expires at the end of 2026. Keep held.
+- **New candidates:** none beyond Ransom Note (GLOBAL-SCOUT §13). **Films now wrong:** none.

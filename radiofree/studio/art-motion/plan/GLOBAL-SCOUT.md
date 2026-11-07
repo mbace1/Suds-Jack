@@ -1300,3 +1300,27 @@ Everything below comes from search summaries. No article was opened.
   [TNW](https://thenextweb.com/news/google-gemini-eu-copyright-adviser-opinion),
   [Business Standard](https://www.business-standard.com/world-news/google-gemini-may-infringe-publishers-rights-eu-court-adviser-says-126110400457_1.html),
   [CURIA opinion page](https://curia.europa.eu/site/jcms/p1_1000088866/en/opinion-case-c-250/s.gif)
+
+### Check Sat 7 Nov 17:16 (evening, run ~21:20; search summaries only; nothing opened, EDGAR not retried)
+- **Big development:** none.
+- **12 The Round Trip:** still HOLD. S-1/A of 2 Nov added Q3; no price-range amendment on EDGAR as of 5 Nov (trackers).
+  Reuters (5 Nov): investors questioned a 9 Nov roadshow and pre-Thanksgiving pricing at $1.5T; talk now $1.2–1.3T; one
+  report targets the week of 16 Nov.
+  [FinanceFeeds](https://financefeeds.com/anthropic-ipo-roadshow-looms-with-no-price-range/),
+  [Leverage Shares](https://leverageshares.com/us/anthropic-ipo-tracker/),
+  [Venture Magazine](https://venturemagazine.net/blog/anthropics-ipo-roadshow-faces-valuation-pushback-after-the-ai-selloff)
+- **Coxon 14 On the Label (posted ~18:50–18:54):** settlement still unruled (no ruling found; trackers dated 2 Nov say
+  "awaiting final approval"). A Rogan #2578 transcript is online (singjupost) for verbatim checks. White House response
+  unchanged (Schuster, via STAT). No new verdict.
+  [STAT](https://www.statnews.com/2026/11/06/calley-means-joe-rogan-trump-maha-agenda-derailed-by-corporate-influence/),
+  [yournews, 7 Nov](https://yournews.com/2026/11/07/7257000/former-rfk-jr-adviser-accuses-white-house-officials-of-blocking/),
+  [transcript](https://singjupost.com/transcript-calley-means-interview-on-joe-rogan-experience-2578/),
+  [Global Agriculture, settlement awaits ruling](https://www.global-agriculture.com/crop-protection/bayer-faces-new-missouri-roundup-trial-while-7-25-billion-settlement-awaits-judges-ruling/)
+- **8 Unmarked Boxes (posted ~12:45):** nothing new; Fortune (Aug) on the postponed trial stands.
+  [Fortune](https://fortune.com/2026/08/20/supermicro-investigation-ceo-nvidia-smuggling/)
+- **2 Grade Your Own Homework (posted ~06:44):** nothing new.
+- **5 Short Supply:** the 13 Nov listing was not re-found tonight; rely on yesterday's docket entries; re-check 12 Nov.
+  [MLex](https://www.mlex.com/mlex/antitrust/articles/2521308)
+- **10/11 Whistleblowers:** S. 1792 no November action; watch 9 Nov (possible unanimous-consent request, per Deseret).
+  [Deseret](https://www.deseret.com/politics/2026/09/25/john-curtis-back-bill-protecting-ai-whistleblower/)
+- **1, 3, 4, 13:** nothing new.

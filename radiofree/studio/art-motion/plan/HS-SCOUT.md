@@ -1031,3 +1031,23 @@ Everything below comes from search summaries. No article was opened.
 - **Pattern note:** Hamina's November items came through Yle first this time (the records-request story came through STT
   syndication first); keep both standing searches (`Hamina liito-orava LVV`, `STT tietopyyntö Google`). Weekend mornings
   return little that is new; the evening run is the one to lean on before Sunday's slot.
+
+### Check Sat 7 Nov 17:16 (evening, run ~21:20; search summaries only; nothing opened)
+- **Hamina (Right of Way, Sun ~12:52):** no resumption, order or inspection result. A Yle headline surfaced, "Google
+  hakkasi liito-oravien puut Haminassa" (yle.fi/a/74-20252354), title only: new 2026 felling or a 2018–19 recap is not
+  known. Check it before the slot; the film is true either way. Also Yle: Google bought 56 ha more land in Hamina (€10.7M).
+  [Yle, felling headline](https://yle.fi/a/74-20252354), [Yle, nature act](https://yle.fi/a/74-20255224),
+  [Yle, land](https://yle.fi/a/74-20253285), [Kymen Sanomat](https://www.kymensanomat.fi/paikalliset/9932630)
+- **Glyphosate / Found in Pasila (in production):** Helsinki's 2020 statement confirmed in the results (paatokset.hel.fi
+  HEL-2020-000554: ten years of cutting pesticide use in parks; the aim to give up glyphosate in parks and built areas;
+  mechanical methods, boiling water, pelargonic acid, steam). A 2018 Tukes restriction on certain glyphosate products in
+  playgrounds, play parks and daycare yards appears only in a Pargas municipal document (snippet cut off): not for screen
+  without Tukes's own source. Tukes (2024): 25 glyphosate products on the market. No new Yle or HS glyphosate item.
+  [paatokset.hel.fi](https://paatokset.hel.fi/fi/asia/hel-2020-000554/e989dadd-ae95-4a75-a51f-35785aff0bb1),
+  [Pargas document](https://pargas.fi/dynasty/sv_SE/kokous/20215110-39.PDF),
+  [Tukes letter 2024](https://api.hankeikkuna.fi/asiakirjat/54580b26-61a2-4eb0-bc03-32bc0bdc6c47/0d480c0e-a568-40e3-9b55-7f7792cc50a0/KIRJE_20240418101036.PDF)
+- **Muhos (Cut First):** no second source for the extension, no new deadline. **Helsinki (Five Pins):** nothing new.
+  **Break Glass:** no plenary result; the act ends 31 Dec 2026.
+- **Reactions:** counts not visible through search. Cut First, Count the Trees, Trade Secret, Five Pins: unchanged.
+- **Pattern note:** after a restart the evening run happened ~4 h late; nothing time-critical was missed. For Hamina,
+  search Yle's own headlines by id range around the story (74-2025xxxx), since the felling item surfaced only by title.
