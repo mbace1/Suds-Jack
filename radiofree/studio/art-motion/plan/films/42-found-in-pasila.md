@@ -169,3 +169,6 @@ topic, for "you cover this"), "kynnyksellänne" (on your doorstep).
 **What the first stills showed, fixed before the build:** the envelope sat under the low caption (moved up, and it now
 barely lags the tilt); the tilt to the sign was too slow for the sign to be in frame when "doorstep" landed (the tilt
 now completes in the first half of the shot and rests); the evidence and WHO? tags were small at phone size (enlarged).
+**What the first full build's contact sheet showed, fixed and rebuilt:** the EU · 2033 card's header touched the
+fourth caption line ("probably." / "todennäköisesti.") because the card lagged the tilt-down upward (moved down, and it
+now barely lags).
