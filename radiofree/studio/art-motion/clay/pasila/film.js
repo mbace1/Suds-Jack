@@ -176,7 +176,7 @@ function whoTag(g, t, jx, jy) {
 /** the calendar card: EU · ALLOWED UNTIL over a big gold 2033 that lands when the year is said */
 function calendarCard(g, t, dx, dy) {
   const k = t - EV.cal4; if (k < 0) return; const drop = ease.back(k / 0.55);
-  const w = 400, h = 280, x = 560 + dx * 0.25, y = lerp(-320, 700, drop) + dy * 0.1;   // clear of a four-line caption; barely lags the tilt
+  const w = 400, h = 280, x = 660 + dx * 0.1, y = lerp(-320, 690, drop) + dy * 0.1;   // clear of a four-line caption and of the jug, which slides right under the tilt
   card(g, x, y, w, h, { rot: 0.03, seed: 9 }, (c) => {
     c.fillStyle = AQUA; c.fillRect(0, 0, w, 54); text(c, UI.calHead, w / 2, 38, { size: 26, color: '#fff', align: 'center', max: w - 30 });
     for (let i = 0; i < 2; i++) { c.fillStyle = PAPER; c.beginPath(); c.arc(60 + i * 280, 0, 12, 0, Math.PI * 2); c.fill(); c.fillStyle = AQUA_DEEP; c.fillRect(56 + i * 280, -16, 8, 34); }
