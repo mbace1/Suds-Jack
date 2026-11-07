@@ -1,0 +1,2 @@
+# Conservative motion limits
+Integrated raster body/environment/vehicle/prop plates; not animation rigs. Independent identity is a registered overlay on placeholder, not detachable freely moving head. saved-seat identity layer empty by design. Independent component movement allowance0px without repainting and hidden-surface reconstruction. No character/hand/seat/placard/tram mattes claimed. Full-frame crossfades safe; panning/zooming requires overscan and both format checks. No MP4. If approved for animation later, rebuild proper source separation first.
