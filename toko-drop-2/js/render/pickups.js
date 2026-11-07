@@ -27,11 +27,36 @@
 // go through the actors' own chunks.
 import * as THREE from 'three/webgpu';
 import * as TSL from 'three/tsl';
-import { TUNING } from '../tuning.js?v=120';
-import { itemLook, gateLook, glyphOf, colorOf } from '../sim/pickups.js?v=120';
-import { t as say } from '../ui.js?v=120';
+import { TUNING } from '../tuning.js?v=121';
+import { itemLook, gateLook, glyphOf, colorOf } from '../sim/pickups.js?v=121';
+import { t as say } from '../ui.js?v=121';
 
 const T = TUNING, P = T.pickups, G = P.gate, C = P.convoy, B = P.bounty, GL = G.look, FAM = G.family;
+// v121: a label over the floor lets the hero show through it. A screenshot pass found DASH THROUGH! and BOUNTY
+// written across the hero, the one thing on the floor a player must always see. The test is ON SCREEN, with the
+// camera: a label floats 2 m up, so it lands past its anchor, over a hero the floor's own distance calls far; and
+// measured along the camera's own right and up, it holds as the view turns with the phone (v18a). Where the hero
+// stands inside the label's box (grown by the hero's own size) the label fades to a third, smoothly at the edge
+const _v = new THREE.Vector3(), _r = new THREE.Vector3(), _u = new THREE.Vector3();
+const _L = { x: 0, y: 0 }, _Lr = { x: 0, y: 0 }, _Lu = { x: 0, y: 0 }, _H = { x: 0, y: 0 }, _Hr = { x: 0, y: 0 };
+// a world point on screen: normalised device x stretched by the screen's aspect, so a distance reads alike both ways
+const onScreen = (cam, v, out) => { v.project(cam); out.x = v.x * (cam.aspect || 1); out.y = v.y; return out; };
+function clearOfHero(cam, w, x, y, z, width, height) {
+  const h = w.hero;
+  if (!cam || !h || h.alive === false) return 1;
+  _r.setFromMatrixColumn(cam.matrixWorld, 0); _u.setFromMatrixColumn(cam.matrixWorld, 1);
+  const R = T.hero.radius;
+  onScreen(cam, _v.set(x, y, z), _L);
+  onScreen(cam, _v.set(x, y, z).addScaledVector(_r, width / 2), _Lr);
+  onScreen(cam, _v.set(x, y, z).addScaledVector(_u, height / 2), _Lu);
+  onScreen(cam, _v.set(h.x, R, h.z), _H);
+  onScreen(cam, _v.set(h.x, R, h.z).addScaledVector(_r, R), _Hr);
+  const hw = Math.hypot(_Lr.x - _L.x, _Lr.y - _L.y), hh = Math.hypot(_Lu.x - _L.x, _Lu.y - _L.y), hr = Math.hypot(_Hr.x - _H.x, _Hr.y - _H.y);
+  // 1 at the edge of the label's box grown by the hero's size; under 1 the hero is behind the words
+  const k = Math.max(Math.abs(_H.x - _L.x) / (hw + hr || 1), Math.abs(_H.y - _L.y) / (hh + hr || 1));
+  const e = Math.min(1, Math.max(0, (k - 0.85) / 0.3));
+  return 0.32 + 0.68 * e * e * (3 - 2 * e);
+}
 const POOLS = 96;   // pools of light a frame: the drops, the beams, the moths
 const css = (hex) => '#' + hex.toString(16).padStart(6, '0');
 
@@ -332,7 +357,7 @@ export class PickupView {
       v.hint.visible = !!tag;
       if (tag) {
         setPicture(v.hint, hintTex);
-        v.hint.material.opacity = G.hint.alpha[0] + G.hint.alpha[1] * Math.sin(time * G.hint.rate);
+        v.hint.material.opacity = (G.hint.alpha[0] + G.hint.alpha[1] * Math.sin(time * G.hint.rate)) * clearOfHero(this.actors?.camera, w, x, G.hint.y, z, P.label.h * hintTex.userData.aspect, P.label.h);
         v.hint.scale.set(P.label.h * hintTex.userData.aspect, P.label.h, 1);
         v.hint.position.set(x, G.hint.y, z);
       }
@@ -368,7 +393,7 @@ export class PickupView {
       this.bountyLabel.scale.set(P.label.h * tex.userData.aspect, P.label.h, 1);
       // fxY + 2r + 1.3 (main.js:6021), fxY a body's mid-height, r (tuning/pickups.js)
       this.bountyLabel.position.set(x, g.r * 3 + B.label.lift, z);
-      this.bountyLabel.material.opacity = 1;
+      this.bountyLabel.material.opacity = clearOfHero(this.actors?.camera, w, x, g.r * 3 + B.label.lift, z, P.label.h * tex.userData.aspect, P.label.h);
     }
 
     // the mark's ping: a gold "!" at fxY + 2r + 0.8 for 1.6 s (main.js:5860-5875)

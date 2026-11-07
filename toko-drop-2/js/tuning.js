@@ -7,10 +7,10 @@
 // things that work"). The arena is 1.x's, so every 1.x number ports as it is
 // instead of through a rescale. Axes: x across the screen (right +), y up,
 // z toward the bottom of the screen. The arena is centred on the origin.
-import { SPECIES } from './tuning/species/index.js?v=120';
-import WAVES from './tuning/waves.js?v=120';
-import PICKUPS from './tuning/pickups.js?v=120';
-import MUSIC from './tuning/music.js?v=120';
+import { SPECIES } from './tuning/species/index.js?v=121';
+import WAVES from './tuning/waves.js?v=121';
+import PICKUPS from './tuning/pickups.js?v=121';
+import MUSIC from './tuning/music.js?v=121';
 
 export const TUNING = {
   render: {
@@ -172,12 +172,14 @@ export const TUNING = {
       grid:     { sun: 0xffffff, sunI: 1.3, at: [8, 20, 10],    ambient: 0xffffff, ambientI: 0.45, env: 1.0 },
       // v93: the sun from the near left, lower (38°): the long curb on the left throws its shadow onto the slab, every
       // body's shadow falls away toward the far right, and the bodies are lit from the camera's side
-      driveway: { sun: 0xfff1d8, sunI: 1.5, at: [-16, 15, 10],  ambient: 0xdce8ff, ambientI: 0.55, env: 1.05 },
+      // v121: `hero`, how strong the light the hero carries is in this world (TUNING.light.arena.hero × it): in the sun a
+      // pool of light only washes out the floor round a pale hero — a screenshot pass found it white on white on the ice
+      driveway: { sun: 0xfff1d8, sunI: 1.5, at: [-16, 15, 10],  ambient: 0xdce8ff, ambientI: 0.55, env: 1.05, hero: 0.3 },
       sewer:    { sun: 0xd4ecdc, sunI: 1.0, at: [3, 22, 4],     ambient: 0x9cc6c0, ambientI: 0.42, env: 0.85 },
       cistern:  { sun: 0xffc98e, sunI: 1.0, at: [-6, 10, -14],  ambient: 0x7fa2aa, ambientI: 0.40, env: 0.9 },
       boiler:   { sun: 0xffbd7a, sunI: 1.3, at: [4, 9, -16],    ambient: 0xb49070, ambientI: 0.38, env: 0.8 },
-      river:    { sun: 0xfff4e2, sunI: 1.5, at: [8, 24, 10],     ambient: 0xd8ecff, ambientI: 0.62, env: 1.08 },
-      ice:      { sun: 0xfff8ee, sunI: 1.5, at: [-10, 22, 10],   ambient: 0xdceeff, ambientI: 0.66, env: 1.12 },
+      river:    { sun: 0xfff4e2, sunI: 1.5, at: [8, 24, 10],     ambient: 0xd8ecff, ambientI: 0.62, env: 1.08, hero: 0.6 },
+      ice:      { sun: 0xfff8ee, sunI: 1.5, at: [-10, 22, 10],   ambient: 0xdceeff, ambientI: 0.66, env: 1.12, hero: 0.3 },
       deep:     { sun: 0x6a8cff, sunI: 1.0, at: [0, 20, 2],     ambient: 0x4a5c8c, ambientI: 0.50, env: 0.7 },
       core:     { sun: 0xff6ae0, sunI: 1.0, at: [-10, 18, -10], ambient: 0x6c48a8, ambientI: 0.42, env: 1.1 },
     },

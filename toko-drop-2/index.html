@@ -33,8 +33,10 @@
     #backend { color: var(--dim); }
     :root { --gold: #f0c040; --amber: #ffb468; --line: rgba(217, 220, 226, .22); }
     #sticks { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 3; }
-    /* a dark edge on the HUD's text, so it reads over world 2's sunlit slab as over the night (v66) */
-    #hud { position: fixed; inset: 0; pointer-events: none; z-index: 4; text-shadow: 0 1px 2px rgba(0,0,0,.75), 0 0 10px rgba(0,0,0,.3); }
+    /* a dark edge on the HUD's text, so it reads over world 2's sunlit slab as over the night (v66); v121: a tight dark
+       outline under it, for the ice's snow, where a soft shadow alone left white text on white */
+    #hud { position: fixed; inset: 0; pointer-events: none; z-index: 4;
+      text-shadow: 0 0 1px rgba(0,0,0,.95), 0 0 2px rgba(0,0,0,.8), 0 1px 2px rgba(0,0,0,.75), 0 0 10px rgba(0,0,0,.3); }
     #hud[hidden] { display: none; }
     #scorebox { position: absolute; left: max(14px, env(safe-area-inset-left)); top: max(10px, env(safe-area-inset-top)); }
     #score { font-size: 22px; letter-spacing: .06em; }
@@ -42,8 +44,8 @@
     /* HEAT (v51): the ×, hotter as it climbs, a bar for how far into it you are, and BANK's pot */
     #mult[data-m="3"], #mult[data-m="4"] { color: #ff9a4a; }
     #mult[data-m="5"], #mult[data-m="6"] { color: #ff6a3a; font-size: 17px; }
-    #mult[data-m="7"], #mult[data-m="8"] { color: #ff4a4a; font-size: 19px; text-shadow: 0 0 10px rgba(255,80,60,.7); }
-    #mult[data-m="w"] { color: #fff; font-size: 21px; text-shadow: 0 0 12px rgba(255,235,220,.85), 0 0 3px #ff6a3a; }
+    #mult[data-m="7"], #mult[data-m="8"] { color: #ff4a4a; font-size: 19px; text-shadow: 0 0 2px rgba(0,0,0,.8), 0 0 10px rgba(255,80,60,.7); }
+    #mult[data-m="w"] { color: #fff; font-size: 21px; text-shadow: 0 0 2px rgba(0,0,0,.85), 0 0 12px rgba(255,235,220,.85), 0 0 3px #ff6a3a; }
     #pot { margin-left: 8px; color: var(--gold); font-size: 13px; }
     #mult { display: inline-block; transform-origin: left center; }
     #mult.pop { animation: heat-pop .32s ease-out; }
@@ -51,26 +53,34 @@
     @keyframes heat-pop { 0% { transform: scale(1.9); } 100% { transform: scale(1); } }
     @keyframes heat-cold { 0% { color: #8fd8ff; transform: scale(1.4); text-shadow: 0 0 12px #6cf; } 100% { transform: scale(1); } }
     @media (prefers-reduced-motion: reduce) { #mult.pop, #mult.cold { animation: none; } }
-    #heat { width: 92px; height: 3px; margin: 3px 0 2px; background: rgba(255,255,255,.12); }
+    #heat { width: 92px; height: 3px; margin: 3px 0 2px; background: rgba(255,255,255,.12); box-shadow: 0 0 0 1px rgba(0,0,0,.28); }
     #heat > i { display: block; height: 100%; width: 0; background: var(--amber); }
     #heat[data-m="5"] > i, #heat[data-m="6"] > i { background: #ff6a3a; }
     #heat[data-m="7"] > i, #heat[data-m="8"] > i { background: #ff4a4a; }
     #heat[data-m="w"] > i { background: #fff; }
     #menu .mutator { font-size: 11px; color: var(--gold); letter-spacing: .04em; margin: 2px 0 4px; }
     #lives { display: flex; gap: 6px; margin-top: 6px; }
-    #lives i { width: 10px; height: 10px; border-radius: 50%; background: #f2efe6; box-shadow: 0 0 6px rgba(242, 239, 230, .6), 0 1px 2px rgba(0, 0, 0, .6); }
+    /* v121: a dark ring round each life, so the three read on the ice's snow as well as on the night */
+    #lives i { width: 10px; height: 10px; border-radius: 50%; background: #f2efe6; box-shadow: 0 0 0 1.5px rgba(10, 10, 20, .55), 0 0 6px rgba(242, 239, 230, .5), 0 1px 2px rgba(0, 0, 0, .6); }
     #fx { display: flex; flex-wrap: wrap; gap: 4px 10px; margin-top: 6px; max-width: min(48vw, 420px); font-size: 11px; letter-spacing: .08em; }
-    #fx span { white-space: nowrap; text-shadow: 0 0 6px currentColor, 0 1px 2px rgba(0,0,0,.75); }
-    /* MENU sits where 1.x had it, over the clock, top right; the clock under it (owner, 2026-10-24) */
-    #clock { position: absolute; right: max(14px, env(safe-area-inset-right)); top: calc(max(6px, env(safe-area-inset-top)) + 52px); font-size: 16px; letter-spacing: .1em; color: var(--amber); text-align: right; max-width: 44vw; }
+    #fx span { white-space: nowrap; text-shadow: 0 0 1px rgba(0,0,0,.95), 0 0 6px currentColor, 0 1px 2px rgba(0,0,0,.75); }
+    /* MENU sits where 1.x had it, over the clock, top right; the clock under it (owner, 2026-10-24). v121: the clock and
+       a boss's bar stand in one column, so the bar is always under however many lines the clock has */
+    #hudr { position: absolute; right: max(14px, env(safe-area-inset-right)); top: calc(max(6px, env(safe-area-inset-top)) + 52px);
+      display: flex; flex-direction: column; align-items: flex-end; gap: 7px; }
+    #clock { font-size: 16px; letter-spacing: .1em; color: var(--amber); text-align: right; max-width: 56vw; white-space: nowrap; }
+    /* v121: a room's clock is two lines — the goal, then its seconds and the grade it is on course for, kept whole
+       (one line broke wherever a phone's width ran out: "F →" over "C 36k") */
+    #clock .ln { display: block; white-space: normal; }
+    #clock .ln.whole { white-space: nowrap; }
     @media (max-width: 480px) { #clock { font-size: 13px; letter-spacing: .05em; } }
     /* a boss wave's health (v42): under the clock, every boss of the wave in one bar */
-    #bossbar { position: absolute; right: max(14px, env(safe-area-inset-right)); top: calc(max(6px, env(safe-area-inset-top)) + 76px);
-      width: min(44vw, 240px); height: 6px; border: 1px solid var(--line); background: rgba(8, 8, 16, .5); }
+    #bossbar { width: min(44vw, 240px); height: 6px; border: 1px solid var(--line); background: rgba(8, 8, 16, .5); }
     #bossbar[hidden] { display: none; }
     #bossbar i { display: block; height: 100%; width: 100%; transition: width .15s linear; }
     #pausebtn { position: absolute; right: max(10px, env(safe-area-inset-right)); top: max(6px, env(safe-area-inset-top)); pointer-events: auto;
       min-width: 64px; height: 44px; padding: 0 14px; background: rgba(8, 8, 16, .45); border: 1px solid var(--line); color: var(--ink); font: inherit; font-size: 14px; letter-spacing: .14em; }
+    #hud.under #pausebtn { visibility: hidden; }   /* v121: under a panel (the pause, OPTIONS) the run's MENU button is not shown */
     #vignette { position: fixed; inset: 0; pointer-events: none; opacity: 0;
       background: radial-gradient(ellipse at center, rgba(255,20,20,0) 35%, rgba(255,20,20,.55) 105%); }
     #vignette.on { animation: vig .32s linear forwards; }
@@ -227,6 +237,13 @@
     #menu .gelcard .name { margin: 2px 0 4px; font-size: 17px; letter-spacing: .14em; color: var(--gel, var(--ink)); font-weight: 700; }
     #menu .gelcard .line { margin: 0; font-size: 11px; line-height: 1.45; color: var(--ink); opacity: .8; }
     #menu .stats dd { letter-spacing: .06em; }
+    /* v121: RECORDS' values are long ("123,456 · reached WORLD 9"): on a phone held upright each row stacks, its name over
+       its value, where two columns wrapped the value a word at a time */
+    @media (max-width: 520px) {
+      #menu .stats.recs { grid-template-columns: auto; row-gap: 1px; }
+      #menu .stats.recs dt { margin-top: 7px; font-size: 11px; }
+      #menu .stats.recs dd { margin: 0; }
+    }
     #fault {
       position: fixed; left: max(10px, env(safe-area-inset-left)); top: max(10px, env(safe-area-inset-top));
       max-width: min(92vw, 640px); max-height: 60vh; overflow: auto;
@@ -254,14 +271,13 @@
   <div id="hud" hidden>
     <div id="scorebox"><span id="score">0</span><span id="mult"></span><span id="pot"></span><div id="heat" hidden><i></i></div><div id="lives"></div><div id="fx"></div></div>
     <button id="pausebtn" aria-label="menu">≡ MENU</button>
-    <div id="clock"></div>
-    <div id="bossbar" hidden><i></i></div>
+    <div id="hudr"><div id="clock"></div><div id="bossbar" hidden><i></i></div></div>
   </div>
   <div id="banner" hidden></div>
   <div id="card" hidden><div class="t"></div><div class="s"></div></div>
   <div id="vignette" aria-hidden="true"></div>
   <div id="menu" class="menu" hidden></div>
-  <div id="ver">2.0 · v120<span id="backend"></span></div>
+  <div id="ver">2.0 · v121<span id="backend"></span></div>
   <pre id="fault" hidden></pre>
   <script>
     // A failure must be visible on the phone: there is no console there.
@@ -370,6 +386,6 @@
       });
     })();
   </script>
-  <script type="module" src="js/main.js?v=120"></script>
+  <script type="module" src="js/main.js?v=121"></script>
 </body>
 </html>

@@ -20,7 +20,7 @@
 // TUNING.light.arena.
 import * as THREE from 'three/webgpu';
 import { uv, vec2, vec3, float, length, clamp, pow } from 'three/tsl';
-import { TUNING } from '../tuning.js?v=120';
+import { TUNING } from '../tuning.js?v=121';
 
 const T = TUNING, A = T.light.arena, _Y = new THREE.Vector3(0, 1, 0);
 const smooth = (t) => { t = Math.min(1, Math.max(0, t)); return t * t * (3 - 2 * t); };
@@ -64,6 +64,9 @@ export class ArenaLight {
 
   // the world's sun stands at (x, y, z) (main.js applyLight): a caustic (actors.js)
   // slides `offset` × its radius away from it along the floor
+  // v121: how strong the hero's own light is in the world on now (TUNING.worlds.light[…].hero, 1 where unsaid)
+  heroK = 1;
+  setHeroLight(k = 1) { this.heroK = k; }
   setSun(x, y, z) {
     const l = Math.hypot(x, z) || 1, lean = l / (Math.abs(y) || 1);
     this.sunOff.x = (-x / l) * Math.min(1, lean) * A.caustic.offset; this.sunOff.z = (-z / l) * Math.min(1, lean) * A.caustic.offset;
@@ -134,7 +137,7 @@ export class ArenaLight {
     // v104 (owner: "more HD graphics and light. No cheap effects like glow"): the hero carries a light — a
     // wide pool on the floor round it (the floor lit, as a bullet lights it), where a halo used to glow
     const HL = A.hero, hh = w.hero;
-    if (HL && hh.alive && n < A.cap) this._put(this.pools, n++, hh.px + (hh.x - hh.px) * alpha, hh.pz + (hh.z - hh.pz) * alpha, HL.r, HL.color, HL.k);
+    if (HL && hh.alive && n < A.cap) this._put(this.pools, n++, hh.px + (hh.x - hh.px) * alpha, hh.pz + (hh.z - hh.pz) * alpha, HL.r, HL.color, HL.k * this.heroK);
     let s = 0;
     const S = A.shadow, h = w.hero;
     // the hero's shadow narrows as it falls into a world from high up, and goes with it down a drain

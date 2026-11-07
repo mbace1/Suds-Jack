@@ -19,6 +19,20 @@
     Never `--no-verify`.
 -->
 
+## v121 — 2026-11-07
+**A screenshot pass, standing in for the owner's eye: every screen and world shot on a phone and read, and what it found fixed**
+- THE PASS (owner, 2026-11-07: "Use bots instead of me. Analyze screenshots."): the real game on WebGPU, phone-sized upright (390 × 844) and sideways (844 × 390), the look-ahead bot playing — the title, OPTIONS, RECORDS, the grid and a room card, the ending, all nine worlds mid-fight and every world's boss, HARDCADE's corpse fire, a heat of ×8, the pause card, the results (a run, a DAILY, a room cleared and a room failed), and one room of every goal and every mutator: 54 shots, no page error. Read one by one, with the hero found on each and cropped.
+- THE CLOCK LINE BROKE MID-PHRASE in every room and challenge wave: one line in a box under MENU, wrapped wherever a phone's width ran out ("SURVIVE · 18s · F →" over "C 36k", PROTECT THE HEART's over three lines). It is two lines now: in a room the goal, then its seconds and the grade it is on course for, kept whole; in an arcade challenge wave the run's clock, then the challenge kept whole. A boss's health bar stands in one column with the clock, so it is always under the clock's lines.
+- THE HUD ON THE ICE: white score and lives on the snow nearly vanished. The HUD's text has a tight dark outline under its shadow, each life a dark ring, the heat bar a dark edge: they read on the snow as on the night.
+- THE HERO'S OWN LIGHT WASHED OUT THE FLOOR round a pale hero on a sunlit floor (v104's pool of light, on every world). A world says how strong it is (TUNING.worlds.light[…].hero): a third on the driveway and the ice, 0.6 on the river; as it was everywhere else.
+- A LABEL OVER THE HERO: DASH THROUGH! and BOUNTY were written across the hero. Where a label stands over the hero ON SCREEN (worked out with the camera, so it holds as the view turns) it fades to a third.
+- A BOSS'S CARD OUTLIVED ITS RUN: the banner and the card count down by frames, and one up as a run ended rode on into the results and the next run (OMEGA's card over world 3, over a challenge banner). They go when the HUD comes or goes, and a banner takes the band from a card there.
+- Paused, the run's MENU button no longer stands over the OPTIONS panel's corner. RECORDS stacks each row, its name over its value, on a phone held upright (two columns wrapped "reached WORLD" over "9").
+- The title says "Nine worlds of waves" where it said "1.x waves" (a player does not know 1.x), and HARDCADE "a life comes back each world". In English, Finnish and Japanese.
+- Cache tokens `?v=120` → `?v=121`; HUD label → `2.0 · v121`
+
+---
+
 ## v120 — 2026-11-06
 **The lines pass: eight lines drawn again by the bots that read the warning, PACK ICE a little harder for a beginner, and the campaign's ending previewed**
 - THE LINES (plan items 2–4, shown to the owner before they shipped). v117's bot test drew every room's lines again with bots that read the warning, as a person does. Eight of them were more than 25% off what each room carries now, and they are drawn again by the same rule as every line since v56 (scripts/lines.mjs, 24 seeds a skill): S is the sharp bot's median score, A the average bot's, B the average's weaker quarter, C the rough bot's median or the average's weakest tenth.
