@@ -7,10 +7,10 @@
 // things that work"). The arena is 1.x's, so every 1.x number ports as it is
 // instead of through a rescale. Axes: x across the screen (right +), y up,
 // z toward the bottom of the screen. The arena is centred on the origin.
-import { SPECIES } from './tuning/species/index.js?v=121';
-import WAVES from './tuning/waves.js?v=121';
-import PICKUPS from './tuning/pickups.js?v=121';
-import MUSIC from './tuning/music.js?v=121';
+import { SPECIES } from './tuning/species/index.js?v=122';
+import WAVES from './tuning/waves.js?v=122';
+import PICKUPS from './tuning/pickups.js?v=122';
+import MUSIC from './tuning/music.js?v=122';
 
 export const TUNING = {
   render: {
@@ -1411,7 +1411,10 @@ export const TUNING = {
   shake: { decay: 2.8, amp: [1.8, 1.2, 1.2], freq: [41, 37, 43], kill: 0.07, killPerRadius: 0.13, hurt: 0.38, bigKill: 0.1 },
   // v58: one sound at most this many times in `window` s (a pile-up's
   // rest is not heard), and the limiter on the master only a pile-up reaches
-  audio: { master: 0.5, gate: { window: 0.04, land: 3, spawn: 3, kill: 4, hit: 4, lobLand: 3, mothShot: 3, revengeSeed: 2, revengeFizzle: 2, escortScatter: 1, strandCut: 2, ballBounce: 2, slamWarn: 2, slam: 2 },
+  // v122: the master 0.5 → 0.8 (+4 dB). A bot's runs rendered with every effect (scripts/music-render.mjs replay)
+  // measured −27 to −29 LUFS, quiet for a phone's speaker, with 6–10 dB of headroom: now −23 to −25, the limiter
+  // holding the loudest moment at −2.3 dBFS true peak (docs/SOUND.md)
+  audio: { master: 0.8, gate: { window: 0.04, land: 3, spawn: 3, kill: 4, hit: 4, lobLand: 3, mothShot: 3, revengeSeed: 2, revengeFizzle: 2, escortScatter: 1, strandCut: 2, ballBounce: 2, slamWarn: 2, slam: 2 },
     limit: { threshold: -3, ratio: 20, attack: 0.002, release: 0.12 } },
   // the music (tuning/music.js, v58): a song a world, layered by the heat
   music: MUSIC,

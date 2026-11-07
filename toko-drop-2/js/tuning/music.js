@@ -162,7 +162,9 @@ export default {
     // 5 · THE BOILER (updraft): plate steel, the grate's glow, the shove from the middle
     boiler: {
       name: 'PRESSURE', bpm: 136, bar: 16, beat: 4, swing: 0, echo: 3,
-      lead: { wave: 'fm', ratio: 1, index: 2.4, decay: 0, vol: 0.17, vib: 0.006, echo: 0.3 },
+      // v122: its lead 0.17 → 0.21: on a phone the boiler sat 2.6 dB under the other songs (its weight is low, where a
+      // phone's speaker gives little back), the quietest lead of the ten
+      lead: { wave: 'fm', ratio: 1, index: 2.4, decay: 0, vol: 0.21, vib: 0.006, echo: 0.3 },
       stab: { wave: 'fm', ratio: 1, index: 3, decay: 0.18, vol: 0.05, oct: 4, pattern: 'x.....x.........', len: 2, echo: 0.2 },
       metal: { pattern: '..x...x...x.x...' },
       bass: { wave: 'p25', vol: 0.13, cut: 1100, pattern: 'R.RR.RR.R.RR.RO.' },

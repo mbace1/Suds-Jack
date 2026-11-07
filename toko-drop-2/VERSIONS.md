@@ -19,6 +19,16 @@
     Never `--no-verify`.
 -->
 
+## v122 — 2026-11-07
+**A sound pass, standing in for the owner's ears: the game 4 dB louder on a phone, and the boiler's song brought up to the others**
+- THE PASS (owner, 2026-11-07: "Use bots instead of me"): every song at every level beside the game's own effects (scripts/music-render.mjs measure), and a bot's real runs of worlds 2, 5 and 8 rendered with the music and every effect its play set off (replay), measured to EBU R128 (ffmpeg) and drawn as spectrograms. Clean: no clipping anywhere, the songs within about 2 dB of each other, a kill or a hurt 8 dB over the music, the melodies clear at 500–900 Hz, nothing harsh above 5 kHz. Written up in docs/SOUND.md.
+- QUIET FOR A PHONE: the real runs measured −27 to −29 LUFS, about 10 dB under what a phone's speaker usually plays, with 6–10 dB of headroom unused. The master goes 0.5 → 0.8 (+4 dB): −23 to −25 LUFS, and the limiter (v58) holds the loudest moment of the lot, world 5's, at −2.3 dBFS true peak. VOLUME and MUSIC in OPTIONS are as they were.
+- THE BOILER ON A PHONE: its weight is low, where a phone's speaker gives little back, and it played 2.6 dB under the other songs there; its lead was the quietest of the ten. Lead 0.17 → 0.21: the songs on a phone now sit within 2.9 dB of each other (4.3 before).
+- Found and left: heat levels 3 and 4 add a ride, a metal tick and the lead an octave up, texture rather than loudness (the songs measure the same from level 2 up); each step of the × still plays its own cue.
+- Cache tokens `?v=121` → `?v=122`; HUD label → `2.0 · v122`
+
+---
+
 ## v121 — 2026-11-07
 **A screenshot pass, standing in for the owner's eye: every screen and world shot on a phone and read, and what it found fixed**
 - THE PASS (owner, 2026-11-07: "Use bots instead of me. Analyze screenshots."): the real game on WebGPU, phone-sized upright (390 × 844) and sideways (844 × 390), the look-ahead bot playing — the title, OPTIONS, RECORDS, the grid and a room card, the ending, all nine worlds mid-fight and every world's boss, HARDCADE's corpse fire, a heat of ×8, the pause card, the results (a run, a DAILY, a room cleared and a room failed), and one room of every goal and every mutator: 54 shots, no page error. Read one by one, with the hero found on each and cropped.
