@@ -41,11 +41,11 @@ import { TRAMS } from './cards.js?v=3';
 import { mountAudio } from './audio.js?v=2';
 import { loadStanding, saveStanding } from './regulars.js?v=4';
 import { addNote } from './sealed.js?v=2';
-import { MOMENTS, faceIn, keepIn, pickupMoment, deliveryMoment, boardMoment } from './moments.js?v=1';
+import { MOMENTS, faceIn, keepIn, pickupMoment, deliveryMoment, boardMoment, walkMoment, cardMoment, choiceMoment } from './moments.js?v=2';
 import { resolveMode, dailyShare, W } from './modes.js?v=1';
 import { recordDaily, todayRecord, streak } from './daily.js?v=2';
 
-export const BUILD_VERSION = '3.12';
+export const BUILD_VERSION = '3.13';
 const $ = id => document.getElementById(id);
 const params = new URLSearchParams(location.search);
 // a run of the ladder, today's daily, or a day of the week (modes.js, ACT1.md §12)
@@ -549,8 +549,13 @@ function render() {
   if (c.kind === 'story' && pendingHop) {
     // a card dealt on the way: aboard is the car, on foot is the board mid-walk
     setActor(null);
+    const cm = cardMoment(c.id, fmt, sky());                               // the card's own scene (v3.13): the saved seat
     if (pendingHop.kind === 'walk') { showBoard(pendingHop, 0.5, c.id); }   // what you walk past rides beside you (v3.9)
+    else if (cm) { hideBoard(); paintScene(`m-${cm}`); }
     else { hideBoard(); paintScene(interior(pendingHop), { car: carOf(pendingHop), crowd: crowdOf(pendingHop, c.id) }); }
+  } else if (c.kind === 'story' && cardMoment(c.id, fmt, sky())) {
+    // a card with a scene of its own (v3.13): the tourist and her map, the sealed parcel's choice
+    hideBoard(); setActor(null); paintScene(`m-${cardMoment(c.id, fmt, sky())}`); arrived = null;
   } else {
     hideBoard();
     const t = tramFor(c), leaving = !t && arrived;
@@ -607,8 +612,8 @@ function sign(hop) {
 }
 
 // A moment of the job (v3.12): its picture, its line, a beat; skippable.
-// the art is sunny: a moment stands by day, on a clear day
-const sunny = () => !NIGHT && (S?.weather || 'clear') === 'clear';
+// the hour and the weather the art has to match (js/moments.js): 'night', or the day's weather
+const sky = () => (NIGHT ? 'night' : S?.weather || 'clear');
 async function moment(id, html = '', ms = 1500) {
   if (!id) return false;
   hideBoard(); setActor(null); $('v3mini').hidden = true;
@@ -631,7 +636,7 @@ async function pick(i) {
   if (busy || !S || S.phase === 'end') return;
   busy = true; panel.querySelectorAll('button').forEach(b => { b.disabled = true; });
   sfx('tap');
-  const wasHop = pendingHop;
+  const wasHop = pendingHop, before = J.card(net, S);
   const r = J.choose(net, S, i);
   if (r.error) { busy = false; render(); return; }
   paintHud();
@@ -640,7 +645,7 @@ async function pick(i) {
       sfx('coin');
       // (a sealed parcel's address stays hidden: the line is the one its dispatch card said)
       const what = S.job.sealed ? 'A sealed parcel. No address, only a sticker.' : `${J.cargoWord(S.job.cargo)} for ${S.job.toName}.`;
-      await moment(pickupMoment(S.at, S.job, fmt, sunny()), `<div class="v3stamp pickup" role="status"><span class="big">PICKED UP</span><span>${esc(what)}</span><span class="pts">€${S.job.fee}</span></div>`, 1400);
+      await moment(pickupMoment(S.at, S.job, fmt, sky()), `<div class="v3stamp pickup" role="status"><span class="big">PICKED UP</span><span>${esc(what)}</span><span class="pts">€${S.job.fee}</span></div>`, 1400);
     }
     if (r.hop) {
       $('v3mini').hidden = true;
@@ -648,7 +653,8 @@ async function pick(i) {
       // the tram you chose pulls in (look only: the model is drawn, the ride is the same)
       if (tram) { const wait = scene !== 'stop' ? paintScene('stop', { at: r.hop.from }) : 0; if (wait) await beat(wait); setTram({ model: r.hop.model, family: r.hop.line.family }); panel.innerHTML = ''; await drive('in'); }
       if (r.hop.model === 'museum') await rare();
-      await moment(boardMoment(r.hop, fmt, sunny()), '', 1100);   // stepping aboard (v3.12): a tram stop, the Kalasatama platform, the stairs down
+      await moment(boardMoment(r.hop, fmt, sky()), '', 1100);   // stepping aboard (v3.12): a tram stop, the Kalasatama platform, the stairs down
+      await moment(walkMoment(r.hop, fmt, sky()), '', 1100);    // setting off on foot in the snow (v3.13)
       if (r.hop.kind === 'ride') { hideBoard(); paintScene(interior(r.hop), { car: carOf(r.hop), crowd: crowdOf(r.hop) }); sign(r.hop); }
       if (r.unsealed) { await beat(900); await reveal({ say: `Aboard the ${r.unsealed.family}, the label makes sense: ${r.unsealed.stop}.`, chips: [], how: 'win' }); }
       if (r.story) { pendingHop = r.hop; busy = false; return render(); }
@@ -664,7 +670,12 @@ async function pick(i) {
       panel.innerHTML = '';
       await rideBoard(wasHop, wasHop.kind === 'walk' ? 0.5 : 0, 1);
       if (wasHop.kind === 'ride' && wasHop.model && wasHop.model !== 'metro') arrived = { model: wasHop.model, family: wasHop.line.family };
-    } else if (r.reveal) await reveal(r.reveal);
+    } else if (r.reveal) {
+      // a choice with its consequence drawn (v3.13): walking the lady across is the crossing
+      const cm = before?.kind === 'story' ? choiceMoment(before.id, before.options[i]?.label, fmt, sky()) : null;
+      if (cm) { hideBoard(); setActor(null); paintScene(`m-${cm}`); arrived = null; }
+      await reveal(r.reveal);
+    }
     pendingHop = null;
     if (r.delivered) await stamp(r.delivered);
   } finally { busy = false; }
@@ -674,7 +685,7 @@ async function pick(i) {
 // A delivery: the fee, and what was inside all along.
 async function stamp(d) {
   // at the door (or at the steps) by day; the night shift stamps it at the stop
-  const m = deliveryMoment(d, fmt, sunny());
+  const m = deliveryMoment(d, fmt, sky());
   hideBoard(); setActor(null); $('v3mini').hidden = true;
   if (m) { paintScene(`m-${m}`); arrived = null; }               // the tram has gone while you were at the door
   else { paintScene('stop', { at: S.at, tram: arrived }); setTram(arrived); }

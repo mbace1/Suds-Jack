@@ -118,7 +118,7 @@ server.listen(0, '127.0.0.1', async () => {
         runs: [...document.querySelectorAll('#mutRow .run')].map(r => ({ id: r.dataset.run, open: !r.classList.contains('locked'), lit: r.classList.contains('on') })),
         goal: document.getElementById('titleGoal').textContent, play: document.getElementById('play').textContent,
         links: ['dailyLink', 'weekLink', 'liveLink'].filter(id => { const e = document.getElementById(id); return e && !e.hidden && getComputedStyle(e).display !== 'none'; }) }));
-      ok(`the bare address is the card journey, not the real-time game (v${t.v})`, !t.classic && t.v === '3.12' && /v3\.12/.test(t.hero));
+      ok(`the bare address is the card journey, not the real-time game (v${t.v})`, !t.classic && t.v === '3.13' && /v3\.13/.test(t.hero));
       ok(`it is Act 1, in Helsinki (${await page.evaluate(() => document.getElementById('titleWhen').textContent)})`, await page.evaluate(() => /^Act 1 · Helsinki · 07:00/.test(document.getElementById('titleWhen').textContent)));
       ok(`the ladder: EASY open and lit, three locked (${t.runs.map(r => r.id + (r.open ? '' : '🔒')).join(' ')})`, t.runs.map(r => r.id).join() === 'easy,medium,hard,night' && t.runs[0].open && t.runs[0].lit && t.runs.slice(1).every(r => !r.open) && t.run === 'easy');
       ok(`the goal and the button (${t.goal} · ${t.play})`, /^Three deliveries before 08:15/.test(t.goal) && t.play === 'START SHIFT');
@@ -280,6 +280,20 @@ server.listen(0, '127.0.0.1', async () => {
       ok('the metro boarded at Kalasatama stands at its open-air platform', among(M.BOARD_METRO_KALASATAMA));
       ok(`and the run still ends (${seen.cards.length} cards)`, seen.end);
       ok('no page or network errors (moments)', !errs.length, errs.slice(0, 3).join(' | '));
+      await ctx.close();
+    }
+    // ── a card's own scene, and a choice's consequence (v3.13): EASY 1103 deals the
+    // tourist and her map, then the lady at the crossing (walked across), then the
+    // seat she saved
+    {
+      const ctx = await browser.newContext(PHONE), page = await ctx.newPage(), errs = watch(page);
+      await page.goto(`${base}/toko-move/?run=easy&seed=1103`, { waitUntil: 'load' }); await ready(page);
+      await page.tap('#play'); await page.waitForSelector('#v3panel .eventOpt', { timeout: 15000 });
+      const seen = await playOut(page, { maxSteps: 400 }), ms = [...seen.scenes].filter(x => x.startsWith('m-')).map(x => x.slice(2));
+      ok(`the tourist's card is played in front of her and her map (${ms.join(', ')})`, ms.includes('tourist'));
+      ok('walking the lady across is the crossing', ms.includes('crossing'));
+      ok('and the seat she saved you is her callback\'s scene', ms.includes('saved-seat'));
+      ok('no page or network errors (card scenes)', !errs.length, errs.slice(0, 3).join(' | '));
       await ctx.close();
     }
     // ── story arcs (v3.4, ACT1.md §10): a second run meets Dispatch, and the city remembers

@@ -1,9 +1,10 @@
-// THE MOMENTS (v3.12; the owner's approved exterior art, PR #632, 21 scenes)
-// in bare node:
+// THE MOMENTS (v3.12–v3.13; the owner's approved exterior art, PR #632, 29
+// scenes) in bare node:
 //   · the approved art is untouched: every image matches the inventory's own
 //     sha256 list (art/approved-exteriors/ASSET-SHA256.json)
 //   · every approved scene is a moment, in exactly the formats it was approved
-//     in (five are landscape only, and no portrait is invented for them)
+//     in (five are landscape only, and no portrait is invented for them) — or
+//     HELD, with its reason, and then nothing of it ships
 //   · the game's copies (scenes/moments/<fmt>/<id>.webp) ARE the approved crops:
 //     the same size, decoded within compression of them (PSNR), against a
 //     control (two different scenes read far below the bar)
@@ -12,8 +13,9 @@
 //   · the beats: a handover with a place of its own where there is one, the
 //     generic ones elsewhere; a tram stop when a tram is boarded, the
 //     Kalasatama platform for its metro, the stairs down for the others; the
-//     old trams, the night and the weather keep the game's own scenes; and
-//     every scene shipped is reachable from some beat
+//     old trams, the night and the weather keep the game's own scenes; the
+//     cards with scenes of their own, walking the lady across, and the snow;
+//     and every scene shipped is reachable from some beat
 //
 //   node toko-move/test/moments.mjs
 import assert from 'node:assert/strict';
@@ -32,9 +34,12 @@ const changed = Object.entries(sums).filter(([f, h]) => crypto.createHash('sha25
 ok(Object.keys(sums).length >= 100 && !changed.length, `the approved art is untouched (${Object.keys(sums).length} images against the inventory's checksums)${changed.length ? '; changed: ' + changed.slice(0, 3).join(', ') : ''}`);
 
 const variantOf = id => INV.variants.find(v => v.pack === M.MOMENTS[id].src[0] && v.scene_variant === M.MOMENTS[id].src[1]);
-const unused = INV.variants.filter(v => !ids.some(id => variantOf(id) === v)).map(v => `${v.pack}/${v.scene_variant}`);
+const held = Object.values(M.HELD), isHeld = v => held.some(([src]) => src[0] === v.pack && src[1] === v.scene_variant);
+const unused = INV.variants.filter(v => !ids.some(id => variantOf(id) === v) && !isHeld(v)).map(v => `${v.pack}/${v.scene_variant}`);
 const wrongFmt = ids.filter(id => { const v = variantOf(id); return !v || JSON.stringify(M.MOMENTS[id].fmts) !== JSON.stringify(['169', ...(v.portrait ? ['916'] : [])]); });
-ok(INV.variants.length === 21 && ids.length === 21 && !unused.length && !wrongFmt.length, `every one of the ${INV.variants.length} approved scenes is a moment, in the formats it was approved in (${ids.filter(id => M.MOMENTS[id].fmts.length === 1).length} landscape only)${unused.length ? '; unused: ' + unused.join(', ') : ''}${wrongFmt.length ? '; formats: ' + wrongFmt.join(', ') : ''}`);
+ok(INV.variants.length === ids.length + held.length && !unused.length && !wrongFmt.length, `every one of the ${INV.variants.length} approved scenes is a moment (${ids.length}, ${ids.filter(id => M.MOMENTS[id].fmts.length === 1).length} of them landscape only) or held (${held.length})${unused.length ? '; unused: ' + unused.join(', ') : ''}${wrongFmt.length ? '; formats: ' + wrongFmt.join(', ') : ''}`);
+ok(held.every(([src, why]) => INV.variants.some(v => v.pack === src[0] && v.scene_variant === src[1]) && why.length > 40) && Object.keys(M.HELD).every(id => !M.MOMENTS[id] && ['169', '916'].every(f => !fs.existsSync(at(`../scenes/moments/${f}/${id}.webp`)))),
+  `a held scene names its reason and ships nothing (${Object.keys(M.HELD).join(', ')})`);
 
 const OP = ART + 'sunny-open-perspectives/', meta = JSON.parse(fs.readFileSync(at(OP + 'crop-metadata.json'), 'utf8')), compose = fs.readFileSync(at(OP + 'sources/compose.py'), 'utf8');
 const faceOf = s => { const m = new RegExp(`'${s}':\\{'face':(\\[[\\d,]+\\]|None)`).exec(compose); return m && m[1] !== 'None' ? JSON.parse(m[1]).slice(0, 2) : null; };
@@ -59,26 +64,36 @@ if (hasFfmpeg) {
   const extra = ['169', '916'].flatMap(f => fs.readdirSync(at(`../scenes/moments/${f}/`)).map(x => x.replace('.webp', '')).filter(x => !M.MOMENTS[x]?.fmts.includes(f)).map(x => `${f}/${x}`));
   const s = size(at(ART + variantOf('kiosk').landscape).pathname), ctl = psnr(raw(at('../scenes/moments/169/kiosk.webp').pathname, s), raw(at(ART + variantOf('doorway').landscape).pathname, s));
   ok(ctl < 20, `the ruler tells two scenes apart (kiosk against the doorway: ${ctl.toFixed(1)} dB)`);
-  ok(read.length === 37 && !wrong.length && !extra.length, `the game's ${read.length} pictures are the approved crops (${Math.min(...read).toFixed(1)}–${Math.max(...read).toFixed(1)} dB), and nothing else ships${wrong.length ? '; not: ' + wrong.join(', ') : ''}${extra.length ? '; extra: ' + extra.join(', ') : ''}`);
+  const want = ids.reduce((a, id) => a + M.MOMENTS[id].fmts.length, 0);
+  ok(read.length === want && !wrong.length && !extra.length, `the game's ${read.length} pictures are the approved crops (${Math.min(...read).toFixed(1)}–${Math.max(...read).toFixed(1)} dB), and nothing else ships${wrong.length ? '; not: ' + wrong.join(', ') : ''}${extra.length ? '; extra: ' + extra.join(', ') : ''}`);
 } else console.log('  (ffmpeg not on PATH: the fidelity check is skipped)');
 
 // the beats
 const job = { to: 'kamppi', cargo: 'documents' }, D = (to, i) => ({ to, contents: `thing${i}` });
-ok(M.pickupMoment('rautatientori', job, '916', true) === 'station' && M.pickupMoment('ruoholahti', job, '169', true) === 'canal' && M.pickupMoment('ooppera', job, '916', true) === 'park',
+ok(M.pickupMoment('rautatientori', job, '916', 'clear') === 'station' && M.pickupMoment('ruoholahti', job, '169', 'clear') === 'canal' && M.pickupMoment('ooppera', job, '916', 'clear') === 'park',
   'a handover with a place of its own: the station at Rautatientori, the canal at Ruoholahti, the lakeside park at the park stops');
-const harbour = f => new Set(Array.from({ length: 30 }, (_, i) => M.deliveryMoment(D('kauppatori', i), f, true)));
+const harbour = f => new Set(Array.from({ length: 30 }, (_, i) => M.deliveryMoment(D('kauppatori', i), f, 'clear')));
 ok([...harbour('169')].sort().join() === 'ferry,harbour-handoff,quay' && [...harbour('916')].join() === 'ferry', 'at the harbour: the market quay, the close quay, the ferry — upright, the ferry (the other two are landscape only)');
 const anyway = (fn, f) => new Set(Array.from({ length: 60 }, (_, i) => fn(i, f)));
-ok([...anyway(i => M.deliveryMoment(D(`p${i}`, i), '916', true))].sort().join() === 'bench,cyclist,doorway' && [...anyway(i => M.pickupMoment(`p${i}`, { ...job, to: `q${i}` }, '169', true))].sort().join() === 'bench,kiosk,stop-handoff',
+ok([...anyway(i => M.deliveryMoment(D(`p${i}`, i), '916', 'clear'))].sort().join() === 'bench,cyclist,doorway' && [...anyway(i => M.pickupMoment(`p${i}`, { ...job, to: `q${i}` }, '169', 'clear'))].sort().join() === 'bench,kiosk,stop-handoff',
   'anywhere else a delivery is a doorway, a cyclist or the bench, and a pickup a kiosk, the bench or the tram stop');
 const ride = (from, model, i) => ({ kind: 'ride', from, to: `t${i}`, model, line: { id: `l${i}` } });
-ok([...anyway(i => M.boardMoment(ride('kamppi', 'artic', i), '169', true))].sort().join() === [...M.BOARD_TRAM].sort().join() && !anyway(i => M.boardMoment(ride('kamppi', 'artic', i), '916', true)).has('stop-handoff'),
-  'boarding a tram is a tram stop, five ways (four upright)');
-ok([...anyway(i => M.boardMoment(ride('kalasatama', 'metro', i), '916', true))].sort().join() === [...M.BOARD_METRO_KALASATAMA].sort().join() && anyway(i => M.boardMoment(ride('hakaniemi', 'metro', i), '169', true)).has('stairs') && M.boardMoment(ride('hakaniemi', 'metro', 1), '916', true) === null,
+ok([...anyway(i => M.boardMoment(ride('kamppi', 'artic', i), '169', 'clear'))].sort().join() === [...M.BOARD_TRAM].sort().join() && !anyway(i => M.boardMoment(ride('kamppi', 'artic', i), '916', 'clear')).has('stop-handoff'),
+  'boarding a tram is a tram stop, six ways (five upright)');
+ok([...anyway(i => M.boardMoment(ride('kalasatama', 'metro', i), '916', 'clear'))].sort().join() === [...M.BOARD_METRO_KALASATAMA].sort().join() && anyway(i => M.boardMoment(ride('hakaniemi', 'metro', i), '169', 'clear')).has('stairs') && M.boardMoment(ride('hakaniemi', 'metro', 1), '916', 'clear') === null,
   'a metro at Kalasatama boards at the open-air platform (four ways); elsewhere the stairs down, landscape only');
-ok(['museum', 'nr1', 'nr2'].every(m => M.boardMoment(ride('kamppi', m, 1), '169', true) === null), 'the old trams keep their own pictures');
-ok(M.pickupMoment('kamppi', job, '169', false) === null && M.deliveryMoment(D('kamppi', 1), '916', false) === null && M.boardMoment(ride('kamppi', 'artic', 1), '169', false) === null, 'at night or in weather, no moment: the art is sunny');
-ok(M.deliveryMoment(D('eira', 3), '916', true) === M.deliveryMoment(D('eira', 3), '916', true), 'the same drop is always the same picture');
-const reach = new Set([...Object.values(M.HANDOFF_AT).flat(), ...M.PICKUP, ...M.DELIVERY, ...M.BOARD_TRAM, ...M.BOARD_METRO_KALASATAMA, ...M.BOARD_METRO]);
+ok(['museum', 'nr1', 'nr2'].every(m => M.boardMoment(ride('kamppi', m, 1), '169', 'clear') === null), 'the old trams keep their own pictures');
+const skies = ['night', 'rain', 'fog'];
+ok(skies.every(k => M.pickupMoment('kamppi', job, '169', k) === null && M.deliveryMoment(D('kamppi', 1), '916', k) === null && M.boardMoment(ride('kamppi', 'artic', 1), '169', k) === null && M.walkMoment({ kind: 'walk', to: 'eira' }, '916', k) === null),
+  'at night, in rain or in fog, no moment: the art is sunny, and its one weather is snow');
+ok(M.deliveryMoment(D('kamppi', 1), '916', 'snow') === 'snow' && M.walkMoment({ kind: 'walk', to: 'eira' }, '169', 'snow') === 'snow' && M.walkMoment({ kind: 'walk', to: 'eira' }, '169', 'clear') === null && M.pickupMoment('kamppi', job, '169', 'snow') === null,
+  'on a snowy day a walk and a delivery are the courier on the snowy steps');
+ok(M.cardMoment('map', '916', 'clear') === 'tourist' && M.cardMoment('sealed', '169', 'clear') === 'sealed-place' && M.cardMoment('map', '916', 'rain') === null && M.cardMoment('gull', '916', 'clear') === null,
+  'the tourist and her map, and the sealed parcel between the kiosk and the tram, are their cards\' scenes on a clear day');
+ok(M.cardMoment('granny2', '916', 'rain') === 'saved-seat' && M.cardMoment('granny2', '916', 'night') === null, 'the lady who saved you a seat is inside a tram: her scene stands by day in any weather');
+ok(M.choiceMoment('granny', 'Walk her across', '169', 'clear') === 'crossing' && M.choiceMoment('granny', 'Walk on', '169', 'clear') === null, 'walking the lady across is drawn as the crossing; walking on is not');
+ok(M.deliveryMoment(D('eira', 3), '916', 'clear') === M.deliveryMoment(D('eira', 3), '916', 'clear'), 'the same drop is always the same picture');
+const reach = new Set([...Object.values(M.HANDOFF_AT).flat(), ...M.PICKUP, ...M.DELIVERY, ...M.BOARD_TRAM, ...M.BOARD_METRO_KALASATAMA, ...M.BOARD_METRO, 'snow',
+  ...Object.values(M.CARD_SCENE).map(([m]) => m), ...Object.values(M.CHOICE_SCENE).flatMap(o => Object.values(o))]);
 ok(ids.every(id => reach.has(id)), `every scene shipped is reachable from some beat${ids.filter(id => !reach.has(id)).length ? ' (never: ' + ids.filter(id => !reach.has(id)).join(', ') + ')' : ''}`);
 console.log(`moments: ${n} checks passed`);

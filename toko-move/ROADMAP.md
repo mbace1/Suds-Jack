@@ -41,7 +41,11 @@ view") brought up to the scenes. Every step ends in a re-filmed trailer
    dropped on the owner's word (*"Forget your art designs, I will get u a
    PR"*). Shipped in v3.12 instead: all 21 approved scenes of PR #632 as
    moments of the job (handovers, tram stops, the Kalasatama platform, the
-   stairs down), each at its place where it has one. Further packs land the same way: the
+   stairs down), each at its place where it has one.
+   v3.13 added the next approvals: the cards' own scenes (the tourist, the
+   sealed parcel, the saved seat), the crossing as the consequence of
+   helping, and the snow. Held for the owner: the wallet (no journey card)
+   and the demonstration (its cause is a new proposal). Further packs land the same way: the
    approved crops as they are, at the beat they draw.
 
 Each step is measured, gated and deployed, and the trailer is re-filmed with
