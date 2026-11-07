@@ -25,7 +25,7 @@
     },
     {
       "id": "claims",
-      "role": "setup",
+      "role": "evidence",
       "at": "s2+0.4",
       "until": "s3-0.2",
       "hold": "s3",
