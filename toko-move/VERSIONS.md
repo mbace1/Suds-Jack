@@ -1,5 +1,68 @@
 # Toko Move — versions
 
+## v3.11 — 2026-11-07
+
+**MORE INTERIORS, AND THE WEATHER IN THE WINDOW** — step 4 of the plan for the
+owner's direction of 2026-11-06 (ROADMAP.md), and the owner's note on a night
+screenshot the next day: *"Rain seems to be falling into 2 different
+directions here. But assume we need more of these and outside art."*
+
+- **The rain fell two ways, and now falls one.** The window is a tile the
+  game scrolls. To make its ends meet, `plates.py` put the picture beside
+  its own mirror. That is fine for a row of houses. It was wrong for the
+  rain the night plate had painted in: the left half fell one way and the
+  right half the other, and where they met the streaks made a row of Λs.
+  - `make_windows.py` takes the painted rain out (a streak is a short
+    bright run along a row; it gets its row's 31 px median).
+  - The rain goes back in as weather, drawn at x and x ± W so the tile stays
+    seamless, all of it falling down and to the left.
+  - A first cut used a square 9 px median. A steep streak fills more than
+    half of that square, so a ghost of every streak stayed, visible only
+    with the contrast stretched.
+  - The painted plate is kept in `art/…/_prev/` so a re-run starts from it.
+- **The window carries the weather.** The stop's rain is never drawn inside
+  a car, so a rainy run showed sun through the glass.
+  - The day tram's window has rain, snow and fog
+    (`01-outside-tile-<rain|snow|fog>`), picked by the run's weather.
+  - The night car's window keeps its rain. A night run is always "clear",
+    and its look was always a rainy night. It gets snow and fog too, made
+    from the dried plate.
+- **The metro by day.** Every metro hop rode the tram's car until now.
+  `make_cars.py` makes it from the same plate:
+  - the metro's colours (orange seats, yellow poles, pale grey laminate);
+  - a tunnel for the window: rings, cable runs, lamps with their light on
+    the wall, a sign too far to read.
+  - Two things found by looking:
+    - The first tunnel put its lamps a few pixels below the glass, and the
+      window read as a black panel. The glass is measured now, and
+      everything sits inside it.
+    - The plate's riders were cut out of a day window, and the cut kept a
+      rim of that sky. It is invisible against daylight and glows against
+      a tunnel. The metro's rider layers drop it, except on Toko's head,
+      whose ring meets its disc in exactly that colour (the first pass
+      chewed it).
+- **Rush hour.** The crush card, or a tram you let go by because it was
+  full, now rides in a full car (`03-people-rush`, `04-courier-rush`):
+  - In 16:9 the plate's rider sits one seat over each way, re-dressed (a
+    green coat and brown hair, a purple coat and black hair). He is cut
+    clean of the seat strips that came with him.
+  - Standing passengers hold straps close to the lens, cropped by the
+    frame, over the courier because they are nearer than he is.
+  - The metro has its own rush car.
+  - The humming card ("the empty car") leaves the riders out.
+- **Gates.**
+  - `test/scenarios.mjs`: every layer the car can ask for exists (the
+    weather list is read from play.js). The rain in every window falls one
+    way, measured as the slant of the image gradient per half. The old
+    two-way plate is the control: the same ruler reads it +0.97 / −0.97,
+    and the new windows +0.69 to +0.96 in both halves. The night's snow
+    and fog have no painted rain under them.
+  - `test/play.cjs` (browser): MEDIUM 1087 rides the metro in the tunnel
+    car and fills it for the crush; MEDIUM 1027 rains in the tram's window
+    and fills the tram.
+  - The gate waits for the car to fill: the card is up 0.2 s before the
+    scene behind it cross-fades, and the bot answered it in less.
+
 ## v3.10 — 2026-11-07
 
 **EVERY STOP IS SOMEWHERE** — step 3 of the plan for the owner's direction of

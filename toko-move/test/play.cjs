@@ -72,16 +72,18 @@ const look = page => page.evaluate(() => {
     tram: (() => { const t = document.getElementById('v3tram'); return t && !t.hidden ? { model: t.dataset.model, chip: document.getElementById('v3chip').textContent, glow: t.classList.contains('glow') } : null; })(),
     land: document.querySelector('#v3frame .L.land')?.dataset.land || null, plate: document.querySelector('#v3frame .plate b')?.textContent || '',
     car: (() => { for (const e of document.querySelectorAll('#v3frame .L')) { const m = getComputedStyle(e).backgroundImage.match(/(02-car(?:-[a-z]+)?)\.webp/); if (m) return m[1]; } return null; })(),
+    layers: [...document.querySelectorAll('#v3frame .L')].map(e => (e.style.backgroundImage.match(/scenes\/([a-z]+)\/\d+\/([0-9a-z-]+)\.webp/) || []).slice(1).join('/')).filter(Boolean),
+    card: window.__tm3.card()?.id || null,
   };
 });
 // Play by tapping: the first button of every card; tap the scene to hurry a
 // hop or a stamp along. Returns everything it saw.
 async function playOut(page, { maxSteps = 600, pick = () => 0, onCard = null } = {}) {
-  const seen = { scenes: new Set(), kinds: new Set(), boards: 0, signs: [], stamps: [], cards: [], bad: [], clocks: [], strips: [], end: false, reveals: new Set(), trams: [], lands: new Set(), plates: new Set(), wx: new Set(), stakes: [], cars: new Set() };
+  const seen = { scenes: new Set(), kinds: new Set(), boards: 0, signs: [], stamps: [], cards: [], bad: [], clocks: [], strips: [], end: false, reveals: new Set(), trams: [], lands: new Set(), plates: new Set(), wx: new Set(), stakes: [], cars: new Set(), layers: new Set() };
   for (let i = 0; i < maxSteps; i++) {
     const s = await look(page);
     seen.scenes.add(s.scene); if (s.board) seen.boards++; if (s.sign) seen.signs.push(s.sign); if (s.stamp) seen.stamps.push(s.stamp);
-    if (s.rev) seen.reveals.add(s.rev); if (s.tram) seen.trams.push(s.tram); if (s.car) seen.cars.add(s.car); if (s.land) seen.lands.add(s.land); if (s.plate) seen.plates.add(s.plate); seen.wx.add(s.wx); seen.stakes.push(...s.stakes);
+    if (s.rev) seen.reveals.add(s.rev); if (s.tram) seen.trams.push(s.tram); if (s.car) seen.cars.add(s.car); for (const l of s.layers) seen.layers.add(l); if (s.land) seen.lands.add(s.land); if (s.plate) seen.plates.add(s.plate); seen.wx.add(s.wx); seen.stakes.push(...s.stakes);
     if (s.overflow) seen.bad.push('the page scrolled or overflowed');
     if (s.end) { seen.end = true; break; }
     if (!s.busy && s.buttons.length) {
@@ -116,7 +118,7 @@ server.listen(0, '127.0.0.1', async () => {
         runs: [...document.querySelectorAll('#mutRow .run')].map(r => ({ id: r.dataset.run, open: !r.classList.contains('locked'), lit: r.classList.contains('on') })),
         goal: document.getElementById('titleGoal').textContent, play: document.getElementById('play').textContent,
         links: ['dailyLink', 'weekLink', 'liveLink'].filter(id => { const e = document.getElementById(id); return e && !e.hidden && getComputedStyle(e).display !== 'none'; }) }));
-      ok(`the bare address is the card journey, not the real-time game (v${t.v})`, !t.classic && t.v === '3.10' && /v3\.10/.test(t.hero));
+      ok(`the bare address is the card journey, not the real-time game (v${t.v})`, !t.classic && t.v === '3.11' && /v3\.11/.test(t.hero));
       ok(`it is Act 1, in Helsinki (${await page.evaluate(() => document.getElementById('titleWhen').textContent)})`, await page.evaluate(() => /^Act 1 · Helsinki · 07:00/.test(document.getElementById('titleWhen').textContent)));
       ok(`the ladder: EASY open and lit, three locked (${t.runs.map(r => r.id + (r.open ? '' : '🔒')).join(' ')})`, t.runs.map(r => r.id).join() === 'easy,medium,hard,night' && t.runs[0].open && t.runs[0].lit && t.runs.slice(1).every(r => !r.open) && t.run === 'easy');
       ok(`the goal and the button (${t.goal} · ${t.play})`, /^Three deliveries before 08:15/.test(t.goal) && t.play === 'START SHIFT');
@@ -223,7 +225,7 @@ server.listen(0, '127.0.0.1', async () => {
       ok(`the night stage: the pill reads after eleven, five jobs (${c?.clock} ${c?.dots})`, !!c && /^23:/.test(c.clock) && c.dots === '○○○○○' && c.night);
       const nt = await topRow(page);
       ok(`the night's wider pill clears the HUB button and ♪ (${nt.left}–${nt.right}px ${nt.t || 'centred'})`, nt.hasHome && !nt.home && !nt.snd);
-      ok(`a ride at night is the night car (${[...seen.scenes]})`, seen.scenes.has('night') && !seen.scenes.has('tram'));
+      ok(`a ride at night is the night car (${[...seen.scenes]})`, seen.scenes.has('night') && !seen.scenes.has('tram') && !seen.scenes.has('metro'));
       ok('the night hums under the city', await page.evaluate(() => window.__tm3.audio.log.some(e => e.name === 'bed:night')));
       ok('no page or network errors (NIGHT)', !errs.length, errs.slice(0, 3).join(' | '));
       await ctx.close();
@@ -239,6 +241,25 @@ server.listen(0, '127.0.0.1', async () => {
       ok(`the museum tram is wood and brass inside (${[...seen.cars].join(' ')} · at the stop: ${models.join(', ')})`, seen.cars.has('02-car-museum') && models.includes('museum'));
       ok('and an Nr II is its 1970s self inside', seen.cars.has('02-car-old'));
       ok('every interior layer it asked for was there (no 404s)', !errs.length, errs.slice(0, 3).join(' | '));
+      await ctx.close();
+    }
+    // ── more interiors (v3.11): the metro by day, the rush car, and the weather in the window.
+    // MEDIUM 1087 is a rainy day that rides the metro and is dealt the crush aboard it;
+    // MEDIUM 1027 rides a tram in the rain and is dealt the crush there.
+    for (const [seed, car] of [[1087, 'metro'], [1027, 'tram']]) {
+      const ctx = await browser.newContext(PHONE); await seedRuns(ctx, { easy: { done: true } });
+      const page = await ctx.newPage(), errs = watch(page);
+      await page.goto(`${base}/toko-move/?run=medium&seed=${seed}`, { waitUntil: 'load' }); await ready(page);
+      await page.tap('#play'); await page.waitForSelector('#v3panel .eventOpt', { timeout: 15000 });
+      // the card is up a beat before the car behind it fills (the scene cross-fades in .2 s): look once it has
+      let crush = 'never dealt';
+      const seen = await playOut(page, { maxSteps: 70, onCard: async c => { if (c.card === 'crush') { await page.waitForTimeout(500); crush = (await look(page)).layers.join(' '); } } }), L = seen.layers;
+      if (car === 'metro') {
+        ok(`a metro ride by day is the metro car, a tunnel for its window (${[...L].filter(l => l.startsWith('metro')).join(' ')})`, L.has('metro/02-car') && L.has('metro/01-outside-tile'));
+        ok('and a tunnel has no rain in it', ![...L].some(l => /^metro\/01-outside-tile-/.test(l)));
+      } else ok(`a rainy day rains in the tram's window too (${[...L].filter(l => l.includes('outside')).join(' ')})`, L.has('tram/01-outside-tile-rain') && !L.has('tram/01-outside-tile'));
+      ok(`the crush card fills the ${car} (${crush})`, crush.includes(`${car}/03-people-rush`) && crush.includes(`${car}/04-courier-rush`));
+      ok(`no page or network errors (${car} interiors)`, !errs.length, errs.slice(0, 3).join(' | '));
       await ctx.close();
     }
     // ── story arcs (v3.4, ACT1.md §10): a second run meets Dispatch, and the city remembers
