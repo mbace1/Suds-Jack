@@ -1,5 +1,51 @@
 # Toko Move — versions
 
+## v3.13 — 2026-11-07
+
+**THE CARDS HAVE THEIR SCENES, AND THE SNOW HAS ONE** — PR #632's next two
+approvals (29 scenes now). Six are in the game; the other two are held, each
+with its reason.
+
+- **A card's scene while it is played.** Each stands under the card, in place
+  of the stop or the car:
+  - the `map` card ("A tourist is looking for the Moomin shop…") is played
+    in front of the tourist and her map;
+  - the sealed parcel's card is the courier with the box between the kiosk
+    and the tram: ask, or ride and watch.
+
+  Both are on a clear day.
+- **The lady who saved you a seat.** The `granny2` callback, aboard, is the
+  seat she saved by the door. It is inside a tram, so it stands by day in
+  any weather.
+- **A choice's consequence.** Walking the lady across (the `granny` card's
+  first option) is the crossing, under the line its reveal already says.
+  Walking on is not drawn. The pack's own notes call this pair "the
+  strongest story comparison": a choice at a stop, and the same lady later
+  aboard.
+- **The wind at a tram stop** is a sixth way to board a tram.
+- **Snow, the first weather the art has.** On a snowy day a walk and a
+  delivery are the courier on the snowy steps. Rain and fog still keep the
+  game's own scenes.
+- **Held, with the reason written next to them** (`HELD` in
+  `js/moments.js`; nothing of them ships):
+  - **the wallet:** the scene is the classic deck's encounter, and the
+    journey has no wallet card. Adding one moves every deal.
+  - **the demonstration:** its pack approves the art and calls the cause a
+    new proposal. A march as the reason a line is halted needs the owner's
+    sign-off first.
+- **Framing.** The saved seat, upright, keeps the lady's face in view.
+- **Gates.**
+  - `test/moments.mjs` (20 checks):
+    - the approved art is untouched (175 images);
+    - every one of the 29 approved scenes is a moment (27) or held (2);
+    - a held scene names its reason and ships nothing;
+    - the game's 49 pictures are the approved crops;
+    - the card scenes, the choice and the snow.
+  - `test/play.cjs` (browser):
+    - EASY 1103 plays the tourist's card in front of her, walks the lady
+      across, and meets the seat she saved;
+    - EASY 3434 shows 8 moments in one run.
+
 ## v3.12 — 2026-11-07
 
 **THE JOB ITSELF, IN THE OWNER'S NEW ILLUSTRATIONS** — PR #632, every approved
