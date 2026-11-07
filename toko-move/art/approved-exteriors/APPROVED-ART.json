@@ -14,7 +14,7 @@
       "pack": "outdoor-weather-tests",
       "scene_variant": "tram",
       "approval_context": "Sunny ones work, rain doesn\u2019t \u2014 sunny subset approval; rain excluded.",
-      "destination": "PR632",
+      "destination": "main (3060e6c78; originally PR632)",
       "landscape": "outdoor-weather-tests/stills/tram-dry-169.png",
       "landscape_size": [
         1024,
@@ -32,7 +32,7 @@
       "pack": "outdoor-weather-tests",
       "scene_variant": "harbour",
       "approval_context": "Sunny ones work, rain doesn\u2019t \u2014 sunny subset approval; rain excluded.",
-      "destination": "PR632",
+      "destination": "main (3060e6c78; originally PR632)",
       "landscape": "outdoor-weather-tests/stills/harbour-dry-169.png",
       "landscape_size": [
         1024,
@@ -50,7 +50,7 @@
       "pack": "outdoor-weather-tests",
       "scene_variant": "metro",
       "approval_context": "Sunny ones work, rain doesn\u2019t \u2014 sunny subset approval; rain excluded.",
-      "destination": "PR632",
+      "destination": "main (3060e6c78; originally PR632)",
       "landscape": "outdoor-weather-tests/stills/metro-dry-169.png",
       "landscape_size": [
         1024,
@@ -68,7 +68,7 @@
       "pack": "sunny-camera-studies",
       "scene_variant": "03-elevated-metro",
       "approval_context": "pt126u: Others approved \u2014 only 03 elevated stairs and 04 street-level harbour; overhead 01 rejected and 02 nearly works excluded.",
-      "destination": "PR632",
+      "destination": "main (3060e6c78; originally PR632)",
       "landscape": "sunny-camera-studies/stills/03-elevated-metro.png",
       "landscape_size": [
         1280,
@@ -87,7 +87,7 @@
       "pack": "sunny-camera-studies",
       "scene_variant": "04-close-quay",
       "approval_context": "pt126u: Others approved \u2014 only 03 elevated stairs and 04 street-level harbour; overhead 01 rejected and 02 nearly works excluded.",
-      "destination": "PR632",
+      "destination": "main (3060e6c78; originally PR632)",
       "landscape": "sunny-camera-studies/stills/04-close-quay.png",
       "landscape_size": [
         1280,
@@ -105,7 +105,7 @@
       "pack": "sunny-dual-crop-v2",
       "scene_variant": "platform",
       "approval_context": "Latest sunny-dual-crop-v2 tram AND harbour approved, relayed before pt131u Make more new ones with the rules.",
-      "destination": "PR632",
+      "destination": "main (3060e6c78; originally PR632)",
       "landscape": "sunny-dual-crop-v2/crops/platform-169.png",
       "landscape_size": [
         1792,
@@ -126,7 +126,7 @@
       "pack": "sunny-dual-crop-v2",
       "scene_variant": "harbour",
       "approval_context": "Latest sunny-dual-crop-v2 tram AND harbour approved, relayed before pt131u Make more new ones with the rules.",
-      "destination": "PR632",
+      "destination": "main (3060e6c78; originally PR632)",
       "landscape": "sunny-dual-crop-v2/crops/harbour-169.png",
       "landscape_size": [
         1792,
@@ -147,7 +147,7 @@
       "pack": "sunny-new-locations",
       "scene_variant": "metro",
       "approval_context": "pt134u: Approved, more \u2014 all three pairs.",
-      "destination": "PR632",
+      "destination": "main (3060e6c78; originally PR632)",
       "landscape": "sunny-new-locations/crops/metro-169.png",
       "landscape_size": [
         1024,
@@ -168,7 +168,7 @@
       "pack": "sunny-new-locations",
       "scene_variant": "tram",
       "approval_context": "pt134u: Approved, more \u2014 all three pairs.",
-      "destination": "PR632",
+      "destination": "main (3060e6c78; originally PR632)",
       "landscape": "sunny-new-locations/crops/tram-169.png",
       "landscape_size": [
         1024,
@@ -189,7 +189,7 @@
       "pack": "sunny-new-locations",
       "scene_variant": "park",
       "approval_context": "pt134u: Approved, more \u2014 all three pairs.",
-      "destination": "PR632",
+      "destination": "main (3060e6c78; originally PR632)",
       "landscape": "sunny-new-locations/crops/park-169.png",
       "landscape_size": [
         1024,
@@ -210,7 +210,7 @@
       "pack": "sunny-city-arrivals",
       "scene_variant": "kalasatama",
       "approval_context": "Approve the detailed ones \u2014 all three detailed city-arrivals pairs; metro approach illustrative only.",
-      "destination": "PR632",
+      "destination": "main (3060e6c78; originally PR632)",
       "landscape": "sunny-city-arrivals/crops/kalasatama-169.png",
       "landscape_size": [
         1024,
@@ -231,7 +231,7 @@
       "pack": "sunny-city-arrivals",
       "scene_variant": "station",
       "approval_context": "Approve the detailed ones \u2014 all three detailed city-arrivals pairs; metro approach illustrative only.",
-      "destination": "PR632",
+      "destination": "main (3060e6c78; originally PR632)",
       "landscape": "sunny-city-arrivals/crops/station-169.png",
       "landscape_size": [
         1024,
@@ -252,7 +252,7 @@
       "pack": "sunny-city-arrivals",
       "scene_variant": "canal",
       "approval_context": "Approve the detailed ones \u2014 all three detailed city-arrivals pairs; metro approach illustrative only.",
-      "destination": "PR632",
+      "destination": "main (3060e6c78; originally PR632)",
       "landscape": "sunny-city-arrivals/crops/canal-169.png",
       "landscape_size": [
         1024,
@@ -273,7 +273,7 @@
       "pack": "sunny-minimal-comparisons",
       "scene_variant": "metro",
       "approval_context": "pt137u: The tram and metro low details are good too \u2014 park NOT approved.",
-      "destination": "PR632",
+      "destination": "main (3060e6c78; originally PR632)",
       "landscape": "sunny-minimal-comparisons/crops/metro-169.png",
       "landscape_size": [
         1024,
@@ -294,7 +294,7 @@
       "pack": "sunny-minimal-comparisons",
       "scene_variant": "tram",
       "approval_context": "pt137u: The tram and metro low details are good too \u2014 park NOT approved.",
-      "destination": "PR632",
+      "destination": "main (3060e6c78; originally PR632)",
       "landscape": "sunny-minimal-comparisons/crops/tram-169.png",
       "landscape_size": [
         1024,
@@ -315,7 +315,7 @@
       "pack": "sunny-open-backgrounds",
       "scene_variant": "tram",
       "approval_context": "pt139u: Those are approved \u2014 tram+shelter and bench handoff.",
-      "destination": "PR632",
+      "destination": "main (3060e6c78; originally PR632)",
       "landscape": "sunny-open-backgrounds/crops/tram-169.png",
       "landscape_size": [
         1024,
@@ -336,7 +336,7 @@
       "pack": "sunny-open-backgrounds",
       "scene_variant": "bench",
       "approval_context": "pt139u: Those are approved \u2014 tram+shelter and bench handoff.",
-      "destination": "PR632",
+      "destination": "main (3060e6c78; originally PR632)",
       "landscape": "sunny-open-backgrounds/crops/bench-169.png",
       "landscape_size": [
         1024,
@@ -357,7 +357,7 @@
       "pack": "sunny-open-perspectives",
       "scene_variant": "metro",
       "approval_context": "Perfect all approved, then Put these in a PR \u2014 all four pairs.",
-      "destination": "PR632",
+      "destination": "main (3060e6c78; originally PR632)",
       "landscape": "sunny-open-perspectives/crops/metro-169.png",
       "landscape_size": [
         1024,
@@ -378,7 +378,7 @@
       "pack": "sunny-open-perspectives",
       "scene_variant": "kiosk",
       "approval_context": "Perfect all approved, then Put these in a PR \u2014 all four pairs.",
-      "destination": "PR632",
+      "destination": "main (3060e6c78; originally PR632)",
       "landscape": "sunny-open-perspectives/crops/kiosk-169.png",
       "landscape_size": [
         1024,
@@ -399,7 +399,7 @@
       "pack": "sunny-open-perspectives",
       "scene_variant": "cyclist",
       "approval_context": "Perfect all approved, then Put these in a PR \u2014 all four pairs.",
-      "destination": "PR632",
+      "destination": "main (3060e6c78; originally PR632)",
       "landscape": "sunny-open-perspectives/crops/cyclist-169.png",
       "landscape_size": [
         1024,
@@ -420,7 +420,7 @@
       "pack": "sunny-open-perspectives",
       "scene_variant": "doorway",
       "approval_context": "Perfect all approved, then Put these in a PR \u2014 all four pairs.",
-      "destination": "PR632",
+      "destination": "main (3060e6c78; originally PR632)",
       "landscape": "sunny-open-perspectives/crops/doorway-169.png",
       "landscape_size": [
         1024,
@@ -520,18 +520,105 @@
         "encounters-weather-studies/layers/snow/00-integrated-plate.png",
         "encounters-weather-studies/layers/snow/10-exact-courier-identity.png"
       ]
+    },
+    {
+      "pack": "choice-consequence-studies",
+      "scene_variant": "crossing",
+      "approval_context": "pt151u: All approved, more \u2014 all four choice/consequence pairs. Demonstration gameplay cause remains NEW PROPOSAL.",
+      "destination": "PR632",
+      "landscape": "choice-consequence-studies/crops/crossing-169.png",
+      "landscape_size": [
+        1024,
+        576
+      ],
+      "portrait": "choice-consequence-studies/crops/crossing-916.png",
+      "portrait_size": [
+        576,
+        1024
+      ],
+      "master": "choice-consequence-studies/masters/crossing-master.png",
+      "composite_layers": [
+        "choice-consequence-studies/layers/crossing/00-integrated-plate.png",
+        "choice-consequence-studies/layers/crossing/10-exact-courier-identity.png"
+      ]
+    },
+    {
+      "pack": "choice-consequence-studies",
+      "scene_variant": "saved-seat",
+      "approval_context": "pt151u: All approved, more \u2014 all four choice/consequence pairs. Demonstration gameplay cause remains NEW PROPOSAL.",
+      "destination": "PR632",
+      "landscape": "choice-consequence-studies/crops/saved-seat-169.png",
+      "landscape_size": [
+        1024,
+        576
+      ],
+      "portrait": "choice-consequence-studies/crops/saved-seat-916.png",
+      "portrait_size": [
+        576,
+        1024
+      ],
+      "master": "choice-consequence-studies/masters/saved-seat-master.png",
+      "composite_layers": [
+        "choice-consequence-studies/layers/saved-seat/00-integrated-plate.png",
+        "choice-consequence-studies/layers/saved-seat/10-exact-courier-identity.png"
+      ]
+    },
+    {
+      "pack": "choice-consequence-studies",
+      "scene_variant": "sealed-place",
+      "approval_context": "pt151u: All approved, more \u2014 all four choice/consequence pairs. Demonstration gameplay cause remains NEW PROPOSAL.",
+      "destination": "PR632",
+      "landscape": "choice-consequence-studies/crops/sealed-place-169.png",
+      "landscape_size": [
+        1024,
+        576
+      ],
+      "portrait": "choice-consequence-studies/crops/sealed-place-916.png",
+      "portrait_size": [
+        576,
+        1024
+      ],
+      "master": "choice-consequence-studies/masters/sealed-place-master.png",
+      "composite_layers": [
+        "choice-consequence-studies/layers/sealed-place/00-integrated-plate.png",
+        "choice-consequence-studies/layers/sealed-place/10-exact-courier-identity.png"
+      ]
+    },
+    {
+      "pack": "choice-consequence-studies",
+      "scene_variant": "demonstration",
+      "approval_context": "pt151u: All approved, more \u2014 all four choice/consequence pairs. Demonstration gameplay cause remains NEW PROPOSAL.",
+      "destination": "PR632",
+      "landscape": "choice-consequence-studies/crops/demonstration-169.png",
+      "landscape_size": [
+        1024,
+        576
+      ],
+      "portrait": "choice-consequence-studies/crops/demonstration-916.png",
+      "portrait_size": [
+        576,
+        1024
+      ],
+      "master": "choice-consequence-studies/masters/demonstration-master.png",
+      "composite_layers": [
+        "choice-consequence-studies/layers/demonstration/00-integrated-plate.png",
+        "choice-consequence-studies/layers/demonstration/10-exact-courier-identity.png"
+      ]
     }
   ],
   "counts": {
-    "unique_variants": 25,
-    "landscape_outputs": 25,
-    "portrait_outputs": 20,
-    "previously_in_pr632": 21,
+    "unique_variants": 29,
+    "landscape_outputs": 29,
+    "portrait_outputs": 24,
+    "previously_in_pr632": 25,
     "newly_added_variants": 4,
-    "pack_files": 195,
+    "pack_files": 228,
     "audit_files": 5,
-    "total_pr_files": 200,
-    "new_files_this_update": 33
+    "total_pr_files": 70,
+    "new_files_this_update": 33,
+    "total_inventory_files": 233,
+    "already_on_main_variants": 21,
+    "pending_pr_variants": 8
   },
   "files_by_pack": {
     "outdoor-weather-tests": [
@@ -746,6 +833,41 @@
       "encounters-weather-studies/sources/tourist.jpg",
       "encounters-weather-studies/sources/wallet.jpg",
       "encounters-weather-studies/sources/wind.jpg"
+    ],
+    "choice-consequence-studies": [
+      "choice-consequence-studies/CONTACT.png",
+      "choice-consequence-studies/MOTION.md",
+      "choice-consequence-studies/README.md",
+      "choice-consequence-studies/SCENES-GAMEPLAY.md",
+      "choice-consequence-studies/approval-record.json",
+      "choice-consequence-studies/asset-sha256.json",
+      "choice-consequence-studies/crop-metadata.json",
+      "choice-consequence-studies/crops/crossing-169.png",
+      "choice-consequence-studies/crops/crossing-916.png",
+      "choice-consequence-studies/crops/demonstration-169.png",
+      "choice-consequence-studies/crops/demonstration-916.png",
+      "choice-consequence-studies/crops/saved-seat-169.png",
+      "choice-consequence-studies/crops/saved-seat-916.png",
+      "choice-consequence-studies/crops/sealed-place-169.png",
+      "choice-consequence-studies/crops/sealed-place-916.png",
+      "choice-consequence-studies/layers/crossing/00-integrated-plate.png",
+      "choice-consequence-studies/layers/crossing/10-exact-courier-identity.png",
+      "choice-consequence-studies/layers/demonstration/00-integrated-plate.png",
+      "choice-consequence-studies/layers/demonstration/10-exact-courier-identity.png",
+      "choice-consequence-studies/layers/saved-seat/00-integrated-plate.png",
+      "choice-consequence-studies/layers/saved-seat/10-exact-courier-identity.png",
+      "choice-consequence-studies/layers/sealed-place/00-integrated-plate.png",
+      "choice-consequence-studies/layers/sealed-place/10-exact-courier-identity.png",
+      "choice-consequence-studies/masters/crossing-master.png",
+      "choice-consequence-studies/masters/demonstration-master.png",
+      "choice-consequence-studies/masters/saved-seat-master.png",
+      "choice-consequence-studies/masters/sealed-place-master.png",
+      "choice-consequence-studies/sources/compose.py",
+      "choice-consequence-studies/sources/crossing.jpg",
+      "choice-consequence-studies/sources/demonstration.jpg",
+      "choice-consequence-studies/sources/master-shapes.json",
+      "choice-consequence-studies/sources/saved-seat.jpg",
+      "choice-consequence-studies/sources/sealed-place.jpg"
     ]
   }
 }
