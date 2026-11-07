@@ -2,56 +2,75 @@
 
 ## v3.12 — 2026-11-07
 
-**THE JOB ITSELF, IN THE NEW ILLUSTRATIONS** — the owner's art pack (PR #632,
-`art/sunny-open-perspectives/`, approved 7 Nov: *"Perfect all approved"*),
-after the owner's *"Forget your art designs, I will get u a PR."*
+**THE JOB ITSELF, IN THE OWNER'S NEW ILLUSTRATIONS** — PR #632, every approved
+exterior variant: 21 scenes, 37 pictures (`art/approved-exteriors/`). It
+follows the owner's *"Forget your art designs, I will get u a PR"*, and then,
+on a first cut that used only the latest four, *"It should have a lot
+more"*.
 
-- **Four moments, each at the beat it draws.** Each one is shown full frame
-  under the panel that beat already has:
-  - **Pickup.** A job taken by day is handed over at a kiosk hatch, with a
-    PICKED UP stamp. A sealed parcel's line keeps its address hidden: it is
-    the one its dispatch card said.
-  - **Delivery.** It happens at a doorway or with a cyclist at the steps,
-    picked by the drop itself, so the same drop is always the same picture.
-    The tram you came on has gone while you were at the door.
-  - **Metro.** A metro boarded at Kalasatama stands at the open-air platform
-    first. The pack draws the outdoor metro, and of the game's 23 places
-    only Kalasatama has one (the pack's README: "Outdoor metro only
-    Kalasatama/east").
-  - **Night.** The pack is sunny only, so the night shift keeps its stops.
-- **The pack, as delivered.**
-  - Its commit is in the history unchanged, and its own sha256 list still
-    holds.
-  - The game ships each 16:9 and 9:16 crop as webp
-    (`scenes/moments/<fmt>/<id>.webp`, 324 KB for all eight). Nothing is
-    repainted or re-cropped: each format uses its own crop.
-  - `js/moments.js` holds the pack's crop boxes and each courier's face from
-    its compositor. The push-in starts at the face; the cyclist is seen from
-    behind, so his parcel stands in.
+- **Every beat of a job has its picture.** Each stands full frame under the
+  panel that beat already has:
+  - **A job taken** is a handover where you are:
+    - the station's granite at Rautatientori;
+    - the canal bridge at Ruoholahti;
+    - the market quay, the close quay or the ferry at the four harbour stops;
+    - the lakeside reeds at the park stops (Ooppera on Töölönlahti, Arabia
+      on Vanhankaupunginlahti, Meilahti, Käpylä);
+    - anywhere else a kiosk hatch, a bench, or the tram stop.
+
+    It carries a PICKED UP stamp. A sealed parcel's line keeps its address
+    hidden.
+  - **A delivery** is at the same places at the drop. Anywhere else it is a
+    doorway, a cyclist at the steps, or the bench. The tram you came on has
+    gone while you were at the door.
+  - **A tram boarded** (after it pulls in) is a tram stop, five ways. The
+    museum tram and the Nr I and II keep their own pictures: the art draws
+    today's trams.
+  - **A metro boarded at Kalasatama** is the open-air platform, four ways
+    (of the game's 23 places only Kalasatama has an outdoor metro).
+    Anywhere else it is the stairs down.
+- **Sunny only.** The owner: *"Sunny ones work, rain doesn't."* The moments
+  stand by day on a clear day. The night shift and a day of rain, snow or
+  fog keep the game's own scenes.
+- **The same drop is always the same picture.** A beat picks from its pool
+  by the thing itself: the drop, the ride, the job. A first hash (FNV-1a)
+  picked only two of Kalasatama's four platforms, because its low bits
+  barely move for keys that differ only at the end. It has a final mix
+  now.
+- **The art, as delivered.**
+  - The PR's commits are in the history unchanged. Its own check
+    (`approved-exteriors/reproduce.py`) passes: every hash, and all 21
+    variants pixel-exact.
+  - The game ships the approved crops as webp (`scenes/moments/<fmt>/`,
+    2.7 MB for all 37), in the formats they were approved in.
+  - Five scenes are landscape only, and no portrait is invented for them.
+    A phone held upright picks from the other sixteen.
+  - The crops are 1024 wide (the dual-crop pair 1792), about 2× enlarged on
+    a phone's frame. Masters at 2× would sharpen them.
 - **Framing on a phone, found by looking.** A phone's frame is narrower
-  than 9:16, so some scenes keep a point other than the face in view:
-  - The cyclist's portrait has the courier's back at one edge and her face
-    at the other; the first cut lost her face. It now keeps her face and
-    the parcel.
-  - The metro's portrait keeps the courier at its edge and the cab's front.
-  - Sideways, the doorway keeps the courier's middle, so the parcel is not
-    on the frame's edge.
-  - Sideways, a moment's stamp is narrower (38vw), so the parcel in their
-    hands stays in view.
-- **The crops are 1024×576 and 576×1024**, against a 1920×1080 frame. On a
-  phone that is about 2× enlarged and a little soft. Masters at 2× would
-  fix it.
+  than 9:16 upright and wider than 16:9 sideways, so some scenes keep a
+  point other than the middle in view:
+  - the cyclist's face and the parcel;
+  - the metro's cab and the courier at its edge;
+  - the doorway's parcel, sideways;
+  - the courier on the Kalasatama curve and at the tram stops.
+
+  Sideways, a moment's stamp is narrower (38vw), so the parcel in their
+  hands stays in view.
 - **Gates.**
-  - `test/moments.mjs` checks:
-    - the pack is untouched (25 images against its checksums);
-    - the game's copies are its crops (37.9–42.9 dB). The control, two
-      different scenes compared, reads 5.7 dB;
-    - the table matches the pack's crop metadata and compositor;
+  - `test/moments.mjs` (15 checks):
+    - the approved art is untouched (125 images against the inventory's
+      checksums);
+    - every approved scene is a moment, in exactly its approved formats;
+    - the game's 37 pictures are those crops (36.5–43.4 dB). The control,
+      two different scenes compared, reads 5.7 dB;
+    - the open-perspectives scenes carry their pack's crop boxes and faces;
     - every face and kept point is inside its crop and clear of the card;
-    - the beat rules, night included.
-  - `test/play.cjs` (browser): EASY 1019 takes a job at the kiosk, delivers
-    at a door or to a cyclist, and boards the metro at Kalasatama, then
-    finishes. A night run shows none of them.
+    - every beat's pool, the night and the weather;
+    - every scene shipped is reachable from some beat.
+  - `test/play.cjs` (browser): EASY 3434, a clear day, shows 7 of them in
+    one run: a pickup, a delivery, two tram stops, the station at
+    Rautatientori and the Kalasatama platform. A night run shows none.
 
 ## v3.11 — 2026-11-07
 

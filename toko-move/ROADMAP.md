@@ -39,9 +39,9 @@ view") brought up to the scenes. Every step ends in a re-filmed trailer
    new compositions; that waits for the key.
 5. ~~**v3.12 · The owner's art.**~~ The code-drawn window views were
    dropped on the owner's word (*"Forget your art designs, I will get u a
-   PR"*). Shipped in v3.12 instead: PR #632's four approved illustrations as
-   moments of the job (pickup at a kiosk, delivery at a door or to a
-   cyclist, the metro at Kalasatama). Further packs land the same way: the
+   PR"*). Shipped in v3.12 instead: all 21 approved scenes of PR #632 as
+   moments of the job (handovers, tram stops, the Kalasatama platform, the
+   stairs down), each at its place where it has one. Further packs land the same way: the
    approved crops as they are, at the beat they draw.
 
 Each step is measured, gated and deployed, and the trailer is re-filmed with

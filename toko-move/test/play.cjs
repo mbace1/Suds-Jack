@@ -263,16 +263,21 @@ server.listen(0, '127.0.0.1', async () => {
       ok(`no page or network errors (${car} interiors)`, !errs.length, errs.slice(0, 3).join(' | '));
       await ctx.close();
     }
-    // ── the moments (v3.12, the owner's art pack, PR #632): EASY 1019 takes a job at
-    // the kiosk, delivers at a door or to a cyclist, and boards the metro at Kalasatama
+    // ── the moments (v3.12, the owner's approved art, PR #632): EASY 3434 (a clear day)
+    // takes jobs, boards trams, delivers, and boards the metro at Kalasatama, each
+    // beat with its picture
     {
+      const M = await import(require('url').pathToFileURL(require('path').join(__dirname, '../js/moments.js')).href);
       const ctx = await browser.newContext(PHONE), page = await ctx.newPage(), errs = watch(page);
-      await page.goto(`${base}/toko-move/?run=easy&seed=1019`, { waitUntil: 'load' }); await ready(page);
+      await page.goto(`${base}/toko-move/?run=easy&seed=3434`, { waitUntil: 'load' }); await ready(page);
       await page.tap('#play'); await page.waitForSelector('#v3panel .eventOpt', { timeout: 15000 });
-      const seen = await playOut(page, { maxSteps: 400 }), ms = [...seen.scenes].filter(x => x.startsWith('m-'));
-      ok(`a job taken is handed over at the kiosk (${ms.join(', ')})`, ms.includes('m-kiosk') && [...seen.layers].includes('moments/kiosk'));
-      ok('a delivery is at a doorway or with a cyclist at the steps', ms.includes('m-doorway') || ms.includes('m-cyclist'));
-      ok('the metro boarded at Kalasatama stands at its open-air platform first', ms.includes('m-metro'));
+      const seen = await playOut(page, { maxSteps: 400 }), ms = [...seen.scenes].filter(x => x.startsWith('m-')).map(x => x.slice(2));
+      const among = pool => ms.some(m => pool.includes(m)), hand = [...Object.values(M.HANDOFF_AT).flat()];
+      ok(`a run on a clear day is told in the new pictures: ${ms.length} of them (${ms.join(', ')})`, ms.length >= 4 && ms.every(m => M.MOMENTS[m]?.fmts.includes('916')));
+      ok('a job taken is handed over (a kiosk, a bench, or a place of its own)', among([...M.PICKUP, ...hand]));
+      ok('a delivery is at a door, with a cyclist, at the bench or at a place of its own', among([...M.DELIVERY, ...hand]));
+      ok('a tram boarded is a tram stop', among(M.BOARD_TRAM));
+      ok('the metro boarded at Kalasatama stands at its open-air platform', among(M.BOARD_METRO_KALASATAMA));
       ok(`and the run still ends (${seen.cards.length} cards)`, seen.end);
       ok('no page or network errors (moments)', !errs.length, errs.slice(0, 3).join(' | '));
       await ctx.close();

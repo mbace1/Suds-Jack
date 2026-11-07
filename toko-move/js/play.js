@@ -41,7 +41,7 @@ import { TRAMS } from './cards.js?v=3';
 import { mountAudio } from './audio.js?v=2';
 import { loadStanding, saveStanding } from './regulars.js?v=4';
 import { addNote } from './sealed.js?v=2';
-import { MOMENTS, faceIn, keepIn, pickupMoment, deliveryMoment, metroMoment } from './moments.js?v=1';
+import { MOMENTS, faceIn, keepIn, pickupMoment, deliveryMoment, boardMoment } from './moments.js?v=1';
 import { resolveMode, dailyShare, W } from './modes.js?v=1';
 import { recordDaily, todayRecord, streak } from './daily.js?v=2';
 
@@ -607,6 +607,8 @@ function sign(hop) {
 }
 
 // A moment of the job (v3.12): its picture, its line, a beat; skippable.
+// the art is sunny: a moment stands by day, on a clear day
+const sunny = () => !NIGHT && (S?.weather || 'clear') === 'clear';
 async function moment(id, html = '', ms = 1500) {
   if (!id) return false;
   hideBoard(); setActor(null); $('v3mini').hidden = true;
@@ -638,7 +640,7 @@ async function pick(i) {
       sfx('coin');
       // (a sealed parcel's address stays hidden: the line is the one its dispatch card said)
       const what = S.job.sealed ? 'A sealed parcel. No address, only a sticker.' : `${J.cargoWord(S.job.cargo)} for ${S.job.toName}.`;
-      await moment(pickupMoment(NIGHT), `<div class="v3stamp pickup" role="status"><span class="big">PICKED UP</span><span>${esc(what)}</span><span class="pts">€${S.job.fee}</span></div>`, 1400);
+      await moment(pickupMoment(S.at, S.job, fmt, sunny()), `<div class="v3stamp pickup" role="status"><span class="big">PICKED UP</span><span>${esc(what)}</span><span class="pts">€${S.job.fee}</span></div>`, 1400);
     }
     if (r.hop) {
       $('v3mini').hidden = true;
@@ -646,7 +648,7 @@ async function pick(i) {
       // the tram you chose pulls in (look only: the model is drawn, the ride is the same)
       if (tram) { const wait = scene !== 'stop' ? paintScene('stop', { at: r.hop.from }) : 0; if (wait) await beat(wait); setTram({ model: r.hop.model, family: r.hop.line.family }); panel.innerHTML = ''; await drive('in'); }
       if (r.hop.model === 'museum') await rare();
-      await moment(metroMoment(r.hop, NIGHT), '', 1400);        // the one open-air metro platform in the game (v3.12)
+      await moment(boardMoment(r.hop, fmt, sunny()), '', 1100);   // stepping aboard (v3.12): a tram stop, the Kalasatama platform, the stairs down
       if (r.hop.kind === 'ride') { hideBoard(); paintScene(interior(r.hop), { car: carOf(r.hop), crowd: crowdOf(r.hop) }); sign(r.hop); }
       if (r.unsealed) { await beat(900); await reveal({ say: `Aboard the ${r.unsealed.family}, the label makes sense: ${r.unsealed.stop}.`, chips: [], how: 'win' }); }
       if (r.story) { pendingHop = r.hop; busy = false; return render(); }
@@ -672,7 +674,7 @@ async function pick(i) {
 // A delivery: the fee, and what was inside all along.
 async function stamp(d) {
   // at the door (or at the steps) by day; the night shift stamps it at the stop
-  const m = deliveryMoment(d, NIGHT);
+  const m = deliveryMoment(d, fmt, sunny());
   hideBoard(); setActor(null); $('v3mini').hidden = true;
   if (m) { paintScene(`m-${m}`); arrived = null; }               // the tram has gone while you were at the door
   else { paintScene('stop', { at: S.at, tram: arrived }); setTram(arrived); }
