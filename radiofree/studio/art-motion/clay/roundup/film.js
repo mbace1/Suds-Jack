@@ -1,14 +1,15 @@
-// ON THE LABEL (RFH · Roundup / glyphosate), v2 FULL FILM (approved 7 Nov 2026, en). The device: THE LABEL.
+// ON THE LABEL (RFH · Roundup / glyphosate), v3 (7 Nov 2026, en; the owner on v2: "not punchy enough"). The device: THE LABEL.
 // One generic weedkiller jug (no brand, no logo, no trade dress; Roundup is named only in captions and tags) stands on a
 // toy shed workbench, and each beat of the 2026 record happens TO ITS LABEL:
-//   1 the jug, two banker's boxes of CLAIMS files, a red desk phone; on "65,000" three more files drop on the stack;
-//   2 a STATE CANCER WARNING sticker flies at the label's empty warning box, is stamped PREEMPTED and falls off (Durnell);
-//   3 a rubber stamp brands the label NATIONAL DEFENSE PRIORITY (the 18 Feb executive order, Defense Production Act);
-//   4 a NON-NEGOTIABLE sticky note slaps onto the phone, which never rings (Means alleges; attributed; Kennedy's own
-//     March line beside it);
-//   5 a slow push to the label: the warning box is still empty.
+//   1 HOOK: tight on the label's empty WARNING box ("Read the warning"): nothing under the heading;
+//   2 two banker's boxes of CLAIMS files CRASH onto the bench on "65,000", files spill;
+//   3 a STATE CANCER WARNING sticker slaps onto the box; on "No" a hand stamp HAMMERS it PREEMPTED and it tears in two (Durnell);
+//   4 the big rubber stamp SLAMS the label NATIONAL DEFENSE PRIORITY, dust (the 18 Feb executive order);
+//   5 a NONNEGOTIABLE sticky note slaps onto a red phone that never rings (Means alleges; attributed; Kennedy's March line,
+//     the White House's and Blair's rebuttals on tags beside it);
+//   6 THE TURN: silence, a slow push into the empty box, and "WARNING: this space intentionally blank".
 // The 3D toy-world look from looks/cars and clay/cutfirst (soft anime grade, tilt-shift, grain); a new subject: a bench.
-// v2 (full build): every action lands on its caption's pop word; the files read as files; the window is gone.
+// v3: every hit is an impact (a camera kick of 2–3 frames, dust, a tear), beats of varied length, the bed out for the turn.
 // 1080×1920, 30 fps. film.html?lang=en
 
 import * as THREE from 'three';
@@ -55,13 +56,18 @@ const fit = (g, text, size, maxW, min = 20, face = 'Anton-400', wt = '') => { le
 
 await CAP.loadFonts(FONT_DIR);
 const COPY = await CAP.loadCopy('copy.json');
-const BEATS = [['s1', 0], ['s2', 4.4], ['s3', 8.8], ['s4', 13.2], ['s5', 17.6], ['end', 22.0]];
-const P = CAP.plan(COPY, LANG, BEATS, { snap: 0.5 }), T = P.T, DUR = T.end, UI = P.ui;
-// every action lands on its caption's pop word
+// short-short-long: the hook, three hits, the long allegation beat (four tags), the turn
+const BEATS = [['s1', 0], ['s2', 3.3], ['s3', 6.25], ['s4', 9.55], ['s5', 12.85], ['s6', 17.45], ['end', 21.35]];
+const P = CAP.plan(COPY, LANG, BEATS, { snap: 0.25 }), T = P.T, DUR = T.end, UI = P.ui;
+// every impact lands on its caption's pop word, to the frame
 const popT = (id) => { const c = P.captions.find((c) => c.id === id); return (c.words.find((w) => w.pop) || c.words[0]).t; };
-const EV = { folderDrop: popT('claims'), stickStamp: popT('court'), stampDown: popT('order'), noteSlap: popT('asked'), settle: popT('label') };
-EV.stickHit = EV.stickStamp - 0.55; EV.stickFall = EV.stickStamp + 0.7; EV.stickLand = EV.stickFall + 0.9;
-for (let i = 0; i < 3; i++) EV['folder' + i] = EV.folderDrop + 0.03 + i * 0.13;
+const EV = { hook: popT('hook'), crash: popT('claims'), stickStamp: popT('court'), stampDown: popT('order'), noteSlap: popT('asked'), blank: popT('blank') };
+EV.stickHit = EV.stickStamp - 0.5; EV.stickLand = EV.stickStamp + 0.6;
+for (let i = 0; i < 3; i++) EV['folder' + i] = EV.crash + 0.06 + i * 0.09;
+EV.silence0 = T.s6; EV.silence1 = T.s6 + 0.55;
+// the camera kick: a 2–3 frame punch on each impact, bigger for the heavier thing
+const KICKS = [[EV.crash, 1.0], [EV.stickStamp, 0.75], [EV.stampDown, 1.5], [EV.noteSlap, 0.55], [EV.blank, 0.4]];
+function kickAt(t) { let k = 0; for (const [t0, a] of KICKS) { const dt = t - t0; if (dt >= 0 && dt < 0.3) k += a * Math.exp(-dt * 24) * Math.cos(dt * 52); } return k; }
 
 // ------------------------------------------------------------------ the shed: bench, pegboard wall, a window on a field
 const WOOD = canvasTex(512, 512, (g, w, h) => { g.fillStyle = '#c8955f'; g.fillRect(0, 0, w, h); const r = rng(3);
@@ -129,22 +135,39 @@ function drawSticker(stampK) { const g = SC.getContext('2d'), w = SC.width, h = 
   g.fillStyle = '#f6c62e'; g.fillRect(0, 0, w, h); g.fillStyle = '#1d1b19';
   for (let i = -2; i < 18; i++) { g.beginPath(); g.moveTo(i * 40, 0); g.lineTo(i * 40 + 20, 0); g.lineTo(i * 40 - 10, 26); g.lineTo(i * 40 - 30, 26); g.fill(); g.beginPath(); g.moveTo(i * 40, h - 26); g.lineTo(i * 40 + 20, h - 26); g.lineTo(i * 40 - 10, h); g.lineTo(i * 40 - 30, h); g.fill(); }
   g.textAlign = 'center'; g.textBaseline = 'middle'; fit(g, UI.sticker, 84, w - 60); g.fillText(UI.sticker, w / 2, 104);
-  if (stampK > 0) { g.save(); g.translate(w / 2 + 40, 206); g.rotate(-0.08); g.globalAlpha = clamp(stampK); g.fillStyle = 'rgba(246,198,46,.85)'; g.fillRect(-200, -46, 400, 92);
-    g.strokeStyle = '#c4232b'; g.lineWidth = 9; g.strokeRect(-196, -44, 392, 88);
-    g.fillStyle = '#c4232b'; fit(g, UI.preempted, 76, 360); g.fillText(UI.preempted, 0, 5); g.restore(); }
+  if (stampK > 0) { g.save(); g.translate(w * 0.745, 206); g.rotate(-0.08); g.globalAlpha = clamp(stampK); g.fillStyle = 'rgba(246,198,46,.85)'; g.fillRect(-150, -42, 300, 84);
+    g.strokeStyle = '#c4232b'; g.lineWidth = 8; g.strokeRect(-146, -40, 292, 80);
+    g.fillStyle = '#c4232b'; fit(g, UI.preempted, 62, 270); g.fillText(UI.preempted, 0, 4); g.restore(); }
   stickerTex.needsUpdate = true; }
 drawSticker(0);
-const STICK = new THREE.Group(); scene.add(STICK);
-mesh(new THREE.PlaneGeometry(4.2, 1.97), new THREE.MeshStandardMaterial({ map: stickerTex, roughness: 0.5, side: THREE.DoubleSide }), { parent: STICK, cast: true });
+// the sticker is two halves (left, right) that ride together until the hammer tears them apart
+const STICK = [new THREE.Group(), new THREE.Group()]; STICK.forEach((g) => scene.add(g));
+{ const stMat = new THREE.MeshStandardMaterial({ map: stickerTex, roughness: 0.5, side: THREE.DoubleSide });
+  for (const [i, u0, u1] of [[0, 0, 0.52], [1, 0.48, 1]]) { const geo = new THREE.PlaneGeometry(4.2 * (u1 - u0), 1.97); const uv = geo.attributes.uv;
+    for (let j = 0; j < uv.count; j++) uv.setX(j, lerp(u0, u1, uv.getX(j)));
+    mesh(geo, stMat, { parent: STICK[i], pos: [(i === 0 ? -1 : 1) * 4.2 * (u1 - u0) / 2, 0, 0], cast: true }); } }
 function stickerAt(t) {
   const target = labelPt(0.5, (BOX.y + BOX.h / 2) / 640, 0.06), start = V([target.x + 7, target.y + 7, target.z + 6]);
-  if (t < EV.stickHit) { const k = ease.out((t - (EV.stickHit - 0.85)) / 0.85); STICK.position.copy(start.clone().lerp(target, k)); STICK.rotation.set(0, JUG.rotation.y, lerp(0.9, 0, k) * (1 - k * 0)); STICK.visible = t > EV.stickHit - 0.85; return; }
-  STICK.visible = true;
-  if (t < EV.stickFall) { STICK.position.copy(target); STICK.rotation.set(0, JUG.rotation.y, Math.sin((t - EV.stickHit) * 30) * 0.03 * Math.exp(-(t - EV.stickHit) * 6)); return; }
-  // it does not hold: the top corner lifts, it peels, it drops to the bench and lies there
-  const k = clamp((t - EV.stickFall) / 0.9), fall = ease.io(k);
-  STICK.position.set(target.x + fall * 2.2, lerp(target.y, BENCH_Y + 0.05, fall * fall), target.z + fall * 2.8);
-  STICK.rotation.set(lerp(0, -Math.PI / 2, fall), JUG.rotation.y + fall * 0.5, lerp(0, 0.35, fall));
+  const vis = t > EV.stickHit - 0.55; STICK.forEach((g) => (g.visible = vis)); if (!vis) return;
+  if (t < EV.stickHit) { const k = ease.out((t - (EV.stickHit - 0.55)) / 0.55); STICK.forEach((g) => { g.position.copy(start.clone().lerp(target, k)); g.rotation.set(0, JUG.rotation.y, lerp(0.9, 0, k)); }); return; }
+  if (t < EV.stickStamp) { STICK.forEach((g) => { g.position.copy(target); g.rotation.set(0, JUG.rotation.y, Math.sin((t - EV.stickHit) * 30) * 0.03 * Math.exp(-(t - EV.stickHit) * 6)); }); return; }
+  // the hammer: both halves are knocked off the box and tumble to the bench, apart
+  const k = clamp((t - EV.stickStamp) / 0.6), fall = ease.out(k) ;
+  STICK.forEach((g, i) => { const sx = i === 0 ? -1 : 1;
+    g.position.set(target.x + sx * fall * 2.4 + fall * 0.6, lerp(target.y, BENCH_Y + 0.05, k * k) + Math.sin(k * Math.PI) * 1.4, target.z + fall * 2.6);
+    g.rotation.set(lerp(0, -Math.PI / 2, fall), JUG.rotation.y + sx * fall * 0.7, sx * lerp(0, 0.9, fall) + (i ? 0.25 : -0.1)); });
+}
+// the hand stamp that hammers PREEMPTED onto it: small, fast, from above
+const HSTAMP = new THREE.Group(); scene.add(HSTAMP);
+mesh(new THREE.SphereGeometry(0.55, 16, 12), paint('#7a3b22'), { pos: [0, 0, 2.0], parent: HSTAMP });
+mesh(new THREE.CylinderGeometry(0.24, 0.3, 1.5, 12).rotateX(Math.PI / 2), paint('#8a4a2a'), { pos: [0, 0, 1.15], parent: HSTAMP });
+mesh(rbox(2.6, 1.0, 0.5, 0.08), paint('#3a2b24'), { pos: [0, 0, 0.3], parent: HSTAMP });
+function hstampAt(t) {
+  const face = labelPt(0.64, (BOX.y + BOX.h / 2 + 30) / 640, 0.14), away = face.clone().add(V([0.8, 5.5, 4.5]));
+  const tIn = EV.stickStamp - 0.2, tUp = EV.stickStamp + 0.1, tGone = EV.stickStamp + 0.5;
+  HSTAMP.visible = t > tIn && t < tGone; if (!HSTAMP.visible) return;
+  let k; if (t < EV.stickStamp) k = Math.pow(clamp((t - tIn) / (EV.stickStamp - tIn)), 2); else if (t < tUp) k = 1; else k = 1 - ease.io((t - tUp) / (tGone - tUp));
+  HSTAMP.position.copy(away.clone().lerp(face, k)); HSTAMP.rotation.set(0, JUG.rotation.y, -0.08);
 }
 
 // ------------------------------------------------------------------ the rubber stamp
@@ -155,11 +178,26 @@ mesh(rbox(4.8, 2.0, 0.9, 0.12), paint('#3a2b24'), { pos: [0, 0, 0.6], parent: ST
 mesh(rbox(4.6, 1.85, 0.3, 0.06), matte('#c4232b'), { pos: [0, 0, 0.0], parent: STAMP });
 function stampAt(t) {
   const face = labelPt(0.5, 300 / 640, 0.05), away = face.clone().add(V([1.5, 1.2, 7]));
-  const tIn = EV.stampDown - 0.45, tUp = EV.stampDown + 0.3, tGone = EV.stampDown + 0.95;
-  STAMP.visible = t > tIn - 0.6 && t < tGone;
-  let k; if (t < EV.stampDown) k = ease.io((t - (tIn - 0.6)) / (EV.stampDown - tIn + 0.6)); else if (t < tUp) k = 1; else k = 1 - ease.io((t - tUp) / (tGone - tUp));
+  const tIn = EV.stampDown - 0.95, tUp = EV.stampDown + 0.32, tGone = EV.stampDown + 0.95;
+  STAMP.visible = t > tIn && t < tGone;
+  // it hangs over the label, then SLAMS: the last 0.18 s is the fall
+  let k; if (t < EV.stampDown - 0.18) k = 0.62 * ease.out((t - tIn) / (EV.stampDown - 0.18 - tIn)); else if (t < EV.stampDown) k = 0.62 + 0.38 * Math.pow(clamp((t - (EV.stampDown - 0.18)) / 0.18), 2); else if (t < tUp) k = 1; else k = 1 - ease.io((t - tUp) / (tGone - tUp));
   STAMP.position.copy(away.clone().lerp(face, k)); STAMP.rotation.set(0, JUG.rotation.y, -0.16);
   const sk = t >= EV.stampDown ? 1 : 0; if (sk !== LBL.stamp) { LBL.stamp = sk; drawLabel(sk); }
+}
+// the dust: drawn in 2D over the frame (soft warm puffs at projected points), so it never fights the post pass
+const PUFFS = [];
+{ const r = rng(41);
+  for (let i = 0; i < 16; i++) PUFFS.push({ ev: 'stampDown', a: (i / 16) * TAU + r() * 0.4, sp: 0.9 + r() * 1.0, sz: 0.8 + r() * 0.8, dl: r() * 0.06, plane: 'label' });
+  for (let i = 0; i < 20; i++) PUFFS.push({ ev: 'crash', a: (i / 20) * TAU + r() * 0.5, sp: 1.2 + r() * 1.6, sz: 0.9 + r() * 1.0, dl: r() * 0.08, plane: 'bench', box: i % 2 }); }
+function drawPuffs(g, t) {
+  for (const u of PUFFS) { const dt = t - EV[u.ev] - u.dl; if (dt <= 0 || dt > 0.8) continue; const k = clamp(dt / 0.8);
+    let p; if (u.plane === 'label') { const rr = 2.3 + u.sp * 1.6 * ease.out(k); p = JUG.localToWorld(V([Math.cos(u.a) * rr * 1.2, JH * 0.47 + (0.5 - 300 / 640) * LH + Math.sin(u.a) * rr * 0.7 + k * 0.5, LABEL_Z + 0.5])); }
+    else { const B = BOXES[u.box], rr = 2.6 + u.sp * 2.2 * ease.out(k); p = V([B.position.x + Math.cos(u.a) * rr, BENCH_Y + 0.25 + k * 1.1 * u.sz, B.position.z + Math.sin(u.a) * rr * 0.8]); }
+    tmp.copy(p).project(camera); if (tmp.z > 1) continue; const x = (tmp.x + 1) / 2 * W, y = (1 - tmp.y) / 2 * H, rad = (u.sz * (26 + 90 * k)) * (u.plane === 'label' ? 1 : 0.8);
+    const gr = g.createRadialGradient(x, y, 2, x, y, rad); const al = (u.plane === 'label' ? 0.55 : 0.5) * (1 - k) * (1 - k);
+    gr.addColorStop(0, `rgba(198,160,108,${al})`); gr.addColorStop(0.55, `rgba(198,160,108,${al * 0.45})`); gr.addColorStop(1, 'rgba(198,160,108,0)');
+    g.fillStyle = gr; g.beginPath(); g.arc(x, y, rad, 0, TAU); g.fill(); }
 }
 
 // ------------------------------------------------------------------ the phone (it never rings) and the sticky note
@@ -204,18 +242,25 @@ function bankerBox(x, z, ry, seed) {
   }
   return B;
 }
-bankerBox(-6.0, -3.6, 0.3, 19); bankerBox(-11.4, -5.2, 0.18, 23);
+const BOXES = [bankerBox(-6.0, -3.6, 0.3, 19), bankerBox(-11.4, -5.2, 0.18, 23)];
+function boxesAt(t) {   // they fall in from above the frame and CRASH on "65,000": a squash on landing, a settle
+  BOXES.forEach((B, i) => { const land = EV.crash + i * 0.04, dt = t - land;
+    if (dt < 0) { const k = clamp((t - (land - 0.42)) / 0.42); B.visible = k > 0; B.position.y = BENCH_Y + 11 * (1 - k * k); B.scale.set(1, 1, 1); B.rotation.z = (1 - k) * (i ? -0.12 : 0.1); return; }
+    B.visible = true; B.position.y = BENCH_Y; B.rotation.z = 0;
+    const sq = Math.max(0, Math.sin(dt * 26)) * Math.exp(-dt * 12) * 0.14; B.scale.set(1 + sq * 0.6, 1 - sq, 1 + sq * 0.6); });
+}
 // a flat stack in front, and three more that drop onto it on "65,000"
 const flatTex = canvasTex(320, 240, (g, w, h) => { g.fillStyle = '#e3bd72'; g.fillRect(0, 0, w, h); g.fillStyle = '#d9b066'; g.fillRect(0, 0, w, 26);
   g.fillStyle = '#f7f1e2'; g.fillRect(36, 74, 248, 92); g.fillStyle = '#1d1b19'; g.textAlign = 'center'; g.textBaseline = 'middle'; fit(g, UI.folder, 74, 220); g.fillText(UI.folder, w / 2, 122); });
 const flatGeo = new THREE.BoxGeometry(3.4, 0.12, 2.5), flatMat = [manila2, manila2, matte('#e3bd72', { map: flatTex }), manila2, manila2, manila2];
-const STACK = { x: -4.2, z: 1.6, y: 0 };
-{ const r = rng(29); let y = 0.06; for (let i = 0; i < 9; i++) { mesh(flatGeo, flatMat, { pos: [STACK.x + (r() - 0.5) * 0.5, y, STACK.z + (r() - 0.5) * 0.4], rot: [0, 0.3 + (r() - 0.5) * 0.5, 0] }); y += 0.125; } STACK.y = y; }
+const STACK = { x: -4.2, z: 1.6, y: 0 }, STACKG = new THREE.Group(); scene.add(STACKG);
+{ const r = rng(29); let y = 0.06; for (let i = 0; i < 9; i++) { mesh(flatGeo, flatMat, { pos: [STACK.x + (r() - 0.5) * 0.5, y, STACK.z + (r() - 0.5) * 0.4], rot: [0, 0.3 + (r() - 0.5) * 0.5, 0], parent: STACKG }); y += 0.125; } STACK.y = y; }
 const DROPS = [0, 1, 2].map((i) => mesh(flatGeo, flatMat, { rot: [0, 0.3 + (i - 1) * 0.35, 0] }));
-function dropsAt(t) {
-  DROPS.forEach((m, i) => { const t0 = EV['folder' + i] - 0.38, k = clamp((t - t0) / 0.38), land = STACK.y + i * 0.125;
-    m.visible = t > t0; m.position.set(STACK.x + (i - 1) * 0.25, lerp(land + 6.5, land, k * k), STACK.z + (i - 1) * 0.15);
-    m.rotation.z = (1 - k) * (i - 1) * 0.5; });
+function dropsAt(t) {   // the crash shakes the stack, and three files are thrown out of the near box onto it
+  const dt = t - EV.crash; STACKG.position.y = dt > 0 ? Math.abs(Math.sin(dt * 22)) * Math.exp(-dt * 9) * 0.5 : 0;
+  DROPS.forEach((m, i) => { const t0 = EV['folder' + i], k = clamp((t - t0) / 0.42), land = STACK.y + i * 0.125, from = [-6.0 + (i - 1) * 0.6, 3.4, -2.2];
+    m.visible = t > t0; m.position.set(lerp(from[0], STACK.x + (i - 1) * 0.3, k), lerp(from[1], land, k) + Math.sin(k * Math.PI) * 2.2, lerp(from[2], STACK.z + (i - 1) * 0.15, k));
+    m.rotation.set((1 - k) * 0.6 * (i - 1), 0.3 + (i - 1) * 0.35, (1 - k) * (i - 1) * 0.9); });
 }
 
 // ------------------------------------------------------------------ light: daylight through the window, a warm practical
@@ -228,12 +273,21 @@ const lamp = new THREE.PointLight('#ffcf8a', 30, 40, 1.8); lamp.position.set(8, 
 
 // ------------------------------------------------------------------ shots
 const JC = () => labelPt(0.5, 0.45);
+const BOXV = (BOX.y + BOX.h * 0.42) / 640;   // the warning box's centre, in label v
 const SHOT = [
-  { t0: () => T.s1, focus: () => JC(), cam(lt, d) { const k = ease.io(lt / d); return { pos: V(lerp3([4.4, 16.5, 32], [3.8, 15, 29], k)), at: V([-2.3, 3.0, -1.0]), fov: 40 }; } },
-  { t0: () => T.s2, focus: () => labelPt(0.5, 0.75), cam(lt, d) { const k = ease.io(lt / d); return { pos: V(lerp3([7, 6.2, 21], [6, 5.6, 19], k)), at: V([2.2, 3.1, 1.2]), fov: 30 }; } },
-  { t0: () => T.s3, focus: () => labelPt(0.5, 0.45), cam(lt, d) { const k = ease.io(lt / d); return { pos: V(lerp3([-3.5, 7.0, 20], [-2.5, 6.5, 18.5], k)), at: V([1.8, 3.6, 1.0]), fov: 31 }; } },
-  { t0: () => T.s4, focus: () => PHONE.localToWorld(V([0, 1.15, 1.9])), cam(lt, d) { const k = ease.io(lt / d); return { pos: V(lerp3([8.5, 10.5, 23], [8.0, 9.6, 20.5], k)), at: V([5.4, 2.3, 1.2]), fov: 34 }; } },
-  { t0: () => T.s5, focus: () => labelPt(0.5, 0.75), cam(lt, d) { const k = ease.io(lt / d); return { pos: V(lerp3([3.5, 6.2, 22], [3.0, 4.6, 15.5], k)), at: V(lerp3([2.0, 3.6, 0.5], [2.2, 2.9, 1.4], k)), fov: lerp(32, 30, k) }; } },
+  // 1 the hook: tight on the empty warning box, a slow creep in
+  { t0: () => T.s1, focus: () => labelPt(0.5, BOXV), tight: true, cam(lt, d) { const k = smooth(lt / d); return { pos: labelPt(0.5 + 0.02 * k, BOXV - 0.2 + 0.03 * k, lerp(15.5, 14.0, k)), at: labelPt(0.5, BOXV - 0.03), fov: 30 }; } },
+  // 2 wide: the boxes crash in from above
+  { t0: () => T.s2, focus: () => V([-6, 1.5, -2]), cam(lt, d) { const k = ease.io(lt / d); return { pos: V(lerp3([3.0, 15.0, 31], [2.4, 14.0, 29], k)), at: V([-3.2, 2.6, -1.2]), fov: 40 }; } },
+  // 3 the sticker and the hammer
+  { t0: () => T.s3, focus: () => labelPt(0.5, 0.75), cam(lt, d) { const k = ease.io(lt / d); return { pos: V(lerp3([7, 6.2, 21], [6, 5.6, 19], k)), at: V([2.2, 3.1, 1.2]), fov: 30 }; } },
+  // 4 the big stamp
+  { t0: () => T.s4, focus: () => labelPt(0.5, 0.45), cam(lt, d) { const k = ease.io(lt / d); return { pos: V(lerp3([-3.5, 7.0, 20], [-2.5, 6.5, 18.5], k)), at: V([1.8, 3.6, 1.0]), fov: 31 }; } },
+  // 5 the phone
+  { t0: () => T.s5, focus: () => PHONE.localToWorld(V([0, 1.15, 1.9])), cam(lt, d) { const k = ease.io(lt / d); return { pos: V(lerp3([8.5, 10.5, 23], [8.0, 9.6, 20.5], k)), at: V([5.4, 2.3, 1.2]), fov: 34 }; } },
+  // 6 the turn: from the label, a slow push INTO the empty box; it fills the frame on "blank", then holds
+  { t0: () => T.s6, focus: () => labelPt(0.5, BOXV), tight: true, cam(lt) { const k = smooth(lt / Math.max(0.1, EV.blank - T.s6)), k2 = clamp((lt - (EV.blank - T.s6)) / 2.5);
+      return { pos: labelPt(lerp(0.52, 0.5, k), lerp(0.5, BOXV - 0.14, k) - k2 * 0.01, lerp(24, 14.2, k) - k2 * 0.4), at: labelPt(0.5, lerp(0.5, BOXV - 0.03, k)), fov: lerp(32, 27, k) }; } },
 ];
 const shotAt = (t) => { for (let i = SHOT.length - 1; i >= 0; i--) if (t >= SHOT[i].t0()) return i; return 0; };
 const SHOT_END = (i) => i + 1 < SHOT.length ? SHOT[i + 1].t0() : T.end;
@@ -250,25 +304,30 @@ const tmp = new THREE.Vector3();
 function frame(t, captions = true) {
   // the sticker's PREEMPTED stamp lands once; redraw its canvas only on change
   const ss = t >= EV.stickStamp ? 1 : 0; if (ss !== (frame.ss ?? -1)) { frame.ss = ss; drawSticker(ss); }
-  stickerAt(t); stampAt(t); noteAt(t); dropsAt(t);
+  boxesAt(t); stickerAt(t); hstampAt(t); stampAt(t); noteAt(t); dropsAt(t);
   const i = shotAt(t), S = SHOT[i], t0 = S.t0(), d = SHOT_END(i) - t0;
-  const L = S.cam(t - t0, d); camera.fov = L.fov; camera.position.copy(L.pos); camera.lookAt(L.at); camera.updateProjectionMatrix(); scene.updateMatrixWorld(true);
+  const L = S.cam(t - t0, d), kk = kickAt(t);
+  camera.fov = L.fov - kk * 1.6; camera.position.copy(L.pos); camera.position.y -= kk * 0.32; camera.lookAt(L.at); camera.position.z -= kk * 0.12;
+  camera.updateProjectionMatrix(); scene.updateMatrixWorld(true);
   tmp.copy(S.focus(t)).project(camera); const cy = clamp((tmp.y + 1) / 2, 0.15, 0.85);
   post.render(scene, camera, { focus: 60, aperture: 0, maxBlur: 22, tilt: 10, tiltCenter: cy, tiltBand: 0.55,
-    threshold: 0.95, knee: 0.45, bloomA: 0.35, bloomB: 0.3, exposure: 1.04, vignette: 0.32, grain: 0.022, seed: Math.floor(t * 24),
+    threshold: 0.95, knee: 0.45, bloomA: S.tight ? 0.16 : 0.35, bloomB: S.tight ? 0.12 : 0.3, exposure: S.tight ? 0.9 : 1.04, vignette: S.tight ? 0.42 : 0.32, grain: 0.022, seed: Math.floor(t * 24),
     sat: 1.14, contrast: 1.06, toe: 0.0, lift: [0.014, 0.008, 0.03], gain: [1.03, 1.0, 0.97] });
   g2d.setTransform(1, 0, 0, 1, 0, 0); g2d.drawImage(renderer.domElement, 0, 0);
+  drawPuffs(g2d, t);
   CAP.bug(g2d);
   const tg = (a0, a1) => clamp((t - a0) / 0.3) * clamp((a1 - t) / 0.3);
-  tag(g2d, UI.tag1, tg(T.s1 + 1.0, T.s1 + 2.6)); tag(g2d, UI.tag1b, tg(T.s1 + 2.7, T.s2 - 0.1));
-  tag(g2d, UI.tag2, tg(T.s2 + 1.6, T.s3 - 0.1));
-  tag(g2d, UI.tag3, tg(T.s3 + 1.4, T.s4 - 0.1));
-  tag(g2d, UI.tag4, tg(T.s4 + 1.0, T.s4 + 2.8)); tag(g2d, UI.tag4b, tg(T.s4 + 2.9, T.s5 - 0.1));
-  tag(g2d, UI.tag5, tg(T.s5 + 1.6, T.end + 1));
+  tag(g2d, UI.tag0, tg(T.s1 + 1.6, T.s2 - 0.1));
+  tag(g2d, UI.tag1, tg(T.s2 + 0.8, T.s2 + 1.85)); tag(g2d, UI.tag1b, tg(T.s2 + 1.95, T.s3 - 0.1));
+  tag(g2d, UI.tag2, tg(T.s3 + 1.7, T.s4 - 0.1));
+  tag(g2d, UI.tag3, tg(T.s4 + 1.6, T.s5 - 0.1));
+  tag(g2d, UI.tag4, tg(T.s5 + 0.5, T.s5 + 1.55)); tag(g2d, UI.tag4b, tg(T.s5 + 1.65, T.s5 + 2.6));
+  tag(g2d, UI.tag4c, tg(T.s5 + 2.7, T.s5 + 3.6)); tag(g2d, UI.tag4d, tg(T.s5 + 3.7, T.s6 - 0.1));
+  tag(g2d, UI.tag5, tg(EV.blank + 0.5, T.end + 1));
   if (captions) CAP.draw(g2d, P, t, { busy: BUSY || {} });
   return out;
 }
-frame(0, false); frame(T.s3 + 1.5, false);
+frame(0, false); frame(T.s4 + 1.5, false);
 let BUSY = null; if (Q.get('busy') !== '0') BUSY = CAP.measureBusy(g2d, P, (t) => frame(t, false));
 window.__film = { fps: FPS, frames: Math.round(DUR * FPS), events: { ...T, lang: LANG, ...EV, ...CAP.events(P), quiet: [] }, lang: LANG,
   report: { ...CAP.report(g2d, P, { keep: () => [], busy: BUSY || {} }) },
