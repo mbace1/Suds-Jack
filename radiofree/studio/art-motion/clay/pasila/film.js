@@ -71,7 +71,7 @@ const SHOT = [
     t0: () => T.s3, ph: PH[2], a: [0.52, 0.5, 2.1], b: [0.46, 0.57, 1.84], e: (k) => smooth(k), jug: [0.46, 0.57] },
   { // 4 · photo 2, the jug in low sun: a tilt down from the lit twigs onto it
     //     v4: ends further right, so the jug stays left of the 2033 card (v2's tilt slid it under the card)
-    t0: () => T.s4, ph: PH[1], a: [0.52, 0.44, 1.75], b: [0.48, 0.58, 1.5], e: ease.io, jug: [0.34, 0.63] },
+    t0: () => T.s4, ph: PH[1], a: [0.50, 0.44, 1.75], b: [0.455, 0.58, 1.5], e: ease.io, jug: [0.34, 0.63] },
   { // 5 · v4: photo 1 again, the doorstep itself: a slow pull back to the whole picture, the sign in focus and clear
     t0: () => T.s5, ph: PH[0], a: [0.5, 0.505, 2.0], b: [0.5, 0.5, 2.1], e: ease.io, jug: [0.375, 0.735] },
 ];
@@ -185,10 +185,10 @@ function whoTag(g, t, jx, jy) {
 /** the calendar card: EU · ALLOWED UNTIL over a big gold 2033 that lands when the year is said */
 function calendarCard(g, t, dx, dy) {
   const k = t - EV.cal4; if (k < 0) return; const drop = ease.back(k / 0.55);
-  const w = 340, h = 260, x = 706 + dx * 0.1, y = lerp(-320, 690, drop) + dy * 0.1;   // clear of a four-line caption and of the jug (v4: the jug ends left of x≈660)
+  const w = 330, h = 260, x = 722 + dx * 0.1, y = lerp(-320, 690, drop) + dy * 0.1;   // clear of a four-line caption and of the jug (v4: the jug ends left of x≈660)
   card(g, x, y, w, h, { rot: 0.03, seed: 9 }, (c) => {
     c.fillStyle = AQUA; c.fillRect(0, 0, w, 54); text(c, UI.calHead, w / 2, 38, { size: 26, color: '#fff', align: 'center', max: w - 30 });
-    for (let i = 0; i < 2; i++) { c.fillStyle = PAPER; c.beginPath(); c.arc(56 + i * 228, 0, 12, 0, Math.PI * 2); c.fill(); c.fillStyle = AQUA_DEEP; c.fillRect(52 + i * 228, -16, 8, 34); }
+    for (let i = 0; i < 2; i++) { c.fillStyle = PAPER; c.beginPath(); c.arc(56 + i * 218, 0, 12, 0, Math.PI * 2); c.fill(); c.fillStyle = AQUA_DEEP; c.fillRect(52 + i * 218, -16, 8, 34); }
     const y4 = clamp((t - EV.year4) / 0.4), s = 0.6 + 0.4 * spring(y4 / 0.6);
     if (y4 > 0) { c.save(); c.translate(w / 2, 178); c.scale(s, s); text(c, UI.calYear, 0, 40, { size: 112, color: GOLD, align: 'center', max: w - 40 }); c.restore(); }
     else text(c, '20__', w / 2, 218, { size: 112, color: 'rgba(30,28,26,.18)', align: 'center', max: w - 40 });
@@ -252,8 +252,9 @@ function frame(t, captions = true) {
   const tg = (a0, a1) => clamp((t - a0) / 0.3) * clamp((a1 - t) / 0.3);
   const UP = 912;   // v4: beats 1 and 5 are photo 1, whose jug runs to the bottom: their tags sit above it
   tag(g2d, UI.tag1, tg(T.s1 + 1.3, T.s2 - 0.1), UP);
-  tag(g2d, UI.tag2, tg(T.s2 + 1.0, T.s2 + 2.4));
-  tag(g2d, UI.tag2b, tg(T.s2 + 2.5, T.s3 - 0.1));
+  const CAP2 = 860;   // v4: beat 2's tags sit on the jug's black cap, under the quote card, never over the ROUNDUP wordmark
+  tag(g2d, UI.tag2, tg(T.s2 + 1.0, T.s2 + 2.4), CAP2);
+  tag(g2d, UI.tag2b, tg(T.s2 + 2.5, T.s3 - 0.1), CAP2);
   tag(g2d, UI.tag3, tg(T.s3 + 0.9, T.s4 - 0.1));
   tag(g2d, UI.tag4, tg(T.s4 + 0.9, T.s4 + 2.4));
   tag(g2d, UI.tag4b, tg(T.s4 + 2.5, T.s5 - 0.1));

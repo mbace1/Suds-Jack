@@ -244,3 +244,77 @@ the Yle-coverage tag held for only about a second (the Helsinki tag cut, see abo
 **Files (v3 replaces v2 at the same paths):** `films/07-11-Helsinki1-Found-in-Pasila.mp4` + `-loop.mp4` (en),
 `films/07-11-Helsinki1-Found-in-Pasila-fi.mp4` + `-fi-loop.mp4`; v1 kept as `-v1.mp4` / `-v1-loop.mp4`. Stills:
 `previews/07-11-RFH-Found-in-Pasila-v3-stills.jpg`. Previews: `previews/07-11-RFH-Found-in-Pasila-en.mp4`, `-fi.mp4`.
+
+## v4: back to v2, no Yle zoom (7 Nov, owner on v3)
+
+**Owner:** "Previous was better. Upper thirds don't work. Zoom into YLE logo that is not clear is bad, etc."
+
+**What v4 is.** v2's look comes back whole: the house-style outline captions over the photo (no bars, no chips), and
+the cut-paper layers in Yle aqua #03b1d1, white paper and RFH gold #f2b83a (the FOUND evidence tag on its pin, the ring
+on the jug, the label's quote card, the WHO? tag, the 2033 calendar card, the TO: YLE envelope with the RFH stamp, the
+torn paper frame on every cut). `film.js` and `score.py` are v2's (466d85e01) with the fixes below; `copy.json` keeps
+the current words (the owner's Finnish last line, the Finnish envelope line, both posts). The v3 broadcast thirds are
+gone.
+
+**The Yle sign, three rules.** (1) No push-in or zoom on the sign anywhere. (2) No crop past 1:1 native pixels, in any
+shot (the narrowest window is 1080 px wide, 1.0×). (3) The sign appears only in photo 1, the one photo where it is in
+focus; photos 4 and 5 were focused on the jug and their sign is soft, so neither shows it. Photo 1 is held wide (2.1×
+to 2.0×, the whole picture) and the caption sits between the logo and the jug.
+
+**Changes from v2, every one:**
+1. Beat 1 is held wide: a barely-there move (2.1× → 2.0×) instead of v2's push to 1.86×, which slid the sign toward the
+   top edge. The jug in the flowerbed with the Yle sign readable behind it.
+2. Beat 1's caption sits at a fixed baseline (470), between the logo and the top of the jug, instead of the top band
+   over the sign.
+3. Beat 1's tag (YLE · FINLAND'S PUBLIC BROADCASTER · PASILA · 7 NOV 2026) sits above the jug (y 912), not across its
+   foot (y 1520).
+4. Beat 2 (photo 5, the label) ends at 1.0× instead of 0.84×: v2's end was an upscale and went soft. Its framing is
+   still the lower-left two thirds, so the passer-by (x≈0.88, y≈0.40) and the soft sign never enter.
+5. Beat 2's tags sit on the jug's black cap (y 860), under the quote card, instead of across the ROUNDUP wordmark.
+6. Beat 4 (photo 2) ends further left (0.455 instead of 0.48) and starts at 0.50 instead of 0.52, so the whole jug stays
+   in frame and left of the 2033 card; the card is narrower (330 instead of 340 px) and sits at x 722.
+7. Beat 5, the turn, no longer tilts up to photo 4's hazy sign. It returns to photo 1, the doorstep itself, with a slow
+   pull back to the whole picture (2.0× → 2.1×). The turn does not rely on the sign being read: the caption carries it.
+8. Beat 5's envelope is smaller (440 × 226) and sits at the top left over the sky and the building's left side, clear
+   of the logo (x ≥ 540), the caption and the station bug; it slides in from the left.
+9. Beat 5's caption sits at baseline 470 like beat 1's, and its tags sit above the jug (y 912).
+10. Beat 5 carries two tags, not three: v2's HELSINKI'S GOAL SINCE 2020: NO GLYPHOSATE IN ITS PARKS stays cut (as in
+    v3), so the Yle-coverage tag holds about 2.4 s and RFH: OVER TO YOU closes.
+11. `score.py`: v2's paper sounds and room, with beat 5's whoosh relabelled for the pull back (same cue, same time).
+
+**Unchanged from v2:** the device (the tip-off: Yle the addressee, never the accused; found, never used; who left it
+unknown), the beats and their timing, the holds for Finnish, the layers' behaviour, the logo never redrawn, no faces.
+
+**Shot table v4 (en; fi gets holds of +0.75 / +0.5 / +1.0 s and runs 21.85 s):**
+
+| # | t (en) | picture | caption place | tags |
+|---|---|---|---|---|
+| 1 | 0–3.4 | photo 1 whole, held (2.1× → 2.0×); the sign sharp behind the jug; the evidence tag drops, the ring finds the jug | baseline 470, between logo and jug | YLE · FINLAND'S PUBLIC BROADCASTER · PASILA · 7 NOV 2026 (y 912) |
+| 2 | 3.4–7.45 | photo 5, its lower-left two thirds: a rack down onto the label, 1.3× → 1.0×; the quote card | top | ROUNDUP PIHA, 5 L · GLYPHOSATE · THE LABEL'S OWN CLAIM → SOLD TO CONSUMERS IN FINLAND (y 860, on the cap) |
+| 3 | 7.45–10.85 | photo 3, the jug small at the foot of the tree, a drift (2.1× → 1.84×); the ring and WHO? | top | WHO LEFT IT, WHETHER IT WAS USED: NOT KNOWN |
+| 4 | 10.85–15.1 | photo 2 in low sun, a tilt down (1.75× → 1.5×); the calendar card, 2033 on the word | top | EU RENEWAL · NOV 2023 → 15 DEC 2033 → ECHA 2022: NOT CLASSIFIED AS A CARCINOGEN · BAYER: SAFE |
+| 5 | 15.1–20.1 | photo 1 again, a slow pull back to the whole picture (2.0× → 2.1×); the envelope slides in top left, the stamp lands on the pop | baseline 470 | YLE ON GLYPHOSATE: 2015, 2016, 2017, 2018, 2019, 2023, 2025 (YLE.FI) → RFH: OVER TO YOU (y 912) |
+
+Photo 1 opens and closes the film (a bookend: found here, and it is still here).
+
+**What the v4 stills showed, fixed before the build:** beat 2's tag at the foot of the frame sat across the ROUNDUP
+wordmark (moved onto the black cap, y 860); beat 4's tilt ended with the jug cut at the left edge (the window now starts
+and ends further left, and the 2033 card is narrower). The stills sheet is
+`previews/07-11-RFH-Found-in-Pasila-v4-stills.jpg` (the five English beats, Finnish beat 2 and the Finnish last line).
+
+**QA (pipeline/build.py, pre-flight then build, --jobs 3):** en: text 96 pass, 4 warn, 0 fail (the warnings are the
+Finnish sidecars measured against the shorter English master, and the Finnish native read); sound 5 pass, 0 fail,
+-14.1 LUFS, -2.9 dBTP, LRA 6.6; 20.1 s, 23.1 s with the sign-off. fi: text 100 pass, 1 warn (native read), 0 fail;
+sound 5 pass, 0 fail, -13.9 LUFS, -2.8 dBTP, LRA 6.5; 21.85 s, 24.9 s with the sign-off. Contact sheets of both
+finished films looked at, cuts included: the jug is never covered, no card sits over a pop word, the sign is only ever
+seen whole and sharp, and the passer-by never enters.
+
+**Files (v4 replaces v3 at the same paths):** `films/07-11-Helsinki1-Found-in-Pasila.mp4` (en with sign-off, 43.2 MB)
++ `-loop.mp4` (en film only, re-encoded CRF 19, 35.5 MB), `films/07-11-Helsinki1-Found-in-Pasila-fi.mp4` (47.0 MB)
++ `-fi-loop.mp4` (CRF 19, 38.7 MB). v3 kept as `-v3.mp4`, `-v3-loop.mp4`, `-v3-fi.mp4`, `-v3-fi-loop.mp4`; v1 as
+`-v1*.mp4`. Previews: `previews/07-11-RFH-Found-in-Pasila-en.mp4`, `-fi.mp4` (CRF 25).
+
+**Risks:** the Finnish is still the assistant's except the owner's last line (`native_read.fi` false); the yle.fi
+links come from search summaries and should be opened before the post goes up; photo 1 is used twice (a bookend, and
+the loop point now lands on the same picture); the beat 2 label shot is photo 5, whose sign is soft, but only its
+lower-left two thirds are ever in frame.
