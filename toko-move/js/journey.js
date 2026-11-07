@@ -35,7 +35,7 @@ import { haltFamily, haltMinutes } from './mutators.js?v=2';
 import { payFor } from './parcels.js?v=1';
 import { lineFamily } from './board.js?v=8';
 import { CARGO } from './deliveries.js?v=28';
-import { MISSION_CARDS, MISSION_CALLBACKS, PERKS, STRIKES } from './missions.js?v=1';
+import { MISSION_CARDS, MISSION_CALLBACKS, PERKS, STRIKES } from './missions.js?v=2';
 
 export const SHIFT_SECONDS = 75 * 60;            // 07:00–08:15, or 23:00–00:15
 export const SPEED_KMH = { tram: 14, metro: 34, walk: 4.8 };
@@ -130,7 +130,8 @@ export function dealDeck(s, run, weather) {
 
 // A mission's cards (missions.js) are the journey's own, by id: the deck's,
 // a callback, or one made for a mission (the wallet)
-const CARD_BY_ID = id => CARDS.find(c => c.id === id) || Object.values(CALLBACKS).find(c => c.id === id) || MISSION_CARDS[id] || null;
+const CARD_BY_ID = id => CARDS.find(c => c.id === id) || Object.values(CALLBACKS).find(c => c.id === id) || MISSION_CARDS[id] || (id === SEALED_CARD.id ? SEALED_CARD : null);
+const cardsOf = (st, s) => (st.cards || []).map(CARD_BY_ID).filter(c => c && (!c.weather || c.weather.includes(s.weather)));
 const callbackOf = flag => CALLBACKS[flag] || MISSION_CALLBACKS[flag] || null;
 
 // The arc step a run deals (ACT1.md §10): none on a first run, at most one,
@@ -163,8 +164,10 @@ export function newRun(net, run = {}, seed = 1, { start = 'lasipalatsi', memory 
   s.deck = dealDeck(s, run, s.weather);
   // a mission deals its own: one event a step, drawn from the step's few — and
   // the drop each step sends you to, drawn now, so a seed IS a version of it
-  if (run.mission) run.mission.steps.forEach((st, i) => { const ok = (st.cards || []).map(CARD_BY_ID).filter(c => c && (!c.weather || c.weather.includes(s.weather)));
-    if (ok.length) slot(s, pickOf(s, ok), i); s.picks.push(pickOf(s, st.to)); });
+  // (a FORK — two errands to choose between — draws its drops when it is reached,
+  // and its event when one is chosen)
+  if (run.mission) run.mission.steps.forEach((st, i) => { if (st.fork) { s.picks.push(null); return; }
+    const ok = cardsOf(st, s); if (ok.length) slot(s, pickOf(s, ok), i); s.picks.push(pickOf(s, st.to)); });
   const step = run.mission ? null : arcStep(s.memory, run); if (step) slot(s, step, step.job);
   // the run-modifiers (ACT1.md §11), placed by a hash of the seed — no rng, so
   // the deck is the one it always was: the sealed parcel from a fourth run (the
@@ -207,12 +210,23 @@ function dispatch(net, s, notTo = null) {
 function missionDispatch(net, s) {
   const st = s.run.mission.steps[s.done + s.sold], from = s.at;
   if (!st) { s.phase = 'end'; s.offer = null; return; }            // a parcel sold to a buyer used its step: the errand is over
-  let to = s.picks[s.done + s.sold]; if (to === from) to = st.to.find(t => t !== from) || [...net.nodes.keys()].find(t => t !== from);
-  const best = s.best[from][to];
-  s.offer = { to, cargo: st.cargo, best, contents: pickOf(s, CONTENTS[st.cargo] || ['something']), brief: st.brief.replace('{stop}', net.name(to)) };
-  s.offer.fee = Math.round(feeOf(s.offer) * s.trust);
-  const reg = regularAt(to); if (reg) s.offer.regular = { id: reg.id, name: reg.name };
   s.phase = 'dispatch';
+  // a fork: two errands, each a whole offer, and the card asks which
+  if (st.fork) { s.fork = st.fork.map(b => missionOffer(net, s, b, pickOf(s, b.to), from)); s.offer = s.fork[0]; return; }
+  s.offer = missionOffer(net, s, st, s.picks[s.done + s.sold], from);
+}
+function missionOffer(net, s, st, to, from) {
+  if (!to || to === from) to = st.to.find(t => t !== from) || [...net.nodes.keys()].find(t => t !== from);
+  const best = s.best[from][to];
+  const o = { to, cargo: st.cargo, best, contents: pickOf(s, CONTENTS[st.cargo] || ['something']), brief: st.brief.replace('{stop}', net.name(to)), step: st };
+  o.fee = Math.round(feeOf(o) * s.trust);
+  const reg = regularAt(to); if (reg) o.regular = { id: reg.id, name: reg.name };
+  // the run's own modifiers, on a step that asks for them: the rival races you
+  // for it, or the label is only a sticker and the line tells you where
+  if (st.rival) o.rival = { eta: round10(best * (s.run.race?.pace || 1.2)) };
+  if (st.sealed) { const fams = [...new Set((net.at.get(to) || []).filter(l => l.mode === 'tram').map(l => l.family))].sort();
+    if (fams.length) { o.sealed = { family: fams[hashOf(`sealed:${s.seed}:${to}`) % fams.length], revealed: false }; o.fee = Math.round(o.fee * 1.5); } }
+  return o;
 }
 
 // ── what the card says ─────────────────────────────────────────────────────
@@ -301,8 +315,11 @@ export function card(net, s) {
   if (s.phase === 'end') return null;
   if (s.phase === 'perk') return { kind: 'perk', mood: 'opportunity', text: `Job ${s.done} of ${s.target} done. Pick one for the rest of the errand.`,
     options: s.perkOffer.map(id => ({ label: PERKS[id].name, price: 0, perk: id, stakes: { sure: [PERKS[id].line] } })) };
+  if (s.phase === 'dispatch' && s.fork) return { kind: 'dispatch', mood: MOODS_FOR.dispatch, text: 'Two errands for the next job. Pick one.', mission: true, fork: true,
+    options: s.fork.map(o => ({ label: `${cargoWord(o.cargo)} → ${net.name(o.to)}`, price: 0, stakes: { sure: [`€${o.fee}`] } })) };
   if (s.phase === 'dispatch' && s.offer?.brief) { const o = s.offer;
-    return { kind: 'dispatch', mood: MOODS_FOR.dispatch, text: o.brief, fee: o.fee, mission: true, options: [{ label: 'Take it', price: 0, stakes: { sure: [`€${o.fee}`] } }] }; }
+    return { kind: 'dispatch', mood: o.rival ? 'warning' : MOODS_FOR.dispatch, text: o.rival ? `${o.brief} The other courier wants it too.` : o.brief, fee: o.fee, mission: true, sealed: !!o.sealed, rival: !!o.rival,
+      options: [{ label: o.rival ? 'Race her' : 'Take it', price: 0, stakes: o.rival ? { odds: `beat ${clockAt(s, s.clock + o.rival.eta)}`, win: [`€${o.fee} ×1.3`], lose: ['×0.6'] } : { sure: [`€${o.fee}`] } }] }; }
   if (s.phase === 'dispatch') { const o = s.offer;
     const base = o.sealed ? 'A sealed parcel. No address, only a sticker.' : o.regular ? `${cargoWord(o.cargo)} for ${o.regular.name} at ${net.name(o.to)}.` : `${cargoWord(o.cargo)} for ${net.name(o.to)}.`;
     if (o.rival) return { kind: 'dispatch', mood: 'warning', text: `${base} The other courier wants it too.`, fee: o.fee, rival: true,
@@ -358,6 +375,8 @@ export function choose(net, s, i) {
   const out = { kind: c.kind, price: opt.price, label: opt.label };
   s.log.push({ at: s.clock, kind: c.kind, label: opt.label, price: opt.price });
   if (c.kind === 'dispatch') {
+    // a fork chosen: that errand is the job, and its event takes the job's card slot
+    if (c.fork) { s.offer = s.fork[i]; s.fork = null; const ok = cardsOf(s.offer.step, s); if (ok.length) slot(s, pickOf(s, ok), s.done + s.sold); i = 0; }
     if (i === 1) { advance(s, REROLL_S); if (s.phase !== 'end') dispatch(net, s, s.offer.to); return out; }
     s.job = { ...s.offer, startedAt: s.clock, limit: Math.round(s.offer.best * GRACE * (s.run.deadline || 1) * (s.mods?.deadline || 1)), mult: 1, known: false, toName: net.name(s.offer.to) }; s.offer = null;
     if (s.job.rival) s.job.rival.until = s.clock + s.job.rival.eta;

@@ -118,7 +118,7 @@ server.listen(0, '127.0.0.1', async () => {
         runs: [...document.querySelectorAll('#mutRow .run[data-run]')].map(r => ({ id: r.dataset.run, open: !r.classList.contains('locked'), lit: r.classList.contains('on') })),
         goal: document.getElementById('titleGoal').textContent, play: document.getElementById('play').textContent,
         links: ['dailyLink', 'weekLink', 'liveLink'].filter(id => { const e = document.getElementById(id); return e && !e.hidden && getComputedStyle(e).display !== 'none'; }) }));
-      ok(`the bare address is the card journey, not the real-time game (v${t.v})`, !t.classic && t.v === '3.14' && /v3\.14/.test(t.hero));
+      ok(`the bare address is the card journey, not the real-time game (v${t.v})`, !t.classic && t.v === '3.15' && /v3\.15/.test(t.hero));
       ok(`it is Act 1, in Helsinki (${await page.evaluate(() => document.getElementById('titleWhen').textContent)})`, await page.evaluate(() => /^Act 1 · Helsinki · 07:00/.test(document.getElementById('titleWhen').textContent)));
       ok(`the ladder: EASY open and lit, three locked (${t.runs.map(r => r.id + (r.open ? '' : '🔒')).join(' ')})`, t.runs.map(r => r.id).join() === 'easy,medium,hard,night' && t.runs[0].open && t.runs[0].lit && t.runs.slice(1).every(r => !r.open) && t.run === 'easy');
       ok(`the goal and the button (${t.goal} · ${t.play})`, /^Three deliveries before 08:15/.test(t.goal) && t.play === 'START SHIFT');
@@ -316,6 +316,22 @@ server.listen(0, '127.0.0.1', async () => {
       ok(`between jobs a perk is drafted from two (${perkCard})`, !!perkCard && perkCard.split(' | ').length === 2);
       ok(`and the errand ends on its card, with the build (${JSON.stringify(res)})`, seen.end && res?.mode === 'mission' && res.perks.length >= 1);
       ok('no page or network errors (missions)', !errs.length, errs.slice(0, 3).join(' | '));
+      await ctx.close();
+    }
+    // v3.15: a fork in EAST OF THE BRIDGE (two errands, one card), and THE LAST TRAM at night
+    {
+      const ctx = await browser.newContext(PHONE), page = await ctx.newPage(), errs = watch(page);
+      await page.goto(`${base}/toko-move/?mission=east&seed=4`, { waitUntil: 'load' }); await ready(page);
+      await page.tap('#play'); await page.waitForSelector('#v3panel .eventOpt', { timeout: 15000 });
+      let fork = null;
+      const seen = await playOut(page, { maxSteps: 400, onCard: async c => { if (!fork && /Two errands/.test(c.line)) fork = c.buttons.map(b => b.t.replace(/\+\d+:\d\d.*/, '').trim()); } });
+      ok(`a fork is two errands on one card (${fork?.join(' / ')})`, fork?.length === 2 && fork.every(b => /→/.test(b)));
+      ok('and the errand goes on to its end', seen.end);
+      await page.goto(`${base}/toko-move/?mission=lasttram&seed=2`, { waitUntil: 'load' }); await ready(page);
+      await page.tap('#play'); await page.waitForSelector('#v3panel .eventOpt', { timeout: 15000 });
+      const night = await playOut(page, { maxSteps: 400 });
+      ok(`THE LAST TRAM is the night shift: the night car, no sunny moments (${[...night.scenes].join(', ')})`, night.end && night.scenes.has('night') && ![...night.scenes].some(x => x.startsWith('m-')) && night.clocks.some(([c]) => /^23:/.test(c)));
+      ok('no page or network errors (fork, night)', !errs.length, errs.slice(0, 3).join(' | '));
       await ctx.close();
     }
     // ── story arcs (v3.4, ACT1.md §10): a second run meets Dispatch, and the city remembers

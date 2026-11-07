@@ -1,5 +1,48 @@
 # Toko Move — versions
 
+## v3.15 — 2026-11-07
+
+**FORKS, A RACE, A STICKER, AND THE LAST TRAM** — the next step of v3.14's
+missions (ROADMAP step 6: "a mission that strings the sealed parcel and the
+race").
+
+- **Forks.** A mission job can be two errands, and the card asks which. It is
+  the same card as any choice: one line, two buttons, each with its fee
+  ("Something fragile → Arabia €48 / Parts → Sörnäinen €13"). The big fee
+  is the fragile one, which rides the tram only. The event that job deals
+  is drawn from the errand you picked. EAST OF THE BRIDGE's middle job is
+  a fork now.
+- **THE STICKER** (Kamppi), the run's own modifiers as a mission:
+  1. a race: the other courier wants the envelope ("Race her", ×1.3 if you
+     beat her, ×0.6 if not);
+  2. a sealed parcel, only a sticker until the right line tells you (×1.5);
+  3. a fork: an express parcel for the station on a tight clock, or parts
+     for the market with no hurry.
+- **THE LAST TRAM** (the station, 23:00), the night shift as a mission:
+  - the night car, half the trams, kebabs for Kallio, a contract before
+    midnight, and something that hums;
+  - its events are the night's that have art: the ghost tram at the stop,
+    the empty humming car, the karaoke and the reindeer on the walk;
+  - the night cards with no art (the kebab, the last metro, the flicker)
+    are not dealt, by the owner's rule: every event with its correct art.
+- **Six missions now**, each opening the next. THE LAST TRAM is last.
+- **Measured** (60 seeds each):
+  - A board-reader finishes every mission (THE STICKER 59/60, one lost to
+    the clock).
+  - A left-tapper collects strikes and loses some; THE LAST TRAM costs it
+    the most (38 strikes, 12 lost). Its clock is 1.1: at 1.3 a reader never
+    struck.
+- **Finnish** for the forks, the new briefs and the two missions.
+- **Gates.**
+  - `test/missions.mjs` (23 checks):
+    - a fork offers two errands, and the one picked is the job;
+    - THE STICKER opens on a race and deals the sealed parcel;
+    - THE LAST TRAM is played at night, from the station;
+    - the art rule now names the walking pictures, the ghost tram and the
+      empty car.
+  - `test/play.cjs` (browser): a fork on one card in EAST, and THE LAST
+    TRAM through to its end in the night car.
+
 ## v3.14 — 2026-11-07
 
 **MISSIONS, THE WALLET, AND A RUN THAT CARRIES SOMETHING** — the owner's
