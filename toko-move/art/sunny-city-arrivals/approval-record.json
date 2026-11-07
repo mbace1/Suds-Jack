@@ -1,0 +1,11 @@
+{
+  "status": "approved_subset",
+  "approval_context": "Approve the detailed ones \u2014 all three detailed city-arrivals pairs; metro approach illustrative only.",
+  "approved_scenes": [
+    "kalasatama",
+    "station",
+    "canal"
+  ],
+  "audit_date": "2026-11-07",
+  "approved_image_bytes_preserved": true
+}

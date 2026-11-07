@@ -1,0 +1,10 @@
+{
+  "status": "approved_subset",
+  "approval_context": "pt126u: Others approved \u2014 only 03 elevated stairs and 04 street-level harbour; overhead 01 rejected and 02 nearly works excluded.",
+  "approved_scenes": [
+    "03-elevated-metro",
+    "04-close-quay"
+  ],
+  "audit_date": "2026-11-07",
+  "approved_image_bytes_preserved": true
+}

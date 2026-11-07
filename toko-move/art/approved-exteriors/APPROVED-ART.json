@@ -1,0 +1,632 @@
+{
+  "audit_date": "2026-11-07",
+  "scope": "Approved exterior variants only; crop formats are not separate art pieces",
+  "approval_evidence": "User approval chronology relayed in task and available local metadata. SearchTranscripts returned no session record; no additional direct transcript evidence claimed.",
+  "baseline": {
+    "path": "toko-move/art/minimal-metro-look",
+    "tracked_on_main": true,
+    "first_commit": "311a3fd53",
+    "tracked_file_count": 277,
+    "pr631": "Merged code-only event-card PR; four gameplay files, no art assets. Baseline was added separately, already on main; not duplicated here."
+  },
+  "variants": [
+    {
+      "pack": "outdoor-weather-tests",
+      "scene_variant": "tram",
+      "approval_context": "Sunny ones work, rain doesn\u2019t \u2014 sunny subset approval; rain excluded.",
+      "destination": "PR632",
+      "landscape": "outdoor-weather-tests/stills/tram-dry-169.png",
+      "landscape_size": [
+        1024,
+        576
+      ],
+      "portrait": null,
+      "portrait_size": null,
+      "master": null,
+      "composite_layers": [
+        "outdoor-weather-tests/layers/tram/00-integrated-illustration.png",
+        "outdoor-weather-tests/layers/tram/30-courier-traced-identity.png"
+      ]
+    },
+    {
+      "pack": "outdoor-weather-tests",
+      "scene_variant": "harbour",
+      "approval_context": "Sunny ones work, rain doesn\u2019t \u2014 sunny subset approval; rain excluded.",
+      "destination": "PR632",
+      "landscape": "outdoor-weather-tests/stills/harbour-dry-169.png",
+      "landscape_size": [
+        1024,
+        576
+      ],
+      "portrait": null,
+      "portrait_size": null,
+      "master": null,
+      "composite_layers": [
+        "outdoor-weather-tests/layers/harbour/00-integrated-illustration.png",
+        "outdoor-weather-tests/layers/harbour/30-courier-traced-identity.png"
+      ]
+    },
+    {
+      "pack": "outdoor-weather-tests",
+      "scene_variant": "metro",
+      "approval_context": "Sunny ones work, rain doesn\u2019t \u2014 sunny subset approval; rain excluded.",
+      "destination": "PR632",
+      "landscape": "outdoor-weather-tests/stills/metro-dry-169.png",
+      "landscape_size": [
+        1024,
+        576
+      ],
+      "portrait": null,
+      "portrait_size": null,
+      "master": null,
+      "composite_layers": [
+        "outdoor-weather-tests/layers/metro/00-integrated-illustration.png",
+        "outdoor-weather-tests/layers/metro/30-courier-traced-identity.png"
+      ]
+    },
+    {
+      "pack": "sunny-camera-studies",
+      "scene_variant": "03-elevated-metro",
+      "approval_context": "pt126u: Others approved \u2014 only 03 elevated stairs and 04 street-level harbour; overhead 01 rejected and 02 nearly works excluded.",
+      "destination": "PR632",
+      "landscape": "sunny-camera-studies/stills/03-elevated-metro.png",
+      "landscape_size": [
+        1280,
+        720
+      ],
+      "portrait": null,
+      "portrait_size": null,
+      "master": null,
+      "composite_layers": [
+        "sunny-camera-studies/layers/03-elevated-metro/00-integrated-plate.png",
+        "sunny-camera-studies/layers/03-elevated-metro/10-traced-courier-identity.png",
+        "sunny-camera-studies/layers/03-elevated-metro/20-hand-occlusion-holdout.png"
+      ]
+    },
+    {
+      "pack": "sunny-camera-studies",
+      "scene_variant": "04-close-quay",
+      "approval_context": "pt126u: Others approved \u2014 only 03 elevated stairs and 04 street-level harbour; overhead 01 rejected and 02 nearly works excluded.",
+      "destination": "PR632",
+      "landscape": "sunny-camera-studies/stills/04-close-quay.png",
+      "landscape_size": [
+        1280,
+        720
+      ],
+      "portrait": null,
+      "portrait_size": null,
+      "master": null,
+      "composite_layers": [
+        "sunny-camera-studies/layers/04-close-quay/00-integrated-plate.png",
+        "sunny-camera-studies/layers/04-close-quay/10-traced-courier-identity.png"
+      ]
+    },
+    {
+      "pack": "sunny-dual-crop-v2",
+      "scene_variant": "platform",
+      "approval_context": "Latest sunny-dual-crop-v2 tram AND harbour approved, relayed before pt131u Make more new ones with the rules.",
+      "destination": "PR632",
+      "landscape": "sunny-dual-crop-v2/crops/platform-169.png",
+      "landscape_size": [
+        1792,
+        1008
+      ],
+      "portrait": "sunny-dual-crop-v2/crops/platform-916.png",
+      "portrait_size": [
+        1008,
+        1792
+      ],
+      "master": "sunny-dual-crop-v2/masters/platform-master.png",
+      "composite_layers": [
+        "sunny-dual-crop-v2/layers/platform/00-integrated-extended-plate.png",
+        "sunny-dual-crop-v2/layers/platform/10-traced-courier.png"
+      ]
+    },
+    {
+      "pack": "sunny-dual-crop-v2",
+      "scene_variant": "harbour",
+      "approval_context": "Latest sunny-dual-crop-v2 tram AND harbour approved, relayed before pt131u Make more new ones with the rules.",
+      "destination": "PR632",
+      "landscape": "sunny-dual-crop-v2/crops/harbour-169.png",
+      "landscape_size": [
+        1792,
+        1008
+      ],
+      "portrait": "sunny-dual-crop-v2/crops/harbour-916.png",
+      "portrait_size": [
+        1008,
+        1792
+      ],
+      "master": "sunny-dual-crop-v2/masters/harbour-master.png",
+      "composite_layers": [
+        "sunny-dual-crop-v2/layers/harbour/00-integrated-extended-plate.png",
+        "sunny-dual-crop-v2/layers/harbour/10-traced-courier.png"
+      ]
+    },
+    {
+      "pack": "sunny-new-locations",
+      "scene_variant": "metro",
+      "approval_context": "pt134u: Approved, more \u2014 all three pairs.",
+      "destination": "PR632",
+      "landscape": "sunny-new-locations/crops/metro-169.png",
+      "landscape_size": [
+        1024,
+        576
+      ],
+      "portrait": "sunny-new-locations/crops/metro-916.png",
+      "portrait_size": [
+        576,
+        1024
+      ],
+      "master": "sunny-new-locations/masters/metro-master.png",
+      "composite_layers": [
+        "sunny-new-locations/layers/metro/00-integrated-plate.png",
+        "sunny-new-locations/layers/metro/10-exact-courier-identity.png"
+      ]
+    },
+    {
+      "pack": "sunny-new-locations",
+      "scene_variant": "tram",
+      "approval_context": "pt134u: Approved, more \u2014 all three pairs.",
+      "destination": "PR632",
+      "landscape": "sunny-new-locations/crops/tram-169.png",
+      "landscape_size": [
+        1024,
+        576
+      ],
+      "portrait": "sunny-new-locations/crops/tram-916.png",
+      "portrait_size": [
+        576,
+        1024
+      ],
+      "master": "sunny-new-locations/masters/tram-master.png",
+      "composite_layers": [
+        "sunny-new-locations/layers/tram/00-integrated-plate.png",
+        "sunny-new-locations/layers/tram/10-exact-courier-identity.png"
+      ]
+    },
+    {
+      "pack": "sunny-new-locations",
+      "scene_variant": "park",
+      "approval_context": "pt134u: Approved, more \u2014 all three pairs.",
+      "destination": "PR632",
+      "landscape": "sunny-new-locations/crops/park-169.png",
+      "landscape_size": [
+        1024,
+        576
+      ],
+      "portrait": "sunny-new-locations/crops/park-916.png",
+      "portrait_size": [
+        576,
+        1024
+      ],
+      "master": "sunny-new-locations/masters/park-master.png",
+      "composite_layers": [
+        "sunny-new-locations/layers/park/00-integrated-plate.png",
+        "sunny-new-locations/layers/park/10-exact-courier-identity.png"
+      ]
+    },
+    {
+      "pack": "sunny-city-arrivals",
+      "scene_variant": "kalasatama",
+      "approval_context": "Approve the detailed ones \u2014 all three detailed city-arrivals pairs; metro approach illustrative only.",
+      "destination": "PR632",
+      "landscape": "sunny-city-arrivals/crops/kalasatama-169.png",
+      "landscape_size": [
+        1024,
+        576
+      ],
+      "portrait": "sunny-city-arrivals/crops/kalasatama-916.png",
+      "portrait_size": [
+        576,
+        1024
+      ],
+      "master": "sunny-city-arrivals/masters/kalasatama-master.png",
+      "composite_layers": [
+        "sunny-city-arrivals/layers/kalasatama/00-integrated-plate.png",
+        "sunny-city-arrivals/layers/kalasatama/10-exact-courier-identity.png"
+      ]
+    },
+    {
+      "pack": "sunny-city-arrivals",
+      "scene_variant": "station",
+      "approval_context": "Approve the detailed ones \u2014 all three detailed city-arrivals pairs; metro approach illustrative only.",
+      "destination": "PR632",
+      "landscape": "sunny-city-arrivals/crops/station-169.png",
+      "landscape_size": [
+        1024,
+        576
+      ],
+      "portrait": "sunny-city-arrivals/crops/station-916.png",
+      "portrait_size": [
+        576,
+        1024
+      ],
+      "master": "sunny-city-arrivals/masters/station-master.png",
+      "composite_layers": [
+        "sunny-city-arrivals/layers/station/00-integrated-plate.png",
+        "sunny-city-arrivals/layers/station/10-exact-courier-identity.png"
+      ]
+    },
+    {
+      "pack": "sunny-city-arrivals",
+      "scene_variant": "canal",
+      "approval_context": "Approve the detailed ones \u2014 all three detailed city-arrivals pairs; metro approach illustrative only.",
+      "destination": "PR632",
+      "landscape": "sunny-city-arrivals/crops/canal-169.png",
+      "landscape_size": [
+        1024,
+        576
+      ],
+      "portrait": "sunny-city-arrivals/crops/canal-916.png",
+      "portrait_size": [
+        576,
+        1024
+      ],
+      "master": "sunny-city-arrivals/masters/canal-master.png",
+      "composite_layers": [
+        "sunny-city-arrivals/layers/canal/00-integrated-plate.png",
+        "sunny-city-arrivals/layers/canal/10-exact-courier-identity.png"
+      ]
+    },
+    {
+      "pack": "sunny-minimal-comparisons",
+      "scene_variant": "metro",
+      "approval_context": "pt137u: The tram and metro low details are good too \u2014 park NOT approved.",
+      "destination": "PR632",
+      "landscape": "sunny-minimal-comparisons/crops/metro-169.png",
+      "landscape_size": [
+        1024,
+        576
+      ],
+      "portrait": "sunny-minimal-comparisons/crops/metro-916.png",
+      "portrait_size": [
+        576,
+        1024
+      ],
+      "master": "sunny-minimal-comparisons/masters/metro-master.png",
+      "composite_layers": [
+        "sunny-minimal-comparisons/layers/metro/00-integrated-plate.png",
+        "sunny-minimal-comparisons/layers/metro/10-exact-courier-identity.png"
+      ]
+    },
+    {
+      "pack": "sunny-minimal-comparisons",
+      "scene_variant": "tram",
+      "approval_context": "pt137u: The tram and metro low details are good too \u2014 park NOT approved.",
+      "destination": "PR632",
+      "landscape": "sunny-minimal-comparisons/crops/tram-169.png",
+      "landscape_size": [
+        1024,
+        576
+      ],
+      "portrait": "sunny-minimal-comparisons/crops/tram-916.png",
+      "portrait_size": [
+        576,
+        1024
+      ],
+      "master": "sunny-minimal-comparisons/masters/tram-master.png",
+      "composite_layers": [
+        "sunny-minimal-comparisons/layers/tram/00-integrated-plate.png",
+        "sunny-minimal-comparisons/layers/tram/10-exact-courier-identity.png"
+      ]
+    },
+    {
+      "pack": "sunny-open-backgrounds",
+      "scene_variant": "tram",
+      "approval_context": "pt139u: Those are approved \u2014 tram+shelter and bench handoff.",
+      "destination": "PR632",
+      "landscape": "sunny-open-backgrounds/crops/tram-169.png",
+      "landscape_size": [
+        1024,
+        576
+      ],
+      "portrait": "sunny-open-backgrounds/crops/tram-916.png",
+      "portrait_size": [
+        576,
+        1024
+      ],
+      "master": "sunny-open-backgrounds/masters/tram-master.png",
+      "composite_layers": [
+        "sunny-open-backgrounds/layers/tram/00-integrated-plate.png",
+        "sunny-open-backgrounds/layers/tram/10-exact-courier-identity.png"
+      ]
+    },
+    {
+      "pack": "sunny-open-backgrounds",
+      "scene_variant": "bench",
+      "approval_context": "pt139u: Those are approved \u2014 tram+shelter and bench handoff.",
+      "destination": "PR632",
+      "landscape": "sunny-open-backgrounds/crops/bench-169.png",
+      "landscape_size": [
+        1024,
+        576
+      ],
+      "portrait": "sunny-open-backgrounds/crops/bench-916.png",
+      "portrait_size": [
+        576,
+        1024
+      ],
+      "master": "sunny-open-backgrounds/masters/bench-master.png",
+      "composite_layers": [
+        "sunny-open-backgrounds/layers/bench/00-integrated-plate.png",
+        "sunny-open-backgrounds/layers/bench/10-exact-courier-identity.png"
+      ]
+    },
+    {
+      "pack": "sunny-open-perspectives",
+      "scene_variant": "metro",
+      "approval_context": "Perfect all approved, then Put these in a PR \u2014 all four pairs.",
+      "destination": "PR632",
+      "landscape": "sunny-open-perspectives/crops/metro-169.png",
+      "landscape_size": [
+        1024,
+        576
+      ],
+      "portrait": "sunny-open-perspectives/crops/metro-916.png",
+      "portrait_size": [
+        576,
+        1024
+      ],
+      "master": "sunny-open-perspectives/masters/metro-master.png",
+      "composite_layers": [
+        "sunny-open-perspectives/layers/metro/00-integrated-plate.png",
+        "sunny-open-perspectives/layers/metro/10-exact-courier-identity.png"
+      ]
+    },
+    {
+      "pack": "sunny-open-perspectives",
+      "scene_variant": "kiosk",
+      "approval_context": "Perfect all approved, then Put these in a PR \u2014 all four pairs.",
+      "destination": "PR632",
+      "landscape": "sunny-open-perspectives/crops/kiosk-169.png",
+      "landscape_size": [
+        1024,
+        576
+      ],
+      "portrait": "sunny-open-perspectives/crops/kiosk-916.png",
+      "portrait_size": [
+        576,
+        1024
+      ],
+      "master": "sunny-open-perspectives/masters/kiosk-master.png",
+      "composite_layers": [
+        "sunny-open-perspectives/layers/kiosk/00-integrated-plate.png",
+        "sunny-open-perspectives/layers/kiosk/10-exact-courier-identity.png"
+      ]
+    },
+    {
+      "pack": "sunny-open-perspectives",
+      "scene_variant": "cyclist",
+      "approval_context": "Perfect all approved, then Put these in a PR \u2014 all four pairs.",
+      "destination": "PR632",
+      "landscape": "sunny-open-perspectives/crops/cyclist-169.png",
+      "landscape_size": [
+        1024,
+        576
+      ],
+      "portrait": "sunny-open-perspectives/crops/cyclist-916.png",
+      "portrait_size": [
+        576,
+        1024
+      ],
+      "master": "sunny-open-perspectives/masters/cyclist-master.png",
+      "composite_layers": [
+        "sunny-open-perspectives/layers/cyclist/00-integrated-plate.png",
+        "sunny-open-perspectives/layers/cyclist/10-exact-courier-identity.png"
+      ]
+    },
+    {
+      "pack": "sunny-open-perspectives",
+      "scene_variant": "doorway",
+      "approval_context": "Perfect all approved, then Put these in a PR \u2014 all four pairs.",
+      "destination": "PR632",
+      "landscape": "sunny-open-perspectives/crops/doorway-169.png",
+      "landscape_size": [
+        1024,
+        576
+      ],
+      "portrait": "sunny-open-perspectives/crops/doorway-916.png",
+      "portrait_size": [
+        576,
+        1024
+      ],
+      "master": "sunny-open-perspectives/masters/doorway-master.png",
+      "composite_layers": [
+        "sunny-open-perspectives/layers/doorway/00-integrated-plate.png",
+        "sunny-open-perspectives/layers/doorway/10-exact-courier-identity.png"
+      ]
+    }
+  ],
+  "counts": {
+    "unique_variants": 21,
+    "landscape_outputs": 21,
+    "portrait_outputs": 16,
+    "previously_in_pr632": 4,
+    "newly_added_variants": 17,
+    "pack_files": 162,
+    "audit_files": 5,
+    "total_pr_files": 167,
+    "new_files_this_update": 136
+  },
+  "files_by_pack": {
+    "outdoor-weather-tests": [
+      "outdoor-weather-tests/CONTACT.png",
+      "outdoor-weather-tests/MOTION.md",
+      "outdoor-weather-tests/README.md",
+      "outdoor-weather-tests/approval-record.json",
+      "outdoor-weather-tests/layers/harbour/00-integrated-illustration.png",
+      "outdoor-weather-tests/layers/harbour/30-courier-traced-identity.png",
+      "outdoor-weather-tests/layers/metro/00-integrated-illustration.png",
+      "outdoor-weather-tests/layers/metro/30-courier-traced-identity.png",
+      "outdoor-weather-tests/layers/tram/00-integrated-illustration.png",
+      "outdoor-weather-tests/layers/tram/30-courier-traced-identity.png",
+      "outdoor-weather-tests/sources/harbour.jpg",
+      "outdoor-weather-tests/sources/master-shapes.json",
+      "outdoor-weather-tests/sources/metro.jpg",
+      "outdoor-weather-tests/sources/tram.jpg",
+      "outdoor-weather-tests/stills/harbour-dry-169.png",
+      "outdoor-weather-tests/stills/metro-dry-169.png",
+      "outdoor-weather-tests/stills/tram-dry-169.png"
+    ],
+    "sunny-camera-studies": [
+      "sunny-camera-studies/CONTACT.png",
+      "sunny-camera-studies/README.md",
+      "sunny-camera-studies/approval-record.json",
+      "sunny-camera-studies/layers/03-elevated-metro/00-integrated-plate.png",
+      "sunny-camera-studies/layers/03-elevated-metro/10-traced-courier-identity.png",
+      "sunny-camera-studies/layers/03-elevated-metro/20-hand-occlusion-holdout.png",
+      "sunny-camera-studies/layers/04-close-quay/00-integrated-plate.png",
+      "sunny-camera-studies/layers/04-close-quay/10-traced-courier-identity.png",
+      "sunny-camera-studies/sources/03-elevated-metro.jpg",
+      "sunny-camera-studies/sources/04-close-quay.jpg",
+      "sunny-camera-studies/sources/master-shapes.json",
+      "sunny-camera-studies/stills/03-elevated-metro.png",
+      "sunny-camera-studies/stills/04-close-quay.png"
+    ],
+    "sunny-city-arrivals": [
+      "sunny-city-arrivals/CONTACT.png",
+      "sunny-city-arrivals/README.md",
+      "sunny-city-arrivals/approval-record.json",
+      "sunny-city-arrivals/crop-metadata.json",
+      "sunny-city-arrivals/crops/canal-169.png",
+      "sunny-city-arrivals/crops/canal-916.png",
+      "sunny-city-arrivals/crops/kalasatama-169.png",
+      "sunny-city-arrivals/crops/kalasatama-916.png",
+      "sunny-city-arrivals/crops/station-169.png",
+      "sunny-city-arrivals/crops/station-916.png",
+      "sunny-city-arrivals/layers/canal/00-integrated-plate.png",
+      "sunny-city-arrivals/layers/canal/10-exact-courier-identity.png",
+      "sunny-city-arrivals/layers/kalasatama/00-integrated-plate.png",
+      "sunny-city-arrivals/layers/kalasatama/10-exact-courier-identity.png",
+      "sunny-city-arrivals/layers/station/00-integrated-plate.png",
+      "sunny-city-arrivals/layers/station/10-exact-courier-identity.png",
+      "sunny-city-arrivals/masters/canal-master.png",
+      "sunny-city-arrivals/masters/kalasatama-master.png",
+      "sunny-city-arrivals/masters/station-master.png",
+      "sunny-city-arrivals/sources/canal.jpg",
+      "sunny-city-arrivals/sources/compose.py",
+      "sunny-city-arrivals/sources/kalasatama.jpg",
+      "sunny-city-arrivals/sources/master-shapes.json",
+      "sunny-city-arrivals/sources/station.jpg"
+    ],
+    "sunny-dual-crop-v2": [
+      "sunny-dual-crop-v2/CONTACT.png",
+      "sunny-dual-crop-v2/README.md",
+      "sunny-dual-crop-v2/approval-record.json",
+      "sunny-dual-crop-v2/crop-metadata.json",
+      "sunny-dual-crop-v2/crops/harbour-169.png",
+      "sunny-dual-crop-v2/crops/harbour-916.png",
+      "sunny-dual-crop-v2/crops/platform-169.png",
+      "sunny-dual-crop-v2/crops/platform-916.png",
+      "sunny-dual-crop-v2/layers/harbour/00-integrated-extended-plate.png",
+      "sunny-dual-crop-v2/layers/harbour/10-traced-courier.png",
+      "sunny-dual-crop-v2/layers/platform/00-integrated-extended-plate.png",
+      "sunny-dual-crop-v2/layers/platform/10-traced-courier.png",
+      "sunny-dual-crop-v2/masters/harbour-master.png",
+      "sunny-dual-crop-v2/masters/platform-master.png",
+      "sunny-dual-crop-v2/sources/compose.py",
+      "sunny-dual-crop-v2/sources/harbour.jpg",
+      "sunny-dual-crop-v2/sources/master-shapes.json",
+      "sunny-dual-crop-v2/sources/platform.jpg"
+    ],
+    "sunny-minimal-comparisons": [
+      "sunny-minimal-comparisons/CONTACT.png",
+      "sunny-minimal-comparisons/README.md",
+      "sunny-minimal-comparisons/approval-record.json",
+      "sunny-minimal-comparisons/crop-metadata.json",
+      "sunny-minimal-comparisons/crops/metro-169.png",
+      "sunny-minimal-comparisons/crops/metro-916.png",
+      "sunny-minimal-comparisons/crops/tram-169.png",
+      "sunny-minimal-comparisons/crops/tram-916.png",
+      "sunny-minimal-comparisons/layers/metro/00-integrated-plate.png",
+      "sunny-minimal-comparisons/layers/metro/10-exact-courier-identity.png",
+      "sunny-minimal-comparisons/layers/tram/00-integrated-plate.png",
+      "sunny-minimal-comparisons/layers/tram/10-exact-courier-identity.png",
+      "sunny-minimal-comparisons/masters/metro-master.png",
+      "sunny-minimal-comparisons/masters/tram-master.png",
+      "sunny-minimal-comparisons/sources/master-shapes.json",
+      "sunny-minimal-comparisons/sources/metro.jpg",
+      "sunny-minimal-comparisons/sources/tram.jpg"
+    ],
+    "sunny-new-locations": [
+      "sunny-new-locations/CONTACT.png",
+      "sunny-new-locations/README.md",
+      "sunny-new-locations/approval-record.json",
+      "sunny-new-locations/crop-metadata.json",
+      "sunny-new-locations/crops/metro-169.png",
+      "sunny-new-locations/crops/metro-916.png",
+      "sunny-new-locations/crops/park-169.png",
+      "sunny-new-locations/crops/park-916.png",
+      "sunny-new-locations/crops/tram-169.png",
+      "sunny-new-locations/crops/tram-916.png",
+      "sunny-new-locations/layers/metro/00-integrated-plate.png",
+      "sunny-new-locations/layers/metro/10-exact-courier-identity.png",
+      "sunny-new-locations/layers/park/00-integrated-plate.png",
+      "sunny-new-locations/layers/park/10-exact-courier-identity.png",
+      "sunny-new-locations/layers/tram/00-integrated-plate.png",
+      "sunny-new-locations/layers/tram/10-exact-courier-identity.png",
+      "sunny-new-locations/masters/metro-master.png",
+      "sunny-new-locations/masters/park-master.png",
+      "sunny-new-locations/masters/tram-master.png",
+      "sunny-new-locations/sources/compose.py",
+      "sunny-new-locations/sources/master-shapes.json",
+      "sunny-new-locations/sources/metro.jpg",
+      "sunny-new-locations/sources/park.jpg",
+      "sunny-new-locations/sources/tram.jpg"
+    ],
+    "sunny-open-backgrounds": [
+      "sunny-open-backgrounds/CONTACT.png",
+      "sunny-open-backgrounds/README.md",
+      "sunny-open-backgrounds/approval-record.json",
+      "sunny-open-backgrounds/crop-metadata.json",
+      "sunny-open-backgrounds/crops/bench-169.png",
+      "sunny-open-backgrounds/crops/bench-916.png",
+      "sunny-open-backgrounds/crops/tram-169.png",
+      "sunny-open-backgrounds/crops/tram-916.png",
+      "sunny-open-backgrounds/layers/bench/00-integrated-plate.png",
+      "sunny-open-backgrounds/layers/bench/10-exact-courier-identity.png",
+      "sunny-open-backgrounds/layers/tram/00-integrated-plate.png",
+      "sunny-open-backgrounds/layers/tram/10-exact-courier-identity.png",
+      "sunny-open-backgrounds/masters/bench-master.png",
+      "sunny-open-backgrounds/masters/tram-master.png",
+      "sunny-open-backgrounds/sources/bench.jpg",
+      "sunny-open-backgrounds/sources/compose.py",
+      "sunny-open-backgrounds/sources/master-shapes.json",
+      "sunny-open-backgrounds/sources/tram.jpg"
+    ],
+    "sunny-open-perspectives": [
+      "sunny-open-perspectives/CONTACT.png",
+      "sunny-open-perspectives/README.md",
+      "sunny-open-perspectives/approval-record.json",
+      "sunny-open-perspectives/crop-metadata.json",
+      "sunny-open-perspectives/crops/cyclist-169.png",
+      "sunny-open-perspectives/crops/cyclist-916.png",
+      "sunny-open-perspectives/crops/doorway-169.png",
+      "sunny-open-perspectives/crops/doorway-916.png",
+      "sunny-open-perspectives/crops/kiosk-169.png",
+      "sunny-open-perspectives/crops/kiosk-916.png",
+      "sunny-open-perspectives/crops/metro-169.png",
+      "sunny-open-perspectives/crops/metro-916.png",
+      "sunny-open-perspectives/layers/cyclist/00-integrated-plate.png",
+      "sunny-open-perspectives/layers/cyclist/10-exact-courier-identity.png",
+      "sunny-open-perspectives/layers/doorway/00-integrated-plate.png",
+      "sunny-open-perspectives/layers/doorway/10-exact-courier-identity.png",
+      "sunny-open-perspectives/layers/kiosk/00-integrated-plate.png",
+      "sunny-open-perspectives/layers/kiosk/10-exact-courier-identity.png",
+      "sunny-open-perspectives/layers/metro/00-integrated-plate.png",
+      "sunny-open-perspectives/layers/metro/10-exact-courier-identity.png",
+      "sunny-open-perspectives/masters/cyclist-master.png",
+      "sunny-open-perspectives/masters/doorway-master.png",
+      "sunny-open-perspectives/masters/kiosk-master.png",
+      "sunny-open-perspectives/masters/metro-master.png",
+      "sunny-open-perspectives/pixel-asset-sha256.json",
+      "sunny-open-perspectives/sources/compose.py",
+      "sunny-open-perspectives/sources/cyclist.jpg",
+      "sunny-open-perspectives/sources/doorway.jpg",
+      "sunny-open-perspectives/sources/kiosk.jpg",
+      "sunny-open-perspectives/sources/master-shapes.json",
+      "sunny-open-perspectives/sources/metro.jpg"
+    ]
+  }
+}
