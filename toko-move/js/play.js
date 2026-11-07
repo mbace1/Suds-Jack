@@ -25,7 +25,7 @@
 // nothing happens while you read. Every animation is skippable by a tap and
 // none of them is a timer the game waits on to be fair: the state has already
 // moved when it starts.
-import { tr } from './lang.js?v=10';
+import { tr } from './lang.js?v=11';
 import * as J from './journey.js?v=3';
 import * as Runs from './runs.js?v=4';
 import { HopBoard } from './hopboard.js?v=3';
@@ -41,10 +41,11 @@ import { TRAMS } from './cards.js?v=3';
 import { mountAudio } from './audio.js?v=2';
 import { loadStanding, saveStanding } from './regulars.js?v=4';
 import { addNote } from './sealed.js?v=2';
+import { MOMENTS, faceIn, keepIn, pickupMoment, deliveryMoment, metroMoment } from './moments.js?v=1';
 import { resolveMode, dailyShare, W } from './modes.js?v=1';
 import { recordDaily, todayRecord, streak } from './daily.js?v=2';
 
-export const BUILD_VERSION = '3.11';
+export const BUILD_VERSION = '3.12';
 const $ = id => document.getElementById(id);
 const params = new URLSearchParams(location.search);
 // a run of the ladder, today's daily, or a day of the week (modes.js, ACT1.md §12)
@@ -68,6 +69,10 @@ const SCENES = {
   metro: { layers: ['01-outside-tile', '02-car', '03-people', '04-courier'], tile: { '916': 1222 / 1920, '169': 1670 / 1080 }, face: { '916': [.53, .34], '169': [.43, .22] }, focus: { '916': [.5, .5], '169': [.5, .45] } },
   stop: { layers: ['01-backdrop', '02-street', '04-shelter', '05-people', '06-courier'], face: { '916': [.89, .32], '169': [.59, .33] }, focus: { '916': [.68, .4], '169': [.55, .45] } },
 };
+// THE MOMENTS (v3.12, js/moments.js): the owner's art pack, one full-frame
+// picture per beat of the job, cut for each format; the push-in starts at the
+// courier's face.
+for (const id of Object.keys(MOMENTS)) SCENES[`m-${id}`] = { moment: id, layers: [], face: { '916': faceIn(id, '916'), '169': faceIn(id, '169') }, focus: { '916': keepIn(id, '916'), '169': keepIn(id, '169') } };
 // The key stations (ACT1.md §7): their plate is the bold one. Since v3.10 every
 // place has a landmark behind the stop (act1.json's `land`), not only these.
 const LANDMARKS = new Set(['rautatientori', 'senaatintori', 'kauppatori', 'kamppi', 'kallionkirkko', 'hakaniemi', 'ooppera', 'lasipalatsi', 'olympiaterminaali', 'hietalahti', 'kalasatama', 'pasila']);
@@ -171,6 +176,8 @@ const CSS = `
 #v3mini .tag{position:absolute;left:8px;bottom:6px;font:800 10px/1 ui-monospace,Menlo,monospace;letter-spacing:1.5px;color:#15262b;background:rgba(255,255,255,.85);padding:3px 5px;border-radius:5px}
 #v3panel{position:absolute;left:12px;right:12px;bottom:calc(env(safe-area-inset-bottom) + 12px);max-width:520px;margin:0 auto;z-index:4}
 @media (orientation:landscape){#v3panel{left:auto;right:16px;width:min(440px,50vw)}#v3mini{top:calc(env(safe-area-inset-top) + 64px)}}
+/* a moment (v3.12) is a picture of people at the middle of the frame: sideways, its stamp is narrower, so the parcel in their hands stays in view */
+@media (orientation:landscape){#v3.moment #v3panel{width:min(340px,38vw)}}
 #v3panel .eventCard{margin:0;animation:v3stamp .26s cubic-bezier(.2,.8,.3,1.2) both}
 #v3panel .leaving{animation:v3leave .18s ease-in both}
 @keyframes v3stamp{from{opacity:0;transform:translateY(28px) scale(.98)}to{opacity:1;transform:none}}
@@ -270,6 +277,7 @@ function paintScene(name, v = {}, force = false) {
   const sc = SCENES[name], first = !scene; scene = name; sceneKey = key;
   stage.classList.toggle('night-stop', NIGHT && name === 'stop');
   stage.classList.toggle('night-car', name === 'night');
+  stage.classList.toggle('moment', !!sc.moment);
   const build = () => {
     let html = '';
     if (name === 'stop') {
@@ -285,7 +293,8 @@ function paintScene(name, v = {}, force = false) {
         + ((ACT?.wx || []).includes(S?.weather) ? L('stop', `05b-wx-${S.weather}`, 'wxl') : '')
         + L('stop', '06-courier', 'idle');
       html += plateHtml(v.at, LANDMARKS.has(v.at));
-    } else html = sc.layers.map((l, i) => {
+    } else if (sc.moment) html = L('moments', sc.moment, 'moment', ` data-moment="${sc.moment}"`);
+    else html = sc.layers.map((l, i) => {
       const cls = i === 0 ? (sc.tile ? 'tile' : sc.drift ? 'drift' : '') : (i === 1 ? 'sway' : i === 2 ? 'sway lag' : 'bob');
       return (l = carLayer(name, l, v)) && L(name, l, cls);
     }).join('');
@@ -597,6 +606,13 @@ function sign(hop) {
   panel.innerHTML = `<div class="v3sign" role="status"><span class="lb" style="background:${ink}">${esc(hop.line.mode === 'metro' ? 'M' : (hop.line.family || hop.line.label))}</span>${end}<span class="nx">${esc(net.name(hop.to).toUpperCase())}</span>${model}</div>`;
 }
 
+// A moment of the job (v3.12): its picture, its line, a beat; skippable.
+async function moment(id, html = '', ms = 1500) {
+  if (!id) return false;
+  hideBoard(); setActor(null); $('v3mini').hidden = true;
+  const wait = paintScene(`m-${id}`); panel.innerHTML = html;
+  await beat(ms + wait); return true;
+}
 // What a choice did (ACT1.md §3): the line, and its chips.
 async function reveal(rv) {
   if (!rv || (!rv.say && !rv.chips.length)) return;
@@ -618,12 +634,19 @@ async function pick(i) {
   if (r.error) { busy = false; render(); return; }
   paintHud();
   try {
+    if (r.kind === 'dispatch' && i === 0 && S.job) {            // the job is taken: the parcel is handed over
+      sfx('coin');
+      // (a sealed parcel's address stays hidden: the line is the one its dispatch card said)
+      const what = S.job.sealed ? 'A sealed parcel. No address, only a sticker.' : `${J.cargoWord(S.job.cargo)} for ${S.job.toName}.`;
+      await moment(pickupMoment(NIGHT), `<div class="v3stamp pickup" role="status"><span class="big">PICKED UP</span><span>${esc(what)}</span><span class="pts">€${S.job.fee}</span></div>`, 1400);
+    }
     if (r.hop) {
       $('v3mini').hidden = true;
       const tram = r.hop.kind === 'ride' && r.hop.model && r.hop.model !== 'metro';
       // the tram you chose pulls in (look only: the model is drawn, the ride is the same)
       if (tram) { const wait = scene !== 'stop' ? paintScene('stop', { at: r.hop.from }) : 0; if (wait) await beat(wait); setTram({ model: r.hop.model, family: r.hop.line.family }); panel.innerHTML = ''; await drive('in'); }
       if (r.hop.model === 'museum') await rare();
+      await moment(metroMoment(r.hop, NIGHT), '', 1400);        // the one open-air metro platform in the game (v3.12)
       if (r.hop.kind === 'ride') { hideBoard(); paintScene(interior(r.hop), { car: carOf(r.hop), crowd: crowdOf(r.hop) }); sign(r.hop); }
       if (r.unsealed) { await beat(900); await reveal({ say: `Aboard the ${r.unsealed.family}, the label makes sense: ${r.unsealed.stop}.`, chips: [], how: 'win' }); }
       if (r.story) { pendingHop = r.hop; busy = false; return render(); }
@@ -648,7 +671,11 @@ async function pick(i) {
 
 // A delivery: the fee, and what was inside all along.
 async function stamp(d) {
-  hideBoard(); paintScene('stop', { at: S.at, tram: arrived }); setTram(arrived); $('v3mini').hidden = true;
+  // at the door (or at the steps) by day; the night shift stamps it at the stop
+  const m = deliveryMoment(d, NIGHT);
+  hideBoard(); setActor(null); $('v3mini').hidden = true;
+  if (m) { paintScene(`m-${m}`); arrived = null; }               // the tram has gone while you were at the door
+  else { paintScene('stop', { at: S.at, tram: arrived }); setTram(arrived); }
   sfx('stamp'); setTimeout(() => sfx(d.late ? 'late' : 'deliver'), 140);
   if (MODE.mode === 'week') { W.progress(MODE.week, { score: S.score * W.PER_EURO, results: S.results }); W.saveWeek(MODE.week, MODE.store); }
   const note = d.sealed ? addNote(net.name(d.to)).split(' · ').slice(1).join(' · ') : '';

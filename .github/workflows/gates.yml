@@ -381,6 +381,9 @@ jobs:
       - name: the scenarios (v3.9) — every stop actor cast from a stop card, both formats, clear of the card; every walk has its picture
         run: node toko-move/test/scenarios.mjs
 
+      - name: the moments (v3.12) — the owner's approved art pack untouched, the game's copies are its crops, each at its beat of the job
+        run: node toko-move/test/moments.mjs
+
       - name: the sealed parcel — which offer, the notebook, its store, the Finnish
         run: node toko-move/test/sealed.mjs
 

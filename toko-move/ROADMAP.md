@@ -37,12 +37,12 @@ view") brought up to the scenes. Every step ends in a re-filmed trailer
    the humming card. The window carries the weather (`make_windows.py`), and
    the night window's rain falls one way. Generated plates would still add
    new compositions; that waits for the key.
-5. **v3.12 · Outside the window** (owner, 2026-11-07: *"assume we need more
-   of these and outside art"*). The tram's window shows the same row of
-   houses on every hop. It should show where the hop runs: the sea along
-   the shore, the park, the stone city centre, Kallio's blocks, the bridges.
-   Each is a seamless tile in the plate's register, picked from what lies
-   beside the hop's line on the map, in every weather.
+5. ~~**v3.12 · The owner's art.**~~ The code-drawn window views were
+   dropped on the owner's word (*"Forget your art designs, I will get u a
+   PR"*). Shipped in v3.12 instead: PR #632's four approved illustrations as
+   moments of the job (pickup at a kiosk, delivery at a door or to a
+   cyclist, the metro at Kalasatama). Further packs land the same way: the
+   approved crops as they are, at the beat they draw.
 
 Each step is measured, gated and deployed, and the trailer is re-filmed with
 what changed.

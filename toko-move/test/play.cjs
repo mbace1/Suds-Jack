@@ -118,7 +118,7 @@ server.listen(0, '127.0.0.1', async () => {
         runs: [...document.querySelectorAll('#mutRow .run')].map(r => ({ id: r.dataset.run, open: !r.classList.contains('locked'), lit: r.classList.contains('on') })),
         goal: document.getElementById('titleGoal').textContent, play: document.getElementById('play').textContent,
         links: ['dailyLink', 'weekLink', 'liveLink'].filter(id => { const e = document.getElementById(id); return e && !e.hidden && getComputedStyle(e).display !== 'none'; }) }));
-      ok(`the bare address is the card journey, not the real-time game (v${t.v})`, !t.classic && t.v === '3.11' && /v3\.11/.test(t.hero));
+      ok(`the bare address is the card journey, not the real-time game (v${t.v})`, !t.classic && t.v === '3.12' && /v3\.12/.test(t.hero));
       ok(`it is Act 1, in Helsinki (${await page.evaluate(() => document.getElementById('titleWhen').textContent)})`, await page.evaluate(() => /^Act 1 · Helsinki · 07:00/.test(document.getElementById('titleWhen').textContent)));
       ok(`the ladder: EASY open and lit, three locked (${t.runs.map(r => r.id + (r.open ? '' : '🔒')).join(' ')})`, t.runs.map(r => r.id).join() === 'easy,medium,hard,night' && t.runs[0].open && t.runs[0].lit && t.runs.slice(1).every(r => !r.open) && t.run === 'easy');
       ok(`the goal and the button (${t.goal} · ${t.play})`, /^Three deliveries before 08:15/.test(t.goal) && t.play === 'START SHIFT');
@@ -226,6 +226,7 @@ server.listen(0, '127.0.0.1', async () => {
       const nt = await topRow(page);
       ok(`the night's wider pill clears the HUB button and ♪ (${nt.left}–${nt.right}px ${nt.t || 'centred'})`, nt.hasHome && !nt.home && !nt.snd);
       ok(`a ride at night is the night car (${[...seen.scenes]})`, seen.scenes.has('night') && !seen.scenes.has('tram') && !seen.scenes.has('metro'));
+      ok(`and the night shift keeps its stops: the sunny moments are day pictures (${[...seen.scenes].filter(x => x.startsWith('m-')).join(', ') || 'none'})`, ![...seen.scenes].some(x => x.startsWith('m-')));
       ok('the night hums under the city', await page.evaluate(() => window.__tm3.audio.log.some(e => e.name === 'bed:night')));
       ok('no page or network errors (NIGHT)', !errs.length, errs.slice(0, 3).join(' | '));
       await ctx.close();
@@ -260,6 +261,20 @@ server.listen(0, '127.0.0.1', async () => {
       } else ok(`a rainy day rains in the tram's window too (${[...L].filter(l => l.includes('outside')).join(' ')})`, L.has('tram/01-outside-tile-rain') && !L.has('tram/01-outside-tile'));
       ok(`the crush card fills the ${car} (${crush})`, crush.includes(`${car}/03-people-rush`) && crush.includes(`${car}/04-courier-rush`));
       ok(`no page or network errors (${car} interiors)`, !errs.length, errs.slice(0, 3).join(' | '));
+      await ctx.close();
+    }
+    // ── the moments (v3.12, the owner's art pack, PR #632): EASY 1019 takes a job at
+    // the kiosk, delivers at a door or to a cyclist, and boards the metro at Kalasatama
+    {
+      const ctx = await browser.newContext(PHONE), page = await ctx.newPage(), errs = watch(page);
+      await page.goto(`${base}/toko-move/?run=easy&seed=1019`, { waitUntil: 'load' }); await ready(page);
+      await page.tap('#play'); await page.waitForSelector('#v3panel .eventOpt', { timeout: 15000 });
+      const seen = await playOut(page, { maxSteps: 400 }), ms = [...seen.scenes].filter(x => x.startsWith('m-'));
+      ok(`a job taken is handed over at the kiosk (${ms.join(', ')})`, ms.includes('m-kiosk') && [...seen.layers].includes('moments/kiosk'));
+      ok('a delivery is at a doorway or with a cyclist at the steps', ms.includes('m-doorway') || ms.includes('m-cyclist'));
+      ok('the metro boarded at Kalasatama stands at its open-air platform first', ms.includes('m-metro'));
+      ok(`and the run still ends (${seen.cards.length} cards)`, seen.end);
+      ok('no page or network errors (moments)', !errs.length, errs.slice(0, 3).join(' | '));
       await ctx.close();
     }
     // ── story arcs (v3.4, ACT1.md §10): a second run meets Dispatch, and the city remembers

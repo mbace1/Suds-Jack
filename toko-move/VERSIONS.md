@@ -1,5 +1,58 @@
 # Toko Move — versions
 
+## v3.12 — 2026-11-07
+
+**THE JOB ITSELF, IN THE NEW ILLUSTRATIONS** — the owner's art pack (PR #632,
+`art/sunny-open-perspectives/`, approved 7 Nov: *"Perfect all approved"*),
+after the owner's *"Forget your art designs, I will get u a PR."*
+
+- **Four moments, each at the beat it draws.** Each one is shown full frame
+  under the panel that beat already has:
+  - **Pickup.** A job taken by day is handed over at a kiosk hatch, with a
+    PICKED UP stamp. A sealed parcel's line keeps its address hidden: it is
+    the one its dispatch card said.
+  - **Delivery.** It happens at a doorway or with a cyclist at the steps,
+    picked by the drop itself, so the same drop is always the same picture.
+    The tram you came on has gone while you were at the door.
+  - **Metro.** A metro boarded at Kalasatama stands at the open-air platform
+    first. The pack draws the outdoor metro, and of the game's 23 places
+    only Kalasatama has one (the pack's README: "Outdoor metro only
+    Kalasatama/east").
+  - **Night.** The pack is sunny only, so the night shift keeps its stops.
+- **The pack, as delivered.**
+  - Its commit is in the history unchanged, and its own sha256 list still
+    holds.
+  - The game ships each 16:9 and 9:16 crop as webp
+    (`scenes/moments/<fmt>/<id>.webp`, 324 KB for all eight). Nothing is
+    repainted or re-cropped: each format uses its own crop.
+  - `js/moments.js` holds the pack's crop boxes and each courier's face from
+    its compositor. The push-in starts at the face; the cyclist is seen from
+    behind, so his parcel stands in.
+- **Framing on a phone, found by looking.** A phone's frame is narrower
+  than 9:16, so some scenes keep a point other than the face in view:
+  - The cyclist's portrait has the courier's back at one edge and her face
+    at the other; the first cut lost her face. It now keeps her face and
+    the parcel.
+  - The metro's portrait keeps the courier at its edge and the cab's front.
+  - Sideways, the doorway keeps the courier's middle, so the parcel is not
+    on the frame's edge.
+  - Sideways, a moment's stamp is narrower (38vw), so the parcel in their
+    hands stays in view.
+- **The crops are 1024×576 and 576×1024**, against a 1920×1080 frame. On a
+  phone that is about 2× enlarged and a little soft. Masters at 2× would
+  fix it.
+- **Gates.**
+  - `test/moments.mjs` checks:
+    - the pack is untouched (25 images against its checksums);
+    - the game's copies are its crops (37.9–42.9 dB). The control, two
+      different scenes compared, reads 5.7 dB;
+    - the table matches the pack's crop metadata and compositor;
+    - every face and kept point is inside its crop and clear of the card;
+    - the beat rules, night included.
+  - `test/play.cjs` (browser): EASY 1019 takes a job at the kiosk, delivers
+    at a door or to a cyclist, and boards the metro at Kalasatama, then
+    finishes. A night run shows none of them.
+
 ## v3.11 — 2026-11-07
 
 **MORE INTERIORS, AND THE WEATHER IN THE WINDOW** — step 4 of the plan for the
