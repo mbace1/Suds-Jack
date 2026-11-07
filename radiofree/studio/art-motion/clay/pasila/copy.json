@@ -1,0 +1,74 @@
+{
+  "film": "found-in-pasila",
+  "cut": "v1 (7 Nov 2026, en only; owner: 'Original photos'): an RFH PHOTO film from the owner's five photos of a Roundup Piha jug found in a flowerbed in front of the Yle campus in Pasila that morning. No 3D. Device: the FOUND OBJECT (a crime scene that isn't): what the photos prove (a jug was there) and what they don't (who left it, whether it was used), answered by the record (the EU allows it until 2033; ECHA found no carcinogen classification, so the label carries no cancer warning). The label's own claim is one beat. The film says FOUND, never USED, and attaches nothing to Yle beyond 'in front of'. US spelling.",
+  "series": "rfh",
+  "captionSize": "big",
+  "argument": "A Roundup jug found in a Helsinki flowerbed: who left it is unknown, the EU allows glyphosate until 2033, and the label carries no cancer warning here either.",
+  "langs": ["en"],
+  "native_read": { "en": true },
+  "syntax": "'/' breaks a line, [word] is the pop word",
+  "captions": [
+    {
+      "id": "found",
+      "role": "setup",
+      "at": "s1+0.3",
+      "until": "s2-0.3",
+      "hold": "s2",
+      "text": { "en": "Found today. / Pasila, Helsinki. / [Roundup]." },
+      "source": "The owner's own photos, Sat 7 Nov 2026 morning: a 5 L Roundup Piha jug in a flowerbed by the Yle campus signpost (Mediatalo / Luova talo / Studiotalo), Pasila. 'Found' is all the photos prove; the copy never says used."
+    },
+    {
+      "id": "label",
+      "role": "evidence",
+      "at": "s2+0.3",
+      "until": "s3-0.3",
+      "hold": "s3",
+      "text": { "en": "'Kills weeds, / roots and all.' / Its own [words]." },
+      "source": "The label in the photos (Finnish): 'Hävittää rikkakasvit juurineen' = kills weeds, roots and all; also 'Tehoaa jopa vuorokaudessa' (works in as little as a day), 'Näkyviä tuloksia 24 tunnissa'. Roundup Piha is the consumer product, sold in Finland (MTV 2019: 'Suomessakin myytävä ... Roundup'). Glyphosate is in about 40 products in Finland and is the most-used plant-protection substance (Tukes via Yle). Search summaries only."
+    },
+    {
+      "id": "unknown",
+      "role": "evidence",
+      "at": "s3+0.3",
+      "until": "s4-0.3",
+      "hold": "s4",
+      "text": { "en": "Who left it? / [Unknown]." },
+      "source": "Not known from the photos: who left the jug, whether it is empty, whether anything was sprayed there, or whose land the bed is. The film states only that it was found. Nothing is attached to Yle, the City of Helsinki or any contractor."
+    },
+    {
+      "id": "eu",
+      "role": "evidence",
+      "at": "s4+0.3",
+      "until": "s5-0.3",
+      "hold": "s5",
+      "text": { "en": "Who allowed it? / The EU, / until [2033]." },
+      "source": "EU renewal: the Commission renewed glyphosate's approval for ten years after member states deadlocked; the implementing regulation was published 29 Nov 2023 and runs to 15 Dec 2033; pre-harvest use as a desiccant is banned, pre-harvest weed control stays allowed; member states may restrict nationally (NFU, Agriland, Farmers Weekly, Phys.org/AFP; search summaries). ECHA's Committee for Risk Assessment, opinion adopted 30 May 2022: the evidence did not meet the criteria to classify glyphosate as carcinogenic, mutagenic or reprotoxic (ECHA via Feedstuffs, Agence Europe; NGOs disputed it). IARC 2015: 'probably carcinogenic to humans' (2A). All from search summaries."
+    },
+    {
+      "id": "warning",
+      "role": "punchline",
+      "at": "s5+0.5",
+      "until": "end-0.4",
+      "hold": "end",
+      "text": { "en": "On the label, / here too: / no cancer / [warning]." },
+      "source": "Because ECHA did not classify glyphosate as a carcinogen (2022), the EU label carries no cancer warning; in the US the Supreme Court held on 25 Jun 2026 (Monsanto v. Durnell, 7-2) that states cannot require one either (Coxon 14, On the Label, carries that story). Bayer says the product is safe, citing EPA, EFSA and ECHA. City of Helsinki: in answering a 2020 council initiative (HEL 2020-000554, Marcus Rantala and 18 others), the city board said its goal is already to stop using glyphosate-based products in maintaining the parks and other built areas it owns, while glyphosate stays allowed for strong-rooted perennial weeds; the council closed the matter 7 Oct 2020 (paatokset.hel.fi; search summary). The bed in the photos may not be city land: the tag states the city's goal, not a breach."
+    }
+  ],
+  "ui": {
+    "tag1": { "en": "PASILA, HELSINKI · SAT 7 NOV 2026" },
+    "tag2": { "en": "ROUNDUP PIHA, 5 L · GLYPHOSATE · THE LABEL'S OWN CLAIM" },
+    "tag2b": { "en": "SOLD TO CONSUMERS IN FINLAND" },
+    "tag3": { "en": "WHO LEFT IT, WHETHER IT WAS USED: NOT KNOWN" },
+    "tag4": { "en": "EU RENEWAL · NOV 2023 → 15 DEC 2033" },
+    "tag4b": { "en": "ECHA 2022: NOT A CARCINOGEN · IARC 2015: 'PROBABLY'" },
+    "tag5": { "en": "HELSINKI'S GOAL SINCE 2020: NO GLYPHOSATE IN ITS PARKS" },
+    "tag5b": { "en": "BAYER: SAFE · EPA, EFSA, ECHA: NOT CARCINOGENIC" }
+  },
+  "props": {
+    "photos": { "en": "the owner's five photos, ref/roundup-pasila/07-11-roundup-yle-pasila-1..5.jpg, at full resolution (2268×4032)", "why": "the record is the picture; nothing is drawn" },
+    "figure": { "en": "photo 5 has a distant passer-by by the railing (top right); every crop of it stays in its lower-left two thirds", "why": "no faces, no bystanders" }
+  },
+  "post": {
+    "en": "Found this morning in a flowerbed in Pasila, Helsinki: a 5 L Roundup jug. Who left it: unknown. Who allows glyphosate: the EU, until 2033. ECHA saw no grounds to call it a carcinogen (IARC: 'probably'); Bayer says it's safe. So no cancer warning on the label here either. Who checks?"
+  }
+}
