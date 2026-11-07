@@ -28,7 +28,7 @@ view") brought up to the scenes. Every step ends in a re-filmed trailer
    the rest. Each one is a flat-vector cutout in the people's style
    (featureless faces, tapered limbs) on one layer that comes and goes with
    its card.
-3. **v3.10 · More places.** Landmarks for more stations than today's twelve,
+3. ~~**v3.10 · More places.**~~ Shipped in v3.10: a landmark for all 23 places (`make_places.py`), snow and puddles on the stop. Autumn leaves wait for a season the game does not have yet. Landmarks for more stations than today's twelve,
    and weather on the scene: snow on the shelter roof, puddles and autumn
    leaves.
 4. **v3.11 · More interiors.** A rush-hour car, the empty last tram and the
