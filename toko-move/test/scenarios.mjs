@@ -18,6 +18,8 @@ import fs from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { CARDS, CALLBACKS } from '../js/cards.js';
 import { VIGNETTES } from '../js/vignettes.js';
+import * as J from '../js/journey.js';
+import { buildRealHelsinki } from '../js/real-helsinki.js';
 
 let n = 0; const ok = (c, m) => { assert.ok(c, m); n++; };
 const at = f => new URL(f, import.meta.url);
@@ -55,4 +57,13 @@ const walking = all.filter(c => c.where === 'walking').map(c => c.id);
 const bare = walking.filter(id => !VIGNETTES.includes(id)), orphan = VIGNETTES.filter(id => !byId.has(id));
 ok(walking.length >= 6 && !bare.length, `every card played on foot has a picture on the board (${walking.length})${bare.length ? '; none for ' + bare.join(', ') : ''}`);
 ok(!orphan.length, `no picture for a card that does not exist${orphan.length ? ' (' + orphan.join(', ') + ')' : ''}`);
+// MORE PLACES (v3.10): every place the network names stands in front of its
+// own landmark, in both formats, and the weather that lies on the stop is drawn
+const net = J.network(buildRealHelsinki(JSON.parse(fs.readFileSync(at('../cities/helsinki.json'), 'utf8'))));
+const places = [...net.nodes.keys()], bare2 = places.filter(id => !['916', '169'].every(f => act.land?.[id]?.[f] && fs.existsSync(at(`../scenes/stop/${f}/01b-land-${id}.webp`))));
+ok(places.length >= 20 && !bare2.length, `every one of the ${places.length} places has its landmark in both formats${bare2.length ? '; none for ' + bare2.join(', ') : ''}`);
+const ferries = Object.entries(act.land || {}).filter(([, v]) => v['916']?.ferry).map(([k]) => k);
+ok(ferries.includes('olympiaterminaali') && ferries.includes('lansiterminaali'), `both ferry terminals carry the bobbing ferry (${ferries.join(', ')})`);
+const wx = act.wx || [], wxMissing = wx.flatMap(w => ['916', '169'].map(f => `05b-wx-${w}`).filter((x, i) => !fs.existsSync(at(`../scenes/stop/${['916', '169'][i]}/${x}.webp`))));
+ok(wx.includes('snow') && wx.includes('rain') && !wxMissing.length, `the weather lies on the stop: ${wx.join(', ')}, both formats`);
 console.log(`scenarios: ${n} checks passed`);

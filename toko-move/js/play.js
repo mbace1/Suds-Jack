@@ -44,7 +44,7 @@ import { addNote } from './sealed.js?v=2';
 import { resolveMode, dailyShare, W } from './modes.js?v=1';
 import { recordDaily, todayRecord, streak } from './daily.js?v=2';
 
-export const BUILD_VERSION = '3.9';
+export const BUILD_VERSION = '3.10';
 const $ = id => document.getElementById(id);
 const params = new URLSearchParams(location.search);
 // a run of the ladder, today's daily, or a day of the week (modes.js, ACT1.md §12)
@@ -66,8 +66,8 @@ const SCENES = {
   night: { layers: ['01-outside-tile', '02-car', '03-people', '04-courier'], drift: true, face: { '916': [.29, .59], '169': [.29, .25] }, focus: { '916': [.42, .55], '169': [.45, .5] } },
   stop: { layers: ['01-backdrop', '02-street', '04-shelter', '05-people', '06-courier'], face: { '916': [.89, .32], '169': [.59, .33] }, focus: { '916': [.68, .4], '169': [.55, .45] } },
 };
-// The key stations with a landmark behind the stop (ACT1.md §7) — the ids are
-// the network's own.
+// The key stations (ACT1.md §7): their plate is the bold one. Since v3.10 every
+// place has a landmark behind the stop (act1.json's `land`), not only these.
 const LANDMARKS = new Set(['rautatientori', 'senaatintori', 'kauppatori', 'kamppi', 'kallionkirkko', 'hakaniemi', 'ooppera', 'lasipalatsi', 'olympiaterminaali', 'hietalahti', 'kalasatama', 'pasila']);
 // Where the stop's plate stands, in frame fractions: beside the shelter, inside
 // a phone's crop and clear of the card.
@@ -262,7 +262,7 @@ const L = (name, l, cls = '', extra = '', style = '') => `<div class="L ${cls}" 
 // it, the tram is a layer of its own that comes and goes without a rebuild.
 let view = {};
 function paintScene(name, v = {}, force = false) {
-  const key = name === 'stop' ? `stop|${v.at || ''}` : `${name}|${v.car || ''}`;
+  const key = name === 'stop' ? `stop|${v.at || ''}|${S?.weather || ''}` : `${name}|${v.car || ''}`;
   view = v;
   if (key === sceneKey && !force) return 0;
   const sc = SCENES[name], first = !scene; scene = name; sceneKey = key;
@@ -271,15 +271,18 @@ function paintScene(name, v = {}, force = false) {
   const build = () => {
     let html = '';
     if (name === 'stop') {
-      const land = LANDMARKS.has(v.at) ? v.at : null, extra = land && ACT?.land?.[land]?.[fmt];
+      const land = ACT?.land?.[v.at]?.[fmt] ? v.at : null, extra = land && ACT?.land?.[land]?.[fmt];
       html += L('stop', '01-backdrop');
       if (land) html += L('stop', `01b-land-${land}`, 'land', ` data-land="${land}"`);
       if (extra?.wheel) html += L('stop', '01c-wheel', 'wheel', '', `transform-origin:${extra.wheel[0] * 100}% ${extra.wheel[1] * 100}%`);
       if (extra?.ferry) html += L('stop', '01c-ferry', 'ferry');
       if (NIGHT) html += '<div class="L dusk"></div>';      // the night sky over the far city; every layer is dimmed on its own, so a lit tram can glow
       html += L('stop', '02-street') + `<div class="L tram" id="v3tram" hidden><span class="chip" id="v3chip"></span></div>`
-        + L('stop', '04-shelter') + L('stop', '05-people', 'shift') + L('stop', '06-courier', 'idle');
-      html += plateHtml(v.at, !!land);
+        + L('stop', '04-shelter') + L('stop', '05-people', 'shift')
+        // the weather lying ON the stop (v3.10): snow on the roof and the bench, puddles
+        + ((ACT?.wx || []).includes(S?.weather) ? L('stop', `05b-wx-${S.weather}`, 'wxl') : '')
+        + L('stop', '06-courier', 'idle');
+      html += plateHtml(v.at, LANDMARKS.has(v.at));
     } else html = sc.layers.map((l, i) => L(name, i && v.car ? `${l}-${v.car}` : l, i === 0 ? (sc.tile ? 'tile' : sc.drift ? 'drift' : '') : (i === 1 ? 'sway' : i === 2 ? 'sway lag' : 'bob'))).join('');
     frameEl.innerHTML = html;
     place();

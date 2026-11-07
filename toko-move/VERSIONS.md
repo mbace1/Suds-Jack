@@ -1,5 +1,48 @@
 # Toko Move — versions
 
+## v3.10 — 2026-11-07
+
+**EVERY STOP IS SOMEWHERE** — step 3 of the plan for the owner's direction of
+2026-11-06 (ROADMAP.md): *"lots more art … in these styles."*
+
+- **Eleven more landmarks.** Act 1 drew one behind the stop at twelve key
+  stations. The other eleven places stood in front of the same paper
+  blocks. Now every place the network names has its own:
+  - Uspenski's onion domes at Katajanokka;
+  - the Suvilahti gasometer in its steel cage at Sörnäinen;
+  - the Crown Bridge's pylon at Kruunuvuori, with a tram on the deck;
+  - the wooden houses of Puu-Käpylä in ochre, red and green;
+  - the Arabia factory and its chimney;
+  - the West Harbour terminal (with the bobbing ferry);
+  - a Jugend villa and its turret in Eira;
+  - the Cable Factory and the canal at Ruoholahti;
+  - the expo hall and its flags at Messukeskus;
+  - the hospital towers at Meilahti;
+  - pines on the rock at Laajasalo.
+
+  They are drawn in `make_act1.py`'s register (flat iso, three values a
+  face, no outline, no text) by `art/minimal-metro-look/make_places.py`,
+  and placed by its own `placed()`, so they sit in the same sky. The bold
+  "key station" plate stays with the original twelve. The landmark itself
+  is now read from `act1.json`, not from a list in the code.
+- **The weather lies on the stop.**
+  - Snow (`05b-wx-snow`): on the shelter roof, the bench, the ticket
+    machine and the bin, along the platform's edge, and across the tracks.
+  - Rain (`05b-wx-rain`): puddles on the platform, and a wet edge.
+
+  Both use the same camera as the stop. The stop's scene key now carries
+  the weather, so a new run at the same place repaints it.
+- **The tooling.** `act1.json` is updated, never rewritten, so
+  `make_act1.py`'s trams, `make_actors.py`'s cast and these places stand
+  side by side.
+- **Gates.** `test/scenarios.mjs` now also holds:
+  - every one of the 23 places has its landmark in both formats;
+  - both ferry terminals carry the ferry;
+  - the snow and rain layers exist in both formats.
+
+  9 checks.
+- **The trailer** gains "Every stop is somewhere": Katajanokka in the snow.
+
 ## v3.9 — 2026-11-07
 
 **SCENARIOS IN THE SCENE** — step 2 of the plan for the owner's direction of

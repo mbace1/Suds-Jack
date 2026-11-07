@@ -255,7 +255,7 @@ const look = () => { const g = window.__tm3, q = s => document.querySelector(s);
   return { busy: g.busy(), scene: g.scene(), line: q('.evLine')?.textContent || '', card: q('#v3panel .eventCard')?.dataset.card || '',
     btn: !!q('#v3panel .eventOpt:not([disabled])'), stamp: q('.v3stamp')?.textContent || '', end: !q('#end').hidden,
     car: [...document.querySelectorAll('#v3frame .L')].map(e => (getComputedStyle(e).backgroundImage.match(/02-car(-[a-z]+)?\.webp/) || [])[0]).find(Boolean) || '',
-    glow: !!q('#v3tram.glow'), board: q('#v3board').classList.contains('on'), tram: q('#v3tram')?.hidden === false ? q('#v3tram').dataset.model || '' : '' }; };
+    glow: !!q('#v3tram.glow'), board: q('#v3board').classList.contains('on'), land: q('#v3frame .L.land')?.dataset.land || '', tram: q('#v3tram')?.hidden === false ? q('#v3tram').dataset.model || '' : '' }; };
 const choice = () => { const bs = [...document.querySelectorAll('#v3panel .eventOpt:not([disabled])')]; const b = bs.find(e => e.querySelector('.evStk em')) || bs[0];
   if (!b) return null; const r = b.getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 }; };
 const ring = ([X, Y]) => { const el = document.createElement('div'); el.className = '__tap'; el.style.left = X + 'px'; el.style.top = Y + 'px';
@@ -325,6 +325,10 @@ server.listen(0, '127.0.0.1', async () => {
     await card(browser, 'cap', 1.6, [{ n: 'deal', t: 0 }], 'What you walk past.');
     await take(browser, 'on foot', '?run=medium&seed=1009', { save: { tokoMoveRuns: { easy: { done: true, stars: 2, plays: 1 } } },
       ff: s => ['fence', 'fog', 'iceswim', 'karaoke', 'reindeer', 'roadworks', 'slip', 'sofa', 'wet'].includes(s.card) && s.btn, done: (s, taps) => taps >= 1, tail: 1.4, max: 8 });
+    // v3.10: every stop is somewhere, and the weather lies on it
+    await card(browser, 'cap', 1.6, [{ n: 'deal', t: 0 }], 'Every stop is somewhere.');
+    await take(browser, 'Katajanokka in the snow', '?run=medium&seed=1009', { save: { tokoMoveRuns: { easy: { done: true, stars: 2, plays: 1 } } },
+      ff: s => s.scene === 'stop' && s.land === 'katajanokka' && s.btn, done: () => true, tail: 2.6, max: 6 });
     await card(browser, 'cap', 1.6, [{ n: 'deal', t: 0 }], 'Real trams. Some of them very old.');
     await take(browser, 'museum tram', '?run=easy&seed=1197', { ff: s => s.scene === 'stop' && s.tram === 'museum', done: (s, taps) => s.scene === 'tram' && taps >= 1, tail: 2.0, max: 12 });
     await card(browser, 'cap', 1.6, [{ n: 'deal', t: 0 }], 'On the night shift, a tram with no number.');
