@@ -1,9 +1,9 @@
 {
   "film": "found-in-pasila",
-  "cut": "v2 (7 Nov 2026, en + fi; owner: 'The big part is that it's also in front of YLE, the BBC of Finland... Make an English and Finnish version. Also use some more 2d layers to spruce up the look. YLE aqua and white, maybe a 3rd complementing color'). The device on top of v1's found object is the TIP-OFF: the pirate station hands the public broadcaster a story found on its own doorstep. Yle is the ADDRESSEE, never the accused: the photos prove the jug was FOUND in front of Yle, not that anyone there used or left it; 'who left it: unknown' stays, and Yle has covered glyphosate for a decade (2015-2025, yle.fi), so the turn says 'you cover this; now it's on your doorstep'. Beat 2 attributes the quote to the LABEL (who markets Roundup Piha in Finland is not verified, so no company is named on screen). Cut-paper layers over the photos in Yle's aqua (#03b1d1, measured off the sign in photo 1), white paper, and the RFH gold (#f2b83a) as the one warm complement, which is also the pop colour, so the layers and the words agree. The Yle logo is never redrawn: it appears only as photographed. v1 (7 Nov, en only) is kept as films/07-11-Helsinki1-Found-in-Pasila-v1.mp4. US spelling. Finnish written by the assistant, native read pending; the last Finnish line is the owner's own (7 Nov): 'YLE: Tuttu aihe. Nyt ihan omalla pihallanne.'",
+  "cut": "v3 (7 Nov 2026, en + fi; owner notes in order: 'more artistic layers', then 'cut out and ripped white paper large 2d tiles', 'basic shapes and a single dandelion', 'no window, just lower and upper 3rds', 'basic after effects layers like YLE or others might use', 'no need for dandelion actually'). The graphics are a clean, GENERIC broadcast news package built from flat shape layers: in the UPPER third a flat white caption bar with a thin aqua rule, sliding in from the left, the words revealed by a mask a few frames after the bar, dark type with the pop word on a gold highlight; in the LOWER third a two-tier lower third (an aqua label chip over a white bar carrying the tag), wiping on from the left with a 5-frame stagger and off at the cut, plus flat white cards for the label's quote, the 2033 date and the tip-off to Yle; broadcast wipes (a white bar sweeping across) on the cuts. The MIDDLE third is the photo, untouched: every shot is framed so its subject (the Yle sign, the jug, the label) sits there. It is news grammar, NOT a copy of Yle's own package or typeface, and the Yle logo is never drawn, so nobody can take an RFH film for a Yle broadcast. Aqua (#03b1d1, measured off the sign in photo 1) is a nod, white dominant, RFH gold (#f2b83a) for the pop. v2's device stands: the TIP-OFF, Yle as the addressee, never the accused; found, never used; who left it unknown; Yle has covered glyphosate for a decade. The last Finnish line is the owner's own: 'YLE: Tuttu aihe. Nyt ihan omalla pihallanne.' Finnish otherwise written by the assistant, native read pending. v1 is kept as films/07-11-Helsinki1-Found-in-Pasila-v1.mp4. US spelling.",
   "series": "rfh",
   "captionSize": "big",
-  "argument": "A Roundup jug found in front of Yle in Pasila, where any kid could pick it up: who left it is unknown, the EU allows glyphosate until 2033, and Yle's own story is on its doorstep.",
+  "argument": "A Roundup jug found in front of Yle, Pasila, where any kid could pick it up: who left it is unknown, the EU allows glyphosate until 2033, and Yle's own story is on its doorstep.",
   "langs": [
     "en",
     "fi"
@@ -65,7 +65,6 @@
     {
       "id": "doorstep",
       "role": "punchline",
-      "place": 1090,
       "at": "s5+0.6",
       "until": "end-0.4",
       "hold": "end",
@@ -105,17 +104,13 @@
       "en": "YLE ON GLYPHOSATE: 2015, 2016, 2017, 2018, 2019, 2023, 2025 (YLE.FI)",
       "fi": "YLE GLYFOSAATISTA: 2015, 2016, 2017, 2018, 2019, 2023, 2025 (YLE.FI)"
     },
-    "tag5b": {
-      "en": "HELSINKI'S GOAL SINCE 2020: NO GLYPHOSATE IN ITS PARKS",
-      "fi": "HELSINGIN TAVOITE 2020: EI GLYFOSAATTIA PUISTOIHIN"
-    },
     "tag5c": {
       "en": "RFH: OVER TO YOU",
       "fi": "RFH: TEIDÄN VUORONNE"
     },
     "evidence": {
       "en": "FOUND · 7 NOV",
-      "fi": "LÖYTÖ · 7.11."
+      "fi": "LÖYTYI · 7.11."
     },
     "quoteHead": {
       "en": "ON THE LABEL",
@@ -156,6 +151,26 @@
     "stamp": {
       "en": "RFH",
       "fi": "RFH"
+    },
+    "chip1": {
+      "en": "FOUND · 7 NOV",
+      "fi": "LÖYTYI · 7.11."
+    },
+    "chip2": {
+      "en": "ON THE LABEL",
+      "fi": "ETIKETISSÄ"
+    },
+    "chip3": {
+      "en": "WHO LEFT IT?",
+      "fi": "KUKA JÄTTI?"
+    },
+    "chip4": {
+      "en": "THE RECORD",
+      "fi": "TAUSTAA"
+    },
+    "chip5": {
+      "en": "RFH TIP-OFF",
+      "fi": "RFH:N VINKKI"
     }
   },
   "props": {

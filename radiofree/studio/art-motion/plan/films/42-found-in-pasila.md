@@ -172,3 +172,75 @@ now completes in the first half of the shot and rests); the evidence and WHO? ta
 **What the first full build's contact sheet showed, fixed and rebuilt:** the EU · 2033 card's header touched the
 fourth caption line ("probably." / "todennäköisesti.") because the card lagged the tilt-down upward (moved down, and it
 now barely lags).
+
+## Owner's Finnish line, 7 Nov
+
+**Owner:** "YLE: Tuttu aihe. Nyt ihan omalla pihallanne." It replaces the assistant's Finnish turn (v2's "Hyvä Yle: /
+tuttu aihe. / Nyt se on / [kynnyksellänne].") word for word, the owner's casing kept: **"YLE: Tuttu aihe. / Nyt ihan
+omalla / [pihallanne]."** Three lines, the pop on *pihallanne*. Its two consequences: the tip-off card's Finnish line is
+now "juttu, ihan omalla pihallanne", and the Finnish post ends "Nyt ihan omalla pihallanne?" (277 characters). The
+English is unchanged. This line is native; the rest of the Finnish is still the assistant's and `native_read.fi` stays
+false.
+
+## v3, 7 Nov: broadcast thirds (owner, a run of notes, the later ones superseding the earlier)
+
+**The notes, in order:** "Also more artistic layers." → "Cut out and ripped white paper large 2d tiles, etc." →
+"Maybe just basic shapes and a single dandelion." → "No window, just lower and upper 3rds." → "Basic after effects
+layers like YLE or others might use." → "No need for dandelion actually." The paper look (v2's torn frame, tags on
+strings, the envelope) and a paper-tile pass in between are gone. No paper texture, no dandelion.
+
+**What it is now: a clean, generic broadcast news package made of flat shape layers, in thirds.**
+- **Upper third:** a flat white caption bar with an 8 px aqua rule under it slides in from the left (0.32 s, a crisp
+  out-ease, starting 0.24 s before the first word); the words are revealed a few frames later by a mask that rises with
+  each word. Dark type (#16191c) in the house caption face and size (Poppins 800, 82 px), so the caption pipeline's width,
+  safe-area and reading checks all still hold; the pop word sits on a **gold highlight** that wipes on behind it. The bar
+  leaves to the right at the caption's end. The caption sits on a solid bar, so no scrim is ever needed.
+- **Lower third:** two tiers, an **aqua label chip** (white caps, Inter 800 30 px) over a **white bar** carrying the tag
+  in dark type with an 8 px aqua edge. The chip wipes on from the left, the bar 5 frames after it; both wipe off at the
+  cut. A tag that will not fit on one line at 30 px breaks in two (at a " · " if one balances it, else after the colon),
+  and the bar grows to two lines for that beat. Tags change with a short upward mask.
+- **Cards** in the same system, flat white with an 8 px aqua top rule, wiping on from the left: the label's printed
+  claim (beat 2, a gold underline on "label"), **EU · ALLOWED UNTIL / 2033** (beat 4, the year rises into the card on
+  the word with a gold bar under it), and the tip-off **FROM: RADIO FREE HELSINKI / TO: YLE / a story, on your doorstep**
+  (beat 5) with a simple gold **RFH roundel** that pops on the pop word.
+- **Cuts:** a broadcast wipe: a white bar (150 px, with a 10 px aqua leading edge) sweeps left to right in 0.36 s and the
+  next photo is revealed behind it.
+- **Middle third:** the photo, untouched (a light warm grade, vignette and grain only, as in v1/v2). Every shot is
+  reframed so its subject sits in the middle third, between the two bars.
+
+It is news *grammar*, **not** Yle's own package or typeface, and the Yle logo is never drawn (it is only photographed),
+so nobody can take an RFH film for a Yle broadcast.
+
+**Colours:** white dominant; **aqua #03b1d1** (measured off the sign in photo 1) for the rules, the bar edges and the
+sweep's leading edge; the chip a shade deeper, **#0398b4**, because white caps on #03b1d1 are 2.6:1 and on #0398b4 they
+clear 3:1 for large bold type; **#027d93** for the small aqua heads on white cards (4.8:1); ink **#16191c**, grey
+**#5b6168**; **RFH gold #f2b83a** only for the pop highlight, the underlines and the roundel.
+
+**Shot table v3 (en; fi gets holds of +0.75 / +0.5 / +1.0 s and runs 21.85 s):**
+
+| # | t (en) | photo, framed for the middle third | lower third: chip · tag(s) | card |
+|---|---|---|---|---|
+| 1 | 0–3.4 | photo 1: the Yle sign held through "Yle", then a tilt down to the jug in the flowerbed | FOUND · 7 NOV · YLE · FINLAND'S PUBLIC BROADCASTER · PASILA · 7 NOV 2026 | — |
+| 2 | 3.4–7.45 | photo 4: a slow push onto ROUNDUP and its own claim | ON THE LABEL · ROUNDUP PIHA, 5 L · GLYPHOSATE · THE LABEL'S OWN CLAIM → SOLD TO CONSUMERS IN FINLAND | the label's claim, HÄVITTÄÄ RIKKAKASVIT JUURINEEN |
+| 3 | 7.45–10.85 | photo 3: the jug small at the foot of the tree by the path, a slow drift | WHO LEFT IT? · WHO LEFT IT, WHETHER IT WAS USED: NOT KNOWN | — |
+| 4 | 10.85–15.1 | photo 2: the jug in low sun, held in the middle third, a slow push in | THE RECORD · EU RENEWAL · NOV 2023 → 15 DEC 2033 → ECHA 2022: NOT CLASSIFIED AS A CARCINOGEN · BAYER: SAFE | EU · ALLOWED UNTIL 2033 |
+| 5 | 15.1–20.1 | photo 5: a tilt up from the jug to the Yle sign (the addressee), done by the pop, then it rests; the passer-by (x≈0.88, y≈0.40) never enters | RFH TIP-OFF · YLE ON GLYPHOSATE: 2015, 2016, 2017, 2018, 2019, 2023, 2025 (YLE.FI) → RFH: OVER TO YOU | the tip-off to Yle, the RFH roundel on the pop |
+
+Captions are unchanged from v2 except the owner's Finnish line above. v2's third beat-5 tag (HELSINKI'S GOAL SINCE 2020:
+NO GLYPHOSATE IN ITS PARKS) is cut: three tags in under four seconds left the Yle-coverage tag on screen for about a
+second, and that tag is the honesty line, so it now holds ~2.6 s and RFH: OVER TO YOU closes the film.
+
+**Sound v3 (`score.py`):** v1's room stands (wind, leaves, the far tram, the bed low under the evidence and out for the
+turn, the motif, the station's sting). The paper sounds are replaced by clean broadcast UI sounds: an air that pans left
+to right with each sweep, a soft rising wipe as each caption bar slides in, a wipe and a glassy tick for each lower
+third's chip and its bar 5 frames later, a fuller wipe and a soft landing for each card, a swish for the gold underline,
+a low clean knock and a tick as 2033 rises, and on the pop word the roundel's slap and low thump with one marimba note.
+
+**What the v3 stills showed, fixed before the build:** the long tags (YLE ON GLYPHOSATE…, ECHA 2022…) were being shrunk
+to ~18 px to fit one line (now two lines at 30 px); white caps on the sign's own aqua were under 3:1 (the chip is now
+#0398b4); beat 4's tilt brought the jug under the 2033 card (now a push in with the jug held in the middle third); and
+the Yle-coverage tag held for only about a second (the Helsinki tag cut, see above).
+
+**Files (v3 replaces v2 at the same paths):** `films/07-11-Helsinki1-Found-in-Pasila.mp4` + `-loop.mp4` (en),
+`films/07-11-Helsinki1-Found-in-Pasila-fi.mp4` + `-fi-loop.mp4`; v1 kept as `-v1.mp4` / `-v1-loop.mp4`. Stills:
+`previews/07-11-RFH-Found-in-Pasila-v3-stills.jpg`. Previews: `previews/07-11-RFH-Found-in-Pasila-en.mp4`, `-fi.mp4`.
