@@ -254,7 +254,7 @@ export const FI = new Map(Object.entries({
   'A courier in Helsinki. At every stop, one card: which tram, which way, who to help. The clock only moves when you choose.': 'Lähetti Helsingissä. Jokaisella pysäkillä yksi kortti: mikä ratikka, mihin suuntaan, ketä autat. Kello liikkuu vain, kun valitset.',
   'Take it': 'Ota se', 'Ask for another': 'Pyydä toinen', 'Find another way': 'Etsi toinen reitti', 'Wait it out': 'Odota ohi', 'Wait for the next one': 'Odota seuraavaa',
   'Documents': 'Asiakirjat', 'Hot food': 'Lämmin ruoka', 'Parts': 'Osat', 'Something fragile': 'Jotain särkyvää', 'Equipment': 'Laitteet', 'An express parcel': 'Pikalähetys', 'Fresh food': 'Tuoreruoka', 'Market goods': 'Torikamat', 'A parcel': 'Paketti',
-  'DELIVERED': 'TOIMITETTU', 'DELIVERED LATE': 'TOIMITETTU MYÖHÄSSÄ', 'TAP TO CLOSE': 'SULJE NAPAUTTAMALLA', 'on time': 'ajallaan', 'jobs': 'keikat',
+  'DELIVERED': 'TOIMITETTU', 'DELIVERED LATE': 'TOIMITETTU MYÖHÄSSÄ', 'PICKED UP': 'NOUDETTU', 'TAP TO CLOSE': 'SULJE NAPAUTTAMALLA', 'on time': 'ajallaan', 'jobs': 'keikat',
   'the board': 'kartta', 'the board: where you are going': 'kartta: minne olet menossa',
   // v3.1: Act 1 — the deck, its stakes and reveals, the weather, the contents (cards.js)
   "Act 1": "Osa 1",

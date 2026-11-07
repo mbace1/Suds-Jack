@@ -60,21 +60,24 @@ server.listen(0, '127.0.0.1', async () => {
     // the journey: tap the first button of every card, tap the scene to hurry
     // a hop, until the first drop is stamped
     await page.tap('#play'); await page.waitForSelector('#v3panel .eventOpt', { timeout: 15000 });
-    let scenes = new Set(), boards = 0;
+    let scenes = new Set(), boards = 0, most = 0;
     for (let i = 0; i < 300; i++) {
-      const s = await page.evaluate(() => ({ done: window.__tm3.state().done, busy: window.__tm3.busy(), scene: window.__tm3.scene(), board: document.getElementById('v3board').classList.contains('on'), btn: !!document.querySelector('#v3panel .eventOpt:not([disabled])') }));
-      scenes.add(s.scene); if (s.board) boards++;
+      const s = await page.evaluate(() => ({ done: window.__tm3.state().done, busy: window.__tm3.busy(), scene: window.__tm3.scene(), board: document.getElementById('v3board').classList.contains('on'), btn: !!document.querySelector('#v3panel .eventOpt:not([disabled])'),
+        painted: [...document.querySelectorAll('#v3frame .L')].map(e => getComputedStyle(e).backgroundImage).filter(b => /\.webp/.test(b)).length }));
+      scenes.add(s.scene); if (s.board) boards++; most = Math.max(most, s.painted);
       // the state moves inside choose(), before the hop is played: wait for the
       // delivery to finish playing, or a first-hop drop reads 0 hops (CI, main)
       if (s.done >= 1 && !s.busy) break;
       if (!s.busy && s.btn) { await page.tap('#v3panel .eventOpt[data-i="0"]').catch(() => {}); await page.waitForTimeout(100); continue; }
       await page.touchscreen.tap(80, 380).catch(() => {}); await page.waitForTimeout(140);
     }
-    const j = await page.evaluate(() => ({ done: window.__tm3.state().done, hops: window.__tm3.boards, painted: [...document.querySelectorAll('#v3frame .L')].map(e => getComputedStyle(e).backgroundImage).filter(b => /\.webp/.test(b)).length }));
+    // the layers are counted over the whole job, not at its last frame: since v3.12 a
+    // delivery by day ends on its moment, one full-frame picture, where the stop had six
+    const j = await page.evaluate(() => ({ done: window.__tm3.state().done, hops: window.__tm3.boards }));
     // hops are COUNTED (__tm3.boards): this loop hurries every animation, so a
     // sampled board frame was luck, and v3.1's tram drive-in made it unlucky
     ok(`a card-journey delivery from the zip alone (${j.done} delivered; scenes ${[...scenes]}; ${j.hops} hops on the board)`, j.done >= 1 && j.hops > 0 && scenes.has('stop'));
-    ok(`the scenes are in the package and painted (${j.painted} layers)`, j.painted >= 4);
+    ok(`the scenes are in the package and painted (${most} layers at most)`, most >= 4);
     // ?classic: the real-time game, from the same zip
     await page.goto(`${base}/toko-move/index.html?classic`, { waitUntil: 'load' });
     await page.waitForFunction(() => window.__tm?.flow && !document.getElementById('play').disabled, null, { timeout: 30000 });

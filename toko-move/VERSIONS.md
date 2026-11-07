@@ -1,5 +1,77 @@
 # Toko Move — versions
 
+## v3.12 — 2026-11-07
+
+**THE JOB ITSELF, IN THE OWNER'S NEW ILLUSTRATIONS** — PR #632, every approved
+exterior variant: 21 scenes, 37 pictures (`art/approved-exteriors/`). It
+follows the owner's *"Forget your art designs, I will get u a PR"*, and then,
+on a first cut that used only the latest four, *"It should have a lot
+more"*.
+
+- **Every beat of a job has its picture.** Each stands full frame under the
+  panel that beat already has:
+  - **A job taken** is a handover where you are:
+    - the station's granite at Rautatientori;
+    - the canal bridge at Ruoholahti;
+    - the market quay, the close quay or the ferry at the four harbour stops;
+    - the lakeside reeds at the park stops (Ooppera on Töölönlahti, Arabia
+      on Vanhankaupunginlahti, Meilahti, Käpylä);
+    - anywhere else a kiosk hatch, a bench, or the tram stop.
+
+    It carries a PICKED UP stamp. A sealed parcel's line keeps its address
+    hidden.
+  - **A delivery** is at the same places at the drop. Anywhere else it is a
+    doorway, a cyclist at the steps, or the bench. The tram you came on has
+    gone while you were at the door.
+  - **A tram boarded** (after it pulls in) is a tram stop, five ways. The
+    museum tram and the Nr I and II keep their own pictures: the art draws
+    today's trams.
+  - **A metro boarded at Kalasatama** is the open-air platform, four ways
+    (of the game's 23 places only Kalasatama has an outdoor metro).
+    Anywhere else it is the stairs down.
+- **Sunny only.** The owner: *"Sunny ones work, rain doesn't."* The moments
+  stand by day on a clear day. The night shift and a day of rain, snow or
+  fog keep the game's own scenes.
+- **The same drop is always the same picture.** A beat picks from its pool
+  by the thing itself: the drop, the ride, the job. A first hash (FNV-1a)
+  picked only two of Kalasatama's four platforms, because its low bits
+  barely move for keys that differ only at the end. It has a final mix
+  now.
+- **The art, as delivered.**
+  - The PR's commits are in the history unchanged. Its own check
+    (`approved-exteriors/reproduce.py`) passes: every hash, and all 21
+    variants pixel-exact.
+  - The game ships the approved crops as webp (`scenes/moments/<fmt>/`,
+    2.7 MB for all 37), in the formats they were approved in.
+  - Five scenes are landscape only, and no portrait is invented for them.
+    A phone held upright picks from the other sixteen.
+  - The crops are 1024 wide (the dual-crop pair 1792), about 2× enlarged on
+    a phone's frame. Masters at 2× would sharpen them.
+- **Framing on a phone, found by looking.** A phone's frame is narrower
+  than 9:16 upright and wider than 16:9 sideways, so some scenes keep a
+  point other than the middle in view:
+  - the cyclist's face and the parcel;
+  - the metro's cab and the courier at its edge;
+  - the doorway's parcel, sideways;
+  - the courier on the Kalasatama curve and at the tram stops.
+
+  Sideways, a moment's stamp is narrower (38vw), so the parcel in their
+  hands stays in view.
+- **Gates.**
+  - `test/moments.mjs` (15 checks):
+    - the approved art is untouched (125 images against the inventory's
+      checksums);
+    - every approved scene is a moment, in exactly its approved formats;
+    - the game's 37 pictures are those crops (36.5–43.4 dB). The control,
+      two different scenes compared, reads 5.7 dB;
+    - the open-perspectives scenes carry their pack's crop boxes and faces;
+    - every face and kept point is inside its crop and clear of the card;
+    - every beat's pool, the night and the weather;
+    - every scene shipped is reachable from some beat.
+  - `test/play.cjs` (browser): EASY 3434, a clear day, shows 7 of them in
+    one run: a pickup, a delivery, two tram stops, the station at
+    Rautatientori and the Kalasatama platform. A night run shows none.
+
 ## v3.11 — 2026-11-07
 
 **MORE INTERIORS, AND THE WEATHER IN THE WINDOW** — step 4 of the plan for the
