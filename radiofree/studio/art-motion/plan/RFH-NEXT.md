@@ -711,3 +711,64 @@ All facts below come from search summaries; no article was opened.
   plenary result found. **Count the Trees:** still true (the STT records add to it). **Trade Secret:** Hamina follow-up
   above.
 - **Films now wrong:** none.
+
+## Daily check, Sat 7 Nov 07:16 (morning; search summaries only, nothing opened)
+- **Big development:** none on a global candidate. The Anthropic IPO still has no price range (EDGAR checked by a
+  tracker at 22:24 UTC 6 Nov: blank); Bloomberg/The Information say the roadshow starts the week of 9 Nov, Reuters says
+  investors doubt a November listing; valuation talk ranges $1.2–2T across outlets. **The Round Trip stays HOLD.**
+- **Today's queue, pre-posting checks:**
+  - **Sat ~06:52, Coxon 13 Grade Your Own Homework v2: CLEAR.** Nothing dated November on the four July 2025 contracts.
+    The record behind the past tense is firmer than the copy needs: Anthropic was designated a supply-chain risk (effective
+    4 Mar 2026, per the Pentagon), its up-to-$200M deal was cancelled, OpenAI signed a classified deal the same day, and the
+    1 May 2026 IL6/IL7 agreements went to seven firms (SpaceX, OpenAI, Google, Nvidia, Reflection AI, Microsoft, AWS; some
+    outlets add Oracle) without Anthropic. One headline says a California federal judge blocked the designation; it could
+    not be verified from page text, and the copy does not depend on it ("was cancelled in early 2026" holds either way).
+  - **Sat ~12:52, Global 4 Unmarked Boxes: CLEAR.** No new plea, ruling, dismissal or BIS rule found. One caveat from the
+    sweep: the March 2027 trial date was again found only in a German outlet (drweb.de) plus the earlier Fortune item; the
+    film does not state the trial date, and the post says "One pleaded guilty. The company isn't charged", both still true.
+  - **Sun ~12:52, Doodle 10 Right of Way: CLEAR so far.** Nothing after 6 Nov on resumption, an order or an inspection
+    result; the same Yle/Kymen Sanomat/KSML/Kouvolan Sanomat set stands (LVV *asked*; Tuike agreed to stop; the urgent
+    inquiry begins with a hearing of Tuike, then LVV decides on a site inspection; Google: a 30 m wooded corridor is kept).
+    Re-check Sunday morning.
+  - **Tue 10 Nov, Doodle 9 Five Pins: CLEAR.** No council (valtuusto) step found; the 2 Nov board decision stands. One
+    detail worth knowing: the board first took the principles on 19 Oct and postponed them two weeks (Verkkouutiset), and a
+    June item says an earlier version was sent back for preparation; the film's "Helsinki chose" refers to the 2 Nov board
+    decision, which is right. A developer has applied to reserve ~7.3 ha at Heikinlaakso (Lahdenväylä) and the city asked
+    residents for views (hel.fi); not in the film.
+- **Coxon 14, On the Label (awaiting the owner's approval): the facts hold, with one tag now backed by a named outlet.**
+  - **Settlement:** Judge Boyer has still not ruled on the $7.25B class settlement (preliminary approval 4 Mar; fairness
+    hearing 14 Sep; the special master recommended denying most objections on 4 Sep; no decision found). "RULING PENDING"
+    is right. Bayer's CEO said 3 Nov he expects it before Christmas.
+  - **Kennedy's own words:** E&E News (5 Mar 2026): "I did know about the executive order, and I made my opinions about it
+    clear to the administration." The tag "KENNEDY, MARCH: HE KNEW OF THE ORDER" and the post's "Kennedy said in March he
+    knew of it" are backed. He later told Rogan he was "not particularly happy" with the order (E&E News).
+  - **White House / Blair response, now from named outlets:** STAT (6 Nov), The Hill (6 Nov) and Axios (6 Nov) carry
+    Means's claims; NBC/Axios carry the responses: White House spokesperson Allison Schuster pointed to "extensive
+    victories for the MAHA Agenda"; James Blair said he had "literally no idea what Calley Means is talking about" and that
+    Means was making things up for media attention (his wording contains profanity); HHS pointed NBC to Kennedy's post on X
+    ("intend to keep fighting until the American people, not corporate influence, drive our health policies"). The film
+    carries Kennedy's March words next to the allegation, which is the strongest fairness line; the post could add "the
+    White House disputes it" if the owner wants the rebuttal in the copy (it is 280 chars now, so something would go).
+  - **Means's status:** Reuters/NYT say his 130-day special-government-employee term expired; he frames it as a
+    resignation. The film says "ex-adviser", which is true under both.
+  - **Not linked, not shown:** Wiles → Miller (announced 6 Nov, effective 9 Nov).
+- **Doodle 8, Cut First (posted):** the extension is still Kaleva only, but the search summary now gives LVV's stated
+  reason ("the plan's demanding nature and the applicant's need to prepare it carefully"); no new deadline; nothing
+  contradicts it. No correction needed. Reaction counts not visible through search.
+- **Global 3, Short Supply (posted):** the 13 Nov hearing stands per the dockets found last night; this morning's sweep
+  added nothing new (MLex: motion to dismiss filed 3 Sep, plaintiffs' opposition filed). Re-check 12 Nov.
+- **Brink 4, The Panel (posted):** nothing new since the 6 Oct NPR ethics coverage; no word on employment status or
+  recusal.
+- **9 Nov, AI Whistleblower Protection Act (S. 1792):** no November item; the bill still sits in HELP committee with no
+  floor action recorded; the Senate returns 9 Nov. **Break Glass:** no 2026 plenary result found (results are the June
+  2025 168–29 vote). **NDAs:** nothing dated November. **Meridian:** nothing new.
+- **New candidate (global): Ransom Note / the EU court adviser.** AG Szpunar's opinion in Like Company v Google (C-250/25,
+  3 Nov): training on press content falls under the text-and-data-mining exception; a chatbot's real-time reuse of
+  articles may infringe press publishers' rights; Google's "implied licence" argument rejected; Google welcomed the
+  training finding. Non-binding; the Court's ruling is months away. Carried by Courthouse News, TNW, TechRepublic,
+  Business Standard. Device already in the bank (ransom note of cut-up headlines, papercut). Not Finnish; a Coxon/Global
+  candidate.
+- **Finnish sweep:** nothing new on HS (hs.fi still refuses the crawler). An ERR (Estonian) item citing HS says Trump
+  posted that Google wants to build in Finland because US permitting is hard and that he is "not happy"; Newsweek dates
+  that to September, so it is old, not a November item. No new HS candidate.
+- **Films now wrong:** none.

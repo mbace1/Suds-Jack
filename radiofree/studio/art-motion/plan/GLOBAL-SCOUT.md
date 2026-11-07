@@ -1246,3 +1246,57 @@ Everything below comes from search summaries. No article was opened.
   Gamer). Nothing usable yet.
 - **Cross-reference (Finnish):** STT's records request shows Google knew the Muhos felling needed an EIA ("Yes, we are
   aware :("); see HS-SCOUT, 6 Nov 17:16.
+
+### Check Sat 7 Nov 07:16 (search summaries only; nothing opened, EDGAR not retried)
+- **Big development:** none.
+- **12 The Round Trip (Anthropic S-1): still HOLD.** No price range (a tracker checked EDGAR at 22:24 UTC 6 Nov: blank).
+  S-1 filed 26 Oct, S-1/A No. 1 on 2 Nov (no range). Roadshow: Bloomberg and The Information say the week of 9 Nov;
+  Reuters says investors doubt a November listing is possible; valuation talk $1.2–1.3T (Bloomberg), $1.25–1.75T
+  (Techmeme summary), $1.5–2T (others). Ticker ANT on Nasdaq, single secondary source.
+  [FinanceFeeds](https://financefeeds.com/anthropic-ipo-roadshow-looms-with-no-price-range/),
+  [Leverage Shares tracker](https://leverageshares.com/us/anthropic-ipo-tracker/),
+  [SEC exhibit index](https://www.sec.gov/Archives/edgar/data/0002130357/000162828026067168/exhibit45-sx1.htm)
+- **2 Grade Your Own Homework (Coxon 13, posts today ~06:52): CLEAR.** Nothing dated November on the four contracts. The
+  record behind the past tense: supply-chain-risk designation effective 4 Mar 2026 (Washington Times, 5 Mar); the
+  up-to-$200M deal cancelled; OpenAI's classified deal the same day (Fortune, 28 Feb); the 1 May 2026 IL6/IL7 agreements
+  went to seven firms (SpaceX, OpenAI, Google, Nvidia, Reflection AI, Microsoft, AWS; some add Oracle) without Anthropic.
+  An unverified headline says a California federal judge blocked the designation; a March item says Anthropic was back in
+  talks. Neither changes the copy.
+  [Washington Times](https://m.washingtontimes.com/news/2026/mar/5/pentagon-officially-labels-anthropic-maker-claude-ai-supply-chain/),
+  [Fortune](https://fortune.com/2026/02/28/openai-pentagon-deal-anthropic-designated-supply-chain-risk-unprecedented-action-damage-its-growth),
+  [Yahoo Finance, the seven-firm deals](https://finance.yahoo.com/sectors/technology/articles/nvidia-google-microsoft-win-major-202408743.html)
+- **8 Unmarked Boxes (Global 4, posts today ~12:52): CLEAR.** No new plea, ruling, dismissal or BIS rule. The March 2027
+  trial date is still thin (Fortune Aug; drweb.de); the film does not state it. The plea by the "fixer" (Bloomberg
+  Government) and the co-founder's not-guilty plea (Bloomberg, 1 Apr) stand.
+  [Bloomberg](https://www.bloomberg.com/news/articles/2026-04-01/super-micro-co-founder-pleads-not-guilty-in-china-smuggling-case),
+  [Bloomberg Government, plea](https://news.bgov.com/artificial-intelligence/super-micro-case-fixer-pleads-guilty-to-diverting-ai-tech-1)
+- **Coxon 14, On the Label (awaiting approval): facts hold.** Boyer has not ruled on the $7.25B settlement (special
+  master's report 4 Sep; fairness hearing 14 Sep; no decision found). Kennedy's "I did know about the executive order, and
+  I made my opinions about it clear to the administration" is E&E News, 5 Mar 2026. The 6 Nov responses are now in named
+  outlets: STAT, The Hill, Axios (Means's claims); NBC/Axios (White House spokesperson Allison Schuster: "extensive
+  victories for the MAHA Agenda"; James Blair: "literally no idea what Calley Means is talking about"; HHS pointed to
+  Kennedy's X post: "keep fighting until the American people, not corporate influence, drive our health policies").
+  [E&E News, Kennedy knew](https://www.eenews.net/articles/kennedy-says-he-knew-about-glyphosate-executive-order-in-advance),
+  [E&E News, not happy](https://www.eenews.net/articles/rfk-jr-says-he-was-not-happy-with-trumps-pesticide-eo/),
+  [STAT](https://www.statnews.com/2026/11/06/calley-means-joe-rogan-trump-maha-agenda-derailed-by-corporate-influence/),
+  [The Hill](https://thehill.com/homenews/administration/6205715-calley-means-susan-wiles-departure-maha/),
+  [Axios](https://www.axios.com/2026/11/06/trump-joe-rogan-calley-means),
+  [Claims Journal, preliminary approval](https://www.claimsjournal.com/news/national/2026/03/05/336073.htm),
+  [Daily Record, remand](https://thedailyrecord.com/2026/06/17/judge-sends-bayer-roundup-settlement-back-to-state-court/)
+- **5 Short Supply (posted):** 13 Nov hearing stands; MLex: motion to dismiss 3 Sep, opposition filed. Re-check 12 Nov.
+  [MLex](https://www.mlex.com/mlex/antitrust/articles/2521308)
+- **1 Meridian panel:** nothing after the 6 Oct NPR ethics coverage.
+- **10/11 Whistleblowers:** S. 1792 still in HELP committee, no floor action; the Senate returns 9 Nov. Watch Monday.
+  [Deseret, Sep](https://www.deseret.com/politics/2026/09/25/john-curtis-back-bill-protecting-ai-whistleblower/)
+- **3 NDAs:** nothing dated November (latest: Louisiana/Boyce, NPR 27 Aug; Wisconsin Watch; Farmington MN's NDA runs to
+  Oct 2026). **4 Corrected:** no November action on the tax breaks.
+- **NEW 13. Ransom Note · Coxon/Global · peg 3 Nov (AG opinion) · MED.** Like Company v Google (C-250/25): AG Szpunar
+  says training on press content is covered by the text-and-data-mining exception, but a chatbot's real-time reuse of
+  articles may infringe press publishers' rights; Google's implied-licence argument rejected; Google welcomed the training
+  finding. Non-binding; ruling in months. Device: a chatbot answer assembled from cut-up headlines (STORY-DEVICES).
+  Risk: low (a court document); the line "facts stay free; the writing doesn't" must stay close to the opinion's "only the
+  specific form of expression" is protected.
+  [Courthouse News](https://courthousenews.com/eu-legal-adviser-finds-limited-uses-of-google-ai-could-run-afoul-of-publishers-rights/),
+  [TNW](https://thenextweb.com/news/google-gemini-eu-copyright-adviser-opinion),
+  [Business Standard](https://www.business-standard.com/world-news/google-gemini-may-infringe-publishers-rights-eu-court-adviser-says-126110400457_1.html),
+  [CURIA opinion page](https://curia.europa.eu/site/jcms/p1_1000088866/en/opinion-case-c-250/s.gif)

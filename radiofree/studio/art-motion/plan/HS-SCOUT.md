@@ -999,3 +999,35 @@ Everything below comes from search summaries. No article was opened.
 - **Pattern note:** the records-request story ran through STT's syndication (Uutissuomalainen papers, Demokraatti, MT)
   before Yle. Add `STT tietopyyntö Google` and `Muhos sähköpostit Google` to the standing searches, alongside the Hamina
   ones.
+
+### Check Sat 7 Nov 07:16 (search summaries only; nothing opened)
+- **Hamina (Right of Way, posts Sun ~12:52): nothing after 6 Nov.** The set stands: LVV asked Tuike to pause (Yle
+  74-20254899; KSML; Kouvolan Sanomat; SSS carrying Kymen Sanomat); Tuike told LVV it agrees to stop; the Nature League's
+  Kaakkois-Kymi branch fears a ~50 m corridor is cut and that more squirrel trees were felled in the south than planned;
+  LVV's urgent inquiry starts with a hearing of Tuike, then LVV decides whether to inspect (Yle 74-20255224; Kymen
+  Sanomat 9932630); Google: a 30 m wooded passage is reserved. The 2018–19 unpermitted felling and reprimand are in the
+  Yle set. No resumption, order or inspection result found. Re-check Sunday morning before the slot.
+  [Yle, LVV asked](https://yle.fi/a/74-20254899?origin=rss), [Yle, nature act](https://yle.fi/a/74-20255224),
+  [Kymen Sanomat](https://kymensanomat.fi/paikalliset/9932630), [KSML](https://www.ksml.fi/uutissuomalainen/9923744),
+  [Yle, Google bought 50 ha in Hamina](https://yle.fi/a/74-20253285)
+- **Muhos (Cut First, posted):** the extension is still Kaleva only; the summary now gives LVV's reason (the plan's
+  demanding nature; the applicant's need to prepare it carefully); no new deadline. Nothing contradicts it.
+  [Kaleva](https://www.kaleva.fi/google-sai-lisaaikaa-muhoksen-vesienhallintaselvit/13742874)
+- **Helsinki (Five Pins, Tue 10 Nov):** no valtuusto step. Timeline detail: the board took the principles on 19 Oct and
+  postponed two weeks; decided 2 Nov (hel.fi; STT). A developer has applied for a ~7.3 ha development reservation at
+  Heikinlaakso (Lahdenväylä), and the city has asked residents for views (hel.fi). The Greens' release asks for strict
+  lines and nature protection. The film's facts hold.
+  [hel.fi, the decision](https://www.hel.fi/fi/uutiset/kaupunginhallitus-hyvaksyi-datakeskusperiaatteet),
+  [hel.fi, Lahdenväylä plan](https://www.hel.fi/fi/uutiset/lahdenvaylan-varteen-suunnitellaan-uutta-datakeskusta),
+  [Verkkouutiset](https://www.verkkouutiset.fi/a/naille-viidelle-helsingin-alueelle-voi-tulla-datakeskus)
+- **HS:** nothing new surfaced (hs.fi refuses the crawler). The ERR/HS item on Trump's "not happy" post about Google
+  building in Finland is from September (Newsweek dates it), so not a November candidate.
+- **Break Glass:** still no 2026 plenary result in search; the June 2025 168–29 vote (extension to end-2026) is all that
+  returns. Keep held.
+- **Reactions:**
+  - **Cut First (Doodle 8):** counts not visible; the owner reports it doing well. **Count the Trees / Muhos:** still
+    true. **Trade Secret / Hamina:** extended by the pause request and inquiry; nothing contradicts. **Five Pins /
+    Helsinki:** no follow-up. **Reader comments:** not visible through search.
+- **Pattern note:** Hamina's November items came through Yle first this time (the records-request story came through STT
+  syndication first); keep both standing searches (`Hamina liito-orava LVV`, `STT tietopyyntö Google`). Weekend mornings
+  return little that is new; the evening run is the one to lean on before Sunday's slot.
