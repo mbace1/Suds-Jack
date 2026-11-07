@@ -1,5 +1,51 @@
 # Toko Move — versions
 
+## v3.9 — 2026-11-07
+
+**SCENARIOS IN THE SCENE** — step 2 of the plan for the owner's direction of
+2026-11-06 (ROADMAP.md): *"lots more art and scenarios in these styles."*
+
+- **Who you meet stands at the stop.** Sixteen story cards played at the
+  stop now bring their subject into the scene for as long as the card is
+  played:
+  - the gull on your parcel, staring at you, and its friend;
+  - the lady with her cane at the kerb;
+  - the tourist with Stockholm's map, and the one with a fan of notes and a
+    paper bag (the Moomin card shows no troll, only a shopper);
+  - the busker with an accordion and an open case;
+  - the dog in its tiny yellow raincoat;
+  - the student in a white cap and red overalls, with a vappu balloon;
+  - the other courier, the same face in ink on white, never the courier's
+    cyan;
+  - the long coat, the dentist's white coat, the towel, the spruce man, the
+    Swedish question and three puffy coats;
+  - the crowd pressed under the shelter out of the horizontal rain.
+
+  Each is one transparent layer per format
+  (`scenes/stop/<fmt>/07-actor-<card>.webp`, 396 KB for all 32), drawn by
+  `art/minimal-metro-look/make_actors.py` with the stop's own camera and
+  people. The rules hold: flat fills, faces featureless, one Toko face in
+  cyan, no text. The actor steps in with the card and out when the card
+  is answered, and the night dims it with everything else.
+- **What you walk past rides beside you.** The nine cards played on foot
+  each put a small picture beside the courier on the board, a white card
+  with an ink edge and a tail (`js/vignettes.js`): the reindeer on
+  Mannerheimintie, the sofa on Aleksanterinkatu, the ice hole, the karaoke
+  door, the roadworks, the fence gap, the fog over the cranes, the black ice
+  with its pensioner and the rain in your bag. The bubble sits to the
+  courier's left, because the board writes every name to the right; a first
+  cut covered SENAATINTORI.
+- **Gates.**
+  - `test/scenarios.mjs` (bare node, in `gates.yml`) holds the casting:
+    every actor is a card played at the stop, both formats exist, every
+    actor stands clear of the card in both formats (read off its own pixels
+    with ffmpeg), and every walking card has a picture.
+  - `test/play.cjs` holds the moment: on EASY seed 1000 the student stands
+    at the stop while the vappu card is played and is gone after. 84
+    checks.
+- **The trailer** gains two takes, "Who you meet at the stop" and "What
+  you walk past".
+
 ## v3.8 — 2026-11-06
 
 **THE BOARD, POLISHED** — step 1 of the plan for the owner's direction of

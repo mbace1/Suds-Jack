@@ -116,7 +116,7 @@ server.listen(0, '127.0.0.1', async () => {
         runs: [...document.querySelectorAll('#mutRow .run')].map(r => ({ id: r.dataset.run, open: !r.classList.contains('locked'), lit: r.classList.contains('on') })),
         goal: document.getElementById('titleGoal').textContent, play: document.getElementById('play').textContent,
         links: ['dailyLink', 'weekLink', 'liveLink'].filter(id => { const e = document.getElementById(id); return e && !e.hidden && getComputedStyle(e).display !== 'none'; }) }));
-      ok(`the bare address is the card journey, not the real-time game (v${t.v})`, !t.classic && t.v === '3.8' && /v3\.8/.test(t.hero));
+      ok(`the bare address is the card journey, not the real-time game (v${t.v})`, !t.classic && t.v === '3.9' && /v3\.9/.test(t.hero));
       ok(`it is Act 1, in Helsinki (${await page.evaluate(() => document.getElementById('titleWhen').textContent)})`, await page.evaluate(() => /^Act 1 · Helsinki · 07:00/.test(document.getElementById('titleWhen').textContent)));
       ok(`the ladder: EASY open and lit, three locked (${t.runs.map(r => r.id + (r.open ? '' : '🔒')).join(' ')})`, t.runs.map(r => r.id).join() === 'easy,medium,hard,night' && t.runs[0].open && t.runs[0].lit && t.runs.slice(1).every(r => !r.open) && t.run === 'easy');
       ok(`the goal and the button (${t.goal} · ${t.play})`, /^Three deliveries before 08:15/.test(t.goal) && t.play === 'START SHIFT');
@@ -359,6 +359,24 @@ server.listen(0, '127.0.0.1', async () => {
       const hitW = sw.filter(w => w[1]).length / Math.max(1, sw.length), hitL = sl.filter(w => !w[1]).length / Math.max(1, sl.length);
       ok(`where the sea is, the board paints water (${sw.length} sea points, ${(100 * hitW).toFixed(0)}% blue; ${sl.length} land points, ${(100 * hitL).toFixed(0)}% not) · base drawn in ${ms?.toFixed(0)} ms`, sw.length >= 8 && sl.length >= 30 && hitW >= 0.85 && hitL >= 0.9);
       ok('no page or network errors (the board)', !errs.length, errs.slice(0, 3).join(' | '));
+      await ctx.close();
+    }
+    // ── scenarios in the scene (v3.9): a stop card's subject stands in the
+    // scene while it is played (EASY seed 1000 deals the vappu student second)
+    {
+      const ctx = await browser.newContext(PHONE), page = await ctx.newPage(), errs = watch(page);
+      await page.goto(`${base}/toko-move/?run=easy&seed=1000`, { waitUntil: 'load' }); await ready(page);
+      await page.tap('#play');
+      const actorNow = () => page.evaluate(() => { const el = document.querySelector('#v3frame .L.actor:not(.out)'); return el ? { id: el.dataset.actor, bg: getComputedStyle(el).backgroundImage } : null; });
+      let met = null, after = null, card = '';
+      for (let i = 0; i < 400; i++) { const s = await look(page); card = await page.evaluate(() => document.querySelector('#v3panel .eventCard')?.dataset.card || '');
+        if (!met && card === 'vappu' && !s.busy && s.buttons.length) { await page.waitForTimeout(500); met = await actorNow(); await page.tap('#v3panel .eventOpt[data-i="1"]').catch(() => {}); await page.waitForTimeout(300); continue; }
+        if (met && card && card !== 'vappu' && !s.busy && s.buttons.length) { after = await actorNow(); break; }
+        if (s.end) break;
+        if (!s.busy && s.buttons.length) { await page.tap('#v3panel .eventOpt[data-i="0"]').catch(() => {}); await page.waitForTimeout(250); } else await page.waitForTimeout(40); }
+      ok(`the student in the white cap stands at the stop while the vappu card is played (${met?.id || 'nobody'})`, met?.id === 'vappu' && /07-actor-vappu\.webp/.test(met.bg));
+      ok(`and is gone once the card is answered (next: ${card}, actor ${after?.id || 'none'})`, !!met && after?.id !== 'vappu');
+      ok('no page or network errors (scenarios)', !errs.length, errs.slice(0, 3).join(' | '));
       await ctx.close();
     }
     // ── ?classic is still the real-time game

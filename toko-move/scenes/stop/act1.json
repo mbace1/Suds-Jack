@@ -163,5 +163,23 @@
    -0.866,
    0.5
   ]
- }
+ },
+ "actors": [
+  "busker",
+  "dentist",
+  "dog",
+  "granny",
+  "gull",
+  "gull2",
+  "longcoat",
+  "map",
+  "moomin",
+  "puffy",
+  "rival",
+  "sauna",
+  "spruce2",
+  "swedish",
+  "umbrella",
+  "vappu"
+ ]
 }

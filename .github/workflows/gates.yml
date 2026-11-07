@@ -378,6 +378,9 @@ jobs:
       - name: the sea (v3.8) — solved from the coastline, the harbours water, the squares land, no stop in the sea
         run: node toko-move/test/sea.mjs
 
+      - name: the scenarios (v3.9) — every stop actor cast from a stop card, both formats, clear of the card; every walk has its picture
+        run: node toko-move/test/scenarios.mjs
+
       - name: the sealed parcel — which offer, the notebook, its store, the Finnish
         run: node toko-move/test/sealed.mjs
 

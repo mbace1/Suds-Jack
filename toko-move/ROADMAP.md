@@ -12,7 +12,7 @@ situations to put in it. Third, the board between moments ("the top down
 view") brought up to the scenes. Every step ends in a re-filmed trailer
 (`tools/film3.cjs`), because that is how progress is shown.
 
-1. **v3.8 · The board, polished.** Six changes, on Day, Night and Snow:
+1. ~~**v3.8 · The board, polished.**~~ Shipped in v3.8 (and the district names moved where the places are). Six changes, on Day, Night and Snow:
    - The sea is filled. The board only stroked the coastline, so a harbour
      read as blue tubes. The sea is now solved from the coastline, as the
      bible's stills already do, and drawn with a shore.
@@ -22,7 +22,7 @@ view") brought up to the scenes. Every step ends in a re-filmed trailer
    - The landmarks appear on the board.
    - The pill is bigger and carries the line number.
    - The camera eases between hops instead of cutting.
-2. **v3.9 · Scenarios in the scene.** A card's subject appears in the scene
+2. ~~**v3.9 · Scenarios in the scene.**~~ Shipped in v3.9: sixteen stop actors (`make_actors.py`) and nine walking pictures on the board (`js/vignettes.js`). A card's subject appears in the scene
    it is played in: the gull on the parcel, the lady at the crossing, the
    tourist and the map, the busker, the choir, the inspector, the dog and
    the rest. Each one is a flat-vector cutout in the people's style
