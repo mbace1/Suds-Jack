@@ -1,6 +1,6 @@
 {
   "film": "on-the-label",
-  "cut": "v3 (7 Nov, en only; the owner on v2: \"Label is not punchy enough and needs better delivery\"). RFH, Roundup / glyphosate. The device: THE LABEL. One generic weedkiller jug on a shed workbench (no brand, no logo, no trade dress; Roundup is named in captions and tags only) is the stage, and each beat of the 2026 record happens to its label. v3: a hook on the empty warning box; the CLAIMS boxes crash onto the bench; a state cancer-warning sticker is hammered off with a PREEMPTED stamp and tears (Durnell); the big stamp slams NATIONAL DEFENSE PRIORITY with dust (the 18 Feb executive order); a NONNEGOTIABLE note slaps a phone that never rings (Means's allegation, attributed, with Kennedy's March statement and the White House's and Blair's rebuttals beside it); then silence, a push into the empty box, and the turn: WARNING: this space intentionally blank. Shorter captions, a camera kick and a real impact on every hit, beats of varied length. US spelling.",
+  "cut": "v3 (7 Nov, en only; the owner on v2: \"Label is not punchy enough and needs better delivery\"). RFH, Roundup / glyphosate. The device: THE LABEL. One generic weedkiller jug on a shed workbench (no brand, no logo, no trade dress; Roundup is named in captions and tags only) is the stage, and each beat of the 2026 record happens to its label. v3: a hook on the empty warning box; the CLAIMS boxes crash onto the bench; a state cancer-warning sticker is hammered off with a PREEMPTED stamp and tears (Durnell); the big stamp slams NATIONAL DEFENSE PRIORITY · EXECUTIVE ORDER 18 FEB 2026 with dust and NO caption: the picture is the sentence (the house rule allows three facts between the setup and the punchline, so the order beat speaks through the stamp and its tag); a NONNEGOTIABLE note slaps a phone that never rings (Means's allegation, attributed, with Kennedy's March statement and the White House's and Blair's rebuttals beside it); then silence, a push into the empty box, and the turn: WARNING: this space intentionally blank. Shorter captions, a camera kick and a real impact on every hit, beats of varied length. US spelling.",
   "series": "rfh",
   "captionSize": "big",
   "argument": "In 2026 Roundup's fight moved onto its label: the Supreme Court preempted state cancer warnings, an order made glyphosate a defense priority, and an ex-adviser alleges Kennedy wasn't consulted; Bayer says it's safe.",
@@ -25,7 +25,7 @@
     },
     {
       "id": "claims",
-      "role": "evidence",
+      "role": "setup",
       "at": "s2+0.4",
       "until": "s3-0.2",
       "hold": "s3",
@@ -44,17 +44,6 @@
         "en": "A state warning? / Supreme Court: / [No]."
       },
       "source": "Monsanto Co. v. Durnell, No. 24-1068, decided 25 Jun 2026, 7–2 (Kavanaugh; Jackson and Gorsuch dissenting): FIFRA preempts a Missouri failure-to-warn claim that would have required a cancer warning on Roundup's label; a jury award of about $1.25M was reversed (Mayer Brown, Faegre Drinker, National Ag Law Center summaries). 'A state warning? No' = a state-law claim cannot require one. Search summaries only."
-    },
-    {
-      "id": "order",
-      "role": "evidence",
-      "at": "s4+0.3",
-      "until": "s5-0.2",
-      "hold": "s5",
-      "text": {
-        "en": "The White House / stamped it / [defense]."
-      },
-      "source": "Executive order of 18 Feb 2026, 'Promoting the National Defense by Ensuring an Adequate Supply of Elemental Phosphorus and Glyphosate-Based Herbicides', invoking the Defense Production Act (Washington Times, Fresh Fruit Portal, ADN, Feb 2026). The stamp on screen reads NATIONAL DEFENSE PRIORITY, a paraphrase; the tag gives the order's date and the act. MAHA activists objected; Kennedy backed it publicly and later told Rogan he was not 'particularly happy' with it. Search summaries only."
     },
     {
       "id": "asked",
@@ -123,7 +112,7 @@
       "en": "MONSANTO v. DURNELL · 25 JUNE 2026 · 7–2"
     },
     "tag3": {
-      "en": "ORDER OF 18 FEB 2026 · DEFENSE PRODUCTION ACT"
+      "en": "WHITE HOUSE ORDER · DEFENSE PRODUCTION ACT"
     },
     "tag4": {
       "en": "CALLEY MEANS ALLEGES · ON A PODCAST · 6 NOV"
@@ -139,9 +128,18 @@
     },
     "tag5": {
       "en": "$7.25B SETTLEMENT · RULING PENDING"
+    },
+    "stamp3": {
+      "en": "EXECUTIVE ORDER · 18 FEB 2026"
     }
   },
   "post": {
     "en": "Roundup's label has no cancer warning: the Supreme Court says states can't require one (7–2). A February order made glyphosate a defense priority. An ex-adviser alleges RFK Jr. wasn't consulted; Kennedy says he knew; the White House disputes it. Bayer: safe. Who writes the label?"
+  },
+  "props": {
+    "stamp": {
+      "en": "NATIONAL DEFENSE PRIORITY · EXECUTIVE ORDER · 18 FEB 2026, a red rubber stamp on the label",
+      "why": "Executive order of 18 Feb 2026, 'Promoting the National Defense by Ensuring an Adequate Supply of Elemental Phosphorus and Glyphosate-Based Herbicides', invoking the Defense Production Act (Washington Times, Fresh Fruit Portal, ADN, Feb 2026). The stamp on screen reads NATIONAL DEFENSE PRIORITY, a paraphrase; the tag gives the order's date and the act. MAHA activists objected; Kennedy backed it publicly and later told Rogan he was not 'particularly happy' with it. Search summaries only."
+    }
   }
 }

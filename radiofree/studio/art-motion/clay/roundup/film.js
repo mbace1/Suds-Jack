@@ -57,11 +57,11 @@ const fit = (g, text, size, maxW, min = 20, face = 'Anton-400', wt = '') => { le
 await CAP.loadFonts(FONT_DIR);
 const COPY = await CAP.loadCopy('copy.json');
 // short-short-long: the hook, three hits, the long allegation beat (four tags), the turn
-const BEATS = [['s1', 0], ['s2', 3.3], ['s3', 6.25], ['s4', 9.55], ['s5', 12.85], ['s6', 17.45], ['end', 21.35]];
+const BEATS = [['s1', 0], ['s2', 3.3], ['s3', 6.25], ['s4', 9.55], ['s5', 12.15], ['s6', 16.75], ['end', 20.65]];
 const P = CAP.plan(COPY, LANG, BEATS, { snap: 0.25 }), T = P.T, DUR = T.end, UI = P.ui;
 // every impact lands on its caption's pop word, to the frame
 const popT = (id) => { const c = P.captions.find((c) => c.id === id); return (c.words.find((w) => w.pop) || c.words[0]).t; };
-const EV = { hook: popT('hook'), crash: popT('claims'), stickStamp: popT('court'), stampDown: popT('order'), noteSlap: popT('asked'), blank: popT('blank') };
+const EV = { hook: popT('hook'), crash: popT('claims'), stickStamp: popT('court'), stampDown: T.s4 + 1.25, noteSlap: popT('asked'), blank: popT('blank') };   // the slam has no caption: the stamp is the line
 EV.stickHit = EV.stickStamp - 0.5; EV.stickLand = EV.stickStamp + 0.6;
 for (let i = 0; i < 3; i++) EV['folder' + i] = EV.crash + 0.06 + i * 0.09;
 EV.silence0 = T.s6; EV.silence1 = T.s6 + 0.55;
@@ -114,11 +114,12 @@ function drawLabel(stampK) {
   g.strokeStyle = '#1d1b19'; g.lineWidth = 5; g.setLineDash([16, 10]); g.strokeRect(BOX.x, BOX.y, BOX.w, BOX.h); g.setLineDash([]);
   g.fillStyle = '#1d1b19'; g.textAlign = 'left'; g.font = '34px ArchivoBlack-400'; g.fillText(UI.warnBox, BOX.x + 18, BOX.y + 46);
   if (stampK > 0) {   // NATIONAL DEFENSE / PRIORITY, in rubber-stamp red, at an angle, over the middle of the label
-    g.save(); g.translate(w / 2, 300); g.rotate(-0.16); g.globalAlpha = clamp(stampK);
-    g.strokeStyle = '#c4232b'; g.lineWidth = 12; g.strokeRect(-232, -88, 464, 176);
-    g.fillStyle = '#c4232b'; g.textAlign = 'center'; fit(g, UI.stamp1, 82, 420); g.fillText(UI.stamp1, 0, -6); fit(g, UI.stamp2, 82, 420); g.fillText(UI.stamp2, 0, 72);
+    g.save(); g.translate(w / 2, 284); g.rotate(-0.16); g.globalAlpha = clamp(stampK);
+    g.strokeStyle = '#c4232b'; g.lineWidth = 12; g.strokeRect(-232, -100, 464, 232);
+    g.fillStyle = '#c4232b'; g.textAlign = 'center'; fit(g, UI.stamp1, 82, 420); g.fillText(UI.stamp1, 0, -18); fit(g, UI.stamp2, 82, 420); g.fillText(UI.stamp2, 0, 60);
+    fit(g, UI.stamp3, 34, 400, 16, 'ArchivoBlack-400'); g.fillText(UI.stamp3, 0, 110);
     // ink texture: knock a few specks out, as a rubber stamp leaves it
-    g.globalCompositeOperation = 'destination-out'; const r = rng(11); for (let i = 0; i < 260; i++) { g.globalAlpha = 0.5 * clamp(stampK); g.fillRect(-240 + r() * 480, -96 + r() * 192, 2 + r() * 5, 2 + r() * 3); }
+    g.globalCompositeOperation = 'destination-out'; const r = rng(11); for (let i = 0; i < 300; i++) { g.globalAlpha = 0.5 * clamp(stampK); g.fillRect(-240 + r() * 480, -108 + r() * 248, 2 + r() * 5, 2 + r() * 3); }
     g.restore();
   }
   labelTex.needsUpdate = true;
@@ -320,7 +321,7 @@ function frame(t, captions = true) {
   tag(g2d, UI.tag0, tg(T.s1 + 1.6, T.s2 - 0.1));
   tag(g2d, UI.tag1, tg(T.s2 + 0.8, T.s2 + 1.85)); tag(g2d, UI.tag1b, tg(T.s2 + 1.95, T.s3 - 0.1));
   tag(g2d, UI.tag2, tg(T.s3 + 1.7, T.s4 - 0.1));
-  tag(g2d, UI.tag3, tg(T.s4 + 1.6, T.s5 - 0.1));
+  tag(g2d, UI.tag3, tg(EV.stampDown + 0.25, T.s5 - 0.1));
   tag(g2d, UI.tag4, tg(T.s5 + 0.5, T.s5 + 1.55)); tag(g2d, UI.tag4b, tg(T.s5 + 1.65, T.s5 + 2.6));
   tag(g2d, UI.tag4c, tg(T.s5 + 2.7, T.s5 + 3.6)); tag(g2d, UI.tag4d, tg(T.s5 + 3.7, T.s6 - 0.1));
   tag(g2d, UI.tag5, tg(EV.blank + 0.5, T.end + 1));

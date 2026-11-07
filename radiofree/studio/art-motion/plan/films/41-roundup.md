@@ -198,7 +198,7 @@ as `films/07-11-Coxon14-On-the-Label-v1.mp4` / `-v1-loop.mp4` for comparison. St
 
 **What was wrong with v1, and the fix:**
 - Five beats at the same ~4.4 s cadence, each a three-line news sentence with one pop. v2 has six beats of varied
-  length (3.3 / 2.95 / 3.3 / 3.3 / 4.6 / 3.9 s), shorter lines, and a turn at the end instead of a repeat of beat 2.
+  length (3.3 / 2.95 / 3.3 / 2.6 / 4.6 / 3.9 s), five captions and one caption-less slam, shorter lines, and a turn at the end instead of a repeat of beat 2.
 - Polite actions. Every hit is now an impact with a 2–3 frame camera kick: the CLAIMS boxes crash in from above and files
   spill; a hand stamp hammers PREEMPTED onto the sticker, which tears in two; the big stamp hangs, then slams, with dust;
   the note slaps. The bed ducks hard under each (−10 / −10 / −14 / −8 dB).
@@ -207,22 +207,28 @@ as `films/07-11-Coxon14-On-the-Label-v1.mp4` / `-v1-loop.mp4` for comparison. St
   deadpan sting: "WARNING: this space intentionally [blank]." Legal-document deadpan; true, since after Durnell no state
   can require the warning and the federal label carries none.
 
-**Script (en, 21.35 s + the sign-off):**
+**The house rule and the cut.** The message check allows one setup, at most three facts and one punchline; six captions
+failed it (four facts). The `order` caption was cut: the slam carries the fact itself — the stamp reads NATIONAL DEFENSE
+PRIORITY · EXECUTIVE ORDER · 18 FEB 2026 and the tag WHITE HOUSE ORDER · DEFENSE PRODUCTION ACT. The picture is the
+sentence, and the beat is shorter (2.6 s).
+
+**Script (en, 20.65 s + the sign-off):**
 1. (0–3.3) Roundup's label. / Read the / [warning]. — tight on the empty box. Tag: ROUNDUP: BAYER'S GLYPHOSATE WEEDKILLER.
 2. (3.3–6.25) [65,000] people / say: cancer. — the CLAIMS boxes crash onto the bench. Tags: PLAINTIFFS ALLEGE · BAYER SAYS
    IT'S SAFE; EPA: NOT LIKELY CARCINOGENIC · IARC: PROBABLY.
 3. (6.25–9.55) A state warning? / Supreme Court: / [No]. — the sticker slaps on; the hammer; it tears. Tag: MONSANTO v.
    DURNELL · 25 JUNE 2026 · 7–2.
-4. (9.55–12.85) The White House / stamped it / [defense]. — the slam, dust. Tag: ORDER OF 18 FEB 2026 · DEFENSE PRODUCTION ACT.
-5. (12.85–17.45) RFK Jr.? / Not consulted, / ex-aide [alleges]. — the note slaps onto the phone, which never rings. Tags:
+4. (9.55–12.15) no caption: the stamp hangs, then SLAMS the label — NATIONAL DEFENSE PRIORITY · EXECUTIVE ORDER · 18 FEB
+   2026 — with dust. Tag: WHITE HOUSE ORDER · DEFENSE PRODUCTION ACT.
+5. (12.15–16.75) RFK Jr.? / Not consulted, / ex-aide [alleges]. — the note slaps onto the phone, which never rings. Tags:
    CALLEY MEANS ALLEGES · ON A PODCAST · 6 NOV; KENNEDY, MARCH: HE KNEW OF THE ORDER; WHITE HOUSE: "EXTENSIVE VICTORIES"
    FOR MAHA; AIDE JAMES BLAIR: "NO IDEA WHAT HE'S TALKING ABOUT" (STAT, The Hill, Axios, 6 Nov).
-6. (17.45–21.35) silence; WARNING: / this space / intentionally / [blank]. — the push into the empty box. Tag: $7.25B
+6. (16.75–20.65) silence; WARNING: / this space / intentionally / [blank]. — the push into the empty box. Tag: $7.25B
    SETTLEMENT · RULING PENDING.
 
 **Post (278 chars):** "Roundup's label has no cancer warning: the Supreme Court says states can't require one (7–2). A
 February order made glyphosate a defense priority. An ex-adviser alleges RFK Jr. wasn't consulted; Kennedy says he knew;
 the White House disputes it. Bayer: safe. Who writes the label?"
 
-**Length:** the owner asked for ~19–20 s; it is 21.35 s because the reading rule (1 s + a character per 20) sets each
+**Length:** the owner asked for ~19–20 s; it is 20.65 s because the reading rule (1 s + a character per 20) sets each
 caption's minimum, and beat 5 carries four tags (the allegation, Kennedy's answer, the White House's two rebuttals).
