@@ -87,3 +87,85 @@ with a scalar; renamed `claim`.
 - **Two label close-ups** (beats 2 and 5) use different photos (4 and 5) and different framings; if they still read as
   one shot on a phone, beat 2 can start wider.
 - **Fourth glyphosate/Roundup item of the day**: this and On the Label (Coxon 14) should not post in the same interval.
+
+## v2, 7 Nov: the Yle angle, EN + FI, cut-paper layers (owner, ~14:30 and two notes)
+
+**Owner:** "The big part is that it's also in front of YLE, the BBC of Finland. They should be looking into it as a health
+risk, not using it and leaving it for kids to find. Make an English and Finnish version. Also use some more 2d layers to
+spruce up the look. YLE aqua and white, maybe a 3rd complementing color." Then: beat 2's attribution was unclear
+("whose words?"), and Yle HAS covered glyphosate for a decade, so the turn must not imply it has ignored the topic.
+
+**The device on top of the found object: the tip-off.** The pirate station hands the public broadcaster a story found
+on its own doorstep. **Yle is the addressee, never the accused**: the photos prove the jug was FOUND in front of Yle,
+not that anyone there used or left it. "Who left it: unknown" stays; "left where any kid could pick it up" is what the
+pictures show (ground level, a public flowerbed by the path and the tram stop). The turn says *you cover this; now it's
+on your doorstep*, with the decade of Yle coverage on a tag.
+
+**Yle on glyphosate (yle.fi, from search summaries; open before posting):**
+- 2015 · "Torjunta-aineesta on tullut syöpäriski"
+- 2016 · Tukes bans POEA-containing products · https://yle.fi/a/3-8741000
+- 2017 · the EU extension · https://yle.fi/a/3-9950495
+- 2018 · the Johnson verdict · https://yle.fi/a/3-10348209
+- 2019 · "Huoli Suomen yleisimmän rikkakasvimyrkyn glyfosaatin turvallisuudesta kasvaa" · https://yle.fi/a/3-10702830
+- 2023 · a microbes study · https://yle.fi/a/74-20026360
+- 2024–25 · a bumblebee study · https://yle.fi/a/74-20165372 · and a US rural-births study · https://yle.fi/a/74-20138908
+- Areena · "Myrkkyä pelloille?"
+
+**Beat 2 attribution:** the quote is the LABEL's own printed claim ("says the label" / "sanoo etiketti"). No company is
+named on screen for it: Bayer owns the Roundup brand, but who markets the Roundup Piha consumer line in Finland is not
+verified (the European consumer line has been handled by licensees). The tag stays ROUNDUP PIHA, 5 L · GLYPHOSATE · THE
+LABEL'S OWN CLAIM.
+
+**The colours.** Yle's aqua measured off the sign in photo 1 (a 120×120 px patch at full resolution, the median of its
+saturated-teal pixels): **#03b1d1**. In photos 4 and 5 the sign is backlit and hazy (#4d7a9b, #2d5f7e), so photo 1 is
+the reference. White paper **#f7f3ec**. The one warm complement is the **RFH gold #f2b83a** (hue 40° against the aqua's
+192°: a split complement), which is already the pop colour, so the layers' accents (pin, string, underline, the year,
+the stamp) and the pop words agree and the film stays three colours. A true complement (a coral, ~#e9573f) would have
+been a fourth; not used.
+
+**The layers (`film.js`), cut paper over the photos:** a torn white paper frame that irises open on every cut and stays
+as a thin deckle edge; an aqua evidence tag (FOUND · 7 NOV / LÖYTÖ · 7.11.) on a gold pin and string that drops and
+swings to rest; a dashed aqua ring that finds the jug and tracks it under the move (it is attached to the photo, so it
+has true parallax; the cards lag the picture a little); a white quote card with the label's own line and a gold
+underline on the pop; a WHO? / KUKA? tag beside the small jug with a dashed lead; an EU · ALLOWED UNTIL calendar card
+whose gold 2033 springs on when the year is said; and an envelope (TO: YLE / YLELLE, FROM: RADIO FREE HELSINKI) that
+slides in through the silence, with a gold RFH stamp that lands on the pop word. The layers never cover the jug, and
+the Yle logo is never redrawn: it appears only as photographed. Photo 5's distant passer-by never enters a crop.
+
+**Shot table (en; fi gets holds of +0.75 / +0.5 / +1.0 s from the reading rule, so it runs 21.85 s):**
+
+| # | t (en) | caption en | caption fi | picture | tags |
+|---|---|---|---|---|---|
+| 1 | 0–3.4 | Found today, / in front of [Yle]. | Löytyi tänään / Ylen [edestä]. | photo 1 whole, the Yle sign behind the jug, a slow push; the tag drops, the ring finds the jug | YLE · FINLAND'S PUBLIC BROADCASTER · PASILA · 7 NOV 2026 |
+| 2 | 3.4–7.45 | 'Kills weeds, / roots and all,' / says the [label]. | 'Hävittää / rikkakasvit / juurineen', / sanoo [etiketti]. | photo 5, a rack down onto the label (its lower-left two thirds only); the quote card | ROUNDUP PIHA, 5 L · GLYPHOSATE · THE LABEL'S OWN CLAIM; SOLD TO CONSUMERS IN FINLAND |
+| 3 | 7.45–10.85 | Left where / any kid could / [pick it up]. | Jätetty maahan, / lasten / [ulottuville]. | photo 3, the jug small at the foot of the tree by the path, a drift; the ring and WHO? | WHO LEFT IT, WHETHER IT WAS USED: NOT KNOWN |
+| 4 | 10.85–15.1 | The EU allows it / until 2033. / Cancer? IARC: / [probably]. | EU sallii sen / vuoteen 2033. / Syöpä? IARC: / [todennäköisesti]. | photo 2 in low sun, a tilt down; the calendar card, 2033 on the word | EU RENEWAL · NOV 2023 → 15 DEC 2033; ECHA 2022: NOT CLASSIFIED AS A CARCINOGEN · BAYER: SAFE |
+| 5 | 15.1–20.1 | Dear Yle: / you cover this. / Now it's on / your [doorstep]. | Hyvä Yle: / tuttu aihe. / Nyt se on / [kynnyksellänne]. | photo 4, a tilt UP from the jug to the Yle sign (the addressee); the envelope slides in through 0.6 s of silence, the stamp lands on the pop; the caption sits low | YLE ON GLYPHOSATE: 2015, 2016, 2017, 2018, 2019, 2023, 2025 (YLE.FI); HELSINKI'S GOAL SINCE 2020: NO GLYPHOSATE IN ITS PARKS; RFH: OVER TO YOU |
+
+The message lint holds as written: one setup, three facts, one punchline. Nothing was cut.
+
+**Sound (`score.py`):** v1's room (wind, leaves, the far tram, the bed low under the evidence and out for the turn) plus
+a paper sound for every layer: the tag's swish and the catch on its string, a felt-tip squeak for the ring, the card
+sliding in and landing, the gold underline, the WHO? tag and its dashed lead, the calendar card dropping and 2033
+stamping on, the envelope sliding in through the silence and settling, and on the pop a slap and a low wooden thump
+for the RFH stamp with one marimba note; then the station's sting.
+
+**Posts.** en (279): "Found this morning in a flowerbed in front of Yle, Pasila: a 5 L Roundup jug, where any kid could
+pick it up. Who left it: unknown. The EU allows glyphosate until 2033; IARC says 'probably' carcinogenic, ECHA and
+Bayer disagree. Yle has covered this for years. Your doorstep now?" · fi (277): "Löytyi tänään kukkapenkistä Ylen
+edestä Pasilasta: 5 litran Roundup-kanisteri, lasten ulottuvilla. Kuka jätti: ei tiedetä. EU sallii glyfosaatin
+vuoteen 2033; IARC: todennäköisesti syöpävaarallinen; ECHA ja Bayer eri mieltä. Yle on kertonut aiheesta vuosia. Nyt
+kynnyksellänne?"
+
+**Finnish:** written by the assistant, not a word-for-word translation; `native_read.fi` is false until a native
+speaker reads it. Choices worth a native eye: "lasten ulottuville" (within children's reach), "tuttu aihe" (a familiar
+topic, for "you cover this"), "kynnyksellänne" (on your doorstep).
+
+**Files:** v2 overwrites `films/07-11-Helsinki1-Found-in-Pasila.mp4` + `-loop.mp4` (en) and adds
+`films/07-11-Helsinki1-Found-in-Pasila-fi.mp4` + `-fi-loop.mp4`; v1 is kept as `films/07-11-Helsinki1-Found-in-Pasila-v1.mp4`
+(+ `-v1-loop.mp4`). Stills: `previews/07-11-RFH-Found-in-Pasila-v2-stills.jpg`. Previews: `previews/07-11-RFH-Found-in-Pasila-en.mp4`,
+`-fi.mp4`.
+
+**What the first stills showed, fixed before the build:** the envelope sat under the low caption (moved up, and it now
+barely lags the tilt); the tilt to the sign was too slow for the sign to be in frame when "doorstep" landed (the tilt
+now completes in the first half of the shot and rests); the evidence and WHO? tags were small at phone size (enlarged).
