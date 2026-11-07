@@ -39,6 +39,7 @@ import { TransitLayers } from './transit-layers.js?v=11';
 import { applySkin, TOKO_CYAN } from './skin.js?v=1';
 import { seaRings, labelAt } from './sea.js?v=1';
 import { landmarkPoints, drawLandmarks } from './landmarks.js?v=3';
+import { drawVignette } from './vignettes.js?v=1';
 
 const kxAt = lat => Math.cos(lat * Math.PI / 180);
 const M_PER_DEG = 111320;
@@ -81,7 +82,8 @@ export class HopBoard {
   // a still frame of where the courier stands.
   // `previews` are hops on offer (the stop's card), drawn as their own paths so
   // a choice reads as WHERE it leaves you; `labels: false` is the corner inset.
-  draw({ at, hop = null, t = 1, dest = null, destColour = '#233d4d', halted = null, previews = [], labels = true, lift = true }) {
+  // `vignette` (v3.9) is the walking card's id: its picture rides beside the courier.
+  draw({ at, hop = null, t = 1, dest = null, destColour = '#233d4d', halted = null, previews = [], labels = true, lift = true, vignette = null }) {
     const { ctx, canvas, skin, net } = this, d = this.d || 1, W = canvas.width, H = canvas.height;
     const from = net.nodes.get(hop ? hop.from : at), to = hop ? net.nodes.get(hop.to) : null, dn = dest ? net.nodes.get(dest) : null;
     const fit = this.frame([from, to, dn, ...previews.map(p => net.nodes.get(p.to))].filter(Boolean), lift);
@@ -125,6 +127,7 @@ export class HopBoard {
     // the courier: on its line's pill (the number riding with it), or on foot
     if (hop && hop.kind !== 'walk') drawPill(ctx, pos.x, pos.y, ang, this.inkOf(hop), hop.line?.mode === 'metro' ? 'M' : (hop.line?.family || hop.line?.label || ''), d);
     drawCourier(ctx, pos.x, pos.y, d);
+    if (vignette) drawVignette(ctx, vignette, pos.x, pos.y, d);
     ctx.restore();
   }
   inkOf(hop) { return this.transit.layers.find(l => l.id === hop.line?.sourceId)?.colour || '#52676d'; }

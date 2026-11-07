@@ -28,7 +28,7 @@
 import { tr } from './lang.js?v=10';
 import * as J from './journey.js?v=3';
 import * as Runs from './runs.js?v=4';
-import { HopBoard } from './hopboard.js?v=2';
+import { HopBoard } from './hopboard.js?v=3';
 import { loadGround } from './ground.js?v=12';
 import { skinFor } from './skin.js?v=1';
 import { moodFace, MOODS } from './events.js?v=10';
@@ -44,7 +44,7 @@ import { addNote } from './sealed.js?v=2';
 import { resolveMode, dailyShare, W } from './modes.js?v=1';
 import { recordDaily, todayRecord, streak } from './daily.js?v=2';
 
-export const BUILD_VERSION = '3.8';
+export const BUILD_VERSION = '3.9';
 const $ = id => document.getElementById(id);
 const params = new URLSearchParams(location.search);
 // a run of the ladder, today's daily, or a day of the week (modes.js, ACT1.md §12)
@@ -130,6 +130,9 @@ const CSS = `
 @keyframes v3fog{from{background-position:0 0,0 0,0 0}to{background-position:0 0,-60% 0,40% 0}}
 #v3.night #v3wx.fog{background:linear-gradient(180deg,rgba(40,52,70,0),rgba(70,84,104,.5) 45%,rgba(40,52,70,.1)),radial-gradient(60% 30% at 30% 55%,rgba(110,124,146,.4),transparent);background-size:100% 100%,200% 100%}
 #v3board{position:absolute;inset:0;width:100%;height:100%;opacity:0;transition:opacity .22s;pointer-events:none}
+#v3 .L.actor{animation:v3actor .45s cubic-bezier(.2,.7,.2,1) both}
+#v3 .L.actor.out{opacity:0;transition:opacity .25s}
+@keyframes v3actor{from{opacity:0;transform:translateY(1.2%)}to{opacity:1;transform:none}}
 #v3board.on{opacity:1;pointer-events:auto;animation:v3settle .55s cubic-bezier(.2,.7,.2,1)}
 @keyframes v3settle{from{transform:scale(1.045)}to{transform:none}}
 #v3top{position:absolute;left:0;right:0;top:calc(env(safe-area-inset-top) + 10px);display:flex;flex-direction:column;align-items:center;gap:6px;pointer-events:none;z-index:3}
@@ -238,6 +241,22 @@ function place() {
   frameEl.style.transformOrigin = `${sc.face[fmt][0] * 100}% ${sc.face[fmt][1] * 100}%`;
   if (sc.tile) frameEl.style.setProperty('--tw', `${Math.round(H * sc.tile[fmt])}px`);
 }
+// THE CARD'S SUBJECT, IN THE SCENE (v3.9; owner, 2026-11-06: "lots more art and
+// scenarios in these styles"). A story card dealt at the stop lays its actor —
+// the gull on the parcel, the lady at the kerb — over the courier, drawn in the
+// stop's own flat iso (art/minimal-metro-look/make_actors.py), and takes it
+// away when the card is answered. act1.json lists who has one; a card without
+// one plays over the bare stop, as every card did before.
+let actorWant = null;
+function setActor(id) { actorWant = id; applyActor(); }
+function applyActor() {
+  const cur = frameEl.querySelector('.L.actor:not(.out)'), want = scene === 'stop' ? actorWant : null;
+  if (cur && cur.dataset.actor === want) return;
+  if (cur) { cur.classList.add('out'); setTimeout(() => cur.remove(), 280); }
+  if (!want) return;
+  const html = L('stop', `07-actor-${want}`, 'actor', ` data-actor="${want}"`), courier = frameEl.querySelector('.L.idle');
+  if (courier) courier.insertAdjacentHTML('afterend', html); else frameEl.insertAdjacentHTML('beforeend', html);
+}
 const L = (name, l, cls = '', extra = '', style = '') => `<div class="L ${cls}" style="background-image:url(scenes/${name}/${fmt}/${l}.webp);${style}"${extra}></div>`;
 // A scene is built once per place: the stop's landmark and plate are part of
 // it, the tram is a layer of its own that comes and goes without a rebuild.
@@ -267,6 +286,7 @@ function paintScene(name, v = {}, force = false) {
     frameEl.classList.remove('push'); if (!CALM) { void frameEl.offsetWidth; frameEl.classList.add('push'); }
     frameEl.classList.remove('fade');
     if (name === 'stop') setTram(view.tram || null);
+    applyActor();
   };
   weather();
   if (first || force || CALM) { build(); return 0; }
@@ -496,12 +516,14 @@ function render() {
   if (!c) return finish();
   if (c.kind === 'story' && pendingHop) {
     // a card dealt on the way: aboard is the car, on foot is the board mid-walk
-    if (pendingHop.kind === 'walk') { showBoard(pendingHop, 0.5); }
+    setActor(null);
+    if (pendingHop.kind === 'walk') { showBoard(pendingHop, 0.5, c.id); }   // what you walk past rides beside you (v3.9)
     else { hideBoard(); paintScene(interior(), { car: carOf(pendingHop) }); }
   } else {
     hideBoard();
     const t = tramFor(c), leaving = !t && arrived;
     const wait = paintScene('stop', { at: S.at, tram: t || arrived || null });
+    setActor(c.kind === 'story' && (ACT?.actors || []).includes(c.id) ? c.id : null);
     if (!wait) setTram(t || arrived || null);
     // the tram that brought you leaves, while the next card comes in; a ghost
     // or a halted tram pulls in to be looked at
@@ -513,7 +535,7 @@ function render() {
 }
 
 // Play the board for a hop from t0 to t1; resolves when done or tapped past.
-function showBoard(hop, t = 1) { const cv = $('v3board'); cv.classList.add('on'); board.resize(); board.draw({ at: S.at, hop, t, dest: dropOf(S.job), destColour: S.job ? colourOf(S.job.cargo) : undefined, halted: haltedLayer }); weather(); }
+function showBoard(hop, t = 1, vignette = null) { const cv = $('v3board'); cv.classList.add('on'); board.resize(); board.draw({ at: S.at, hop, t, dest: dropOf(S.job), destColour: S.job ? colourOf(S.job.cargo) : undefined, halted: haltedLayer, vignette }); weather(); }
 function hideBoard() { $('v3board').classList.remove('on'); weather(); }
 function rideBoard(hop, t0 = 0, t1 = 1) {
   game.boards++; sfx(hop.kind === 'walk' ? 'walk' : 'ride');
@@ -628,7 +650,7 @@ async function forecast() {
 
 // ── the end: the run's result (runs.js), and what you carried ─────────────
 function finish() {
-  hideBoard(); $('v3mini').hidden = true; panel.innerHTML = ''; wxEl.className = ''; audio?.bed(null);
+  hideBoard(); setActor(null); $('v3mini').hidden = true; panel.innerHTML = ''; wxEl.className = ''; audio?.bed(null);
   if (MODE.mode !== 'run') return finishMode();
   Runs.remember(S.keep);                                  // what the city remembers (ACT1.md §10)
   if (S.keep.regulars) saveStanding({ ...loadStanding(), ...S.keep.regulars });   // the regulars' standing (§11)

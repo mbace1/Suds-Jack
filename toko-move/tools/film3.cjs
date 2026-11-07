@@ -153,8 +153,9 @@ window.paint = (kind, t, line = '') => {
     const b = out3((t - 1.3) / 0.4);
     text("A courier's shift, one card at a time.", LAND ? 17 : 14.5, X, Y + (LAND ? 66 : 56), SOFT, { weight: 600, font: FONT, alpha: b, rise: (1 - b) * 8 });
     if (PROGRESS) { const a2 = out3((t - 0.6) / 0.35), lbl = 'v' + PROGRESS.v, px2 = LAND ? 18 : 15; x.font = '800 ' + px2 * d + 'px ' + MONO; const tw2 = x.measureText(lbl).width / d;
-      x.globalAlpha = a2; x.fillStyle = INK; x.beginPath(); x.roundRect(X * d, (Y - px2 * (LAND ? 4.2 : 3.9)) * d, (tw2 + 20) * d, (px2 + 14) * d, 8 * d); x.fill(); x.globalAlpha = 1;
-      text(lbl, px2, X + 10, Y - px2 * (LAND ? 4.2 : 3.9) + px2 + 3, PAPER, { weight: 800, alpha: a2 }); }
+      const cy = Y - px * 0.95 - (px2 + 14) - 10;   // above the wordmark's cap height, clear of it
+      x.globalAlpha = a2; x.fillStyle = INK; x.beginPath(); x.roundRect(X * d, cy * d, (tw2 + 20) * d, (px2 + 14) * d, 8 * d); x.fill(); x.globalAlpha = 1;
+      text(lbl, px2, X + 10, cy + px2 + 3, PAPER, { weight: 800, alpha: a2 }); }
   } else if (kind === 'cap') {
     const a = out3(t / 0.32), px = LAND ? 40 : 27, words = line.split(' '), lines = [];
     x.font = '800 ' + px * d + 'px ' + FONT;
@@ -318,6 +319,12 @@ server.listen(0, '127.0.0.1', async () => {
     await card(browser, 'title', 2.6, [{ n: 'bell', t: 0.15 }]);
     // the loop, whole: Dispatch, a tram, a risk in words, the ride, the board, the stamp
     await take(browser, 'first job', '?run=easy&seed=1002', { ff: s => s.btn, done: s => /DELIVERED/.test(s.stamp), tail: 2.2, max: 30 });
+    // v3.9: who you meet at the stop, and what you walk past
+    await card(browser, 'cap', 1.6, [{ n: 'deal', t: 0 }], 'Who you meet at the stop.');
+    await take(browser, 'the student', '?run=easy&seed=1000', { ff: s => s.card === 'vappu' && s.btn, done: (s, taps) => taps >= 1, tail: 2.0, max: 8 });
+    await card(browser, 'cap', 1.6, [{ n: 'deal', t: 0 }], 'What you walk past.');
+    await take(browser, 'on foot', '?run=medium&seed=1009', { save: { tokoMoveRuns: { easy: { done: true, stars: 2, plays: 1 } } },
+      ff: s => ['fence', 'fog', 'iceswim', 'karaoke', 'reindeer', 'roadworks', 'slip', 'sofa', 'wet'].includes(s.card) && s.btn, done: (s, taps) => taps >= 1, tail: 1.4, max: 8 });
     await card(browser, 'cap', 1.6, [{ n: 'deal', t: 0 }], 'Real trams. Some of them very old.');
     await take(browser, 'museum tram', '?run=easy&seed=1197', { ff: s => s.scene === 'stop' && s.tram === 'museum', done: (s, taps) => s.scene === 'tram' && taps >= 1, tail: 2.0, max: 12 });
     await card(browser, 'cap', 1.6, [{ n: 'deal', t: 0 }], 'On the night shift, a tram with no number.');
