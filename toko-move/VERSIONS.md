@@ -1,5 +1,44 @@
 # Toko Move — versions
 
+## v3.19 — 2026-11-08
+
+**THE RIDE, INSIDE, AND THE NECK** — the owner, on v3.17: *"The traveling on a
+tram visual is a great one and should be used more. The neck is a bit
+disconnected but the background looks great moving. Similar ones should for a
+longer loop of travel, animations and choices."*
+
+- **A ride stays in the car.** It used to show the interior for a beat, then
+  cut to the board. Now the whole ride plays inside, for 2.6 to 5.2 seconds by
+  how long it is:
+  - the window carries the travel and slows at each stop the line passes;
+  - the sign names the next stop (*"then RUOHOLAHTI"* under it);
+  - the corner map follows the courier along the line.
+
+  A tap hurries it, as before. After a card aboard, the rest of the ride is
+  played in the car too. Walks and lifts still go on the board.
+- **More choices aboard.** Cards that happen aboard are dealt half again as
+  often, so more of them are played in the car. Bands, reader · tapper:
+
+  | run | reader | tapper |
+  |---|---|---|
+  | EASY | 60/60 | 60/60 |
+  | MEDIUM | 56 | 50 |
+  | HARD | 54 | 44 |
+  | NIGHT | 51 | 25 |
+
+  The ladder holds.
+- **The neck.** Toko's head sat high on the courier in the tram and metro
+  interiors, with about 40 px of neck between the ring and the collar. It is
+  moved down onto the collar and centred over the neck, in all 12 layers
+  (tram and metro, both formats, every crowd and old-car variant).
+  - `art/minimal-metro-look/fix_neck.py` does it from the originals, kept in
+    `_prev/neck/`, so running it again gives the same files.
+  - The art request (PR #633) asks for the courier redrawn at the source,
+    which replaces this.
+- **Gates.** `test/play.cjs`: a ride is played inside the car with the corner
+  map; new seeds where the decks moved (the crush in the metro, MEDIUM 1162;
+  the tourist, the crossing and the saved seat, EASY 1152).
+
 ## v3.18 — 2026-11-08
 
 **THREE AT EVERY CHOICE, AND THE MENUS WEAR THE CARD** — the owner, on

@@ -93,7 +93,7 @@ sometimes be special or very special. This same lower third look, should be used
 in menus and the intro screen."*
 
 11. ~~**v3.18 · Three at every choice, and the menus wear the card.**~~ Shipped.
-12. **v3.19 · The ride, longer.** The tram interior as the stage for a longer
+12. ~~**v3.19 · The ride, longer.**~~ Shipped: the ride stays in the car, the neck mended; the art for more (window views, poses, passengers) is asked for in PR #633. The tram interior as the stage for a longer
     stretch of travel: the ride held, more aboard (cards, the people moving),
     choices made riding; and the courier's neck mended (Toko's head sits left
     of the neck in the interior layers).

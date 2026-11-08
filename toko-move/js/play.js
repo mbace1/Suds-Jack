@@ -26,7 +26,7 @@
 // none of them is a timer the game waits on to be fair: the state has already
 // moved when it starts.
 import { tr } from './lang.js?v=16';
-import * as J from './journey.js?v=7';
+import * as J from './journey.js?v=8';
 import * as Runs from './runs.js?v=5';
 import { HopBoard } from './hopboard.js?v=4';
 import { loadGround } from './ground.js?v=12';
@@ -46,7 +46,7 @@ import { MOMENTS, faceIn, keepIn, pickupMoment, deliveryMoment, boardMoment, wal
 import { resolveMode, dailyShare, errandShare, errandStore, errandOf, W } from './modes.js?v=6';
 import { recordDaily, todayRecord, streak, dateKey } from './daily.js?v=2';
 
-export const BUILD_VERSION = '3.18';
+export const BUILD_VERSION = '3.19';
 const $ = id => document.getElementById(id);
 const params = new URLSearchParams(location.search);
 // a run of the ladder, today's daily, or a day of the week (modes.js, ACT1.md §12)
@@ -216,7 +216,7 @@ const CSS = `
 @media (prefers-reduced-motion:reduce){.evVery{animation:none}}
 .v3sign{display:flex;align-items:center;gap:10px;padding:12px 16px;border-radius:14px;background:#101418;color:#ffb648;font:700 15px/1.2 ui-monospace,'SF Mono',Menlo,Consolas,monospace;letter-spacing:1px;box-shadow:0 0 0 2px #2a2f34,0 4px 14px rgba(0,0,0,.35);animation:v3stamp .22s ease-out both;flex-wrap:wrap}
 .v3sign .lb{display:inline-grid;place-items:center;min-width:34px;height:26px;padding:0 6px;border-radius:6px;color:#fff;font-weight:900}
-.v3sign .nx{color:#fff}.v3sign .model{flex-basis:100%;font-size:11px;color:#8a949b;letter-spacing:2px}
+.v3sign .nx{color:#fff}.v3sign .then{flex-basis:100%;font-size:11px;color:#ffb648;opacity:.75;letter-spacing:1.5px}.v3sign .model{flex-basis:100%;font-size:11px;color:#8a949b;letter-spacing:2px}
 .v3stamp{display:flex;flex-direction:column;align-items:center;gap:5px;padding:16px;border-radius:18px;background:#fffdf7;border:3px solid #233d4d;box-shadow:0 6px 20px rgba(21,38,43,.25);text-align:center;animation:v3bump .42s cubic-bezier(.2,.9,.3,1.35) both}
 @keyframes v3bump{0%{opacity:0;transform:translateY(24px) scale(.92) rotate(-1.5deg)}100%{opacity:1;transform:none}}
 .v3stamp .big{font-size:21px;font-weight:900;letter-spacing:3px;color:#233d4d}
@@ -690,12 +690,41 @@ addEventListener('keydown', e => { if (skip && !stage.hidden && (e.key === ' ' |
 
 // The in-car display: the line, where it is going, the next stop — and, on a
 // tram, which tram (look only).
-function sign(hop) {
+function sign(hop, next = null) {
   const layer = board.transit.layers.find(l => l.id === hop.line?.sourceId), ink = layer?.colour || '#52676d';
   const where = J.terminus(net, hop);
   const end = where && where !== net.name(hop.to) ? `<span>${esc(String(where).toUpperCase())}</span><span aria-hidden="true">›</span>` : '<span aria-hidden="true">›</span>';
   const model = hop.model && hop.model !== 'metro' ? `<span class="model">${esc(modelName(hop.model).toUpperCase())}</span>` : '';
-  panel.innerHTML = `<div class="v3sign" role="status"><span class="lb" style="background:${ink}">${esc(hop.line.mode === 'metro' ? 'M' : (hop.line.family || hop.line.label))}</span>${end}<span class="nx">${esc(net.name(hop.to).toUpperCase())}</span>${model}</div>`;
+  const nx = next && next !== hop.to ? `<span class="nx">${esc(net.name(next).toUpperCase())}</span><span class="then">then ${esc(net.name(hop.to).toUpperCase())}</span>` : `<span class="nx">${esc(net.name(hop.to).toUpperCase())}</span>`;
+  panel.innerHTML = `<div class="v3sign" role="status"><span class="lb" style="background:${ink}">${esc(hop.line.mode === 'metro' ? 'M' : (hop.line.family || hop.line.label))}</span>${end}${nx}${model}</div>`;
+}
+
+// THE RIDE, INSIDE (v3.19; owner: "The traveling on a tram visual is a great one and should be
+// used more … the background looks great moving … a longer loop of travel"). A ride stays in
+// the car for its whole length: the window carries the travel and slows at each stop the line
+// passes, the sign names the next one, and the corner map follows the courier along the line.
+// A tap hurries it, as a hop on the board always could.
+function rideInside(hop, t0 = 0, t1 = 1) {
+  game.boards++; game.rides = (game.rides || 0) + 1; sfx('ride');
+  return new Promise(done => {
+    const line = hop.line, step = line.k > line.i ? 1 : -1, stops = [];
+    for (let k = line.i + step; k !== line.k + step; k += step) stops.push(line.nodes[k]);
+    const dur = CALM ? 400 : (2600 + 2600 * Math.min(1, hop.price / 900)) * (t1 - t0), start = performance.now();
+    const tile = frameEl.querySelector('.L.tile, .L.drift'), anim = tile?.getAnimations?.()[0];
+    const btn = $('v3mini'); btn.hidden = false; mini.resize();
+    const dest = dropOf(S.job), col = S.job ? colourOf(S.job.cargo) : undefined;
+    let over = false, shown = -1;
+    const end = () => { if (over) return; over = true; skip = null; if (anim) anim.playbackRate = 1; btn.hidden = true; done(); };
+    skip = end;
+    const tick = now => { if (over) return; const k = Math.min(1, (now - start) / dur), t = t0 + (t1 - t0) * k;
+      // the stop the car is nearest: slow towards it, and the sign names the next one
+      const at = Math.min(stops.length - 1, Math.floor(t * stops.length)), frac = t * stops.length - at;
+      if (anim) anim.playbackRate = stops.length > 1 && at < stops.length - 1 ? 0.35 + 0.65 * Math.min(1, Math.abs(frac - 1) * 4, frac * 4) : 1 - 0.7 * Math.max(0, (t - 0.85) / 0.15);
+      if (at !== shown) { shown = at; sign(hop, stops[at]); }
+      mini.draw({ at: S.at, hop, t, dest, destColour: col, labels: false, lift: false, halted: haltedLayer });
+      if (k >= 1) end(); else requestAnimationFrame(tick); };
+    requestAnimationFrame(tick);
+  });
 }
 
 // A moment of the job (v3.12): its picture, its line, a beat; skippable.
@@ -748,9 +777,8 @@ async function pick(i) {
       if (r.hop.kind === 'ride') { hideBoard(); paintScene(interior(r.hop), { car: carOf(r.hop), crowd: crowdOf(r.hop) }); sign(r.hop); }
       if (r.unsealed) { await beat(900); await reveal({ say: `Aboard the ${r.unsealed.family}, the label makes sense: ${r.unsealed.stop}.`, chips: [], how: 'win' }); }
       if (r.story) { pendingHop = r.hop; busy = false; return render(); }
-      if (r.hop.kind === 'ride') await beat(1200);
-      panel.innerHTML = '';
-      await rideBoard(r.hop);
+      if (r.hop.kind === 'ride') await rideInside(r.hop);         // v3.19: the ride stays in the car
+      else { panel.innerHTML = ''; await rideBoard(r.hop); }
       if (r.reveal) await reveal(r.reveal);                   // the weather's stakes on a walk land on the way
       if (tram) arrived = { model: r.hop.model, family: r.hop.line.family };
     } else if (wasHop) {
@@ -758,7 +786,8 @@ async function pick(i) {
       pendingHop = null;
       if (r.reveal) await reveal(r.reveal);
       panel.innerHTML = '';
-      await rideBoard(wasHop, wasHop.kind === 'walk' ? 0.5 : 0, 1);
+      if (wasHop.kind === 'ride') { paintScene(interior(wasHop), { car: carOf(wasHop), crowd: crowdOf(wasHop) }); await rideInside(wasHop, 0.4, 1); }
+      else await rideBoard(wasHop, wasHop.kind === 'walk' ? 0.5 : 0, 1);
       if (wasHop.kind === 'ride' && wasHop.model && wasHop.model !== 'metro') arrived = { model: wasHop.model, family: wasHop.line.family };
     } else if (r.kind === 'perk' && r.cash) {
       await reveal({ say: 'You keep the cash.', chips: [`+€${r.cash}`], how: 'win' });
