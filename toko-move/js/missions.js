@@ -107,10 +107,11 @@ export const PERKS = {
 export const PERK_ORDER = ['shoes', 'pass', 'map', 'coin', 'number', 'umbrella'];
 export const perkPool = (doneCount = 0) => PERK_ORDER.slice(0, Math.min(PERK_ORDER.length, 3 + doneCount));
 
-// the run a mission is played as: MEDIUM's city, on the mission's clock
+// the run a mission is played as: MEDIUM's city, on the mission's clock (and
+// none of the run's own levers: no march, no forks of its own — v3.16)
 export function missionRun(base, m, doneCount = 0) {
   return { ...base, id: `mission-${m.id}`, name: m.name, title: m.title, glyph: m.glyph, blurb: m.blurb, mission: m, target: m.steps.length,
-    cards: 0, rival: false, sealed: false, race: base.race || { pace: 1.2 }, halt: null, deadline: m.deadline || 1, skies: m.skies || ['clear', 'clear', 'snow'], perkPool: perkPool(doneCount) };
+    cards: 0, rival: false, sealed: false, race: base.race || { pace: 1.2 }, halt: null, march: null, forks: null, deadline: m.deadline || 1, skies: m.skies || ['clear', 'clear', 'snow'], perkPool: perkPool(doneCount) };
 }
 
 // ── the save ───────────────────────────────────────────────────────────────

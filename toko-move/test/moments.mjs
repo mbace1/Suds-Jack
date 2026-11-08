@@ -1,4 +1,4 @@
-// THE MOMENTS (v3.12–v3.13; the owner's approved exterior art, PR #632, 29
+// THE MOMENTS (v3.12–v3.16; the owner's approved exterior art, PR #632, 29
 // scenes) in bare node:
 //   · the approved art is untouched: every image matches the inventory's own
 //     sha256 list (art/approved-exteriors/ASSET-SHA256.json)
@@ -93,8 +93,10 @@ ok(M.cardMoment('map', '916', 'clear') === 'tourist' && M.cardMoment('sealed', '
 ok(M.cardMoment('granny2', '916', 'rain') === 'saved-seat' && M.cardMoment('granny2', '916', 'night') === null, 'the lady who saved you a seat is inside a tram: her scene stands by day in any weather');
 ok(M.choiceMoment('granny', 'Walk her across', '169', 'clear') === 'crossing' && M.choiceMoment('granny', 'Walk on', '169', 'clear') === null, 'walking the lady across is drawn as the crossing; walking on is not');
 ok(M.choiceMoment('wallet', 'Hand it in at the kiosk', '916', 'clear') === 'wallet' && M.choiceMoment('wallet', 'Pocket it', '916', 'clear') === null, 'handing the wallet in is drawn at the kiosk; pocketing it is not');
+ok(M.haltMoment('march', '916', 'clear') === 'demonstration' && M.haltMoment('march', '169', 'snow') === 'demonstration' && M.haltMoment('march', '916', 'night') === null && M.haltMoment(null, '916', 'clear') === null,
+  'the march on Mannerheimintie is its halt\'s scene by day, in any weather (drawn from above, it has none); a plain halt keeps the stop');
 ok(M.deliveryMoment(D('eira', 3), '916', 'clear') === M.deliveryMoment(D('eira', 3), '916', 'clear'), 'the same drop is always the same picture');
 const reach = new Set([...Object.values(M.HANDOFF_AT).flat(), ...M.PICKUP, ...M.DELIVERY, ...M.BOARD_TRAM, ...M.BOARD_METRO_KALASATAMA, ...M.BOARD_METRO, 'snow',
-  ...Object.values(M.CARD_SCENE).map(([m]) => m), ...Object.values(M.CHOICE_SCENE).flatMap(o => Object.values(o))]);
+  ...Object.values(M.CARD_SCENE).map(([m]) => m), ...Object.values(M.HALT_SCENE).map(([m]) => m), ...Object.values(M.CHOICE_SCENE).flatMap(o => Object.values(o))]);
 ok(ids.every(id => reach.has(id)), `every scene shipped is reachable from some beat${ids.filter(id => !reach.has(id)).length ? ' (never: ' + ids.filter(id => !reach.has(id)).join(', ') + ')' : ''}`);
 console.log(`moments: ${n} checks passed`);

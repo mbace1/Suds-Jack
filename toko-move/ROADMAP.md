@@ -59,6 +59,16 @@ view") brought up to the scenes. Every step ends in a re-filmed trailer
 
 Next, proposed 2026-11-08 (owner: *"Plan next steps and show me trailer"*):
 
+**Owner's answers, same day:** the march goes in, *"for central lines,
+especially around Mannerheimintie"*; perks and modifiers go on *"all runs …
+test all, plan to fit the design"*; and the build is played on the Suds Jack
+cabinet, not uploaded to itch. ~~**v3.16 · The march, and the roguelike on
+every run.**~~ Shipped: the march holds the 1, 2, 4 and 10 by the Parliament
+House (MEDIUM every other shift, HARD when its halt is central); every run
+drafts perks, deals one fork and counts strikes, with HARD's clock and
+NIGHT's strikes refitted so the ladder keeps its shape. The list below moves
+up by one.
+
 7. **v3.16 · Missions on the board.** The mission list becomes the map:
    each mission's start is a pin at its real place, done ones stamped with
    their best, the next one open and pulsing. No new art; the board and the

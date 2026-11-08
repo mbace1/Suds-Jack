@@ -1,6 +1,7 @@
 // Toko Move v3.12–v3.13 — THE MOMENTS (the owner's approved exterior art,
 // PR #632: 29 scenes, art/approved-exteriors/APPROVED-ART.json is the inventory;
-// 28 are in the game and one is HELD, below, with its reason).
+// all 29 are in the game: the demonstration, HELD until the owner signed the
+// march off, is the halt on Mannerheimintie since v3.16).
 //
 // Illustrations of the job itself, each standing full frame at the beat it
 // draws, under the panel that beat already has:
@@ -70,11 +71,13 @@ export const MOMENTS = {
   'sealed-place': { src: ['choice-consequence-studies', 'sealed-place'], fmts: BOTH },
   // v3.14: the wallet, handed in at the kiosk (the mission card's first option)
   wallet:    { src: ['encounters-weather-studies', 'wallet'], fmts: BOTH },
+  // v3.16: the march on Mannerheimintie, the owner's go (2026-11-08: "For central
+  // lines, especially around Mannerheimintie. The congress building area")
+  demonstration: { src: ['choice-consequence-studies', 'demonstration'], fmts: BOTH },
 };
 // approved, and NOT in the game yet — each waiting on a decision that is not the art's
-export const HELD = {
-  demonstration: [['choice-consequence-studies', 'demonstration'], 'its pack approves the art and calls the cause a NEW PROPOSAL: a march as the reason a line is halted needs the owner\'s design sign-off first'],
-};
+// (the demonstration was held here until the owner signed the march off, v3.16)
+export const HELD = {};
 const frac = (m, fmt, p) => { const [x0, y0, x1, y1] = m.crop[fmt]; return [+((p[0] - x0) / (x1 - x0)).toFixed(3), +((p[1] - y0) / (y1 - y0)).toFixed(3)]; };
 export const faceIn = (id, fmt) => { const m = MOMENTS[id]; return m.crop ? frac(m, fmt, m.at) : (m.face?.[fmt] || m.keep?.[fmt] || [.5, .5]); };
 // what a cropped screen keeps in view: the face, unless the scene says otherwise
@@ -115,6 +118,9 @@ export const CARD_SCENE = { map: ['tourist', 'clear'], sealed: ['sealed-place', 
 export const CHOICE_SCENE = { granny: { 'Walk her across': 'crossing' }, wallet: { 'Hand it in at the kiosk': 'wallet' } };
 const under = (want, sky) => (want === 'day' ? sky !== 'night' : sky === want);
 export const cardMoment = (id, fmt, sky) => { const c = CARD_SCENE[id]; return c && under(c[1], sky) ? pick([c[0]], fmt, id) : null; };
+// a halt with a cause of its own (v3.16): the march, drawn from above on any day
+export const HALT_SCENE = { march: ['demonstration', 'day'] };
+export const haltMoment = (cause, fmt, sky) => { const c = HALT_SCENE[cause]; return c && under(c[1], sky) ? pick([c[0]], fmt, cause) : null; };
 export const choiceMoment = (id, label, fmt, sky) => { const m = CHOICE_SCENE[id]?.[label]; return m && sky === 'clear' ? pick([m], fmt, id) : null; };
 export function boardMoment(hop, fmt, sky) {
   if (sky !== 'clear' || hop?.kind !== 'ride' || OLD.has(hop.model)) return null;

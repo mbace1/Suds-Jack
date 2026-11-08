@@ -35,7 +35,7 @@ import { haltFamily, haltMinutes } from './mutators.js?v=2';
 import { payFor } from './parcels.js?v=1';
 import { lineFamily } from './board.js?v=8';
 import { CARGO } from './deliveries.js?v=28';
-import { MISSION_CARDS, MISSION_CALLBACKS, PERKS, STRIKES } from './missions.js?v=2';
+import { MISSION_CARDS, MISSION_CALLBACKS, PERKS, STRIKES, perkPool } from './missions.js?v=3';
 
 export const SHIFT_SECONDS = 75 * 60;            // 07:00–08:15, or 23:00–00:15
 export const SPEED_KMH = { tram: 14, metro: 34, walk: 4.8 };
@@ -154,7 +154,11 @@ export function newRun(net, run = {}, seed = 1, { start = 'lasipalatsi', memory 
     phase: 'dispatch', deck: [], used: new Set(), halt: null, haltSeen: false, log: [], hop: null, pending: null, results: [], seen: [],
     memory: { ...(memory || {}) }, flags: new Set(), keep: {}, standing: { ...(standing || {}) }, sealedJob: -1, rivalJob: -1 };
   // a mission (missions.js): where it starts, its perks and strikes
-  if (run.mission) { s.at = net.nodes.has(run.mission.start) ? run.mission.start : s.at; s.perks = []; s.strikes = 0; s.mods = { deadline: 1, luck: 0, tip: 0, dry: false }; s.perkOffer = null; s.picks = []; }
+  if (run.mission) { s.at = net.nodes.has(run.mission.start) ? run.mission.start : s.at; s.picks = []; }
+  // the roguelike levers (v3.14 for missions; v3.16 for every run that asks —
+  // owner: "yes to all runs, modifiers, perks"): a perk drafted between jobs,
+  // strikes (late drops that end it), forks (two jobs on one card)
+  s.perks = []; s.strikes = 0; s.mods = { deadline: 1, luck: 0, tip: 0, dry: false }; s.perkOffer = null;
   // the shift's weather, and the run as the weather makes it: slower walks,
   // fuller trams — the deadlines are set from THIS, so snow is slow, not unfair
   s.weather = run.skies?.length ? pickOf(s, run.skies) : 'clear';
@@ -177,11 +181,28 @@ export function newRun(net, run = {}, seed = 1, { start = 'lasipalatsi', memory 
   if (run.race) { const js = [1, 2].filter(j => j !== s.sealedJob); s.rivalJob = js[hashOf(`rival:${seed}`) % js.length]; }
   // HARD's halted family (runs.js halt): seeded, a tram, from its minute
   if (run.halt) { const fams = [...new Set(net.lines.filter(l => l.mode === 'tram').map(l => l.family))];
-    const fam = haltFamily(seed, fams); if (fam) s.halt = { family: fam, from: run.halt.atMin * 60, until: run.halt.atMin * 60 + haltMinutes(seed, run) * 60, recoverJobs: run.halt.recoverJobs, startDone: null, lifted: false }; }
+    const fam = haltFamily(seed, fams); if (fam) s.halt = { family: fam, from: run.halt.atMin * 60, until: run.halt.atMin * 60 + haltMinutes(seed, run) * 60, recoverJobs: run.halt.recoverJobs, startDone: null, lifted: false };
+    if (fam && marchFamilies(net).includes(fam)) s.halt.cause = 'march'; }   // a central line held: it is the march
+  // THE MARCH (v3.16, `march`): on every n-th shift a march on Mannerheimintie
+  // holds one of the lines that run along it, from its minute
+  else if (run.march && hashOf(`march:${seed}`) % (run.march.every || 1) === 0) { const fams = marchFamilies(net);
+    if (fams.length) { const fam = fams[hashOf(`marchline:${seed}`) % fams.length], from = run.march.atMin * 60;
+      s.halt = { family: fam, from, until: from + haltMinutes(seed, { halt: run.march }) * 60, recoverJobs: run.march.recoverJobs, startDone: null, lifted: false, cause: 'march' }; } }
   dispatch(net, s);
   return s;
 }
 
+// THE MARCH (v3.16; owner, 2026-11-08: "For central lines, especially around
+// Mannerheimintie. The congress building area"): a peaceful march on
+// Mannerheimintie, by the Parliament House, between Lasipalatsi and the Opera.
+// It holds every tram family that runs that stretch (the 1, 2, 4 and 10), read
+// off the network rather than typed, and is routed round like any halt.
+export const MARCH_STRETCH = ['lasipalatsi', 'ooppera'];
+export function marchFamilies(net) {
+  const [a, b] = MARCH_STRETCH, along = l => l.nodes.some((id, i) => (id === a && l.nodes[i + 1] === b) || (id === b && l.nodes[i + 1] === a));
+  return [...new Set(net.lines.filter(l => l.mode === 'tram' && along(l)).map(l => l.family))].sort((x, y) => (parseInt(x) || 99) - (parseInt(y) || 99));
+}
+export const strikesOf = run => run?.mission ? STRIKES : (run?.strikes || 0);
 export const halted = (s, fam) => !!s.halt && !s.halt.lifted && s.halt.family === fam && s.clock >= s.halt.from && s.clock < s.halt.until;
 
 // A job offer from where the courier stands: a destination a run can carry
@@ -198,6 +219,15 @@ function dispatch(net, s, notTo = null) {
   s.offer = { to: pick, cargo, best: best[pick], contents: pickOf(s, CONTENTS[cargo] || ['something']) };
   s.offer.fee = Math.round(feeOf(s.offer) * s.trust);   // a sold parcel costs every fee after it (dispatch hears)
   const idx = s.done + s.sold, reg = regularAt(pick);
+  // a fork (v3.16, `forks`: the jobs it falls on): a second job comes in with
+  // the first, somewhere else, and the card asks which — never on the race's or
+  // the sealed parcel's job, which have their own card
+  if (s.run.forks?.includes(idx) && idx !== s.rivalJob && idx !== s.sealedJob) {
+    const rest = pool.filter(id => id !== pick), other = rest.length ? rest[Math.floor(rand(s) * rest.length)] : null;
+    if (other) { const cg = keys[Math.floor(rand(s) * keys.length)], b = { to: other, cargo: cg, best: best[other], contents: pickOf(s, CONTENTS[cg] || ['something']) };
+      b.fee = Math.round(feeOf(b) * s.trust); const rb = regularAt(other); if (rb) b.regular = { id: rb.id, name: rb.name };
+      const ra = regularAt(pick); if (ra) s.offer.regular = { id: ra.id, name: ra.name };
+      s.fork = [s.offer, b]; s.phase = 'dispatch'; return; } }
   if (reg) s.offer.regular = { id: reg.id, name: reg.name };
   if (idx === s.rivalJob) s.offer.rival = { eta: round10(s.offer.best * (s.run.race?.pace || 1.2)) };
   if (idx === s.sealedJob) { const fams = [...new Set((net.at.get(pick) || []).filter(l => l.mode === 'tram').map(l => l.family))].sort();
@@ -313,9 +343,9 @@ const eligible = (c, s) => c.options.filter(o => !o.needs || o.needs === s.job?.
 // line, and up to two buttons, each with its price in time and its stakes.
 export function card(net, s) {
   if (s.phase === 'end') return null;
-  if (s.phase === 'perk') return { kind: 'perk', mood: 'opportunity', text: `Job ${s.done} of ${s.target} done. Pick one for the rest of the errand.`,
+  if (s.phase === 'perk') return { kind: 'perk', mood: 'opportunity', text: `Job ${s.done} of ${s.target} done. Pick one for the rest of the ${s.run.mission ? 'errand' : 'shift'}.`,
     options: s.perkOffer.map(id => ({ label: PERKS[id].name, price: 0, perk: id, stakes: { sure: [PERKS[id].line] } })) };
-  if (s.phase === 'dispatch' && s.fork) return { kind: 'dispatch', mood: MOODS_FOR.dispatch, text: 'Two errands for the next job. Pick one.', mission: true, fork: true,
+  if (s.phase === 'dispatch' && s.fork) return { kind: 'dispatch', mood: MOODS_FOR.dispatch, text: s.run.mission ? 'Two errands for the next job. Pick one.' : 'Two jobs come in at once. Pick one.', mission: !!s.run.mission, fork: true,
     options: s.fork.map(o => ({ label: `${cargoWord(o.cargo)} → ${net.name(o.to)}`, price: 0, stakes: { sure: [`€${o.fee}`] } })) };
   if (s.phase === 'dispatch' && s.offer?.brief) { const o = s.offer;
     return { kind: 'dispatch', mood: o.rival ? 'warning' : MOODS_FOR.dispatch, text: o.rival ? `${o.brief} The other courier wants it too.` : o.brief, fee: o.fee, mission: true, sealed: !!o.sealed, rival: !!o.rival,
@@ -330,7 +360,7 @@ export function card(net, s) {
     return { kind: 'story', id: c.id, mood: c.mood || 'info', text: fill(s, c.text), where: c.where, tram: c.tram || null, sale: !!c.sale,
       options: eligible(c, s).map(o => ({ label: fill(s, o.label), price: o.time || 0, stakes: stakesOf(o) })) }; }
   if (s.phase === 'halt') { const h = s.halt;
-    return { kind: 'halt', mood: MOODS_FOR.halt, text: `The ${h.family} is halted.`, options: [{ label: 'Find another way', price: 0, stakes: null }, { label: 'Wait it out', price: round10(Math.max(0, h.until - s.clock)), stakes: null }] }; }
+    return { kind: 'halt', mood: MOODS_FOR.halt, cause: h.cause || null, text: h.cause === 'march' ? `A march on Mannerheimintie, by the Parliament House. The ${h.family} is halted.` : `The ${h.family} is halted.`, options: [{ label: 'Find another way', price: 0, stakes: null }, { label: 'Wait it out', price: round10(Math.max(0, h.until - s.clock)), stakes: null }] }; }
   const opts = s.options || [];
   // nowhere this parcel may go from here (a dead end for its rules): the next
   // one is always a way on, so the card never strands the courier
@@ -376,7 +406,7 @@ export function choose(net, s, i) {
   s.log.push({ at: s.clock, kind: c.kind, label: opt.label, price: opt.price });
   if (c.kind === 'dispatch') {
     // a fork chosen: that errand is the job, and its event takes the job's card slot
-    if (c.fork) { s.offer = s.fork[i]; s.fork = null; const ok = cardsOf(s.offer.step, s); if (ok.length) slot(s, pickOf(s, ok), s.done + s.sold); i = 0; }
+    if (c.fork) { s.offer = s.fork[i]; s.fork = null; if (s.offer.step) { const ok = cardsOf(s.offer.step, s); if (ok.length) slot(s, pickOf(s, ok), s.done + s.sold); } i = 0; }
     if (i === 1) { advance(s, REROLL_S); if (s.phase !== 'end') dispatch(net, s, s.offer.to); return out; }
     s.job = { ...s.offer, startedAt: s.clock, limit: Math.round(s.offer.best * GRACE * (s.run.deadline || 1) * (s.mods?.deadline || 1)), mult: 1, known: false, toName: net.name(s.offer.to) }; s.offer = null;
     if (s.job.rival) s.job.rival.until = s.clock + s.job.rival.eta;
@@ -438,12 +468,14 @@ function arrive(net, s, out) {
     out.delivered = { to: s.job.to, late, took, pay, contents: s.job.contents, mult: s.job.mult, race, eta: s.job.rival?.eta ?? null, tip, regular: s.job.regular?.name || null, sealed: !!s.job.sealed };
     if (s.halt && s.halt.startDone != null && s.done >= s.halt.startDone + s.halt.recoverJobs) s.halt.lifted = true;
     s.job = null;
-    // a mission's strikes: an errand someone waits on is lost on the second late drop
-    if (s.run.mission && late && ++s.strikes >= STRIKES) { s.phase = 'end'; out.end = true; out.failed = true; out.delivered.strike = s.strikes; return out; }
-    if (s.run.mission && late) out.delivered.strike = s.strikes;
+    // strikes: an errand someone waits on is lost on the second late drop (a run
+    // that names `strikes` keeps its own count)
+    const maxStrikes = strikesOf(s.run);
+    if (maxStrikes && late && ++s.strikes >= maxStrikes) { s.phase = 'end'; s.failed = true; out.end = true; out.failed = true; out.delivered.strike = s.strikes; return out; }
+    if (maxStrikes && late) out.delivered.strike = s.strikes;
     if (s.done >= s.target) { s.phase = 'end'; out.end = true; return out; }
     // between a mission's jobs, the draft: two of the pool you do not have yet
-    if (s.run.mission) { const pool = (s.run.perkPool || []).filter(p => !s.perks.includes(p));
+    if (s.run.mission || s.run.perks) { const pool = (s.run.perkPool || perkPool(0)).filter(p => !s.perks.includes(p));
       if (pool.length >= 2) { const a = pickOf(s, pool), b = pickOf(s, pool.filter(p => p !== a)); s.perkOffer = [a, b]; s.phase = 'perk'; return out; } }
     dispatch(net, s); return out;
   }
@@ -472,7 +504,8 @@ function dueCard(s, place) {
 function advance(s, sec) { s.clock += sec; if (s.clock >= SHIFT_SECONDS) { s.clock = SHIFT_SECONDS; s.phase = 'end'; } }
 
 // ── reading the run ────────────────────────────────────────────────────────
-export const complete = s => s.done >= s.target;
+// struck out is not complete, even when the strike was the last drop
+export const complete = s => s.done >= s.target && !s.failed;
 export const timeLeft = s => s.job ? s.job.limit - (s.clock - s.job.startedAt) : null;
 export function clockAt(s, sec) { const m = (s.run.startHour ?? 7) * 60 + Math.floor(sec / 60); return `${String(Math.floor(m / 60) % 24).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`; }
 export function clockLabel(s) { const m = (s.run.startHour ?? 7) * 60 + Math.floor(s.clock / 60); return `${String(Math.floor(m / 60) % 24).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`; }

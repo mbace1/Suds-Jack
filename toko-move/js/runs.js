@@ -22,11 +22,18 @@
 // (journey.js), and `node test/journey.mjs` holds these bands: sixty fresh
 // shifts of each run, a bot that reads the board (the hop that leaves the
 // least to go) and one that taps the left button every time — completed,
-// reader / left-tapper (on time in brackets):
-//   EASY   3 jobs, short board, ×1.5    60/60 (60) · 60/60 (55)
-//   MEDIUM 4 jobs, reach 20 min         57/60 (41) · 44/60 (15)
-//   HARD   5 jobs, rush, a line halted  53/60 (22) · 35/60  (8)
-//   NIGHT  5 jobs from 23:00, ×2 waits  48/60 (24) · 26/60  (3)
+// reader / left-tapper (on time in brackets), since v3.16:
+//   EASY   3 jobs, short board, ×1.5          60/60 (60) · 60/60 (58)
+//   MEDIUM 4 jobs, reach 16, a march, 3 strikes 53/60 (39) · 46/60 (24)
+//   HARD   5 jobs, rush, a line halted, ×0.9   52/60 (21) · 44/60  (5)
+//   NIGHT  5 jobs from 23:00, ×2 waits, 2 strikes 43/60 (20) · 27/60 (12)
+// v3.16 (owner: "yes to all runs, modifiers, perks. Let's test all, plan to fit
+// the design") put the missions' levers on every run: a perk drafted between
+// jobs (`perks`), a job that comes in two at once (`forks`, the job index it
+// falls on) and strikes (`strikes`: late drops that end the shift). Perks alone
+// made every rung easier (HARD's reader 47 → 58 of 60 on another block, NIGHT's
+// tapper above HARD's), so HARD's clock is 0.9 and NIGHT strikes out on two:
+// the ladder keeps its shape, and a tapper is stopped higher up each rung.
 // so a player who reads the board clears the ladder, and one who taps the
 // first thing on it is stopped higher up each rung. `reach` is how far a job
 // may send you (minutes of the best route); EASY's short board is the nearest
@@ -42,24 +49,25 @@ export const RUNS = [
     target: 3, deadline: 1.5, cargo: ['documents', 'parts'], board: 'short', encounters: 1, places: ['stop', 'aboard'],
     moods: { opportunity: 3, info: 2, warning: 0, notice: 0 }, disruptions: 0,
     rush: 'off', weather: 'clear', cityDay: false, rival: false, sealed: false, par: 65,
-    tones: { fun: 1 }, skies: ['clear'], cards: 3 },
+    tones: { fun: 1 }, skies: ['clear'], cards: 3, perks: true, forks: [1] },
   { id: 'medium', name: 'MEDIUM', title: 'A morning', glyph: '②',
     blurb: 'Four jobs, every kind of parcel, the morning rush, and the city happening to you.',
     target: 4, deadline: 1, cargo: null, encounters: 3, moods: null,
-    rush: null, weather: null, cityDay: true, rival: true, sealed: true, reach: 16, par: 110, race: { pace: 1.2 },
+    rush: null, weather: null, cityDay: true, rival: true, sealed: true, reach: 16, par: 120, race: { pace: 1.2 },
+    march: { every: 2, atMin: 12, minutes: [20, 32], recoverJobs: 2 }, perks: true, forks: [3], strikes: 3,
     tones: { fun: 3, risky: 1 }, skies: ['clear', 'rain', 'snow'], cards: 4 },
   { id: 'hard', name: 'HARD', title: 'Rush hour, one line down', glyph: '③',
     blurb: 'Five jobs at the height of the rush, with one tram line halted.',
-    target: 5, deadline: 1, cargo: null, encounters: 3, moods: { warning: 2, notice: 2 },
+    target: 5, deadline: 0.9, cargo: null, encounters: 3, moods: { warning: 2, notice: 2 },
     headway: 0.6, rush: 'max', weather: null, cityDay: false,
-    halt: { atMin: 10, recoverJobs: 2, minutes: [28, 44] }, rival: true, sealed: true, reach: 14, par: 120, race: { pace: 1.1 },
-    tones: { risky: 3, fun: 1 }, skies: ['snow', 'rain'], cards: 5 },
+    halt: { atMin: 10, recoverJobs: 2, minutes: [28, 44] }, rival: true, sealed: true, reach: 14, par: 130, race: { pace: 1.1 },
+    tones: { risky: 3, fun: 1 }, skies: ['snow', 'rain'], cards: 5, perks: true, forks: [3], strikes: 3 },
   { id: 'night', name: 'NIGHT', title: 'Last service', glyph: '☾',
     blurb: 'Five jobs from 23:00, half the trams, the lines lit like neon.',
     target: 5, deadline: 0.9, cargo: null, encounters: 3, moods: { info: 2, notice: 2, opportunity: 0.5 },
     skin: 'night', startHour: 23, headway: 2, rush: 'off', weather: 'clear', cityDay: false,
-    rival: true, sealed: true, reach: 16, par: 140,
-    tones: { scary: 3, risky: 1 }, skies: ['fog', 'rain', 'snow'], cards: 5 },
+    rival: true, sealed: true, reach: 16, par: 155,
+    tones: { scary: 3, risky: 1 }, skies: ['fog', 'rain', 'snow'], cards: 5, perks: true, forks: [3], strikes: 2 },
 ];
 export const BY_ID = Object.fromEntries(RUNS.map(r => [r.id, r]));
 export const ORDER = RUNS.map(r => r.id);
@@ -107,8 +115,8 @@ export function extrasOpen(all = loadRuns()) { return all.night?.done === true; 
 export function nextRun(all = loadRuns()) { return ORDER.find(id => unlocked(id, all) && !all[id].done) || ORDER[ORDER.length - 1]; }
 
 // Stars for a finished attempt. Never a gate.
-export function starsFor(run, { delivered, target, late, score }) {
-  if (!(delivered >= target)) return 0;
+export function starsFor(run, { delivered, target, late, score, failed = false }) {
+  if (!(delivered >= target) || failed) return 0;   // struck out (v3.16) is not done
   if (late > 0) return 1;
   return score >= (run?.par ?? Infinity) ? 3 : 2;
 }

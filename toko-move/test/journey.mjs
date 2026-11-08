@@ -94,7 +94,36 @@ ok(RUNS.every(r => !r.cargo || r.cargo.every(c => CARGO[c])), 'every run deals r
         const i = k % 2; J.choose(net, s, i); if (i) { waited++; ok(s.halt.lifted && !J.halted(s, s.halt.family), 'waiting it out lifts it'); } else around++; continue; }
       J.choose(net, s, POLICIES.reader(c, s)); } }
   ok(met >= 15 && waited && around, `the halt is met (${met} of 60 shifts), both ways out are taken`);
-  ok(RUNS.filter(r => r.id !== 'hard').every(r => !J.newRun(net, r, 1).halt), 'only HARD halts a line'); }
+  ok(['easy', 'night'].every(id => Array.from({ length: 20 }, (_, k) => J.newRun(net, BY_ID[id], 1 + k)).every(s => !s.halt)), 'EASY and NIGHT never halt a line'); }
+
+// ── 7b. the march (v3.16): a march on Mannerheimintie holds the lines that run along it
+{ const fams = J.marchFamilies(net);
+  ok(fams.join() === '1,2,4,10', `the lines along Mannerheimintie, Lasipalatsi to the Opera, read off the network (${fams.join(', ')})`);
+  const med = Array.from({ length: 60 }, (_, k) => J.newRun(net, BY_ID.medium, 6000 + k)), marched = med.filter(s => s.halt);
+  ok(marched.length >= 20 && marched.length <= 40 && marched.every(s => s.halt.cause === 'march' && fams.includes(s.halt.family)), `MEDIUM: every other shift or so a march holds one of them (${marched.length} of 60)`);
+  ok(new Set(marched.map(s => s.halt.family)).size >= 2, `and not always the same line (${[...new Set(marched.map(s => s.halt.family))].join(', ')})`);
+  const hard = Array.from({ length: 60 }, (_, k) => J.newRun(net, BY_ID.hard, 6000 + k));
+  ok(hard.every(s => (s.halt.cause === 'march') === fams.includes(s.halt.family)) && hard.some(s => s.halt.cause === 'march') && hard.some(s => !s.halt.cause),
+    `HARD: its held line is the march when it is a Mannerheimintie line (${hard.filter(s => s.halt.cause === 'march').length} of 60), a plain halt otherwise`);
+  let met = 0, rode = 0; for (const s0 of marched.slice(0, 20)) { const s = s0; let st = 0;
+    while (s.phase !== 'end' && st++ < 400) { const c = J.card(net, s);
+      if (c.kind === 'halt') { met++; ok(c.cause === 'march' && /^A march on Mannerheimintie, by the Parliament House\. The \S+ is halted\.$/.test(c.text) && c.text.includes(s.halt.family), 'the march card says where and which line'); }
+      if (c.kind === 'route') for (const o of c.options) if (o.hop?.kind === 'ride' && J.halted(s, o.hop.line.family)) rode++;
+      J.choose(net, s, 0); } }
+  ok(met >= 5 && rode === 0, `the march is met (${met} of 20) and no route offers the held line while it holds`); }
+
+// ── 7c. the run's own levers (v3.16): a perk between jobs, a fork, strikes
+{ let perks = 0, offered = 0, forks = 0, struck = 0, forkOk = true;
+  for (const run of RUNS) for (let k = 1; k <= 20; k++) { const s = J.newRun(net, run, 7000 + k); let st = 0;
+    while (s.phase !== 'end' && st++ < 500) { const c = J.card(net, s);
+      if (c.kind === 'perk') { perks++; if (c.options.length === 2 && c.options[0].label !== c.options[1].label && /rest of the shift\.$/.test(c.text)) offered++; }
+      if (c.fork) { forks++; if (!(c.text === 'Two jobs come in at once. Pick one.' && c.options.length === 2 && c.options.every(o => /→/.test(o.label)))) forkOk = false; }
+      J.choose(net, s, 0); }
+    if (J.strikesOf(run) && s.strikes >= J.strikesOf(run)) { struck++; ok(!J.complete(s) && s.late >= J.strikesOf(run), `${run.id}: struck out is not complete`); }
+    ok(s.perks.length <= Math.max(0, s.done - (J.complete(s) ? 1 : 0)) && new Set(s.perks).size === s.perks.length, `${run.id} ${7000 + k}: a perk per job done, never twice`); }
+  ok(perks > 100 && offered === perks, `a perk is drafted between jobs on every run, two different ones a card (${perks})`);
+  ok(forks >= 40 && forkOk, `a fork offers two jobs on one card (${forks})`);
+  ok(struck >= 1, `a left-tapper can strike out of a run (${struck} of 80)`); }
 
 // ── 8. Act 1's deck (ACT1.md §5): every card well formed; a run deals its own
 //      tones, places and weather, one card a job, at most one buyer
