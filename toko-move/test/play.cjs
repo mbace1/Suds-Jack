@@ -124,7 +124,7 @@ server.listen(0, '127.0.0.1', async () => {
       ok(`the goal and the button (${t.goal} · ${t.play})`, /^Three deliveries before 08:15/.test(t.goal) && t.play === 'START SHIFT');
       ok(`no daily, week or LIVE before NIGHT (${t.links})`, !t.links.length);
       // the same address with a pinned shift, so the gate sees the same one
-      await page.goto(`${base}/toko-move/?run=easy&seed=1002`, { waitUntil: 'load' }); await ready(page);
+      await page.goto(`${base}/toko-move/?run=easy&seed=1009`, { waitUntil: 'load' }); await ready(page);
       await page.tap('#play'); await page.waitForTimeout(250);
       const fc = await look(page);
       ok(`the shift opens on its weather (${fc.stamp})`, /CLEAR/.test(fc.stamp) && /quiet city/.test(fc.stamp));
@@ -263,13 +263,13 @@ server.listen(0, '127.0.0.1', async () => {
       ok(`no page or network errors (${car} interiors)`, !errs.length, errs.slice(0, 3).join(' | '));
       await ctx.close();
     }
-    // ── the moments (v3.12, the owner's approved art, PR #632): EASY 3434 (a clear day)
+    // ── the moments (v3.12, the owner's approved art, PR #632): EASY 1003 (a clear day)
     // takes jobs, boards trams, delivers, and boards the metro at Kalasatama, each
     // beat with its picture
     {
       const M = await import(require('url').pathToFileURL(require('path').join(__dirname, '../js/moments.js')).href);
       const ctx = await browser.newContext(PHONE), page = await ctx.newPage(), errs = watch(page);
-      await page.goto(`${base}/toko-move/?run=easy&seed=3434`, { waitUntil: 'load' }); await ready(page);
+      await page.goto(`${base}/toko-move/?run=easy&seed=1003`, { waitUntil: 'load' }); await ready(page);
       await page.tap('#play'); await page.waitForSelector('#v3panel .eventOpt', { timeout: 15000 });
       const seen = await playOut(page, { maxSteps: 400 }), ms = [...seen.scenes].filter(x => x.startsWith('m-')).map(x => x.slice(2));
       const among = pool => ms.some(m => pool.includes(m)), hand = [...Object.values(M.HANDOFF_AT).flat()];
@@ -282,12 +282,12 @@ server.listen(0, '127.0.0.1', async () => {
       ok('no page or network errors (moments)', !errs.length, errs.slice(0, 3).join(' | '));
       await ctx.close();
     }
-    // ── a card's own scene, and a choice's consequence (v3.13): EASY 1103 deals the
+    // ── a card's own scene, and a choice's consequence (v3.13): EASY 1125 deals the
     // tourist and her map, then the lady at the crossing (walked across), then the
     // seat she saved
     {
       const ctx = await browser.newContext(PHONE), page = await ctx.newPage(), errs = watch(page);
-      await page.goto(`${base}/toko-move/?run=easy&seed=1103`, { waitUntil: 'load' }); await ready(page);
+      await page.goto(`${base}/toko-move/?run=easy&seed=1125`, { waitUntil: 'load' }); await ready(page);
       await page.tap('#play'); await page.waitForSelector('#v3panel .eventOpt', { timeout: 15000 });
       const seen = await playOut(page, { maxSteps: 400 }), ms = [...seen.scenes].filter(x => x.startsWith('m-')).map(x => x.slice(2));
       ok(`the tourist's card is played in front of her and her map (${ms.join(', ')})`, ms.includes('tourist'));
