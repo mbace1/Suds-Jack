@@ -1,4 +1,4 @@
-# 36 · GL · Toko Drop 2.0: the game's own intro, then a fast compilation (built 4 Nov; stills checkpoint 3 Nov)
+# 36 · Toko Drop 2.0: the game's own intro, then a fast compilation (re-cut 8 Nov for the Toko Midori Games accounts; built 4 Nov as GL; stills checkpoint 3 Nov)
 
 **Owner, 3 Nov**, in order, with each message overriding the one before where they differ:
 1. "I already mentioned that GL needs to be 3d, but also.. can we make one of Toko drop 2.0?"
@@ -22,6 +22,113 @@ has been fully rendered and nothing has been posted.
   - `score.py`, the music;
   - `tools/`, the capture scripts.
 - **Length:** 33.49 s = 24 bars at **172 BPM**. The intro runs for 6 bars, the compilation for 16 and the end card for 2.
+
+## Toko re-cut, 8 Nov (Toko 7, for the Toko Midori Games accounts; supersedes GL1)
+
+**Owner, Sun 8 Nov ~19:05 Helsinki:** "Can you make the Toko Drop 2.0 video be for Toko Midori Games accounts. So end
+slate with those socials, no links of any kind just logo and Toko details. Saying coming in 2027. Make the video a bit
+shorter edit out glitched shooting part. Use current world 1 visuals, see if other worlds can be used since they look
+better now." GL1 (`films/04-11-GL1-Toko-Drop-2.mp4`) is on HOLD in `POSTED.md` and is not to be posted.
+
+- **Files:**
+  - `films/08-11-Toko7-Toko-Drop-2.mp4`: 1080×1920, 30 fps, **25.1 s** (was 33.5), H.264 crf 17 + AAC, 22.4 MB, no
+    RFH sign-off;
+  - `previews/08-11-Toko-Drop-2-Toko-en.mp4`: the phone preview (crf 25), 8.0 MB;
+  - `previews/08-11-Toko-Drop-2-Toko-stills.jpg`: eight frames (the intro, six cuts, the slate).
+- **Length:** 18 bars at 172 BPM = 25.12 s: the game's intro 4 bars, the compilation 10, the end slate 4. Every cut is
+  on a beat; `score.py` now reads its bar layout off `plan.json` (written by `tools/mkplan3.py`) instead of hard-coding
+  the 4 Nov film's 6 + 16 + 2.
+- **Sound:** the same synth score, re-cut to the new bars, with the game's own **v123** intro cues (`introWav`) under
+  the intro. Measured on the filed MP4 by ffmpeg ebur128: **−14.1 LUFS integrated, −2.7 dBFS true peak, LRA 7.5**.
+  Under the slate a soft pulse and a note as each line lands, then the pad rings out.
+
+### What was cut as "the glitched shooting part", and why it happened
+
+Found frame by frame in the 4 Nov film: **22.3–25.1 s, the BOSS and WORLD CLEAR cuts.** After both of world 1's Twin
+Prisms were put down (`debug.killBosses`), the hero stood still and kept firing: a straight row of evenly spaced shots
+running right across the empty arena, sitting in the same place frame after frame. The same thing showed for a moment
+in the BOSS cut before it. The cause was the capture, not the game: the takes were played by the game's built-in
+capture bot (`botInput` in `main.js`), which with nothing on the floor aims at +x and **fires anyway**, and the shot rate
+lined up with the 30 fps capture step so the stream looked frozen.
+
+The fix is a different player, not a trim: **`tools/bot.cjs`**, handed to the game through its own hook
+(`debug.capPlay(think, seed)`, added in v119). It fires only when there is a body to shoot, circles the nearest body
+instead of backing straight away, turns now and then, and dashes when something gets close. Every play frame in the
+re-cut was taken with it (`tools/take3.cjs`, `tools/cap3.cjs`; fixed seeds, so a take can be made again). The world
+clear is gone from the edit, the boss cut is a real fight, and the film's play frames were checked for frozen stretches
+(frame-to-frame motion never under 1.0 of 255 on a 270×480 sample; median 3.2).
+
+### The cut list (`plan.json`; every play frame from the deployed v123)
+
+| t (s) | beats | what | take |
+|---|---|---|---|
+| 0.00 | 7 | the game's own intro: the Toko Midori Games lockup, then "Toko drop" (intro 1.9 s on) | the game's intro |
+| 2.44 | 5 | the drop hangs from the magenta bar, lets go, falls, lands; the ring goes out (5.6 s on) | the game's intro |
+| 4.19 | 4 | it opens its eyes over the grid and drops to world 1's floor; the HUD comes in (9.1 s on) | intro, then real play |
+| 5.58 | 4 | WORLD 1 · THE GRID: the new void and its neon loops, every body a light, a wall curtain | REAL |
+| 6.98 | 4 | WORLD 1 · THE GRID: wave 6 clear, wave 7, a bounty body | REAL |
+| 8.37 | 4 | WORLD 2 · THE DRIVEWAY: DASH THE GATES, a tank, the rolling ball | REAL |
+| 9.77 | 4 | WORLD 3 · THE SEWER: a giant gathers and slams beside the hero | REAL |
+| 11.16 | 4 | WORLD 4 · THE CISTERN: a diagonal curtain, a floor of goo | REAL |
+| 12.56 | 4 | WORLD 5 · THE BOILER ROOM: protect the heart | REAL |
+| 13.95 | 2 | WORLD 6 · THE RIVER: hold the ring, a crab-legged giant | REAL |
+| 14.65 | 2 | WORLD 7 · THE ICE SHEET: swarm | REAL |
+| 15.35 | 2 | WORLD 8 · THE DEEP: collect the gems | REAL |
+| 16.05 | 4 | WORLD 9 · THE CORE: protect the heart on the magenta grid | REAL |
+| 17.44 | 6 | WORLD 1 · BOSS: Twin Prisms, fought by the capture player (`debug.bossWave` jumps the run to its boss wave) | REAL (jumped to the boss) |
+| 19.53 | 16 | the Toko Midori Games end slate, held to 25.12 | — |
+
+- **All nine worlds** are in, each from a fresh v123 take; every one looked better than its 4 Nov cut and none was
+  dropped. World 1 opens the compilation twice and closes it with the boss, so the new void look leads and ends.
+- **Dropped, all staged:** GIANTS, STEP OUT!, SPLIT!, CLEAR THE LANE!, SEWER RAMS, GIANT + ESCORT, DASH. A fresh
+  STEP OUT! was staged on world 1 (`stage2.cjs g2 1`) and not used: the giant is small on the whole-arena camera and the
+  hero takes a hit in the middle of it. The re-cut is **all real play**.
+- **Cuts placed off hurt flashes.** A hit on the hero flashes the screen red, and the capture tops lives back up (the HUD
+  then shows three again). Every cut sits clear of those frames (scanned per take).
+- **The tag along the bottom** is a small Toko face (the traced master, magenta) and the world's name. **No GL mark
+  anywhere**; the strip is near-opaque so the game's own `2.0 · v123` line does not show through it.
+
+### The end slate (`film.js`, `card=toko`, the default now)
+
+Magenta `#F0027F` on black, nothing else (BRAND.md §2c): the **traced master face** (`toko/js/master.js`, not `face.js`'s
+GEO) beside the drawn three-line logotype (`toko/js/wordmark.js`), in `lockup.js`'s proportions; then
+
+> TOKO DROP 2.0
+> COMING IN 2027 (black, reversed out of a magenta band)
+> INSTAGRAM / tokomidorigames
+> X / @tokomidori
+
+The platforms are named as words, with no platform logos. **No URL, no "play free", no arcade, no QR, no GL.** The face
+pops in on the downbeat, the logotype lines follow, the title slams in on beat 3, the band wipes on 4.5, the handles land
+on 6 and 6.5, and the face blinks once on beat 9. The handles stay out of the bottom fifth, where Reels and X lay their
+own captions. The type is Anton, as on the Toko clay films' cards. The kit is mounted for the render with
+`--mount toko=<repo>/toko`.
+
+### How to make it again
+
+```
+looks/gl/tokodrop2/tools/serve.sh <scratch>/site                    # the deployed gh-pages build on :8731
+node tools/take3.cjs <world> <clips>/w<N> busy:7:90 0-149          # each world (w1: busy:8:90 0-179)
+node tools/take3.cjs 1 <clips>/boss busy:4:60 0-29,30-179@boss
+node tools/cap3.cjs <clips>/intro 0-345                            # the intro and the start of the run
+node tools/misc.cjs <scratch>/misc                                 # the intro's cues (intro/sfx.wav)
+python3 tools/index.py <clips>; python3 tools/mkplan3.py plan.json
+uv run --with numpy --with soundfile python score.py plan.json score.wav <scratch>/misc/intro/sfx.wav
+NODE_PATH=$(npm root -g) node pipeline/render.mjs looks/gl/tokodrop2/index.html <out> --fonts <fonts> \
+  --mount _clips=<clips> --mount toko=<repo>/toko                  # then ffmpeg: frames + score.wav, crf 17
+```
+
+### Risks (re-cut)
+
+- **"Coming in 2027"** is the owner's line and the film states it as fact; the game is playable today in the arcade, and
+  the slate does not mention that (by instruction). If someone replies "it's already out", that is the owner's call.
+- **The capture still tops up lives**, as on 4 Nov. No cut shows the top-up (the cuts avoid every hurt flash), but the
+  HUD's lives are always full.
+- **The boss cut is reached by `debug.bossWave`**, a jump: the run in that cut is real play from the boss wave on, but
+  the waves before it were skipped.
+- **The capture player is ours** (`tools/bot.cjs`), not the game's look-ahead bot from v119 (that one lives in the game's
+  own repo, not in the deployed tree). It plays well enough to look like a person; it is not a skill claim.
+- **Platform marks:** none are drawn. If the owner wants the Instagram and X glyphs, they are a separate decision.
 
 ## Built 4 Nov (full film, English)
 
@@ -204,6 +311,15 @@ has been fully rendered and nothing has been posted.
 - **The music is a sketch.** It has not been listened to by a person yet or mixed against the picture.
 
 ## Post draft
+
+**Toko re-cut, 8 Nov (Toko Instagram + Toko X; no links, as the slate):**
+
+> Toko Drop 2.0. One drop, nine worlds, a lot of goo. Coming in 2027. #TokoDrop #gamedev #indiedev #twinstick
+
+(107 characters. No link anywhere, per the owner. The 4 Nov draft below carried the arcade's address and is not for the
+Toko accounts.)
+
+**GL1, 4 Nov (on HOLD, not to be posted):**
 
 > Toko Drop 2.0: nine worlds, giants that slam, sewer rams, goo everywhere. Free in the arcade: mbace1.github.io/Suds-Jack/toko-drop-2/
 

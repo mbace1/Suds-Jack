@@ -1,15 +1,17 @@
-"""GL · Toko Drop 2.0, the score: a 172 BPM drive in the early-3D era's spirit (the late-90s console jungle/breakbeat
+"""Toko Drop 2.0, the score: a 172 BPM drive in the early-3D era's spirit (the late-90s console jungle/breakbeat
 sound — a chopped break, a detuned 'reese' bass, FM stabs and a wide pad), every voice synthesised here, nothing
 sampled and nothing borrowed. The cut list in plan.json sits on this grid, so this file and that one share BPM.
 
     uv run --with numpy --with soundfile python looks/gl/tokodrop2/score.py plan.json <out.wav> [intro_sfx.wav]
 
-  bars 1-6   (0 - 8.37 s)    under the game's OWN intro: its cues (intro_sfx.wav, rendered by the game itself,
-                              debug.introWav) cut to the same three runs as the picture; a pad and a filtered break
-                              build under them, a riser and a snare roll into bar 7
-  bars 7-22  (8.37 - 30.70)  the compilation: full break, reese bass on i-VI-VII-v in D minor, stabs on the off-beats;
-                              bar 19 is four one-beat cuts, so its snares fall on the cuts
-  bars 23-24 (30.70 - 33.49) the end card: a crash and the last chord, then the bass and pad ring out
+  The bar layout is read off plan.json (re-cut 8 Nov for the Toko Midori Games accounts: 4 intro bars, 10 bars of
+  compilation, a 4-bar end slate, 25.1 s; the 4 Nov GL film was 6 + 16 + 2 bars, 33.5 s):
+  intro bars      under the game's OWN intro: its cues (intro_sfx.wav, rendered by the game itself,
+                  debug.introWav) cut to the same three runs as the picture; a pad from the logo, a filtered break
+                  from the second bar, a riser over the last two and a snare roll into the drop
+  compilation     the drop on its first bar: full break, reese bass on i-VI-VII-v in D minor, stabs on the off-beats;
+                  a snare on every cut that is not on a bar line, a crash half way, a fill into the slate
+  end slate       a crash and the tonic on its downbeat, then a soft pulse under the slate and the pad ringing out
 """
 import sys, json
 import numpy as np
@@ -91,21 +93,29 @@ def music_bar(bar, intensity):
             at(t0 + s * S16, stab(chord), 0.16, 0.25 if s % 2 else -0.25)
     at(t0, pad(chord, BAR + 0.25), 0.10 if intensity >= 2 else 0.17, 0)
 
-# 1. under the intro: pad from the logo, a filtered break from bar 3, a riser through bar 6 and a roll at its end
-for b in range(6): music_bar(b, 1)
-for b in (2, 3, 4, 5): drums(b, 1, level=0.55 if b < 4 else 0.75)
-ris = tt(BAR * 2); rn = rng.uniform(-1, 1, len(ris)); at(4 * BAR, hp(rn, 300 + 5000 * (ris / ris[-1]) ** 2) * (ris / ris[-1]) ** 2, 0.22)
-for i in range(8): at(5 * BAR + 2 * B + i * S16, SNARE, 0.18 + 0.05 * i, 0.05)
-# 2. the compilation: the drop on bar 7, full from there; bar 19's four one-beat cuts get a snare each; bar 22 fills
-at(6 * BAR, CRASH, 0.5, -0.2); at(6 * BAR, KICK, 1.0)
-drums(6, 16, fills=(21,))
-for b in range(6, 22): music_bar(b, 2)
-for i in range(4): at(18 * BAR + i * B, SNARE, 0.35, 0.05)
-at(14 * BAR, CRASH, 0.35, 0.2)
-# 3. the end card: a crash and the tonic on the downbeat, then the bass and pad ring out
-at(22 * BAR, CRASH, 0.55, 0); at(22 * BAR, KICK, 1.0); at(22 * BAR, stab(PROG[0][1] + [74], 0.5), 0.3)
-at(22 * BAR, reese(PROG[0][0], BAR * 1.6, 600), 0.3); at(22 * BAR, pad(PROG[0][1], BAR * 2), 0.14)
-for k in range(4): at(22 * BAR + B * (1 + k), stab([PROG[0][1][k % 3] + 12], 0.12), 0.1, (-0.4, 0.4)[k % 2])
+# the layout, read off the plan: intro bars [0, IB), compilation [IB, CB), the slate [CB, end)
+PLAY = [x for x in PLAN['segs'] if x['kind'] == 'play']
+IB = round(PLAY[0]['t0'] / BAR); CB = round(next(x for x in PLAN['segs'] if x['kind'] == 'card')['t0'] / BAR); EB = round(END / BAR)
+assert abs(IB * BAR - PLAY[0]['t0']) < 0.01 and abs(CB * BAR - PLAN['segs'][-1]['t0']) < 0.01, 'the cuts must sit on the bar grid'
+# 1. under the intro: pad from the logo, a filtered break from bar 2, a riser through the last two bars and a roll at its end
+for b in range(IB): music_bar(b, 1)
+for b in range(1, IB): drums(b, 1, level=0.55 if b < IB - 1 else 0.75)
+ris = tt(BAR * 2); rn = rng.uniform(-1, 1, len(ris)); at((IB - 2) * BAR, hp(rn, 300 + 5000 * (ris / ris[-1]) ** 2) * (ris / ris[-1]) ** 2, 0.22)
+for i in range(8): at((IB - 1) * BAR + 2 * B + i * S16, SNARE, 0.18 + 0.05 * i, 0.05)
+# 2. the compilation: the drop on its first bar, full from there; a snare on each cut off the bar line; a fill into the slate
+at(IB * BAR, CRASH, 0.5, -0.2); at(IB * BAR, KICK, 1.0)
+drums(IB, CB - IB, fills=(CB - 1,))
+for b in range(IB, CB): music_bar(b, 2)
+for x in PLAY[1:]:
+    if abs(x['t0'] / BAR - round(x['t0'] / BAR)) > 0.01: at(x['t0'], SNARE, 0.3, 0.05)
+at((IB + (CB - IB) // 2) * BAR, CRASH, 0.35, 0.2)
+# 3. the end slate: a crash and the tonic on the downbeat, a soft four-on-the-floor pulse under the words as they land,
+#    then the bass and pad ring out to the end
+at(CB * BAR, CRASH, 0.55, 0); at(CB * BAR, KICK, 1.0); at(CB * BAR, stab(PROG[0][1] + [74], 0.5), 0.3)
+at(CB * BAR, reese(PROG[0][0], BAR * 1.6, 600), 0.3); at(CB * BAR, pad(PROG[0][1], BAR * (EB - CB)), 0.14)
+for k in range(4): at(CB * BAR + B * (1 + k), stab([PROG[0][1][k % 3] + 12], 0.12), 0.1, (-0.4, 0.4)[k % 2])
+for k in range(4, 4 * (EB - CB) - 2): at(CB * BAR + k * B, KICK, 0.32 * (1 - k / (4 * (EB - CB))))
+for b in (3, 4.5, 6): at(CB * BAR + b * B, stab([PROG[0][1][0] + 24], 0.1), 0.09, 0)   # the slate's lines landing
 
 # the game's own intro cues, cut to the picture's three runs (plan.json's intro segments)
 if SFX:
