@@ -2,7 +2,7 @@
 // with a tail fin that beats faster as it charges; while it lines up, its lane
 // is lit on the floor out to the wall it will hit (the sim's s.lx, lz), and
 // the boss ring is under it.
-import { auraBuild, auraUpdate, auraReset } from './bossaura.js?v=122';
+import { auraBuild, auraUpdate, auraReset } from './bossaura.js?v=123';
 
 export default {
   build(ctx) {

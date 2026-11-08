@@ -7,35 +7,35 @@
 // The rules live in sim/ and run on a fixed step; this file feeds them input,
 // hands their events to the view and the sound, and draws in between steps.
 import * as THREE from 'three/webgpu';
-import { TUNING } from './tuning.js?v=122';
-import { buildFloor } from './render/floor.js?v=122';
-import { fitCamera, screenToWorld, screenDown } from './render/view.js?v=122';
-import * as worldsSim from './sim/worlds.js?v=122';
-import { shapeAt as shiftShape } from './sim/floorshift.js?v=122';
-import * as reshapeSim from './sim/reshape.js?v=122';
-import { Scenery } from './render/scenery.js?v=122';
-import { DRIFT } from './render/kit.js?v=122';
-import { Transit } from './render/transit.js?v=122';
-import { Splats } from './render/splats.js?v=122';
-import { Actors } from './render/actors.js?v=122';
-import { GEL_TIME } from './render/gel.js?v=122';
-import { studioEnvironment } from './render/env.js?v=122';
-import { Specimen } from './render/specimen.js?v=122';
-import { createWorld, step, api as simApi } from './sim/world.js?v=122';
-import { stage as stagePk } from './sim/pickups.js?v=122';
-import { Input } from './input.js?v=122';
-import { UI, t, timeText, LANGS, getLang, setLang, goalText, bossName } from './ui.js?v=122';
-import { Announcer } from './announcer.js?v=122';
-import { rooms as campaignRooms, isOpen as roomOpen, better as betterGrade } from './sim/director/campaign.js?v=122';
-import { levelShape, slots as regionSlots } from './sim/shape.js?v=122';
-import { Sound } from './audio.js?v=122';
-import { Music, worldWant, cueFor, renderMusicWav } from './music.js?v=122';
-import { Intro, CUES as INTRO } from './intro/intro.js?v=122';
-import { scheduleIntroSfx, renderIntroSfxWav } from './intro/sfx.js?v=122';
-import { Readout } from './readout.js?v=122';
-import { Meter, device, Quality } from './meter.js?v=122';
-import * as record from './record.js?v=122';
-import { dailySeed } from './sim/rng.js?v=122';
+import { TUNING } from './tuning.js?v=123';
+import { buildFloor } from './render/floor.js?v=123';
+import { fitCamera, screenToWorld, screenDown } from './render/view.js?v=123';
+import * as worldsSim from './sim/worlds.js?v=123';
+import { shapeAt as shiftShape } from './sim/floorshift.js?v=123';
+import * as reshapeSim from './sim/reshape.js?v=123';
+import { Scenery } from './render/scenery.js?v=123';
+import { DRIFT } from './render/kit.js?v=123';
+import { Transit } from './render/transit.js?v=123';
+import { Splats } from './render/splats.js?v=123';
+import { Actors } from './render/actors.js?v=123';
+import { GEL_TIME } from './render/gel.js?v=123';
+import { studioEnvironment } from './render/env.js?v=123';
+import { Specimen } from './render/specimen.js?v=123';
+import { createWorld, step, api as simApi } from './sim/world.js?v=123';
+import { stage as stagePk } from './sim/pickups.js?v=123';
+import { Input } from './input.js?v=123';
+import { UI, t, timeText, LANGS, getLang, setLang, goalText, bossName } from './ui.js?v=123';
+import { Announcer } from './announcer.js?v=123';
+import { rooms as campaignRooms, isOpen as roomOpen, better as betterGrade } from './sim/director/campaign.js?v=123';
+import { levelShape, slots as regionSlots } from './sim/shape.js?v=123';
+import { Sound } from './audio.js?v=123';
+import { Music, worldWant, cueFor, renderMusicWav } from './music.js?v=123';
+import { Intro, CUES as INTRO } from './intro/intro.js?v=123';
+import { scheduleIntroSfx, renderIntroSfxWav } from './intro/sfx.js?v=123';
+import { Readout } from './readout.js?v=123';
+import { Meter, device, Quality } from './meter.js?v=123';
+import * as record from './record.js?v=123';
+import { dailySeed } from './sim/rng.js?v=123';
 
 const T = TUNING;
 const params = new URLSearchParams(location.search);
@@ -89,7 +89,7 @@ function applyLight(id) {
   const L = T.worlds.light[id] ?? T.worlds.light.grid; litAs = T.worlds.light[id] ? id : 'grid';
   sun.color.setHex(L.sun); sun.intensity = L.sunI; sun.position.set(...L.at);
   actors.light.setSun(...L.at);   // v76: the caustics slide away from it; v93: the bodies' shadows fall away from it
-  actors.light.setHeroLight(L.hero ?? 1);   // v121: the hero's light, weaker in the sun (it washed out the floor round it)
+  actors.light.setWorldLight(L);   // v121: the hero's light, weaker in the sun (it washed out the floor round it); v123: the bullets', the bodies'
   setSceneSun(...L.at);           // v93: the slab's and the lawn's curb shadows too (render/sun.js)
   ambient.color.setHex(L.ambient); ambient.intensity = L.ambientI;
   if (T.env.on) scene.environmentIntensity = T.env.intensity * L.env;
@@ -529,9 +529,9 @@ const specimen = new Specimen(T, actors, scene.environment);
 // menu). It takes effect at run start; the menu also redraws the world left
 // behind the title in the new style. The HUD label says ' · sdf' while on.
 const GELS = ['classic', 'sdf'];
-import { STYLES } from './render/style.js?v=122';
-import { Lens } from './render/lens.js?v=122';
-import { setSceneSun } from './render/sun.js?v=122';
+import { STYLES } from './render/style.js?v=123';
+import { Lens } from './render/lens.js?v=123';
+import { setSceneSun } from './render/sun.js?v=123';
 let urlGels = GELS.includes(params.get('gels')) ? params.get('gels') : null;
 const gels = () => urlGels ?? (GELS.includes(store.str('toko2.gels')) ? store.str('toko2.gels') : 'classic');
 // The LENS switch (render/lens.js, v94): NONE or TILT-SHIFT, localStorage toko2.lens; ?lens=tilt|none for a link
@@ -682,7 +682,7 @@ const campaignProgress = (hard = false) => { try { return JSON.parse(store.str(h
 let lastRoom = null;   // AGAIN replays it
 const levels = new Map();
 async function loadLevel(id) {
-  if (!levels.has(id)) levels.set(id, fetch(new URL(`../levels/${id}.json?v=122`, import.meta.url)).then((r) => { if (!r.ok) throw new Error(`levels/${id}.json ${r.status}`); return r.json(); }));
+  if (!levels.has(id)) levels.set(id, fetch(new URL(`../levels/${id}.json?v=123`, import.meta.url)).then((r) => { if (!r.ok) throw new Error(`levels/${id}.json ${r.status}`); return r.json(); }));
   return levels.get(id);
 }
 // the list the room screen draws: worlds, their rooms, open or not, best grades
@@ -1135,6 +1135,7 @@ function frame(now, dtFixed) {
   const wall = now - last, dt = dtFixed ?? Math.min(0.1, wall / 1000), time = now / 1000;
   last = now;
   GEL_TIME.value = time;
+  actors.light.extra = scenery.lightsAt(time);   // v123: world 1's neon lines light the floor's edge as they pass
   ui.pollPad(); ui.tick(dt);
   const inp = input.read(null);
   let introT = 0;

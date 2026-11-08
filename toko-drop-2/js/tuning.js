@@ -7,10 +7,10 @@
 // things that work"). The arena is 1.x's, so every 1.x number ports as it is
 // instead of through a rescale. Axes: x across the screen (right +), y up,
 // z toward the bottom of the screen. The arena is centred on the origin.
-import { SPECIES } from './tuning/species/index.js?v=122';
-import WAVES from './tuning/waves.js?v=122';
-import PICKUPS from './tuning/pickups.js?v=122';
-import MUSIC from './tuning/music.js?v=122';
+import { SPECIES } from './tuning/species/index.js?v=123';
+import WAVES from './tuning/waves.js?v=123';
+import PICKUPS from './tuning/pickups.js?v=123';
+import MUSIC from './tuning/music.js?v=123';
 
 export const TUNING = {
   render: {
@@ -169,7 +169,10 @@ export const TUNING = {
       core:    { ambient: 0.85, rim: { w: 1.9, k: 0.6, glow: 0.3, color: [1, 0.3, 0.85], sides: 'all' } },
     },
     light: {
-      grid:     { sun: 0xffffff, sunI: 1.3, at: [8, 20, 10],    ambient: 0xffffff, ambientI: 0.45, env: 1.0 },
+      // v123 (owner, 2026-11-08: "push for more lights"): in the neon world the bullets throw `shots` × their light,
+      // and every body is a light of its own (render/light.js `bodies`)
+      grid:     { sun: 0xffffff, sunI: 1.3, at: [8, 20, 10],    ambient: 0xffffff, ambientI: 0.45, env: 1.0,
+                  shots: 2.0, bodies: { r: 2.4, add: 0.7, k: 0.3, boss: 1.6 } },
       // v93: the sun from the near left, lower (38°): the long curb on the left throws its shadow onto the slab, every
       // body's shadow falls away toward the far right, and the bodies are lit from the camera's side
       // v121: `hero`, how strong the light the hero carries is in this world (TUNING.light.arena.hero × it): in the sun a
@@ -482,13 +485,21 @@ export const TUNING = {
     // sides: `every` m apart, `out` [min, max] m past the edge, `h`/`r`/`w`
     // [min, max] in m, a `glow` colour at `glowI`
     surround: {
-      // the grid runs on past its rail, much fainter than the floor's own, and
-      // short bollards with lit tops stand along it like a runway's lights
-      // (tall neon posts were tried first: seen from above they streak out
-      // from the floor like a starburst)
-      grid: { ground: { lo: [0.006, 0.007, 0.02], hi: [0.014, 0.016, 0.04], scale: 0.35, line: [0.012, 0.024, 0.06], cell: 1.286, out: 18, fade: 8 },
-              props: [{ shape: 'post', every: 2.6, out: [1.4, 1.4], h: [0.35, 0.35], w: 0.16, color: 0x0b0d18, glow: 0x5f8cff, glowI: 3.0, rough: 0.5, jitter: 0 },
-                      { shape: 'post', every: 5.2, out: [4.2, 4.2], h: [0.55, 0.55], w: 0.2, color: 0x0b0d18, glow: 0xb26bff, glowI: 2.4, rough: 0.5, jitter: 0 }] },
+      // v123 (owner, 2026-11-08: "take out the environment art away from world 1, let's keep it super minimalistic.
+      // Only ... some moving neon lines in the void around the arena. Push for more lights and sharper visuals"): the
+      // arena alone in the void — the grid that ran on past its rail and its bollards are gone — and lines of neon
+      // running round it on loops that sink deeper into the dark the further out they are (render/scenery.js _neon).
+      // A loop: `out` m past the floor's edge, `y` m down, `w` m wide; `n` lines on it at `speed` m/s (the sign is
+      // the way round), each a white-hot head and a `tail` m streak of `color` × `i`; `light`: the inner loop's lines
+      // light the floor's edge in their colour as they pass — `along` pools down the streak, `step` m apart, each
+      // that share of `k`, `r` m across (round pools at the head alone read as blobs). `track`: the loops' own line, faint
+      grid: { neon: { track: 0.05, tip: 1.0, loops: [
+        { out: 0.8, y: -0.02, w: 0.08, n: 6, speed: 6.5, tail: 9, color: 0x22f2ff, i: 2.2, light: { r: 2.2, k: 0.75, step: 2.4, along: [1, 0.65, 0.35] } },
+        { out: 2.1, y: -0.45, w: 0.09, n: 5, speed: -5, tail: 12, color: 0xff2fe0, i: 2.0 },
+        { out: 3.8, y: -1.2, w: 0.1, n: 5, speed: 4, tail: 14, color: 0x8a6bff, i: 1.9 },
+        { out: 6.0, y: -2.2, w: 0.12, n: 4, speed: -3.2, tail: 16, color: 0x22f2ff, i: 1.6 },
+        { out: 8.8, y: -3.5, w: 0.14, n: 4, speed: 2.5, tail: 18, color: 0xff2fe0, i: 1.3 },
+      ] } },
       cistern: { ground: { lo: [0.004, 0.018, 0.026], hi: [0.016, 0.06, 0.075], scale: 0.5, out: 18, fade: 11 },
                  edge: { color: 0x3fb8d0, glow: 1.6, width: 0.12, height: 0.05 },
                  props: [{ shape: 'column', every: 4.4, out: [1.9, 2.1], h: [5.5, 5.5], r: 0.62, color: 0x8a8272, rough: 0.9 },
@@ -541,8 +552,10 @@ export const TUNING = {
   // put on screen; grid cells are square at 1.286 units.
   floor: {
     base: 0x14142b, gridLo: 0x211261, gridHi: 0x008c80,
-    gridCell: 1.286, gridLine: 0.012, gridGlow: 0.55,   // line half-width in cells; strength
-    vignetteInner: 0.55, vignetteDepth: 0.55, gridFalloff: 0.45,
+    // v123 (owner, 2026-11-08: "sharper visuals"): the lines brighter (0.55) and the rim's darkening less deep
+    // (0.55, 0.45), so the grid reads crisp to its edge against the void
+    gridCell: 1.286, gridLine: 0.012, gridGlow: 0.8,   // line half-width in cells; strength
+    vignetteInner: 0.55, vignetteDepth: 0.38, gridFalloff: 0.3,
     poolRadius: 0.30, poolLift: 0.30,
     rail: 0x5555cc, railHeight: 0.05,
   },

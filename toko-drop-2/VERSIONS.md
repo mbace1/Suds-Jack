@@ -19,6 +19,17 @@
     Never `--no-verify`.
 -->
 
+## v123 — 2026-11-08
+**World 1 alone in the void: the grid round it gone, lines of neon running round it, every body a light, the grid sharper**
+- THE DIRECTION (owner, 2026-11-08: "take out the environment art away from world 1, let's keep it super minimalistic. Only ... some moving neon lines in the void around the arena. Push for more lights and sharper visuals"). World 1's surround — the grid running on past the rail into the dark and the lit bollards along three sides — is gone: the arena stands alone in the void.
+- THE NEON: five loops round the arena, each further out and deeper into the dark (0.8 m out at the floor's level to 8.8 m out, 3.5 m down), cyan, magenta and violet, each a faint line of its own with lines of light running round it — a white-hot head and a streak of its colour 9–18 m long, 4–6 to a loop, the loops turning opposite ways at 2.5–6.5 m/s, the deeper the slower. One mesh, one shader, run off the game's clock: nothing moves on the CPU. Flat on the void, so the near side's loops hide nothing. NEON's floors and SURVIVAL wear it too, and the title stands in front of it.
+- MORE LIGHT: the inner loop's lines light the floor's edge in their colour as they pass, the light running along the edge with each streak (pools down the streak from its head, weaker behind — round pools at the head alone read as blobs). Every body on world 1's floor is a light of its own, a pool of its colour lighting the grid round its foot (a boss's brighter), and the bullets throw twice the light. The hero's light is put on the light map first, so a floor full of bullets and bodies cannot crowd it out.
+- SHARPER: the grid's lines brighter (strength 0.55 → 0.8) and the darkening toward the floor's rim shallower (0.55 → 0.38, the lines' fade 0.45 → 0.3), so the grid reads crisp to its edge against the void.
+- Looked at as a phone shows it, upright and sideways: the title, a challenge wave, the boss, and a 3-second clip of a run, before and after; five bodies staged with their light on and off.
+- Cache tokens `?v=122` → `?v=123`; HUD label → `2.0 · v123`
+
+---
+
 ## v122 — 2026-11-07
 **A sound pass, standing in for the owner's ears: the game 4 dB louder on a phone, and the boiler's song brought up to the others**
 - THE PASS (owner, 2026-11-07: "Use bots instead of me"): every song at every level beside the game's own effects (scripts/music-render.mjs measure), and a bot's real runs of worlds 2, 5 and 8 rendered with the music and every effect its play set off (replay), measured to EBU R128 (ffmpeg) and drawn as spectrograms. Clean: no clipping anywhere, the songs within about 2 dB of each other, a kill or a hurt 8 dB over the music, the melodies clear at 500–900 Hz, nothing harsh above 5 kHz. Written up in docs/SOUND.md.

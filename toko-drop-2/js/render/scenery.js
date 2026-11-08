@@ -33,10 +33,15 @@
 //            levels a bit bigger and put graphics on the sides"): a ground
 //            that goes on past the floor and fades into the dark, a thin
 //            glowing edge in the world's rail colour where the floor stops,
-//            and props standing along the far side and the two sides — the
-//            grid's lit bollards, now (world 1, NEON's floors, SURVIVAL).
+//            and props standing along the far side and the two sides.
 //            Never along the near side: nothing stands between you and the
 //            fight. One builder, every number in TUNING.scenery.surround[id]
+//   world 1 (v123, owner, 2026-11-08: "super minimalistic, only some moving
+//            neon lines in the void around the arena"): no ground and no
+//            props — the arena alone in the void, and loops of neon round it,
+//            each deeper and further out, lines running round them (_neon);
+//            NEON's floors and SURVIVAL wear it too. Flat on the void, never
+//            standing up, so the near side's loops hide nothing
 //
 // The floor itself is floor.js (its `style`); this is the rest. The camera
 // follows the hero on worlds 2 and 3 and shows T.camera.follow.edge m past
@@ -46,21 +51,21 @@
 // TUNING.scenery.
 import * as THREE from 'three/webgpu';
 import { Fn, float, vec2, vec3, fract, sin, dot, floor as tfloor, mix, smoothstep, abs, positionWorld, positionLocal, normalWorld, normalView, clamp, max, min, length, step, fwidth, uv, attribute } from 'three/tsl';
-import { GEL_TIME } from './gel.js?v=122';
-import { hash, noise, seeded, motes, phase } from './kit.js?v=122';
-import { SUN_AT } from './sun.js?v=122';
-import { boiler } from './sets/boiler.js?v=122';
-import { river } from './sets/river.js?v=122';
-import { ice } from './sets/ice.js?v=122';
-import { deep } from './sets/deep.js?v=122';
-import { core } from './sets/core.js?v=122';
+import { GEL_TIME } from './gel.js?v=123';
+import { hash, noise, seeded, motes, phase } from './kit.js?v=123';
+import { SUN_AT } from './sun.js?v=123';
+import { boiler } from './sets/boiler.js?v=123';
+import { river } from './sets/river.js?v=123';
+import { ice } from './sets/ice.js?v=123';
+import { deep } from './sets/deep.js?v=123';
+import { core } from './sets/core.js?v=123';
 
 // worlds 5-9 (v72): a set of their own each, built to its brief (render/sets/)
 const SETS = { boiler, river, ice, deep, core };
 
 // the noise, the cracks and the seeded numbers are the kit's (v72: render/kit.js),
 // and the floor still takes them from here
-export { noise, cells } from './kit.js?v=122';
+export { noise, cells } from './kit.js?v=123';
 
 // the storm drain's grate (v65, the owner's world-2 sheet), in its own units
 // (q, its frame's radius 1): x the grate, y a slot, z the frame. Rows of
@@ -120,6 +125,75 @@ export class Scenery {
   clear() {
     for (const m of this.parts) { this.group.remove(m); m.geometry.dispose(); m.material.dispose(); }
     this.parts.length = 0;
+    this.neon = null;
+  }
+
+  // v123: world 1's lines of neon (TUNING.scenery.surround.grid.neon). Every loop is a thin flat band round the
+  // arena, and all of them are ONE mesh with ONE shader (v116: one compiled graph): each vertex carries where it is
+  // along its loop (aS, m) and across it (aX, -1 … 1), and its loop's numbers. The lines are drawn by the shader off
+  // the game's clock (GEL_TIME), so nothing moves on the CPU: at `s` m along the loop, d = how far behind the
+  // nearest head it lies, and the line is bright at the head and fades over its tail. Added light on the void, so a
+  // line passing a line is brighter; the floor is opaque and stands over the deeper loops where they pass behind it
+  _neon(N, hx, hz) {
+    const pos = [], aS = [], aX = [], aSeg = [], aV = [], aL = [], aPh = [], aCol = [], idx = [], rnd = seeded(123), loops = [];
+    for (const L of N.loops) {
+      const a = hx + L.out, b = hz + L.out, P = 4 * a + 4 * b, w = L.w / 2, ph = rnd() * P;
+      const corners = [[-a, -b, 0], [a, -b, 2 * a], [a, b, 2 * a + 2 * b], [-a, b, 4 * a + 2 * b], [-a, -b, P]];
+      const col = new THREE.Color(L.color).multiplyScalar(L.i), base = pos.length / 3;
+      for (const [x, z, sAt] of corners) {
+        const sx = Math.sign(x), sz = Math.sign(z);
+        for (const k of [-1, 1]) {   // inner, outer
+          pos.push(x + k * sx * w, L.y, z + k * sz * w); aS.push(sAt); aX.push(k);
+          aSeg.push(P / L.n); aV.push(L.speed); aL.push(L.tail); aPh.push(ph); aCol.push(col.r, col.g, col.b);
+        }
+      }
+      for (let i = 0; i < 4; i++) { const v = base + i * 2; idx.push(v, v + 1, v + 3, v, v + 3, v + 2); }
+      loops.push({ ...L, a, b, P, ph });
+    }
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+    for (const [name, arr, n] of [['aS', aS, 1], ['aX', aX, 1], ['aSeg', aSeg, 1], ['aV', aV, 1], ['aL', aL, 1], ['aPh', aPh, 1], ['aCol', aCol, 3]]) g.setAttribute(name, new THREE.Float32BufferAttribute(arr, n));
+    g.setIndex(idx);
+    const mat = new THREE.MeshBasicNodeMaterial({ transparent: true, depthWrite: false, side: THREE.DoubleSide, blending: THREE.AdditiveBlending });
+    mat.colorNode = Fn(() => {
+      const s = attribute('aS', 'float'), x = attribute('aX', 'float'), seg = attribute('aSeg', 'float'), v = attribute('aV', 'float');
+      const tail = attribute('aL', 'float'), ph = attribute('aPh', 'float'), col = attribute('aCol', 'vec3');
+      const dir = step(0, v).mul(2).sub(1);                                        // +1 round one way, -1 the other
+      const d = fract(ph.add(v.mul(GEL_TIME)).sub(s).mul(dir).div(seg)).mul(seg);  // m behind the nearest head
+      const t = clamp(float(1).sub(d.div(tail)), 0, 1);
+      const tip = float(1).sub(smoothstep(0, 0.4, d));                            // the head, white-hot for 40 cm
+      const core = float(1).sub(smoothstep(0.45, 1, abs(x)));                     // full across the middle, soft at the edges
+      return col.mul(t.mul(t).add(N.track)).add(vec3(1, 1, 1).mul(tip.mul(N.tip))).mul(core);
+    })();
+    const m = this._add(new THREE.Mesh(g, mat));
+    m.renderOrder = 2; m.frustumCulled = false;
+    this.neon = { loops, hx, hz };
+  }
+
+  // v123: where the neon's lit lines are now (the same sum the shader does, at the game's `time`): light of its
+  // colour thrown onto the floor's edge by each line — `light.along` pools down its streak from the head, each
+  // `light.step` m behind the last and weaker, so the light runs along the edge with the line and turns its
+  // corners with it (render/light.js `extra`); none where the world has no neon
+  lightsAt(time) {
+    const out = (this._lit ||= []);   // the same objects every frame (v116: nothing made per frame)
+    let n = 0;
+    for (const L of this.neon?.loops ?? []) {
+      if (!L.light) continue;
+      const G = L.light, seg = L.P / L.n, dir = Math.sign(L.speed) || 1;
+      for (let j = 0; j < L.n; j++) {
+        const head = L.ph + L.speed * time + j * seg;
+        for (let m = 0; m < G.along.length; m++) {
+          const s = (((head - dir * m * G.step) % L.P) + L.P) % L.P, o = (out[n++] ||= {});
+          if (s < 2 * L.a) { o.x = -L.a + s; o.z = -L.b; }
+          else if (s < 2 * L.a + 2 * L.b) { o.x = L.a; o.z = -L.b + (s - 2 * L.a); }
+          else if (s < 4 * L.a + 2 * L.b) { o.x = L.a - (s - 2 * L.a - 2 * L.b); o.z = L.b; }
+          else { o.x = -L.a; o.z = L.b - (s - 4 * L.a - 2 * L.b); }
+          o.r = G.r; o.hex = L.color; o.k = G.k * G.along[m];
+        }
+      }
+    }
+    out.length = n;
+    return out;
   }
 
   _add(mesh) { this.group.add(mesh); this.parts.push(mesh); return mesh; }
@@ -359,9 +433,15 @@ export class Scenery {
     if (id === 'cistern') { this._cistern(hx, hz); return; }   // v71: built to its brief, as worlds 2 and 3
     if (SETS[id]) { SETS[id](this, hx, hz); return; }           // v72: worlds 5-9, the same
     const S = this.T.scenery.surround[id];
-    const G = S.ground, out = G.out;
-    // the ground: two tones of noise, a grid or traces if the world has one,
-    // falling into the dark the further it lies from the floor
+    if (S.ground) this._ground(S.ground, hx, hz);
+    this._edgeAndProps(S, id, hx, hz);
+    if (S.neon) this._neon(S.neon, hx, hz);   // v123: world 1's lines of neon in the void
+  }
+
+  // the ground: two tones of noise, a grid or traces if the world has one,
+  // falling into the dark the further it lies from the floor
+  _ground(G, hx, hz) {
+    const out = G.out;
     const groundMat = new THREE.MeshBasicNodeMaterial();
     groundMat.colorNode = Fn(() => {
       const p = positionWorld.xz;
@@ -378,7 +458,9 @@ export class Scenery {
     })();
     const ground = this._add(new THREE.Mesh(new THREE.PlaneGeometry(2 * (hx + out), 2 * (hz + out)).rotateX(-Math.PI / 2), groundMat));
     ground.position.y = -0.03; ground.renderOrder = 1;   // after the floor, as the lawn (v68)
+  }
 
+  _edgeAndProps(S, id, hx, hz) {
     // the edge: a thin line glowing in the world's rail colour, all four sides
     if (S.edge) {
       const E = S.edge, mat = new THREE.MeshBasicNodeMaterial({ color: new THREE.Color(E.color).multiplyScalar(E.glow ?? 1) });

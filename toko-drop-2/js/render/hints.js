@@ -2,10 +2,10 @@
 // CLEAR THE LANE! over a ram's lit lane, each a line of text as DASH THROUGH! is (render/pickups.js labelTexture),
 // beating as it does, and only while the game is playing (`playing`, set by main.js each frame as the pickups' is).
 // Reads the world, never writes it; the counts are this browser's (`load`, and `k.dirty` for main.js to store).
-import { TUNING } from '../tuning.js?v=122';
-import { create, update } from '../sim/teach.js?v=122';
-import { labelTexture, sprite, setPicture } from './pickups.js?v=122';
-import { t as say } from '../ui.js?v=122';
+import { TUNING } from '../tuning.js?v=123';
+import { create, update } from '../sim/teach.js?v=123';
+import { labelTexture, sprite, setPicture } from './pickups.js?v=123';
+import { t as say } from '../ui.js?v=123';
 
 const T = TUNING, MAX = 4;
 

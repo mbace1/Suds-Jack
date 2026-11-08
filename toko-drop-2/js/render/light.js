@@ -20,7 +20,7 @@
 // TUNING.light.arena.
 import * as THREE from 'three/webgpu';
 import { uv, vec2, vec3, float, length, clamp, pow } from 'three/tsl';
-import { TUNING } from '../tuning.js?v=122';
+import { TUNING } from '../tuning.js?v=123';
 
 const T = TUNING, A = T.light.arena, _Y = new THREE.Vector3(0, 1, 0);
 const smooth = (t) => { t = Math.min(1, Math.max(0, t)); return t * t * (3 - 2 * t); };
@@ -65,8 +65,10 @@ export class ArenaLight {
   // the world's sun stands at (x, y, z) (main.js applyLight): a caustic (actors.js)
   // slides `offset` × its radius away from it along the floor
   // v121: how strong the hero's own light is in the world on now (TUNING.worlds.light[…].hero, 1 where unsaid)
-  heroK = 1;
-  setHeroLight(k = 1) { this.heroK = k; }
+  // v123: and how strong the bullets' (`shots`), and whether every body is a light of its own (`bodies`)
+  heroK = 1; shotK = 1; bodyLight = null;
+  extra = [];   // v123: pools of light from outside the floor, { x, z, r, hex, k } (scenery.lightsAt)
+  setWorldLight(L = {}) { this.heroK = L.hero ?? 1; this.shotK = L.shots ?? 1; this.bodyLight = L.bodies ?? null; }
   setSun(x, y, z) {
     const l = Math.hypot(x, z) || 1, lean = l / (Math.abs(y) || 1);
     this.sunOff.x = (-x / l) * Math.min(1, lean) * A.caustic.offset; this.sunOff.z = (-z / l) * Math.min(1, lean) * A.caustic.offset;
@@ -124,20 +126,37 @@ export class ArenaLight {
   sync(w, alpha, views) {
     let n = 0;
     const P = A.bullet;
+    // v104 (owner: "more HD graphics and light. No cheap effects like glow"): the hero carries a light — a
+    // wide pool on the floor round it (the floor lit, as a bullet lights it), where a halo used to glow. First, so
+    // a floor full of bullets and bodies (v123: every body a light) cannot crowd it out of the map's `cap`
+    const HL = A.hero, hh = w.hero;
+    if (HL && hh.alive) this._put(this.pools, n++, hh.px + (hh.x - hh.px) * alpha, hh.pz + (hh.z - hh.pz) * alpha, HL.r, HL.color, HL.k * this.heroK);
     for (const bl of w.bullets) {
       if (n >= A.cap) break;
       const B = bl.hero ? P.hero : P.gel;
-      this._put(this.pools, n++, bl.px + (bl.x - bl.px) * alpha, bl.pz + (bl.z - bl.pz) * alpha, B.r, bl.color, B.k);
+      this._put(this.pools, n++, bl.px + (bl.x - bl.px) * alpha, bl.pz + (bl.z - bl.pz) * alpha, B.r, bl.color, B.k * this.shotK);
     }
     for (const b of this.bursts) {
       if (n >= A.cap) break;
       const t = b.life / b.max;
       this._put(this.pools, n++, b.x, b.z, b.r, b.hex, b.k * t * t);
     }
-    // v104 (owner: "more HD graphics and light. No cheap effects like glow"): the hero carries a light — a
-    // wide pool on the floor round it (the floor lit, as a bullet lights it), where a halo used to glow
-    const HL = A.hero, hh = w.hero;
-    if (HL && hh.alive && n < A.cap) this._put(this.pools, n++, hh.px + (hh.x - hh.px) * alpha, hh.pz + (hh.z - hh.pz) * alpha, HL.r, HL.color, HL.k * this.heroK);
+    // v123: light from round the floor (main.js sets it each frame: world 1's neon lines as they pass the edge)
+    for (const e of this.extra) { if (n >= A.cap) break; this._put(this.pools, n++, e.x, e.z, e.r, e.hex, e.k); }
+    // v123 (owner, 2026-11-08: "push for more lights"): in the neon world every body is a light — a pool in its
+    // colour round its foot, so the grid lights up wherever one stands (TUNING.worlds.light[…].bodies: `r` × its
+    // radius plus `add` m, `k` strong, a boss × `boss`; the worlds a sun lights have none)
+    const BL = this.bodyLight;
+    if (BL) for (const g of w.gels) {
+      if (n >= A.cap) break;
+      if (!g.alive || (g.state === 'appear' && g.t < 0)) continue;
+      const v = views?.get(g.id);
+      if (v && v.root && !v.root.visible) continue;
+      const grow = g.child || !(g.t < T.gel.swell) ? 1 : smooth(g.t / T.gel.swell);
+      if (grow <= 0.01) continue;
+      this._put(this.pools, n++, g.px + (g.x - g.px) * alpha, g.pz + (g.z - g.pz) * alpha, (g.r * BL.r + BL.add) * grow,
+        T.species[g.kind]?.color ?? 0xffffff, BL.k * (g.isBoss ? BL.boss : 1));
+    }
     let s = 0;
     const S = A.shadow, h = w.hero;
     // the hero's shadow narrows as it falls into a world from high up, and goes with it down a drain
