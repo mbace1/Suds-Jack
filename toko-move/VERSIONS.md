@@ -1,5 +1,64 @@
 # Toko Move — versions
 
+## v3.18 — 2026-11-08
+
+**THREE AT EVERY CHOICE, AND THE MENUS WEAR THE CARD** — the owner, on
+v3.17: *"We need 3 options at every choice. 2 regular and 3rd can sometimes
+be special or very special. This same lower third look, should be used in
+menus and the intro screen."*
+
+- **Every card has three buttons.** The first two are what they always
+  were, in the same places (the cheaper hop still on the left). The third
+  is new, and sometimes special (gold, ★ SPECIAL) or very special (a slow
+  cyan-and-gold shine, ✦ VERY SPECIAL):
+  - **A stop:** another way when there is one. On about one stop in five,
+    a taxi straight to the drop (special: €8 plus €3 a km, a four-minute
+    wait, slower in snow). On one in twenty-five, a cargo bike courier's
+    lift (very special: free and quick). A sealed parcel has no address,
+    so it gets no lift.
+  - **A story card:** a third thing to do, written for each of the 46
+    cards and the two mission cards. Twenty are ordinary, sixteen special
+    (they cost or pay a little), ten very special (choir: *"Join in"*;
+    sauna: *"Ask about the cold plunge"*; the ghost tram: *"Ask the driver
+    where it goes"*; the wallet: *"Find him from the library card"*).
+  - **A dispatch:**
+    - take it / ask for another / *Take it, express* (special: the fee
+      ×1.5, the clock ×0.7);
+    - a mission's: take it / *Take it slow* (the fee ×0.8, the clock ×1.3)
+      / express;
+    - the race: race her / let her have it / *Buy her a coffee* (special:
+      €3, no race).
+  - **A halt:** find another way / wait it out / a taxi past it (special).
+  - **A fork:** the two jobs, or *Toss a coin* (special: one of them, and
+    €3).
+  - **A perk:** the two perks, or *Keep the cash* (€8).
+- **Measured.** The taxi was first on every third stop for €6: the
+  reader's NIGHT went 43 → 57 of 60. At €8 + €3/km with a four-minute wait,
+  on one stop in five, the ladder keeps its shape. Bands, reader · tapper:
+
+  | run | reader | tapper |
+  |---|---|---|
+  | EASY | 60/60 | 60/60 |
+  | MEDIUM | 57 | 46 |
+  | HARD | 54 | 44 |
+  | NIGHT | 51 | 27 |
+
+  More choice is better for a player who reads; the tapper, who never
+  takes a third, is where it was.
+- **The menus wear the card.** The title is the game's lower third over an
+  approved picture: the tram stop (PR #632), sideways the tram at the
+  platform, with Toko's face beside the name. The runs and missions are
+  pill buttons, START stays at the foot of the card, and the end card and
+  the pause share the look.
+- **Finnish** for every new option, line and tag.
+- **Gates.**
+  - `test/journey.mjs`: three buttons on every card; the two regular ways
+    first; the third sometimes special and now and then very special.
+  - `test/missions.mjs`: the wallet's third, the fork's coin, the race's
+    coffee.
+  - `test/play.cjs` (browser): three priced 44px buttons on every card;
+    the express, the halt's taxi, the perk's cash, the coin.
+
 ## v3.17 — 2026-11-08
 
 **THE MISSIONS ON THE MAP, AND TODAY'S ERRAND** — ROADMAP steps 7 and 8 (owner,

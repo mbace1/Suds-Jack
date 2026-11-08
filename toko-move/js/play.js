@@ -25,8 +25,8 @@
 // nothing happens while you read. Every animation is skippable by a tap and
 // none of them is a timer the game waits on to be fair: the state has already
 // moved when it starts.
-import { tr } from './lang.js?v=15';
-import * as J from './journey.js?v=6';
+import { tr } from './lang.js?v=16';
+import * as J from './journey.js?v=7';
 import * as Runs from './runs.js?v=5';
 import { HopBoard } from './hopboard.js?v=4';
 import { loadGround } from './ground.js?v=12';
@@ -37,16 +37,16 @@ import { colourOf, parcelHtml } from './parcels.js?v=1';
 import { esc } from './ui.js?v=2';
 import { STORE } from './platform.js?v=1';
 import { lineFamily } from './board.js?v=8';
-import { TRAMS } from './cards.js?v=3';
+import { TRAMS } from './cards.js?v=4';
 import { mountAudio } from './audio.js?v=2';
 import { loadStanding, saveStanding } from './regulars.js?v=4';
 import { addNote } from './sealed.js?v=2';
-import { MISSIONS, PERKS, STRIKES, loadMissions, missionOpen, recordMission, perkPool, doneCount } from './missions.js?v=3';
+import { MISSIONS, PERKS, STRIKES, loadMissions, missionOpen, recordMission, perkPool, doneCount } from './missions.js?v=4';
 import { MOMENTS, faceIn, keepIn, pickupMoment, deliveryMoment, boardMoment, walkMoment, cardMoment, choiceMoment, haltMoment } from './moments.js?v=4';
-import { resolveMode, dailyShare, errandShare, errandStore, errandOf, W } from './modes.js?v=5';
+import { resolveMode, dailyShare, errandShare, errandStore, errandOf, W } from './modes.js?v=6';
 import { recordDaily, todayRecord, streak, dateKey } from './daily.js?v=2';
 
-export const BUILD_VERSION = '3.17';
+export const BUILD_VERSION = '3.18';
 const $ = id => document.getElementById(id);
 const params = new URLSearchParams(location.search);
 // a run of the ladder, today's daily, or a day of the week (modes.js, ACT1.md §12)
@@ -190,6 +190,30 @@ const CSS = `
 .evStk em.usually{background:#dff0e3;color:#2f6b3a}.evStk em.maybe{background:#fff1c7;color:#7a5a00}.evStk em.long{background:#fde0d4;color:#a13d1d}
 .evPrimary .evStk em.usually{background:#3f7a45;color:#fff}.evPrimary .evStk em.maybe{background:#ffcc00;color:#15262b}.evPrimary .evStk em.long{background:#e2683c;color:#fff}
 .evStk .or{opacity:.7;margin:0 2px}
+/* v3.18: the menus wear the game's own lower third (owner: "This same lower third look, should be used in
+   menus and the intro screen"): the card sits at the foot of an approved picture, with the same pill buttons */
+.veil{align-items:flex-end;padding:12px 12px calc(12px + env(safe-area-inset-bottom));background:rgba(237,242,238,.28)}
+#title.veil{background:linear-gradient(rgba(237,242,238,0) 35%,rgba(237,242,238,.6)),url(scenes/moments/916/tram-stop.webp) center 28%/cover no-repeat,#edf2ee}
+@media (orientation:landscape){.veil{justify-content:flex-end}#title.veil{background-image:linear-gradient(90deg,rgba(237,242,238,0) 40%,rgba(237,242,238,.6)),url(scenes/moments/169/tram-stop.webp)}}
+.veil .card{max-width:440px;border-radius:18px;padding:14px 14px 12px;border:1px solid #c5cec8;box-shadow:0 3px 0 #d3d8d1,0 10px 30px rgba(21,38,43,.2);max-height:min(76dvh,680px);overflow-y:auto;animation:v3stamp .3s cubic-bezier(.2,.8,.3,1.2) both}
+.veil .card h1{font-size:24px;display:flex;align-items:center;gap:10px}.veil .card h1 .evFace{width:40px;height:40px;flex:none}
+.veil .btn{border-radius:999px;min-height:48px;border:1.5px solid #233d4d;font-weight:800;letter-spacing:.5px}
+.veil .btn.ghost{background:#fffdf7;color:#15262b}
+.veil .run{border-radius:999px;border:1.5px solid #233d4d;min-height:46px;padding:2px 14px}
+.veil .run.on{background:#233d4d;color:#fff;border-color:#233d4d}.veil .run.on small{color:#cfe0e6}
+.veil .run.locked{border:1.5px dashed #b9c2bd;color:#69777a}
+.veil .mutHead{margin-top:10px}
+#title .card{max-height:min(60dvh,600px)}
+@media (orientation:landscape){#title .card{max-height:calc(100dvh - 24px)}}
+.veil a.btn{display:block;text-align:center;text-decoration:none;line-height:1.25;padding:13px 12px}
+.veil #play{position:sticky;bottom:-12px;z-index:2;box-shadow:0 0 0 6px #fffdf7,0 -10px 14px 2px #fffdf7}
+/* v3.18: three at every choice; the third sometimes special (gold), now and then very special */
+.ev3 .evBtn{min-height:46px;padding:6px 14px}.ev3{gap:6px!important}
+.evTier{display:block;font-size:9.5px;font-weight:900;letter-spacing:1.6px;line-height:1;margin-bottom:2px}
+.evSpecial{background:#fff3cf;color:#15262b;border-color:#d39a14!important;box-shadow:inset 0 0 0 1px #f2c94c}.evSpecial .evTier{color:#a9750a}
+.evVery{background:linear-gradient(100deg,#e9f8fc 0%,#fff6d8 45%,#e9f8fc 90%);background-size:220% 100%;color:#15262b;border-color:#33b2d2!important;box-shadow:0 0 0 2px rgba(51,178,210,.25),0 0 14px rgba(242,201,76,.55);animation:evShine 2.6s linear infinite}.evVery .evTier{color:#1f8fae}
+@keyframes evShine{to{background-position:-220% 0}}
+@media (prefers-reduced-motion:reduce){.evVery{animation:none}}
 .v3sign{display:flex;align-items:center;gap:10px;padding:12px 16px;border-radius:14px;background:#101418;color:#ffb648;font:700 15px/1.2 ui-monospace,'SF Mono',Menlo,Consolas,monospace;letter-spacing:1px;box-shadow:0 0 0 2px #2a2f34,0 4px 14px rgba(0,0,0,.35);animation:v3stamp .22s ease-out both;flex-wrap:wrap}
 .v3sign .lb{display:inline-grid;place-items:center;min-width:34px;height:26px;padding:0 6px;border-radius:6px;color:#fff;font-weight:900}
 .v3sign .nx{color:#fff}.v3sign .model{flex-basis:100%;font-size:11px;color:#8a949b;letter-spacing:2px}
@@ -373,6 +397,8 @@ const ready = (async () => {
 const COUNT = ['No', 'One', 'Two', 'Three', 'Four', 'Five', 'Six'];
 const hhmm = m => `${String(Math.floor(m / 60) % 24).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
 function paintTitle() {
+  // Toko on the title, as on every card (v3.18)
+  const h1 = document.querySelector('#title .card h1'); if (h1 && !h1.querySelector('.face')) h1.insertAdjacentHTML('afterbegin', face('info'));
   const start = (RUN.startHour ?? 7) * 60, end = start + J.SHIFT_SECONDS / 60;
   const set = (id, t) => { const e = $(id); if (e) e.textContent = t; };
   set('titleWhen', `Act 1 · Helsinki · ${hhmm(start)} · ${RUN.title}`);
@@ -534,8 +560,10 @@ let dealt = '';
 function paintCard(c) {
   const key = `${S.log.length}:${c.kind}:${c.id || ''}:${c.text}`;
   if (key !== dealt) { dealt = key; sfx(c.kind === 'halt' || c.rival ? 'event' : 'deal'); }
-  const stack = c.options.some(o => String(tr(o.label)).length > 18 || o.stakes);
-  panel.innerHTML = `<section class="eventCard mood-${esc(c.mood)}" data-kind="${c.kind}"${c.id ? ` data-card="${c.id}"` : ''}><div class="evHead">${face(c.mood)}<b class="evLine">${c.at ? `<span class="evAt">${esc(c.at.toUpperCase())}</span>` : ''}${esc(c.text)}</b></div><div class="evOpts${stack ? ' evStack' : ''}">${c.options.map((o, i) => `<button class="evBtn ${i === 0 ? 'evPrimary' : 'evGhost'} eventOpt" type="button" data-i="${i}"><span class="evLb"><span>${esc(o.label)}</span>${stakesHtml(o.stakes)}</span><span class="evCost">${price(o.price)}</span></button>`).join('')}</div></section>`;
+  const stack = c.options.length > 2 || c.options.some(o => String(tr(o.label)).length > 18 || o.stakes);
+  const cls = (o, i) => o.tier === 'very' ? 'evVery' : o.tier === 'special' ? 'evSpecial' : i === 0 ? 'evPrimary' : 'evGhost';
+  const tag = o => o.tier === 'very' ? '<span class="evTier">✦ VERY SPECIAL</span>' : o.tier === 'special' ? '<span class="evTier">★ SPECIAL</span>' : '';
+  panel.innerHTML = `<section class="eventCard mood-${esc(c.mood)}" data-kind="${c.kind}"${c.id ? ` data-card="${c.id}"` : ''}><div class="evHead">${face(c.mood)}<b class="evLine">${c.at ? `<span class="evAt">${esc(c.at.toUpperCase())}</span>` : ''}${esc(c.text)}</b></div><div class="evOpts${stack ? ' evStack' : ''}${c.options.length > 2 ? ' ev3' : ''}">${c.options.map((o, i) => `<button class="evBtn ${cls(o, i)} eventOpt" type="button" data-i="${i}"${o.tier ? ` data-tier="${o.tier}"` : ''}><span class="evLb">${tag(o)}<span>${esc(o.label)}</span>${stakesHtml(o.stakes)}</span><span class="evCost">${price(o.price)}</span></button>`).join('')}</div></section>`;
   const armed = performance.now() + 300;
   panel.querySelectorAll('.eventOpt').forEach(b => b.addEventListener('click', () => { if (performance.now() >= armed) pick(Number(b.dataset.i)); }));
 }
@@ -545,7 +573,7 @@ function paintCard(c) {
 const dropOf = job => job && !(job.sealed && !job.sealed.revealed) ? job.to : undefined;
 // the corner inset: here, the drop, and the hops on offer as their own paths
 function paintMini(c) {
-  const btn = $('v3mini'), hops = c?.kind === 'route' ? c.options.map(o => o.hop).filter(Boolean) : [];
+  const btn = $('v3mini'), hops = c?.kind === 'route' ? c.options.map(o => o.hop).filter(h => h?.to) : [];
   // at dispatch the drop on offer is the job's; it shows where it is before you take it
   const job = S.job || (S.offer ? { to: S.offer.to, cargo: S.offer.cargo, sealed: S.offer.sealed } : null), show = !!job && c && c.kind !== 'story';
   btn.hidden = !show; if (!show) { still = null; return; }
@@ -561,7 +589,7 @@ function openBoard() {
   boardOpen = true; panel.style.visibility = 'hidden'; $('v3mini').hidden = true;
   const cv = $('v3board'); cv.classList.add('on'); board.resize();
   const job = S.job || (S.offer ? { to: S.offer.to, cargo: S.offer.cargo, sealed: S.offer.sealed } : null);
-  board.draw({ at: S.at, dest: dropOf(job), destColour: job ? colourOf(job.cargo) : undefined, previews: c.kind === 'route' ? c.options.map(o => o.hop).filter(Boolean) : [], lift: false, halted: haltedLayer });
+  board.draw({ at: S.at, dest: dropOf(job), destColour: job ? colourOf(job.cargo) : undefined, previews: c.kind === 'route' ? c.options.map(o => o.hop).filter(h => h?.to) : [], lift: false, halted: haltedLayer });
   hint('TAP TO CLOSE'); weather();
 }
 $('v3mini').addEventListener('click', openBoard);
@@ -695,16 +723,19 @@ async function pick(i) {
   if (busy || !S || S.phase === 'end') return;
   busy = true; panel.querySelectorAll('button').forEach(b => { b.disabled = true; });
   sfx('tap');
-  const wasHop = pendingHop, before = J.card(net, S);
+  const wasHop = pendingHop, before = J.card(net, S), hadJob = !!S.job;
   const r = J.choose(net, S, i);
   if (r.error) { busy = false; render(); return; }
   paintHud();
   try {
-    if (r.kind === 'dispatch' && i === 0 && S.job) {            // the job is taken: the parcel is handed over
+    if (r.kind === 'dispatch' && !hadJob && S.job) {            // the job is taken: the parcel is handed over
+      if (r.coin != null) await reveal({ say: `The coin says: ${J.cargoWord(S.job.cargo).toLowerCase()} for ${S.job.toName}.`, chips: [`+€${J.COIN_CASH}`], how: 'win' });
+      if (r.coffee) await reveal({ say: 'She takes the coffee, and the job is yours. No race.', chips: [`−€${J.COFFEE}`], how: 'sure' });
       sfx('coin');
       // (a sealed parcel's address stays hidden: the line is the one its dispatch card said)
       const what = S.job.sealed ? 'A sealed parcel. No address, only a sticker.' : `${J.cargoWord(S.job.cargo)} for ${S.job.toName}.`;
-      await moment(pickupMoment(S.at, S.job, fmt, sky()), `<div class="v3stamp pickup" role="status"><span class="big">PICKED UP</span><span>${esc(what)}</span><span class="pts">€${S.job.fee}</span></div>`, 1400);
+      const how = r.express ? '<span class="xtra">EXPRESS · the clock ×0.7</span>' : r.slow ? '<span class="xtra">SLOW · the clock ×1.3</span>' : '';
+      await moment(pickupMoment(S.at, S.job, fmt, sky()), `<div class="v3stamp pickup" role="status"><span class="big">PICKED UP</span><span>${esc(what)}</span>${how}<span class="pts">€${S.job.fee}</span></div>`, 1400);
     }
     if (r.hop) {
       $('v3mini').hidden = true;
@@ -729,6 +760,8 @@ async function pick(i) {
       panel.innerHTML = '';
       await rideBoard(wasHop, wasHop.kind === 'walk' ? 0.5 : 0, 1);
       if (wasHop.kind === 'ride' && wasHop.model && wasHop.model !== 'metro') arrived = { model: wasHop.model, family: wasHop.line.family };
+    } else if (r.kind === 'perk' && r.cash) {
+      await reveal({ say: 'You keep the cash.', chips: [`+€${r.cash}`], how: 'win' });
     } else if (r.perk) {
       // a perk drafted (v3.14; on every run since v3.16): kept for the rest of it
       await reveal({ say: `${PERKS[r.perk].name}, for the rest of the ${MODE.mode === 'mission' ? 'errand' : 'shift'}.`, chips: [PERKS[r.perk].line], how: 'win' });

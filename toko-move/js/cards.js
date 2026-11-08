@@ -221,3 +221,59 @@ export const TRAMS = [
 export const SLIPS = ['You slip. A pensioner lifts you up with one hand and keeps walking.', 'You slip. Three strangers catch you without a word, then pretend it never happened.',
   'You slip, spin, and land standing. Nobody saw. Everybody saw.', 'You slip into a snowdrift. A child asks if you are a snowman.'];
 export const SOAKS = ['Rain gets into the bag. The paper is now papier-mâché.', 'A bus drives through a puddle at you. Personally.', 'The rain wins this round. The label is running.'];
+
+// ── THE THIRD OPTION (v3.18; owner, 2026-11-08: "We need 3 options at every
+// choice. 2 regular and 3rd can sometimes be special or very special") ──────
+// One per card, kept here in one table so it reads as a set. `tier`:
+//   (none)     a third ordinary thing to do
+//   'special'  costs a little money, or pays a little more for it
+//   'very'     the rare one: a moment the city remembers
+export const THIRDS = {
+  gull: { label: 'Feed it a bit of pulla', time: 10, cash: -2, pay: 1.05, tier: 'special', say: 'It eats the pulla and stands guard over your parcel. Nobody comes near.' },
+  granny: { label: 'Point her to the underpass', time: 20, say: 'She takes the underpass. She has opinions about the underpass.' },
+  map: { label: 'Walk them to the shop', time: 120, cash: 15, tier: 'special', say: 'The Moomin shop. They buy you a mug and fill it with a fifteen-euro note.' },
+  choir: { label: 'Join in', time: 40, pay: 1.3, cash: 10, tier: 'very', say: 'You know the words. The whole carriage turns. Somebody films it, and somebody tips.' },
+  spruce: { label: 'Help him off at his stop', time: 60, cash: 5, say: 'You and the spruce get off together. He gives you five euros and a branch.' },
+  scratch: { label: 'Buy three', time: 20, tier: 'special', risk: { odds: 'maybe', win: { cash: 34, say: 'The third one wins forty. The cashier claps, twice.' }, lose: { cash: -6, say: 'Three free coffees. You are holding one coffee.' } } },
+  sauna: { label: 'Ask about the cold plunge', time: 120, pay: 1.5, tier: 'very', say: 'Ice water, then the steam. You leave faster than you came. Much faster.' },
+  quiet: { label: 'Read your phone', time: 0, say: 'Your phone is on 2%. You read the battery icon very carefully.' },
+  swedish: { label: 'Walk them there yourself', time: 90, cash: 15, tier: 'special', say: 'They take your arm the whole way and tip you in euros and kronor.' },
+  sofa: { label: 'Hold the doors for them', time: 20, pay: 1.05, say: 'The sofa gets through. A cheer goes up from the overalls.' },
+  busker: { label: 'Request it again', time: 60, cash: -5, pay: 1.25, tier: 'special', say: 'He plays it twice as fast. So do you.' },
+  inspector: { label: 'Buy a ticket from him', time: 10, cash: -3, tier: 'special', say: 'He sells you one. He seems to enjoy it.' },
+  dog: { label: 'Give it your scarf', time: 30, cash: 30, tier: 'very', say: 'Its owner turns out to be a city councillor. A reward, a sticker and a letter of thanks.' },
+  umbrella: { label: 'Run between the drops', time: 0, risk: { odds: 'maybe', win: { say: 'You are not wet. You are not sure how.' }, lose: { pay: 0.9, say: 'You are wet. So is the parcel, a little.' } } },
+  iceswim: { label: 'Join him', time: 180, pay: 1.6, tier: 'very', say: 'Thirty seconds in the sea. You have never been so awake. You run the rest.' },
+  slip: { label: 'Buy ice studs at the kiosk', time: 30, cash: -8, pay: 1.05, tier: 'special', say: 'Ice studs. You walk like a local now.' },
+  vappu: { label: 'Sell him a sticker instead', time: 10, cash: 5, say: 'He sticks it on his cap. He seems happy with the trade.' },
+  moomin: { label: 'Sell her your keyring', time: 10, cash: 15, tier: 'special', say: 'It is a Moomin keyring. You did not know that until now.' },
+  dentist: { label: 'Help her find the crowns', time: 40, pay: 1.05, say: 'They were in the next parcel along. She is very grateful.' },
+  rival: { label: 'Race him for it instead', time: 0, tier: 'special', risk: { odds: 'maybe', win: { cash: 30, say: 'You beat him to the corner. He pays up, in real notes this time.' }, lose: { cash: -10, say: 'He wins, and takes ten euros for the trouble.' } } },
+  runforit: { label: 'Take the underpass', time: 40, say: 'Down, along, up. The tram is still there.' },
+  fence: { label: 'Ask the man in hi-vis', time: 40, pay: 1.1, say: 'He opens the gate for you. "Just this once." It is always just this once.' },
+  crush: { label: 'Pay a tall man to hold it', time: 0, cash: -5, tier: 'special', say: 'He holds it above the crowd, like a trophy, but taller.' },
+  roadworks: { label: 'Ask the foreman', time: 60, say: 'He walks you through, with commentary.' },
+  puffy: { label: 'Take your coat off and squeeze in', time: 30, risk: { odds: 'usually', win: { say: 'You fit, and you are cold.' }, lose: { time: 60, say: 'Still a puffy coat too many. You wait.' } } },
+  wet: { label: 'Buy a bin bag at the kiosk', time: 30, cash: -2, tier: 'special', say: 'Dry. Fashionable? No. Dry.' },
+  ghost: { label: 'Ask the driver where it goes', time: 30, tier: 'very', risk: { odds: 'long shot', win: { pay: 2.5, say: 'It goes exactly where you are going. He knew before you asked.' }, lose: { time: 180, say: 'He does not answer. When you look up, you are alone at the stop.' } } },
+  humming: { label: 'Hum along', time: 10, say: 'You harmonise. It is not bad, actually.' },
+  fog: { label: 'Follow the foghorn', time: 30, pay: 1.15, tier: 'special', say: 'The horn knows the harbour. So do you now.' },
+  moved: { label: 'Talk to it', time: 10, tier: 'very', risk: { odds: 'long shot', win: { pay: 2, say: 'It goes still, then warm. You deliver it very gently.' }, lose: { time: 60, say: 'It does not answer. You carry it at arm\'s length.' } } },
+  longcoat: { label: 'Ask her who "he" is', time: 30, pay: 1.4, tier: 'very', say: 'She tells you. You deliver the parcel with great care.' },
+  lastmetro: { label: 'Run for the night tram', time: 120, risk: { odds: 'maybe', win: { say: 'You catch it. The driver nods. You are both night people now.' }, lose: { time: 120, say: 'It leaves as you arrive. Another one, eventually.' } } },
+  karaoke: { label: 'Take the microphone', time: 90, tier: 'special', risk: { odds: 'maybe', win: { cash: 40, say: 'Standing ovation. The tip jar is yours.' }, lose: { cash: -5, say: 'Silence, then one person claps. You buy them a drink.' } } },
+  kebab: { label: 'Just the fries', time: 30, cash: -4, pay: 1.05, say: 'Fries. Enough courage for one more drop.' },
+  reindeer: { label: 'Feed it your pulla', time: 20, pay: 1.5, tier: 'very', say: 'It eats it, bows, and is gone. Your feet feel lighter.' },
+  flicker: { label: 'Close your eyes too', time: 0, say: 'When you open them, everyone is awake and nobody mentions it.' },
+  granny2: { label: 'Buy her a coffee at the next stop', time: 60, cash: -3, pay: 1.3, tier: 'special', say: 'She tells you the whole history of the 4. You arrive knowing everything.' },
+  spruce2: { label: 'Carry it together', time: 20, pay: 1.1, say: 'Two men, one parcel. It has never been safer.' },
+  gull2: { label: 'Buy them a fish at the market', time: 60, cash: -5, pay: 1.4, tier: 'very', say: 'They escort you to the drop. Nobody bothers you. Nobody.' },
+  dispatch1: { label: 'Which one is blue?', time: 10, say: '"The blue one." Dispatch hangs up.' },
+  dispatch2: { label: 'Ask about Tuesday', time: 20, say: '"Tuesday was fine." It was not fine.' },
+  dispatch3: { label: 'Bring her flowers too', time: 60, cash: -8, pay: 1.8, tier: 'very', say: 'Aino cries a little. There is coffee, and a cake, and a story.' },
+  dispatch4: { label: 'Ask for a map', time: 20, say: '"There is no map." Dispatch hangs up.' },
+  ticket1987: { label: 'Hand it to the driver', time: 10, pay: 1.2, tier: 'special', say: 'He punches it and winks. "Mind the stop that is not there."' },
+  inspector1987: { label: 'Pay the fine', time: 20, cash: -10, say: 'Ten euros. He gives you the ticket back, for the museum.' },
+  sealed: { label: 'Shake it gently', time: 10, tier: 'special', risk: { odds: 'maybe', win: { unseal: true, say: 'It rattles a name: {stop}.' }, lose: { pay: 0.8, say: 'It rattles. Something inside is now in two pieces.' } } },
+};
+for (const c of [...CARDS, ...Object.values(CALLBACKS), ...ARCS, SEALED_CARD]) if (THIRDS[c.id] && !c.options.includes(THIRDS[c.id])) c.options.push(THIRDS[c.id]);

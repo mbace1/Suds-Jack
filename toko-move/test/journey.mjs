@@ -31,7 +31,8 @@ ok(net.lines.every(l => l.sourceId), 'every line knows its HSL geometry (the boa
 // ── 2. a bot, two ways to play
 const POLICIES = {
   // reads the board: the hop that leaves the least to go; the cheapest card
-  reader: c => c.kind === 'route' && c.options[0].hop ? c.options.map((o, k) => [o.hop.total, k]).sort((a, b) => a[0] - b[0])[0][1]
+  // (v3.18: a taxi's euros weigh 25 s each — the reader reads the price as well as the clock)
+  reader: c => c.kind === 'route' && c.options[0].hop ? c.options.map((o, k) => [o.hop.total + Math.max(0, -(o.hop.cash || 0)) * 25, k]).sort((a, b) => a[0] - b[0])[0][1]
     : c.kind === 'story' || c.kind === 'halt' ? c.options.map((o, k) => [o.price + (/job gone/.test(`${o.stakes?.win} ${o.stakes?.sure}`) ? 1e6 : 0), k]).sort((a, b) => a[0] - b[0])[0][1] : 0,
   left: () => 0,
 };
@@ -40,14 +41,17 @@ const play = (run, seed, policy, watch = null) => { const s = J.newRun(net, run,
   while (s.phase !== 'end' && steps++ < 500) { const c = J.card(net, s); if (!c) break; watch?.(c, s); const r = J.choose(net, s, POLICIES[policy](c, s)); if (r.error) throw new Error(`${run.id} ${seed}: ${r.error}`); outs.push(r); }
   return { s, steps, outs }; };
 
-// ── 3. the card grammar (art bible §4): one mood, one line, two priced buttons
-{ let cards = 0, kinds = new Set(), bad = [], twoRoute = 0, routes = 0;
+// ── 3. the card grammar (art bible §4): one mood, one line, three priced buttons (v3.18:
+// two regular, the third sometimes special or very special)
+{ let cards = 0, kinds = new Set(), bad = [], twoRoute = 0, routes = 0, tiers = {};
   for (const run of RUNS) for (let k = 1; k <= 25; k++) for (const pol of ['reader', 'left']) play(run, 500 + k, pol, (c, s) => {
     cards++; kinds.add(c.kind);
-    if (!MOODS[c.mood] || !c.text || !c.options.length || c.options.length > 2) bad.push(`${c.kind}: ${c.text}`);
+    if (!MOODS[c.mood] || !c.text || (c.options.length !== 3 && !(c.kind === 'route' && J.isSealed(s)))) bad.push(`${c.kind} (${c.options.length}): ${c.text}`);
+    for (const o of c.options) tiers[o.tier || 'regular'] = (tiers[o.tier || 'regular'] || 0) + 1;
+    if (c.options.slice(0, 2).some(o => o.tier === 'very')) bad.push(`${c.kind}: a very special option that is not the third`);
     if (c.options.some(o => !o.label || !(o.price >= 0) || o.price % 10)) bad.push(`price ${c.kind}`);
-    if (c.kind === 'route') { routes++; if (c.options.length === 2) twoRoute++;
-      const p = c.options.map(o => o.price); if (p[1] != null && p[0] > p[1]) bad.push('the cheaper hop is not on the left');
+    if (c.kind === 'route') { routes++; if (c.options.length === 3) twoRoute++;
+      const reg = c.options.slice(0, 2).filter(o => ['ride', 'walk'].includes(o.hop?.kind)).map(o => o.price); if (reg.length === 2 && reg[0] > reg[1]) bad.push('the cheaper hop is not on the left');
       const rule = CARGO[s.job.cargo] || {};
       for (const o of c.options) { const h = o.hop; if (!h) continue;
         if (h.kind === 'walk' && rule.heavy) bad.push(`${s.job.cargo} walked`);
@@ -57,7 +61,8 @@ const play = (run, seed, policy, watch = null) => { const s = J.newRun(net, run,
   });
   ok(!bad.length, `every card keeps the grammar and the rules (${cards} cards) ${bad.slice(0, 3).join(' | ')}`);
   ok(['dispatch', 'route', 'story', 'halt'].every(k => kinds.has(k)), `all four kinds are dealt (${[...kinds]})`);
-  ok(twoRoute / routes > 0.85, `a stop is nearly always a choice of two (${twoRoute}/${routes})`); }
+  ok(twoRoute / routes > 0.95, `a stop is a choice of three (${twoRoute}/${routes})`);
+  ok(tiers.special > tiers.very && tiers.very > 0 && tiers.regular > tiers.special, `the third is sometimes special, now and then very special (${JSON.stringify(tiers)})`); }
 
 // ── 4. the clock moves ONLY by what you choose (and what it costs you)
 { let off = 0, ended = 0, stuck = 0;
@@ -116,12 +121,12 @@ ok(RUNS.every(r => !r.cargo || r.cargo.every(c => CARGO[c])), 'every run deals r
 { let perks = 0, offered = 0, forks = 0, struck = 0, forkOk = true;
   for (const run of RUNS) for (let k = 1; k <= 20; k++) { const s = J.newRun(net, run, 7000 + k); let st = 0;
     while (s.phase !== 'end' && st++ < 500) { const c = J.card(net, s);
-      if (c.kind === 'perk') { perks++; if (c.options.length === 2 && c.options[0].label !== c.options[1].label && /rest of the shift\.$/.test(c.text)) offered++; }
-      if (c.fork) { forks++; if (!(c.text === 'Two jobs come in at once. Pick one.' && c.options.length === 2 && c.options.every(o => /→/.test(o.label)))) forkOk = false; }
+      if (c.kind === 'perk') { perks++; if (c.options.length === 3 && c.options[0].label !== c.options[1].label && c.options[2].label === 'Keep the cash' && /rest of the shift\.$/.test(c.text)) offered++; }
+      if (c.fork) { forks++; if (!(c.text === 'Two jobs come in at once. Pick one.' && c.options.length === 3 && c.options.slice(0, 2).every(o => /→/.test(o.label)) && c.options[2].label === 'Toss a coin')) forkOk = false; }
       J.choose(net, s, 0); }
     if (J.strikesOf(run) && s.strikes >= J.strikesOf(run)) { struck++; ok(!J.complete(s) && s.late >= J.strikesOf(run), `${run.id}: struck out is not complete`); }
     ok(s.perks.length <= Math.max(0, s.done - (J.complete(s) ? 1 : 0)) && new Set(s.perks).size === s.perks.length, `${run.id} ${7000 + k}: a perk per job done, never twice`); }
-  ok(perks > 100 && offered === perks, `a perk is drafted between jobs on every run, two different ones a card (${perks})`);
+  ok(perks > 100 && offered === perks, `a perk is drafted between jobs on every run, two different ones a card, or the cash (${perks})`);
   ok(forks >= 40 && forkOk, `a fork offers two jobs on one card (${forks})`);
   ok(struck >= 1, `a left-tapper can strike out of a run (${struck} of 80)`); }
 
@@ -236,7 +241,7 @@ ok(RUNS.every(r => !r.cargo || r.cargo.every(c => CARGO[c])), 'every run deals r
     'Dispatch: one step a run, the one the memory says is next, and then it is over');
   ok(step({ runs: 2 }, 'night') === 'ticket1987' && step({ runs: 2, ticket: 1 }, 'night') === 'dispatch1' && step({ runs: 2, ticket: 1 }, 'easy') === 'inspector1987' && step({ runs: 2, ticket: 2 }, 'easy') === 'dispatch1',
     'the 1987 ticket: found on NIGHT, asked about by day, and then Dispatch again');
-  ok(ARCS.every(a => a.options.length === 2 && a.options.every(o => typeof o.time === 'number')) && Object.values(CALLBACKS).every(c => c.options.length === 2), 'every arc and callback card keeps the grammar');
+  ok(ARCS.every(a => a.options.length === 3 && a.options.every(o => typeof o.time === 'number')) && Object.values(CALLBACKS).every(c => c.options.length === 3), 'every arc and callback card keeps the grammar');
   // at most one arc step a run, in its own job's slot
   let one = true; for (const run of RUNS) for (let k = 1; k <= 20; k++) { const s = J.newRun(net, run, 700 + k, { memory: { runs: 3, ticket: run.id === 'night' ? 0 : 1 } });
     const arcs = s.deck.filter(d => d.card.arc); if (arcs.length !== 1 || arcs[0].job !== arcs[0].card.job) one = false; }
