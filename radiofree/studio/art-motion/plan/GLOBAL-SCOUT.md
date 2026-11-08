@@ -1324,3 +1324,16 @@ Everything below comes from search summaries. No article was opened.
 - **10/11 Whistleblowers:** S. 1792 no November action; watch 9 Nov (possible unanimous-consent request, per Deseret).
   [Deseret](https://www.deseret.com/politics/2026/09/25/john-curtis-back-bill-protecting-ai-whistleblower/)
 - **1, 3, 4, 13:** nothing new.
+
+### Check Sun 8 Nov 07:16 (search summaries only; nothing opened)
+- **Big development:** none.
+- **12 The Round Trip:** no price range; roadshow reported for the week of 9 or 16 Nov; one 7 Nov report: investor talks
+  at $1.2–1.3T (secondhand). HOLD. [FinanceFeeds](https://financefeeds.com/anthropic-ipo-roadshow-looms-with-no-price-range/)
+- **On the Label (posted):** settlement still unruled; nothing new from Means / Kennedy / White House.
+  [Law Commentary](https://www.lawcommentary.com/articles/monsanto-roundup-7-25-billion-cancer-settlement)
+- **8 Unmarked Boxes (posted):** nothing new; "three more indicted" headlines are the March 2026 case.
+  [Tom's Hardware](https://www.tomshardware.com/tech-industry/three-individuals-charged-with-attempting-to-break-us-sanctions-on-ai-chips-damning-text-messages-between-conspirators-reveal-intention-to-find-clients-to-act-as-pass-through-partner-for-customers-in-china)
+- **2 Grade Your Own Homework (posted):** nothing new on the four contracts.
+- **5 Short Supply:** motion to dismiss pending; re-check 12 Nov. [MLex](https://www.mlex.com/mlex/antitrust/articles/2521308)
+- **10/11 Whistleblowers:** S. 1792 — watch Mon 9 Nov (unanimous-consent attempt possible). [Yahoo](https://www.yahoo.com/news/politics/articles/grassley-pushes-ai-whistleblower-bill-195522504.html)
+- **1, 3, 4, 13:** nothing new.

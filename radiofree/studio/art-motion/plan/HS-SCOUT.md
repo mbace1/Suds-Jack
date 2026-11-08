@@ -1051,3 +1051,23 @@ Everything below comes from search summaries. No article was opened.
 - **Reactions:** counts not visible through search. Cut First, Count the Trees, Trade Secret, Five Pins: unchanged.
 - **Pattern note:** after a restart the evening run happened ~4 h late; nothing time-critical was missed. For Hamina,
   search Yle's own headlines by id range around the story (74-2025xxxx), since the felling item surfaced only by title.
+
+### Check Sun 8 Nov 07:16 (search summaries only; nothing opened)
+- **Hamina (Right of Way posts today ~12:52): the Yle headline is the 2018–19 felling, not new felling.** "Google
+  hakkasi liito-oravien puut Haminassa" (yle.fi/a/74-20252354, late Oct; Yle with HS) = ~1.3 ha in Summa without a
+  permit, found by the city in late 2019, no criminal report; the Trade Secret story. Current state unchanged: LVV asked
+  for a pause, Google paused, urgent nature-act inquiry; the association says the corridor may already be cut; Google says
+  a 30 m passage is kept. No resumption, order or inspection result. Film and post stand.
+  [Yle](https://yle.fi/a/74-20252354), [Kymen Sanomat](https://www.kymensanomat.fi/paikalliset/9889691),
+  [Yle, nature act](https://yle.fi/a/74-20255224)
+- **Glyphosate / Found in Pasila:** the jug's small print reads "Tehoaine: glyfosaatti 7,2 g/l" (Rek.nro 2923) —
+  confirmed glyphosate. **But Transmeri (the importer) says glyphosate Roundup consumer products have not been sold in
+  Finland since 2019** (Yle says 2021); consumer Roundup now uses pelargonic acid. So the film's "SOLD TO CONSUMERS IN
+  FINLAND" tag is likely wrong; the jug is probably years-old stock. Fix flagged in RFH-NEXT.
+  [Transmeri](https://www.transmeri.fi/en/brand/roundup/), [Yle 74-20138908](https://yle.fi/a/74-20138908)
+- **Muhos (Cut First):** the 5 Nov deadline passed; no delivery report, no new date; extension still Kaleva only.
+  [Yle, police](https://yle.fi/a/74-20252848)
+- **Helsinki (Five Pins):** nothing new. **Break Glass:** no plenary result.
+- **Reactions:** counts not visible through search. Trade Secret's story resurfaced via the Yle/HS felling item (above).
+- **Pattern note:** read a product's own label before writing a tag about its sale status — the label confirmed the
+  ingredient, the importer's page undid the "sold" claim.

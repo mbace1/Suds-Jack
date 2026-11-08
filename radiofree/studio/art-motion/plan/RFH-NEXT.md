@@ -812,3 +812,56 @@ All facts below come from search summaries; no article was opened.
   Grassley might seek unanimous consent when the Senate returns 9 Nov. Watch Monday.
 - **Break Glass:** no plenary result; the act still expires at the end of 2026. Keep held.
 - **New candidates:** none beyond Ransom Note (GLOBAL-SCOUT §13). **Films now wrong:** none.
+
+## Daily check, Sun 8 Nov 07:16 (morning; search summaries only, nothing opened)
+- **Big development:** none. **Anthropic IPO:** still no price range (no S-1/A with a range found; the 2 Nov amendment
+  left it blank). Roadshow reported for the week of 9 Nov (Bloomberg, via others) or 16 Nov; one 7 Nov report says
+  investor talks cluster at $1.2–1.3T after the AI selloff (one outlet's summary of Reuters/CNBC/Bloomberg; treat with
+  care). The Round Trip stays on hold. [FinanceFeeds](https://financefeeds.com/anthropic-ipo-roadshow-looms-with-no-price-range/),
+  [Tech Insider](https://tech-insider.org/anthropic-ipo-investors-lower-valuation-1-5-1-6-trillion-ai-backlash-2026/)
+- **Sun ~12:52, Doodle 10 Right of Way: CLEAR TO POST, unchanged.** Yesterday's Yle headline **"Google hakkasi
+  liito-oravien puut Haminassa"** (yle.fi/a/74-20252354; also run as "Google on hakannut laittomasti myös Haminassa,
+  mutta rikosilmoitusta ei tehty" and "Google kaatoi luvattomasti metsää myös Haminassa") is the **late-October story of
+  the 2018–19 felling** (~1.3 ha in Summa, nest trees and routes, without a permit; found by the city in late 2019; no
+  criminal report), not new felling. Yle and HS broke it together (Kymen Sanomat: "Yle ja HS: Google hakkasi myös
+  Haminassa metsää luvatta"). It is the Trade Secret story, already in the film's last tag ("2018–19: 1.3 HA OF SQUIRREL
+  FOREST FELLED"). No new felling, resumption, order or inspection result found. Two details consistent with the film:
+  the nature association says the corridor **may already have been cut** and more suitable trees were felled in the south
+  than planned; Google says the current work doesn't affect the habitat and keeps a 30 m wooded passage. One outlier
+  headline (MT, citing Kymen Sanomat) says LVV "keskeytti" (halted); Yle and Kouvolan Sanomat say "pyysi" (asked), as the
+  film does. **No draft post needed; the existing post stands.**
+  [Yle 74-20252354](https://yle.fi/a/74-20252354), [Kymen Sanomat](https://www.kymensanomat.fi/paikalliset/9889691),
+  [Yle, pause](https://yle.fi/a/74-20254899), [Yle, nature act](https://yle.fi/a/74-20255224),
+  [Kouvolan Sanomat](https://www.kouvolansanomat.fi/paikalliset/9924506)
+- **Found in Pasila (Helsinki 1, awaiting approval): ONE TAG IS LIKELY WRONG — fix before posting.**
+  - The jug's own small print (photo 4, cropped and read today) says **"Tehoaine: glyfosaatti 7,2 g/l"**
+    (Rek.nro 2923), so it is a glyphosate product. Good: the film's "glyphosate" is confirmed by the label itself.
+  - But the importer **Transmeri says it has not sold glyphosate-containing Roundup consumer products in Finland since
+    2019**; current Roundup consumer products use pelargonic acid (Transmeri brand page). Yle (74-20138908) dates the
+    removal of glyphosate from consumer Roundup to 2021 (unreconciled with Transmeri's 2019). Glyphosate stays in
+    professional use (farming).
+  - So the beat-2 tag **"SOLD TO CONSUMERS IN FINLAND" / "MYYDÄÄN KULUTTAJILLE SUOMESSA" is very likely wrong in the
+    present tense.** The jug is probably old stock, years old (it looks weathered). Replace with e.g. EN "GLYPHOSATE
+    ROUNDUP: OFF CONSUMER SHELVES SINCE 2019 (IMPORTER)" / FI "GLYFOSAATTI-ROUNDUP: EI KULUTTAJAMYYNNISSÄ 2019 JÄLKEEN
+    (MAAHANTUOJA)". It sharpens the story: a product pulled from home-garden shelves, still sitting in a public flowerbed.
+    The posts don't claim current sale, so they stand; optionally add "a product pulled from consumer shelves years ago".
+  - No new Finnish glyphosate news, no Yle reaction. Helsinki's 2020 goal (paatokset.hel.fi) stands.
+  [Transmeri, Roundup](https://www.transmeri.fi/en/brand/roundup/), [Yle 74-20138908](https://yle.fi/a/74-20138908),
+  [Seura](https://seura.fi/asiat/ajankohtaista/puutarhayritys-lopetti-kiistanalaisen-glyfosaattivalmisteen-myynnin-pelaamme-varman-paalle-ruotsissa-tuotteet-poistettiin-valikoimista-jo-vuonna-2015/),
+  [Tukes letter 2024](https://api.hankeikkuna.fi/asiakirjat/54580b26-61a2-4eb0-bc03-32bc0bdc6c47/0d480c0e-a568-40e3-9b55-7f7792cc50a0/KIRJE_20240418101036.PDF)
+- **Coxon 14 On the Label (posted 7 Nov):** still true. No ruling from Judge Boyer found (decision reserved since
+  14 Sep; Bayer's CEO expects it before Christmas); "RULING PENDING" holds. Nothing new from Means, Kennedy or the White
+  House beyond what the film carries. [Global Agriculture](https://www.global-agriculture.com/crop-protection/bayer-faces-new-missouri-roundup-trial-while-7-25-billion-settlement-awaits-judges-ruling/),
+  [Law Commentary](https://www.lawcommentary.com/articles/monsanto-roundup-7-25-billion-cancer-settlement)
+- **Global 4 Unmarked Boxes, Coxon 13 Grade Your Own Homework (posted 7 Nov):** nothing new. (The "three more indicted"
+  headlines are the March 2026 $170M case already in the plan doc; no November development; the Super Micro trial is
+  reported for March 2027.)
+- **Tue 10 Nov, Doodle 9 Five Pins: CLEAR.** No council step; Brunswick's Heikinlaakso 7.3 ha reservation application is
+  the only project-level item (older). [hel.fi](https://www.hel.fi/fi/uutiset/kaupunginhallitus-hyvaksyi-datakeskusperiaatteet)
+- **Doodle 8 Cut First (posted):** the 5 Nov water-plan deadline has passed; no report on delivery or a new date; the
+  extension is still Kaleva only. No correction.
+- **Global 3 Short Supply:** motion to dismiss still pending (no ruling found; one unverified forum post claims dismissal,
+  not used). Re-check the 13 Nov listing on 12 Nov.
+- **Mon 9 Nov:** the Senate returns; Grassley may seek unanimous consent on S. 1792 (AI Whistleblower Protection Act).
+  Watch the evening run. **Break Glass:** no plenary result.
+- **New candidates:** none. **Films now wrong:** none posted; **Found in Pasila's beat-2 tag needs the fix above.**
