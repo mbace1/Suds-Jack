@@ -57,6 +57,25 @@ view") brought up to the scenes. Every step ends in a re-filmed trailer
    sealed parcel) and THE LAST TRAM (the night, its events those with art). Further packs land the same way: the
    approved crops as they are, at the beat they draw.
 
+Next, proposed 2026-11-08 (owner: *"Plan next steps and show me trailer"*):
+
+7. **v3.16 · Missions on the board.** The mission list becomes the map:
+   each mission's start is a pin at its real place, done ones stamped with
+   their best, the next one open and pulsing. No new art; the board and the
+   pins are what exists.
+8. **v3.17 · The daily mission.** One mission a day, seeded from the date
+   (the daily shift's rule), its perk pool fixed, a share line with the
+   strikes and the build. Cheap and social, and it gives the six missions a
+   reason to be replayed.
+9. **v3.18 · The next approved pack.** Whatever PR #632's successors
+   approve becomes moments first, then a mission built from them, as v3.14
+   and v3.15 did. Two decisions are the owner's and wait for him: the
+   demonstration as a halt cause, and perks on the main runs (it would move
+   the measured bands).
+10. **Store refresh.** The trailer, stills and itch text brought up to the
+    missions. The upload, a real-phone pass and a native Finnish read stay
+    the owner's.
+
 Each step is measured, gated and deployed, and the trailer is re-filmed with
 what changed.
 
