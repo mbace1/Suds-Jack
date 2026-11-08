@@ -1,5 +1,38 @@
 # Toko Move — versions
 
+## v3.17 — 2026-11-08
+
+**THE MISSIONS ON THE MAP, AND TODAY'S ERRAND** — ROADMAP steps 7 and 8 (owner,
+2026-11-08: *"Go ahead with plans"*).
+
+- **The missions on the map.** Once EASY is done, the title card's MISSIONS
+  section opens on the city:
+  - a pin where each mission starts (the station, the market square,
+    Hakaniemi, the ferry quay, Kamppi, Lasipalatsi);
+  - finished ones dark with a tick, the open one in Toko's cyan and
+    breathing, with its name beside it, the locked ones small and grey with
+    their glyph;
+  - a tap on an open pin plays it, and the list below it says the same in
+    words.
+  - It is the board's own drawing (`HopBoard.drawPins`): the sea, the lines
+    stepped back, no new art. Only the open pin is named, because the pins
+    sit close together in the centre.
+- **Today's errand** (`?errand`): one mission a day, the same for everyone.
+  - The missions take turns by the daily's own count; the seed is the
+    day's; every perk is in the pool.
+  - The first finish stands, kept beside the daily's on its own key; again
+    is practice. The title then shows what stands.
+  - The end card has the line to send: *"Toko Move · Errand 47 · 8 Nov /
+    THE LAST TRAM 🟩🟩🟨 · €70 · A season pass, Good shoes"* — a square a
+    job, red for the ones a lost errand never reached, and the build.
+  - It opens with the missions, after EASY, from a link above the list:
+    *TODAY'S ERRAND · THE LAST TRAM*.
+- **Finnish** for the errand.
+- **Gates.** `test/play.cjs` (browser):
+  - the map pins every mission and a tap on the open pin plays it;
+  - the errand is offered, is the day's mission, ends on its line, and
+    stands.
+
 ## v3.16 — 2026-11-08
 
 **THE MARCH, AND THE ROGUELIKE ON EVERY RUN** — the owner's answers:

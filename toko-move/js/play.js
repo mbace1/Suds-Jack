@@ -25,10 +25,10 @@
 // nothing happens while you read. Every animation is skippable by a tap and
 // none of them is a timer the game waits on to be fair: the state has already
 // moved when it starts.
-import { tr } from './lang.js?v=14';
+import { tr } from './lang.js?v=15';
 import * as J from './journey.js?v=6';
 import * as Runs from './runs.js?v=5';
-import { HopBoard } from './hopboard.js?v=3';
+import { HopBoard } from './hopboard.js?v=4';
 import { loadGround } from './ground.js?v=12';
 import { skinFor } from './skin.js?v=1';
 import { moodFace, MOODS } from './events.js?v=10';
@@ -43,10 +43,10 @@ import { loadStanding, saveStanding } from './regulars.js?v=4';
 import { addNote } from './sealed.js?v=2';
 import { MISSIONS, PERKS, STRIKES, loadMissions, missionOpen, recordMission, perkPool, doneCount } from './missions.js?v=3';
 import { MOMENTS, faceIn, keepIn, pickupMoment, deliveryMoment, boardMoment, walkMoment, cardMoment, choiceMoment, haltMoment } from './moments.js?v=4';
-import { resolveMode, dailyShare, W } from './modes.js?v=4';
-import { recordDaily, todayRecord, streak } from './daily.js?v=2';
+import { resolveMode, dailyShare, errandShare, errandStore, errandOf, W } from './modes.js?v=5';
+import { recordDaily, todayRecord, streak, dateKey } from './daily.js?v=2';
 
-export const BUILD_VERSION = '3.16';
+export const BUILD_VERSION = '3.17';
 const $ = id => document.getElementById(id);
 const params = new URLSearchParams(location.search);
 // a run of the ladder, today's daily, or a day of the week (modes.js, ACT1.md §12)
@@ -215,6 +215,9 @@ const CSS = `
 #v3.night .v3tap{color:rgba(246,249,252,.6)}
 .carried{margin-top:10px;text-align:left}.carried h3{font-size:11px;letter-spacing:1.5px;color:var(--dim,#69777a)}.carried li{font-size:12.5px;margin:4px 0 0 18px}
 .carried li small{color:var(--dim,#69777a)}
+/* v3.17: the missions on the map, a pin where each one starts */
+.missionMap{position:relative;margin:4px 0 8px;border-radius:14px;overflow:hidden;box-shadow:0 0 0 1px #c5cec8;background:#f4f1e8}
+.missionMap canvas{display:block;width:100%;height:clamp(150px,24vh,210px);cursor:pointer;touch-action:manipulation}
 @media (prefers-reduced-motion:reduce){#v3 .L,#v3 .sway,#v3 .bob,#v3 .shift,#v3 .idle,#v3 .frame.push,#v3wx,#v3 .chip.halted,#v3board.on{animation:none!important}}
 `;
 
@@ -353,14 +356,14 @@ function weather() {
 }
 
 // ── loading ────────────────────────────────────────────────────────────────
-let net = null, board = null, mini = null, S = null, still = null;
+let net = null, board = null, mini = null, S = null, still = null, PACK = null;
 const getJson = async url => { const r = await fetch(url, { cache: 'no-store' }); if (!r.ok) throw new Error(`${url} ${r.status}`); return r.json(); };
 const ready = (async () => {
   const play = $('play'); if (play) { play.disabled = true; play.textContent = 'LOADING HELSINKI…'; }
   // the ground (v3.8): the water, the streets, the quarters and the landmarks
   // the real-time board already drew — the journey's board stands on it now
   const [pack, ground, act] = await Promise.all([getJson('./cities/helsinki.json'), loadGround('./cities/ground/').catch(() => null), getJson('./scenes/stop/act1.json').catch(() => null)]);
-  net = J.network(buildRealHelsinki(pack)); ACT = act;
+  net = J.network(buildRealHelsinki(pack)); ACT = act; PACK = pack;
   board = new HopBoard($('v3board'), { pack, ground, skin: SKIN, net }); board.label = tr;
   mini = new HopBoard($('v3minic'), { pack, water: ground?.water, skin: SKIN, net, detail: false }); mini.label = tr;
   if (play) { play.disabled = false; play.textContent = MODE.mode === 'mission' ? 'START THE ERRAND' : 'START SHIFT'; }
@@ -396,15 +399,50 @@ function paintTitle() {
 // each after the one before; a locked one says what opens it
 function missionList(all = Runs.loadRuns()) {
   const ms = loadMissions(), easy = all.easy?.done, on = MODE.mode === 'mission' ? MODE.mission.id : null;
-  return `<p class="mutHead">MISSIONS</p><div class="runList missionList">${MISSIONS.map((m, i) => missionOpen(m.id, ms, easy)
+  // the map (v3.17) once there is somewhere to go: a pin per mission, the list below it says the same in words
+  const map = MISSIONS.some(m => missionOpen(m.id, ms, easy)) ? '<div class="missionMap"><canvas id="missionMap" aria-hidden="true"></canvas></div>' : '';
+  queueMicrotask(paintMissionMap);
+  const today = map ? errandOf(dateKey()) : null, done = today && todayRecord(dateKey(), errandStore());
+  const errand = today ? `<a class="btn ghost wide" id="errandLink" href="?errand">TODAY'S ERRAND · ${esc(today.name)}${done ? ' · DONE' : ''}</a>` : '';
+  return `<p class="mutHead">MISSIONS</p>${map}${errand}<div class="runList missionList">${MISSIONS.map((m, i) => missionOpen(m.id, ms, easy)
     ? `<a class="run${m.id === on ? ' on' : ''}" href="?mission=${m.id}" data-mission="${m.id}"><span class="runG" aria-hidden="true">${m.glyph}</span><span class="runT"><b>${esc(m.name)}</b><small>${esc(m.title)} · ${m.steps.length} jobs</small></span><span class="runS">${ms[m.id].done ? '✓' : ''}</span></a>`
     : `<span class="run locked" data-mission="${m.id}" aria-disabled="true"><span class="runG" aria-hidden="true">🔒</span><span class="runT"><b>${esc(m.name)}</b><small>${i ? `finish ${esc(MISSIONS[i - 1].name)} to open` : 'finish EASY to open'}</small></span></span>`).join('')}</div>`;
+}
+// The mission map: drawn once Helsinki is loaded, its open pin breathing while
+// the title is up; a tap on a pin that is open plays it.
+let pinBoard = null, pinLoop = 0;
+async function paintMissionMap() {
+  const cv = $('missionMap'); if (!cv) return;
+  await ready;
+  if (!pinBoard || pinBoard.canvas !== cv) pinBoard = new HopBoard(cv, { pack: PACK, water: board.water, skin: SKIN, net, detail: false });
+  pinBoard.label = tr; pinBoard.resize();
+  const ms = loadMissions(), easy = Runs.loadRuns().easy?.done, on = MODE.mode === 'mission' ? MODE.mission.id : null;
+  const pins = MISSIONS.map(m => { const open = missionOpen(m.id, ms, easy), done = ms[m.id].done;
+    return { id: m.id, at: m.start, glyph: m.glyph, state: done ? 'done' : open ? 'open' : 'locked', label: m.name, on: m.id === on }; });
+  let spots = [];
+  cancelAnimationFrame(pinLoop);
+  const frame = now => { if (!cv.isConnected) return; spots = pinBoard.drawPins({ pins, t: now / 1600 }); cv.dataset.pins = spots.map(p => `${p.id}:${p.state}:${Math.round(p.x)}:${Math.round(p.y)}`).join(' ');
+    if (!CALM && pins.some(p => p.state === 'open') && !$('title').hidden) pinLoop = requestAnimationFrame(frame); };
+  frame(performance.now());
+  cv.onclick = e => { const r = cv.getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top;
+    const hit = spots.filter(p => p.state !== 'locked').map(p => ({ p, d: Math.hypot(p.x - x, p.y - y) })).sort((a, b) => a.d - b.d)[0];
+    if (hit && hit.d < 30) location.href = `?mission=${hit.p.id}`; };
 }
 // The daily and the week on the title card: what this shift is, what stands.
 function paintModeTitle(start, end) {
   const set = (id, t) => { const e = $(id); if (e) e.textContent = t; };
   for (const id of ['dailyLink', 'weekLink', 'liveLink']) { const e = $(id); if (e) e.hidden = true; }
   const row = $('mutRow');
+  if (MODE.errand) {
+    // today's errand (v3.17): the day's mission, the same for everyone; the first finish stands
+    set('titleWhen', `Errand ${MODE.number} · ${MODE.label} · ${MODE.mission.name}`);
+    set('titleGoal', `The same errand for everyone today. ${MODE.mission.blurb} Two late drops and it is lost; every perk is in the pool. Your first finish stands.`);
+    const rec = todayRecord(MODE.key, errandStore());
+    if (row) row.innerHTML = (rec ? `<p class="mutHead">TODAY'S STANDS</p><div class="dailyBox"><p class="dailyGrid">${esc(rec.text.split('\n')[1])}</p><p class="hint">Play it again for practice; it will not count.</p></div>` : '')
+      + `<p class="hint mutBlurb"><a href="?">← the runs</a></p>`;
+    const p = $('play'); if (p) p.textContent = 'START THE ERRAND';
+    return;
+  }
   if (MODE.mode === 'mission') {
     set('titleWhen', `Mission · ${MODE.mission.name} · ${hhmm(start)}`);
     set('titleGoal', `${MODE.mission.blurb} ${COUNT[RUN.target]} jobs. Two late drops and the errand is lost; between jobs, pick a perk.`);
@@ -764,6 +802,20 @@ function finish() {
 // and the line to send. The week's: the day banked, the rent, and tomorrow.
 function finishMode() {
   const done = J.complete(S), again = $('again');
+  if (MODE.errand) {
+    // today's errand: the first finish stands, and the line to send
+    const lost = !done, text = errandShare(MODE, { results: S.results, target: S.target, score: S.score, lost, perks: S.perks.map(p => PERKS[p].name) }, location.href.split('#')[0].replace(/[?&](lang|seed|date)=[^&]*/g, ''));
+    const rec = recordDaily(MODE.key, { results: [...S.results], score: S.score, target: S.target, done, text }, errandStore());
+    $('endTitle').textContent = `ERRAND ${MODE.number}${done ? ' DONE' : ' LOST'}`;
+    $('endStats').innerHTML = `<div class="dailyBox runBox"><p class="dailyHead">${esc(MODE.mission.name)} · ${esc(MODE.label)} · the same errand for everyone</p><p class="dailyGrid">${esc(text.split('\n')[1])}</p>`
+      + `<p class="hint">${rec.first ? 'This finish is the day\'s result.' : `Today's result already stands. This one was practice.`} · ${streak(MODE.key, errandStore())} day streak</p>`
+      + `<button class="btn prime wide" id="shareDaily" type="button">COPY THE RESULT</button><pre class="shareText" id="shareText" hidden>${esc(text)}</pre></div>`;
+    $('endNote').textContent = 'A new errand tomorrow.';
+    $('shareDaily').onclick = async () => { const pre = $('shareText'); pre.hidden = false; try { await navigator.clipboard.writeText(text); $('shareDaily').textContent = 'COPIED'; } catch { $('shareDaily').textContent = 'SELECT AND COPY'; } };
+    if (again) { again.textContent = 'PLAY IT AGAIN · PRACTICE'; again.classList.remove('prime'); again.classList.add('ghost'); again.onclick = () => { location.href = location.href; }; }
+    $('end').hidden = false; sfx(done ? 'end' : 'miss'); game.result = { mode: 'errand', first: rec.first, done, id: MODE.mission.id, text };
+    return;
+  }
   if (MODE.mode === 'mission') {
     const m = MODE.mission, rec = recordMission(m.id, { done, score: S.score }), next = MISSIONS[MISSIONS.indexOf(m) + 1];
     const why = done ? 'Every errand run.' : S.strikes >= STRIKES ? `Two late drops: ${m.name.toLowerCase()} is lost.` : 'The errand did not get done.';
@@ -813,7 +865,7 @@ async function start() {
   await ready;
   $('title').hidden = true; stage.hidden = false;
   if (MODE.mode === 'week' && W.isOver(MODE.week)) { W.clearWeek(MODE.store); location.href = location.href; return; }
-  const own = MODE.mode !== 'daily';   // the daily is the same shift for everyone: nothing of this device's in it
+  const own = MODE.mode !== 'daily' && !MODE.errand;   // the daily is the same shift for everyone: nothing of this device's in it
   // a run's perks come from the same pool the missions grow (the daily's is the first three, the same for everyone)
   const run = MODE.mode === 'mission' || !RUN.perks ? RUN : { ...RUN, perkPool: perkPool(own ? doneCount(loadMissions()) : 0) };
   S = J.newRun(net, run, SEED, { memory: own ? Runs.memoryFor() : {}, standing: own ? loadStanding() : {} }); shownMin = null;

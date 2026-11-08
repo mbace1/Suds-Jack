@@ -118,7 +118,7 @@ server.listen(0, '127.0.0.1', async () => {
         runs: [...document.querySelectorAll('#mutRow .run[data-run]')].map(r => ({ id: r.dataset.run, open: !r.classList.contains('locked'), lit: r.classList.contains('on') })),
         goal: document.getElementById('titleGoal').textContent, play: document.getElementById('play').textContent,
         links: ['dailyLink', 'weekLink', 'liveLink'].filter(id => { const e = document.getElementById(id); return e && !e.hidden && getComputedStyle(e).display !== 'none'; }) }));
-      ok(`the bare address is the card journey, not the real-time game (v${t.v})`, !t.classic && t.v === '3.16' && /v3\.16/.test(t.hero));
+      ok(`the bare address is the card journey, not the real-time game (v${t.v})`, !t.classic && t.v === '3.17' && /v3\.17/.test(t.hero));
       ok(`it is Act 1, in Helsinki (${await page.evaluate(() => document.getElementById('titleWhen').textContent)})`, await page.evaluate(() => /^Act 1 · Helsinki · 07:00/.test(document.getElementById('titleWhen').textContent)));
       ok(`the ladder: EASY open and lit, three locked (${t.runs.map(r => r.id + (r.open ? '' : '🔒')).join(' ')})`, t.runs.map(r => r.id).join() === 'easy,medium,hard,night' && t.runs[0].open && t.runs[0].lit && t.runs.slice(1).every(r => !r.open) && t.run === 'easy');
       ok(`the goal and the button (${t.goal} · ${t.play})`, /^Three deliveries before 08:15/.test(t.goal) && t.play === 'START SHIFT');
@@ -305,6 +305,13 @@ server.listen(0, '127.0.0.1', async () => {
       await page.goto(`${base}/toko-move/`, { waitUntil: 'load' }); await ready(page);
       const list = await page.evaluate(() => [...document.querySelectorAll('[data-mission]')].map(e => `${e.dataset.mission}:${e.tagName === 'A' ? 'open' : 'locked'}`));
       ok(`the title lists the missions, the first open after EASY (${list.join(' ')})`, list[0] === 'aino:open' && list.slice(1).every(x => x.endsWith('locked')) && list.length >= 4);
+      // v3.17: the missions on the map — a pin where each starts, and a tap on the open one plays it
+      await page.waitForFunction(() => document.getElementById('missionMap')?.dataset.pins, null, { timeout: 15000 });
+      const pins = (await page.evaluate(() => document.getElementById('missionMap').dataset.pins)).split(' ').map(x => { const [id, state, px, py] = x.split(':'); return { id, state, x: +px, y: +py }; });
+      ok(`the map pins every mission where it starts, AINO'S MORNING open (${pins.map(p => p.id + ':' + p.state).join(' ')})`, pins.length === list.length && pins.find(p => p.id === 'aino')?.state === 'open' && pins.filter(p => p.state === 'locked').length === list.length - 1);
+      const box = await (await page.$('#missionMap')).boundingBox(), aino = pins.find(p => p.id === 'aino');
+      await page.touchscreen.tap(box.x + aino.x, box.y + aino.y); await page.waitForURL(/mission=aino/, { timeout: 5000 }).catch(() => {});
+      ok(`a tap on the open pin plays it (${page.url().replace(base, '')})`, /\?mission=aino/.test(page.url()));
       await page.goto(`${base}/toko-move/?mission=wallet&seed=11`, { waitUntil: 'load' }); await ready(page);
       const t = await page.evaluate(() => ({ when: document.getElementById('titleWhen').textContent, play: document.getElementById('play').textContent }));
       ok(`?mission=wallet is the errand (${t.when} · ${t.play})`, /LOST AND FOUND/.test(t.when) && t.play === 'START THE ERRAND');
@@ -345,6 +352,24 @@ server.listen(0, '127.0.0.1', async () => {
       ok(`the march holds a Mannerheimintie line, drawn from above (${JSON.stringify(march)})`, /^A march on Mannerheimintie, by the Parliament House\. The (1|2|4|10) is halted\.$/.test(march?.line || '') && march.scene === 'm-demonstration');
       ok('and the shift goes on round it to its end', seen.end);
       ok('no page or network errors (the march)', !errs.length, errs.slice(0, 3).join(' | '));
+      await ctx.close();
+    }
+    // v3.17: today's errand — one mission a day, the same for everyone, its first finish stands
+    {
+      const ctx = await browser.newContext(PHONE); await seedRuns(ctx, { easy: { done: true, stars: 2, plays: 1 } });
+      const page = await ctx.newPage(), errs = watch(page);
+      await page.goto(`${base}/toko-move/`, { waitUntil: 'load' }); await ready(page);
+      const link = await page.evaluate(() => { const a = document.getElementById('errandLink'); return a ? { t: a.textContent, h: a.getAttribute('href') } : null; });
+      ok(`the missions offer today's errand (${link?.t})`, !!link && /^TODAY'S ERRAND · /.test(link.t) && link.h === '?errand');
+      await page.goto(`${base}/toko-move/?errand&date=2026-11-08`, { waitUntil: 'load' }); await ready(page);
+      const t = await page.evaluate(() => ({ when: document.getElementById('titleWhen').textContent, goal: document.getElementById('titleGoal').textContent, play: document.getElementById('play').textContent }));
+      ok(`?errand is the day's mission (${t.when})`, /^Errand \d+ · 8 Nov · THE LAST TRAM$/.test(t.when) && /same errand for everyone/.test(t.goal) && t.play === 'START THE ERRAND');
+      await page.tap('#play'); await page.waitForSelector('#v3panel .eventOpt', { timeout: 15000 });
+      const seen = await playOut(page, { maxSteps: 400 }), res = await page.evaluate(() => window.__tm3.result);
+      ok(`it ends on the errand's card, its line to send, and it stands (${JSON.stringify(res)})`, seen.end && res?.mode === 'errand' && res.first === true && /^Toko Move · Errand \d+ · 8 Nov\nTHE LAST TRAM [🟩🟨🟥⬛]{3} · €\d+/u.test(res.text));
+      await page.goto(`${base}/toko-move/?errand&date=2026-11-08`, { waitUntil: 'load' }); await ready(page);
+      ok('the title then shows what stands for the day', await page.evaluate(() => /TODAY'S STANDS/.test(document.getElementById('mutRow').textContent)));
+      ok('no page or network errors (the errand)', !errs.length, errs.slice(0, 3).join(' | '));
       await ctx.close();
     }
     // ── story arcs (v3.4, ACT1.md §10): a second run meets Dispatch, and the city remembers
