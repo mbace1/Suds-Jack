@@ -9,10 +9,10 @@
 //     rent (week.js). Its own key, so a ?classic week (scored in points) is
 //     never mixed in; a reload mid-shift is the clock-out, as it always was.
 // `&classic` keeps the real-time versions (boot.js).
-import * as Runs from './runs.js?v=4';
+import * as Runs from './runs.js?v=5';
 import { dateKey, dailySeed, dailyNumber, dateLabel } from './daily.js?v=2';
 import * as W from './week.js?v=4';
-import { MISSION_BY_ID, missionRun, loadMissions, doneCount } from './missions.js?v=2';
+import { MISSION_BY_ID, missionRun, loadMissions, doneCount } from './missions.js?v=3';
 
 const ls = () => { try { return globalThis.localStorage; } catch { return null; } };
 // the journey's week lives beside ?classic's under its own key

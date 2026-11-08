@@ -1,5 +1,68 @@
 # Toko Move — versions
 
+## v3.16 — 2026-11-08
+
+**THE MARCH, AND THE ROGUELIKE ON EVERY RUN** — the owner's answers:
+*"For central lines, especially around Mannerheimintie. The congress building
+area"* (the demonstration), and *"yes to all runs, modifiers, perks. Let's
+test all, plan to fit the design."*
+
+- **The march.** A peaceful march on Mannerheimintie, by the Parliament
+  House, holds the tram lines that run between Lasipalatsi and the Opera:
+  the 1, 2, 4 and 10. The four lines are read off the network, not typed.
+  - MEDIUM: every other shift or so, a march holds one of them from about
+    07:12, for 20 to 32 minutes or two jobs.
+  - HARD: its held line is the march when it is one of the four (14 of 60
+    shifts); otherwise the plain halt it always was.
+  - The card: *"A march on Mannerheimintie, by the Parliament House. The 4
+    is halted."*, with the halt's two ways out: find another way, or wait it
+    out (priced honestly).
+  - The art: the approved demonstration scene (PR #632), drawn from above,
+    plays at the card by day in any weather. It was HELD until now; all 29
+    approved scenes are in the game.
+  - Measured: MEDIUM moves by one shift in sixty for the reader and none for
+    the tapper. The march is something to route round, not a wall.
+- **Perks, forks and strikes on every run.**
+  - **Perks:** between jobs, pick one of two for the rest of the shift.
+    The pool is the missions' (three, one more per mission finished); the
+    daily's is the first three, the same for everyone.
+  - **Forks:** one job a run comes in two at once, and the card asks which
+    ("Two jobs come in at once. Pick one.").
+  - **Strikes:** none on EASY, three on MEDIUM and HARD, two at NIGHT. The
+    title says so, the stamp counts them, and the end card names them.
+- **Tested, then fitted.** Bots, 60 to 100 shifts a run, on three seed
+  blocks:
+  - perks alone made every rung easier, and put NIGHT's tapper above HARD's;
+  - forks barely move a band;
+  - two strikes everywhere broke the ladder's order, three everywhere left
+    NIGHT too soft.
+  - What ships: HARD's clock is 0.9 (it was 1.0) and NIGHT strikes out on
+    two. Bands, reader · tapper:
+
+    | run | reader | tapper |
+    |---|---|---|
+    | EASY | 60/60 | 60/60 |
+    | MEDIUM | 53 | 46 |
+    | HARD | 52 | 44 |
+    | NIGHT | 43 | 27 |
+
+    The ladder keeps its shape, and the tapper is stopped higher up each
+    rung. Pars are re-read off the reader's 70th percentile: MEDIUM 120,
+    HARD 130, NIGHT 155.
+- **A bug the new strikes found:** a strike-out on the very last drop
+  counted as a finished run (and a finished mission). Struck out is not
+  complete now (`J.complete`, `starsFor`).
+- **Finnish** for the march, the perk draft, the forks and the strikes.
+- **Gates.**
+  - `test/journey.mjs`: the march (its four lines, MEDIUM's every other
+    shift, HARD's central halt, its card, no ride on the held line) and the
+    run's levers (a perk between jobs, a fork, strike-outs that are not
+    complete).
+  - `test/moments.mjs`: the march's scene.
+  - `test/missions.mjs`: a mission takes none of its base run's march or
+    forks.
+  - `test/play.cjs` (browser): MEDIUM 15 meets the march in its picture.
+
 ## v3.15 — 2026-11-07
 
 **FORKS, A RACE, A STICKER, AND THE LAST TRAM** — the next step of v3.14's

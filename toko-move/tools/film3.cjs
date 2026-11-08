@@ -255,15 +255,15 @@ const look = () => { const g = window.__tm3, q = s => document.querySelector(s);
   return { busy: g.busy(), scene: g.scene(), line: q('.evLine')?.textContent || '', card: q('#v3panel .eventCard')?.dataset.card || '',
     btn: !!q('#v3panel .eventOpt:not([disabled])'), stamp: q('.v3stamp')?.textContent || '', end: !q('#end').hidden,
     car: [...document.querySelectorAll('#v3frame .L')].map(e => (getComputedStyle(e).backgroundImage.match(/02-car(-[a-z]+)?\.webp/) || [])[0]).find(Boolean) || '',
-    glow: !!q('#v3tram.glow'), board: q('#v3board').classList.contains('on'), land: q('#v3frame .L.land')?.dataset.land || '', tram: q('#v3tram')?.hidden === false ? q('#v3tram').dataset.model || '' : '' }; };
-const choice = () => { const bs = [...document.querySelectorAll('#v3panel .eventOpt:not([disabled])')]; const b = bs.find(e => e.querySelector('.evStk em')) || bs[0];
+    glow: !!q('#v3tram.glow'), board: q('#v3board').classList.contains('on'), land: q('#v3frame .L.land')?.dataset.land || '', m: q('#v3frame .L.moment')?.dataset.moment || '', tram: q('#v3tram')?.hidden === false ? q('#v3tram').dataset.model || '' : '' }; };
+const choice = (pick = null) => { const bs = [...document.querySelectorAll('#v3panel .eventOpt:not([disabled])')]; const b = (pick != null && bs[pick]) || bs.find(e => e.querySelector('.evStk em')) || bs[0];
   if (!b) return null; const r = b.getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 }; };
 const ring = ([X, Y]) => { const el = document.createElement('div'); el.className = '__tap'; el.style.left = X + 'px'; el.style.top = Y + 'px';
   el.addEventListener('animationend', () => el.remove()); document.body.appendChild(el); };
 const TAPCSS = '.__tap{position:fixed;width:48px;height:48px;margin:-24px 0 0 -24px;border-radius:50%;background:rgba(255,255,255,.5);box-shadow:0 0 0 2.5px rgba(21,38,43,.45);pointer-events:none;z-index:2147483647;animation:__tap .45s ease-out forwards}@keyframes __tap{from{transform:scale(.45);opacity:.95}to{transform:scale(1.3);opacity:0}}';
 const holdFor = line => Math.min(2.8, Math.max(1.5, 0.9 + line.length * 0.028));
 
-async function take(browser, name, url, { save = null, ff = () => false, done, tail = 1.5, max = 24 }) {
+async function take(browser, name, url, { save = null, ff = () => false, done, tail = 1.5, max = 24, pick = null }) {
   if (!wanted(name)) return;
   const ctx = await browser.newContext(DEVICE);
   await ctx.addInitScript(SHIM);
@@ -279,7 +279,7 @@ async function take(browser, name, url, { save = null, ff = () => false, done, t
     a.play = n => { window.__cues.push({ n, t: performance.now() }); return P(n); };
     a.bed = n => { if ((n || null) !== window.__bed) { window.__bed = n || null; window.__cues.push({ n: 'bed:' + (n || ''), t: performance.now() }); } return B(n); }; });
   await page.tap('#play');
-  const tap = async () => { const at = await page.evaluate(choice); if (!at) return false; await page.evaluate(ring, [at.x, at.y]); await page.touchscreen.tap(at.x, at.y); return true; };
+  const tap = async () => { const at = await page.evaluate(choice, pick); if (!at) return false; await page.evaluate(ring, [at.x, at.y]); await page.touchscreen.tap(at.x, at.y); return true; };
   // unfilmed, until the take begins: cards answered as soon as they arm
   let since = null, guard = 0;
   for (; guard < 3000; guard++) {
@@ -336,6 +336,16 @@ server.listen(0, '127.0.0.1', async () => {
     await card(browser, 'cap', 1.6, [{ n: 'deal', t: 0 }], 'Another courier wants your jobs.');
     await take(browser, 'race', '?run=medium&seed=1002', { save: { tokoMoveRuns: { easy: { done: true, stars: 2, plays: 2 }, medium: { plays: 1 } } },
       ff: s => s.btn && !s.busy && /other courier wants it too/.test(s.line), done: (s, taps) => taps >= 1, tail: 1.3, max: 8 });
+    // v3.12–v3.15: the job in the owner's illustrations, and the missions
+    const easyDone = { tokoMoveRuns: { easy: { done: true, stars: 2, plays: 1 } } };
+    await card(browser, 'cap', 1.6, [{ n: 'deal', t: 0 }], 'Every handover, drawn.');
+    await take(browser, 'pickup', '?run=easy&seed=3434', { ff: s => s.m === 'kiosk', done: () => true, tail: 2.0, max: 4 });
+    await take(browser, 'delivery', '?run=easy&seed=3434', { ff: s => s.m === 'doorway', done: () => true, tail: 2.2, max: 4 });
+    await card(browser, 'cap', 1.6, [{ n: 'deal', t: 0 }], 'Missions. A different errand every run.');
+    await take(browser, 'the wallet', '?mission=wallet&seed=11', { save: easyDone, pick: 0, ff: s => s.card === 'wallet' && s.btn, done: s => s.m === 'wallet', tail: 2.6, max: 10 });
+    await card(browser, 'cap', 1.6, [{ n: 'deal', t: 0 }], 'Pick what you carry.');
+    await take(browser, 'the perk', '?mission=wallet&seed=11', { save: easyDone, pick: 0, ff: s => /Pick one for the rest/.test(s.line) && s.btn, done: (s, taps) => taps >= 1, tail: 2.0, max: 8 });
+    await take(browser, 'the fork', '?mission=east&seed=4', { save: easyDone, pick: 0, ff: s => /Two errands/.test(s.line) && s.btn, done: (s, taps) => taps >= 1, tail: 1.6, max: 8 });
     await card(browser, 'cap', 1.6, [{ n: 'deal', t: 0 }], 'And the city remembers you.');
     await take(browser, 'the lady again', '?run=easy&seed=1125', { ff: s => s.card === 'granny2' && s.btn, done: (s, taps) => taps >= 1, tail: 2.0, max: 9 });
     await card(browser, 'end', 3.8, [{ n: 'act', t: 0.15 }]);

@@ -107,7 +107,12 @@ const rec = M.recordMission('aino', { done: true, score: 40 }, st);
 ok(rec.opened === 'wallet' && rec.perk === 'coin' && M.missionOpen('wallet', M.loadMissions(st), true) && M.perkPool(M.doneCount(M.loadMissions(st))).includes('coin'), 'finishing it opens the next and puts a new perk in the pool');
 ok(M.recordMission('aino', { done: true, score: 10 }, st).perk === null && M.loadMissions(st).aino.best === 40, 'a second finish opens nothing new and keeps the best');
 
-// the runs are untouched
+// the runs carry the levers too since v3.16 (owner: "yes to all runs, modifiers, perks"),
+// each set on the run, and a mission none of the run's own (no march, no forks of its own)
 const before = R.RUNS.map(r => { const s = J.newRun(net, r, 1234); return [s.at, s.offer?.to, s.deck.map(d => d.card.id).join(',')].join('|'); });
-ok(before.every(x => !x.includes('undefined')) && R.RUNS.every(r => !J.newRun(net, r, 1).perks), 'the four runs deal as they did: no perks, no strikes, no mission steps');
+ok(before.every(x => !x.includes('undefined')) && R.RUNS.every(r => r.perks && J.newRun(net, r, 1).perks.length === 0 && !J.newRun(net, r, 1).picks),
+  'every run drafts perks, starts with none, and has no mission steps');
+ok(J.strikesOf(R.BY_ID.easy) === 0 && J.strikesOf(R.BY_ID.medium) === 3 && J.strikesOf(R.BY_ID.hard) === 3 && J.strikesOf(R.BY_ID.night) === 2 && J.strikesOf({ mission: M.MISSIONS[0] }) === M.STRIKES,
+  'strikes: none on EASY, three on MEDIUM and HARD, two at NIGHT, two on a mission');
+ok(M.MISSIONS.every(m => { const r = M.missionRun(R.BY_ID[m.base || 'medium'], m); return !r.march && !r.forks && !r.halt; }), 'a mission takes none of its base run\'s march, forks or halt');
 console.log(`missions: ${n} checks passed`);

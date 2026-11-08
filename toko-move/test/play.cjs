@@ -118,13 +118,13 @@ server.listen(0, '127.0.0.1', async () => {
         runs: [...document.querySelectorAll('#mutRow .run[data-run]')].map(r => ({ id: r.dataset.run, open: !r.classList.contains('locked'), lit: r.classList.contains('on') })),
         goal: document.getElementById('titleGoal').textContent, play: document.getElementById('play').textContent,
         links: ['dailyLink', 'weekLink', 'liveLink'].filter(id => { const e = document.getElementById(id); return e && !e.hidden && getComputedStyle(e).display !== 'none'; }) }));
-      ok(`the bare address is the card journey, not the real-time game (v${t.v})`, !t.classic && t.v === '3.15' && /v3\.15/.test(t.hero));
+      ok(`the bare address is the card journey, not the real-time game (v${t.v})`, !t.classic && t.v === '3.16' && /v3\.16/.test(t.hero));
       ok(`it is Act 1, in Helsinki (${await page.evaluate(() => document.getElementById('titleWhen').textContent)})`, await page.evaluate(() => /^Act 1 · Helsinki · 07:00/.test(document.getElementById('titleWhen').textContent)));
       ok(`the ladder: EASY open and lit, three locked (${t.runs.map(r => r.id + (r.open ? '' : '🔒')).join(' ')})`, t.runs.map(r => r.id).join() === 'easy,medium,hard,night' && t.runs[0].open && t.runs[0].lit && t.runs.slice(1).every(r => !r.open) && t.run === 'easy');
       ok(`the goal and the button (${t.goal} · ${t.play})`, /^Three deliveries before 08:15/.test(t.goal) && t.play === 'START SHIFT');
       ok(`no daily, week or LIVE before NIGHT (${t.links})`, !t.links.length);
       // the same address with a pinned shift, so the gate sees the same one
-      await page.goto(`${base}/toko-move/?run=easy&seed=1002`, { waitUntil: 'load' }); await ready(page);
+      await page.goto(`${base}/toko-move/?run=easy&seed=1009`, { waitUntil: 'load' }); await ready(page);
       await page.tap('#play'); await page.waitForTimeout(250);
       const fc = await look(page);
       ok(`the shift opens on its weather (${fc.stamp})`, /CLEAR/.test(fc.stamp) && /quiet city/.test(fc.stamp));
@@ -263,13 +263,13 @@ server.listen(0, '127.0.0.1', async () => {
       ok(`no page or network errors (${car} interiors)`, !errs.length, errs.slice(0, 3).join(' | '));
       await ctx.close();
     }
-    // ── the moments (v3.12, the owner's approved art, PR #632): EASY 3434 (a clear day)
+    // ── the moments (v3.12, the owner's approved art, PR #632): EASY 1003 (a clear day)
     // takes jobs, boards trams, delivers, and boards the metro at Kalasatama, each
     // beat with its picture
     {
       const M = await import(require('url').pathToFileURL(require('path').join(__dirname, '../js/moments.js')).href);
       const ctx = await browser.newContext(PHONE), page = await ctx.newPage(), errs = watch(page);
-      await page.goto(`${base}/toko-move/?run=easy&seed=3434`, { waitUntil: 'load' }); await ready(page);
+      await page.goto(`${base}/toko-move/?run=easy&seed=1003`, { waitUntil: 'load' }); await ready(page);
       await page.tap('#play'); await page.waitForSelector('#v3panel .eventOpt', { timeout: 15000 });
       const seen = await playOut(page, { maxSteps: 400 }), ms = [...seen.scenes].filter(x => x.startsWith('m-')).map(x => x.slice(2));
       const among = pool => ms.some(m => pool.includes(m)), hand = [...Object.values(M.HANDOFF_AT).flat()];
@@ -282,12 +282,12 @@ server.listen(0, '127.0.0.1', async () => {
       ok('no page or network errors (moments)', !errs.length, errs.slice(0, 3).join(' | '));
       await ctx.close();
     }
-    // ── a card's own scene, and a choice's consequence (v3.13): EASY 1103 deals the
+    // ── a card's own scene, and a choice's consequence (v3.13): EASY 1125 deals the
     // tourist and her map, then the lady at the crossing (walked across), then the
     // seat she saved
     {
       const ctx = await browser.newContext(PHONE), page = await ctx.newPage(), errs = watch(page);
-      await page.goto(`${base}/toko-move/?run=easy&seed=1103`, { waitUntil: 'load' }); await ready(page);
+      await page.goto(`${base}/toko-move/?run=easy&seed=1125`, { waitUntil: 'load' }); await ready(page);
       await page.tap('#play'); await page.waitForSelector('#v3panel .eventOpt', { timeout: 15000 });
       const seen = await playOut(page, { maxSteps: 400 }), ms = [...seen.scenes].filter(x => x.startsWith('m-')).map(x => x.slice(2));
       ok(`the tourist's card is played in front of her and her map (${ms.join(', ')})`, ms.includes('tourist'));
@@ -332,6 +332,19 @@ server.listen(0, '127.0.0.1', async () => {
       const night = await playOut(page, { maxSteps: 400 });
       ok(`THE LAST TRAM is the night shift: the night car, no sunny moments (${[...night.scenes].join(', ')})`, night.end && night.scenes.has('night') && ![...night.scenes].some(x => x.startsWith('m-')) && night.clocks.some(([c]) => /^23:/.test(c)));
       ok('no page or network errors (fork, night)', !errs.length, errs.slice(0, 3).join(' | '));
+      await ctx.close();
+    }
+    // v3.16: the march on Mannerheimintie: MEDIUM 15 (a clear day) holds the 4 by the Parliament House
+    {
+      const ctx = await browser.newContext(PHONE); await seedRuns(ctx, { easy: { done: true, stars: 2, plays: 1 } });
+      const page = await ctx.newPage(), errs = watch(page);
+      await page.goto(`${base}/toko-move/?run=medium&seed=15`, { waitUntil: 'load' }); await ready(page);
+      await page.tap('#play'); await page.waitForSelector('#v3panel .eventOpt', { timeout: 15000 });
+      let march = null;
+      const seen = await playOut(page, { maxSteps: 400, onCard: async c => { if (!march && c.kind === 'halt') march = { line: c.line, scene: c.scene }; } });
+      ok(`the march holds a Mannerheimintie line, drawn from above (${JSON.stringify(march)})`, /^A march on Mannerheimintie, by the Parliament House\. The (1|2|4|10) is halted\.$/.test(march?.line || '') && march.scene === 'm-demonstration');
+      ok('and the shift goes on round it to its end', seen.end);
+      ok('no page or network errors (the march)', !errs.length, errs.slice(0, 3).join(' | '));
       await ctx.close();
     }
     // ── story arcs (v3.4, ACT1.md §10): a second run meets Dispatch, and the city remembers
