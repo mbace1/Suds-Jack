@@ -131,7 +131,7 @@ server.listen(0, '127.0.0.1', async () => {
       const live = await page.evaluate(() => ({ v: window.__tm3.version, kind: window.__tm3.card()?.kind,
         buttons: document.querySelectorAll('#v3panel .eventOpt').length }));
       ok('pressing START deals the first card', live.kind === 'dispatch', String(live.kind));
-      ok('and it can be answered', live.buttons === 2, `${live.buttons} buttons`);
+      ok('and it can be answered, three ways (v3.18)', live.buttons === 3, `${live.buttons} buttons`);
       ok(`the running build is ${built}`, live.v === built, live.v);
     }
   }
