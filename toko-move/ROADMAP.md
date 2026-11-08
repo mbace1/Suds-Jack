@@ -69,11 +69,11 @@ drafts perks, deals one fork and counts strikes, with HARD's clock and
 NIGHT's strikes refitted so the ladder keeps its shape. The list below moves
 up by one.
 
-7. **v3.16 · Missions on the board.** The mission list becomes the map:
+7. ~~**v3.17 · Missions on the board.**~~ Shipped in v3.17 (the map on the title card, a tap on a pin plays it). The mission list becomes the map:
    each mission's start is a pin at its real place, done ones stamped with
    their best, the next one open and pulsing. No new art; the board and the
    pins are what exists.
-8. **v3.17 · The daily mission.** One mission a day, seeded from the date
+8. ~~**v3.17 · The daily mission.**~~ Shipped in v3.17 as TODAY'S ERRAND (`?errand`). One mission a day, seeded from the date
    (the daily shift's rule), its perk pool fixed, a share line with the
    strikes and the build. Cheap and social, and it gives the six missions a
    reason to be replayed.

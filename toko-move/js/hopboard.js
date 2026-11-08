@@ -130,6 +130,33 @@ export class HopBoard {
     if (vignette) drawVignette(ctx, vignette, pos.x, pos.y, d);
     ctx.restore();
   }
+  // THE MISSION MAP (v3.17): the city with a pin where each mission starts —
+  // done (filled, its best), open (pulsing at `t`), locked (a small grey dot).
+  // Returns each pin's centre in CSS pixels, for a tap to find.
+  drawPins({ pins, t = 0 }) {
+    const { ctx, canvas, skin, net } = this, d = this.d || 1, W = canvas.width, H = canvas.height;
+    const pts = pins.map(p => net.nodes.get(p.at)).filter(Boolean); if (!pts.length) return [];
+    const fit = this.frame(pts, false);
+    const key = `${this.cam.key}|${skin.id}|pins`;
+    if (key !== this.baseKey || !this.base) { this.renderBase(fit, { focus: new Set(), halted: null, named: new Map() }); this.baseKey = key; }
+    ctx.save(); ctx.clearRect(0, 0, W, H); ctx.drawImage(this.base, 0, 0);
+    ctx.fillStyle = skin.paper; ctx.globalAlpha = 0.28; ctx.fillRect(0, 0, W, H); ctx.globalAlpha = 1;   // the network steps back behind the pins
+    const out = [];
+    ctx.font = `800 ${Math.round(11.5 * d)}px Inter, system-ui, sans-serif`; ctx.textBaseline = 'middle'; ctx.lineJoin = 'round';
+    const order = { locked: 0, done: 1, open: 2 };
+    for (const p of [...pins].sort((a, b) => order[a.state] - order[b.state])) { const n = net.nodes.get(p.at); if (!n) continue; const c = fit(n.lat, n.lon);
+      const R = (p.state === 'locked' ? 10 : 13) * d;
+      if (p.state === 'open') { const k = t % 1; ctx.beginPath(); ctx.arc(c.x, c.y, R + 14 * k * d, 0, Math.PI * 2); ctx.globalAlpha = 0.55 * (1 - k); ctx.lineWidth = 3 * d; ctx.strokeStyle = TOKO_CYAN; ctx.stroke(); ctx.globalAlpha = 1; }
+      const ink = p.state === 'done' ? skin.hubRing : p.state === 'open' ? TOKO_CYAN : '#aab4af';
+      ctx.beginPath(); ctx.arc(c.x, c.y, R, 0, Math.PI * 2); ctx.fillStyle = p.state === 'done' ? ink : p.state === 'open' ? '#ffffff' : '#eef1ee'; ctx.fill(); ctx.lineWidth = (p.state === 'locked' ? 2 : 3) * d; ctx.strokeStyle = ink; ctx.stroke();
+      ctx.fillStyle = p.state === 'done' ? '#ffffff' : ink; ctx.textAlign = 'center'; ctx.font = `800 ${Math.round((p.state === 'locked' ? 10 : 13) * d)}px Inter, system-ui, sans-serif`; ctx.fillText(p.state === 'done' ? '✓' : p.glyph || '•', c.x, c.y + 0.5 * d);
+      // only the open one is named (the pins sit close in the centre; the list says the rest), left of it near the edge
+      if (p.state === 'open' && p.label) { ctx.font = `800 ${Math.round(11.5 * d)}px Inter, system-ui, sans-serif`; const txt = this.label(p.label).toUpperCase(), w = ctx.measureText(txt).width, right = c.x + R + 6 * d + w < W - 6 * d;
+        ctx.textAlign = right ? 'left' : 'right'; const x = right ? c.x + R + 6 * d : c.x - R - 6 * d;
+        ctx.lineWidth = 5 * d; ctx.strokeStyle = skin.halo; ctx.strokeText(txt, x, c.y); ctx.fillStyle = skin.label; ctx.fillText(txt, x, c.y); ctx.textAlign = 'left'; }
+      out.push({ id: p.id, x: c.x / d, y: c.y / d, state: p.state }); }
+    ctx.restore(); return out;
+  }
   inkOf(hop) { return this.transit.layers.find(l => l.id === hop.line?.sourceId)?.colour || '#52676d'; }
   // Everything that holds still for a hop, drawn once: paper, ground, water,
   // the quarters' names, the network (the hop's line in focus), the stops and
