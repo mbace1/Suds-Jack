@@ -35,6 +35,10 @@ export const MISSION_CARDS = {
 export const MISSION_CALLBACKS = { wallet: MISSION_CARDS.wallet2 };
 
 // a step: where the job may send you, what it is, how dispatch says it, and the
+// (v3.15) a step may be a FORK — two such errands, and the card asks which —
+// or carry the run's own modifiers: `rival` (race her) and `sealed` (only a sticker).
+// A mission plays on MEDIUM's city unless it says `base: 'night'`.
+//
 // event cards it may deal (ids from cards.js or MISSION_CARDS; the run draws one).
 // No buyer cards: selling the errand's parcel would end the errand, a trap
 // rather than a choice (a first cut dealt four, and lost most runs to them).
@@ -57,7 +61,8 @@ export const MISSIONS = [
     blurb: 'Tools for the towers, a parcel for the gallery, and the market before it shuts.',
     steps: [
       { to: ['kalasatama'], cargo: 'equipment', brief: 'Tools for the site at Kalasatama. Transit only: it is heavy.', cards: ['busker', 'swedish', 'puffy'] },
-      { to: ['arabia', 'sornainen'], cargo: 'fragile', brief: 'A vase for the gallery at {stop}. Mind the corners.', cards: ['sauna', 'map'] },
+      { fork: [{ to: ['arabia'], cargo: 'fragile', brief: 'A vase for the gallery at Arabia. Mind the corners.', cards: ['sauna', 'map'] },
+               { to: ['sornainen'], cargo: 'parts', brief: 'A spare part for the market hall\'s lift at Sörnäinen.', cards: ['busker', 'swedish'] }] },
       { to: ['hakaniemi', 'kallionkirkko'], cargo: 'market goods', brief: 'Back to {stop} before the market shuts.', cards: ['gull', 'busker'] },
     ] },
   { id: 'harbour', name: 'THE HARBOUR ROUND', glyph: '⚓', start: 'olympiaterminaali', title: 'Quay to quay, and the canal',
@@ -66,6 +71,23 @@ export const MISSIONS = [
       { to: ['kauppatori'], cargo: 'fresh food', brief: 'Fish for the market hall, from the ferry.', cards: ['gull', 'swedish'] },
       { to: ['lansiterminaali', 'hietalahti'], cargo: 'parts', brief: 'A crate along the shore to {stop}.', cards: ['map', 'sauna', 'puffy'] },
       { to: ['ruoholahti'], cargo: 'documents', brief: 'Drawings for the office by the canal at Ruoholahti.', cards: ['spruce2', 'busker', 'wallet'] },
+    ] },
+  // v3.15: the run's own modifiers as a mission, and the night
+  { id: 'sticker', name: 'THE STICKER', glyph: '◉', start: 'kamppi', title: 'A race, a sealed parcel, a choice',
+    blurb: 'The other courier wants the first one. The second has no address, only a sticker. The third is yours to pick.',
+    steps: [
+      { to: ['kauppatori', 'katajanokka'], cargo: 'documents', rival: true, brief: 'A plain envelope for {stop}. Somebody is waiting.', cards: ['map', 'busker'] },
+      { to: ['eira', 'kallionkirkko', 'ooppera', 'arabia'], cargo: 'documents', sealed: true, brief: 'A sealed parcel. No address, only a sticker.', cards: ['sealed'] },
+      { fork: [{ to: ['rautatientori'], cargo: 'express', brief: 'An express parcel for the station: a big fee, a tight clock.', cards: ['gull', 'swedish'] },
+               { to: ['hakaniemi', 'sornainen'], cargo: 'parts', brief: 'A box of parts for the market at {stop}. No hurry.', cards: ['busker', 'sauna'] }] },
+    ] },
+  { id: 'lasttram', name: 'THE LAST TRAM', glyph: '☾', start: 'rautatientori', base: 'night', deadline: 1.1, skies: ['clear', 'fog'], title: 'Three errands after eleven',
+    blurb: 'Kebabs for Kallio, a contract before midnight, and something that hums. Half the trams, and one with no number.',
+    steps: [
+      { to: ['kallionkirkko', 'sornainen'], cargo: 'hot food', brief: 'Late kebabs for a flat in {stop}. They are getting cold.', cards: ['ghost', 'karaoke'] },
+      { to: ['kamppi', 'ooppera'], cargo: 'documents', brief: 'A contract that must be signed before midnight, at {stop}.', cards: ['humming', 'reindeer'] },
+      { fork: [{ to: ['eira'], cargo: 'fragile', brief: 'Something that hums, for a villa in Eira. Do not open it.', cards: ['ghost', 'karaoke'] },
+               { to: ['katajanokka'], cargo: 'documents', brief: 'An envelope for the night ferry at Katajanokka.', cards: ['humming', 'reindeer'] }] },
     ] },
 ];
 export const MISSION_BY_ID = Object.fromEntries(MISSIONS.map(m => [m.id, m]));
@@ -88,7 +110,7 @@ export const perkPool = (doneCount = 0) => PERK_ORDER.slice(0, Math.min(PERK_ORD
 // the run a mission is played as: MEDIUM's city, on the mission's clock
 export function missionRun(base, m, doneCount = 0) {
   return { ...base, id: `mission-${m.id}`, name: m.name, title: m.title, glyph: m.glyph, blurb: m.blurb, mission: m, target: m.steps.length,
-    cards: 0, rival: false, sealed: false, race: null, halt: null, deadline: m.deadline || 1, skies: ['clear', 'clear', 'snow'], perkPool: perkPool(doneCount) };
+    cards: 0, rival: false, sealed: false, race: base.race || { pace: 1.2 }, halt: null, deadline: m.deadline || 1, skies: m.skies || ['clear', 'clear', 'snow'], perkPool: perkPool(doneCount) };
 }
 
 // ── the save ───────────────────────────────────────────────────────────────

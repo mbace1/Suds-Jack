@@ -52,7 +52,9 @@ view") brought up to the scenes. Every step ends in a re-filmed trailer
    strikes, a perk draft between jobs, and unlocks (missions and perks).
    Next: more missions as art lands (one per approved scene set), a mission
    that strings the sealed parcel and the race, and the perks on the runs
-   too if the owner wants them there (it would move the measured bands). Further packs land the same way: the
+   too if the owner wants them there (it would move the measured bands).
+   v3.15: forks (two errands on one card), THE STICKER (the race and the
+   sealed parcel) and THE LAST TRAM (the night, its events those with art). Further packs land the same way: the
    approved crops as they are, at the beat they draw.
 
 Each step is measured, gated and deployed, and the trailer is re-filmed with

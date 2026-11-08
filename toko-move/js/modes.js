@@ -12,7 +12,7 @@
 import * as Runs from './runs.js?v=4';
 import { dateKey, dailySeed, dailyNumber, dateLabel } from './daily.js?v=2';
 import * as W from './week.js?v=4';
-import { MISSION_BY_ID, missionRun, loadMissions, doneCount } from './missions.js?v=1';
+import { MISSION_BY_ID, missionRun, loadMissions, doneCount } from './missions.js?v=2';
 
 const ls = () => { try { return globalThis.localStorage; } catch { return null; } };
 // the journey's week lives beside ?classic's under its own key
@@ -34,7 +34,7 @@ export function resolveMode(params, now = new Date(), s = ls()) {
   }
   // a mission (v3.14, missions.js): ?mission=<id>, played on MEDIUM's city with its own steps
   const m = MISSION_BY_ID[params.get('mission')];
-  if (m) return { mode: 'mission', mission: m, run: missionRun(Runs.BY_ID.medium, m, doneCount(loadMissions(s))), seed: Number(params.get('seed')) || null };
+  if (m) return { mode: 'mission', mission: m, run: missionRun(Runs.BY_ID[m.base || 'medium'], m, doneCount(loadMissions(s))), seed: Number(params.get('seed')) || null };
   return { mode: 'run', run: Runs.resolveRun(params), seed: Number(params.get('seed')) || null };
 }
 // The line you send: the grid, the euros, and where to play it.
