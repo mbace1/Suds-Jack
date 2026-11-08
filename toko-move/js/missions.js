@@ -27,10 +27,12 @@
 export const MISSION_CARDS = {
   wallet: { id: 'wallet', tone: ['fun', 'risky'], where: 'stop', mood: 'opportunity', text: 'A wallet on the bench by the shelter. A bus card, a library card, €40.',
     options: [{ label: 'Hand it in at the kiosk', time: 60, pay: 1.1, set: 'wallet', say: 'The kiosk keeps a drawer for this. The drawer is full of gloves.' },
-      { label: 'Pocket it', time: 0, risk: { odds: 'maybe', win: { cash: 40, say: 'Nobody saw. You feel it in your pocket all the way.' }, lose: { cash: -20, say: 'The owner saw. You give it back, and €20 for the fright.' } } }] },
+      { label: 'Pocket it', time: 0, risk: { odds: 'maybe', win: { cash: 40, say: 'Nobody saw. You feel it in your pocket all the way.' }, lose: { cash: -20, say: 'The owner saw. You give it back, and €20 for the fright.' } } },
+      { label: 'Find him from the library card', time: 150, pay: 1.3, set: 'wallet', tier: 'very', say: 'The library knows him. He is reading in the corner, and nearly cries.' }] },
   wallet2: { id: 'wallet2', tone: ['fun'], where: 'aboard', mood: 'opportunity', text: 'The man whose wallet you handed in is on this tram. He knows your bag.',
     options: [{ label: 'Say hello', time: 30, pay: 1.2, say: 'He runs the café at your next drop. "Your coffee is on the house. For a year."' },
-      { label: 'Look out of the window', time: 0, say: 'He nods at your reflection. That counts.' }] },
+      { label: 'Look out of the window', time: 0, say: 'He nods at your reflection. That counts.' },
+      { label: 'Buy him a coffee', time: 30, cash: -3, pay: 1.25, tier: 'special', say: 'He insists on paying. You insist harder. You win, and he tips you anyway.' }] },
 };
 export const MISSION_CALLBACKS = { wallet: MISSION_CARDS.wallet2 };
 

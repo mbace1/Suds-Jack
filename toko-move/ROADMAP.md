@@ -86,6 +86,20 @@ up by one.
     missions. The upload, a real-phone pass and a native Finnish read stay
     the owner's.
 
+**Owner, 2026-11-08, on v3.17:** *"The traveling on a tram visual is a great one
+and should be used more … The waiting on a stop visual is great but needs lots of
+improvement and polish … We need 3 options at every choice. 2 regular and 3rd can
+sometimes be special or very special. This same lower third look, should be used
+in menus and the intro screen."*
+
+11. ~~**v3.18 · Three at every choice, and the menus wear the card.**~~ Shipped.
+12. **v3.19 · The ride, longer.** The tram interior as the stage for a longer
+    stretch of travel: the ride held, more aboard (cards, the people moving),
+    choices made riding; and the courier's neck mended (Toko's head sits left
+    of the neck in the interior layers).
+13. **v3.20 · The stop, polished** toward the approved illustrations, with what
+    the repo holds (no new art invented).
+
 Each step is measured, gated and deployed, and the trailer is re-filmed with
 what changed.
 

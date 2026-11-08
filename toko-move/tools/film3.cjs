@@ -327,7 +327,7 @@ server.listen(0, '127.0.0.1', async () => {
       ff: s => ['fence', 'fog', 'iceswim', 'karaoke', 'reindeer', 'roadworks', 'slip', 'sofa', 'wet'].includes(s.card) && s.btn, done: (s, taps) => taps >= 1, tail: 1.4, max: 8 });
     // v3.10: every stop is somewhere, and the weather lies on it
     await card(browser, 'cap', 1.6, [{ n: 'deal', t: 0 }], 'Every stop is somewhere.');
-    await take(browser, 'Katajanokka in the snow', '?run=medium&seed=1009', { save: { tokoMoveRuns: { easy: { done: true, stars: 2, plays: 1 } } },
+    await take(browser, 'Katajanokka in the snow', '?run=medium&seed=1031', { save: { tokoMoveRuns: { easy: { done: true, stars: 2, plays: 1 } } },
       ff: s => s.scene === 'stop' && s.land === 'katajanokka' && s.btn, done: () => true, tail: 2.6, max: 6 });
     await card(browser, 'cap', 1.6, [{ n: 'deal', t: 0 }], 'Real trams. Some of them very old.');
     await take(browser, 'museum tram', '?run=easy&seed=1197', { ff: s => s.scene === 'stop' && s.tram === 'museum', done: (s, taps) => s.scene === 'tram' && taps >= 1, tail: 2.0, max: 12 });
@@ -339,8 +339,10 @@ server.listen(0, '127.0.0.1', async () => {
     // v3.12–v3.15: the job in the owner's illustrations, and the missions
     const easyDone = { tokoMoveRuns: { easy: { done: true, stars: 2, plays: 1 } } };
     await card(browser, 'cap', 1.6, [{ n: 'deal', t: 0 }], 'Every handover, drawn.');
-    await take(browser, 'pickup', '?run=easy&seed=3434', { ff: s => s.m === 'kiosk', done: () => true, tail: 2.0, max: 4 });
-    await take(browser, 'delivery', '?run=easy&seed=3434', { ff: s => s.m === 'doorway', done: () => true, tail: 2.2, max: 4 });
+    await take(browser, 'pickup', '?run=easy&seed=1003', { ff: s => ['kiosk', 'bench', 'stop-handoff', 'station', 'park'].includes(s.m), done: () => true, tail: 2.0, max: 4 });
+    await take(browser, 'delivery', '?run=easy&seed=1003', { ff: s => ['doorway', 'cyclist', 'ferry', 'quay'].includes(s.m), done: () => true, tail: 2.2, max: 4 });
+    await card(browser, 'cap', 1.6, [{ n: 'deal', t: 0 }], 'Some mornings, Mannerheimintie marches.');
+    await take(browser, 'the march', '?run=medium&seed=15', { save: easyDone, ff: s => s.m === 'demonstration' && s.btn, done: (s, taps) => taps >= 1, tail: 2.4, max: 10 });
     await card(browser, 'cap', 1.6, [{ n: 'deal', t: 0 }], 'Missions. A different errand every run.');
     await take(browser, 'the wallet', '?mission=wallet&seed=11', { save: easyDone, pick: 0, ff: s => s.card === 'wallet' && s.btn, done: s => s.m === 'wallet', tail: 2.6, max: 10 });
     await card(browser, 'cap', 1.6, [{ n: 'deal', t: 0 }], 'Pick what you carry.');

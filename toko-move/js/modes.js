@@ -12,7 +12,7 @@
 import * as Runs from './runs.js?v=5';
 import { dateKey, dailySeed, dailyNumber, dateLabel } from './daily.js?v=2';
 import * as W from './week.js?v=4';
-import { MISSIONS, MISSION_BY_ID, missionRun, loadMissions, doneCount, PERK_ORDER } from './missions.js?v=3';
+import { MISSIONS, MISSION_BY_ID, missionRun, loadMissions, doneCount, PERK_ORDER } from './missions.js?v=4';
 
 const ls = () => { try { return globalThis.localStorage; } catch { return null; } };
 // the journey's week lives beside ?classic's under its own key

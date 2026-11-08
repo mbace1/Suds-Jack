@@ -10,7 +10,7 @@
 //     already held, and each does what it says
 //   · strikes: the second late drop loses the errand
 //   · a reader finishes every mission; a left-tapper collects strikes
-//   · the wallet is a two-button choice card, handing it in brings its owner
+//   · the wallet is a three-button choice card, handing it in brings its owner
 //     back on a later job
 //   · the save: the first mission opens with EASY, each after the one before,
 //     and a finished mission adds a perk to the pool
@@ -48,11 +48,12 @@ ok(!bare.length, `every event a mission deals has its art: a stop actor, an appr
 
 const play = (m, seed, pick = () => 0) => { const s = J.newRun(net, M.missionRun(R.BY_ID[m.base || 'medium'], m, 3), seed), seen = { cards: [], drops: [], perks: [], offers: [] };
   for (let k = 0; k < 400; k++) { const c = J.card(net, s); if (!c) break;
-    if (c.kind === 'story') seen.cards.push(c.id); if (c.kind === 'dispatch') seen.drops.push(s.offer.to); if (c.kind === 'perk') seen.offers.push(c.options.map(o => o.perk));
+    if (c.kind === 'story') seen.cards.push(c.id); if (c.kind === 'dispatch') seen.drops.push(s.offer.to); if (c.kind === 'perk') seen.offers.push(c.options.map(o => o.perk).filter(Boolean));
     const r = J.choose(net, s, pick(s, c)); if (r.error) break; if (r.perk) seen.perks.push(r.perk); }
   return { s, ...seen }; };
-const reader = (s, c) => { if (c.kind !== 'route') return Math.min(1, c.options.length - 1); let bi = 0, bv = Infinity;
-  c.options.forEach((o, i) => { const h = o.hop, v = h ? h.price + (s.best[h.to]?.[s.job.to] ?? 0) : 1e9; if (v < bv) { bv = v; bi = i; } }); return bi; };
+// (v3.18: a dispatch is taken as it comes; a perk, the second; a taxi's euros weigh 25 s each)
+const reader = (s, c) => { if (c.kind === 'dispatch' && !c.fork) return 0; if (c.kind !== 'route') return Math.min(1, c.options.length - 1); let bi = 0, bv = Infinity;
+  c.options.forEach((o, i) => { const h = o.hop, v = h ? h.price + (s.best[h.to ?? s.at]?.[s.job.to] ?? 0) + Math.max(0, -(h.cash || 0)) * 25 : 1e9; if (v < bv) { bv = v; bi = i; } }); return bi; };
 
 const a = play(M.MISSIONS[1], 7), b = play(M.MISSIONS[1], 7);
 ok(JSON.stringify([a.cards, a.drops]) === JSON.stringify([b.cards, b.drops]), 'the same seed is the same version of the mission');
@@ -85,10 +86,10 @@ const forked = (m, seed, pick) => { const s = J.newRun(net, M.missionRun(R.BY_ID
   for (let k = 0; k < 400; k++) { const c = J.card(net, s); if (!c) break; if (c.fork && !fork) { fork = c.options.map(o => o.label); const r = J.choose(net, s, pick); chosen = s.job; continue; } J.choose(net, s, reader(s, c)); }
   return { s, fork, chosen }; };
 const f0 = forked(M.MISSION_BY_ID.east, 4, 0), f1 = forked(M.MISSION_BY_ID.east, 4, 1);
-ok(f0.fork?.length === 2 && f0.fork[0] !== f0.fork[1] && f0.chosen.to === 'arabia' && f1.chosen.to === 'sornainen' && f0.s.done === 3 && f1.s.done === 3,
-  `a fork offers two errands, and the one picked is the job (${f0.fork?.join(' / ')})`);
+ok(f0.fork?.length === 3 && f0.fork[0] !== f0.fork[1] && f0.fork[2] === 'Toss a coin' && f0.chosen.to === 'arabia' && f1.chosen.to === 'sornainen' && f0.s.done === 3 && f1.s.done === 3,
+  `a fork offers two errands and a coin, and the one picked is the job (${f0.fork?.join(' / ')})`);
 const stk = J.newRun(net, M.missionRun(R.BY_ID.medium, M.MISSION_BY_ID.sticker, 3), 6), c0 = J.card(net, stk);
-ok(c0.rival && c0.options.length === 1 && c0.options[0].label === 'Race her' && /other courier/.test(c0.text), `THE STICKER opens on a race (${c0.text})`);
+ok(c0.rival && c0.options.length === 3 && c0.options[0].label === 'Race her' && c0.options[2].label === 'Buy her a coffee' && /other courier/.test(c0.text), `THE STICKER opens on a race (${c0.text})`);
 const sp = play(M.MISSION_BY_ID.sticker, 6, reader);
 ok(sp.cards.includes('sealed') && sp.s.seen.length === 3, 'its second job is the sealed parcel, and its card is dealt');
 const lt = J.newRun(net, M.missionRun(R.BY_ID.night, M.MISSION_BY_ID.lasttram, 3), 2);
@@ -96,7 +97,7 @@ ok(M.MISSION_BY_ID.lasttram.base === 'night' && lt.run.startHour === 23 && lt.ru
 
 // the wallet
 const wal = M.MISSION_CARDS.wallet;
-ok(wal.options.length === 2 && wal.options[0].label === 'Hand it in at the kiosk' && wal.options[1].risk, 'the wallet is a two-button choice: hand it in, or pocket it at a risk');
+ok(wal.options.length === 3 && wal.options[0].label === 'Hand it in at the kiosk' && wal.options[1].risk && wal.options[2].tier === 'very', 'the wallet is a three-button choice: hand it in, pocket it at a risk, or (very special) find him');
 const wr = Array.from({ length: 20 }, (_, i) => play(M.MISSION_BY_ID.wallet, i + 1, (s, c) => c.kind === 'route' ? reader(s, c) : 0));
 ok(wr.every(r => r.cards[0] === 'wallet') && wr.some(r => r.cards.includes('wallet2')), 'LOST AND FOUND deals the wallet first, and handing it in brings its owner back aboard');
 

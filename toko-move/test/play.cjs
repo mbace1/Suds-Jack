@@ -90,7 +90,7 @@ async function playOut(page, { maxSteps = 600, pick = () => 0, onCard = null } =
       // a card slides in (v3stamp, .26 s): measure where it SETTLES, not mid-entrance
       if (s.buttons.some(b => !b.inside)) { await page.waitForTimeout(400); Object.assign(s, await look(page)); if (!s.buttons.length) continue; }
       seen.kinds.add(s.kind); seen.cards.push(s); if (s.strip) seen.strips.push(s.strip);
-      if (s.buttons.length > 2) seen.bad.push(`${s.kind} has ${s.buttons.length} buttons`);
+      if (s.buttons.length !== 3 && s.kind !== 'route') seen.bad.push(`${s.kind} has ${s.buttons.length} buttons`);   // v3.18: three at every choice (a sealed dead end may have one)
       if (s.buttons.some(b => b.h < 44 || !b.inside)) seen.bad.push(`${s.kind}: a button under 44px or off screen ${JSON.stringify(s.buttons)}`);
       if (!/\+\d+:\d\d/.test(s.buttons.map(b => b.t).join(' '))) seen.bad.push(`${s.kind}: a button without a price`);
       seen.clocks.push([s.clock, s.want]);
@@ -118,7 +118,7 @@ server.listen(0, '127.0.0.1', async () => {
         runs: [...document.querySelectorAll('#mutRow .run[data-run]')].map(r => ({ id: r.dataset.run, open: !r.classList.contains('locked'), lit: r.classList.contains('on') })),
         goal: document.getElementById('titleGoal').textContent, play: document.getElementById('play').textContent,
         links: ['dailyLink', 'weekLink', 'liveLink'].filter(id => { const e = document.getElementById(id); return e && !e.hidden && getComputedStyle(e).display !== 'none'; }) }));
-      ok(`the bare address is the card journey, not the real-time game (v${t.v})`, !t.classic && t.v === '3.17' && /v3\.17/.test(t.hero));
+      ok(`the bare address is the card journey, not the real-time game (v${t.v})`, !t.classic && t.v === '3.18' && /v3\.18/.test(t.hero));
       ok(`it is Act 1, in Helsinki (${await page.evaluate(() => document.getElementById('titleWhen').textContent)})`, await page.evaluate(() => /^Act 1 · Helsinki · 07:00/.test(document.getElementById('titleWhen').textContent)));
       ok(`the ladder: EASY open and lit, three locked (${t.runs.map(r => r.id + (r.open ? '' : '🔒')).join(' ')})`, t.runs.map(r => r.id).join() === 'easy,medium,hard,night' && t.runs[0].open && t.runs[0].lit && t.runs.slice(1).every(r => !r.open) && t.run === 'easy');
       ok(`the goal and the button (${t.goal} · ${t.play})`, /^Three deliveries before 08:15/.test(t.goal) && t.play === 'START SHIFT');
@@ -131,7 +131,7 @@ server.listen(0, '127.0.0.1', async () => {
       ok(`the first stop is a key station: its landmark stands behind it and its plate names it (${fc.land}, ${fc.plate})`, fc.land === 'lasipalatsi' && fc.plate === 'LASIPALATSI');
       await page.waitForSelector('#v3panel .eventOpt', { timeout: 15000 });
       const first = await look(page);
-      ok(`START deals the first card: a job, take it or ask for another (${first.line})`, first.kind === 'dispatch' && first.buttons.length === 2 && /for /.test(first.line));
+      ok(`START deals the first card: a job, take it, ask for another, or (special) express (${first.line})`, first.kind === 'dispatch' && first.buttons.length === 3 && /Take it, express/.test(first.buttons[2].t) && /for /.test(first.line));
       ok(`the HUD pill: the run's clock, three empty jobs, no money yet (${first.clock} ${first.dots} ${first.eur})`, first.clock === '07:00' && first.dots === '○○○' && first.eur === '€0');
       ok(`Take it says what the job pays (${first.stakes})`, /^€\d+$/.test(first.stakes[0] || ''));
       ok('the corner map shows where the job on offer goes', first.mini);
@@ -154,7 +154,7 @@ server.listen(0, '127.0.0.1', async () => {
       // EASY, played out by tapping
       const seen = await playOut(page);
       ok(`EASY played by tapping only reaches the end (${seen.cards.length} cards)`, seen.end);
-      ok(`every card keeps the grammar: ≤2 priced 44px buttons on screen, no scroll ${seen.bad.slice(0, 2).join(' | ')}`, !seen.bad.length);
+      ok(`every card keeps the grammar: three priced 44px buttons on screen, no scroll ${seen.bad.slice(0, 2).join(' | ')}`, !seen.bad.length);
       ok(`dispatch, route and story cards were dealt (${[...seen.kinds]})`, ['dispatch', 'route', 'story'].every(k => seen.kinds.has(k)));
       const offClock = seen.clocks.filter(([a, b]) => a !== b);
       ok(`the pill's clock is the run's clock at every card (${seen.clocks.length} read)`, !offClock.length, JSON.stringify(offClock.slice(0, 3)));
@@ -205,7 +205,7 @@ server.listen(0, '127.0.0.1', async () => {
       ok(`HARD's shift is snow or rain, and it falls on the stop (${hw})`, ['snow', 'rain'].includes(hw) && (halt?.wx || '').includes(`${hw} on`));
       const beds = await page.evaluate(() => window.__tm3.audio.log.filter(e => /^bed:/.test(e.name)).map(e => e.name));
       ok(`and it is heard: a ${hw} bed under the stop, quiet inside the car (${beds.slice(0, 4).join(' ')})`, beds.includes(`bed:${hw}`) && beds.includes('bed:none'));
-      ok(`and both ways out are priced (${halt?.buttons.map(b => b.t).join(' / ')})`, !!halt && halt.buttons.length === 2 && /Find another way/.test(halt.buttons[0].t) && /Wait it out/.test(halt.buttons[1].t));
+      ok(`and the ways out are priced, a taxi the special third (${halt?.buttons.map(b => b.t).join(' / ')})`, !!halt && halt.buttons.length === 3 && /Find another way/.test(halt.buttons[0].t) && /Wait it out/.test(halt.buttons[1].t) && /Taxi to /.test(halt.buttons[2].t));
       ok('no page or network errors (HARD)', !errs.length, errs.slice(0, 3).join(' | '));
       await ctx.close();
     }
@@ -309,6 +309,7 @@ server.listen(0, '127.0.0.1', async () => {
       await page.waitForFunction(() => document.getElementById('missionMap')?.dataset.pins, null, { timeout: 15000 });
       const pins = (await page.evaluate(() => document.getElementById('missionMap').dataset.pins)).split(' ').map(x => { const [id, state, px, py] = x.split(':'); return { id, state, x: +px, y: +py }; });
       ok(`the map pins every mission where it starts, AINO'S MORNING open (${pins.map(p => p.id + ':' + p.state).join(' ')})`, pins.length === list.length && pins.find(p => p.id === 'aino')?.state === 'open' && pins.filter(p => p.state === 'locked').length === list.length - 1);
+      await page.$eval('#missionMap', e => e.scrollIntoView({ block: 'start' })); await page.waitForTimeout(200);
       const box = await (await page.$('#missionMap')).boundingBox(), aino = pins.find(p => p.id === 'aino');
       await page.touchscreen.tap(box.x + aino.x, box.y + aino.y); await page.waitForURL(/mission=aino/, { timeout: 5000 }).catch(() => {});
       ok(`a tap on the open pin plays it (${page.url().replace(base, '')})`, /\?mission=aino/.test(page.url()));
@@ -320,7 +321,7 @@ server.listen(0, '127.0.0.1', async () => {
       const seen = await playOut(page, { maxSteps: 400, onCard: async c => { if (c.kind === 'perk' && !perkCard) perkCard = c.buttons.map(b => b.t).join(' | '); } });
       const ms = [...seen.scenes].filter(x => x.startsWith('m-')).map(x => x.slice(2)), res = await page.evaluate(() => window.__tm3.result);
       ok(`the wallet is handed in at the kiosk, in its picture (${ms.join(', ')})`, ms.includes('wallet'));
-      ok(`between jobs a perk is drafted from two (${perkCard})`, !!perkCard && perkCard.split(' | ').length === 2);
+      ok(`between jobs a perk is drafted from two, or the cash (${perkCard})`, !!perkCard && perkCard.split(' | ').length === 3 && /Keep the cash/.test(perkCard));
       ok(`and the errand ends on its card, with the build (${JSON.stringify(res)})`, seen.end && res?.mode === 'mission' && res.perks.length >= 1);
       ok('no page or network errors (missions)', !errs.length, errs.slice(0, 3).join(' | '));
       await ctx.close();
@@ -332,7 +333,7 @@ server.listen(0, '127.0.0.1', async () => {
       await page.tap('#play'); await page.waitForSelector('#v3panel .eventOpt', { timeout: 15000 });
       let fork = null;
       const seen = await playOut(page, { maxSteps: 400, onCard: async c => { if (!fork && /Two errands/.test(c.line)) fork = c.buttons.map(b => b.t.replace(/\+\d+:\d\d.*/, '').trim()); } });
-      ok(`a fork is two errands on one card (${fork?.join(' / ')})`, fork?.length === 2 && fork.every(b => /→/.test(b)));
+      ok(`a fork is two errands and a coin on one card (${fork?.join(' / ')})`, fork?.length === 3 && fork.slice(0, 2).every(b => /→/.test(b)) && /Toss a coin/.test(fork[2]));
       ok('and the errand goes on to its end', seen.end);
       await page.goto(`${base}/toko-move/?mission=lasttram&seed=2`, { waitUntil: 'load' }); await ready(page);
       await page.tap('#play'); await page.waitForSelector('#v3panel .eventOpt', { timeout: 15000 });
@@ -382,7 +383,7 @@ server.listen(0, '127.0.0.1', async () => {
       let met = null;
       const seen = await playOut(page, { onCard: async c => { if (!met && /^Dispatch here\./.test(c.line)) met = c; } });
       const kept = await page.evaluate(() => JSON.parse(localStorage.getItem('tokoMoveMemory') || '{}'));
-      ok(`a second run opens with Dispatch, a card like any other (${met?.line})`, !!met && met.kind === 'story' && met.buttons.length === 2);
+      ok(`a second run opens with Dispatch, a card like any other (${met?.line})`, !!met && met.kind === 'story' && met.buttons.length === 3);
       ok(`and the city remembers it after the run (${before} → ${JSON.stringify(kept)})`, seen.end && !before && kept.dispatch === 1);
       ok('no page or network errors (arcs)', !errs.length, errs.slice(0, 3).join(' | '));
       await ctx.close();
