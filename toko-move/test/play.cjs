@@ -118,7 +118,7 @@ server.listen(0, '127.0.0.1', async () => {
         runs: [...document.querySelectorAll('#mutRow .run[data-run]')].map(r => ({ id: r.dataset.run, open: !r.classList.contains('locked'), lit: r.classList.contains('on') })),
         goal: document.getElementById('titleGoal').textContent, play: document.getElementById('play').textContent,
         links: ['dailyLink', 'weekLink', 'liveLink'].filter(id => { const e = document.getElementById(id); return e && !e.hidden && getComputedStyle(e).display !== 'none'; }) }));
-      ok(`the bare address is the card journey, not the real-time game (v${t.v})`, !t.classic && t.v === '3.18' && /v3\.18/.test(t.hero));
+      ok(`the bare address is the card journey, not the real-time game (v${t.v})`, !t.classic && t.v === '3.19' && /v3\.19/.test(t.hero));
       ok(`it is Act 1, in Helsinki (${await page.evaluate(() => document.getElementById('titleWhen').textContent)})`, await page.evaluate(() => /^Act 1 · Helsinki · 07:00/.test(document.getElementById('titleWhen').textContent)));
       ok(`the ladder: EASY open and lit, three locked (${t.runs.map(r => r.id + (r.open ? '' : '🔒')).join(' ')})`, t.runs.map(r => r.id).join() === 'easy,medium,hard,night' && t.runs[0].open && t.runs[0].lit && t.runs.slice(1).every(r => !r.open) && t.run === 'easy');
       ok(`the goal and the button (${t.goal} · ${t.play})`, /^Three deliveries before 08:15/.test(t.goal) && t.play === 'START SHIFT');
@@ -162,6 +162,8 @@ server.listen(0, '127.0.0.1', async () => {
       ok(`a ride shows the in-car display (${seen.signs[0] || 'none'})`, seen.signs.some(s => /›/.test(s)));
       const hops = await page.evaluate(() => window.__tm3.boards);
       ok(`hops were played on the board (${hops} hops; counted, since a hurried tap skips each in a frame)`, hops > 0);
+      const rides = await page.evaluate(() => window.__tm3.rides || 0);
+      ok(`a ride is played inside the car, the corner map following it (v3.19; ${rides} rides)`, rides > 0);
       ok(`the strip names the job and where it goes (${seen.strips[0]})`, seen.strips.length && seen.strips.every(s => /→/.test(s) && /min (left)|late by/.test(s)));
       ok(`every drop is stamped, with what was inside and what it paid (${seen.stamps.find(s => /DELIVERED/.test(s))})`, seen.stamps.some(s => /DELIVERED/.test(s) && /Signed for: \S/.test(s) && /\+€\d+/.test(s)));
       const risky = seen.stakes.find(x => /^(usually|maybe|long shot) .+ · or .+/.test(x));
@@ -245,9 +247,9 @@ server.listen(0, '127.0.0.1', async () => {
       await ctx.close();
     }
     // ── more interiors (v3.11): the metro by day, the rush car, and the weather in the window.
-    // MEDIUM 1087 is a rainy day that rides the metro and is dealt the crush aboard it;
+    // MEDIUM 1162 is a rainy day that rides the metro and is dealt the crush aboard it;
     // MEDIUM 1027 rides a tram in the rain and is dealt the crush there.
-    for (const [seed, car] of [[1087, 'metro'], [1027, 'tram']]) {
+    for (const [seed, car] of [[1162, 'metro'], [1027, 'tram']]) {
       const ctx = await browser.newContext(PHONE); await seedRuns(ctx, { easy: { done: true } });
       const page = await ctx.newPage(), errs = watch(page);
       await page.goto(`${base}/toko-move/?run=medium&seed=${seed}`, { waitUntil: 'load' }); await ready(page);
@@ -282,12 +284,12 @@ server.listen(0, '127.0.0.1', async () => {
       ok('no page or network errors (moments)', !errs.length, errs.slice(0, 3).join(' | '));
       await ctx.close();
     }
-    // ── a card's own scene, and a choice's consequence (v3.13): EASY 1125 deals the
+    // ── a card's own scene, and a choice's consequence (v3.13): EASY 1152 deals the
     // tourist and her map, then the lady at the crossing (walked across), then the
     // seat she saved
     {
       const ctx = await browser.newContext(PHONE), page = await ctx.newPage(), errs = watch(page);
-      await page.goto(`${base}/toko-move/?run=easy&seed=1125`, { waitUntil: 'load' }); await ready(page);
+      await page.goto(`${base}/toko-move/?run=easy&seed=1152`, { waitUntil: 'load' }); await ready(page);
       await page.tap('#play'); await page.waitForSelector('#v3panel .eventOpt', { timeout: 15000 });
       const seen = await playOut(page, { maxSteps: 400 }), ms = [...seen.scenes].filter(x => x.startsWith('m-')).map(x => x.slice(2));
       ok(`the tourist's card is played in front of her and her map (${ms.join(', ')})`, ms.includes('tourist'));

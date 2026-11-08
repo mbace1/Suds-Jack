@@ -349,7 +349,7 @@ server.listen(0, '127.0.0.1', async () => {
     await take(browser, 'the perk', '?mission=wallet&seed=11', { save: easyDone, pick: 0, ff: s => /Pick one for the rest/.test(s.line) && s.btn, done: (s, taps) => taps >= 1, tail: 2.0, max: 8 });
     await take(browser, 'the fork', '?mission=east&seed=4', { save: easyDone, pick: 0, ff: s => /Two errands/.test(s.line) && s.btn, done: (s, taps) => taps >= 1, tail: 1.6, max: 8 });
     await card(browser, 'cap', 1.6, [{ n: 'deal', t: 0 }], 'And the city remembers you.');
-    await take(browser, 'the lady again', '?run=easy&seed=1125', { ff: s => s.card === 'granny2' && s.btn, done: (s, taps) => taps >= 1, tail: 2.0, max: 9 });
+    await take(browser, 'the lady again', '?run=easy&seed=1152', { ff: s => s.card === 'granny2' && s.btn, done: (s, taps) => taps >= 1, tail: 2.0, max: 9 });
     await card(browser, 'end', 3.8, [{ n: 'act', t: 0.15 }]);
 
     // ── the cut: clips crossfaded, the cues laid on the same timeline ──

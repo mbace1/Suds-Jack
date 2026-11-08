@@ -113,10 +113,12 @@ const pickOf = (s, list) => list[Math.floor(rand(s) * list.length)];
 // The deck a run deals (ACT1.md §5): one card a job, from the run's own tones,
 // places and weather — a card that needs a weather the shift has not got is
 // not in it, and one that has it is twice as likely; one buyer a shift.
+// (v3.19) a card aboard is played in the car, the view the owner wants more of: half again as likely
+export const ABOARD = 1.5;
 export function dealDeck(s, run, weather) {
   const tones = run.tones || { fun: 1 }, places = run.places || null;
   const weight = c => (c.weather && !c.weather.includes(weather)) || (places && !places.includes(c.where) && c.where !== 'any') ? 0
-    : Math.max(...c.tone.map(t => tones[t] || 0)) * (c.weather ? 2 : 1);
+    : Math.max(...c.tone.map(t => tones[t] || 0)) * (c.weather ? 2 : 1) * (c.where === 'aboard' ? ABOARD : 1);
   const out = [];
   for (let i = 0; i < (run.cards ?? 3); i++) {
     const pool = CARDS.filter(c => !out.some(d => d.card.id === c.id) && !(c.sale && out.some(d => d.card.sale)) && weight(c) > 0);
