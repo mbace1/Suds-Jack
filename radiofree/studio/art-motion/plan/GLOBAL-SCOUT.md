@@ -1337,3 +1337,18 @@ Everything below comes from search summaries. No article was opened.
 - **5 Short Supply:** motion to dismiss pending; re-check 12 Nov. [MLex](https://www.mlex.com/mlex/antitrust/articles/2521308)
 - **10/11 Whistleblowers:** S. 1792 — watch Mon 9 Nov (unanimous-consent attempt possible). [Yahoo](https://www.yahoo.com/news/politics/articles/grassley-pushes-ai-whistleblower-bill-195522504.html)
 - **1, 3, 4, 13:** nothing new.
+
+### Check Sun 8 Nov 17:16 (evening; search summaries only; nothing opened)
+- **Big development:** none.
+- **12 The Round Trip:** no price range; roadshow 10 Nov at the earliest, trading possibly before 26 Nov. One roundup
+  citing WSJ: $1.5–1.6T (this morning's secondhand figure was $1.2–1.3T; they disagree, so neither is used). HOLD.
+  [AI Weekly](https://aiweekly.co/alerts/anthropic-ipo-buyers-push-valuation-to-15t-after-tech-selloff)
+- **On the Label (posted):** settlement unruled; nothing dated 7–8 Nov from Means / Kennedy / White House.
+  [E&E News](https://www.eenews.net/articles/kennedy-says-he-knew-about-glyphosate-executive-order-in-advance)
+- **5 Short Supply:** motion to dismiss unruled; 13 Nov listing not re-confirmed by this search; re-check 12 Nov.
+  [MLex](https://www.mlex.com/mlex/antitrust/articles/2521308)
+- **10/11 Whistleblowers:** S. 1792 has no UC attempt yet; still in HELP. Senate back Mon 9 Nov.
+  [BillTrack50](https://www.billtrack50.com/billdetail/1894050),
+  [Grassley](https://www.grassley.senate.gov/news/news-releases/icymi-grassley-discusses-ai-whistleblower-protection-act-during-a-starting-point-interview)
+- **2 Grade Your Own Homework (posted):** no November news on the contracts. **8 Unmarked Boxes (posted):** nothing new.
+- **1, 3, 4, 13:** nothing new.

@@ -865,3 +865,37 @@ All facts below come from search summaries; no article was opened.
 - **Mon 9 Nov:** the Senate returns; Grassley may seek unanimous consent on S. 1792 (AI Whistleblower Protection Act).
   Watch the evening run. **Break Glass:** no plenary result.
 - **New candidates:** none. **Films now wrong:** none posted; **Found in Pasila's beat-2 tag needs the fix above.**
+
+## Daily check, Sun 8 Nov 17:16 (evening; search summaries only, nothing opened)
+- **Big development:** none. **Anthropic IPO:** still no price range (the 26 Oct S-1 left it blank; no amendment with a
+  range found). Roadshow reported to start 10 Nov at the earliest, trading possibly before 26 Nov; one roundup (citing
+  WSJ) puts buyer talks at $1.5–1.6T, against this morning's secondhand $1.2–1.3T. The figures disagree, so neither is
+  usable. The Round Trip stays on hold. [AI Weekly](https://aiweekly.co/alerts/anthropic-ipo-buyers-push-valuation-to-15t-after-tech-selloff),
+  [Leverage Shares](https://leverageshares.com/us/insights/anthropic-ipo-price/)
+- **Doodle 10 Right of Way: POSTED** (Grok Bot moved it up; posted ~00:43–00:46 Sun, not at 12:52). Nothing new on
+  Hamina since this morning: no resumption, order or inspection result.
+- **Found in Pasila (EN then FI, NOW): no reaction found, record holds.** No Yle, HS, MT, City of Helsinki or Tukes item
+  about the jug or about glyphosate this week; search only surfaced older Yle/MTV glyphosate pieces and a shop page
+  for today's non-glyphosate consumer Roundup (consistent with the corrected tag). Everything the film and posts carry
+  still stands: the importer's "not sold to consumers since 2019", Helsinki's 2020 goal, the EU approval to 2033, and
+  IARC vs ECHA/Bayer. The v4.2 date line ("Found on 7 Nov") is right for a Sunday post.
+- **Tue 10 Nov, Doodle 9 Five Pins: CLEAR.** No council step; the council meets 18 Nov on the budget. Brunswick's
+  Heikinlaakso 7.3 ha reservation is still the only project-level item (older).
+  [hel.fi](https://www.hel.fi/fi/uutiset/kaupunginhallitus-hyvaksyi-datakeskusperiaatteet),
+  [Verkkouutiset](https://www.verkkouutiset.fi/a/naille-viidelle-helsingin-alueelle-voi-tulla-datakeskus)
+- **Coxon 14 On the Label (posted):** still true. No ruling on the $7.25B settlement found; RULING PENDING holds.
+  Nothing dated 7–8 Nov from Means, Kennedy or the White House; Kennedy's "knew in advance" (E&E News) stands.
+  [E&E News](https://www.eenews.net/articles/kennedy-says-he-knew-about-glyphosate-executive-order-in-advance),
+  [Insurance Journal](https://amp.insurancejournal.com/news/national/2026/06/18/874229.htm)
+- **Doodle 8 Cut First (posted):** no report on the water plan (5 Nov deadline passed). One detail surfaced: LVV had also
+  asked for a report on a **moor frog (viitasammakko) breeding site**; this is older and not in the film. The police
+  investigation (29 Oct) continues. No correction.
+  [Kaleva](https://kaleva.fi/lvv-on-tehnyt-poliisille-tutkintapyynnon-googlen-m/13720712),
+  [TNW](https://thenextweb.com/news/google-finland-data-centre-police-investigation-muhos)
+- **Global 3 Short Supply:** motion to dismiss (filed 2 Sep, Judge Noël Wise) still unruled. This search did not
+  re-confirm the 13 Nov 9:00 San Jose listing (yesterday's docket check did). Re-check on 12 Nov.
+  [MLex](https://www.mlex.com/mlex/antitrust/articles/2521308)
+- **Mon 9 Nov:** the Senate returns; no unanimous-consent attempt on S. 1792 yet (trackers show it in HELP). Watch the
+  Monday evening run. **Break Glass:** no 2026 plenary result (168–29 was June 2025). **Grade Your Own Homework:**
+  nothing new on the four contracts. [BillTrack50](https://www.billtrack50.com/billdetail/1894050)
+- **New candidates:** none. **Films now wrong:** none.

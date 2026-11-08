@@ -1071,3 +1071,18 @@ Everything below comes from search summaries. No article was opened.
 - **Reactions:** counts not visible through search. Trade Secret's story resurfaced via the Yle/HS felling item (above).
 - **Pattern note:** read a product's own label before writing a tag about its sale status — the label confirmed the
   ingredient, the importer's page undid the "sold" claim.
+
+### Check Sun 8 Nov 17:16 (evening; search summaries only; nothing opened)
+- **Glyphosate / Found in Pasila (posting today, EN then FI):** no Yle, HS, MT, City of Helsinki or Tukes reaction,
+  and no new Finnish glyphosate news. Search surfaced only older Yle/MTV pieces and a shop page for current
+  non-glyphosate consumer Roundup, which fits the corrected importer tag. Record holds.
+- **Hamina (Right of Way, posted ~00:43 Sun):** nothing new since the morning.
+- **Muhos (Cut First):** no water-plan delivery report. LVV had also asked for a report on a moor frog (viitasammakko)
+  breeding site (older, not in the film); police investigation continues. No correction.
+  [Kaleva](https://kaleva.fi/lvv-on-tehnyt-poliisille-tutkintapyynnon-googlen-m/13720712)
+- **Helsinki (Five Pins, Tue):** nothing new; council 18 Nov on the budget, no data-center item.
+  [Verkkouutiset](https://www.verkkouutiset.fi/a/naille-viidelle-helsingin-alueelle-voi-tulla-datakeskus)
+- **HS sweep:** no new November data-center or AI candidate. **Break Glass:** no plenary result.
+- **Reactions:** counts not visible through search. Right of Way and Found in Pasila are too fresh for pickup.
+- **Pattern note:** a found-object story addressed to a newsroom (Yle) gets its reaction, if any, in that newsroom's own
+  outlet first. Tomorrow morning, search yle.fi for "Pasila" + "Roundup"/"glyfosaatti" before the wider sweep.
