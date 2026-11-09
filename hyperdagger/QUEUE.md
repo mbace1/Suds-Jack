@@ -98,6 +98,21 @@ Plan sketch:
 
 ## In progress
 
+
+### HD-021 — One arena navigation per touch gesture
+
+- status: Landed (#638, f8353e757)
+- size: S
+- blocked-by: —
+- design: v60 live acceptance; preserve the existing test-arena route and record isolation
+
+A real touch on the test-arena chip delivers both pointerup and touchend.
+On the deployed site both handlers assign location.href and abort the first
+navigation. Guard the shared handler once per menu render; retain native
+keyboard activation and the original exit/record assertions. Add a delayed
+navigation regression and prove the old implementation fails it.
+
+
 ### HD-014 — Season 3 trucks become floating landspeeders
 
 - status: In progress (#598, #599, #600, #602, #603, #607, #613)

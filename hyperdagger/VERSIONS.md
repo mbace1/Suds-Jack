@@ -1,4 +1,9 @@
 ## v60 — 2026-11-09
+Integration follow-up (9 November): the test-arena chip ignores the second
+release event from one touch gesture. A delayed-navigation regression fails
+on the old handler (two requests and ERR_ABORTED) and retains all three
+season exits and normal/daily record-isolation assertions. Main/worker
+registration advance to 119 and worker cache v89; gameplay is unchanged.
 **SDF on the live menu: RENDER · CLASSIC | SDF (HD-020)**
 
 Mikael, 22 Oct 2026: *"Can you make an SDF toggle in the main menu?"*, then

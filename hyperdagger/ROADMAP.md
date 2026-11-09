@@ -2,10 +2,10 @@
 
 ## Current state — 9 November 2026
 
-- Live hub: v60 on `/hyperdagger/`; separate SDF preview remains build 3 until retirement is explicitly agreed.
-- v60 merged in PR #628 at `fe9a50b73`, preserving #626 ancestry and the combined renderer/menu work. Separate prerequisites #634 (hub fixture) and #635 (Toko idle-aside/offline dialogue fix) are merged.
-- Final source: all 21 local gates passed, including gameplay smoke 220/0, SDF play 35/0 and all six real season/renderer encounter loops. Current-main prospective merge also passed full hub/version/precache checks; all required CI and final-head review passed.
-- Runtime: main/registration 118, input 111, cache v88, 70 generated entries. Classic remains the default. Publication preserves the independent Toko Move v3.23 release and production shell 230.
+- Source v60 is merged at `fe9a50b73` (#628), preserving #626 ancestry; separate prerequisites #634 and #635 are merged and reviewed.
+- Public hub: v60 at production `6b8d06f48`, verified by all 14 selected hashes, all six real encounter loops and offline 6/0. Pages run 42717115868 attempt 2 succeeded. Live arena navigation exposed a duplicate touch-release event; HD-021 closes that final integration finding before a new conversion starts.
+- All 21 final local gates and required CI passed, including smoke 220/0, SDF play 35/0, all six season/renderer encounter loops, input/focus, pause/retry, records and offline. The latest-main prospective tree and production staging also passed.
+- Runtime: main/registration 118, input 111, cache v88, 70 generated entries. Separate preview remains build 3; retain it until retirement is explicitly agreed. Reviewed follow-up #638 is merged at `f8353e757`: main/registration 119, cache v89. Its final 21 local gates and CI pass; verify this deployment before starting a conversion.
 - Classic remains the default. Physical-device performance is unmeasured.
 - Completed runs tie at 300.0 seconds. This is an open scoring design decision, not authorization to change the score.
 

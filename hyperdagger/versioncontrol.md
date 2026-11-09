@@ -431,3 +431,49 @@ Concurrent publication note: the first fast-forward push was rejected
 because Piritori v4.104 (`b3ec97d99`) reached production first. Its work is
 merged intact; production shell advances to 231 and the combined root cache
 to v285. Hyper runtime modules/cache remain 118/111/v88. No force push.
+
+## 2026-11-09 — Pages delivery status (not a live-v60 claim)
+
+The approved source merge is complete at `fe9a50b73`; publication commit
+`14c298e81` is pushed. Its build succeeded, but Pages file syncing timed out
+at ten minutes (run 42713787003). A failed-job retry was superseded by the
+independent Toko Drop 2 v131 release `6b8d06f48`, which contains the entire
+v60 publication. Approved Hyper/shared runtime bytes remain identical;
+only the normal production shell reference advances to 232.
+
+The latest Pages run is 42717115868 and is pending. The public site was
+still v59 at the last check; separate SDF preview remains build 3. The
+artifact increase was only 49,821 bytes (496,004,487 vs 495,954,666), not a
+large payload regression. Actual live hashes, encounter loops and offline
+checks still gate the final live claim. New conversion work stays on hold.
+
+Physical iPad, Android and desktop GPUs are unavailable. A software-only
+full-game Ember SDF diagnostic passed all seven monitor checks: the
+unshimmed sample had 37 frames, p95 583.3 ms, game/real ratio 0.168, up to
+ten enemies and zero page errors. Auto quality stepped 0→2. This is not the
+requested hardware matrix or 60/30 fps certification; no new distance/step
+budget was inferred from it. Normal/daily public records were untouched
+because it ran in a disposable browser context on a loopback origin.
+
+
+## 2026-11-09 — live arena navigation follow-up (HD-021)
+
+v60 source #628 is merged and production commit `6b8d06f48` is deployed
+(Pages 42717115868 attempt 2). All 14 selected public hashes match; all six
+actual Hub/menu combat loops and offline 6/0 pass. The live touch arena
+check consistently exposed duplicate pointerup/touchend navigation.
+
+The shared handler now opens once per menu render. A 100 ms navigation
+delay makes the old code fail with two requests and ERR_ABORTED. The
+original three season exit/record assertions remain. Main/registration
+119, cache v89 and generated precache follow the changed main module.
+This maintenance follow-up is part of closing the approved integration;
+no new enemy or arena geometry is included.
+
+
+Navigation follow-up #638 merged at `f8353e757` after final-head review,
+all 21 local gates and all CI passed. Full smoke 220/0, SDF play 35/0.
+A same-origin cached v60 (worker v88) upgrades to activated v89 with all
+70 URLs, then offline SDF START and first ASK TOKO typed reply pass.
+This scoped deploy preserves current production `24e428332` (Toko Move
+v3.24) and its root metadata; only Hyper runtime and release records move.
