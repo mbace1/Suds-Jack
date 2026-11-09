@@ -33,6 +33,7 @@ import { CARDS, CONTENTS, TRAMS, ODDS, SLIPS, SOAKS, CALLBACKS, ARCS, SEALED_CAR
 import { regularAt, standingOf, tipFor, MAX_STANDING } from './regulars.js?v=4';
 import { haltFamily, haltMinutes } from './mutators.js?v=2';
 import { payFor } from './parcels.js?v=1';
+import { makeCard } from './modules.js?v=1';
 import { lineFamily } from './board.js?v=8';
 import { CARGO } from './deliveries.js?v=28';
 import { MISSION_CARDS, MISSION_CALLBACKS, PERKS, STRIKES, perkPool } from './missions.js?v=4';
@@ -127,8 +128,18 @@ export function dealDeck(s, run, weather) {
     for (const c of pool) { r -= weight(c); if (r < 0) { pick = c; break; } }
     out.push({ card: pick, job: i });
   }
+  // (v3.22) about half the slots are made from modules instead (modules.js):
+  // the written card is still drawn, so the run's rng and the rest of its deck
+  // are exactly what they were, and the slot is then given to a made one by a
+  // hash of the seed — the same seed deals the same cards
+  const share = run.modules ?? MODULE_SHARE;
+  if (share > 0) { const ctx = { places, weather, night: run.skin === 'night', tones }, wants = [];
+    for (const d of out) if (hashOf(`mix:${s.seed}:${d.job}`) % 100 < share * 100) {
+      const m = makeCard(`${s.seed}:${d.job}`, ctx, wants); if (m) { d.card = m; wants.push(m.module.want); } } }
   return out;
 }
+// the share of a deck made from modules (owner: "100x content so it never feels stale")
+export const MODULE_SHARE = 0.5;
 
 // A mission's cards (missions.js) are the journey's own, by id: the deck's,
 // a callback, or one made for a mission (the wallet)
