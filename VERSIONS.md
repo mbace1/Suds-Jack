@@ -7,6 +7,13 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+### Shared-counter maintenance — 2026-11-09
+
+The Toko idle-activity prerequisite updates only this cabinet's signature
+import to token 10 and its worker cache suffix to `toko26`; game modules,
+mechanics and the v221 release number stay unchanged. Toko/PATCH_NOTES.md
+owns the fix (chat 26, table 6), regression gate and shared-importer rollout.
+
 ## v221 — 2026-08-01
 **Each mode drafts its own roster** *(field call: "different enemies for each mode")*
 - **CLOSE COMBAT now draws from its own table** (`TUNING.waves.poolMelee`).

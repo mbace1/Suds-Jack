@@ -1,0 +1,3 @@
+PASS typing defers the aside; real silence still produces it
+PASS host-owned reply defers the aside; silence afterwards still works
+PASS close/destroy and no page exceptions

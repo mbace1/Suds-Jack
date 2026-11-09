@@ -1,0 +1,13 @@
+PASS typing defers the aside; real silence still produces it
+AssertionError [ERR_ASSERTION]: host reply resets the old idle deadline
+
+3 !== 2
+
+    at /workspace/toko-idle-fix/toko/test/idle-activity.cjs:59:10 {
+  generatedMessage: false,
+  code: 'ERR_ASSERTION',
+  actual: 3,
+  expected: 2,
+  operator: 'strictEqual',
+  diff: 'simple'
+}
