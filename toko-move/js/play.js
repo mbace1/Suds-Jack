@@ -25,10 +25,11 @@
 // nothing happens while you read. Every animation is skippable by a tap and
 // none of them is a timer the game waits on to be fair: the state has already
 // moved when it starts.
-import { tr } from './lang.js?v=16';
+import { tr } from './lang.js?v=17';
 import * as J from './journey.js?v=9';
 import * as Runs from './runs.js?v=5';
 import { HopBoard } from './hopboard.js?v=4';
+import * as PL from './playlog.js?v=1';
 import { loadGround } from './ground.js?v=12';
 import { skinFor } from './skin.js?v=1';
 import { moodFace, MOODS } from './events.js?v=10';
@@ -46,7 +47,7 @@ import { MOMENTS, faceIn, keepIn, pickupMoment, deliveryMoment, boardMoment, wal
 import { resolveMode, dailyShare, errandShare, errandStore, errandOf, W } from './modes.js?v=6';
 import { recordDaily, todayRecord, streak, dateKey } from './daily.js?v=2';
 
-export const BUILD_VERSION = '3.20';
+export const BUILD_VERSION = '3.21';
 const $ = id => document.getElementById(id);
 const params = new URLSearchParams(location.search);
 // a run of the ladder, today's daily, or a day of the week (modes.js, ACT1.md §12)
@@ -203,6 +204,7 @@ const CSS = `
 .veil .run.on{background:#233d4d;color:#fff;border-color:#233d4d}.veil .run.on small{color:#cfe0e6}
 .veil .run.locked{border:1.5px dashed #b9c2bd;color:#69777a}
 .veil .mutHead{margin-top:10px}
+.playsText{white-space:pre-wrap;font-size:11px;line-height:1.45;max-height:200px;overflow:auto;text-align:left}
 #title .card{max-height:min(60dvh,600px)}
 @media (orientation:landscape){#title .card{max-height:calc(100dvh - 24px)}}
 .veil a.btn{display:block;text-align:center;text-decoration:none;line-height:1.25;padding:13px 12px}
@@ -420,6 +422,7 @@ function paintTitle() {
   const wl = $('weekLink'); if (wl) { wl.hidden = !extras; wl.textContent = 'OR THE WEEK · five shifts, rent due Friday'; }
   const ll = $('liveLink'); if (ll) ll.hidden = !extras || STORE;
   if (MODE.mode !== 'run') paintModeTitle(start, end);
+  paintPlays();
 }
 // MISSIONS (v3.14, missions.js): the errands, the first open once EASY is done,
 // each after the one before; a locked one says what opens it
@@ -454,6 +457,22 @@ async function paintMissionMap() {
     const hit = spots.filter(p => p.state !== 'locked').map(p => ({ p, d: Math.hypot(p.x - x, p.y - y) })).sort((a, b) => a.d - b.d)[0];
     if (hit && hit.d < 30) location.href = `?mission=${hit.p.id}`; };
 }
+// YOUR PLAY LOG (v3.21, js/playlog.js): what this device has played, as text to read and to copy back
+function paintPlays() {
+  const row = $('mutRow'), sessions = PL.load(); if (!row || !sessions.length) return;
+  row.insertAdjacentHTML('beforeend', `<button class="btn ghost wide" id="playsBtn" type="button">YOUR PLAY LOG · ${sessions.length}</button><div class="dailyBox" id="playsBox" hidden><pre class="shareText playsText">${esc(PL.report(sessions, BUILD_VERSION))}</pre><button class="btn prime wide" id="playsCopy" type="button">COPY THE LOG</button><p class="hint">Kept on this device only. Paste it to the developer to tune the game.</p></div>`);
+  $('playsBtn').onclick = () => { $('playsBox').hidden = !$('playsBox').hidden; };
+  $('playsCopy').onclick = async () => { try { await navigator.clipboard.writeText(PL.report(PL.load(), BUILD_VERSION)); $('playsCopy').textContent = 'COPIED'; } catch { $('playsCopy').textContent = 'SELECT AND COPY'; } };
+}
+// the session being played, and where it is written down at the end (or when the page is left)
+let play = null;
+function endPlay(over) {
+  if (!play) return; const p = play; play = null;
+  PL.close(p, { done: S?.done || 0, target: S?.target || 0, late: S?.late || 0, strikes: S?.strikes || 0, failed: !!S?.failed, score: S?.score || 0, quit: !over, state: S ? J.stateOf(S) : null });
+  const all = PL.load(); all.push(p); PL.save(all);
+  try { globalThis.TokoPlayLog?.logPlay?.('tokomove', 'shift', PL.line(p)); } catch {}   // the arcade's shared log, when the cabinet has loaded it (never a path out of the game: itch carries none)
+}
+addEventListener('pagehide', () => { if (play && S && S.phase !== 'end') endPlay(false); });
 // The daily and the week on the title card: what this shift is, what stands.
 function paintModeTitle(start, end) {
   const set = (id, t) => { const e = $(id); if (e) e.textContent = t; };
@@ -709,7 +728,7 @@ function uiState() {
   if (busy || skip) return 'moving';
   return panel.querySelector('.eventOpt:not([disabled])') ? 'card' : 'moving';
 }
-function markUi() { const b = document.body; b.dataset.ui = uiState(); b.dataset.state = S ? J.stateOf(S) : ''; }
+function markUi() { const b = document.body, u = uiState(); b.dataset.ui = u; b.dataset.state = S ? J.stateOf(S) : ''; if (u === 'card' && play) PL.shown(play, { state: J.stateOf(S) }); }
 // a card can be answered from the keyboard too: 1, 2, 3 are its buttons (the cabinet's keys, and a pad's through the hub)
 addEventListener('keydown', e => { const n = /^[1-3]$/.test(e.key) ? Number(e.key) : /^Digit[1-3]$/.test(e.code || '') ? Number(e.code.slice(5)) : 0;
   if (!n || uiState() !== 'card') return;
@@ -780,6 +799,7 @@ async function pick(i) {
   busy = true; panel.querySelectorAll('button').forEach(b => { b.disabled = true; }); markUi();
   sfx('tap');
   const wasHop = pendingHop, before = J.card(net, S), hadJob = !!S.job;
+  if (play && before) PL.picked(play, { state: before.state, i, tier: before.options[i]?.tier, n: before.options.length });
   const r = J.choose(net, S, i);
   if (r.error) { busy = false; render(); return; }
   paintHud();
@@ -865,7 +885,7 @@ async function forecast() {
 
 // ── the end: the run's result (runs.js), and what you carried ─────────────
 function finish() {
-  setTimeout(markUi, 0);                                  // the end card is up by then, whichever mode it is
+  setTimeout(markUi, 0); endPlay(true);                                  // the end card is up by then, whichever mode it is
   hideBoard(); setActor(null); $('v3mini').hidden = true; panel.innerHTML = ''; wxEl.className = ''; audio?.bed(null);
   if (MODE.mode !== 'run') return finishMode();
   Runs.remember(S.keep);                                  // what the city remembers (ACT1.md §10)
@@ -959,6 +979,7 @@ async function start() {
   // a run's perks come from the same pool the missions grow (the daily's is the first three, the same for everyone)
   const run = MODE.mode === 'mission' || !RUN.perks ? RUN : { ...RUN, perkPool: perkPool(own ? doneCount(loadMissions()) : 0) };
   S = J.newRun(net, run, SEED, { memory: own ? Runs.memoryFor() : {}, standing: own ? loadStanding() : {} }); shownMin = null;
+  play = PL.start({ version: BUILD_VERSION, mode: MODE.errand ? 'errand' : MODE.mode, run: MODE.mode === 'mission' ? MODE.mission.id : RUN.id, seed: SEED });
   if (MODE.mode === 'week') { W.begin(MODE.week); W.saveWeek(MODE.week, MODE.store); } shownEur = 0; shownDone = 0; arrived = null;
   sizeFrame(); paintHud();
   busy = true; try { await forecast(); } finally { busy = false; }
@@ -979,6 +1000,7 @@ sizeFrame();
 const game = { version: BUILD_VERSION, mode: MODE.mode, run: RUN, seed: SEED, ready, state: () => S,
   // the two machines, as one reading (v3.20): where the run is (journey.js STATES), where the screen is (UI),
   // where the run may go next, what the card offers, and anything that does not hold
+  plays: () => PL.summarise(PL.load()), playReport: () => PL.report(PL.load(), BUILD_VERSION), playing: () => play,
   machine: () => { const st = S ? J.stateOf(S) : null, c = S && st !== 'end' ? J.card(net, S) : null;
     return { state: st, ui: uiState(), next: st ? J.STATES[st].next : [], about: st ? J.STATES[st].card : UI[uiState()],
       options: c ? c.options.map(o => ({ label: o.label, price: o.price, tier: o.tier || null })) : [], problems: S ? J.check(net, S) : [] }; }, net: () => net, card: () => (S ? J.card(net, S) : null), busy: () => busy, scene: () => scene, result: null, boards: 0,

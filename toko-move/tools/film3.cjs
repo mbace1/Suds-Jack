@@ -255,7 +255,7 @@ const look = () => { const g = window.__tm3, q = s => document.querySelector(s);
   return { busy: g.busy(), scene: g.scene(), line: q('.evLine')?.textContent || '', card: q('#v3panel .eventCard')?.dataset.card || '',
     btn: !!q('#v3panel .eventOpt:not([disabled])'), stamp: q('.v3stamp')?.textContent || '', end: !q('#end').hidden,
     car: [...document.querySelectorAll('#v3frame .L')].map(e => (getComputedStyle(e).backgroundImage.match(/02-car(-[a-z]+)?\.webp/) || [])[0]).find(Boolean) || '',
-    glow: !!q('#v3tram.glow'), board: q('#v3board').classList.contains('on'), land: q('#v3frame .L.land')?.dataset.land || '', m: q('#v3frame .L.moment')?.dataset.moment || '', tram: q('#v3tram')?.hidden === false ? q('#v3tram').dataset.model || '' : '' }; };
+    sign: q('#v3panel .v3sign')?.textContent || '', tiers: [...document.querySelectorAll('#v3panel .eventOpt[data-tier]')].map(e => e.dataset.tier), glow: !!q('#v3tram.glow'), board: q('#v3board').classList.contains('on'), land: q('#v3frame .L.land')?.dataset.land || '', m: q('#v3frame .L.moment')?.dataset.moment || '', tram: q('#v3tram')?.hidden === false ? q('#v3tram').dataset.model || '' : '' }; };
 const choice = (pick = null) => { const bs = [...document.querySelectorAll('#v3panel .eventOpt:not([disabled])')]; const b = (pick != null && bs[pick]) || bs.find(e => e.querySelector('.evStk em')) || bs[0];
   if (!b) return null; const r = b.getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 }; };
 const ring = ([X, Y]) => { const el = document.createElement('div'); el.className = '__tap'; el.style.left = X + 'px'; el.style.top = Y + 'px';
@@ -338,6 +338,11 @@ server.listen(0, '127.0.0.1', async () => {
       ff: s => s.btn && !s.busy && /other courier wants it too/.test(s.line), done: (s, taps) => taps >= 1, tail: 1.3, max: 8 });
     // v3.12–v3.15: the job in the owner's illustrations, and the missions
     const easyDone = { tokoMoveRuns: { easy: { done: true, stars: 2, plays: 1 } } };
+    // v3.18–v3.19: three ways at every choice, the third sometimes (very) special; the ride, the whole way
+    await card(browser, 'cap', 1.6, [{ n: 'deal', t: 0 }], 'Three ways, every time. Sometimes a very special one.');
+    await take(browser, 'the choir', '?run=easy&seed=1001', { pick: 2, ff: s => s.card === 'choir' && s.btn, done: (s, taps) => taps >= 1, tail: 2.6, max: 10 });
+    await card(browser, 'cap', 1.6, [{ n: 'deal', t: 0 }], 'The ride, the whole way.');
+    await take(browser, 'the ride', '?run=easy&seed=1357', { ff: s => /SENAATINTORI/.test(s.sign), done: s => !s.sign, tail: 0.6, max: 12 });
     await card(browser, 'cap', 1.6, [{ n: 'deal', t: 0 }], 'Every handover, drawn.');
     await take(browser, 'pickup', '?run=easy&seed=1003', { ff: s => ['kiosk', 'bench', 'stop-handoff', 'station', 'park'].includes(s.m), done: () => true, tail: 2.0, max: 4 });
     await take(browser, 'delivery', '?run=easy&seed=1003', { ff: s => ['doorway', 'cyclist', 'ferry', 'quay'].includes(s.m), done: () => true, tail: 2.2, max: 4 });
