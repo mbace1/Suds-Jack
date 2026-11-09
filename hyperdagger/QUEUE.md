@@ -98,6 +98,21 @@ Plan sketch:
 
 ## In progress
 
+
+### HD-021 — One arena navigation per touch gesture
+
+- status: In progress
+- size: S
+- blocked-by: —
+- design: v60 live acceptance; preserve the existing test-arena route and record isolation
+
+A real touch on the test-arena chip delivers both pointerup and touchend.
+On the deployed site both handlers assign location.href and abort the first
+navigation. Guard the shared handler once per menu render; retain native
+keyboard activation and the original exit/record assertions. Add a delayed
+navigation regression and prove the old implementation fails it.
+
+
 ### HD-014 — Season 3 trucks become floating landspeeders
 
 - status: In progress (#598, #599, #600, #602, #603, #607, #613)
@@ -112,16 +127,18 @@ Plan sketch: change the truck mesh/visuals only — remove wheels, add a hover h
 
 Note, 18 Oct (HD-018, v58): there is no haul scoring any more, and the missiles no longer jackknife a truck. The fold itself stays, for the pile-up and HD-016. Read "do not change haul scoring" as "do not bring a cargo score back", and "jackknife" as the fold.
 
+
+## Landed
+
 ### HD-020 — SDF on the live menu: RENDER · CLASSIC | SDF
 
-- status: In progress (#628; merge approved 9 Nov 2026; waiting on prerequisite #635 and final gates)
+- status: Landed (#628, fe9a50b73)
 - size: S
 - blocked-by: —
 - design: Mikael, 22 Oct 2026 — *"Can you make an SDF toggle in the main menu?"*, *"It should also work"*; the SDF builds are #626 (`ROADMAP.md`, the SDF conversion track)
 
 #626's SDF builds (the skull family, and since build 3 the Watcher and the Totem, with carved wounds) and their Classic / SDF choice move from the separate `/hyperdagger-sdf/` preview onto the live game's menu. The choice becomes one segmented row, RENDER · CLASSIC | SDF, so START fits a phone held sideways. Build 3's test-arena link becomes a header chip. CLASSIC stays the default, and `test/sdf-play.cjs` proves the choice reaches play in all three seasons.
 
-## Landed
 
 ### HD-019 — The menu is the season: pick 1-3, see its arena and rules, press START
 

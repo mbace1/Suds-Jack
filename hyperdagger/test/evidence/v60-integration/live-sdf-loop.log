@@ -1,0 +1,10 @@
+Browser: 156.0.8078.79 — software SwiftShader; no physical-device certification
+PASS Hub cabinet Play reaches the main /hyperdagger/ player route
+PASS ember/classic: assets enabled, loaded skull skin attaches
+PASS ember/classic: v60 menu, START, weapon kill, simulation death, isolated free record, tap retry
+PASS ember/sdf: assets enabled, loaded skull skin cannot replace SDF
+PASS ember/sdf: v60 menu, START, weapon kill, simulation death, isolated free record, tap retry
+PASS inca/classic: v60 menu, START, weapon kill, simulation death, isolated free record, tap retry
+PASS inca/sdf: v60 menu, START, weapon kill, simulation death, isolated free record, tap retry
+PASS haul/classic: v60 menu, START, weapon kill, simulation death, isolated free record, tap retry
+PASS haul/sdf: v60 menu, START, weapon kill, simulation death, isolated free record, tap retry
