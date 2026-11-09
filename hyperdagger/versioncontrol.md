@@ -286,3 +286,42 @@ softened. The broad hub smoke's Pajatso A-button/navigation failure also
 reproduced on untouched main `27f68b37`, so that finding belongs in the hub
 lane and still blocks a clean release. Normal Toko Live runtime passed;
 the separately forced idle-typing probe still demonstrates its known bug.
+
+## 2026-11-09 — v60 integrated validation and release hold
+
+Merged current main `84cb8eff` into the integration (`7a852114`), preserving
+Toko Move v3.22 and all unrelated upstream changes. Hyper runtime bytes remain
+identical to tested `6939caad`: main 117, input 111, cache v87, 71 precache
+entries. Full serial gameplay smoke passed **220/0**, including unchanged
+Inca carry checks. All six Classic/SDF season encounter loops, three test-arena
+pause exits, menu/input/focus, pause/resume, run-end, daily keys/GC, offline,
+HUD, action feedback and software correctness checks passed. Local production
+staging also passed all six loops, exits and offline. After merging latest
+main, real hub entry and offline were checked again and passed.
+
+Feature-pins initially exposed two fixture issues: rounded drain reached 1
+before actual drain completion, and isolated pad movement inherited arena
+obstacles/motion. Wait for actual drain and reset that movement fixture;
+all original zero-height/strike and distance assertions remain. Follow-up
+passed 19/0. The unrelated hub deployment-only Pajatso stand-in now has its
+own four-line test-only PR #634; full hub smoke passes on latest main with
+that fixture fix. It is not folded into this Hyper branch.
+
+`sdf-play` remains **34/1**: Ember's natural director can produce no skull
+in its unchanged 20-game-second window. Automatic approval review rejected
+extending observation to 60 seconds as weakening the gate; the requested
+user decision is pending. No extension or assertion weakening was applied.
+The final runtime CI gate jobs are green after one retry of an unrelated
+Toko Move event-card failure, with no Toko code change. Toko Live/Night Shift/
+looks are green; the forced Toko Live idle-typing diagnostic still reproduces
+its separate issue. Fresh Codex review was requested and is pending. Final
+source push will need its own CI result.
+
+Evidence: `test/evidence/v60-integration/validation.json` and six settled
+phone-landscape menu captures. Software rendering is correctness evidence,
+not physical GPU validation. iPad/Android/desktop hardware measurements are
+unavailable. The 300-second scoring tie remains a design decision. No next
+enemy or 3D arena conversion has begun. The separate preview remains build 3.
+Main hub remains v59: no merge or deployment was performed. A local scoped
+release candidate (`56cce635`) exists for review; fetch and reconcile current
+production again before any explicitly approved merge/publish.
