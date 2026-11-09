@@ -619,6 +619,11 @@ export function mountChat(anchor, opts = {}) {
   // A Sierra front desk was never silent. He gets a few of these a visit and
   // then he lets it be quiet, because a counter that keeps talking at you is
   // a shop.
+  // Silence is what an aside answers. A line in the log (his, yours, or one a
+  // page appends itself, as Toko Live does with its answers) or a key in the
+  // field is not silence, so each one starts the wait again.
+  new MutationObserver(() => { if (open && !typing) armIdle(); }).observe(log, { childList: true });
+  parse.addEventListener('input', () => { if (open) armIdle(); });
   function armIdle() {
     clearTimeout(idle);
     if (still || asides >= 3 || !open) return;

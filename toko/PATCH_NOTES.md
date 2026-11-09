@@ -1,5 +1,25 @@
 # Toko Assistant — patch notes
 
+## 2026-11-09 — an aside waits for real silence
+
+- **He no longer talks over a typed conversation.** `armIdle()` schedules an
+  unprompted line ("TAKE YOUR TIME.") 24 s after the menu was last drawn.
+  Toko Live answers typed questions through `conversation-plus.js`, which
+  appends its replies to the log itself and never re-armed that timer. So
+  about 24 s into a conversation the aside landed inside whichever answer was
+  being typed. `toko-live/test/runtime.cjs` read it as two replies to one
+  question (3→5 on Betterment, 4→6 on Eeri). It was intermittent because a
+  fast machine finished the conversation first. It failed every Hyper Dagger
+  release PR, since `toko-live.yml` runs on `hub/**`.
+- **The fix:** a line added to the log, whoever adds it, or a key typed in the
+  field starts the wait again. In real silence the counter still says one
+  aside, and still says at most three a visit.
+- Not a brand release: the counter stays `V5`. Tokens: `chat.js?v=26`, which
+  moves `table.js?v=6` and `signature.js?v=71` (other branches had already used
+  `?v=62`–`70`). The arcade worker (`scripts/sw-shell.mjs`) and Hyper Dagger's
+  worker (`scripts/hd-shell.mjs`) were regenerated. Toko Drop's (cache `?v=226`, above the 225 other branches used) and Radio
+  Free's workers got new cache names. `toko-live/main.js` moved to `?v=22` (other branches had used up to 21).
+
 ## 2026-09-24 — the canon, and the master artwork
 
 - **The owner's master artwork is in the repo** (`master/`, white on yellow and
