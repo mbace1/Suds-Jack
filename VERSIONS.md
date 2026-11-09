@@ -1,7 +1,15 @@
 # Toko Drop — Version Log
 
 <!-- Rules:
-  - Add a new ## vN entry at the top for EVERY commit that touches game files.
+  - Add a new ### Shared-counter maintenance — 2026-11-09
+
+Hyper Dagger v60's prerequisite updates this cabinet's shared signature URL
+to 10 and adds the `toko26` worker-cache suffix. This is the reviewed Toko
+idle-activity repair (chat 26/table 6), not a Toko Drop gameplay release;
+all game modules, existing module tokens and release numbers are preserved.
+See `toko/PATCH_NOTES.md` for the behavior fix and regression evidence.
+
+## vN entry at the top for EVERY commit that touches game files.
   - Stage this file alongside your changes: git add VERSIONS.md
   - When a new multiple of 10 is reached, move the prior decade's entries into the Archive section below.
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
