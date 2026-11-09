@@ -987,7 +987,9 @@ async function start() {
   if (MODE.mode === 'week' && W.isOver(MODE.week)) { W.clearWeek(MODE.store); location.href = location.href; return; }
   const own = MODE.mode !== 'daily' && !MODE.errand;   // the daily is the same shift for everyone: nothing of this device's in it
   // a run's perks come from the same pool the missions grow (the daily's is the first three, the same for everyone)
-  const run = MODE.mode === 'mission' || !RUN.perks ? RUN : { ...RUN, perkPool: perkPool(own ? doneCount(loadMissions()) : 0) };
+  let run = MODE.mode === 'mission' || !RUN.perks ? RUN : { ...RUN, perkPool: perkPool(own ? doneCount(loadMissions()) : 0) };
+  // ?written deals the written deck only, none made from modules (v3.22): the deck as v3.21 dealt it, for a seed a test or a trailer names
+  if (params.has('written')) run = { ...run, modules: 0 };
   S = J.newRun(net, run, SEED, { memory: own ? Runs.memoryFor() : {}, standing: own ? loadStanding() : {} }); shownMin = null;
   play = PL.start({ version: BUILD_VERSION, mode: MODE.errand ? 'errand' : MODE.mode, run: MODE.mode === 'mission' ? MODE.mission.id : RUN.id, seed: SEED });
   if (MODE.mode === 'week') { W.begin(MODE.week); W.saveWeek(MODE.week, MODE.store); } shownEur = 0; shownDone = 0; arrived = null;
