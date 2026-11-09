@@ -50,6 +50,8 @@ function geometries(THREE, S) {
 }
 
 export default {
+  // v127: the popped chunks go with the run (actors.reset), not on under the title
+  clear() { if (POOL) { POOL.chunks.length = 0; draw(POOL); } },
   build(ctx) {
     const { THREE, S } = ctx, L = S.look, G = geometries(THREE, S);
     const mat = ctx.gelMaterial(S.color, 'pyra', S.radius, { wobble: L.wobble });

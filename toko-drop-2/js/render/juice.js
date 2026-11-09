@@ -20,7 +20,7 @@
 // TUNING.juice.
 import * as THREE from 'three/webgpu';
 import { uv, float, vec2, length, smoothstep, clamp, abs, pow } from 'three/tsl';
-import { TUNING } from '../tuning.js?v=126';
+import { TUNING } from '../tuning.js?v=127';
 
 const T = TUNING, J = T.juice;
 const rand = (a, b) => a + Math.random() * (b - a);
@@ -141,5 +141,5 @@ export class Juice {
     }
   }
 
-  reset() { this.sparks.length = 0; this.flashes.length = 0; this.waves.length = 0; }
+  reset() { this.sparks.length = 0; this.flashes.length = 0; this.waves.length = 0; for (const m of [this.glows, this.streaks, this.rings]) m.count = 0; }   // v127: and their meshes, which step() would have emptied
 }

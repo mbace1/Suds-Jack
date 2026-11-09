@@ -50,9 +50,9 @@ import {
   Fn, uniform, attribute, texture, uv, vec2, vec3, vec4, float, normalize, dot, length, max, min, clamp, pow, sqrt,
   mix, cameraViewMatrix, varying, select, positionGeometry, step, smoothstep, mrt, fwidth, dFdx, dFdy, exp, abs, normalLocal, cameraPosition, positionWorld,
 } from 'three/tsl';
-import { TUNING } from '../tuning.js?v=126';
-import { GooSim, BODY, STAMP, wallLen, WALL_N, WALL_T } from './goo-sim.js?v=126';
-import { pickStyle, grainAt } from './style.js?v=126';
+import { TUNING } from '../tuning.js?v=127';
+import { GooSim, BODY, STAMP, wallLen, WALL_N, WALL_T } from './goo-sim.js?v=127';
+import { pickStyle, grainAt } from './style.js?v=127';
 
 const T = TUNING, G = T.goo;
 const MAX_BODIES = 256;

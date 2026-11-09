@@ -15,23 +15,23 @@
 // that springs in and fades (splats.js). Views are pooled per species, so a
 // gel's material is built once and reused, never compiled mid-fight.
 import * as THREE from 'three/webgpu';
-import { TUNING } from '../tuning.js?v=126';
+import { TUNING } from '../tuning.js?v=127';
 import * as TSL from 'three/tsl';
-import { gelMaterial, domeGeometry, cubeGeometry, heroGeometry, GEL_TIME } from './gel.js?v=126';
-import { LOOKS } from './looks/index.js?v=126';
-import { styleName, setStyle as setStyleMode, styledBody } from './style.js?v=126';
-import { JellyBody } from './jelly.js?v=126';
-import { Juice } from './juice.js?v=126';
-import { ArenaLight } from './light.js?v=126';
-import { toSdf } from './sdf.js?v=126';
-import { PickupView } from './pickups.js?v=126';
-import { ChallengeView } from './challenge.js?v=126';
-import { PostView } from './posts.js?v=126';
-import { SlamView } from './slam.js?v=126';
-import { HintView } from './hints.js?v=126';
-import { Goo } from './goo.js?v=126';
-import { mult as heatMult } from '../sim/heat.js?v=126';
-import { strands as liveStrands } from '../sim/formation.js?v=126';
+import { gelMaterial, domeGeometry, cubeGeometry, heroGeometry, GEL_TIME } from './gel.js?v=127';
+import { LOOKS } from './looks/index.js?v=127';
+import { styleName, setStyle as setStyleMode, styledBody } from './style.js?v=127';
+import { JellyBody } from './jelly.js?v=127';
+import { Juice } from './juice.js?v=127';
+import { ArenaLight } from './light.js?v=127';
+import { toSdf } from './sdf.js?v=127';
+import { PickupView } from './pickups.js?v=127';
+import { ChallengeView } from './challenge.js?v=127';
+import { PostView } from './posts.js?v=127';
+import { SlamView } from './slam.js?v=127';
+import { HintView } from './hints.js?v=127';
+import { Goo } from './goo.js?v=127';
+import { mult as heatMult } from '../sim/heat.js?v=127';
+import { strands as liveStrands } from '../sim/formation.js?v=127';
 
 const T = TUNING;
 const B = T.blob, D = T.death;
@@ -432,18 +432,35 @@ export class Actors {
     for (const v of this.views.values()) this._release(v);
     for (const v of this.dying) this._release(v);
     this.views.clear(); this.dying.length = 0; this.chunks.length = 0; this.heat = 0;
+    for (const m of Object.values(this.chunkMesh)) m.count = 0;   // v127: stepFx draws them, and nothing steps on the title
     this.strands.count = this.strandCount = 0; this.cords.count = 0;
     for (const j of this.jellies) { this.scene.remove(j.mesh); j.geo.dispose(); }
     this.jellies.length = 0;
     this.juice.reset();
     this.light.reset();
     this.caustics.count = 0;
+    // v127: and what sync fills afresh every frame from the world — on the title nothing syncs, so these held the
+    // run's last frame (its bullets in the air, the corpse fire's seeds and lines, the lobs and the puddles)
+    this.bullets.count = 0; this.seeds.count = this.ticks.count = this.heads.count = 0; this.lobMesh.count = this.hazMesh.count = 0;
     this.pickups.reset();
     this.challenge.reset();
     this.posts.reset();
     this.slams.reset();
     this.hints.reset();
     this.goo?.clear();
+    for (const L of Object.values(LOOKS)) L.clear?.();   // v127: what a species keeps in a pool of its own (YELA's slime, PYRA's chunks)
+    this._restHero();
+  }
+
+  // v127: the hero as the title first stands it — at the middle, whole and still, nothing of a run on it (a dash's
+  // ghosts, the muzzle's pop, the HEAT halo). The title after a run kept the run's last pose of it: gone after a
+  // death, shrunk mid-vortex, its halo burning where it last stood
+  _restHero() {
+    const hv = this.hero;
+    hv.root.position.set(0, 0, 0); hv.root.scale.set(1, 1, 1); hv.squash.scale.set(1, 1, 1); hv.root.visible = true;
+    hv.mat.opacity = T.heroLook.opacity;
+    for (const g of hv.ghosts) { g.life = 0; g.mesh.visible = false; }
+    hv.muzzleT = 0; hv.muzzle.visible = false; hv.halo.visible = false;
   }
 
   // the sim's events that only the view cares about

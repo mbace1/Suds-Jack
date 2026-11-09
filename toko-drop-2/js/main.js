@@ -7,37 +7,37 @@
 // The rules live in sim/ and run on a fixed step; this file feeds them input,
 // hands their events to the view and the sound, and draws in between steps.
 import * as THREE from 'three/webgpu';
-import { TUNING } from './tuning.js?v=126';
-import { buildFloor } from './render/floor.js?v=126';
-import { fitCamera, screenToWorld, screenDown } from './render/view.js?v=126';
-import * as worldsSim from './sim/worlds.js?v=126';
-import { shapeAt as shiftShape } from './sim/floorshift.js?v=126';
-import * as reshapeSim from './sim/reshape.js?v=126';
-import { Scenery } from './render/scenery.js?v=126';
-import { DRIFT } from './render/kit.js?v=126';
-import { Transit } from './render/transit.js?v=126';
-import { Splats } from './render/splats.js?v=126';
-import { Actors } from './render/actors.js?v=126';
-import { GEL_TIME } from './render/gel.js?v=126';
-import { studioEnvironment } from './render/env.js?v=126';
-import { Specimen } from './render/specimen.js?v=126';
-import { createWorld, step, api as simApi, runPhase } from './sim/world.js?v=126';
-import { heroState } from './sim/hero.js?v=126';
-import { stage as stagePk } from './sim/pickups.js?v=126';
-import { Input } from './input.js?v=126';
-import { UI, t, timeText, LANGS, getLang, setLang, goalText, bossName } from './ui.js?v=126';
-import { Announcer } from './announcer.js?v=126';
-import { rooms as campaignRooms, isOpen as roomOpen, better as betterGrade } from './sim/director/campaign.js?v=126';
-import { levelShape, slots as regionSlots } from './sim/shape.js?v=126';
-import { Sound } from './audio.js?v=126';
-import { Music, worldWant, cueFor, renderMusicWav } from './music.js?v=126';
-import { Intro, CUES as INTRO } from './intro/intro.js?v=126';
-import { scheduleIntroSfx, renderIntroSfxWav } from './intro/sfx.js?v=126';
-import { Readout } from './readout.js?v=126';
-import { Meter, device, Quality } from './meter.js?v=126';
-import * as record from './record.js?v=126';
-import { dailySeed } from './sim/rng.js?v=126';
-import { machine } from './fsm.js?v=126';
+import { TUNING } from './tuning.js?v=127';
+import { buildFloor } from './render/floor.js?v=127';
+import { fitCamera, screenToWorld, screenDown } from './render/view.js?v=127';
+import * as worldsSim from './sim/worlds.js?v=127';
+import { shapeAt as shiftShape } from './sim/floorshift.js?v=127';
+import * as reshapeSim from './sim/reshape.js?v=127';
+import { Scenery } from './render/scenery.js?v=127';
+import { DRIFT } from './render/kit.js?v=127';
+import { Transit } from './render/transit.js?v=127';
+import { Splats } from './render/splats.js?v=127';
+import { Actors } from './render/actors.js?v=127';
+import { GEL_TIME } from './render/gel.js?v=127';
+import { studioEnvironment } from './render/env.js?v=127';
+import { Specimen } from './render/specimen.js?v=127';
+import { createWorld, step, api as simApi, runPhase } from './sim/world.js?v=127';
+import { heroState } from './sim/hero.js?v=127';
+import { stage as stagePk } from './sim/pickups.js?v=127';
+import { Input } from './input.js?v=127';
+import { UI, t, timeText, LANGS, getLang, setLang, goalText, bossName } from './ui.js?v=127';
+import { Announcer } from './announcer.js?v=127';
+import { rooms as campaignRooms, isOpen as roomOpen, better as betterGrade } from './sim/director/campaign.js?v=127';
+import { levelShape, slots as regionSlots } from './sim/shape.js?v=127';
+import { Sound } from './audio.js?v=127';
+import { Music, worldWant, cueFor, renderMusicWav } from './music.js?v=127';
+import { Intro, CUES as INTRO } from './intro/intro.js?v=127';
+import { scheduleIntroSfx, renderIntroSfxWav } from './intro/sfx.js?v=127';
+import { Readout } from './readout.js?v=127';
+import { Meter, device, Quality } from './meter.js?v=127';
+import * as record from './record.js?v=127';
+import { dailySeed } from './sim/rng.js?v=127';
+import { machine } from './fsm.js?v=127';
 
 const T = TUNING;
 const params = new URLSearchParams(location.search);
@@ -166,7 +166,10 @@ const flow = machine('flow', {
     play: () => { pendingDash = false; },
   },
   enter: {
-    menu: () => { runView = false; following = null; camAt.set(0, 0, 0); transit.reset(floor); },
+    // the title's return ends the run's own view, and (v127) lets go of what the run drew: its bodies, goo, splats,
+    // light and shake. The run's world is kept (the play record reads it), but it is not drawn under the title — the
+    // title after a run showed that run's bodies frozen on world 1's floor
+    menu: () => { runView = false; following = null; camAt.set(0, 0, 0); transit.reset(floor); actors.reset(); splats.clear(); trauma = 0; },
   },
 });
 function setState(to, why) {
@@ -577,9 +580,9 @@ const specimen = new Specimen(T, actors, scene.environment);
 // menu). It takes effect at run start; the menu also redraws the world left
 // behind the title in the new style. The HUD label says ' · sdf' while on.
 const GELS = ['classic', 'sdf'];
-import { STYLES } from './render/style.js?v=126';
-import { Lens } from './render/lens.js?v=126';
-import { setSceneSun } from './render/sun.js?v=126';
+import { STYLES } from './render/style.js?v=127';
+import { Lens } from './render/lens.js?v=127';
+import { setSceneSun } from './render/sun.js?v=127';
 let urlGels = GELS.includes(params.get('gels')) ? params.get('gels') : null;
 const gels = () => urlGels ?? (GELS.includes(store.str('toko2.gels')) ? store.str('toko2.gels') : 'classic');
 // The LENS switch (render/lens.js, v94): NONE or TILT-SHIFT, localStorage toko2.lens; ?lens=tilt|none for a link
@@ -738,7 +741,7 @@ let lastRoom = null;   // AGAIN replays it
 const levels = new Map();
 async function loadLevel(id) {
   // v125: a load that failed is forgotten, so the room's START asks again (it was kept as a failure: START did nothing until a reload)
-  if (!levels.has(id)) levels.set(id, fetch(new URL(`../levels/${id}.json?v=126`, import.meta.url)).then((r) => { if (!r.ok) throw new Error(`levels/${id}.json ${r.status}`); return r.json(); }).catch((e) => { levels.delete(id); throw e; }));
+  if (!levels.has(id)) levels.set(id, fetch(new URL(`../levels/${id}.json?v=127`, import.meta.url)).then((r) => { if (!r.ok) throw new Error(`levels/${id}.json ${r.status}`); return r.json(); }).catch((e) => { levels.delete(id); throw e; }));
   return levels.get(id);
 }
 // the list the room screen draws: worlds, their rooms, open or not, best grades
@@ -1259,7 +1262,7 @@ function frame(now, dtFixed) {
     if ((dyingT -= dt) <= 0) finish();
   }
 
-  if (world) {
+  if (world && runView) {   // v127: the run is drawn while its view is on, never under the title
     const a = state === 'play' ? acc / T.sim.dt : 1;
     actors.pickups.playing = actors.hints.playing = state === 'play';   // 1.x drew its gate and bounty tags only while playing (main.js:5893, 6018)
     actors.sync(world, a, time);
@@ -1275,8 +1278,8 @@ function frame(now, dtFixed) {
     ui.hud(world);
   } else { floor.setPlayer(0, 0); actors.light.clear(); }
   if (runView) transit.frame(world, floor);   // v125: the world change is the run's — never re-applied under the title
-  if (world && boundsFloor) survivalFrame();
-  else if (world && floor.bounds && !world.room) squeezeFrame();
+  if (world && runView && boundsFloor) survivalFrame();
+  else if (world && runView && floor.bounds && !world.room) squeezeFrame();
   ruleFrame();
   musicFrame();
   trauma = Math.max(0, trauma - T.shake.decay * dt);

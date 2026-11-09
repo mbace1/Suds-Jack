@@ -19,6 +19,14 @@
     Never `--no-verify`.
 -->
 
+## v127 — 2026-11-09
+**The title after a run is the title again: nothing of the run is drawn under it — and the progress trailer re-cut without its glitches**
+- THE ASK (owner, 2026-11-09: "The trailer had some glitches still"). Every frame of v122's trailer read by a script (the change from frame to frame, shot by shot) and the flagged frames looked at. Three glitches, two of them the trailer's and one the game's.
+- THE GAME'S: back on the title after a run, the run was still drawn under it — its bodies frozen where they stood, on world 1's floor (the trailer's CAMPAIGN grid sat over HARDCADE's sewer gels), its bullets in the air, a burst's chunks, the trails SLUDGE pours and YELA's slime, its hero in its last pose (gone after a death, shrunk in the vortex, the HEAT halo burning where it stood), and its floor's walls where the run's squeeze had left them. The run's world is kept (the play record reads it), but the title's arrival now lets go of everything the run drew — the species that keep a pool of their own (SLUDGE, YELA, PYRA, BAMBU) let go of theirs too — stands the hero as a first visit does, and draws nothing of the kept world until a run starts. Checked by listing every mesh the scene draws on a first visit's title and on the title after a HARDCADE run in the sewer: what differs is the title's own shader warm-up. The smoke checks a title after a quit draws none of the run's bodies.
+- THE TRAILER'S (scripts/itch-clips.mjs, not the game): the camera's shake, 1.x's trauma wobble at 6–7 Hz, sampled at a film's 30 frames a second jumps the whole picture from frame to frame — through the world 9 boss's landing and the first frames of four shots. A film is shot without it now; the game keeps it. And the closing NOW AT shot replayed the NINE WORLDS shot of world 9 from twelve seconds before (one seed, and two run-aheads that met on the same frame): it has a run of its own.
+- Cache tokens `?v=126` → `?v=127`; HUD label → `2.0 · v127`
+---
+
 ## v126 — 2026-11-09
 **The run's own end made safe: nothing hurts you under WORLD CLEAR, a run decided on a step stays decided, and the ★ chip lights for the pickup alone**
 - THE SECOND HALF of the state audit (docs/STATE.md, v125 the first): the simulation's fixes, on their own, so they could be measured against v125 seed for seed.

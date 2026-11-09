@@ -38,6 +38,7 @@
 // the new run is drawn, as 1.x's clearFX did at startGame (main.js:7156-7171).
 const DEG = Math.PI / 180;
 const shared = new WeakMap();        // per scene: the cube, the droplet geometry, the fume pool, the clock
+const ALL = new Set();               // v127: the same, for a clear that has no scene to ask by
 
 function sharedFor(ctx) {
   let sh = shared.get(ctx.scene);
@@ -74,7 +75,7 @@ function sharedFor(ctx) {
   sh.ribbons = { mesh: rMesh, alpha, cap: RCAP, m: new THREE.Matrix4() };
   rMesh.onBeforeRender = () => drawRibbons(sh);
   ctx.scene.add(rMesh);
-  shared.set(ctx.scene, sh);
+  shared.set(ctx.scene, sh); ALL.add(sh);
   return sh;
 }
 
@@ -192,6 +193,9 @@ function drawTrail(tr, B, k) {
 }
 
 export default {
+  // v127: what the last run poured goes with it (actors.reset): newRun swept it only when a cube of the next run was
+  // drawn, so after a run the trails and fumes lay on under the title
+  clear() { for (const sh of ALL) { for (const tr of sh.trails) tr.n = 0; sh.fumes.active.fill(0); sh.fumes.mesh.count = 0; sh.ribbons.mesh.count = 0; } },
   build(ctx) {
     const { THREE } = ctx, sh = sharedFor(ctx);
     const mat = ctx.gelMaterial(ctx.S.color, 'cube', 1);

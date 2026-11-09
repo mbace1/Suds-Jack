@@ -37,6 +37,8 @@ let GEO = null;            // one rounded cube for every view
 let POOL = null;           // the slime on the floor, one per scene
 
 export default {
+  // v127: the slime on the floor goes with the run (actors.reset): it outlived it, a trail fading under the title
+  clear() { if (POOL) clearPool(POOL); },
   build(ctx) {
     const { THREE, S } = ctx, K = S.look;
     GEO ||= roundedBox(THREE, 2 * S.flop.halfExtent, K.corner / S.radius, K.segments);
