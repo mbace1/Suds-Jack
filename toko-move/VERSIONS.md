@@ -1,5 +1,56 @@
 # Toko Move — versions
 
+## v3.22 — 2026-11-09
+
+**CARDS MADE FROM MODULES** — the owner: *"game needs more variety, fun
+options, etc. There can be 100x content so it never feels stale. These can also
+be randomized from modules, so the game actually becomes like a roguelike."*
+And: *"Toko face get buried behind map."*
+
+- **Cards made from parts** (`js/modules.js`). A story card is now often put
+  together from three parts:
+  - **WHO**, somebody at the stop, aboard or on the street (26: a man in a
+    Marimekko scarf, a busker with a broken string, a very tall Swede…);
+  - **WANT**, what they are doing or need, with two ordinary options and
+    three possible thirds (21: a glove on the tracks, the ticket app, a
+    speakerphone divorce, the inspectors, the secret courtyard sauna…);
+  - **TWIST**, one line of the day around it (14).
+
+  That is over 7,500 cards before the third is drawn, against 46 written
+  ones. The third is ordinary three times in five, special about one in
+  four, very special one in eight.
+- **How a run deals them.** About half the slots in a deck are made, the rest
+  written. The written card is still drawn first, so the run's rng and
+  everything else in the deck are exactly what they were; the slot is then
+  given to a made card by a hash of the seed. The same seed deals the same
+  cards. A run's tones, places, weather and hour decide which parts fit:
+  NIGHT draws the stranger facing the wrong way, the passenger who asks what
+  year it is, the humming at the stop and the footsteps at your pace (three
+  new scary wants, so NIGHT stays mostly scary); snow draws somebody
+  shivering, never somebody sunbathing.
+- **In Finnish too.** Every part is a whole phrase in both languages, joined
+  at the same seam, so the Finnish is never inflected across a join
+  (`lang.js` `moduleLine` finds a card's line part by part; every button and
+  what it says is in the table).
+- **Toko's face clear of the map.** On a phone the corner map sat exactly
+  where the courier stands at the stop. The map now moves to the other
+  corner whenever it would cover the face (`clearFace` in `play.js`). The
+  art request (PR #633) asks for the stop redrawn with the face out of the
+  top third, every element as its own layer, and people and things as
+  cutouts for these cards.
+- **Measured** (`test/journey.mjs`, 60 seeds, reader · tapper): EASY 60/60 ·
+  60/60, MEDIUM 59 · 54, HARD 54 · 37, NIGHT 55 · 29. The ladder holds; the
+  made cards are a little kinder than the written ones, mostly to MEDIUM's
+  tapper.
+- **Gates.**
+  - `test/modules.mjs` (new, also in CI): the count, every part in Finnish,
+    the effects vocabulary and its sizes, the same key making the same card,
+    the parts fitting the run (night, snow, places), the tiers, every want
+    reachable, about half of every deck made, no want twice, whole shifts
+    played through them, and the written deck untouched underneath.
+  - `test/journey.mjs`: the odds sample is 320 seeds a run (the made cards
+    took some of the "long shot" rolls it counted).
+
 ## v3.21 — 2026-11-09
 
 **WHAT A PERSON DID** — the owner said yes to reading the cabinet's own play,
