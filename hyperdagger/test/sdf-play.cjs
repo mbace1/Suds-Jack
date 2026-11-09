@@ -54,6 +54,13 @@ s.listen(0, '127.0.0.1', async () => {
       const errs = [];
       p.on('pageerror', e => errs.push('pageerror: ' + e.message));
       p.on('console', m => { if (m.type() === 'error') errs.push('console: ' + m.text()); });
+      // Reproducible scene setup: waveDirector rolls spawns and breathers
+      // per frame. Keep the original 20-second/three-body observation and
+      // every assertion; seed its random input so failures can be replayed.
+      await p.addInitScript(() => {
+        let seed = 628;
+        Math.random = () => { seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0; return seed / 4294967296; };
+      });
       await p.addInitScript(() => { if (sessionStorage.getItem('seeded')) return; sessionStorage.setItem('seeded', '1');
         localStorage.setItem('hyperDaggerSeenTips', '1'); localStorage.setItem('hyperDaggerRunKind', 'free'); localStorage.setItem('hyperDaggerRenderer', 'classic'); });
       await p.goto(base + '/hyperdagger/?assets=0', { waitUntil: 'load' });

@@ -112,15 +112,6 @@ Plan sketch: change the truck mesh/visuals only — remove wheels, add a hover h
 
 Note, 18 Oct (HD-018, v58): there is no haul scoring any more, and the missiles no longer jackknife a truck. The fold itself stays, for the pile-up and HD-016. Read "do not change haul scoring" as "do not bring a cargo score back", and "jackknife" as the fold.
 
-### HD-019 — The menu is the season: pick 1-3, see its arena and rules, press START
-
-- status: In progress
-- size: M
-- blocked-by: —
-- design: Mikael, 18 Oct 2026 — *"Redesign menu. Make it look very different and nicer. Only show season1-3, have the back ground and rules change as you choose it. Have a start button under neath"*
-
-The menu offers seasons 1-3 only, as three tabs. Picking one builds that season's arena behind the menu, live, and shows its rules; START underneath starts it. Picking no longer starts a run. The mode row goes (the season declares its mode, v50), and RUN FREE / DAILY moves to the pause menu, applying from the next run (HD-004's daily runs keep their way in).
-
 ### HD-020 — SDF on the live menu: RENDER · CLASSIC | SDF
 
 - status: In progress
@@ -131,6 +122,15 @@ The menu offers seasons 1-3 only, as three tabs. Picking one builds that season'
 #626's SDF builds (the skull family, and since build 3 the Watcher and the Totem, with carved wounds) and their Classic / SDF choice move from the separate `/hyperdagger-sdf/` preview onto the live game's menu. The choice becomes one segmented row, RENDER · CLASSIC | SDF, so START fits a phone held sideways. Build 3's test-arena link becomes a header chip. CLASSIC stays the default, and `test/sdf-play.cjs` proves the choice reaches play in all three seasons.
 
 ## Landed
+
+### HD-019 — The menu is the season: pick 1-3, see its arena and rules, press START
+
+- status: Landed (#624, a6f299ec)
+- size: M
+- blocked-by: —
+- design: Mikael, 18 Oct 2026 — *"Redesign menu. Make it look very different and nicer. Only show season1-3, have the back ground and rules change as you choose it. Have a start button under neath"*
+
+The menu offers seasons 1-3 only, as three tabs. Picking one builds that season's arena behind the menu, live, and shows its rules; START underneath starts it. Picking no longer starts a run. The mode row goes (the season declares its mode, v50), and RUN FREE / DAILY moves to the pause menu, applying from the next run (HD-004's daily runs keep their way in).
 
 ### HD-001 — short press jumps, hold fires
 

@@ -36,10 +36,18 @@ bottom of the screen. This takes that work to the live game:
   skull wears its skin and an SDF skull never does. The skins are attached
   lazily and skip a body that already has an SDF one.
 
-Tokens: `main.js` 114 and `sw.js` 114, worker cache `hyperdagger-v84`, above
-the 113 / v83 that this branch and build 3 had each taken separately for
-different bytes. `enemy.js`, `truck.js` and `convoy.js` stay at build 3's 113
-and `sdf-skull.js` at its 3; their bytes here are build 3's.
+Integration refresh: current main is preserved, the v59 landing record is
+reconciled, and the compact renderer row carries a visible v60 marker even
+in phone landscape. The short-screen row gaps also keep Inca’s longer card
+and START wholly inside 844×390 with SDF selected, without shrinking touch
+targets. A separate `sdf-loop.cjs` acceptance gate covers the Hub
+entry, both renderers, actual weapon kills, simulation-driven death and tap
+retry; it also checks loaded Meshy skins against the SDF safeguard.
+
+Tokens: `main.js` 115 and `sw.js` 115, worker cache `hyperdagger-v85`.
+The original #628 used 114 / v84 after reconciling the two different 113 /
+v83 builds. `enemy.js`, `truck.js` and `convoy.js` remain at build 3's 113,
+and `sdf-skull.js` at 3; their bytes are unchanged by this integration.
 
 ## SDF build 3 — carved damage, living machinery and floor inlays
 - Shots cut actual through-holes along their trajectories. Six recent cuts
@@ -103,7 +111,7 @@ and the SDF skull, with rotation and 12/40-enemy swarm views.
 - Module tokens: changed enemy/main/truck/convoy imports at 111; new SDF module
   at 1; worker cache 81 and generated precache (71 entries).
 
-## v59 — in progress
+## v59 — 2026-10-19
 **The menu is the season (HD-019)**
 
 Mikael, 18 Oct 2026: *"Redesign menu. Make it look very different and nicer.

@@ -1,10 +1,19 @@
-# SDF conversion — active preview track
+# Hyper Dagger — v60 integration and SDF track
+
+## Current state — 9 November 2026
+
+- Live hub: v59. Separate SDF preview: build 3; retain it until retirement is explicitly agreed.
+- v60 implementation: PR #628 includes #626 (`baa953c5`), head `33ff40cb`.
+- Current main `27f68b37` merges cleanly into that head locally; no conflict markers or unrelated file replacements. The PR API still names an older base.
+- Finish integrated-tree gameplay, menu, record-isolation, offline and hub gates, then request review and Mikael’s merge approval. Publish and verify the actual hub build only after approval.
+- Classic remains the default. Physical-device performance is unmeasured.
+- Completed runs tie at 300.0 seconds. This is an open scoring design decision, not authorization to change the score.
 
 The existing game remains the comparison baseline. The SDF preview is a
 hybrid renderer: only listed enemies are converted; the arena, convoy,
 weapons and physical debris still use the existing geometry.
 
-## Build 2 — testable skull-family slice
+## Build 2 — historical preview slice
 - Classic / SDF Preview choice on the real title menu, saved between visits.
 - Mouse/touch buttons; R or gamepad up/down changes renderer; START plays.
 - Regular, crowned Wraith, cleft Splitter, small hornless Mini and crowned
@@ -39,10 +48,10 @@ GPU measurements remain open; it does not approve SDF as the default.
 - Add SDF-specific distance/step budgets and a return-to-Classic recovery if
   measurements miss the budget. No automatic quality claim from SwiftShader.
 
-## Build 4 — next enemy, one complete loop at a time
+## Build 4 — after v60 integration: one articulated enemy
 1. Watcher: implemented in build 3; validate on physical devices.
 2. Totem: implemented in build 3; validate on physical devices.
-3. Spider and serpent: articulated limbs/rings; retain each segment's hitbox.
+3. Inspect spider and serpent, then choose ONE articulated conversion. Retain segment hitboxes, attack timing, silhouette and death behavior; complete its encounter and performance validation before starting the other.
 4. Heavy/boss silhouettes only after all preceding conversions are tested.
 
 Each conversion must pass the real menu → play → encounter → kill/death → retry
@@ -57,18 +66,19 @@ budget before another enemy starts. Existing voxel fallback remains available.
 - Only consider a fullscreen raymarch after measured GPU evidence supports it.
   A hybrid renderer is an acceptable final architecture.
 
-## Public rollout gate
-Visual review + physical-device pass + green game gates + reviewed merge.
-Then update the cabinet description/version and publish the selected default.
+## Rollout gates
+Opt-in v60: green integrated game/repository gates, visual review, reviewed merge and Mikael’s explicit merge approval, then publish and verify the main hub route. Physical-device results must be reported as unavailable when unavailable.
+
+Making SDF the default additionally requires a physical-device pass at the budgets above and an owner decision. Update cabinet text/version to describe the build actually shipped.
 A preview release does not certify 95% near-parity.
 
 ---
 
-# Hyper Dagger Roadmap
+# Earlier milestone plan — historical
 
-Version bumps are tied to milestones. Each milestone is a shippable slice of the total experience (play, UI, feedback, scoring).
+These v55–v58 targets predate v59 and are retained as planning history, not current completion claims. `VERSIONS.md` records shipped behavior; `QUEUE.md` holds outstanding work.
 
-## v55 — Menu & Scoring Contract (current)
+## v55 — Menu & Scoring Contract (historical target)
 - Explicit season + mode selection on the title screen
 - Mode override sticks; seasons remain primary
 - Personal best and daily best visible
@@ -85,7 +95,7 @@ Version bumps are tied to milestones. Each milestone is a shippable slice of the
 - Brief slowmo + toast on wave transitions
 - Board script accepts season
 
-## v57 — Polished Total Experience (near complete)
+## v57 — Polished Total Experience (historical target)
 - Consistent recap across death and complete
 - Stronger heavy telegraphs and hit confirmation
 - Menu and death screen visual polish

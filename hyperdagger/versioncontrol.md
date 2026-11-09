@@ -159,3 +159,76 @@ The preview tree uses the site's shared imports and omits worker registration.
 Source and deployment SHAs plus live verification are tracked in PR #626.
 Next: physical-device frame budget, then articulated enemies and a small 3D
 arena patch; keep the current Classic/SDF menu recovery.
+
+
+## 2026-10-19 — v59, the menu is the season, on main and on the live page
+
+PR #624, merge commit `a6f299ec172e73edb78a51470239551988115212` (`a6f299ec`), 19 Oct 2026, 11:59:15 EEST. Parents: `1de54988` (main) and `ca8bbeb3` (the PR head, `feat/hyperdagger-menu-redesign`). The full smoke passed 220/0 on `ca8bbeb3`. The other gates are listed in the PR. Codex reviewed it with no findings.
+
+What it changed, for a player (HD-019): the menu offers seasons 1 to 3 as tabs, builds the picked season's arena behind the menu with that season's rules, and starts it from START underneath. A tab only picks. The mode row is gone, RUN FREE / DAILY moved to the pause menu and applies from the next run, and the menu shows no HUD and no hand.
+
+The live page did move. gh-pages `b536d0a2`, 19 Oct 2026, 12:05:51 EEST, message "Publish Hyper Dagger v59 from main a6f299ec (PR #624)". Pages run 39227527492 (pages build and deployment) concluded success at 12:07 EEST. It is the newest Pages run. Read back from `b536d0a2` through the GitHub API:
+- `index.html` asks for `js/main.js?v=110`, `sw.js?v=110` and `../hub/shell.js?v=94`.
+- `sw.js` sets `const CACHE = 'hyperdagger-v80'`.
+- `hub/versions.json` has hyperdagger at v59.
+- The three player seasons carry their menu `card`, and `main.js` has the START path.
+
+The publish carried `hyperdagger/` (minus `test/`, where the site's own two files were left as they were) and the one `hub/versions.json` row. No catalogue line changed, so no token cascade was needed. The deployed `VERSIONS.md` still read "v59 — in progress". The dated heading in this entry's commit reaches the site with the next Hyper Dagger publish.
+
+Not verified: the live page was not opened. This session's network policy refuses `mbace1.github.io`. Before the push, the offline, menu-input, press-edges, hud-lock and goal-card gates passed against the site tree, with the site's own hub and toko files.
+
+## 2026-11-09 — v60 integration preparation (not merged or published)
+
+Goal: finish #628 as the opt-in SDF integration on the real hub route before
+converting another enemy. Classic stays the default; the separate build-3
+preview stays online until its retirement is explicitly agreed.
+
+Implemented on `codex/hyperdagger-v60-integration`: #628 (`33ff40cb`) and its
+complete #626 ancestor (`baa953c5`), with current main `27f68b37` incorporated
+in local merge `128e4cfcf`. The merge was clean, including `hub/versions.json`;
+the PR API's older base/mergeability report was not used as conflict evidence.
+The diff against main remains Hyper Dagger plus its one hub version row.
+The v59 landing documentation from #625 is reconciled without claiming that
+PR itself merged. The roadmap now distinguishes history, opt-in v60,
+hardware budgets, one articulated conversion, and a later 3D arena patch.
+
+The renderer row exposes v60 even in short landscape. Inca SDF's longer card
+previously put START's bottom at 396.56 px in an 844×390 viewport; reducing
+short-screen row gaps retains 44 px targets and makes the complete button
+fit. `main.js` / worker registration are 115, cache `hyperdagger-v85`, with
+the 71-entry precache regenerated. Other game-module tokens are unchanged.
+
+Test additions: `sdf-loop.cjs` uses the hub's real Play link, title/menu,
+weapon input, simulation death and tap retry for both renderers across all
+three seasons, and checks the loaded-asset safeguard. `HD_SITE_ROOT` lets
+that gate and the offline gate test a prepared production tree. Existing
+smoke assertions remain: the court now uses real W input instead of assuming
+40 frames reach the wall, and the palette fixture is kept clear of shale
+and removed after sampling, before it can chip a pile's initial 70 HP.
+
+Verified baseline over HTTPS on 9 November: hub version 59, main cache v80;
+separate preview title build 3, main token 113, no worker registration.
+Source and prepared production-tree version/precache checks agree. The
+prepared release preserves production shell 226 and signature 3, and changes
+only `hyperdagger/` and its version row; no production push has occurred.
+
+Validation is ongoing; final gate results and exact source head must be
+recorded before merge approval. Chromium 156 / SwiftShader proves browser
+correctness only. Physical iPad, Android and desktop GPU measurements are
+unavailable: no hardware p95 or game/real-time budget is certified. Completed
+runs still tie at 300.0 seconds; this remains an owner scoring decision.
+
+Open findings: the natural-spawn gate's 20-second observation can contain no
+skull because the director chooses 10-second breathers and Brutes. Both
+unseeded and seed-628 runs reproduced it; its assertions and limit are still
+intact pending explicit approval of a longer observation. The Inca carry
+assertion is unchanged. Toko's idle interruption also still reproduces:
+with only its 24 s timer shortened to 12 s diagnostically, real input events
+every second were interrupted by two unsolicited lines. No Toko fix is
+included in this lane.
+
+Next: complete the final-tree gates, including the six encounter loops and
+full smoke, resolve every Gate finding in its proper lane, and obtain review
+and Mikael's explicit merge approval. Exit: approved tested head merged,
+scoped publish to `/hyperdagger/`, successful Pages deployment and actual
+live hub/menu/combat verification. Until then v60 is neither merged nor live.

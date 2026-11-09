@@ -84,7 +84,9 @@
       #msg .mn-mark { font-size: 1.7rem; }
       .mn-mark::after { margin-top: 0.4rem; height: 3px; }
       .mn-sub { display: none; }
-      .mn-foot { gap: 0.45rem; }
+      /* Inca's longer card needs another 10 px in SDF landscape. Keep every
+         touch target >=44 px; recover the space between the four rows. */
+      .mn-foot { gap: 0.25rem; }
       #msg button.mn-season { padding: 0.45rem 0.5rem 0.4rem; }
       .mn-t { font-size: 0.92rem; }
       .mn-card { padding: 0.55rem 0.75rem; }
@@ -182,10 +184,10 @@
     }
   }
   </script>
-  <script type="module" src="js/main.js?v=114"></script>
+  <script type="module" src="js/main.js?v=115"></script>
   <script>
     if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
-      navigator.serviceWorker.register('sw.js?v=114').catch(() => {});
+      navigator.serviceWorker.register('sw.js?v=115').catch(() => {});
     }
   </script>
   <script type="module" src="../hub/shell.js?v=43"></script>

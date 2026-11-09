@@ -949,14 +949,17 @@ s.listen(0, '127.0.0.1', async () => {
       ok(`${id}: wall run is on for the course`, course.wallRun === true, JSON.stringify(course));
     } else if (decl.arena === 'court') {
       // v39: the first geometry this arena has had that is not a floor
-      const court = await p.evaluate(async () => {
-        const hd = window.__hd, pl = hd.player;
-        const frames = n => new Promise(r => { let c = 0; const f = () => (++c >= n ? r() : requestAnimationFrame(f)); requestAnimationFrame(f); });
-        const walls = hd.debug.getWalls();
-        pl.feet.set(0, 0, 0); pl.yaw = 0; pl._sync();
-        for (let i = 0; i < 40; i++) { pl.velocity.set(0, 0, -12); await frames(1); }
+      // Forty frames cover a different distance on a fast and slow renderer.
+      // Set up at the centre, then use real movement input and observe contact.
+      // The original position and normal assertions below remain unchanged.
+      await p.evaluate(() => { const pl = window.__hd.player; pl.feet.set(0, 0, 0); pl.velocity.set(0, 0, 0); pl.yaw = 0; pl._sync(); });
+      await p.keyboard.down('w');
+      await p.waitForFunction(() => !!window.__hd.player.wallContact, null, { timeout: 90000 }).catch(() => {});
+      const court = await p.evaluate(() => {
+        const hd = window.__hd, pl = hd.player, walls = hd.debug.getWalls();
         return { walls: walls.count, solid: walls.walls.every(w => !w.maxHp), z: +pl.feet.z.toFixed(2), contact: pl.wallContact ? [+pl.wallContact.nx.toFixed(2), +pl.wallContact.nz.toFixed(2)] : null };
       });
+      await p.keyboard.up('w');
       ok(`${id}: the court has its four walls`, court.walls === 4, JSON.stringify(court));
       ok(`${id}: the court's walls are not destructible — v53's hit points are the shale piles' only`, court.solid === true, JSON.stringify(court));
       ok(`${id}: a wall stops the body and reports its normal`,
@@ -1033,8 +1036,14 @@ s.listen(0, '127.0.0.1', async () => {
       sn.tech = d.getTechArt();
       sn.hand = d.getHand();   // v52: the season's own weapon
       // v45: one body, built under this season, for the roster palette check
-      d.spawnSplitter(); await frames(2);
+      // The palette probe must not grind a shale pile before COVER THAT DIES
+      // snapshots its initial HP. Keep it in the clear centre and remove it
+      // without a death/debris side effect once its palette has been sampled.
+      d.spawnSplitter(); const paletteProbe = hd.enemies.at(-1); paletteProbe.pos.set(0, 2, 0);
+      await frames(2);
       const roster = d.rosterSample();
+      paletteProbe.remove(paletteProbe.group.parent);
+      hd.enemies.splice(hd.enemies.indexOf(paletteProbe), 1);
       // v48: the menus — the intro's buttons are still in the message box
       // (startGame hides it, it does not empty it), and the pause menu is a
       // press of the pause button away

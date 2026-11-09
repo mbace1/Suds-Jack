@@ -1650,7 +1650,7 @@ function showMenu() {
            <p class="mn-best"><span id="menuBoard"></span>${bestLine()}</p>
          </div>
          <div class="mn-render" role="group" aria-label="Enemy renderer">
-           <span class="mn-render-l">RENDER</span>
+           <span class="mn-render-l">RENDER &middot; v60</span>
            <button data-renderer="classic" aria-pressed="${!sdfSkullsEnabled}" title="The voxel enemies the game ships with">CLASSIC</button>
            <button data-renderer="sdf" aria-pressed="${sdfSkullsEnabled}" title="The skull family, the Watcher and the Totem raymarched as signed distance fields, with carved wounds; the rest keep their art">SDF</button>
          </div>
