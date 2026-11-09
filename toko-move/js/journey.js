@@ -34,10 +34,10 @@ import { regularAt, standingOf, tipFor, MAX_STANDING } from './regulars.js?v=4';
 import { haltFamily, haltMinutes } from './mutators.js?v=2';
 import { payFor } from './parcels.js?v=1';
 import { makeCard } from './modules.js?v=2';
-import { DAYS, dayFor, dayLine } from './days.js?v=1';
+import { DAYS, dayFor, dayLine, AREAS, areaFor, pullOf, perksFor } from './days.js?v=2';
 import { lineFamily } from './board.js?v=8';
 import { CARGO } from './deliveries.js?v=28';
-import { MISSION_CARDS, MISSION_CALLBACKS, PERKS, STRIKES, perkPool } from './missions.js?v=4';
+import { MISSION_CARDS, MISSION_CALLBACKS, PERKS, STRIKES, perkPool } from './missions.js?v=5';
 
 export const SHIFT_SECONDS = 75 * 60;            // 07:00–08:15, or 23:00–00:15
 export const SPEED_KMH = { tram: 14, metro: 34, walk: 4.8 };
@@ -182,6 +182,10 @@ export function newRun(net, run = {}, seed = 1, { start = 'lasipalatsi', memory 
   s.day = run.mission || run.days === false ? 'ordinary' : dayFor(seed, { weather: s.weather, night: run.skin === 'night' });
   const D = DAYS[s.day];
   s.mods.deadline *= D.deadline || 1; s.mods.tip += D.tip || 0; s.mods.luck += D.luck || 0; s.dayFee = D.fee || 1;
+  // (v3.24) where the drops lean, and the perks the draft can offer: drawn the same way
+  const drawn = !run.mission && run.days !== false;
+  s.area = drawn ? areaFor(seed) : null;
+  s.perksToday = drawn && run.perks ? perksFor(seed, run.perkPool || perkPool(0), Object.keys(PERKS)).drawn : [];
   s.run = { ...run, walkFactor: (run.walkFactor || 1) * W.walk * (D.walk || 1), headway: (run.headway || 1) * W.wait * (D.wait || 1) };
   Object.defineProperty(s, 'best', { value: bestTable(net, s.run), enumerable: false });
   s.deck = dealDeck(s, run, s.weather);
@@ -227,12 +231,18 @@ export const halted = (s, fam) => !!s.halt && !s.halt.lifted && s.halt.family ==
 // A job offer from where the courier stands: a destination a run can carry
 // (EASY: one of the nearer ones), a parcel from the run's pool, and what is
 // inside it, which nobody tells you.
+// one draw from a list, as often as \`w\` says (one call to the rng, as a plain pick was)
+function weighted(s, list, w) {
+  const total = list.reduce((a, x) => a + w(x), 0); let r = rand(s) * total;
+  for (const x of list) { r -= w(x); if (r < 0) return x; }
+  return list[list.length - 1];
+}
 function dispatch(net, s, notTo = null) {
   if (s.run.mission) return missionDispatch(net, s);
   const from = s.at, best = s.best[from], cands = [...net.nodes.keys()].filter(id => id !== from && id !== notTo && Number.isFinite(best[id]));
   cands.sort((a, b) => best[a] - best[b]);
   const pool = s.run.board === 'short' ? cands.slice(0, Math.max(3, Math.ceil(cands.length / 3))) : cands.filter(id => best[id] <= (s.run.reach || 20) * 60);
-  const pick = (pool.length ? pool : cands)[Math.floor(rand(s) * (pool.length || cands.length))];
+  const pick = weighted(s, pool.length ? pool : cands, id => pullOf(s.area, id));
   const keys = s.run.cargo?.length ? s.run.cargo : Object.keys(CARGO);
   const cargo = keys[Math.floor(rand(s) * keys.length)];
   s.offer = { to: pick, cargo, best: best[pick], contents: pickOf(s, CONTENTS[cargo] || ['something']) };
@@ -242,7 +252,7 @@ function dispatch(net, s, notTo = null) {
   // the first, somewhere else, and the card asks which — never on the race's or
   // the sealed parcel's job, which have their own card
   if (s.run.forks?.includes(idx) && idx !== s.rivalJob && idx !== s.sealedJob) {
-    const rest = pool.filter(id => id !== pick), other = rest.length ? rest[Math.floor(rand(s) * rest.length)] : null;
+    const rest = pool.filter(id => id !== pick), other = rest.length ? weighted(s, rest, id => pullOf(s.area, id)) : null;
     if (other) { const cg = keys[Math.floor(rand(s) * keys.length)], b = { to: other, cargo: cg, best: best[other], contents: pickOf(s, CONTENTS[cg] || ['something']) };
       b.fee = Math.round(feeOf(b) * s.trust * (s.dayFee || 1)); const rb = regularAt(other); if (rb) b.regular = { id: rb.id, name: rb.name };
       const ra = regularAt(pick); if (ra) s.offer.regular = { id: ra.id, name: ra.name };
@@ -440,12 +450,19 @@ const eligible = (c, s) => c.options.filter(o => !o.needs || o.needs === s.job?.
 // line, and up to two buttons, each with its price in time and its stakes.
 export function card(net, s) { const st = stateOf(s), c = cardFor(net, s, st); if (!c) return c; c.state = st;
   // the shift's first job carries the kind of day it is (v3.23), above its line
-  if ((st === 'dispatch' || st === 'fork') && s.done + s.sold === 0 && !c.at) { const l = dayLine(s.day); if (l) { c.at = l; c.day = s.day; } }
+  if ((st === 'dispatch' || st === 'fork') && s.done + s.sold === 0 && !c.at) { const l = [dayLine(s.day), AREAS[s.area]?.line].filter(Boolean).join(' · ');
+    if (l) { c.at = l; c.day = s.day; c.area = s.area; } }
   return c; }
+// The draft's third button (v3.24): a perk drawn for this shift, as a special,
+// while one is left to take; else the cash
+function perkThird(s) {
+  const id = (s.perksToday || []).find(p => !s.perks.includes(p));
+  return id ? { label: PERKS[id].name, price: 0, perk: id, tier: 'special', stakes: { sure: [PERKS[id].line] } } : { label: 'Keep the cash', price: 0, stakes: { sure: [`+€${PERK_CASH}`] } };
+}
 function cardFor(net, s, st) {
   if (st === 'end') return null;
   if (st === 'perk') return { kind: 'perk', mood: 'opportunity', text: `Job ${s.done} of ${s.target} done. Pick one for the rest of the ${s.run.mission ? 'errand' : 'shift'}.`,
-    options: [...s.perkOffer.map(id => ({ label: PERKS[id].name, price: 0, perk: id, stakes: { sure: [PERKS[id].line] } })), { label: 'Keep the cash', price: 0, stakes: { sure: [`+€${PERK_CASH}`] } }] };
+    options: [...s.perkOffer.map(id => ({ label: PERKS[id].name, price: 0, perk: id, stakes: { sure: [PERKS[id].line] } })), perkThird(s)] };
   if (st === 'fork') return { kind: 'dispatch', mood: MOODS_FOR.dispatch, text: s.run.mission ? 'Two errands for the next job. Pick one.' : 'Two jobs come in at once. Pick one.', mission: !!s.run.mission, fork: true,
     options: [...s.fork.map(o => ({ label: `${cargoWord(o.cargo)} → ${net.name(o.to)}`, price: 0, stakes: { sure: [`€${o.fee}`] } })), { label: 'Toss a coin', price: 0, tier: 'special', stakes: { sure: [`+€${COIN_CASH}`] } }] };
   if (st === 'errand') { const o = s.offer;

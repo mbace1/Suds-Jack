@@ -19,6 +19,13 @@
 // The card shows it on the shift's first job, as a line above the text:
 // the day's name, then what it does (`fx`), in the words the card uses.
 //
+// (v3.24) The rest of the shift is drawn the same way:
+//   AREA   most shifts lean their drops to one part of the city (a stop in it
+//          comes up three times as often); the first card names it
+//   PERKS  two perks drawn for the shift from those not unlocked, the
+//          trade-offs among them (missions.js); the draft offers one as its
+//          special third button, while one is left to take
+//
 // Pure: no DOM. test/days.mjs holds it in bare node.
 
 export const DAYS = {
@@ -50,3 +57,27 @@ export function dayFor(seed, ctx = {}) {
 
 // The line the first card carries: "PAYDAY · FEES ×1.15 · EVERYONE WANTS IT NOW"
 export const dayLine = id => { const d = DAYS[id]; return d?.name ? [d.name, ...d.fx].join(' · ') : null; };
+
+// ── the area (v3.24) ─────────────────────────────────────────────────────
+export const AREAS = {
+  harbour: { line: 'drops around the harbour', stops: ['kauppatori', 'katajanokka', 'olympiaterminaali', 'lansiterminaali', 'hietalahti', 'eira'] },
+  centre: { line: 'drops around the centre', stops: ['rautatientori', 'senaatintori', 'kamppi', 'lasipalatsi', 'ooppera'] },
+  kallio: { line: 'drops around Kallio', stops: ['kallionkirkko', 'sornainen', 'hakaniemi', 'pasila', 'kapyla', 'messukeskus', 'arabia'] },
+  east: { line: 'drops east of the bridge', stops: ['kalasatama', 'kruunuvuori', 'laajasalo', 'arabia', 'sornainen'] },
+  west: { line: 'drops on the west side', stops: ['ruoholahti', 'meilahti', 'lansiterminaali', 'hietalahti', 'kamppi'] },
+};
+export const AREA_PULL = 3, AREA_SHARE = 0.6;
+// the area a shift leans to, or null (two in five lean nowhere)
+export function areaFor(seed) {
+  const h = hash(`area:${seed}`); if ((h % 1000) / 1000 >= AREA_SHARE) return null;
+  const ids = Object.keys(AREAS); return ids[(h >>> 10) % ids.length];
+}
+// how much more often a stop comes up today
+export const pullOf = (area, stop) => area && AREAS[area]?.stops.includes(stop) ? AREA_PULL : 1;
+
+// ── the perks (v3.24) ────────────────────────────────────────────────────
+// what is unlocked, plus `n` drawn for the shift from everything else
+export function perksFor(seed, unlocked, all, n = 2) {
+  const rest = all.filter(p => !unlocked.includes(p)).sort((a, b) => hash(`perk:${seed}:${a}`) - hash(`perk:${seed}:${b}`));
+  return { pool: [...unlocked, ...rest.slice(0, n)], drawn: rest.slice(0, n) };
+}

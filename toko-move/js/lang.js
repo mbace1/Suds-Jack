@@ -399,6 +399,12 @@ export const FI = new Map(Object.entries({
   'tips +€2': 'tipit +2 €', 'tips +€1': 'tipit +1 €', 'fuller trams': 'täydemmät ratikat', 'fees ×1.15': 'palkkiot ×1,15', 'everyone wants it now': 'kaikki haluavat sen heti',
   'fees ×0.9': 'palkkiot ×0,9', 'clocks ×1.1': 'kellot ×1,1', 'walking slower': 'kävely hitaampaa', 'luck +5%': 'onni +5 %', 'luck −5%': 'onni −5 %',
   'fees ×1.05': 'palkkiot ×1,05', 'tourists everywhere': 'turisteja kaikkialla', 'fees ×1.1': 'palkkiot ×1,1',
+  // the area and the trade-off perks (v3.24)
+  'drops around the harbour': 'kohteet sataman tienoilla', 'drops around the centre': 'kohteet keskustan tienoilla', 'drops around Kallio': 'kohteet Kallion tienoilla',
+  'drops east of the bridge': 'kohteet sillan itäpuolella', 'drops on the west side': 'kohteet länsipuolella',
+  'Hustle': 'Kiire', 'fees ×1.25, every clock shorter': 'palkkiot ×1,25, joka kello lyhyempi', 'Take it easy': 'Rauhassa', 'every clock a third longer, fees ×0.85': 'joka kello kolmanneksen pidempi, palkkiot ×0,85',
+  'A borrowed bike': 'Lainapyörä', 'walks a third quicker, trams later': 'kävely kolmanneksen nopeampaa, ratikat myöhemmin', 'Nerve': 'Rohkeus', 'a risk lands much more often, every clock shorter': 'riski onnistuu paljon useammin, joka kello lyhyempi',
+  'Charm': 'Charmi', '+€3 every drop, a risk lands less often': '+3 € joka toimitus, riski onnistuu harvemmin', 'A thermos': 'Termospullo', '+€2 every drop, every deadline a tenth longer': '+2 € joka toimitus, joka määräaika kymmenyksen pidempi',
   'walks a fifth quicker': 'kävely viidenneksen nopeampaa', 'trams come sooner': 'ratikat tulevat aiemmin', 'every deadline a fifth longer': 'joka määräaika viidenneksen pidempi', 'a risk lands more often': 'riski onnistuu useammin', '+€4 every drop': '+4 € joka toimitus', 'the weather leaves the parcel alone': 'sää jättää paketin rauhaan',
   'Flowers from Lasipalatsi, for a friend at the Opera.': 'Kukkia Lasipalatsista, ystävälle Oopperaan.', 'The last errand: a cake for the station café.': 'Viimeinen asia: kakku aseman kahvilaan.',
   'A box of programmes from the market quay to Katajanokka.': 'Laatikollinen käsiohjelmia torin laiturilta Katajanokalle.', "The harbour master's post, up to the station.": 'Satamakapteenin posti, ylös asemalle.',

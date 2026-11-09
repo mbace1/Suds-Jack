@@ -110,8 +110,9 @@ needed."*
     the day, over 7,500 cards, about half of every deck.
 15. ~~**v3.23 · The day, drawn.**~~ Shipped: every shift draws its day
     (festival, payday, heatwave, first snow, full moon…) from the run's own
-    levers. Next in the same direction: the perk pool and the route to the
-    drops drawn the same way, so missions stay written stories, not the spine.
+    levers. ~~v3.24~~: where the drops lean and a special perk for the shift
+    are drawn the same way (six trade-off perks). Next: the stop's art from
+    PR #633 when it lands, and more parts for the made cards.
 16. **More parts.** Every new WHO, WANT or TWIST multiplies the deck; the
     stop's cutouts (PR #633 §5) let each card show who it is about.
 
