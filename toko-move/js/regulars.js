@@ -30,8 +30,11 @@ export function regularAt(stopId){return REGULARS.find(r=>r.at===stopId)||null;}
 // The store is a plain object id → standing. localStorage may be absent (bare
 // node, a private window) or throw; a regular with no memory is standing 0,
 // which is exactly a stranger, so nothing needs to know the difference.
-export function loadStanding(store=globalThis.localStorage){try{const raw=store?.getItem(KEY);return raw?JSON.parse(raw):{};}catch{return{};}}
-export function saveStanding(s,store=globalThis.localStorage){try{store?.setItem(KEY,JSON.stringify(s));}catch{}}
+// Reading localStorage can itself throw (private modes, blocked site data) —
+// and a default parameter is evaluated outside the try below (v2.67).
+const ls=()=>{try{return globalThis.localStorage;}catch{return null;}};
+export function loadStanding(store=ls()){try{const raw=store?.getItem(KEY);return raw?JSON.parse(raw):{};}catch{return{};}}
+export function saveStanding(s,store=ls()){try{store?.setItem(KEY,JSON.stringify(s));}catch{}}
 export function standingOf(s,id){return Math.max(0,Math.min(MAX_STANDING,Number(s?.[id])||0));}
 export function bumpStanding(s,id,late){const cur=standingOf(s,id),next=Math.max(0,Math.min(MAX_STANDING,cur+(late?-1:1)));s[id]=next;return next;}
 

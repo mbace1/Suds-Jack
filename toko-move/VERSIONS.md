@@ -1,5 +1,1712 @@
 # Toko Move — versions
 
+## v3.21 — 2026-11-09
+
+**WHAT A PERSON DID** — the owner said yes to reading the cabinet's own play,
+and to the trailer and the store page catching up with v3.18–v3.20.
+
+- **The play log** (`js/playlog.js`). Every balance number so far came from
+  bots, and a bot has no clock and never closes the tab. The game now writes
+  down what a person does, off the run's own machine (v3.20):
+  - every card: its state, which button (1, 2, 3), its tier, and how long it
+    took to choose;
+  - every shift's end: done, late, strikes, struck out, the euros;
+  - a shift left mid-way: QUIT, with the state it was left in.
+- **Kept on this device only:** the last 60 shifts, on their own key. One
+  summary line goes to the arcade's shared log, when the cabinet has loaded
+  it; the itch build carries no path out of itself.
+- **YOUR PLAY LOG** on the title, once anything has been played. The readout
+  covers:
+  - runs done, struck out and left;
+  - the time to choose by state (median and slowest);
+  - how often the third option is taken (special, very special);
+  - where shifts were left.
+
+  COPY THE LOG puts it on the clipboard, to paste back to the developer.
+  `__tm3.plays()` and `__tm3.playReport()` give the same to a test or an
+  agent.
+- **The trailer** adds two takes: the choir's very special *"Join in"*
+  aboard (EASY 1001), and a ride stop by stop inside the car (EASY 1357,
+  the 2 to Senaatintori).
+- **The store page** (`store/ITCH.md`): three choices with a special third,
+  the ride inside the car, perks and strikes, the missions on the map and
+  the day's errand, the march, and the keys 1, 2, 3.
+- **Gates.**
+  - `test/playlog.mjs` (new, also in CI): the timing, a re-render counted
+    once, QUIT, the readout, the 60-session store, a store in the wrong
+    shape, and a real run read in the machine's own states.
+  - `test/play.cjs`: a shift written down, a shift left mid-way read as a
+    QUIT, the title's readout.
+
+## v3.20 — 2026-11-09
+
+**THE MACHINES, NAMED** — the owner: *"Find all of the implicit state machines
+in my app. Make the best decision that will elevate all three: the user
+experience (UX), developer experience (DX), and agent experience (AX) always,
+without breaking anything."*
+
+`STATE-MACHINES.md` lists every machine in the game: fourteen, with where each
+lives and its states. Two were implicit and central, and are now explicit. The
+rest are small, live in one module each, and are documented as they are.
+
+- **The run** (`journey.js` `STATES`, `stateOf`, `check`). The card a run
+  shows used to be a precedence chain inside `card()`: `phase` plus the flags
+  beside it. It is now one table:
+  - eight named states (dispatch, fork, errand, story, halt, route, perk,
+    end);
+  - for each, what must be true in it and where it may go next;
+  - `card()` switches on it, and every card carries its `state`.
+- **The screen** (`play.js` `UI`, `uiState`). It used to be loose variables.
+  Now: loading → title → card ⇄ moving, card ⇄ board, → end. It is derived
+  from the same variables, so it cannot disagree with them. The page wears
+  it as `body[data-ui]` and `body[data-state]`.
+- **For the player (UX):**
+  - **keys 1, 2, 3 answer any waiting card**, and the cabinet's pad does the
+    same: A, B and X are the three buttons and Y hurries what is playing
+    (`pad` in the arcade catalogue);
+  - the stricter checks guard every step against a broken card.
+- **For a developer (DX):** one table instead of a chain of flags, and
+  `check()` names what is wrong instead of a card that silently misbehaves.
+- **For an agent (AX):** `__tm3.machine()` gives the state, the screen,
+  where the run may go next, the card's options (label, price, tier) and any
+  problem, in one call. The doc says where every other machine lives.
+- **Nothing broke.** Over the four runs and six missions, 116,907 steps hash
+  identically before and after the table. The check found no broken state in
+  4,000 runs, or along a whole shift played from the keyboard.
+- **Gates.**
+  - `test/journey.mjs` §7d: 4,000 runs, every step keeps its state's
+    conditions and moves only where the table allows; every state is reached.
+  - `test/play.cjs`: the title is a state of the screen, the first card is
+    `dispatch`, and a shift is played from the keyboard alone to its end card
+    with nothing broken on the way.
+
+## v3.19 — 2026-11-08
+
+**THE RIDE, INSIDE, AND THE NECK** — the owner, on v3.17: *"The traveling on a
+tram visual is a great one and should be used more. The neck is a bit
+disconnected but the background looks great moving. Similar ones should for a
+longer loop of travel, animations and choices."*
+
+- **A ride stays in the car.** It used to show the interior for a beat, then
+  cut to the board. Now the whole ride plays inside, for 2.6 to 5.2 seconds by
+  how long it is:
+  - the window carries the travel and slows at each stop the line passes;
+  - the sign names the next stop (*"then RUOHOLAHTI"* under it);
+  - the corner map follows the courier along the line.
+
+  A tap hurries it, as before. After a card aboard, the rest of the ride is
+  played in the car too. Walks and lifts still go on the board.
+- **More choices aboard.** Cards that happen aboard are dealt half again as
+  often, so more of them are played in the car. Bands, reader · tapper:
+
+  | run | reader | tapper |
+  |---|---|---|
+  | EASY | 60/60 | 60/60 |
+  | MEDIUM | 56 | 50 |
+  | HARD | 54 | 44 |
+  | NIGHT | 51 | 25 |
+
+  The ladder holds.
+- **The neck.** Toko's head sat high on the courier in the tram and metro
+  interiors, with about 40 px of neck between the ring and the collar. It is
+  moved down onto the collar and centred over the neck, in all 12 layers
+  (tram and metro, both formats, every crowd and old-car variant).
+  - `art/minimal-metro-look/fix_neck.py` does it from the originals, kept in
+    `_prev/neck/`, so running it again gives the same files.
+  - The art request (PR #633) asks for the courier redrawn at the source,
+    which replaces this.
+- **Gates.** `test/play.cjs`: a ride is played inside the car with the corner
+  map; new seeds where the decks moved (the crush in the metro, MEDIUM 1162;
+  the tourist, the crossing and the saved seat, EASY 1152).
+
+## v3.18 — 2026-11-08
+
+**THREE AT EVERY CHOICE, AND THE MENUS WEAR THE CARD** — the owner, on
+v3.17: *"We need 3 options at every choice. 2 regular and 3rd can sometimes
+be special or very special. This same lower third look, should be used in
+menus and the intro screen."*
+
+- **Every card has three buttons.** The first two are what they always
+  were, in the same places (the cheaper hop still on the left). The third
+  is new, and sometimes special (gold, ★ SPECIAL) or very special (a slow
+  cyan-and-gold shine, ✦ VERY SPECIAL):
+  - **A stop:** another way when there is one. On about one stop in five,
+    a taxi straight to the drop (special: €8 plus €3 a km, a four-minute
+    wait, slower in snow). On one in twenty-five, a cargo bike courier's
+    lift (very special: free and quick). A sealed parcel has no address,
+    so it gets no lift.
+  - **A story card:** a third thing to do, written for each of the 46
+    cards and the two mission cards. Twenty are ordinary, sixteen special
+    (they cost or pay a little), ten very special (choir: *"Join in"*;
+    sauna: *"Ask about the cold plunge"*; the ghost tram: *"Ask the driver
+    where it goes"*; the wallet: *"Find him from the library card"*).
+  - **A dispatch:**
+    - take it / ask for another / *Take it, express* (special: the fee
+      ×1.5, the clock ×0.7);
+    - a mission's: take it / *Take it slow* (the fee ×0.8, the clock ×1.3)
+      / express;
+    - the race: race her / let her have it / *Buy her a coffee* (special:
+      €3, no race).
+  - **A halt:** find another way / wait it out / a taxi past it (special).
+  - **A fork:** the two jobs, or *Toss a coin* (special: one of them, and
+    €3).
+  - **A perk:** the two perks, or *Keep the cash* (€8).
+- **Measured.** The taxi was first on every third stop for €6: the
+  reader's NIGHT went 43 → 57 of 60. At €8 + €3/km with a four-minute wait,
+  on one stop in five, the ladder keeps its shape. Bands, reader · tapper:
+
+  | run | reader | tapper |
+  |---|---|---|
+  | EASY | 60/60 | 60/60 |
+  | MEDIUM | 57 | 46 |
+  | HARD | 54 | 44 |
+  | NIGHT | 51 | 27 |
+
+  More choice is better for a player who reads; the tapper, who never
+  takes a third, is where it was.
+- **The menus wear the card.** The title is the game's lower third over an
+  approved picture: the tram stop (PR #632), sideways the tram at the
+  platform, with Toko's face beside the name. The runs and missions are
+  pill buttons, START stays at the foot of the card, and the end card and
+  the pause share the look.
+- **Finnish** for every new option, line and tag.
+- **Gates.**
+  - `test/journey.mjs`: three buttons on every card; the two regular ways
+    first; the third sometimes special and now and then very special.
+  - `test/missions.mjs`: the wallet's third, the fork's coin, the race's
+    coffee.
+  - `test/play.cjs` (browser): three priced 44px buttons on every card;
+    the express, the halt's taxi, the perk's cash, the coin.
+
+## v3.17 — 2026-11-08
+
+**THE MISSIONS ON THE MAP, AND TODAY'S ERRAND** — ROADMAP steps 7 and 8 (owner,
+2026-11-08: *"Go ahead with plans"*).
+
+- **The missions on the map.** Once EASY is done, the title card's MISSIONS
+  section opens on the city:
+  - a pin where each mission starts (the station, the market square,
+    Hakaniemi, the ferry quay, Kamppi, Lasipalatsi);
+  - finished ones dark with a tick, the open one in Toko's cyan and
+    breathing, with its name beside it, the locked ones small and grey with
+    their glyph;
+  - a tap on an open pin plays it, and the list below it says the same in
+    words.
+  - It is the board's own drawing (`HopBoard.drawPins`): the sea, the lines
+    stepped back, no new art. Only the open pin is named, because the pins
+    sit close together in the centre.
+- **Today's errand** (`?errand`): one mission a day, the same for everyone.
+  - The missions take turns by the daily's own count; the seed is the
+    day's; every perk is in the pool.
+  - The first finish stands, kept beside the daily's on its own key; again
+    is practice. The title then shows what stands.
+  - The end card has the line to send: *"Toko Move · Errand 47 · 8 Nov /
+    THE LAST TRAM 🟩🟩🟨 · €70 · A season pass, Good shoes"* — a square a
+    job, red for the ones a lost errand never reached, and the build.
+  - It opens with the missions, after EASY, from a link above the list:
+    *TODAY'S ERRAND · THE LAST TRAM*.
+- **Finnish** for the errand.
+- **Gates.** `test/play.cjs` (browser):
+  - the map pins every mission and a tap on the open pin plays it;
+  - the errand is offered, is the day's mission, ends on its line, and
+    stands.
+
+## v3.16 — 2026-11-08
+
+**THE MARCH, AND THE ROGUELIKE ON EVERY RUN** — the owner's answers:
+*"For central lines, especially around Mannerheimintie. The congress building
+area"* (the demonstration), and *"yes to all runs, modifiers, perks. Let's
+test all, plan to fit the design."*
+
+- **The march.** A peaceful march on Mannerheimintie, by the Parliament
+  House, holds the tram lines that run between Lasipalatsi and the Opera:
+  the 1, 2, 4 and 10. The four lines are read off the network, not typed.
+  - MEDIUM: every other shift or so, a march holds one of them from about
+    07:12, for 20 to 32 minutes or two jobs.
+  - HARD: its held line is the march when it is one of the four (14 of 60
+    shifts); otherwise the plain halt it always was.
+  - The card: *"A march on Mannerheimintie, by the Parliament House. The 4
+    is halted."*, with the halt's two ways out: find another way, or wait it
+    out (priced honestly).
+  - The art: the approved demonstration scene (PR #632), drawn from above,
+    plays at the card by day in any weather. It was HELD until now; all 29
+    approved scenes are in the game.
+  - Measured: MEDIUM moves by one shift in sixty for the reader and none for
+    the tapper. The march is something to route round, not a wall.
+- **Perks, forks and strikes on every run.**
+  - **Perks:** between jobs, pick one of two for the rest of the shift.
+    The pool is the missions' (three, one more per mission finished); the
+    daily's is the first three, the same for everyone.
+  - **Forks:** one job a run comes in two at once, and the card asks which
+    ("Two jobs come in at once. Pick one.").
+  - **Strikes:** none on EASY, three on MEDIUM and HARD, two at NIGHT. The
+    title says so, the stamp counts them, and the end card names them.
+- **Tested, then fitted.** Bots, 60 to 100 shifts a run, on three seed
+  blocks:
+  - perks alone made every rung easier, and put NIGHT's tapper above HARD's;
+  - forks barely move a band;
+  - two strikes everywhere broke the ladder's order, three everywhere left
+    NIGHT too soft.
+  - What ships: HARD's clock is 0.9 (it was 1.0) and NIGHT strikes out on
+    two. Bands, reader · tapper:
+
+    | run | reader | tapper |
+    |---|---|---|
+    | EASY | 60/60 | 60/60 |
+    | MEDIUM | 53 | 46 |
+    | HARD | 52 | 44 |
+    | NIGHT | 43 | 27 |
+
+    The ladder keeps its shape, and the tapper is stopped higher up each
+    rung. Pars are re-read off the reader's 70th percentile: MEDIUM 120,
+    HARD 130, NIGHT 155.
+- **A bug the new strikes found:** a strike-out on the very last drop
+  counted as a finished run (and a finished mission). Struck out is not
+  complete now (`J.complete`, `starsFor`).
+- **Finnish** for the march, the perk draft, the forks and the strikes.
+- **Gates.**
+  - `test/journey.mjs`: the march (its four lines, MEDIUM's every other
+    shift, HARD's central halt, its card, no ride on the held line) and the
+    run's levers (a perk between jobs, a fork, strike-outs that are not
+    complete).
+  - `test/moments.mjs`: the march's scene.
+  - `test/missions.mjs`: a mission takes none of its base run's march or
+    forks.
+  - `test/play.cjs` (browser): MEDIUM 15 meets the march in its picture.
+
+## v3.15 — 2026-11-07
+
+**FORKS, A RACE, A STICKER, AND THE LAST TRAM** — the next step of v3.14's
+missions (ROADMAP step 6: "a mission that strings the sealed parcel and the
+race").
+
+- **Forks.** A mission job can be two errands, and the card asks which. It is
+  the same card as any choice: one line, two buttons, each with its fee
+  ("Something fragile → Arabia €48 / Parts → Sörnäinen €13"). The big fee
+  is the fragile one, which rides the tram only. The event that job deals
+  is drawn from the errand you picked. EAST OF THE BRIDGE's middle job is
+  a fork now.
+- **THE STICKER** (Kamppi), the run's own modifiers as a mission:
+  1. a race: the other courier wants the envelope ("Race her", ×1.3 if you
+     beat her, ×0.6 if not);
+  2. a sealed parcel, only a sticker until the right line tells you (×1.5);
+  3. a fork: an express parcel for the station on a tight clock, or parts
+     for the market with no hurry.
+- **THE LAST TRAM** (the station, 23:00), the night shift as a mission:
+  - the night car, half the trams, kebabs for Kallio, a contract before
+    midnight, and something that hums;
+  - its events are the night's that have art: the ghost tram at the stop,
+    the empty humming car, the karaoke and the reindeer on the walk;
+  - the night cards with no art (the kebab, the last metro, the flicker)
+    are not dealt, by the owner's rule: every event with its correct art.
+- **Six missions now**, each opening the next. THE LAST TRAM is last.
+- **Measured** (60 seeds each):
+  - A board-reader finishes every mission (THE STICKER 59/60, one lost to
+    the clock).
+  - A left-tapper collects strikes and loses some; THE LAST TRAM costs it
+    the most (38 strikes, 12 lost). Its clock is 1.1: at 1.3 a reader never
+    struck.
+- **Finnish** for the forks, the new briefs and the two missions.
+- **Gates.**
+  - `test/missions.mjs` (23 checks):
+    - a fork offers two errands, and the one picked is the job;
+    - THE STICKER opens on a race and deals the sealed parcel;
+    - THE LAST TRAM is played at night, from the station;
+    - the art rule now names the walking pictures, the ghost tram and the
+      empty car.
+  - `test/play.cjs` (browser): a fork on one card in EAST, and THE LAST
+    TRAM through to its end in the night car.
+
+## v3.14 — 2026-11-07
+
+**MISSIONS, THE WALLET, AND A RUN THAT CARRIES SOMETHING** — the owner's
+direction: *"Add wallet menu and UI based on base simple UX look that's
+already used for choices. Also start adding the art and locations, build
+missions and all the events in those missions with correct art. Add
+roguelike elements."*
+
+- **The wallet**, in the journey's own choice card (one line, two buttons,
+  a price on each, the stakes under them). It is a card made for missions
+  (`MISSION_CARDS` in `js/missions.js`):
+  - *Hand it in at the kiosk* (+1:00, ×1.1) shows the approved kiosk scene.
+  - *Pocket it* is a risk: maybe +€40, or −€20 for the fright.
+  - Handing it in brings the owner back aboard on a later job (`wallet2`).
+  - The classic deck's third option, *Leave it*, is not on it: the bible's
+    card has at most two buttons.
+
+  The wallet scene is in the game now; the demonstration is still held.
+- **Four missions** (`?mission=<id>`, listed on the title under the runs).
+  Each is three jobs across real places, with its own briefs, drops and
+  events:
+  - **AINO'S MORNING**: Lasipalatsi → the Opera → Kamppi or Eira → the
+    station. The crossing, then the saved seat if you helped.
+  - **LOST AND FOUND**: Kauppatori → Katajanokka → a ferry terminal → the
+    station. The wallet, then its owner.
+  - **EAST OF THE BRIDGE**: Hakaniemi → Kalasatama (heavy: transit only) →
+    Arabia or Sörnäinen → back for the market.
+  - **THE HARBOUR ROUND**: Olympiaterminaali → the market quay → along the
+    shore → the canal at Ruoholahti.
+
+  Every event card a mission deals has its art: a stop actor, or an
+  approved scene. The pickup, delivery and boarding moments play in
+  missions as everywhere.
+
+  No buyer cards are dealt. A first cut dealt four, and selling the
+  errand's parcel ended most left-tapping runs. That was a trap, not a
+  choice.
+- **The roguelike parts**, each a lever the journey already had:
+  - **A version per seed.** The drops and events of each step are drawn,
+    so 30 seeds of EAST give 6+ versions. The same seed is the same
+    version.
+  - **Strikes.** The second late drop loses the errand.
+  - **The draft.** Between jobs, pick one of two perks for the rest of the
+    errand: good shoes (walks −20%), a season pass (waits −30%), a paper
+    map (deadlines +20%), a lucky coin (risks +15%), a regular's number
+    (+€4 a drop), an umbrella (the weather leaves the parcel alone). The
+    end card shows your build.
+  - **Meta.** The first mission opens with EASY, each after the one before.
+    Each first finish adds a perk to the pool: three from the start, six
+    with three missions done.
+- **The runs are untouched.** Everything is behind `run.mission`.
+  `journey.mjs`'s measured bands read exactly as before (easy 60/60 (60) ·
+  60/60 (58) … night 40/60 (12) · 34/60 (4)), and the seed-pinned browser
+  checks still deal what they dealt.
+- **Measured.** A board-reader finishes every mission (EAST, the hard one,
+  on a 1.25 clock). A left-tapper collects 12–35 strikes per 60 runs and
+  loses some.
+- **Finnish** for the missions' title, cards, perks, briefs and end card.
+- **Gates.**
+  - `test/missions.mjs` (19 checks):
+    - real places and cards, and no buyers;
+    - every event has art;
+    - one version per seed;
+    - the draft: two different perks, never one already held, each doing
+      what it says;
+    - two strikes lose the errand;
+    - readers finish, left-tappers collect strikes;
+    - the wallet's two buttons and its callback;
+    - the save, the unlocks and the perk pool;
+    - the runs untouched.
+  - `test/moments.mjs` adds the wallet's kiosk scene.
+  - `test/play.cjs` (browser):
+    - the title lists the missions, the first open after EASY;
+    - LOST AND FOUND plays through: the wallet handed in at the kiosk, a
+      perk drafted from two, the end card with the build.
+
+## v3.13 — 2026-11-07
+
+**THE CARDS HAVE THEIR SCENES, AND THE SNOW HAS ONE** — PR #632's next two
+approvals (29 scenes now). Six are in the game; the other two are held, each
+with its reason.
+
+- **A card's scene while it is played.** Each stands under the card, in place
+  of the stop or the car:
+  - the `map` card ("A tourist is looking for the Moomin shop…") is played
+    in front of the tourist and her map;
+  - the sealed parcel's card is the courier with the box between the kiosk
+    and the tram: ask, or ride and watch.
+
+  Both are on a clear day.
+- **The lady who saved you a seat.** The `granny2` callback, aboard, is the
+  seat she saved by the door. It is inside a tram, so it stands by day in
+  any weather.
+- **A choice's consequence.** Walking the lady across (the `granny` card's
+  first option) is the crossing, under the line its reveal already says.
+  Walking on is not drawn. The pack's own notes call this pair "the
+  strongest story comparison": a choice at a stop, and the same lady later
+  aboard.
+- **The wind at a tram stop** is a sixth way to board a tram.
+- **Snow, the first weather the art has.** On a snowy day a walk and a
+  delivery are the courier on the snowy steps. Rain and fog still keep the
+  game's own scenes.
+- **Held, with the reason written next to them** (`HELD` in
+  `js/moments.js`; nothing of them ships):
+  - **the wallet:** the scene is the classic deck's encounter, and the
+    journey has no wallet card. Adding one moves every deal.
+  - **the demonstration:** its pack approves the art and calls the cause a
+    new proposal. A march as the reason a line is halted needs the owner's
+    sign-off first.
+- **Framing.** The saved seat, upright, keeps the lady's face in view.
+- **Gates.**
+  - `test/moments.mjs` (20 checks):
+    - the approved art is untouched (175 images);
+    - every one of the 29 approved scenes is a moment (27) or held (2);
+    - a held scene names its reason and ships nothing;
+    - the game's 49 pictures are the approved crops;
+    - the card scenes, the choice and the snow.
+  - `test/play.cjs` (browser):
+    - EASY 1103 plays the tourist's card in front of her, walks the lady
+      across, and meets the seat she saved;
+    - EASY 3434 shows 8 moments in one run.
+
+## v3.12 — 2026-11-07
+
+**THE JOB ITSELF, IN THE OWNER'S NEW ILLUSTRATIONS** — PR #632, every approved
+exterior variant: 21 scenes, 37 pictures (`art/approved-exteriors/`). It
+follows the owner's *"Forget your art designs, I will get u a PR"*, and then,
+on a first cut that used only the latest four, *"It should have a lot
+more"*.
+
+- **Every beat of a job has its picture.** Each stands full frame under the
+  panel that beat already has:
+  - **A job taken** is a handover where you are:
+    - the station's granite at Rautatientori;
+    - the canal bridge at Ruoholahti;
+    - the market quay, the close quay or the ferry at the four harbour stops;
+    - the lakeside reeds at the park stops (Ooppera on Töölönlahti, Arabia
+      on Vanhankaupunginlahti, Meilahti, Käpylä);
+    - anywhere else a kiosk hatch, a bench, or the tram stop.
+
+    It carries a PICKED UP stamp. A sealed parcel's line keeps its address
+    hidden.
+  - **A delivery** is at the same places at the drop. Anywhere else it is a
+    doorway, a cyclist at the steps, or the bench. The tram you came on has
+    gone while you were at the door.
+  - **A tram boarded** (after it pulls in) is a tram stop, five ways. The
+    museum tram and the Nr I and II keep their own pictures: the art draws
+    today's trams.
+  - **A metro boarded at Kalasatama** is the open-air platform, four ways
+    (of the game's 23 places only Kalasatama has an outdoor metro).
+    Anywhere else it is the stairs down.
+- **Sunny only.** The owner: *"Sunny ones work, rain doesn't."* The moments
+  stand by day on a clear day. The night shift and a day of rain, snow or
+  fog keep the game's own scenes.
+- **The same drop is always the same picture.** A beat picks from its pool
+  by the thing itself: the drop, the ride, the job. A first hash (FNV-1a)
+  picked only two of Kalasatama's four platforms, because its low bits
+  barely move for keys that differ only at the end. It has a final mix
+  now.
+- **The art, as delivered.**
+  - The PR's commits are in the history unchanged. Its own check
+    (`approved-exteriors/reproduce.py`) passes: every hash, and all 21
+    variants pixel-exact.
+  - The game ships the approved crops as webp (`scenes/moments/<fmt>/`,
+    2.7 MB for all 37), in the formats they were approved in.
+  - Five scenes are landscape only, and no portrait is invented for them.
+    A phone held upright picks from the other sixteen.
+  - The crops are 1024 wide (the dual-crop pair 1792), about 2× enlarged on
+    a phone's frame. Masters at 2× would sharpen them.
+- **Framing on a phone, found by looking.** A phone's frame is narrower
+  than 9:16 upright and wider than 16:9 sideways, so some scenes keep a
+  point other than the middle in view:
+  - the cyclist's face and the parcel;
+  - the metro's cab and the courier at its edge;
+  - the doorway's parcel, sideways;
+  - the courier on the Kalasatama curve and at the tram stops.
+
+  Sideways, a moment's stamp is narrower (38vw), so the parcel in their
+  hands stays in view.
+- **Gates.**
+  - `test/moments.mjs` (15 checks):
+    - the approved art is untouched (125 images against the inventory's
+      checksums);
+    - every approved scene is a moment, in exactly its approved formats;
+    - the game's 37 pictures are those crops (36.5–43.4 dB). The control,
+      two different scenes compared, reads 5.7 dB;
+    - the open-perspectives scenes carry their pack's crop boxes and faces;
+    - every face and kept point is inside its crop and clear of the card;
+    - every beat's pool, the night and the weather;
+    - every scene shipped is reachable from some beat.
+  - `test/play.cjs` (browser): EASY 3434, a clear day, shows 7 of them in
+    one run: a pickup, a delivery, two tram stops, the station at
+    Rautatientori and the Kalasatama platform. A night run shows none.
+
+## v3.11 — 2026-11-07
+
+**MORE INTERIORS, AND THE WEATHER IN THE WINDOW** — step 4 of the plan for the
+owner's direction of 2026-11-06 (ROADMAP.md), and the owner's note on a night
+screenshot the next day: *"Rain seems to be falling into 2 different
+directions here. But assume we need more of these and outside art."*
+
+- **The rain fell two ways, and now falls one.** The window is a tile the
+  game scrolls. To make its ends meet, `plates.py` put the picture beside
+  its own mirror. That is fine for a row of houses. It was wrong for the
+  rain the night plate had painted in: the left half fell one way and the
+  right half the other, and where they met the streaks made a row of Λs.
+  - `make_windows.py` takes the painted rain out (a streak is a short
+    bright run along a row; it gets its row's 31 px median).
+  - The rain goes back in as weather, drawn at x and x ± W so the tile stays
+    seamless, all of it falling down and to the left.
+  - A first cut used a square 9 px median. A steep streak fills more than
+    half of that square, so a ghost of every streak stayed, visible only
+    with the contrast stretched.
+  - The painted plate is kept in `art/…/_prev/` so a re-run starts from it.
+- **The window carries the weather.** The stop's rain is never drawn inside
+  a car, so a rainy run showed sun through the glass.
+  - The day tram's window has rain, snow and fog
+    (`01-outside-tile-<rain|snow|fog>`), picked by the run's weather.
+  - The night car's window keeps its rain. A night run is always "clear",
+    and its look was always a rainy night. It gets snow and fog too, made
+    from the dried plate.
+- **The metro by day.** Every metro hop rode the tram's car until now.
+  `make_cars.py` makes it from the same plate:
+  - the metro's colours (orange seats, yellow poles, pale grey laminate);
+  - a tunnel for the window: rings, cable runs, lamps with their light on
+    the wall, a sign too far to read.
+  - Two things found by looking:
+    - The first tunnel put its lamps a few pixels below the glass, and the
+      window read as a black panel. The glass is measured now, and
+      everything sits inside it.
+    - The plate's riders were cut out of a day window, and the cut kept a
+      rim of that sky. It is invisible against daylight and glows against
+      a tunnel. The metro's rider layers drop it, except on Toko's head,
+      whose ring meets its disc in exactly that colour (the first pass
+      chewed it).
+- **Rush hour.** The crush card, or a tram you let go by because it was
+  full, now rides in a full car (`03-people-rush`, `04-courier-rush`):
+  - In 16:9 the plate's rider sits one seat over each way, re-dressed (a
+    green coat and brown hair, a purple coat and black hair). He is cut
+    clean of the seat strips that came with him.
+  - Standing passengers hold straps close to the lens, cropped by the
+    frame, over the courier because they are nearer than he is.
+  - The metro has its own rush car.
+  - The humming card ("the empty car") leaves the riders out.
+- **Gates.**
+  - `test/scenarios.mjs`: every layer the car can ask for exists (the
+    weather list is read from play.js). The rain in every window falls one
+    way, measured as the slant of the image gradient per half. The old
+    two-way plate is the control: the same ruler reads it +0.97 / −0.97,
+    and the new windows +0.69 to +0.96 in both halves. The night's snow
+    and fog have no painted rain under them.
+  - `test/play.cjs` (browser): MEDIUM 1087 rides the metro in the tunnel
+    car and fills it for the crush; MEDIUM 1027 rains in the tram's window
+    and fills the tram.
+  - The gate waits for the car to fill: the card is up 0.2 s before the
+    scene behind it cross-fades, and the bot answered it in less.
+
+## v3.10 — 2026-11-07
+
+**EVERY STOP IS SOMEWHERE** — step 3 of the plan for the owner's direction of
+2026-11-06 (ROADMAP.md): *"lots more art … in these styles."*
+
+- **Eleven more landmarks.** Act 1 drew one behind the stop at twelve key
+  stations. The other eleven places stood in front of the same paper
+  blocks. Now every place the network names has its own:
+  - Uspenski's onion domes at Katajanokka;
+  - the Suvilahti gasometer in its steel cage at Sörnäinen;
+  - the Crown Bridge's pylon at Kruunuvuori, with a tram on the deck;
+  - the wooden houses of Puu-Käpylä in ochre, red and green;
+  - the Arabia factory and its chimney;
+  - the West Harbour terminal (with the bobbing ferry);
+  - a Jugend villa and its turret in Eira;
+  - the Cable Factory and the canal at Ruoholahti;
+  - the expo hall and its flags at Messukeskus;
+  - the hospital towers at Meilahti;
+  - pines on the rock at Laajasalo.
+
+  They are drawn in `make_act1.py`'s register (flat iso, three values a
+  face, no outline, no text) by `art/minimal-metro-look/make_places.py`,
+  and placed by its own `placed()`, so they sit in the same sky. The bold
+  "key station" plate stays with the original twelve. The landmark itself
+  is now read from `act1.json`, not from a list in the code.
+- **The weather lies on the stop.**
+  - Snow (`05b-wx-snow`): on the shelter roof, the bench, the ticket
+    machine and the bin, along the platform's edge, and across the tracks.
+  - Rain (`05b-wx-rain`): puddles on the platform, and a wet edge.
+
+  Both use the same camera as the stop. The stop's scene key now carries
+  the weather, so a new run at the same place repaints it.
+- **The tooling.** `act1.json` is updated, never rewritten, so
+  `make_act1.py`'s trams, `make_actors.py`'s cast and these places stand
+  side by side.
+- **Gates.** `test/scenarios.mjs` now also holds:
+  - every one of the 23 places has its landmark in both formats;
+  - both ferry terminals carry the ferry;
+  - the snow and rain layers exist in both formats.
+
+  9 checks.
+- **The trailer** gains "Every stop is somewhere": Katajanokka in the snow.
+
+## v3.9 — 2026-11-07
+
+**SCENARIOS IN THE SCENE** — step 2 of the plan for the owner's direction of
+2026-11-06 (ROADMAP.md): *"lots more art and scenarios in these styles."*
+
+- **Who you meet stands at the stop.** Sixteen story cards played at the
+  stop now bring their subject into the scene for as long as the card is
+  played:
+  - the gull on your parcel, staring at you, and its friend;
+  - the lady with her cane at the kerb;
+  - the tourist with Stockholm's map, and the one with a fan of notes and a
+    paper bag (the Moomin card shows no troll, only a shopper);
+  - the busker with an accordion and an open case;
+  - the dog in its tiny yellow raincoat;
+  - the student in a white cap and red overalls, with a vappu balloon;
+  - the other courier, the same face in ink on white, never the courier's
+    cyan;
+  - the long coat, the dentist's white coat, the towel, the spruce man, the
+    Swedish question and three puffy coats;
+  - the crowd pressed under the shelter out of the horizontal rain.
+
+  Each is one transparent layer per format
+  (`scenes/stop/<fmt>/07-actor-<card>.webp`, 396 KB for all 32), drawn by
+  `art/minimal-metro-look/make_actors.py` with the stop's own camera and
+  people. The rules hold: flat fills, faces featureless, one Toko face in
+  cyan, no text. The actor steps in with the card and out when the card
+  is answered, and the night dims it with everything else.
+- **What you walk past rides beside you.** The nine cards played on foot
+  each put a small picture beside the courier on the board, a white card
+  with an ink edge and a tail (`js/vignettes.js`): the reindeer on
+  Mannerheimintie, the sofa on Aleksanterinkatu, the ice hole, the karaoke
+  door, the roadworks, the fence gap, the fog over the cranes, the black ice
+  with its pensioner and the rain in your bag. The bubble sits to the
+  courier's left, because the board writes every name to the right; a first
+  cut covered SENAATINTORI.
+- **Gates.**
+  - `test/scenarios.mjs` (bare node, in `gates.yml`) holds the casting:
+    every actor is a card played at the stop, both formats exist, every
+    actor stands clear of the card in both formats (read off its own pixels
+    with ffmpeg), and every walking card has a picture.
+  - `test/play.cjs` holds the moment: on EASY seed 1000 the student stands
+    at the stop while the vappu card is played and is gone after. 84
+    checks.
+- **The trailer** gains two takes, "Who you meet at the stop" and "What
+  you walk past".
+
+## v3.8 — 2026-11-06
+
+**THE BOARD, POLISHED** — step 1 of the plan for the owner's direction of
+2026-11-06 (ROADMAP.md): *"the top down view can use some polish."* Read off
+the trailer's board frames, it had three faults. Each is fixed with data the
+game already shipped and the journey never loaded.
+
+- **The sea is filled.**
+  - OpenStreetMap carries the sea as coastline, which is a line. The board
+    stroked a band along it, so a harbour read as blue tubes over paper.
+  - `js/sea.js` solves it the way the bible's stills do, as vector: ways
+    joined into chains, each chain closed along a frame walked clockwise,
+    and the islands cut out even-odd.
+  - The board fills it, draws a lighter shallows band inside the shore and
+    a hairline coast. Where the water pack ends (24.995 E) the ground fades
+    out instead of stopping on a ruled line.
+  - `test/sea.mjs` asks geography, not geometry: the South Harbour,
+    Töölönlahti and Eläintarhanlahti are water; Senaatintori, Kamppi and
+    Korkeasaari are land; no stop stands in the sea; and the sea is a sane
+    share of the extract.
+- **The land is no longer empty.**
+  - The real-time board's ground (`ground.js`) is now under the journey's
+    board: the real streets in the centre extract, HSL's corridors beyond
+    it, the district names spaced and quiet, and the six origami landmarks
+    at their stops.
+  - The corner mini map stays plain (`detail: false`): at 164 px, streets
+    are noise.
+- **The district names stand where the places are** (owner, the same day:
+  *"Kluuvi looks to be in the wrong place on the map"*).
+  - The pack gives each quarter the centre of its sub-district polygon. The
+    polygons run over water, rail yards and parks, so Kluuvi's centre was in
+    the tracks north of the station, and five more (Katajanokka,
+    Kruununhaka, Kaivopuisto, Hernesaari, Lapinlahti) stood in the sea.
+  - Snapping each one to the nearest street was tried and put three on the
+    wrong neighbour (Kaivopuisto went to Katajanokka), because the street
+    extract stops north of them. So the six are placed by hand in `sea.js`'s
+    `LABEL_AT`, each with its reason.
+  - `test/sea.mjs` holds that no name the board writes stands in the water,
+    that every hand placement says why, and that Kluuvi is written between
+    the station and the Esplanadi. 21 checks.
+- **The line you ride has weight.**
+  - While a hop plays, the network sits at half strength. The hop's line is
+    bold: solid behind the courier and faint ahead.
+  - The pill is bigger and carries the line's family number ("4", not "4H")
+    on its tail, so the courier on its nose never covers it.
+  - The drop breathes while you ride, and the board settles in as it opens
+    (none under reduced motion).
+- **Cheaper, not dearer.**
+  - Everything that holds still for a hop is drawn once into a base canvas:
+    16–28 ms under software rendering.
+  - Each frame of the hop then blits the base and draws only the line, the
+    pill and the names. Before, every frame redrew the whole board.
+- **Gates.**
+  - `test/play.cjs` reads the board's own pixels at real places across the
+    first hop's frame. On seed 1002, 30 sea points paint blue (100%) and 168
+    land points don't (97%). It also checks the board stands on the ground:
+    a solved sea, 3,731 streets and 6 landmarks.
+  - Two read-only hooks serve those checks: `__tm3.board()` and
+    `__tm3.probe(lat, lon)`.
+  - play.cjs passes 81 of 81.
+
+## v3.7 — 2026-11-04
+
+**ACT 1 IS READY TO SHIP** — the Act 1 ship plan's last step: the ship bar run
+on the journey, and the store pass. The upload to itch stays the owner's
+(roadmap M7).
+
+- **`test/ship3.cjs`** is `ship.cjs`'s bar held for the journey a stranger
+  now meets first. It is in `gates.yml` beside the real-time one. 19
+  checks, all passing on their first run:
+  - **S1:** a whole week by tapping, Monday to Friday's rent. Each day hands
+    on to the next. The page grows by ×0.94–1.13 through a shift, and every
+    card is ≥44px and on screen.
+  - **S2:** a hidden tab suspends the sound, and it comes back. Leaving
+    Monday mid-shift banks what it made and opens on Tuesday.
+  - **S3:** storage that throws still plays a run to its end card. Saves
+    in the wrong shape (the runs, the memory, the regulars, the week, the
+    daily, the notebook, the mute) are a fresh start on the ladder, the
+    daily and the week.
+  - **S4:** a 320px phone plays a whole run.
+  - **S5:** measured, not gated: 4 long tasks over a run, the longest
+    122 ms, under software compositing.
+  - **S6:** nothing sounds before the first touch.
+  - **S7:** the data credits are on the title card in English and Finnish.
+- **A number for the owner (the open rent question).** The rent came over
+  from the real-time week (€400, from points÷10). On the journey, a player
+  who always taps the first button pays it in 51 of 60 seeded weeks. €500
+  would be paid in 32 of 60 and €600 in 11, against a median week of €514.
+  The rent is left at €400 here, because it is the owner's call.
+- **The store pass.** `tools/stills3.cjs` shoots the store page from the
+  store build, every screen reached by tapping:
+  - twelve 1080×1920 stills: the title, a dispatch at Lasipalatsi, a risk
+    with its odds, the museum tram, the board, a delivery, the race, the
+    sealed parcel, the night's tram with no number, EASY complete, the
+    daily and the week's rent;
+  - the 630×500 cover: the game's own Kauppatori stop, composited, with the
+    wordmark on paper.
+
+  `store/ITCH.md` is rewritten for v3: a card game, Act 1 in Helsinki, the
+  description, the Finnish summary, controls, tags and media. The trailer
+  slot is left empty until a journey film exists. `tools/film.cjs` is still
+  the real-time game's.
+- **After the release, tools only (2026-11-06): the trailer.** No game byte
+  changed, so the build is still 3.7. `tools/film3.cjs` films the journey
+  from the store build, so the trailer slot has a film:
+  - **What it shows** (47.1 s):
+    - the title on the Kauppatori stop;
+    - a first delivery whole: Dispatch, a tram, a risk in words that lands,
+      the board, DELIVERED;
+    - the museum tram from outside and in, with an inspector and an €80 fine;
+    - the night's tram with no number, which goes to the depot;
+    - the other courier's race;
+    - the lady from Mannerheimintie, saving the seat she was helped to;
+    - the end card.
+
+    Four one-line captions sit between the beats. Portrait is 1080×1920;
+    `--landscape` is 1920×1080. Both are 30 fps, H.264 + AAC, about 10 MB,
+    and take about 10 minutes each under SwiftShader.
+  - **Virtual time.** A frame costs a second or more to capture, so the page
+    runs on a clock the film steps:
+    - an init script swaps out `performance.now`, `Date.now`, timers and
+      `requestAnimationFrame`;
+    - the DevTools animation timeline is held at rate 0, and every
+      animation's `currentTime` is set from the film clock each frame.
+
+    So a transition ends, and its promise resolves, on the frame it should.
+    The two cuts are the same film: every take lands at the same second in
+    both.
+  - **The game's own sound.** Every cue and weather bed is logged at film
+    time, then `js/audio.js` itself renders into an OfflineAudioContext that
+    suspends at each moment. One fixed gain (6 dB past a −3 dB peak) and a
+    limiter keep the kit's own balance. Found on the way: cues in the same
+    render quantum must run in the order they were laid down. A bed stopped
+    and the next one started at a cut ran the other way round, and faded
+    the fresh bed from its default gain of 1, which is a half-second burst.
+    The game itself can't reach that, because its stop and start are always
+    at least a frame apart.
+
+## v3.6 — 2026-11-04
+
+**THE DAILY AND THE WEEK, AS JOURNEYS** — step 6 of the Act 1 ship plan
+(ACT1.md §12). `?daily` and `?week` opened the real-time game; they are card
+journeys now, and `&classic` keeps the real-time versions.
+
+- **`js/modes.js`** says which shift a visit is: a run of the ladder,
+  today's daily (MEDIUM's rules on the date's seed, `&date=` to pin one), or
+  a day of the week (`week.js`'s seed for that day).
+- **The daily** has no memory and no regulars' standing, so it is the same
+  shift on every device. The first finish stands (`tokoMoveDaily`, shared
+  with `?classic`), and a replay says it is practice. The end card has the
+  grid, the euros, the streak and a line to copy.
+- **The week** banks each delivery as it lands, so leaving mid-shift
+  clocks out with it. The title shows the five days and the pace, and
+  Friday's end card is the rent. It has its own save (`tokoMoveWeek3`),
+  because a `?classic` week is scored in points; the real-time kit stays
+  there too.
+- **Routing:** `boot.js` no longer sends `daily`/`week` to the real-time
+  game. In the real-time game, its title links and its own week
+  navigation (A NEW WEEK, the next shift, a kit pick) carry `&classic`.
+  Otherwise a classic week would have walked into the journey on Tuesday.
+- **Gates moved with it:** `daily.cjs`, `week.cjs`, `ship.cjs`, `lang.cjs`
+  and `tools/stills.cjs` drive the real-time versions at `&classic`.
+- **Finnish:** a line with " · " is translated part by part. The first
+  patterns for "Daily 43 · 4 Nov · 07:00" were whole-line and never fired,
+  so the parts have their own patterns now.
+
+Gates: `test/play.cjs` 78 (`?daily` is the journey, ends on its grid, stands
+and shares, and a replay says what stands; `?week` seeded at Friday closes on
+the rent and leaves a classic week untouched); `daily.cjs` 20, `week.cjs` 31,
+`ship.cjs` 23 and `lang.cjs` 19 at `&classic`.
+
+## v3.5 — 2026-11-04
+
+**THE RIVAL, THE REGULARS AND THE SEALED PARCEL** — step 5 of the Act 1 ship
+plan: the real-time game's three run-modifiers (`rival.js`, `regulars.js`,
+`sealed.js`) on the journey (ACT1.md §11). Each adds a line or a card, never a
+screen, and each keeps the memory `?classic` already writes.
+
+- **The race (MEDIUM and HARD).** One dispatch a run: *"The other courier
+  wants it too."* **Race her** shows her time on the button, which is the
+  best route at the run's pace (MEDIUM ×1.2, HARD ×1.1). The strip carries
+  *beat her by 07:33* in place of the minutes left. Beat it for ×1.3, or
+  she gets there first and it is ×0.6. There are no dice: the time your
+  choices took decides it. Over 40 MEDIUM runs the left-tapper wins 21
+  and loses 13.
+- **The regulars.** A job to Riikka's Ooppera (or Seppo's Hakaniemi, Mirja's
+  Länsiterminaali, Tuomas's Meilahti, Anneli's Kauppatori, Kaarlo's Arabia)
+  names her on the card and on the strip. On time, she tips from her
+  standing (12% of the fee a step) and the standing rises; late, it falls.
+  It is kept in `tokoMoveRegulars`, the same store `?classic` uses.
+- **The sealed parcel (from a fourth run, not EASY).** The second job has no
+  address, only a sticker (×1.5): *"The label says: you'll know the
+  stop."* You can **Ride the 12 and watch** (free) or **Ask at the kiosk**
+  (+0:40), which names it. Boarding that line names it too (*"Aboard the
+  12, the label makes sense: Kamppi."*). Until then, the strip says
+  *SEALED · 12*, and the corner map and the board draw no drop: `dropOf()`
+  in `play.js` is the one place that answers. Delivered, it writes a line
+  in the notebook `?classic` keeps, and the stamp shows it.
+- None of the three spends the run's rng (the race's job and the sealed line
+  come from a hash of the seed), so the bands did not move a job.
+
+Gates: `test/journey.mjs` 201 (no race on EASY or NIGHT; one on MEDIUM and
+HARD; the race card's clock; both outcomes, decided by time; a regular
+named, tipping, rising; the sealed parcel only from a fourth run and never
+on EASY, hidden on the route card, named by the kiosk and by its line;
+the notebook written). `test/play.cjs` 71 (a fourth MEDIUM run: the sealed
+card and SEALED strip, the race on the button, the race settled and the
+notebook line on the stamp). Finnish: 8 lines, 10 patterns.
+
+## v3.4 — 2026-11-03
+
+**THE CITY REMEMBERS** — step 4 of the Act 1 ship plan: story arcs, adapted
+from the itch bible's twist cards (`art/itch-bible/CARDS.md`) to the
+journey and written into `ACT1.md` §10 before a line of code.
+
+- **In a run.** An option can `set` a flag, and its CALLBACK card takes the
+  next job's card slot: walk the granny across Mannerheimintie and she is on
+  your tram later with the seat by the door saved; hold the top of the
+  spruce and the spruce man, without the spruce, insists on carrying your
+  parcel; let the seagull pose and it comes back with a friend.
+- **Across runs.** Two ARCS are kept on the device (`tokoMoveMemory`, its own
+  key, an allow-list of counters) and passed into `newRun`, so a seed and a
+  memory replay exactly. A run deals at most one step, never on a first
+  run, and an arc step keeps its slot against a callback.
+  - **Dispatch** (the spine): four steps, one a run. *"Don't shake the blue
+    one."* → letters from the same sender → *"Just one, by hand. She asked
+    for you."* (Aino, in Kallio, with coffee: ×1.5) → *"And one for the
+    east, if you ever find it."* No line goes there.
+  - **The 1987 ticket:** found on NIGHT, still warm; keep it and a later
+    day's inspector asks where you got it (*maybe* ×1.3, or he keeps it for
+    the museum).
+- A run with no memory deals exactly the deck it always did (no rng is
+  spent on arcs). The bands move by a job or two where bots trigger the
+  callbacks: MEDIUM's left-tapper 49→48 completes of 60, HARD's 41→42.
+- **Fixed on the way:** `lang.cjs` failed on main one run in three with
+  "CROSS THE CROWN BRIDGE" left in English — the test card's toast
+  uppercases its mission title and only some draws show it. `lang.js` now
+  translates a line the table knows when it is SHOUTED.
+
+Gates: `test/journey.mjs` 191 (no arc without a memory; never on a first
+run; the step the memory says is next; one a run in its own slot; Dispatch
+met and kept; the inspector closes the ticket arc; a callback only after
+its choice, and the granny does come back; a seed with a memory replays);
+`test/play.cjs` 67 (a second EASY opens with Dispatch, and the memory is
+kept after the run). 47 new Finnish lines.
+
+## v3.3 — 2026-11-03
+
+**THE OLD TRAMS FROM INSIDE** — step 3 of the Act 1 ship plan. v3.1 drew six
+tram models at the stop (look only, ACT1.md §6), and then every one of them
+was the same modern car inside. Now the museum tram is varnished wood with
+slatted benches, brass poles, leather straps and a bell rope along the
+ceiling; the Nr I and Nr II are the 1970s inside as well as out — orange
+ribbed vinyl, beige laminate, chrome. The Artic, the Variotram and the
+Nr II+ keep the car as painted. They still ride exactly the same.
+
+- `art/minimal-metro-look/make_interiors.py` makes them from the plate the
+  game already ships, so they cannot drift from it: the plate is flat
+  vector, so each colour family (seat, wall, pole, frame) is a handful of
+  tones, and each is moved to its target with its shading kept.
+- Two traps, both found by looking at a render, not by a check: the
+  antialiased seam where a blue seat meets a cream wall belongs to neither
+  family and came out as a white fringe round every seat (and the 1px
+  highlight along each seat back with it); and part of the seat was cut
+  WITH the riders, so blue cushion showed under them in a wooden car. The
+  people and courier layers are moved too, by a strict test, since the
+  courier's navy jacket is the seat's hue (it is more saturated).
+- And one a colour test cannot solve: where the seat shows through the gap
+  between the courier's knees it is LIT, and lit seat is exactly the
+  jacket's blue. Shape solves it: the jacket is a few large patches of blue
+  and the gap a small one. The first cut kept only the largest patch and
+  turned half the jacket brown (the strap and the shirt cut it in two); the
+  second kept the gap blue, because the seat pixels the strict test had
+  just moved were the bridge joining it to the jacket. Patches are found
+  after the strict test now, and only the small ones move.
+- `play.js` picks the car from the hop's model; the night car stays the
+  night car. Six new layers per format, about 570 KB in all.
+
+Gate: `test/play.cjs` plays seed 1197's EASY, which rides the museum tram
+and then an Nr II, and reads the car layer on screen for each (no 404s).
+
+## v3.2 — 2026-11-03
+
+**SOUND FOR THE JOURNEY** — step 2 of the Act 1 ship plan (`ROADMAP.md`;
+owner, 2026-11-03: *"keep going with upgrading through a plan"*). The card
+journey had been silent since v3.0: only `?classic` carried the house kit.
+The same kit now plays the journey, through the same master gain and the
+same kept mute (`tokoMoveSound`), so a mute set in either game holds in both.
+
+- **Called, not inferred.** `?classic` hears itself by watching state
+  (`poll`); the journey stages every moment itself, so `play.js` calls the
+  kit at each: a card dealt (a paper flick; a halt gets the two-pip
+  warning), a tap, the tram's **ding-ding** as it pulls in (the museum tram
+  strikes three, lower; the night's tram with no number arrives in
+  silence), the rails clacking or footsteps for a hop, a risk that worked
+  (up) or did not (down), euros changing hands (a coin), the stamp's thump
+  and then the delivery's arpeggio (or the late slide), the forecast's
+  chime, the end, and a longer fanfare for ACT 1 COMPLETE.
+- **Beds.** `audio.bed()` is a quiet loop that follows the weather on
+  screen — bandpassed rain, wind through snow, fog, and a low hum at night
+  — crossfading as the scene changes and falling silent inside the car,
+  where the weather is never drawn either. A hidden tab suspends the
+  context, so a bed never hisses on under somebody else's page.
+- **The toggle.** ♪, 44px, top-right; the HUB button owns the top-left, and
+  on a phone the pill moves in from both sides to clear them.
+- Sound is not motion: under `prefers-reduced-motion` the drive-in is still,
+  and its bell still rings.
+
+Synthesised, never sampled, nothing fetched, so the store zip stays one
+file with nothing outside it.
+
+Gates: `test/play.cjs` hears an EASY run (forecast, deal, tap, bell, a hop,
+the stamp, a delivery, the end), measures the toggle (44px, top-right, clear
+of the pill and the HUB button) and checks ♪ is a real mute at once and
+kept; HARD has its snow or rain bed under the stop and quiet in the car;
+NIGHT hums; and the night's wider pill, and a 320px phone's, clear the HUB
+button and ♪ (the pill is now measured into the space between them —
+`fitTop()` — after a fixed margin put the night's under the HUB button).
+`test/ship.cjs`'s S6 still holds `?classic`'s sound, which now shares the
+module.
+
+## v3.1 — 2026-11-03
+
+**ACT 1: HELSINKI** (owner, 2026-11-02: *"The trams in the bible look a bit
+like the latest Helsinki trams, but we have older and even older models with
+distinct visual look. That and key stations should have more visual
+indicators. And design random events and funny situations that can happen.
+Card choices should also have some risk factors as well as added time, risks
+can add positive and negative multipliers. Snow will impact walking routes,
+but also congest trams … selling the package to someone else can gain big
+bucks, but also hint at what the packages might contain … focus on making act1
+the playable for now … UI animations and effects will be a big polish issue
+for shipping the Helsinki act"*).
+
+Signed off 2026-11-03:
+
+- **The act:** Act 1 is just Helsinki, as a complete experience. It is the
+  four runs: *"easy and medium that are more fun, hard is more risky and
+  difficult and night is a bit more scary and very risky"*.
+- **Risk:** stakes shown, with the odds in words.
+- **Money:** euros, not points.
+- **Trams:** look only, *"museum quality trams are super rare, but there are
+  many tiers in between"*.
+
+The design is `ACT1.md`.
+
+### The deck (`js/cards.js`)
+
+There are 36 Helsinki cards, each with a tone:
+
+- **fun:** the seagull on your parcel, the choir doing Finlandia, the man with
+  a whole spruce, the public sauna at quarter to eight, the dog in a tiny
+  raincoat walking itself to work;
+- **risky:** run for the red light, the gap in the rail-yard fence, the
+  parcel held above your head in the rush;
+- **scary:** the tram with no number, someone humming your ringtone, the
+  reindeer on Mannerheimintie nobody else can see.
+
+Each run deals one card per job from its own tones and its shift's weather.
+
+**A button can carry stakes.** They show under its label, with the odds as a
+word: *usually* is 75%, *maybe* 50%, *long shot* 25%. The words are fixed, so
+a player can learn them, and the gate holds each to within 8 points over
+thousands of rolls. What a choice did is a **reveal**: the line (often the
+funny one) and its chips.
+
+**Selling the parcel** is a family of buyers:
+
+- a vappu student;
+- a dentist who decides it is the crowns;
+- the rival courier, who pays half the time in Monopoly money;
+- at night, a woman in a long coat who knows your name.
+
+Every buyer **names what was inside**. Every job has hidden contents (*"a whole
+salmon, looking at you"*, *"a USB stick labelled DO NOT"*). A buyer, the rain
+or curiosity can name them; otherwise the delivery stamp does: *"Signed for:
+…"*. A sale pays now, but the job is gone. **Dispatch hears**, so every fee
+after it is ×0.85. Without that, a sale was free money on any clock with room
+in it: the left-tapper sold in 24 of 60 EASY shifts and still finished every
+one.
+
+### Euros
+
+A job pays a **fee**: €8 plus about €1.10 per minute of the best route, times
+the parcel's size pay. These multiply it:
+
+- an on-time streak;
+- late, which halves it;
+- every risk that lands on the job (the strip shows the job's ×).
+
+The run's score is **€ banked**. Pars are now €65, €110, €120 and €140.
+
+### Weather (per shift, from the run's skies)
+
+| run | skies |
+|---|---|
+| EASY | clear |
+| MEDIUM | clear, rain or snow |
+| HARD | snow or rain |
+| NIGHT | fog, rain or snow |
+
+- **Snow:** walks ×1.4 and tram waits ×1.3, and trams are full more often.
+  Every walk can slip you (*usually* fine · or +1:30, and someone helps you
+  up).
+- **Rain:** walks ×1.1, and a paper parcel on a walk can get wet (*maybe* · or
+  ×0.7).
+
+Deadlines are set from the weather, so it is slow, not unfair. The shift opens
+on a weather stamp, and snow, rain or fog falls on the stop and the board.
+
+### The stop (`art/minimal-metro-look/make_act1.py`)
+
+Drawn in the art pack's own iso camera and palette:
+
+- **Six tram models, look only:** Artic (40%), Nr II+ (22%), Variotram (14%),
+  Nr II (12%), Nr I (10%) and the museum tram (2%). The model you ride
+  **drives in** at the stop, with the line's number on its chip, and **drives
+  out** when you arrive. The in-car display names it. The museum tram gets its
+  own stamp.
+- **Twelve key stations stand behind their landmark.** The station clock
+  tower, the cathedral, the SkyWheel (turning) and the tents, the Chapel of
+  Silence, Kallio's tower, the brick market hall, the opera, Amos Rex's
+  domes, a ferry (bobbing), the shipyard cranes, Kalasatama's and Pasila's
+  towers. Each is placed where a phone's crop and a phone held sideways both
+  keep it in view.
+- **Every stop has its plate:** its name and its lines, ringed in yellow at a
+  key station.
+- **NIGHT** dims every layer on its own, so the tram with no number glows.
+
+### Motion
+
+- The € counter rolls and bumps.
+- A job's dot pops.
+- The deadline ring drains smoothly.
+- Cards stamp in, and reveals bump in.
+- Trams drive along the track.
+- Weather falls.
+
+Every one of them is skippable by a tap, and still under
+`prefers-reduced-motion`. The end card says what you earned and lists **what
+you carried**.
+
+### Measured (`node test/journey.mjs`: sixty fresh shifts, reader / left-tapper)
+
+| run | reader | left-tapper |
+|---|---|---|
+| EASY | 60/60 (60 on time) | 60/60 (58) |
+| MEDIUM | 57/60 (33) | 49/60 (15) |
+| HARD | 54/60 (15) | 41/60 (7) |
+| NIGHT | 40/60 (12) | 34/60 (4) |
+
+NIGHT is the very risky one. MEDIUM first measured *harder* than HARD for the
+left-tapper (39 against 41), because its jobs reached further, so its reach
+went from 20 to 16 minutes.
+
+### Gates
+
+- `test/journey.mjs` is now 180 checks: the deck's shape, tones and weather;
+  the odds; the stakes; a sale; the fee; the contents named on every drop; the
+  weather's effects; the tram models' rarity; the bands.
+- `test/play.cjs` checks, through the real buttons:
+  - the weather stamp;
+  - the landmark and the plate;
+  - the € pill and the fee on Take it;
+  - a risky button's stakes and its reveal;
+  - the tram model and its chip;
+  - the delivery stamp's contents;
+  - the end card's euros and what you carried;
+  - HARD's weather on the stop;
+  - NIGHT's glowing museum tram;
+  - all of it in Finnish with no misses.
+- `ship.cjs` no longer reads the page before a week's next day has booted (a
+  race it lost once under load).
+
+What it does not have yet:
+
+- New interiors for the old trams (the plates are the Artic's).
+- Sound.
+- The daily and the week as journeys.
+
+## v3.0 — 2026-11-02
+
+**THE CARD JOURNEY** (owner: *"We need more of the new design, less of the old
+map with visible trams on a realistic schedule. The new art bibles is what we
+are going from as an experience and occasionally you should feel like the
+trams have some realism but it's less actual schedule, more curated narrative
+roguelike with fun choices and minimalistic visuals"*). Signed off in three
+answers: **turn-based card hops**; **the scenes as the main view, the board
+between moments**; and **a slim job strip** kept from the old UI.
+
+The bare address is a new game on the same city. A shift is a run of **cards**,
+each in the art bible's grammar: a Toko face, one line, two buttons with a
+price. The **clock moves only by the prices you choose**, so nothing happens
+while you read.
+
+- **Dispatch:** *"Documents for Kamppi."* Take it, or pay a minute to ask for
+  another.
+- **At a stop:** where to go from here, for example *"4 to Lasipalatsi · +6:00"*
+  or *"Walk to Kamppi · +5:00"*. The price is this hop's. The left button is
+  the cheaper hop, not always the right one, because the choice is where it
+  leaves you.
+- **The deck's cards** happen at a stop, aboard or on foot.
+- **HARD halts a line:** route round it for free, or wait it out at its honest
+  price.
+
+The network is real: 23 named places, every HSL line variant between them,
+and the walks between neighbours. The times are plausible but never a
+timetable. A ride is distance along the line at a tram's or the metro's pace,
+plus a wait drawn from the line's headway. On HARD the rush sometimes fills
+the first tram.
+
+**The screen is the art bible's** (`js/play.js`):
+
+- **A stop** is the iso stop scene and **a ride** is the tram interior, or the
+  night car on NIGHT. Each is the layer stack from
+  `art/minimal-metro-look/layers/`, cut to WebP in both native plates
+  (`scenes/`, 744 KB). Each layer moves per its MOTION.md: the window scrolls,
+  the car sways, the riders lag the sway, and the stop's people shift their
+  weight. Every scene opens with a push-in of at most 4%.
+- **The in-car display** says the line, where it is going and the next stop.
+- **Between moments, the board** (`js/hopboard.js`) shows the courier disc
+  snapping onto its line's pill and riding the real HSL geometry to the next
+  stop. A walk is an ink dash.
+- **The corner MAP** shows here, the drop, and the two offers as their own
+  paths. Tap it for the whole board.
+- **The HUD** is one pill (the clock rolls to its new time, the job dots and
+  the deadline ring) and **the strip**: *Documents → KAMPPI · 9 min left*.
+- **A delivery** is a stamp on the stop.
+- Every animation is skippable with a tap, and none of them is something the
+  game waits on to be fair.
+
+**The model is pure** (`js/journey.js`: no DOM and no clock, deterministic from
+a seed, with its rng in one integer).
+
+**Measured, not guessed** (`node test/journey.mjs`): sixty fresh shifts of
+every run, one bot that reads the board and one that taps left every time.
+Completed, reader / left-tapper (on time in brackets):
+
+| run | reader | left-tapper |
+|---|---|---|
+| EASY | 60/60 (60) | 60/60 (55) |
+| MEDIUM | 57/60 (41) | 44/60 (15) |
+| HARD | 53/60 (22) | 35/60 (8) |
+| NIGHT | 48/60 (24) | 26/60 (3) |
+
+Par was re-set to the reader's 70th percentile: 720, 1330, 1380 and 1580.
+Two things the measurement changed:
+
+- **NIGHT's deadlines were first set from daytime waits.** That put 2 of 40
+  night jobs on time. The best-route table is now per run.
+- **One stop card in five had a single button.** The second option now falls
+  back to another line to the same stop, because two lines with two waits is
+  still a choice. 93% of stop cards now offer two.
+
+**The real-time game is `?classic`** (`js/boot.js`). It also opens for every
+tester or share link that names one of its modes (`?shift`, `?daily`, `?day`,
+`?weather`, `?rush`, `?kit`, `?week`, `?live`, `?skin`, `?mutator`). So a
+shared daily still works, and the daily, the week and LIVE still open after
+NIGHT. Its ladder keeps its own links (`runHref` keeps `classic`).
+
+Gates:
+
+- New: `test/journey.mjs` (156 checks: the network, the card grammar, the
+  rules a hop keeps, the clock as the sum of the prices, determinism, the
+  halt, the deck, the bands) and `test/play.cjs` (40 checks).
+  - play.cjs plays EASY on a phone by tapping only, to COMPLETE and NEXT ·
+    MEDIUM.
+  - It checks the scenes, the in-car display, the board, the strip, the MAP,
+    and that the clock is the run's at every card.
+  - It also covers HARD's halt card with the pulsing tram, NIGHT in the night
+    car, a whole run in Finnish with no misses, sideways, and `?classic`.
+- Moved to `?classic`: `runs.cjs`, `stranger.cjs` and `lang.cjs`'s ladder
+  run.
+- `itch.cjs` plays the journey from the zip, then `?classic`.
+- `cabinet-route.cjs` lands on the journey.
+
+What it does not have yet:
+
+- The sealed parcel, the rival and the regulars.
+- Sound.
+- A card deck written for the journey. It plays the classic deck, re-priced
+  at 1.5 s a tick.
+
+The daily and the week are still the real-time game.
+
+## v2.73 — 2026-11-01
+
+**THE LADDER: EASY, MEDIUM, HARD, NIGHT** (owner: *"make it a much more of a
+structured experience. Easy, medium, hard and night runs. Each unlocked after
+the easier is completed … redesign a lot of the basics around the new
+direction"*). Signed off in three answers: the ladder first and the rest after
+it; a **new shift every attempt**; a run is **completed by delivering every
+job**, with stars on top that gate nothing.
+
+The game is now four runs (`js/runs.js`). The bare address IS the ladder: a
+new player sees EASY open and three runs locked, and each locked row says
+what opens it. Every attempt is a fresh shift. Delivering every job completes
+the run (late is allowed and costs score) and opens the next. The end card
+gives **★** for done, **★★** for every job on time and **★★★** for on time at
+par, says what opened, and its loud button is **NEXT · MEDIUM**. Clearing
+NIGHT opens **the daily and the week**, which keep the classic rules; LIVE
+waits there as well.
+
+| run | jobs | the rules |
+|---|---|---|
+| EASY · First shift | 3 | a short board (the three cheapest jobs that fit, no hand-offs), deadlines ×1.5, plain parcels only, one kind card at a stop or aboard, clear sky, no rival, no sealed parcel, no held lines |
+| MEDIUM · A morning | 4 | the classic game: every parcel, the morning rush, the city day and weather drawn, the rival, the sealed parcel |
+| HARD · Rush hour, one line down | 5 | the rush at its peak, 0.6× headway, a tram family halted from ten minutes in, warning cards |
+| NIGHT · Last service | 5 | the night board from 23:00, twice the headway, deadlines ×0.9, night cards |
+
+**Measured, not guessed** (`node test/shifts.cjs --runs=12` — a new mode: twelve
+fresh shifts of each run, sensible and naive bots, completed sensible/naive):
+EASY 12/12 · 12/12, MEDIUM 12/12 · 10/12, HARD 12/12 · 6/12, NIGHT 12/12 ·
+5/12. A player who reads the board can clear the ladder; one who taps the
+first thing on it is stopped higher on each rung. Three first guesses were
+wrong and the measurement says why: MEDIUM at three jobs was flat against
+EASY (12/12 both), HARD's ×0.9 deadline left 3 of 12 on time (two stars a
+rumour), and NIGHT at four jobs was easier than HARD for the naive player.
+Par is about the sensible bot's 70th percentile of completed scores.
+
+**EASY had to be unlosable for someone who taps what lights**, and the bots
+could not see why it was not: the ladder gate's tapping player lost one fresh
+EASY shift 2/3. After every delivery the first thing on the board was a
+**hand-off** of unknown length (the board also listed one job that took most
+of the shift), and a player who takes the first thing listed took it. EASY
+now has a **short board** — the three cheapest jobs that fit, no hand-off —
+and its one card always happens at a stop or aboard, because on some shifts
+it was a walking card that a player who never walks never meets. Measured
+with the tapping player on ten fresh EASY shifts: 10/10 complete.
+
+**The basics that moved with it.**
+- **The mutator chips are gone** (v2.70's row): NIGHT is a run, and the rush
+  and the held line are HARD's. `mutators.js` keeps only the shared levers.
+- **Any tester parameter keeps the classic rules** (`?shift=`, `?daily`,
+  `?day=`, `?weather=`, `?rush=`, `?kit=`), so the gates written against them
+  still measure what they measured. `?shift=N&run=X` plays a run on a pinned
+  shift.
+- **The title card** carries the ladder beside START SHIFT, and the shift
+  label is not repeated above it. The goal line counts the run's jobs (*Five
+  deliveries before 00:15*).
+- **A run decides** the jobs (`targetOverride`), the parcels (`cargoPool`,
+  which also feeds the drops and hand-offs), the deadlines (through the same
+  `limit` the kit uses), and whether the rival, the sealed parcel, a city day
+  or a held line are in it at all.
+- **LIVE's link ignored `hidden`**: `#liveLink` is styled `display:block`, which
+  beats the attribute, so "OR LIVE" showed wherever it was meant to be hidden.
+  It now waits behind NIGHT with the daily and the week (`live.cjs` checks both
+  sides of that).
+- **A phone held sideways** is 390px tall, and four ladder rows pushed START
+  off it (`ship.cjs` S4 caught it): on a short screen the ladder is one row of
+  four names.
+
+Gates: `test/runs.mjs` (bare node: the table, what opens what, stars, a broken
+or forged save, which visit plays which run, and the levers the v2.70
+mutators' checks held) and `test/runs.cjs`, a browser gate: a new player's
+ladder; EASY played out by tapping only, ending complete and opening MEDIUM,
+with NEXT going there; a fresh shift every attempt; HARD's rush and held line;
+NIGHT's board and clock; what clearing NIGHT opens; and the Finnish. They
+replace `mutators.mjs` and `mutators.cjs`. `daily.cjs` and `week.cjs` now
+reach the daily at `?daily`. The stills add the ladder and the EASY-complete
+card; the store copy describes the four runs.
+
+## v2.72 — 2026-11-01
+
+**A STRANGER MEETS THE CARDS, AND THE STORE PAGE SHOWS THE GAME IT SELLS**
+(the itch package slice; owner: *"Itch package — cover + stills … once the
+in-game UI matches"*).
+
+**The event director dealt from the head of its queue only**, so a card
+waiting for the courier to be somewhere held back every card behind it.
+Shift 1 deals a *walking* card first, and a player who only taps CATCH never
+walks — so they met **none** of the shift's four cards. That was true on
+v2.68 as well (checked on its tree); it came to light because the store
+stills could no longer find an event card to photograph. The director now
+deals the first **due** card whose place this is; a held line keeps its own
+time and never waits behind a card at all (v2.70 had made that true only for
+a Disruption run's halt). And a card is now due **at its time or by its job,
+whichever is first** — the n-th card once n deliveries are done — because the
+times assume all seventy-five minutes, and a quick courier who finished three
+jobs by half-time left two of the three undealt. Job one is never interrupted
+early. `test/stranger.cjs` now fails if a stranger who never walks meets no
+card (all three of its runs meet one now), and `events.mjs` holds both rules
+in bare node.
+
+Two things fell out of cards actually firing: the **sealed parcel's label**
+was dropped whenever another card was already open — it now waits at the
+front of the deal, and since a label has no place it opens wherever the
+courier is (`where: 'any'`); and the **itch gate's** scripted player caught
+the nearest tram in *either* direction, so once a card moved the timing it
+boarded one going away from the drop and rode past its budget — it now takes
+the leg's own direction, and delivers by tick 861.
+
+**The stills come from the new look.** `tools/stills.cjs` renders ten
+phone stills from the store build — the six it had, plus one per core
+mutator, each chosen by its chip on the title card and played by tapping
+(`07-night`, `08-disruption`, `09-rush-hour`, `10-snow-day`; MUTATORS.md:
+*"one still each"*) — and the cover the bible asks for: the day board with
+tram 12 over the water, the HUD pill in the corner, and the name on paper
+with the courier's cyan as its full stop (the first cover put a dark band
+under a board that has since become paper). `store/ITCH.md` describes the
+mutators and the sealed parcel and lists the new stills.
+
+## v2.71 — 2026-11-01
+
+**THE SEALED PARCEL, AND A NOTEBOOK THAT NEVER EXPLAINS ITSELF**
+(NARRATIVE-TWISTS.md §1, the first run-modifier; owner: *"Now, make the
+game"*). *"Every run deals one parcel with no address, only a Toko sticker,
+and you learn where it goes by riding."* `js/sealed.js`:
+
+- **The second dispatch deals one sealed offer** — never the first job (it
+  teaches, and stays exactly as it was), never the first offer listed, seeded
+  by the shift, and only an offer whose quickest plan ends on a **tram
+  family**, because the offer says nothing but `✉ SEALED · ride the 2`.
+- **Taken, its stop is SEALED** wherever the game names a stop: the panel, the
+  plan rows, the feed, and the board, which draws no ring, no flag and no
+  forced label for it. Two seams carry that rather than a check at every place
+  a stop is named — the challenge's `name()` and the city's `nameOverride`,
+  which the job board and the plan rows read.
+- **The card** is the bible's, on an info face: *"The label says: you'll know
+  the stop."* — `Ride the 2 and watch · +0 s` or `Ask at the kiosk · +40 s`.
+- **It opens aboard the family the label named**: the stop is named in the
+  feed and its flag lights ahead of you. The kiosk opens it at once.
+- **Delivered, the notebook gains a line** — the stop and one sentence from a
+  list that never explains itself (*"The sticker was warm."*). It is kept on
+  this device, shown on the end card, and on the title card under
+  `✉ NOTEBOOK · n` the next time the game is opened. Nothing in it names a
+  place the game does not have: Toko Move carries nothing of Piritori (the
+  bible's "East of Piritori" door is deliberately not built).
+
+A run-modifier never re-skins (MUTATORS.md), and this one rides on every
+kind of run but LIVE — the daily included, since the parcel is part of the
+day everybody plays.
+
+Gates: `test/sealed.mjs` (bare node — which offer, the notebook and its
+store, blocked and mangled storage, the card's prices, Finnish for every
+line) and `test/sealed.cjs` (a browser — the sealed offer taken by tapping
+it, SEALED in every name and never in the panel, opened aboard the right
+family, the notebook line on the end card and the title card, and the kiosk
+path).
+
+## v2.70 — 2026-11-01
+
+**FOUR MUTATORS, FROM THE FIRST RUN** (MUTATORS.md, itch v1's core set;
+owner: *"Now, make the game"*). The title card has a row — DAY · NIGHT ·
+DISRUPTION · RUSH HOUR · SNOW DAY — and a run wears one. Each chip is a link,
+because a run is decided at boot: choosing one starts a fresh page wearing it,
+and DAY takes it off. The row sits beside START SHIFT, where the choice is
+made, with the chosen mutator's one sentence under it (inside the title's
+scrolling body it was below the fold on a phone). `js/mutators.js` is the table, and every entry is a
+setting on a lever the game already had, which is the bible's own limit — a
+mutator never changes the verbs, never adds a currency, never draws a route:
+
+- **NIGHT** — the night skin, the clock from **23:00** (the title says so, and
+  the goal reads *before 00:15*), every line provisioned to **2×** the headway,
+  no rush (opposite hours), no low sun. Cards lean to facts and notices.
+- **DISRUPTION** — one **tram family** (seeded, never the metro: the bible's
+  safe spine) is **halted from ten minutes in**, every variant of it, drawn as
+  grey dashes with grey trams. It lifts when **two jobs** are done or after
+  28–44 minutes, and the feed says so. It keeps its own time: an encounter
+  waiting for the courier to be somewhere no longer holds a halt back behind it
+  (the chance disruption of an ordinary shift is unchanged).
+- **RUSH HOUR** — the rush **at its peak all shift** (the RUSH chip, full
+  trams, the surge on pay) and every line at **0.6×** the headway.
+- **SNOW DAY** — the snow skin and the first-snow weather: services a fifth
+  slower, feet two fifths slower (the bible's ×0.7), kinder cards.
+
+**A mutator is the day**: no city event is drawn on top of it, and no weather
+but its own — one mutator per run (MUTATORS.md). **Today's address under a
+mutator is today's city but not the daily**: same seed, its own kind, never
+recorded, so the one result everybody compares stays comparable. LIVE and the
+week wear none. Card moods follow the bible's bias (`pickWeighted`), and with
+no mutator the director deals exactly the schedule it always did — `mutators.mjs`
+compares sixty seeds card for card.
+
+Gates: `test/mutators.mjs` (bare node — the table against the bible, each
+lever, the halt, the mood shares moving the right way and no-mutator dealing
+the old deck) and `test/mutators.cjs` (a browser — the row on the title card,
+choosing by tapping a chip, then each mutator played out by tapping only, with
+its promise checked on screen: 23:00 and past midnight, the held family from
+~10 min lifting by the second job, RUSH from first tick to last, the snow skin;
+and the Finnish for every new line).
+
+## v2.69 — 2026-11-01
+
+**THE BOARD IS PAPER, AND THE HUD IS ONE PILL** (art bible §1/§3/§4, the
+second slice of the minimal-metro look; owner: *"Now, make the game"*). The
+bible made **Day paper the default** board and Night a mutator — *"Default (no
+mutator) is the Day skin"* — so `js/skin.js` holds three skins as colour only:
+**Day** (`#f4f1e8` paper, the bible's day tram inks), **Night** (the owner's
+grey night board from `board.js`, kept whole, metro lifted to `#ff6a3d`) and
+**Snow** (Day with the paper about 6% lighter and grey-blue water). A skin
+never moves geometry. Which one a run wears is `skinFor`: a mutator decides,
+`?skin=` wins for a link, and a city day that snows already IS the Snow Day the
+bible describes. Every line, chip and pill reads `layer.colour`, so
+`applySkin` recolours the pack once and the whole board follows.
+
+- **The courier is a disc**: Toko cyan, a white ring, a white parcel, an ink
+  edge and a soft shadow — the only cyan-filled thing on the board, told apart
+  by shape as well as colour, because tram 2 is a teal too. The walk callout
+  used to sit on it (the hub you would walk to is usually a minute away); it
+  now lifts clear, since the courier is the one thing always on top.
+- **The metro is drawn last, 1.6× wide, on a casing in the ground colour**, so
+  every tram reads as crossing it.
+- **A held line is grey dashes** (`#b8c2c6`) on its own geometry, and its trams
+  go grey with it — a disruption now shows on the board, not only on the card.
+- **The HUD is clock · ●●○ · the deadline ring in one pill.** The ring is navy
+  while there is time (mint on night) and **coral under 30%** — it was the
+  cargo's colour, which said what you carry (the glyph inside already does)
+  and nothing about time. The minutes-left number and the next-stop label left
+  the bar: the ring is the deadline and the sheet names the stop. The minutes
+  are still on the ring's title. Score and the streak stay beside the pill,
+  because a delivery still pops them.
+- **Night darkens the bar** (`body.skin-night`); the sheet stays paper for now
+  — the night cards are the mutator slice's.
+
+Gate: `test/skin.mjs` (153 checks) holds the bible's own floors — every day ink
+3:1 on paper, no two day lines closer than dE 18 (the worst pair, 2 and 12, is
+18.3), none within dE 18 of the courier's cyan, water never reading as the
+courier — and scans `core-v212.js` for every `SK.` key so no skin can be
+missing one the board draws.
+
+## v2.68 — 2026-11-01
+
+**THE EVENT CARDS WEAR TOKO'S FACE** (PR #631, the first slice of the
+minimal-metro look, art bible §4; owner: *"Playtest PR #631 … so the faces and
++N s buttons feel right on phone"*). The card's face is the traced master on a
+mood disc — yellow for a favour, cyan for a fact, coral for a risk and every
+held line, deep teal for an inspector — with one line of text and big pill
+buttons that each say what they cost: `+N s`, the free way past `+0 s`. Held
+lines are the same card, coral, no buttons: `1 is held · 6 min`.
+
+Landed with what stopped the PR shipping, found by running the gates its
+branch could not:
+- **The store build refused it.** `events.js` imports `toko/js/master.js`
+  from outside the game folder and the itch packager (rightly) refused a zip
+  that reaches outside itself. `package-itch.mjs` now carries a short SHARED
+  list — that one file, at the same relative place, so no import is
+  rewritten.
+- **The token gate.** `main-v212.js` changed under the same `?v=`, so a
+  returning player could keep `events.js?v=5` from cache and never see the new
+  cards; and `job-board-v212.js` had drifted on main the same way
+  (`f4869b1f`). Both moved.
+- **Finnish.** Main's new first-job hint ("Tap a job below. Then tap the lit
+  tram to board.") and October's walking and cargo cards had no Finnish — the
+  played-shift gate only meets the cards its seeds draw. `test/lang.cjs` now
+  also checks every card's words directly, drawn or not (36 lines).
+
+**Playtested on a 390px phone viewport**, every card presented, measured and
+answered with a real tap, in both languages: faces render, nothing overflows,
+every card fits on screen. One change from it: a long label in a half-width
+pill wrapped to four lines ("Papers, please — waved through" made an 82px
+pill), so a card whose options run past 18 characters stacks them full width —
+every pill is 52px now. Two things the bible's one-line card gives up on a
+phone, left as the bible has them and noted for the owner: a held line's cause
+and an option's score/note live in a tooltip, and touch has no hover.
+
+The PR also fixed `esc()` in events.js, which mapped every character to
+itself.
+
+## v2.67 — 2026-10-24
+
+**THE SHIP BAR** (owner: *"We need a shippable Toko Move before considering
+itch.io"*). Shippable was defined first, as seven things a stranger's phone
+does to a game that no feature test does on purpose (ROADMAP.md, "The ship
+bar"); an audit measured each one before anything was built, and
+`test/ship.cjs` (23, in CI) now holds them. Three reverted fixes at once fail
+it exactly where they should.
+
+- **S3 — storage that throws stopped the game loading at all.** A private
+  window or blocked site data makes even *reading* `localStorage` throw, and
+  `regulars.js` and `knowledge.js` read it in a default parameter, outside
+  their try. Both guarded. And a week save that was valid JSON in the wrong
+  shape loaded (it only had to HAVE a shifts array) and crashed at the kit
+  night several screens later; `wellFormed()` now decides, and a save that is
+  not a week is a fresh week. The daily's record for today is checked the
+  same way.
+- **S2 — leaving mid-shift was silent.** The clock's catch-up cap already kept
+  a hidden tab from fast-forwarding, but nothing said so and the shift resumed
+  under the player's thumb. Hidden now pauses, and coming back shows PAUSED
+  with RESUME. LIVE is real time and is left alone; a pause made by hand gets
+  no card.
+- **S4 — a phone held sideways got a 195px strip of map** and the CATCH row at
+  the bottom edge. Short landscape screens now get the side-by-side layout the
+  tablet already had. At 320px the cost column no longer squeezes the
+  destination into a column one word wide.
+- **S6 — the game made no sound.** `js/audio.js`: synthesised (never sampled,
+  nothing fetched), one master gain, a ♪ mute in the HUD that is kept.
+  It watches the game the way juice.js does — catch, get-off, delivery, late,
+  drop, chain, event card, miss, end of shift — so it cannot ring for
+  something that did not happen. Nothing before the first touch.
+- **S7 — the credits were only on the map canvas.** The title card now names
+  HSL (CC BY 4.0), OpenStreetMap contributors (ODbL 1.0) and the City of
+  Helsinki, in both languages.
+- **S1 — nothing had ever played a whole week.** The gate now plays Monday to
+  Friday's rent by tapping what lights: 3/3 deliveries every day, RENT PAID,
+  the page and the heap flat across all five (DOM 492 → 483, 11.2 → 11.2 MB).
+- **S5 — frame cost, measured, and two fixes.** Profiled on a phone viewport,
+  the largest JavaScript in a frame was `nearestTo` walking every vehicle in
+  the city to find the few on one line, inside a search that steps tick by
+  tick: the fleet is indexed by line now (rebuilt whenever LIVE replaces or
+  grows the array), 133–169 ms → 39 ms per 4 s. Next, `projection()` looked
+  the canvas up by id once per drawn point, and `sheetSlot()` re-appended all
+  nine sheet sections every frame — a style pass each time, and in Finnish
+  nine sections of "new" text for lang.js to walk. The canvas is cached and
+  the sections move only when their order is wrong. At 4× CPU throttle the
+  median frame went 150 → 100 ms; the rest of that is headless Chromium
+  compositing in software (2.5 s of every 3 s is "Commit"), which a phone's
+  GPU does, so it is reported, not gated. The game's own per-frame work is
+  ~2.2 ms at 1×.
+
+Two more places compared `innerHTML` (the second-job banner, drawn from the
+frame loop) or `textContent` (the catch hint) with English to decide whether
+to repaint — in Finnish they repainted every time; they compare what they
+last wrote now. The hub-tactics panel emptied its section instead of
+deleting it, so `sheetSlot` no longer recreated it every frame.
+
+## v2.66 — 2026-10-24
+
+**SUOMEKSI** (roadmap M5: *"Finnish and English at least"*). The game plays in
+Finnish: a Finnish browser lands in it, `?lang=fi` / `?lang=en` choose, the
+choice is remembered, and the title card carries one link to the other
+language (SUOMEKSI / IN ENGLISH).
+
+**How, and why that way.** The words live where they are drawn — templates
+and data tables in about twenty modules — so `js/lang.js` translates at the
+one place every word passes through: the DOM. English stays the source,
+written inline as before; a MutationObserver swaps each text node, aria-label
+and title for its Finnish, English the per-string fallback (the house
+convention). A line is looked up whole, then fact by fact across the game's
+own " · " separator, then by pattern for the lines that carry names and
+numbers ("in 5 min", "BOARD ONE OF 3", "to Kamppi"). **Place names are never
+inflected**: a pattern puts a stop where Finnish needs no case ending
+("kohde Kamppi", "vaihto: Eira"), because a wrong ending on a stop's name is
+worse than a plainer sentence. Canvas text has no node, so the map's
+TAP · GET OFF and WALK labels, the LATE floater, the week poster and both
+share texts call `tr()` where they draw.
+
+**What a DOM translator could break, held.** The catch panel is rebuilt only
+when what it says changes, so a press in flight lands (v2.4x); a translator
+that made every render look different would undo that. One place compared
+`innerHTML` to decide whether to repaint (the drops on the way) and now
+compares what it last wrote instead. `test/lang.cjs` checks that a lit CATCH
+is the same button while the clock runs under it, in Finnish.
+
+**`test/lang.cjs`** (18, in CI) plays two fixed shifts, today's daily and a
+week through its kit pick in Finnish, tapping only what lights, opens the map
+panel, and fails on any string the table missed that still reads as English;
+it also holds the switch both ways, the remembered choice, a Finnish browser,
+and English untouched. Its first run left 26 strings and a second found
+"beat him" hiding behind a leading separator; the zoom rail reads LÄHI /
+REITTI / KOKO because KAUPUNKI did not fit 44 px.
+
+The Finnish is a **draft in the game's register, not a native read** — the
+same caveat Toko's counter packs carry. Japanese, the arcade's third
+language, is not started.
+
+## v2.65 — 2026-10-24
+
+**THE FIRST MINUTES FOR A STRANGER** (roadmap M4; owner: *"Go 5 then 6 then
+7"*). Measured first, as the milestone says: `test/stranger.cjs` is a player
+who knows nothing but what the screen offers — tap the first job, wait until a
+row says CATCH and tap it, tap GET OFF when it lights, answer any card — with
+no debug hook moving them. On v2.64 that player always finished, and on the
+way read four things wrong. Each is fixed and each is asserted, and the gate
+was run against the old code to prove it fails there.
+
+- **The dispatch quoted a plan the catch board did not offer.** Shift 1's first
+  job read "2 · change · ~10 min"; the board under it listed the first three
+  routes the router found, none on the 2, and the one lit row was an
+  18-minute loop via Eira. The stranger took it — anyone would — and the first
+  delivery took **29 game minutes**. The board now shows the three QUICKEST
+  door to door out of the same six the dispatch ranks by (still lit first):
+  **9.7 minutes**. Today's daily 8.6, shift 2 6.3; the gate's bar is 20.
+- **"Nothing to catch yet" stayed above a lit CATCH.** The rows refresh in
+  place every tick (v2.4x, so a press in flight still lands); the first-job
+  hint above them did not. It refreshes with them now.
+- **"Get off here" at the stop you just boarded.** One tap after CATCH the ride
+  panel offered an early exit at the boarding stop ("saves ~1 min") — the game
+  contradicting the advice it had just given. The boarding stop is never an
+  exit.
+- **LIVE on the store build's title card.** The store page rule is to sell
+  only what has been played; LIVE waits for M6. Hidden when `STORE`, and
+  `test/itch.cjs` checks it.
+
+**The store page's pictures** (roadmap M3): `tools/stills.cjs` renders the
+630×500 cover and six phone stills from the store build, entered by tapping
+START and played by tapping what lights; `store/ITCH.md` names them.
+
+Gates: `stranger.cjs` (18, new, in CI) and `itch.cjs` (12). `misses.cjs`
+watches 1400 ticks instead of 700 — with only the quickest plans on the board
+fewer lines light, and 700 ticks saw two misses where the check needs three
+(both judged correct).
+
+## v2.64 — 2026-10-24
+
+**THE STORE BUILD, AND THE NETWORK HSL HAS BEEN RUNNING SINCE SEPTEMBER**
+(owner, 2026-10-24: *"Toko Move is the thing we publish first and then
+Piritori is a spin-off that becomes the bigger game"* — ROADMAP.md has the
+order and the milestones to an itch.io 1.0).
+
+**The network.** The nightly refresh has validated every night since v2.63 and
+failed only on opening its PR (the repo does not let Actions open one), so
+this takes its newest pack, `automation/toko-move-hsl-40079925291`, byte for
+byte. HSL reroutes trams **2, 4 and H** (4 now runs Katajanokka → Hakaniemi →
+Kallio → Meilahti; Ooppera ↔ Meilahti has no tram) and adds **7B and 9B** —
+B-lines are usually works diversions, so expect them to change back; the
+board follows the feed either way. Every stop moved by the same 3 m, which is
+the board's corner, not the stops. **`tools/fingerprint.mjs`** prints what a
+refresh moved and `--write` accepts it — adopting a network is now one command
+(the September adoption used a scratch script that died with its container).
+
+**The rival kept losing his walk.** A claim on a new job turned him towards
+your stop; if you took the job a tick later the claim dropped and he started a
+FRESH 260-tick walk. A player who takes each job as it appears reset him every
+time, and a quick shift ended with the other courier having delivered nothing
+(the shift gate caught it on the new network: 39 of 40). A race given up now
+resumes the walk it interrupted, with the time that walk had left.
+
+**The store build (roadmap M2).** One shipping tree, two homes.
+`js/platform.js` is the seam: a packaged build declares `TOKO_PLATFORM` and
+the game then shares the STORE PAGE rather than the frame itch.io plays it in,
+and leaves the playtest card off. **`tools/package-itch.mjs`** builds the
+upload from what git tracks — `toko-move/` beside `flow-core/` so every path
+resolves unchanged, a root `index.html` that steps in, no arcade HOME button,
+no tests, tools or design notes — and refuses any path that would reach
+outside the package (an import resolves against its file, a `fetch` against
+the page; it accepts either). **`test/itch.cjs`** unzips the result into an
+empty folder, serves it alone and plays a delivery through it: 11 checks, and
+it fails both ways it was mutated (the HOME button left in is stopped by the
+packager itself; a new module not yet in git is a 404 from the zip). 74 files,
+0.47 MB. **`store/ITCH.md`** is the page kit: settings, copy (only what the
+build does — LIVE stays off the page until M6), controls, credits, media.
+
+**Rent is NOT re-set, and should be** (`--kitweeks=20`): on this network €400
+is paid by the earner **95%**, the sensible player **90%** and the naive
+player **70%** of weeks (v2.63: 90 / 70 / 60). That is outside the 20-week
+noise, and the rule the rent was set by (earner ~80%, sensible ~55%) now reads
+**€500** (75% / 50%). Left at €400 for the owner to decide: it is the biggest
+balance change since the week shipped, and the diversions may change back.
+
+The avoid-a-passed-stop gate (v2.62) no longer names a route — the one it
+named went with tram 4 — and checks every pair instead: 0 leaks, and it fails
+without the rule.
+
 ## v2.63 — 2026-09-26
 
 **LAAJASALO, AND THE MAP NAMES ITS HUBS.**

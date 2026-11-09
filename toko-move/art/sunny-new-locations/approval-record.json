@@ -1,0 +1,11 @@
+{
+  "status": "approved_subset",
+  "approval_context": "pt134u: Approved, more \u2014 all three pairs.",
+  "approved_scenes": [
+    "metro",
+    "tram",
+    "park"
+  ],
+  "audit_date": "2026-11-07",
+  "approved_image_bytes_preserved": true
+}

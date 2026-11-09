@@ -26,7 +26,7 @@ const SHELL = [
   './',
   './index.html',
   './hub/arcade.js?v=5',
-  './hub/art.js?v=20',
+  './hub/art.js?v=21',
   './hub/feedback.js?v=13',
   './hub/games.js?v=104',
   './hub/hub-entry.js?v=32',

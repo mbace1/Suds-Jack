@@ -87,7 +87,13 @@ server.listen(0, '127.0.0.1', async () => {
           if (!btn.disabled) now.push(lab);
         }
         out.lit.push({ tick, lines: now });
-        if (out.ticks > 700) { done(); return; }
+        // v2.65: the board shows the three QUICKEST plans now, so fewer lines
+        // light and misses come slower — 700 ticks saw two, and the check wants three.
+        // v3.5: 1400 saw four here and TWO on a CI runner (gates run 41825136531,
+        // "only 2 judged", both judged right): a banner lives 8 ticks and the
+        // runner's frames came slower than that. Watching longer keeps the bar
+        // at three without lowering it.
+        if (out.ticks > 2100) { done(); return; }
         requestAnimationFrame(step);
       };
       requestAnimationFrame(step);

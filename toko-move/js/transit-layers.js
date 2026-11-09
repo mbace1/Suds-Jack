@@ -15,9 +15,18 @@ export class TransitLayers{
  // any does, the rest step back (FADE of the alpha, thinner) and the focused
  // ones are drawn LAST and a little heavier, so they cross over the rest rather
  // than under them. With nothing focused every line draws as it always did.
- draw(ctx,width,height,{fit=null,alpha=.9,lineWidth=3,filter=null,focus=null}={}){const project=fit||bboxFit(this.bounds,width,height);ctx.save();ctx.lineCap='round';ctx.lineJoin='round';
-  const shown=this.layers.filter(layer=>layer.visible&&!(filter&&!filter(layer))&&Array.isArray(layer.path)&&layer.path.length>=2),hot=focus?shown.filter(focus):[],on=hot.length>0;
-  const stroke=(layer,a,w)=>{ctx.globalAlpha=a;ctx.strokeStyle=layer.colour;ctx.lineWidth=(layer.mode==='SUBWAY'?lineWidth*1.45:lineWidth)*w;ctx.beginPath();for(let i=0;i<layer.path.length;i++){const[lat,lon]=layer.path[i],p=project(lat,lon);i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y);}ctx.stroke();};
+ // v2.69 (art bible §3): the metro is drawn on TOP of the trams, 1.6× wide, in
+ // a casing of the ground colour (`casing`), so the one line that crosses
+ // everything reads as crossing it. A line `halted(layer)` says is held is a
+ // grey dash (bible: "one line halted: grey dashes") — the same geometry, so a
+ // player can still see where it would have gone.
+ draw(ctx,width,height,{fit=null,alpha=.9,lineWidth=3,filter=null,focus=null,casing=null,halted=null,haltInk='#b8c2c6'}={}){const project=fit||bboxFit(this.bounds,width,height);ctx.save();ctx.lineCap='round';ctx.lineJoin='round';
+  const metro=l=>String(l.mode||'').toUpperCase()==='SUBWAY';
+  const shown=this.layers.filter(layer=>layer.visible&&!(filter&&!filter(layer))&&Array.isArray(layer.path)&&layer.path.length>=2).sort((a,b)=>metro(a)-metro(b)),hot=focus?shown.filter(focus):[],on=hot.length>0;
+  const trace=layer=>{ctx.beginPath();for(let i=0;i<layer.path.length;i++){const[lat,lon]=layer.path[i],p=project(lat,lon);i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y);}};
+  const stroke=(layer,a,w)=>{const lw=(metro(layer)?lineWidth*1.6:lineWidth)*w,held=!!halted?.(layer);trace(layer);
+   if(casing&&metro(layer)){ctx.globalAlpha=Math.min(1,a+.1);ctx.strokeStyle=casing;ctx.lineWidth=lw+3*(lineWidth/2.4);ctx.setLineDash([]);ctx.stroke();}
+   ctx.globalAlpha=a;ctx.strokeStyle=held?haltInk:layer.colour;ctx.lineWidth=lw;ctx.setLineDash(held?[lw*2.2,lw*1.6]:[]);ctx.stroke();ctx.setLineDash([]);};
   for(const layer of shown){if(on&&hot.includes(layer))continue;stroke(layer,on?alpha*FADE:alpha,on?0.75:1);}
   for(const layer of hot)stroke(layer,Math.min(1,alpha*1.08),1.3);
   ctx.restore();}

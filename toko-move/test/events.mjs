@@ -4,11 +4,19 @@
 // hold, never more, never through it.
 import assert from 'node:assert';
 import fs from 'node:fs';
-import {ENCOUNTERS,DISRUPTIONS,BUDGET,drawSchedule,EventDirector} from '../js/events.js';
+import {ENCOUNTERS,DISRUPTIONS,BUDGET,MOODS,drawSchedule,EventDirector,priceSeconds} from '../js/events.js';
 import {LiveNetwork,HEADWAY_MIN} from '../js/live-network.js';
 import {TransitLayers} from '../js/transit-layers.js';
 let n=0;const ok=(c,m)=>{assert.ok(c,m);n++;};
 for(const c of ENCOUNTERS){ok(c.options.some(o=>!o.cost),`${c.id} has a free option`);ok(c.options.length>=2,`${c.id} is a choice`);ok(['stop','aboard','walking'].includes(c.where),`${c.id} says where`);ok(c.glyph&&c.text,`${c.id} has a face and a line`);}
+// the card's face (art bible §4): every card names a mood the bible has, no
+// mood is magenta, a held line is a warning, and every button is priced +N s
+ok(['info','opportunity','warning','notice'].every(m=>MOODS[m]),'the four bible moods exist');
+ok(Object.values(MOODS).every(m=>!/^#f0027f$/i.test(m.disc)),'no Toko face is magenta');
+for(const c of [...ENCOUNTERS,...DISRUPTIONS])ok(MOODS[c.mood],`${c.id} has a mood`);
+for(const d of DISRUPTIONS)ok(d.mood==='warning',`${d.id} is a coral warning`);
+ok(ENCOUNTERS.find(c=>c.id==='inspector').mood==='notice','the inspector is a service notice');
+for(const c of ENCOUNTERS)for(const o of c.options)ok(/^\+\d+ s$/.test(priceSeconds(o)),`${c.id}: ${o.label} is priced in seconds`);
 for(const d of DISRUPTIONS)ok(d.minutes>0&&d.minutes<=8,`${d.id} holds for minutes, not the shift`);
 const a=drawSchedule(7,3000,['1','6']),b=drawSchedule(7,3000,['1','6']),c=drawSchedule(8,3000,['1','6']);
 ok(JSON.stringify(a)===JSON.stringify(b),'the schedule is a function of the seed');
@@ -47,4 +55,21 @@ fakeTm.mobility.status=()=>({kind:'riding'});dir.step();ok(first.card.where==='a
 fakeTm.mobility.status=()=>({kind:first.card.where==='aboard'?'riding':first.card.where==='walking'?'walking':'waiting'});dir.step();ok(!!dir.pending,'and fires there');
 const opts=dir.options();ok(opts.every(o=>!o.needs||o.needs==='documents'),'options you cannot meet are not offered');
 const r=dir.choose(0);ok(r.ok&&!dir.pending,'choosing clears the card');
+// v2.72: a card waiting for its place never holds back a card that is ready.
+// Shift 1 deals a "walking" card first; a courier who only catches trams used
+// to meet none of the four, because the director only ever looked at the head.
+{const walk=ENCOUNTERS.find(c=>c.where==='walking'),stop=ENCOUNTERS.find(c=>c.where==='stop');
+ const t={flow:{clock:{tick:0,ticksPerDay:3000}},shift:{hours:1.25},transit:{layers:[]},challenge:{active:{cargo:'documents'},index:0,say(){}},mobility:{status:()=>({kind:'waiting'})}};
+ const d=new EventDirector(t,1);d.queue=[{kind:'encounter',card:walk,at:100},{kind:'encounter',card:stop,at:200}];
+ t.flow.clock.tick=150;d.step();ok(!d.pending,'nothing is due at the stop yet');
+ t.flow.clock.tick=250;d.step();ok(d.pending?.card.id===stop.id,'the stop card fires at the stop although a walking card is ahead of it');
+ ok(d.queue.length===1&&d.queue[0].card.id===walk.id,'and the walking card still waits for a walk');
+ d.choose(0);t.mobility.status=()=>({kind:'walking'});d.step();ok(d.pending?.card.id===walk.id,'then fires on the first walk');}
+// v2.72: a card is due at its time or by its job, whichever is first
+{const stop=ENCOUNTERS.find(c=>c.where==='stop');
+ const t={flow:{clock:{tick:0,ticksPerDay:3000}},shift:{hours:1.25},transit:{layers:[]},challenge:{active:{cargo:'documents'},index:0,say(){}},mobility:{status:()=>({kind:'waiting'})}};
+ const d=new EventDirector(t,1);d.queue=[{kind:'encounter',card:stop,at:2000,job:2}];
+ t.flow.clock.tick=500;t.challenge.index=1;d.step();ok(!d.pending,'before its time and its job, a card waits');
+ t.challenge.index=2;d.step();ok(d.pending?.card.id===stop.id,'by its job it is due, an hour before its time');
+ ok(drawSchedule(5,3000,[]).filter(e=>e.kind==='encounter').every((e,i)=>e.job===i+1),'the n-th card belongs to the n-th delivery — job one is never interrupted early');}
 console.log(`events: ${n} checks passed`);

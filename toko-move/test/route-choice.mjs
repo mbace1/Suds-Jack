@@ -146,10 +146,17 @@ console.log(`route choices: centre ${centre.length}, harbour ${harbour.length}; 
 // v2.62: mid-delivery, the panel does not offer a plan back through a stop this
 // delivery has already stood at — and never goes empty because of it.
 {const through=(c,n)=>c.legs.some(l=>{const s=l.line.nodes,i=s.indexOf(l.from),j=s.indexOf(l.to),k=s.indexOf(n);return k>=0&&k>=Math.min(i,j)&&k<=Math.max(i,j);});
- const free=routeChoices(city,'sornainen','meilahti',3);
- assert.ok(free.some(c=>through(c,'ooppera')),'control: with no history, Sörnäinen → Meilahti offers a plan through Ooppera');
- const back=routeChoices(city,'sornainen','meilahti',3,null,new Set(['lasipalatsi','ooppera']));
- assert.ok(back.length&&!back.some(c=>through(c,'ooppera')),'having come from Ooppera, no plan goes back through it');
+ // Over EVERY pair and every stop a free plan passes through (v2.64: the named
+ // Sörnäinen → Ooppera → Meilahti case went when HSL rerouted tram 4, so the
+ // check no longer depends on which routes the feed has this month): avoiding
+ // that stop takes it out of the plans whenever the network has another way.
+ let cases=0,leaks=0,leak='';
+ for(const a of city.nodes)for(const b of city.nodes){if(a===b)continue;const free=routeChoices(city,a.id,b.id,3);
+  for(const z of new Set(free.flatMap(c=>c.legs.flatMap(l=>{const s=l.line.nodes,i=s.indexOf(l.from),j=s.indexOf(l.to);return s.slice(Math.min(i,j),Math.max(i,j)+1);}))))
+   {if(z===a.id||z===b.id)continue;const back=routeChoices(city,a.id,b.id,3,null,new Set([z]));const alt=routeChoices(city,a.id,b.id,999).some(c=>!through(c,z));
+    if(!alt)continue;cases++;if(back.some(c=>through(c,z))){leaks++;leak||=`${a.id}→${b.id} avoiding ${z}`;}}}
+ assert.ok(cases>50,`control: plenty of plans pass a stop that has a way round (${cases})`);
+ assert.equal(leaks,0,`having come through a stop, no plan goes back through it when another way exists (${leak})`);
  const k=routeChoices(city,'hakaniemi','kruunuvuori',3,null,new Set(['kalasatama']));
  assert.ok(k.length&&!k.some(c=>through(c,'kalasatama')),'having come from Kalasatama, Hakaniemi → Kruunuvuori takes 12, not the metro back');
  let emptied=0;for(const a of city.nodes)for(const b of city.nodes){if(a===b)continue;const all=routeChoices(city,a.id,b.id,3);if(!all.length)continue;

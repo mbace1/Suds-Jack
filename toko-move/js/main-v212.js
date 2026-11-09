@@ -1,26 +1,39 @@
 // Toko Move v2.12.2 runtime — clean HSL core + transfer hubs + walking/interception + two-job carry.
-import './core-v212.js?v=64';
-import './route-choice.js?v=25';
-import {LiveNetwork,HEADWAY_MIN,MODE_KMH} from './live-network.js?v=15';
+// first, so every word the modules below draw passes through it (v2.66)
+import {tr} from './lang.js?v=17';
+import './core-v212.js?v=95';
+import './route-choice.js?v=28';
+import {LiveNetwork,HEADWAY_MIN,MODE_KMH} from './live-network.js?v=17';
 import {hidden as fogHides} from './weather.js?v=1';
 import {mountCity,headwayFor,walkFactor,encounterCount,goodwillFactor,marketOf} from './city-events.js?v=1';
+import {headwayWith,haltFamily,haltMinutes} from './mutators.js?v=2';
+import {lineFamily} from './board.js?v=8';
+import {mountSealed} from './sealed.js?v=2';
+// The family of an offer's quickest plan's LAST ride — what a sealed parcel
+// tells you to ride. The metro is never one ("ride the M1" names no stop).
+const lastFamily=(tm,o)=>{const cs=globalThis.__tmRouteChoiceCore?.routeChoices?.(tm.city,o.stops[0],o.stops[1],6)||[],leg=cs[0]?.legs?.[cs[0].legs.length-1];return leg&&!/subway|metro/i.test(String(leg.line?.mode))?lineFamily(leg.line.label):null;};
+// A Disruption run's halt (MUTATORS.md §2): one seeded tram family, held from
+// ~10 minutes in, every variant of it, until two jobs or its time lift it.
+const haltFor=tm=>{const m=tm.run;if(!m?.halt)return null;const trams=(tm.transit?.layers||[]).filter(l=>l.visible&&String(l.mode||'').toUpperCase()!=='SUBWAY'),fam=haltFamily(tm.shiftSeed??7,trams.map(l=>lineFamily(l.name)));if(!fam)return null;
+  const perMin=tm.flow.clock.ticksPerDay/((tm.shift?.hours||1.25)*60);return{line:fam,lines:trams.filter(l=>lineFamily(l.name)===fam).map(l=>l.name),atTick:Math.round(m.halt.atMin*perMin),minutes:haltMinutes(tm.shiftSeed??7,m),recoverJobs:m.halt.recoverJobs};};
 import {TRANSFER_HUBS,WALK_STREETS,walksFrom} from './hubs-walking.js?v=4';
-import {MobilityController} from './mobility-v212.js?v=10';
+import {MobilityController} from './mobility-v212.js?v=11';
 import {interceptionOptions,bestInterception} from './interception-v212.js?v=2';
-import {mountJobBoard,reachableSoon,planCost,alongOffersFor} from './job-board-v212.js?v=26';
-import {mountEvents} from './events.js?v=5';
-import {mountRival} from './rival.js?v=3';
-import {loadVisited,saveVisited,visit,teach,progress,streetsAt} from './knowledge.js?v=3';
+import {mountJobBoard,reachableSoon,planCost,alongOffersFor} from './job-board-v212.js?v=31';
+import {mountEvents} from './events.js?v=10';
+import {mountRival} from './rival.js?v=4';
+import {loadVisited,saveVisited,visit,teach,progress,streetsAt} from './knowledge.js?v=4';
 import {planEstimate} from './timetable.js?v=2';
 import {ShiftLog} from './shiftlog.js?v=4';
 import {Trails} from './trails.js?v=2';
-import {mountHubTactics} from './hub-tactics-v212.js?v=6';
+import {mountHubTactics} from './hub-tactics-v212.js?v=7';
 import {mountSkillMoments} from './moments-v212.js?v=2';
-import {mountJuice} from './juice.js?v=1';
-import {mountTestCard} from './testcard.js?v=2';
+import {mountJuice} from './juice.js?v=18';
+import {mountAudio} from './audio.js?v=2';
+import {mountTestCard} from './testcard.js?v=3';
 import {mountRecovery} from './recovery-v212.js?v=3';
 import {about,inMinutes} from './ui.js?v=2';
-const BUILD_VERSION='2.63';
+const BUILD_VERSION='3.21';
 function mount(){const tm=window.__tm;if(!tm?.transit||!tm?.flow||!tm?.city){setTimeout(mount,50);return;}tm.version=BUILD_VERSION;// THE DAY IS DRAWN BEFORE THE FLEET, because one of the four is a timetable:
 // QUIET SUNDAY provisions fewer trams, and a fleet cannot be re-provisioned
 // after its vehicles exist without every phase in it moving under the player.
@@ -33,13 +46,13 @@ tm.inFog=(layer,eta)=>{const w=tm.weather;if(!w?.fogM||eta==null)return false;co
   tm.market=at.length?{...mk,lat:at.reduce((a,s)=>a+s.lat,0)/at.length,lon:at.reduce((a,s)=>a+s.lon,0)/at.length}:mk;}
  else tm.market=null;}
 tm.challenge.market=tm.market;
-tm.liveNetwork=new LiveNetwork(tm.transit,{headwayMinutes:headwayFor(tm.cityDay,HEADWAY_MIN),ticksPerDay:tm.flow.clock.ticksPerDay,speedFactor:tm.weather?.speed||1});
+tm.liveNetwork=new LiveNetwork(tm.transit,{headwayMinutes:headwayWith(tm.run,headwayFor(tm.cityDay,HEADWAY_MIN)),ticksPerDay:tm.flow.clock.ticksPerDay,speedFactor:tm.weather?.speed||1});
 // LIVE (v2.56, hfp.js): the fleet above is the timetable; the real vehicles
 // re-time it as their reports arrive. Loaded only for a live shift, and
 // swallowed on failure — a feed that cannot connect leaves the timetable
 // running and the HUD saying so, never a blank board.
 if(tm.live){tm.liveFeed={state:'connecting',label:'LIVE · CONNECTING',count:0};
- Promise.all([import('./hfp.js?v=2'),import('./mqtt-ws.js?v=1')]).then(([H,M])=>{
+ Promise.all([import('./hfp.js?v=4'),import('./mqtt-ws.js?v=1')]).then(([H,M])=>{
   const fleet=new H.LiveFleet(tm.liveNetwork),feed=tm.liveFeed;tm.liveFleet=fleet;let heardAt=0;
   const riding=()=>tm.mobility?.status?.()?.ride?.vehicleId||tm.liveNetwork.selectedVehicleId||null;
   const set=(state,label)=>{feed.state=state;feed.label=label;};
@@ -60,7 +73,7 @@ tm.visitHere=id=>{if(!visit(tm.visited,id))return false;saveVisited(tm.visited);
   tm.challenge.say?.(`FIRST TIME AT ${tm.challenge.name(id)}${st.length?` · ${st.join(', ')}`:''} · ${p.known}/${p.total} walks open`);return true;};
 tm.teachStreet=seed=>{const id=teach(tm.visited,seed);if(id){saveVisited(tm.visited);tm.challenge.say?.(`SHOWN THE WAY · ${tm.challenge.name(id)} is walkable from here`);}return id;};
 tm.visitHere(tm.challenge.currentFrom?.()||'lasipalatsi');
-tm.alongOffers=()=>alongOffersFor(tm);mountJobBoard(tm);mountHubTactics(tm);mountSkillMoments(tm);mountJuice(tm);mountTestCard(tm);mountRecovery(tm);mountCity(tm);mountEvents(tm,tm.shiftSeed??7,{encounters:encounterCount(tm.cityDay,null),goodwill:goodwillFactor(tm.cityDay)});mountRival(tm,tm.shiftSeed??7);const canvas=document.getElementById('map'),ctx=canvas?.getContext('2d');if(!canvas||!ctx)return;const project=(lat,lon)=>tm.project(lat,lon);const nodePoint=id=>{const n=tm.city.resolved?.[id];return n?project(n.lat,n.lon):null;};const drawTransitLayer=()=>{if(document.body.classList.contains('transit-view')||!tm.transit)return;tm.transit.draw(ctx,canvas.width,canvas.height,{fit:project,alpha:.96,lineWidth:2.5*(tm.renderer?.dpr||window.devicePixelRatio||1)});};// Which lines are any use to you RIGHT NOW: the one you are on, the one your plan
+tm.alongOffers=()=>alongOffersFor(tm);mountJobBoard(tm);mountHubTactics(tm);mountSkillMoments(tm);mountJuice(tm);mountAudio(tm);mountTestCard(tm);mountRecovery(tm);mountCity(tm);mountEvents(tm,tm.shiftSeed??7,{encounters:tm.run?.encounters??encounterCount(tm.cityDay,null),disruptions:tm.run?.disruptions,places:tm.run?.places||null,goodwill:goodwillFactor(tm.cityDay),moods:tm.run?.moods||null,halt:haltFor(tm)});if(tm.run?.sealed!==false)mountSealed(tm,{familyOf:o=>lastFamily(tm,o),familyOfLayer:n=>lineFamily(n)});if(tm.run?.rival!==false)mountRival(tm,tm.shiftSeed??7);const canvas=document.getElementById('map'),ctx=canvas?.getContext('2d');if(!canvas||!ctx)return;const project=(lat,lon)=>tm.project(lat,lon);const nodePoint=id=>{const n=tm.city.resolved?.[id];return n?project(n.lat,n.lon):null;};const drawTransitLayer=()=>{if(document.body.classList.contains('transit-view')||!tm.transit)return;tm.transit.draw(ctx,canvas.width,canvas.height,{fit:project,alpha:.96,lineWidth:2.5*(tm.renderer?.dpr||window.devicePixelRatio||1)});};// Which lines are any use to you RIGHT NOW: the one you are on, the one your plan
 // says to take, and the ones the board is offering. Those keep a readable badge in a
 // crowd; everything else yields to a dot. Without this the declutter would be
 // arbitrary about which tram it silenced, and the silenced one is often yours.
@@ -81,7 +94,11 @@ tm.focusLines=()=>{const s=new Set(),ch=tm.challenge,st=tm.mobility?.status?.();
   if(st?.kind==='riding'||st?.kind==='getoff'){add(st.ride?.line);for(const leg of ch?.selectedPlan?.legs||[])add(leg?.line);return s;}
   if(ch?.active){for(const c of document.getElementById('routeChoices')?._choices||[])for(const leg of c?.legs||[])add(leg?.line);return s;}
   for(const l of document.getElementById('jobBoard')?._lines||[])add(l);return s;};
-const drawInterception=()=>{const hit=bestInterception(tm);if(!hit)return;const b=nodePoint(hit.hub);if(!b)return;const d=tm.renderer?.dpr||window.devicePixelRatio||1;ctx.save();ctx.fillStyle='#fffdf7';ctx.strokeStyle=hit.layer?.colour||'#233d4d';ctx.lineWidth=2*d;ctx.font=`bold ${Math.round(11*d)}px ui-monospace,monospace`;const text=`WALK ${about(hit.walkTicks,tm)} → ${hit.line.label} ${inMinutes(hit.waitTicks,tm)}`,pad=6*d,w=ctx.measureText(text).width+pad*2,h=22*d,x=b.x-w/2,y=b.y-34*d;ctx.beginPath();ctx.roundRect(x,y,w,h,4*d);ctx.fill();ctx.stroke();ctx.fillStyle='#15262b';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(text,b.x,y+h/2);ctx.restore();};// THE COURIER IS A FIGURE, AND IS ON THE BOARD WHENEVER YOU ARE. It used to
+const drawInterception=()=>{const hit=bestInterception(tm);if(!hit)return;const b=nodePoint(hit.hub);if(!b)return;const d=tm.renderer?.dpr||window.devicePixelRatio||1;ctx.save();ctx.fillStyle='#fffdf7';ctx.strokeStyle=hit.layer?.colour||'#233d4d';ctx.lineWidth=2*d;ctx.font=`bold ${Math.round(11*d)}px ui-monospace,monospace`;const text=tr(`WALK ${about(hit.walkTicks,tm)} → ${hit.line.label} ${inMinutes(hit.waitTicks,tm)}`),pad=6*d,w=ctx.measureText(text).width+pad*2,h=22*d,x=b.x-w/2;let y=b.y-34*d;
+  // v2.69: the hub you would walk to is usually a minute away, so this box sat
+  // on the courier disc — and the courier is the one thing always on top (art
+  // bible §3). If it would cover the disc, it lifts clear of it.
+  {const c=courierAt;if(c&&c.x+c.r>x&&c.x-c.r<x+w&&c.y+c.r>y&&c.y-c.r<y+h)y=Math.min(y,c.y-c.r-h-4*d);}ctx.beginPath();ctx.roundRect(x,y,w,h,4*d);ctx.fill();ctx.stroke();ctx.fillStyle='#15262b';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(text,b.x,y+h/2);ctx.restore();};// THE COURIER IS A FIGURE, AND IS ON THE BOARD WHENEVER YOU ARE. It used to
 // be a navy dot marked W, and only while walking — standing at a stop you were
 // nowhere on the map at all, which is most of the shift and most of "I don't
 // know how to move". A flat fill inside a hard line, the house register: head,
@@ -115,8 +132,9 @@ const drawRival=()=>{const r=tm.rival,p=r?.position?.();if(!p)return;const d=tm.
 // tap on it gets you off — the map's half of the GET OFF button.
 const drawGetOff=()=>{const st=tm.mobility?.status?.();if(st?.kind!=='getoff')return;const p=nodePoint(st.at);if(!p)return;const d=tm.renderer?.dpr||window.devicePixelRatio||1,pulse=0.5+0.5*Math.sin(performance.now()/160);
   ctx.save();ctx.strokeStyle=`rgba(35,61,77,${(0.6+0.4*pulse).toFixed(2)})`;ctx.lineWidth=(3+2*pulse)*d;ctx.beginPath();ctx.arc(p.x,p.y,(14+5*pulse)*d,0,Math.PI*2);ctx.stroke();
-  ctx.font=`bold ${Math.round(10*d)}px ui-monospace,monospace`;ctx.textAlign='center';ctx.lineJoin='round';ctx.lineWidth=3*d;ctx.strokeStyle='#fffdf7';ctx.strokeText('TAP · GET OFF',p.x,p.y-(24*d));ctx.fillStyle='#233d4d';ctx.fillText('TAP · GET OFF',p.x,p.y-(24*d));ctx.restore();};
-const drawCourier=()=>{const st=tm.mobility?.status?.();if(!st||st.kind==='riding'||st.kind==='getoff')return;
+  ctx.font=`bold ${Math.round(10*d)}px ui-monospace,monospace`;ctx.textAlign='center';ctx.lineJoin='round';ctx.lineWidth=3*d;ctx.strokeStyle='#fffdf7';ctx.strokeText(tr('TAP · GET OFF'),p.x,p.y-(24*d));ctx.fillStyle='#233d4d';ctx.fillText(tr('TAP · GET OFF'),p.x,p.y-(24*d));ctx.restore();};
+let courierAt=null;  // where the disc was drawn this frame, so a callout can keep off it
+const drawCourier=()=>{courierAt=null;const st=tm.mobility?.status?.();if(!st||st.kind==='riding'||st.kind==='getoff')return;
   let x,y,walking=false;const d=tm.renderer?.dpr||window.devicePixelRatio||1;
   if(st.kind==='walking'){
     // v2.55: along the street, not through the block — the line still to walk
@@ -133,28 +151,25 @@ const drawCourier=()=>{const st=tm.mobility?.status?.();if(!st||st.kind==='ridin
       ctx.strokeStyle='#0f1418';ctx.lineWidth=2.2*d;ctx.stroke();ctx.restore();}
     else{const a=nodePoint(st.from),b=nodePoint(st.to);if(!a||!b)return;x=a.x+(b.x-a.x)*e;y=a.y+(b.y-a.y)*e;}
     walking=true;}
-  else{const ll=tm.courierLatLon?.();if(!ll)return;const p=project(ll.lat,ll.lon);x=p.x;y=p.y-9*d;}
-  const step=walking?Math.floor(tm.flow.clock.tick/5)%2:0,ink='#0f1418',coat='#e2683c',skin='#f3d5b5';
-  ctx.save();ctx.lineJoin='round';ctx.lineCap='round';
-  // halo so the figure reads on any ground
-  ctx.strokeStyle='rgba(255,253,247,.9)';ctx.lineWidth=5*d;
-  const body=()=>{ctx.beginPath();ctx.moveTo(x-4*d,y-2*d);ctx.lineTo(x+4*d,y-2*d);ctx.lineTo(x+3.5*d,y+6*d);ctx.lineTo(x-3.5*d,y+6*d);ctx.closePath();};
-  const legs=()=>{ctx.beginPath();if(walking){ctx.moveTo(x-2*d,y+6*d);ctx.lineTo(x-(step?5:1)*d,y+12*d);ctx.moveTo(x+2*d,y+6*d);ctx.lineTo(x+(step?1:5)*d,y+12*d);}else{ctx.moveTo(x-2*d,y+6*d);ctx.lineTo(x-2*d,y+12*d);ctx.moveTo(x+2*d,y+6*d);ctx.lineTo(x+2*d,y+12*d);}};
-  const head=()=>{ctx.beginPath();ctx.arc(x,y-6*d,3.6*d,0,Math.PI*2);};
-  body();ctx.stroke();legs();ctx.stroke();head();ctx.stroke();
-  ctx.strokeStyle=ink;ctx.lineWidth=2*d;
-  legs();ctx.stroke();
-  body();ctx.fillStyle=coat;ctx.fill();ctx.stroke();
-  head();ctx.fillStyle=skin;ctx.fill();ctx.stroke();
-  // the bag: what makes a courier a courier
-  ctx.beginPath();ctx.rect(x+3*d,y-1*d,3.5*d,4.5*d);ctx.fillStyle='#233d4d';ctx.fill();ctx.stroke();
+  else{const ll=tm.courierLatLon?.();if(!ll)return;const p=project(ll.lat,ll.lon);x=p.x;y=p.y;}
+  // v2.69: THE COURIER IS A DISC (art bible §3–4): Toko cyan, a white ring, a
+  // white parcel, an ink edge and a soft shadow — "the only cyan-filled thing"
+  // on the board, so the player is found by colour AND by shape (tram 2 is a
+  // teal too). Walking, it bobs on the step the old figure's legs used.
+  const bob=walking&&Math.floor(tm.flow.clock.tick/5)%2?-1.2*d:0,r=9*d;y+=bob;courierAt={x,y,r:r+1.6*d};
+  ctx.save();
+  ctx.fillStyle='rgba(15,20,24,.22)';ctx.beginPath();ctx.ellipse(x,y+r*0.9-bob,r*0.95,r*0.42,0,0,Math.PI*2);ctx.fill();
+  ctx.beginPath();ctx.arc(x,y,r+1.6*d,0,Math.PI*2);ctx.fillStyle='#15262b';ctx.fill();
+  ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fillStyle='#ffffff';ctx.fill();
+  ctx.beginPath();ctx.arc(x,y,r-2.6*d,0,Math.PI*2);ctx.fillStyle='#33b2d2';ctx.fill();
+  const s=r*0.78;ctx.fillStyle='#ffffff';ctx.beginPath();ctx.roundRect(x-s/2,y-s/2,s,s,1.6*d);ctx.fill();
   ctx.restore();};
 // The ride card in route-choice.js says ON TRAM 1H → Ooppera with the strip
 // and the countdown; this slot used to say ON TRAM 1H a second time above it.
 // It now carries only the one thing that card does not: a second job aboard.
 const rideStatus=()=>{const ch=tm.challenge,el=tm.sheetSlot?.('rideStatus');if(!el)return;const st=tm.mobility?.status?.();
-  if(!ch?.active||st?.kind!=='riding'||!ch.queued){if(el.innerHTML)el.innerHTML='';return;}
+  if(!ch?.active||st?.kind!=='riding'||!ch.queued){if(el.innerHTML){el.innerHTML='';el.dataset.html='';}return;}
   const html=`<div style="margin-top:8px;padding:8px;border:2px solid #e2683c;border-radius:8px;background:#fff8ef;font-size:11px"><b>SECOND JOB ONBOARD</b> → ${ch.name(ch.queued.originalStops?.[1]||ch.queued.stops[1])}</div>`;
-  if(el.innerHTML!==html)el.innerHTML=html;};
-const draw=()=>{tm.shiftLog?.poll();if(!document.body.classList.contains('transit-view')){const dpr=tm.renderer?.dpr||window.devicePixelRatio||1,base=tm.fleetFilter?.(),here=tm.weather?.fogM?tm.courierLatLon?.():null,filter=here?(lat,lon,l,v)=>(!base||base(lat,lon,l,v))&&(v?.id===tm.liveNetwork?.selectedVehicleId||!fogHides(tm.weather,here,{lat,lon})):base;/* FOG: nothing past its reach but the ride you are on */tm.trails?.update(ctx,tm.liveNetwork,tm.flow.clock.tick,project,dpr,filter);const rel=relevantLines(),budget=Math.max(10,Math.min(32,Math.round((canvas.width/dpr)*(canvas.height/dpr)/11000))),lit=new Set((tm.catchables?.()||[]).map(x=>x.vehicle.id)),foc=tm.focusLines?.(),dim=foc&&foc.size?(l=>!foc.has(l?.name)&&!foc.has(l?.id)):null,boxes=tm.liveNetwork?.draw(ctx,tm.flow.clock.tick,project,dpr,{filter,dim,priority:(l,v)=>lit.has(v?.id)?2.5:rel.has(l?.name)||rel.has(l?.id)?2:1,budget,lit,now:performance.now(),full:tm.rushOn?tm.isFull:null})||[];tm.drawStopLabels?.(boxes);drawRival();drawCourier();drawInterception();drawGetOff();tm.juice?.draw(ctx,project,dpr);rideStatus();}requestAnimationFrame(draw);};requestAnimationFrame(draw);}
+  if(el.dataset.html!==html){el.innerHTML=html;el.dataset.html=html;}};
+const draw=()=>{tm.shiftLog?.poll();if(!document.body.classList.contains('transit-view')){const dpr=tm.renderer?.dpr||window.devicePixelRatio||1,base=tm.fleetFilter?.(),here=tm.weather?.fogM?tm.courierLatLon?.():null,filter=here?(lat,lon,l,v)=>(!base||base(lat,lon,l,v))&&(v?.id===tm.liveNetwork?.selectedVehicleId||!fogHides(tm.weather,here,{lat,lon})):base;/* FOG: nothing past its reach but the ride you are on */tm.trails?.update(ctx,tm.liveNetwork,tm.flow.clock.tick,project,dpr,filter);const rel=relevantLines(),budget=Math.max(10,Math.min(32,Math.round((canvas.width/dpr)*(canvas.height/dpr)/11000))),lit=new Set((tm.catchables?.()||[]).map(x=>x.vehicle.id)),foc=tm.focusLines?.(),dim=foc&&foc.size?(l=>!foc.has(l?.name)&&!foc.has(l?.id)):null,boxes=tm.liveNetwork?.draw(ctx,tm.flow.clock.tick,project,dpr,{filter,dim,priority:(l,v)=>lit.has(v?.id)?2.5:rel.has(l?.name)||rel.has(l?.id)?2:1,budget,lit,now:performance.now(),full:tm.rushOn?tm.isFull:null,halted:tm.events?.activeHolds?.()?.length?(l=>tm.events.heldLayer(l)):null})||[];tm.drawStopLabels?.(boxes);drawRival();drawCourier();drawInterception();drawGetOff();tm.juice?.draw(ctx,project,dpr);tm.audio?.poll();rideStatus();}requestAnimationFrame(draw);};requestAnimationFrame(draw);}
 mount();

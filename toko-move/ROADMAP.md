@@ -1,22 +1,255 @@
 # Toko Move — roadmap after v2.36
 
-## Owner direction, 2026-09-27 — two modes: Toko Move, and later Piritori
+## Owner direction, 2026-11-06 — more art, more scenarios, a polished board
 
-*"Just assume that it has 2 modes. Main Toko Move and then it may turn to
-Piritori later, that's it."*
+*"We need to add lots more art and scenarios in these styles and the tip
+down view can use some polish. The trailer is great way to communicate
+progress."*
 
-This settles the 2026-09-26 direction (*"Toko Move turns into Piritori stories
-or a kids game depending on the user"*):
+The plan reads this as three things. First, more of the minimal-metro look:
+the iso stop, the close interiors and the flat-vector people. Second, more
+situations to put in it. Third, the board between moments ("the top down
+view") brought up to the scenes. Every step ends in a re-filmed trailer
+(`tools/film3.cjs`), because that is how progress is shown.
 
-- **Mode 1 — Toko Move**, the courier game as it ships, is the main game and
-  the default. All current work continues here.
-- **Mode 2 — Piritori**, which Toko Move *may* turn into **later**. Not
-  scheduled, not designed here; when it comes, Piritori's own design authority
-  (`piritori/DESIGN_AUTHORITY.md`, the shared-engine note in
-  `piritori/SHARED_ENGINE.md`) governs it, and it is adult content, so how a
-  player reaches it gets decided then.
-- **There is no kids' mode.** The kids' face, the "grown-up or kid?" question
-  and the three open questions in the 2026-09-26 proposal are withdrawn.
+1. ~~**v3.8 · The board, polished.**~~ Shipped in v3.8 (and the district names moved where the places are). Six changes, on Day, Night and Snow:
+   - The sea is filled. The board only stroked the coastline, so a harbour
+     read as blue tubes. The sea is now solved from the coastline, as the
+     bible's stills already do, and drawn with a shore.
+   - The real streets and the district names go under the lines.
+   - The network is quiet. The line you ride is bold and inked behind you
+     as you go.
+   - The landmarks appear on the board.
+   - The pill is bigger and carries the line number.
+   - The camera eases between hops instead of cutting.
+2. ~~**v3.9 · Scenarios in the scene.**~~ Shipped in v3.9: sixteen stop actors (`make_actors.py`) and nine walking pictures on the board (`js/vignettes.js`). A card's subject appears in the scene
+   it is played in: the gull on the parcel, the lady at the crossing, the
+   tourist and the map, the busker, the choir, the inspector, the dog and
+   the rest. Each one is a flat-vector cutout in the people's style
+   (featureless faces, tapered limbs) on one layer that comes and goes with
+   its card.
+3. ~~**v3.10 · More places.**~~ Shipped in v3.10: a landmark for all 23 places (`make_places.py`), snow and puddles on the stop. Autumn leaves wait for a season the game does not have yet. Landmarks for more stations than today's twelve,
+   and weather on the scene: snow on the shelter roof, puddles and autumn
+   leaves.
+4. ~~**v3.11 · More interiors.**~~ Shipped in v3.11 without the key, every
+   car derived from the shipped plate (`make_cars.py`): the metro by day
+   with a tunnel window, a rush-hour car (tram and metro), the empty car for
+   the humming card. The window carries the weather (`make_windows.py`), and
+   the night window's rain falls one way. Generated plates would still add
+   new compositions; that waits for the key.
+5. ~~**v3.12 · The owner's art.**~~ The code-drawn window views were
+   dropped on the owner's word (*"Forget your art designs, I will get u a
+   PR"*). Shipped in v3.12 instead: all 21 approved scenes of PR #632 as
+   moments of the job (handovers, tram stops, the Kalasatama platform, the
+   stairs down), each at its place where it has one.
+   v3.13 added the next approvals: the cards' own scenes (the tourist, the
+   sealed parcel, the saved seat), the crossing as the consequence of
+   helping, and the snow. Held for the owner: the wallet (no journey card)
+   and the demonstration (its cause is a new proposal).
+6. ~~**v3.14 · Missions, the wallet, roguelike runs.**~~ Shipped: four
+   three-job missions across real places, each event with its art; the
+   wallet as a two-button choice card with a callback; a version per seed,
+   strikes, a perk draft between jobs, and unlocks (missions and perks).
+   Next: more missions as art lands (one per approved scene set), a mission
+   that strings the sealed parcel and the race, and the perks on the runs
+   too if the owner wants them there (it would move the measured bands).
+   v3.15: forks (two errands on one card), THE STICKER (the race and the
+   sealed parcel) and THE LAST TRAM (the night, its events those with art). Further packs land the same way: the
+   approved crops as they are, at the beat they draw.
+
+Next, proposed 2026-11-08 (owner: *"Plan next steps and show me trailer"*):
+
+**Owner's answers, same day:** the march goes in, *"for central lines,
+especially around Mannerheimintie"*; perks and modifiers go on *"all runs …
+test all, plan to fit the design"*; and the build is played on the Suds Jack
+cabinet, not uploaded to itch. ~~**v3.16 · The march, and the roguelike on
+every run.**~~ Shipped: the march holds the 1, 2, 4 and 10 by the Parliament
+House (MEDIUM every other shift, HARD when its halt is central); every run
+drafts perks, deals one fork and counts strikes, with HARD's clock and
+NIGHT's strikes refitted so the ladder keeps its shape. The list below moves
+up by one.
+
+7. ~~**v3.17 · Missions on the board.**~~ Shipped in v3.17 (the map on the title card, a tap on a pin plays it). The mission list becomes the map:
+   each mission's start is a pin at its real place, done ones stamped with
+   their best, the next one open and pulsing. No new art; the board and the
+   pins are what exists.
+8. ~~**v3.17 · The daily mission.**~~ Shipped in v3.17 as TODAY'S ERRAND (`?errand`). One mission a day, seeded from the date
+   (the daily shift's rule), its perk pool fixed, a share line with the
+   strikes and the build. Cheap and social, and it gives the six missions a
+   reason to be replayed.
+9. **v3.18 · The next approved pack.** Whatever PR #632's successors
+   approve becomes moments first, then a mission built from them, as v3.14
+   and v3.15 did. Two decisions are the owner's and wait for him: the
+   demonstration as a halt cause, and perks on the main runs (it would move
+   the measured bands).
+10. **Store refresh.** The trailer, stills and itch text brought up to the
+    missions. The upload, a real-phone pass and a native Finnish read stay
+    the owner's.
+
+**Owner, 2026-11-08, on v3.17:** *"The traveling on a tram visual is a great one
+and should be used more … The waiting on a stop visual is great but needs lots of
+improvement and polish … We need 3 options at every choice. 2 regular and 3rd can
+sometimes be special or very special. This same lower third look, should be used
+in menus and the intro screen."*
+
+11. ~~**v3.18 · Three at every choice, and the menus wear the card.**~~ Shipped.
+12. ~~**v3.19 · The ride, longer.**~~ Shipped: the ride stays in the car, the neck mended; the art for more (window views, poses, passengers) is asked for in PR #633. The tram interior as the stage for a longer
+    stretch of travel: the ride held, more aboard (cards, the people moving),
+    choices made riding; and the courier's neck mended (Toko's head sits left
+    of the neck in the interior layers).
+13. **v3.22 · The stop, polished** toward the approved illustrations, with what
+    the repo holds (no new art invented).
+
+Each step is measured, gated and deployed, and the trailer is re-filmed with
+what changed.
+
+## Owner direction, 2026-11-02 — the card journey (v3.0)
+
+*"We need more of the new design, less of the old map with visible trams on a
+realistic schedule. The new art bibles is what we are going from as an
+experience and occasionally you should feel like the trams have some realism
+but it's less actual schedule, more curated narrative roguelike with fun
+choices and minimalistic visuals."* Signed off as turn-based card hops, the
+scenes as the main view with the board between moments, and a slim job strip.
+
+v3.0 shipped the frame of it, and v3.1 shipped Act 1's content (`ACT1.md`):
+36 Helsinki cards by tone, stakes with the odds in words, euros, buyers and
+what the parcels held, the weather, six tram models (look only), and
+landmarks at twelve key stations. The bare address is the card journey
+(`js/journey.js` + `js/play.js`); the real-time game is `?classic`.
+
+### Act 1 to ship — the plan (owner, 2026-11-03: *"keep going with upgrading through a plan"*)
+
+The owner's Act 1 note put feel first: *"Making the visual layers have smooth
+animations will add to the appeal. UI animations and effects will be a big
+polish issue for shipping the Helsinki act."* So the order is feel, then
+character, then the modes, then the store. One version per step, each measured
+and gated, each deployed before the next starts.
+
+1. ~~**The cabinet cover from the v3.1 scenes.**~~ Done 2026-11-03: the
+   arcade's `tramstop` marquee is the Kauppatori stop as the game draws it.
+2. ~~**v3.2 · Sound for the journey.**~~ Shipped in v3.2. The journey is silent; only `?classic`
+   has the kit. The same house kit (synthesised, one master gain, the same
+   kept mute): a tram bell when it pulls in, the ride, a card dealt, the
+   stamp, euros counting up, a risk landing or not, a sale, the museum tram,
+   quiet weather beds (rain, snow wind, night), and the end of a run.
+3. ~~**v3.3 · The old trams from inside.**~~ Shipped in v3.3. One interior serves all six models
+   today; Nr I, Nr II and the museum tram get their own (wood, brass, the
+   bell rope), the newer ones share theirs. Look only, like the outside.
+4. ~~**v3.4 · Story arcs.**~~ Shipped in v3.4 (Dispatch, the 1987 ticket and three in-run callbacks; the Other Courier and the Retired Number wait for v3.5's rival). The itch bible's CARDS.md arcs (Same Morning, the
+   Inspector, the Other Courier, the Retired Number, the Dispatch arc): a card
+   that comes back later in the same run and remembers what you chose. The
+   character and the funny moments live here.
+5. ~~**v3.5 · The rival, the regulars and the sealed parcel on the journey.**~~ Shipped in v3.5.
+   Run modifiers, so each adds a card and never a screen.
+6. ~~**v3.6 · The daily and the week as journeys.**~~ Shipped in v3.6. Today they open the
+   real-time game.
+7. ~~**v3.7 · The ship bar on the journey, and the store pass.**~~ Shipped in v3.7 (`test/ship3.cjs`, `tools/stills3.cjs`, `store/ITCH.md`). Act 1 is ready for itch; the upload, the rent (€400 or €500: VERSIONS.md v3.7 has the numbers), the itch page URL and a real-phone pass are the owner's. `ship.cjs`'s
+   S1–S7 re-run against the journey (a whole run by tapping, leaving
+   mid-run, hostile storage, landscape and 320px, frame cost, sound and mute,
+   credits), then the store copy, stills and cover re-shot from v3. Then Act 1
+   is ready for itch — the upload stays the owner's.
+
+After the plan (2026-11-06): **the trailer.** `tools/film3.cjs` films the
+journey from the store build with its own sound, in 9:16 and 16:9.
+`store/ITCH.md` says which cut goes where.
+
+## Owner direction, 2026-10-24 — publish Toko Move first; Piritori is its spin-off
+
+*"Toko Move is the thing we publish first and then Piritori is a spin-off that
+becomes the bigger game. I have Toko Move approved in my contract but not
+Piritori, so it has to be Toko Move: Piritori and then we rebrand."* And on
+the first draft of the order: *"Toko Move has none of Piritori assets. It's a
+simple transportation simulator game with missions"*; *"We are looking at
+platform publishing like itch.io"*. (Supersedes the 2026-10-23 draft and the
+2026-09-27 "two modes" note.)
+
+### The release order
+
+1. **Toko Move** — published first, on itch.io, under the title the contract
+   approves. A transport simulator with missions on the real Helsinki network.
+   **It carries nothing of Piritori**: no characters, art, name, door or code.
+2. **Toko Move: Piritori** — the spin-off, published under the approved title
+   as its own itch.io project with its own adult-content rating. Built in its
+   own lane (`mbace1/piritori-eden`); Piritori's canon stands untouched —
+   separate products sharing only the neutral city engine (`flow-core`).
+3. **Piritori** — the rebrand, once the spin-off has outgrown the name; it
+   becomes the bigger title and the top of the publisher page. Toko Move stays
+   published and maintained beside it.
+
+Two things to settle outside the code before step 2: that the contract's
+approval of *Toko Move* covers a spin-off of this kind under that name, and
+the spin-off's itch.io URL — give it a neutral slug (`…/piritori`) from day
+one so the rebrand changes a title, not an address.
+
+### Toko Move's road to the store — milestones
+
+**M1 · Current network + the rival fix (v2.64, 2026-10-24).** The feed the
+nightly refresh has validated since; the rival no longer loses his walk to a
+race abandoned a tick later. `tools/fingerprint.mjs` makes every future
+adoption one command.
+
+**M2 · The store build (v2.64).** One shipping tree, two places it is
+published. `js/platform.js` is the seam: a packaged build declares
+`TOKO_PLATFORM` and the game then shares the STORE PAGE rather than the frame
+it is playing in, and leaves out the playtest test card.
+`tools/package-itch.mjs` builds the upload — `toko-move/` beside the parts of
+`flow-core/` it imports, a root `index.html` that steps into it, no arcade
+HOME button, no tests or tools — refuses any path that would reach outside the
+package, and zips it. `test/itch.cjs` unzips that file, serves it ALONE, and
+plays a shift through it.
+
+**M3 · The store page kit.** `store/ITCH.md` (title, short and long
+description, controls, tags, credits, embed settings); the Crown Bridges film
+(`tools/film.cjs`) as the trailer; stills from the same harness.
+*Done in v2.65:* `tools/stills.cjs` renders six phone stills and the 630×500
+cover from the store build (dispatch, a lit catch, tram 12 over the Crown
+Bridge, an event card, the week's rent, the daily result).
+
+**M4 · First minutes for a stranger.** Until now every player had the arcade
+around them and a test card telling them what to try. A store player arrives
+cold: the first shift has to teach the loop — take a job, catch a tram, get
+off, deliver — without a page of text. Measure it (the shift bot's "naive"
+player and a timed first-delivery) before building it.
+*Done in v2.65:* `test/stranger.cjs` taps only what lights. It finished every
+shift already, so nothing was built that the measurement did not ask for; it
+found four things a stranger reads wrong (a quoted plan missing from the catch
+board — shift 1's first delivery 29 → 9.7 min — a stale "nothing to catch",
+"get off here" at the boarding stop, LIVE on the store title) and holds all
+four.
+
+**The ship bar (v2.67, owner: "a shippable Toko Move before considering
+itch.io").** Before the store, the game has to survive what a stranger's phone
+does to it. Seven items, each measured before it was fixed, held by
+`test/ship.cjs`:
+S1 the whole week plays by tapping, Monday to the rent, with memory flat ·
+S2 leaving mid-shift pauses and says so · S3 storage that throws, and saves
+in the wrong shape · S4 phone landscape and 320px phones · S5 frame cost
+(measured; headless cannot speak for a phone GPU, so M6 confirms it) ·
+S6 sound with a kept mute · S7 credits in the game. What the bar does NOT
+claim: that the game is fun enough to sell — that is a playtest, and the
+owner's call.
+
+**M5 · Language.** Finnish and English at least, the arcade's house
+convention (fi/en/ja) as the target; Toko Move is English-only today.
+*Done in v2.66 for Finnish:* `js/lang.js` translates at the DOM, `test/lang.cjs`
+plays in Finnish and fails on any English left. Needs a native read; Japanese
+not started.
+
+**M6 · LIVE on a real phone.** LIVE has never met HSL's broker from here; it
+needs the owner's phone (or a network that reaches `mqtt.hsl.fi`) before a
+store page may name it.
+
+**M7 · 1.0 on itch.io.** Owner uploads the M2 zip (or `butler` with the
+owner's key — not available here), embed 405×720 with fullscreen, mobile
+friendly, the M3 page. Every later release: the same package script, the same
+gate, `VERSIONS.md` as the changelog.
+
+Owner actions outside the code: the GitHub Actions setting so the nightly
+network refresh opens its own PR; the phone pass on the test card; the
+itch.io account and page.
+
+The kids' mode stays withdrawn (2026-09-27).
 
 
 Owner direction, 2026-09-17, in their words: *"Disruptions is good, feels like

@@ -2,28 +2,35 @@
 import {createFlow} from '../../flow-core/sim.js?v=2';
 import {FlowRenderer} from '../../flow-core/render.js?v=3';
 import {THEME} from './palette.js?v=1';
-import {DeliveryChallenge,DELIVERY_TARGET} from './deliveries.js?v=26';
-import {TransitLayers} from './transit-layers.js?v=10';
+import {tr} from './lang.js?v=17';
+const trLines=t=>String(t).split('\n').map(l=>tr(l)).join('\n');
+import {shareUrl,STORE} from './platform.js?v=1';
+import {DeliveryChallenge,DELIVERY_TARGET} from './deliveries.js?v=28';
+import {TransitLayers} from './transit-layers.js?v=11';
 import {buildRealHelsinki} from './real-helsinki.js?v=5';
 import {boardBox,boardFit,roadPaths,lineFamily,ROAD_INK,ROAD_INK_MAJOR,ROAD_INK_MID,ROAD_INK_MINOR,HUB_INK,NIGHT} from './board.js?v=8';
 import {TRANSFER_HUBS} from './hubs-walking.js?v=4';
-import {SHIFT} from './live-network.js?v=15';
+import {SHIFT} from './live-network.js?v=17';
 import {Camera,SCALES,FLEET_RADIUS_M,metresBetween} from './camera.js?v=1';
 import {loadGround,STREET_TIERS} from './ground.js?v=12';
 import {dots,minutes} from './ui.js?v=2';
 import {landmarkPoints,drawLandmarks} from './landmarks.js?v=3';
 import {drawCityEvent,family as dayFamily} from './city-events.js?v=1';
-import {dailyName,resolveShift,todayRecord,recordDaily,streak,shareText,grid as dailyGrid} from './daily.js?v=1';
-import * as Week from './week.js?v=3';
+import {dailyName,resolveShift,todayRecord,recordDaily,streak,shareText,grid as dailyGrid} from './daily.js?v=2';
+import * as Week from './week.js?v=4';
 import * as Kit from './kit.js?v=1';
 import {drawWeather} from './weather.js?v=1';
-import {drawPoster} from './poster.js?v=1';
+import {skinFor,applySkin,CORAL as SK_CORAL} from './skin.js?v=1';
+import {rushWith,startMinute} from './mutators.js?v=2';
+import * as Runs from './runs.js?v=5';
+import {loadNotebook} from './sealed.js?v=2';
+import {drawPoster} from './poster.js?v=18';
 import * as WalkPath from './walkpath.js?v=1';
 import * as Rush from './rush.js?v=1';
 import {colourOf,parcelHtml,bagHtml} from './parcels.js?v=1';
 
 const $=id=>document.getElementById(id);
-const BUILD_VERSION='2.63';
+const BUILD_VERSION='3.21';
 const MAP_THEME={...THEME,latent:THEME.paper,hideQueues:true,hideLoadMarks:true,hideCarriers:true,modeColours:{metro:'rgba(0,0,0,0)',tram:'rgba(0,0,0,0)',car:'rgba(0,0,0,0)'}};
 const cargoColour=colourOf;   // ONE palette: this file and the job board drew the same parcel in two different colours until v2.43
 const esc=s=>String(s??'').replace(/[&<>\"]/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[ch]||ch));
@@ -55,14 +62,23 @@ let WEEK=params.has('week')?Week.resume():null;
 const LIVE=params.has('live')&&!params.has('week');
 if(WEEK&&Week.isOver(WEEK)){Week.clearWeek();WEEK=Week.resume();}
 const WEEK_DAY=WEEK?Week.today(WEEK):null;
-const SHIFT_INFO=WEEK?{kind:'week',seed:WEEK_DAY.seed,index:WEEK_DAY.index,name:WEEK_DAY.name}:LIVE?{...resolveShift(params),kind:'live'}:resolveShift(params);
+// v2.73: THE RUN (runs.js) — the game is a ladder of four runs, EASY to
+// NIGHT, each opened by completing the one before. The bare address IS the
+// ladder and plays the next run on a FRESH shift every attempt (owner: a new
+// shift each time); `?run=` names one that is open. Any of the testers' and
+// the bot's parameters — a pinned shift, the daily, a day, a weather, the rush
+// or a kit — keeps the classic rules, so every gate written against them still
+// measures what it measured. LIVE and the week wear no run.
+const CLASSIC=['shift','daily','day','weather','rush','kit'].some(k=>params.has(k));
+const RUN=Runs.resolveRun(params,{live:LIVE,week:!!WEEK,other:CLASSIC});
+const SHIFT_INFO=WEEK?{kind:'week',seed:WEEK_DAY.seed,index:WEEK_DAY.index,name:WEEK_DAY.name}:LIVE?{...resolveShift(params),kind:'live'}:(params.has('shift')||params.has('daily')||(CLASSIC&&!RUN))?{...resolveShift(params),...(RUN?{run:RUN.id}:{})}:{kind:'run',run:RUN.id,seed:1000+Math.floor(Math.random()*9000)};
 const shiftSeed=SHIFT_INFO.seed;
 // The real clock in Helsinki, in minutes of the day.
 const helsinkiMinutes=(d=new Date())=>{try{const [h,m]=new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/Helsinki',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).format(d).split(':').map(Number);return h*60+m;}catch{return d.getHours()*60+d.getMinutes();}};
 const LIVE_START=LIVE?helsinkiMinutes():null;
 const hhmm=m=>`${String(Math.floor(m/60)%24).padStart(2,'0')}:${String(m%60).padStart(2,'0')}`;
-const shiftLabel=()=>SHIFT_INFO.kind==='live'?`LIVE · HELSINKI ${hhmm(LIVE_START)}`:SHIFT_INFO.kind==='daily'?`${dailyName(SHIFT_INFO.number).toUpperCase()} · ${SHIFT_INFO.label}`:SHIFT_INFO.kind==='week'?`WEEK ${WEEK.seed} · ${SHIFT_INFO.name}`:`shift #${shiftSeed}`;
-const cityDay=drawCityEvent(shiftSeed,WEEK?WEEK_DAY.day:LIVE?'none':params.get('day'));
+const shiftLabel=()=>SHIFT_INFO.kind==='live'?`LIVE · HELSINKI ${hhmm(LIVE_START)}`:SHIFT_INFO.kind==='daily'?`${dailyName(SHIFT_INFO.number).toUpperCase()} · ${SHIFT_INFO.label}`:SHIFT_INFO.kind==='week'?`WEEK ${WEEK.seed} · ${SHIFT_INFO.name}`:SHIFT_INFO.kind==='run'?`${RUN.name} · ${RUN.title}`:RUN?`${RUN.name} · shift #${shiftSeed}`:`shift #${shiftSeed}`;
+const cityDay=drawCityEvent(shiftSeed,WEEK?WEEK_DAY.day:LIVE||(RUN&&!RUN.cityDay)?'none':params.get('day'));   // a run says whether the city happens
 // v2.48: KIT (kit.js). A week carries what was picked on its nights. `?kit=`
 // applies it to a pinned or random shift — the bot measures each item that way
 // — and never to the daily, whose result is one everybody can compare.
@@ -70,14 +86,22 @@ const KIT_IDS=WEEK?Week.owned(WEEK):SHIFT_INFO.kind==='daily'?[]:Kit.parse(param
 const KIT_FX=Kit.effects(KIT_IDS);
 // v2.49: WEATHER (weather.js) — a look and a lever per morning, drawn from the
 // shift. `?weather=` pins it; the harness's `?day=none` control means clear.
-const WEATHER=drawWeather(shiftSeed,LIVE?'clear':params.get('weather'),params.get('day'));
+const WEATHER=drawWeather(shiftSeed,LIVE?'clear':RUN?.weather||params.get('weather'),params.get('day'));
+// v2.69: THE SKIN (skin.js; art bible §1). Day paper is the default board and
+// the owner's grey night map is the Night skin; a run's mutator decides, and
+// `?skin=` pins one for a link. Everything on the board reads SK, never NIGHT.
+const SK=skinFor({skin:params.get('skin'),mutator:RUN?.skin||null,weather:WEATHER});document.body?.classList.add(`skin-${SK.id}`);
 // v2.52: THE RUSH (rush.js). `?rush=off`, and the harness's `?day=none`
 // control, turn it off; `?rush=on` keeps it on under that control.
-const RUSH_ON=!LIVE&&(params.get('rush')==='on'||(params.get('rush')!=='off'&&params.get('day')!=='none'));
-const rushLoad=()=>RUSH_ON&&flow?Rush.load(flow.clock.dayProgress):0;
+// A mutator may pin it: Night has none (opposite hours), Rush Hour is at its peak all shift.
+const RUSH=rushWith(RUN,!LIVE&&(params.get('rush')==='on'||(params.get('rush')!=='off'&&params.get('day')!=='none')),()=>flow?Rush.load(flow.clock.dayProgress):0);
+const RUSH_ON=RUSH.on;
+const rushLoad=()=>RUSH_ON?RUSH.load():0;
+// The clock's first minute: 07:00, or 23:00 on a Night run.
+const START_MIN=startMinute(RUN,SHIFT.startHour);
 const say=s=>{if(msgs[0]===s)return;msgs.unshift(s);msgs.length=Math.min(8,msgs.length);paintFeed();};  // a line repeated back to back is a double call, not news
 
-function publish(){window.__tm={...(window.__tm||{}),walkLine,walkProgress,live:LIVE,version:BUILD_VERSION,shiftSeed,shiftInfo:SHIFT_INFO,cityDay,kit:KIT_IDS,kitFx:KIT_FX,weather:WEATHER,rushOn:RUSH_ON,rushLoad,isFull:v=>RUSH_ON&&!!flow&&Rush.isFull(v,flow.clock.tick,rushLoad()),flow,challenge,renderer,transit,city,water,board:box,project:fitLatLon,projection,camera,ground,landmarkPoints:()=>_lmPoints,fleetFilter,courierLatLon,drawStopLabels,shift:SHIFT,say,paintHud,paintSheet,sheetSlot};}
+function publish(){window.__tm={...(window.__tm||{}),skin:SK.id,run:RUN,walkLine,walkProgress,live:LIVE,version:BUILD_VERSION,shiftSeed,shiftInfo:SHIFT_INFO,cityDay,kit:KIT_IDS,kitFx:KIT_FX,weather:WEATHER,rushOn:RUSH_ON,rushLoad,isFull:v=>RUSH_ON&&!!flow&&Rush.isFull(v,flow.clock.tick,rushLoad()),flow,challenge,renderer,transit,city,water,board:box,project:fitLatLon,projection,camera,ground,landmarkPoints:()=>_lmPoints,fleetFilter,courierLatLon,drawStopLabels,shift:SHIFT,say,paintHud,paintSheet,sheetSlot};}
 
 // THE one projection. It used to go lat/lon -> graph space -> flow.graph.fit(),
 // and fit() letterboxes with Math.min: the board is portrait (about 4km across
@@ -91,7 +115,9 @@ function publish(){window.__tm={...(window.__tm||{}),walkLine,walkProgress,live:
 // scale and is not once a camera makes the answer change continuously. It is
 // memoised on the only five numbers it depends on.
 let _proj=null,_base=null,_pw=0,_ph=0,_pz=-1,_px=0,_py=0;
-function projection(){const c=$('map'),z=camera?camera.zoom:1,cx=camera?camera.cx:0,cy=camera?camera.cy:0;
+// the canvas is looked up once, not on every projected point (v2.67)
+let _mapEl=null;
+function projection(){const c=_mapEl?.isConnected?_mapEl:(_mapEl=$('map')),z=camera?camera.zoom:1,cx=camera?camera.cx:0,cy=camera?camera.cy:0;
   if(!_proj||_pw!==c.width||_ph!==c.height||_pz!==z||_px!==cx||_py!==cy){
     _base=boardFit(box,c.width,c.height);_proj=camera?camera.apply(_base,c.width,c.height):_base;
     _pw=c.width;_ph=c.height;_pz=z;_px=cx;_py=cy;}
@@ -107,7 +133,7 @@ function boot(seed=7){
   // end card to it left a won shift running (v2.29-v2.45) until an event
   // happened to fire, and on a quiet day none did. The day's end always ends it.
   flow=createFlow({city,seed,days:1,demand:null,ticksPerDay:SHIFT.ticksPerDay,hooks:{onTick:()=>{const changed=challenge?.step?.();if(changed){paintHud();paintSheet();}weekProgress();if(challenge?.complete)finish();},onDay:()=>finish()}});
-  challenge=new DeliveryChallenge(flow,say);challenge.shiftSeed=shiftSeed;challenge.kit=KIT_FX;challenge.weatherSpeed=WEATHER.speed||1;challenge.surge=()=>RUSH_ON?Rush.surge(rushLoad()):1;if(WEEK)challenge.useStanding(Week.standingStore(WEEK));done=false;msgs=[];
+  challenge=new DeliveryChallenge(flow,say);challenge.shiftSeed=shiftSeed;challenge.kit=RUN?.deadline&&RUN.deadline!==1?{...KIT_FX,limit:(KIT_FX.limit||1)*RUN.deadline}:KIT_FX;if(RUN?.target&&RUN.target!==3)challenge.targetOverride=RUN.target;if(RUN?.cargo)challenge.cargoPool=RUN.cargo;if(RUN?.board==='short')challenge.shortBoard=true;challenge.weatherSpeed=WEATHER.speed||1;challenge.surge=()=>RUSH_ON?Rush.surge(rushLoad()):1;if(WEEK)challenge.useStanding(Week.standingStore(WEEK));done=false;msgs=[];
   renderer=new FlowRenderer($('map'),MAP_THEME);
   challenge.start();publish();paintHud();paintSheet();
 }
@@ -145,11 +171,11 @@ function drawWater(ctx=$('map').getContext('2d'),alpha=.92){const src=ground?.wa
   // the data itself says is water. Three offset passes, fading out, which reads
   // as sea at a glance and is derived rather than drawn: flip the winding and
   // the shading goes inland, which is exactly the error it would be.
-  ctx.strokeStyle=NIGHT.water;ctx.fillStyle=NIGHT.waterFill;ctx.lineWidth=1.2*d;
+  ctx.strokeStyle=SK.water;ctx.fillStyle=SK.waterFill;ctx.lineWidth=1.2*d;
   for(const area of src.areas||[]){if(!area.shape?.length)continue;ctx.beginPath();area.shape.forEach(([lat,lon],i)=>{const p=fitLatLon(lat,lon);i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y);});ctx.closePath();ctx.fill();ctx.stroke();}
   ctx.lineJoin='round';ctx.lineCap='round';
   for(const[off,w,a]of[[13,17,.30],[6,11,.42],[1.6,5,.60]]){
-    ctx.strokeStyle=NIGHT.waterFill;ctx.globalAlpha=alpha*a;ctx.lineWidth=w*d;
+    ctx.strokeStyle=SK.waterFill;ctx.globalAlpha=alpha*a;ctx.lineWidth=w*d;
     for(const edge of src.edges||[]){const pts=(edge.shape||[]).map(([lat,lon])=>fitLatLon(lat,lon));if(pts.length<2)continue;
       ctx.beginPath();
       for(let i=0;i<pts.length;i++){
@@ -159,7 +185,7 @@ function drawWater(ctx=$('map').getContext('2d'),alpha=.92){const src=ground?.wa
         const x=pts[i].x+(dy/len)*off*d,y=pts[i].y-(dx/len)*off*d;
         i?ctx.lineTo(x,y):ctx.moveTo(x,y);}
       ctx.stroke();}}
-  ctx.globalAlpha=alpha;ctx.strokeStyle=NIGHT.waterEdge;ctx.lineWidth=1.6*d;
+  ctx.globalAlpha=alpha;ctx.strokeStyle=SK.waterEdge;ctx.lineWidth=1.6*d;
   for(const edge of src.edges||[]){if(!edge.shape?.length)continue;ctx.beginPath();edge.shape.forEach(([lat,lon],i)=>{const p=fitLatLon(lat,lon);i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y);});ctx.stroke();}
   ctx.restore();}
 
@@ -169,7 +195,8 @@ function drawWater(ctx=$('map').getContext('2d'),alpha=.92){const src=ground?.wa
 // the badges already rank by (main-v212's relevantLines), so the line and its
 // vehicles agree about what matters.
 function drawTransit(){const rel=window.__tm?.focusLines?.();const focus=rel&&rel.size?(l=>rel.has(l.id)||rel.has(l.name)):null;
-  transit?.draw($('map').getContext('2d'),$('map').width,$('map').height,{fit:fitLatLon,alpha:.92,lineWidth:2.4*(renderer?.dpr||1),focus});}
+  const ev=window.__tm?.events,halted=ev?.activeHolds?.()?.length?(l=>ev.heldLayer(l)):null;
+  transit?.draw($('map').getContext('2d'),$('map').width,$('map').height,{fit:fitLatLon,alpha:.92,lineWidth:2.4*(renderer?.dpr||1),focus,casing:SK.paper,halted});}
 
 // Main roads: GROUND, and they have to stay ground. They are drawn first, in
 // one flat grey with no rounded caps, so they read as the surface the network
@@ -198,7 +225,7 @@ function drawRoads(ctx=$('map').getContext('2d')){const d=renderer?.dpr||1,scale
   // The corridors are not a street map and the credit line says so. What they
   // are is the streets that carry service, which is the right thing for the
   // coarse layer to be: an arterial is exactly a street a bus runs on.
-  const W={minor:1.5,mid:2.6,major:4.2},INK={minor:ROAD_INK_MINOR,mid:ROAD_INK_MID,major:ROAD_INK_MAJOR};
+  const W={minor:1.5,mid:2.6,major:4.2},INK={minor:SK.road.minor,mid:SK.road.mid,major:SK.road.major};
   const tiers=STREET_TIERS[scale]||STREET_TIERS.city;
   const trace=shape=>shape.forEach(([lat,lon],i)=>{const p=fitLatLon(lat,lon);i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y);});
   ctx.save();ctx.lineJoin='round';ctx.lineCap='butt';
@@ -210,7 +237,7 @@ function drawRoads(ctx=$('map').getContext('2d')){const d=renderer?.dpr||1,scale
       for(const r of ground.byTier?.[tier]||[])trace(r.shape);
       for(const r of ground.corridorRuns||[])if(r.tier===tier)trace(r.shape);
       ctx.stroke();}}
-  else if(roads?.length){ctx.strokeStyle=ROAD_INK_MINOR;ctx.lineWidth=2.2*d;ctx.globalAlpha=.85;
+  else if(roads?.length){ctx.strokeStyle=SK.road.minor;ctx.lineWidth=2.2*d;ctx.globalAlpha=.85;
     for(const road of roads){ctx.beginPath();trace(road.path);ctx.stroke();}}
   ctx.restore();}
 
@@ -372,7 +399,7 @@ function creditHeight(){const ctx=$('map').getContext('2d'),d=renderer?.dpr||1,r
   return n?(n*9+4):0;}
 function drawCredit(){if(!ground)return;const ctx=$('map').getContext('2d'),d=renderer?.dpr||1,r=viewRect();
   ctx.save();ctx.font=creditFont(d);ctx.textAlign='left';ctx.textBaseline='bottom';
-  ctx.globalAlpha=.72;ctx.fillStyle=NIGHT.credit;
+  ctx.globalAlpha=.72;ctx.fillStyle=SK.credit;
   const lines=creditLines(ctx,r.w-12*d);
   lines.forEach((l,i)=>ctx.fillText(l,r.x+6*d,r.y+r.h-4*d-(lines.length-1-i)*9*d));
   ctx.restore();}
@@ -393,19 +420,20 @@ function drawCredit(){if(!ground)return;const ctx=$('map').getContext('2d'),d=re
 function paintWeather(ctx){const w=WEATHER;if(!w||w.id==='clear'||!flow)return;const c=$('map'),W=c.width,H=c.height,t=flow.clock.tick,d=renderer?.dpr||window.devicePixelRatio||1;ctx.save();
   if(w.id==='rain'){ctx.fillStyle='rgba(10,24,40,0.16)';ctx.fillRect(0,0,W,H);ctx.strokeStyle='rgba(170,205,230,0.38)';ctx.lineWidth=1*d;ctx.beginPath();
     for(let i=0;i<150;i++){const x=(((i*97.31+t*2.2*d)%(W+40))+W+40)%(W+40)-20,y=(((i*53.77+t*8*d)%(H+40))+H+40)%(H+40)-20;ctx.moveTo(x,y);ctx.lineTo(x-3*d,y+12*d);}ctx.stroke();}
-  else if(w.id==='snow'){ctx.globalCompositeOperation='screen';ctx.fillStyle='rgba(190,200,212,0.20)';ctx.fillRect(0,0,W,H);ctx.globalCompositeOperation='source-over';ctx.fillStyle='rgba(246,249,252,0.85)';
+  else if(w.id==='snow'){if(SK.id==='night'){ctx.globalCompositeOperation='screen';ctx.fillStyle='rgba(190,200,212,0.20)';ctx.fillRect(0,0,W,H);ctx.globalCompositeOperation='source-over';}ctx.fillStyle=SK.flake;
     for(let i=0;i<120;i++){const x=((i*131.7+Math.sin((t+i*13)/40)*18*d)%W+W)%W,y=(((i*71.3+t*1.5*d)%(H+20))+H+20)%(H+20)-10;ctx.beginPath();ctx.arc(x,y,(1+(i%3)*0.6)*d,0,Math.PI*2);ctx.fill();}}
   else if(w.id==='frost'){const g=ctx.createRadialGradient(W/2,H/2,Math.min(W,H)*0.3,W/2,H/2,Math.max(W,H)*0.75);g.addColorStop(0,'rgba(200,225,245,0)');g.addColorStop(1,'rgba(200,225,245,0.24)');ctx.fillStyle=g;ctx.fillRect(0,0,W,H);}
   else if(w.id==='fog'){const ll=courierLatLon();if(ll){const p=fitLatLon(ll.lat,ll.lon),q=fitLatLon(ll.lat+w.fogM/111320,ll.lon),r=Math.max(18*d,Math.hypot(q.x-p.x,q.y-p.y));
     const g=ctx.createRadialGradient(p.x,p.y,r*0.8,p.x,p.y,r*1.5);g.addColorStop(0,'rgba(140,150,158,0)');g.addColorStop(1,'rgba(140,150,158,0.62)');ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
     ctx.strokeStyle='rgba(215,225,230,0.4)';ctx.setLineDash([4*d,5*d]);ctx.lineWidth=1*d;ctx.beginPath();ctx.arc(p.x,p.y,r,0,Math.PI*2);ctx.stroke();}}
   ctx.restore();}
-function paintDawn(ctx){if(!flow)return;const pr=Math.min(1,flow.clock.dayProgress),a=0.13*(1-pr);if(a<=0.005)return;const c=$('map'),r={x:0,y:0,w:c.width,h:c.height};ctx.save();ctx.globalCompositeOperation='soft-light';
+function paintDawn(ctx){if(!flow||START_MIN>=20*60)return;   // no low sun at 23:00
+const pr=Math.min(1,flow.clock.dayProgress),a=0.13*(1-pr);if(a<=0.005)return;const c=$('map'),r={x:0,y:0,w:c.width,h:c.height};ctx.save();ctx.globalCompositeOperation='soft-light';
   // v2.52: the light MOVES — a low sun off the east edge at 07:00, climbing
   // and swinging south as the shift runs, its warm pool going with it.
   {const sx=r.w*(1.05-0.35*pr),sy=r.h*(0.62-0.4*pr),g=ctx.createRadialGradient(sx,sy,0,sx,sy,Math.max(r.w,r.h)*0.9);g.addColorStop(0,`rgba(255,196,120,${(a*2.2).toFixed(3)})`);g.addColorStop(1,'rgba(255,196,120,0)');ctx.fillStyle=g;ctx.fillRect(r.x,r.y,r.w,r.h);}
   ctx.fillStyle=`rgba(255,190,130,${a.toFixed(3)})`;ctx.fillRect(r.x,r.y,r.w,r.h);ctx.globalCompositeOperation='lighter';ctx.fillStyle=`rgba(90,50,25,${(a*0.2).toFixed(3)})`;ctx.fillRect(r.x,r.y,r.w,r.h);ctx.restore();}
-function drawBoardFrame(){const ctx=$('map').getContext('2d'),d=renderer?.dpr||1,r=boardRect();ctx.save();ctx.strokeStyle=NIGHT.frame;ctx.lineWidth=1*d;ctx.strokeRect(r.x+.5,r.y+.5,r.w-1,r.h-1);ctx.restore();}
+function drawBoardFrame(){const ctx=$('map').getContext('2d'),d=renderer?.dpr||1,r=boardRect();ctx.save();ctx.strokeStyle=SK.frame;ctx.lineWidth=1*d;ctx.strokeRect(r.x+.5,r.y+.5,r.w-1,r.h-1);ctx.restore();}
 
 // Stops and transfer spots. A transfer spot is the decision point of the whole
 // game — it is where waiting, catching and changing lines happen — so it is
@@ -414,8 +442,8 @@ function drawBoardFrame(){const ctx=$('map').getContext('2d'),d=renderer?.dpr||1
 // left to the lines, which own it.
 function drawStops(){if(!flow||!city)return;const ctx=$('map').getContext('2d'),d=renderer?.dpr||1;ctx.save();ctx.textAlign='center';ctx.textBaseline='middle';
   for(const node of city.nodes){const p=fitLatLon(node.lat,node.lon),hub=TRANSFER_HUBS.includes(node.id);
-    if(hub){ctx.beginPath();ctx.arc(p.x,p.y,7*d,0,Math.PI*2);ctx.fillStyle=NIGHT.hub;ctx.fill();ctx.lineWidth=2.8*d;ctx.strokeStyle=NIGHT.hubRing;ctx.stroke();}
-    else{ctx.beginPath();ctx.arc(p.x,p.y,3.6*d,0,Math.PI*2);ctx.fillStyle=NIGHT.stop;ctx.fill();ctx.lineWidth=1.8*d;ctx.strokeStyle=NIGHT.stopRing;ctx.stroke();}}
+    if(hub){ctx.beginPath();ctx.arc(p.x,p.y,7*d,0,Math.PI*2);ctx.fillStyle=SK.hub;ctx.fill();ctx.lineWidth=2.8*d;ctx.strokeStyle=SK.hubRing;ctx.stroke();}
+    else{ctx.beginPath();ctx.arc(p.x,p.y,3.6*d,0,Math.PI*2);ctx.fillStyle=SK.stop;ctx.fill();ctx.lineWidth=1.8*d;ctx.strokeStyle=SK.stopRing;ctx.stroke();}}
   ctx.restore();}
 
 // Labels are drawn LAST — after main-v212.js has put the moving vehicles down —
@@ -445,7 +473,7 @@ function drawStopLabels(avoid=[]){if(!flow||!city)return;const ctx=$('map').getC
   // board keeps the names that are decisions: the transfer spots, and the two
   // ends of the job in hand. The dots stay drawn either way, so nothing is
   // hidden — only unlabelled, and one zoom step brings the name back.
-  const wide=camera?.nearestScale()==='city',ends=[challenge?.currentFrom(),challenge?.currentTo()].filter(Boolean);
+  const wide=camera?.nearestScale()==='city',ends=[challenge?.currentFrom(),challenge?.currentTo()].filter(x=>x&&x!==hiddenStop());
   const shown=city.nodes.filter(n=>!wide||TRANSFER_HUBS.includes(n.id)||ends.includes(n.id));
   const ordered=[...shown].sort((a,b)=>Number(TRANSFER_HUBS.includes(b.id))-Number(TRANSFER_HUBS.includes(a.id)));
   for(const node of ordered){const p=fitLatLon(node.lat,node.lon),hub=TRANSFER_HUBS.includes(node.id),size=hub?9.5:8,gap=(hub?13:10)*d;
@@ -455,16 +483,16 @@ function drawStopLabels(avoid=[]){if(!flow||!city)return;const ctx=$('map').getC
     const spots=[[p.x-w/2,p.y-gap-h],[p.x-w/2,p.y+gap],[p.x+gap,p.y-h/2],[p.x-gap-w,p.y-h/2]].map(([x,y])=>({x,y,w,h}));
     hubNow=hub;const at=spots.find(free);if(!at)continue;placed.push(at);
     const tx=at.x+w/2,ty=at.y+h/2;
-    ctx.lineWidth=3.2*d;ctx.strokeStyle=NIGHT.halo;ctx.strokeText(node.name,tx,ty);
-    ctx.fillStyle=hub?NIGHT.label:NIGHT.labelDim;ctx.fillText(node.name,tx,ty);}
+    ctx.lineWidth=3.2*d;ctx.strokeStyle=SK.halo;ctx.strokeText(node.name,tx,ty);
+    ctx.fillStyle=hub?SK.label:SK.labelDim;ctx.fillText(node.name,tx,ty);}
   ctx.restore();}
 
-function drawTransitInspector(){const c=$('map'),ctx=c.getContext('2d');ctx.fillStyle=NIGHT.paper;ctx.fillRect(0,0,c.width,c.height);drawWater($('map').getContext('2d'),1);transit?.draw(ctx,c.width,c.height,{alpha:.96,lineWidth:2.6*(renderer?.dpr||1)});}
+function drawTransitInspector(){const c=$('map'),ctx=c.getContext('2d');ctx.fillStyle=SK.paper;ctx.fillRect(0,0,c.width,c.height);drawWater($('map').getContext('2d'),1);transit?.draw(ctx,c.width,c.height,{alpha:.96,lineWidth:2.6*(renderer?.dpr||1)});}
 // The district names were drawn on top of the stop names at the same size, so
 // KÄPYLÄ and Käpylä sat on each other. They are the coarser layer, so they go
 // UNDER the network as a wide watermark rather than competing with the labels.
 function drawDistricts(ctx=$('map').getContext('2d')){if(!city)return;const d=renderer?.dpr||1,scale=camera?.nearestScale()||'city';
-  ctx.save();ctx.globalAlpha=.4;ctx.fillStyle=NIGHT.district;ctx.font=`${Math.round(11*d)}px ui-monospace,monospace`;ctx.textAlign='center';ctx.letterSpacing=`${2*d}px`;
+  ctx.save();ctx.globalAlpha=.4;ctx.fillStyle=SK.district;ctx.font=`${Math.round(11*d)}px ui-monospace,monospace`;ctx.textAlign='center';ctx.letterSpacing=`${2*d}px`;
   // Forty-one real sub-district label points from the city's own osa-aluejako,
   // ordered by how much of the extent each covers — which is the only ordering
   // in that pack that means anything on a map, because the big quarters are the
@@ -477,14 +505,16 @@ function drawDistricts(ctx=$('map').getContext('2d')){if(!city)return;const d=re
 
 // The active job's two ends, over everything: where you are and where the box
 // has to go. Nothing between them is drawn — no route is the answer.
-function drawJobEnds(){if(!challenge?.active||!city)return;const ctx=$('map').getContext('2d'),d=renderer?.dpr||1;ctx.save();
-  for(const[id,col]of[[challenge.currentFrom(),'#2f9fb8'],[challenge.currentTo(),cargoColour(challenge.active.cargo)]]){const n=city.resolved?.[id];if(!n)continue;const p=fitLatLon(n.lat,n.lon);ctx.strokeStyle=col;ctx.lineWidth=3.4*d;ctx.beginPath();ctx.arc(p.x,p.y,14*d,0,Math.PI*2);ctx.stroke();}
+// v2.71: a sealed parcel's stop is not on the board until it opens (sealed.js)
+const hiddenStop=()=>{const j=challenge?.active;return j?.sealed&&!j.sealed.revealed?(j.originalStops?.[1]||j.stops[j.stops.length-1]):null;};
+function drawJobEnds(){if(!challenge?.active||!city)return;const ctx=$('map').getContext('2d'),d=renderer?.dpr||1,hid=hiddenStop();ctx.save();
+  for(const[id,col]of[[challenge.currentFrom(),SK.hubRing],[challenge.currentTo(),cargoColour(challenge.active.cargo)]]){if(id===hid)continue;const n=city.resolved?.[id];if(!n)continue;const p=fitLatLon(n.lat,n.lon);ctx.strokeStyle=col;ctx.lineWidth=3.4*d;ctx.beginPath();ctx.arc(p.x,p.y,14*d,0,Math.PI*2);ctx.stroke();}
   // WHERE THIS JOB ENDS gets a flag, not a second ring. Two rings in two
   // colours said "two places matter" and nothing about which is which; the
   // one you are going to now carries a pennant in the cargo's colour on a pole
   // with the stop's name on it, so the destination reads from across the board
   // at any scale, before the stop labels have decided whether it earns one.
-  {const to=challenge.currentTo(),n=city.resolved?.[to];if(n){const p=fitLatLon(n.lat,n.lon),col=cargoColour(challenge.active.cargo),ink='#0f1418';
+  {const to=challenge.currentTo(),n=to===hid?null:city.resolved?.[to];if(n){const p=fitLatLon(n.lat,n.lon),col=cargoColour(challenge.active.cargo),ink='#0f1418';
     ctx.lineJoin='round';ctx.lineCap='round';
     const pole=()=>{ctx.beginPath();ctx.moveTo(p.x,p.y-4*d);ctx.lineTo(p.x,p.y-30*d);};
     const flag=()=>{ctx.beginPath();ctx.moveTo(p.x,p.y-30*d);ctx.lineTo(p.x+16*d,p.y-25*d);ctx.lineTo(p.x,p.y-20*d);ctx.closePath();};
@@ -498,7 +528,9 @@ function drawJobEnds(){if(!challenge?.active||!city)return;const ctx=$('map').ge
 // as its cargo glyph inside a ring that empties with the deadline — no
 // "deliveries" / "deadline" labels and no ticks (owner: Mini Metro succinct).
 let _hudBucket=-1,_hudLive=null;
-function paintHud(){if(!challenge||!flow)return;const c=challenge.active?challenge.cargoRule():null;$('done').innerHTML=dots(challenge.index,challenge.target,challenge.drops);{const b=$('bagHud');if(b)b.innerHTML=challenge.active?bagHtml(challenge.carrying?.()||[],challenge.capacity?.()):'';}$('reach').textContent=challenge.active?`${challenge.name(challenge.currentFrom())} → ${challenge.name(challenge.currentTo())}`:'dispatch';$('emit').textContent=challenge.active?(challenge.remaining()<20?'due':minutes(challenge.remaining())):'';$('score').textContent=challenge.score?String(challenge.score):'';{const m=challenge.streakMult?.()||1,el=$('mult');if(el){el.textContent=m>1?`×${m}`:'';el.style.opacity=m>=2?'1':'.8';}}{const ring=$('cargoHud'),g=$('cargoGlyph');if(g)g.innerHTML=challenge.active?parcelHtml(challenge.active.cargo,{max:16}):'<span class="pcl pcl-none"></span>';ring.title=c?`${challenge.active.cargo} · ${c.rule}`:'no job';const p=challenge.active?Math.max(0,Math.min(100,100*challenge.remaining()/challenge.active.limit)):0;ring.style.setProperty('--p',p.toFixed(1));ring.style.setProperty('--ring',challenge.active?cargoColour(challenge.active.cargo):'#e2e6e1');}{const m=(LIVE?LIVE_START:SHIFT.startHour*60)+Math.floor(flow.clock.dayProgress*SHIFT.hours*60);$('clock').textContent=hhmm(m);{const l=rushLoad(),w=Rush.label(l),el=$('rush');if(el&&LIVE){const f=window.__tm?.liveFeed;el.textContent=f?.label||'LIVE';el.className=`rush lvl-live${f?.state==='live'?'':' lvl-wait'}`;}else if(el){el.textContent=w?`${w} ×${Rush.surge(l).toFixed(1)}`:'';el.className=w?`rush lvl-${w.toLowerCase()}`:"rush";}}}{const net=window.__tm?.liveNetwork,sc=SCALES.find(x=>x.id===camera?.nearestScale())?.label||'CITY';$('lines').textContent=net&&Number.isFinite(net.lastShown)?`${sc} \u00b7 ${net.lastShown}/${net.vehicles.length} near`:'HSL network';}}
+// The deadline ring (art bible §4) turns coral under this share of the job's time.
+const RING_LATE=30;
+function paintHud(){if(!challenge||!flow)return;const c=challenge.active?challenge.cargoRule():null;$('done').innerHTML=dots(challenge.index,challenge.target,challenge.drops);{const b=$('bagHud');if(b)b.innerHTML=challenge.active?bagHtml(challenge.carrying?.()||[],challenge.capacity?.()):'';}$('reach').textContent=challenge.active?`${challenge.name(challenge.currentFrom())} → ${challenge.name(challenge.currentTo())}`:'dispatch';$('emit').textContent=challenge.active?(challenge.remaining()<20?'due':minutes(challenge.remaining())):'';$('score').textContent=challenge.score?String(challenge.score):'';{const m=challenge.streakMult?.()||1,el=$('mult');if(el){el.textContent=m>1?`×${m}`:'';el.style.opacity=m>=2?'1':'.8';}}{const ring=$('cargoHud'),g=$('cargoGlyph');if(g)g.innerHTML=challenge.active?parcelHtml(challenge.active.cargo,{max:16}):'<span class="pcl pcl-none"></span>';ring.title=c?`${challenge.active.cargo} · ${c.rule} · ${challenge.remaining()<20?'due':minutes(challenge.remaining())}`:'no job';const p=challenge.active?Math.max(0,Math.min(100,100*challenge.remaining()/challenge.active.limit)):0;ring.style.setProperty('--p',p.toFixed(1));ring.style.setProperty('--ring',challenge.active?(p<RING_LATE?SK_CORAL:SK.ring):'#e2e6e1');ring.classList.toggle('late',!!challenge.active&&p<RING_LATE);}{const m=(LIVE?LIVE_START:START_MIN)+Math.floor(flow.clock.dayProgress*SHIFT.hours*60);$('clock').textContent=hhmm(m);{const l=rushLoad(),w=Rush.label(l),el=$('rush');if(el&&LIVE){const f=window.__tm?.liveFeed;el.textContent=f?.label||'LIVE';el.className=`rush lvl-live${f?.state==='live'?'':' lvl-wait'}`;}else if(el){el.textContent=w?`${w} ×${Rush.surge(l).toFixed(1)}`:'';el.className=w?`rush lvl-${w.toLowerCase()}`:"rush";}}}{const net=window.__tm?.liveNetwork,sc=SCALES.find(x=>x.id===camera?.nearestScale())?.label||'CITY';$('lines').textContent=net&&Number.isFinite(net.lastShown)?`${sc} \u00b7 ${net.lastShown}/${net.vehicles.length} near`:'HSL network';}}
 // THE JOB SHEET HAS THREE WRITERS AND HAD NO OWNER.
 // paintSheet (this file), the dispatch board (job-board-v212.js) and the catch
 // panel (route-choice.js) all wrote into #sheet on their own timers, and each
@@ -533,8 +565,12 @@ function sheetSlot(id){if(id===undefined)return SHEET_SLOTS.slice();const sheet=
   for(const s of SHEET_SLOTS){let el=document.getElementById(s);
     if(!el){el=document.createElement('section');el.id=s;sheet.append(el);}
     else if(el.parentElement!==sheet)sheet.append(el);}
-  // re-assert the order, cheaply: appendChild moves an existing node
-  for(const s of SHEET_SLOTS)sheet.append(document.getElementById(s));
+  // re-assert the order — but only when it is wrong (v2.67). This runs every
+  // frame (the ride panel asks for its slot from the draw loop), and moving
+  // nine sections that are already in place still costs a style pass each
+  // time, and in Finnish it reads to lang.js as nine sections of new text.
+  const tail=[...sheet.children].slice(-SHEET_SLOTS.length).map(e=>e.id);
+  if(tail.join()!==SHEET_SLOTS.join())for(const s of SHEET_SLOTS)sheet.append(document.getElementById(s));
   return document.getElementById(id);}
 
 function paintSheet(){if(!challenge)return;const b=sheetSlot('jobHead');if(!b)return;if(!challenge.active){b.innerHTML='';return;}const j=challenge.active,c=challenge.cargoRule(),constrained=c.modes||c.fragile||c.freshness||c.express;b.innerHTML=`<div class="jobTop" style="align-items:center"><span class="cargoBadge">${parcelHtml(j.cargo,{title:c.rule})}</span><div style="flex:1;min-width:0"><h2 style="font-size:14px">${esc(challenge.name(challenge.currentTo()))}</h2><p class="hint">from ${esc(challenge.name(challenge.currentFrom()))} · ${minutes(challenge.remaining())} left${constrained?` · ${esc(c.rule.toLowerCase().split(';')[0].split(' — ')[0])}`:''}</p></div></div><div class="meter"><i style="width:${Math.max(0,Math.min(100,100*challenge.remaining()/j.limit))}%;background:${cargoColour(j.cargo)}"></i></div>`;}
@@ -547,10 +583,11 @@ function paintFeed(){const f=$('feed');if(!f)return;f.innerHTML='';for(const m o
 function paintDaily(){const box=$('endStats');if(!box)return;
   const again=$('again');
   if(SHIFT_INFO.kind==='week'){paintWeek(box,again);return;}
+  if(RUN){paintRun(box,again);return;}
   if(SHIFT_INFO.kind!=='daily'){if(again)again.textContent=LIVE?'ANOTHER LIVE SHIFT':'RUN THIS SHIFT AGAIN';return;}
   const res={results:[...(challenge.results||[])],target:challenge.target,drops:challenge.drops||0,score:challenge.score,delivered:challenge.index,day:cityDay?.id||null};
   const r=recordDaily(SHIFT_INFO.key,res),rec=r.record,run=streak(SHIFT_INFO.key);
-  const text=shareText({number:SHIFT_INFO.number,label:SHIFT_INFO.label,dayName:cityDay?.name||'',results:rec.results,target:rec.target,drops:rec.drops,score:rec.score,url:location.origin+location.pathname});
+  const text=trLines(shareText({number:SHIFT_INFO.number,label:SHIFT_INFO.label,dayName:cityDay?.name||'',results:rec.results,target:rec.target,drops:rec.drops,score:rec.score,url:shareUrl()}));
   box.insertAdjacentHTML('afterbegin',`<div class="dailyBox"><p class="dailyHead">${esc(shiftLabel())}${cityDay?` · ${esc(cityDay.name)}`:''}</p><p class="dailyGrid">${dailyGrid(rec.results,rec.target)}${rec.drops?` <small>+${rec.drops} drops</small>`:''}</p>${r.first?`<p class="hint">today's result${run>1?` · ${run} days running`:''}</p>`:`<p class="hint">practice — today's result stands at ${Number(rec.score).toLocaleString('en-US')}${run>1?` · ${run} days running`:''}</p>`}<button class="btn prime wide" id="share">SHARE TODAY'S</button><pre class="shareText" id="shareText" hidden></pre><a class="btn wide ghost" href="?shift=random">A RANDOM SHIFT</a></div>`);
   // One loud button on this card, and it is SHARE. Replaying today is allowed
   // and is practice, so it steps down to the quiet style beside it.
@@ -559,6 +596,21 @@ function paintDaily(){const box=$('endStats');if(!box)return;
     try{if(navigator.share){await navigator.share({text});btn.textContent='SHARED';return;}}catch(e){if(e?.name==='AbortError')return;}
     try{await navigator.clipboard.writeText(text);btn.textContent='COPIED';return;}catch{}
     const pre=$('shareText');if(pre){pre.textContent=text;pre.hidden=false;}btn.textContent='COPY THIS';};}
+
+// ── THE RUN'S RESULT (v2.73) ────────────────────────────────────────────
+// Every job delivered completes the run (late is allowed and costs score),
+// and completing it opens the next. Stars sit on top and gate nothing. The
+// loud button is the NEXT run when there is one to go to; trying again is a
+// fresh shift of the same run (a reload draws a new one).
+function paintRun(box,again){
+  const r=Runs.record(RUN.id,{delivered:challenge.index,target:challenge.target,late:challenge.late||0,score:challenge.score});if(!r)return;
+  const i=Runs.ORDER.indexOf(RUN.id),next=Runs.RUNS[i+1],star=n=>'★'.repeat(n)+'☆'.repeat(3-n);
+  const why=r.done?(r.stars===1?'every job delivered · some late':r.stars===2?`every job on time · ${Number(RUN.par).toLocaleString('en-US')} for the third star`:'every job on time, at par'):`deliver all ${challenge.target} to complete ${RUN.name}`;
+  const opened=r.opened.map(id=>`<p class="runOpened">${esc(Runs.BY_ID[id].name)} IS OPEN</p>`).join('')+(r.extrasOpened?'<p class="runOpened">THE DAILY AND THE WEEK ARE OPEN</p>':'');
+  const go=r.done&&next&&Runs.unlocked(next.id,r.all)?`<a class="btn prime wide" id="nextRun" href="${Runs.runHref(next.id,location.search)}">NEXT · ${esc(next.name)}</a>`:'';
+  box.insertAdjacentHTML('afterbegin',`<div class="dailyBox runBox"><p class="dailyHead">${esc(RUN.name)} · ${esc(RUN.title)}</p><p class="runStars" aria-label="${r.stars} of 3 stars">${star(r.stars)}</p><p class="hint">${esc(why)}${r.newBest&&r.all[RUN.id].plays>1?' · a new best':''}</p>${opened}${go}</div>`);
+  $('endTitle').textContent=r.done?`${RUN.name} COMPLETE`:'NOT YET';
+  if(again){again.textContent=r.done?`${RUN.name} AGAIN · A NEW SHIFT`:`TRY ${RUN.name} AGAIN`;again.classList.toggle('prime',!go);again.classList.toggle('ghost',!!go);}}
 
 // ── THE WEEK, on the page ────────────────────────────────────────────────
 // Every delivery is written into the save as it lands, so a page left at any
@@ -579,15 +631,15 @@ function kitChips(ids){return ids.length?`<span class="kitChips"><small>KIT</sma
 function kitPicker(){const n=Week.night(WEEK);if(!n||n.pick)return'';Week.saveWeek(WEEK);
   return `<div class="kitPick"><p class="kitHead">TONIGHT, TAKE ONE FOR ${esc(Week.DAY_NAMES[WEEK.day])}</p>${n.offers.map(id=>{const k=Kit.BY_ID[id];
     return `<button class="kitOffer" data-kit="${esc(id)}"><span class="kg">${k.glyph}</span><span class="kt"><b>${esc(k.name)}</b><small>${esc(k.line)}</small></span></button>`;}).join('')}</div>`;}
-function wireKitPicker(root){root.querySelectorAll('.kitOffer').forEach(b=>b.onclick=()=>{if(Week.choose(WEEK,b.dataset.kit)){Week.saveWeek(WEEK);location.href='?week';}});}
+function wireKitPicker(root){root.querySelectorAll('.kitOffer').forEach(b=>b.onclick=()=>{if(Week.choose(WEEK,b.dataset.kit)){Week.saveWeek(WEEK);location.href='?week&classic';}});}
 function weekTitle(){const w=WEEK,p=Week.pace(w),prev=w.shifts[w.shifts.length-1];
   return `${esc(shiftLabel())} · ${SHIFT_INFO.index+1} of ${Week.LENGTH}${weekStrip(w,SHIFT_INFO.index)}${kitChips(Week.owned(w))}<span class="weekPace">€${p.total} banked · rent €${Week.RENT} on Friday${p.need?` · about €${p.perDay} a shift to go`:' · covered'}</span>${prev?.left?`<br><span class="dailyDone">${esc(prev.name.toLowerCase())} was left mid-shift — it paid €${prev.euros}</span>`:''}`;}
 function paintWeek(box,again){const w=WEEK;
   Week.close(w,{score:challenge.score,results:challenge.results,drops:challenge.drops||0,tips:challenge.tips||0,trail:WEEK_TRAIL});Week.saveWeek(w);
   const x=w.shifts[SHIFT_INFO.index],over=Week.isOver(w),v=Week.verdict(w),p=Week.pace(w);
   const head=`<p class="dailyHead">${esc(SHIFT_INFO.name)}${cityDay?` · ${esc(cityDay.name)}`:''}</p><p class="dailyGrid">${Week.dayGrid(x.results)} <small>€${x.euros}</small></p>`;
-  const tail=over?`<p class="weekVerdict ${v.paid?'paid':'short'}">${v.paid?`RENT PAID · €${v.over} over`:`SHORT €${-v.over} ON THE RENT`}</p><canvas id="poster" class="poster" width="1080" height="1350" aria-label="the week as a poster: five routes on the map, each day's result, the rent"></canvas><button class="btn prime wide" id="savePoster">SAVE THE POSTER</button><button class="btn ghost wide" id="share">SHARE THE WEEK AS TEXT</button><pre class="shareText" id="shareText" hidden></pre><a class="btn ghost wide" href="?week" id="newWeek">A NEW WEEK</a>`
-    :`<p class="weekPace">€${p.total} of €${Week.RENT} · about €${p.perDay} a shift to go</p>${kitPicker()||`<a class="btn prime wide" href="?week" id="nextShift">${Week.DAY_NAMES[w.day]} →</a>`}`;
+  const tail=over?`<p class="weekVerdict ${v.paid?'paid':'short'}">${v.paid?`RENT PAID · €${v.over} over`:`SHORT €${-v.over} ON THE RENT`}</p><canvas id="poster" class="poster" width="1080" height="1350" aria-label="the week as a poster: five routes on the map, each day's result, the rent"></canvas><button class="btn prime wide" id="savePoster">SAVE THE POSTER</button><button class="btn ghost wide" id="share">SHARE THE WEEK AS TEXT</button><pre class="shareText" id="shareText" hidden></pre><a class="btn ghost wide" href="?week&classic" id="newWeek">A NEW WEEK</a>`
+    :`<p class="weekPace">€${p.total} of €${Week.RENT} · about €${p.perDay} a shift to go</p>${kitPicker()||`<a class="btn prime wide" href="?week&classic" id="nextShift">${Week.DAY_NAMES[w.day]} →</a>`}`;
   box.insertAdjacentHTML('afterbegin',`<div class="dailyBox weekBox">${head}${weekStrip(w)}${kitChips(Week.owned(w))}${tail}</div>`);wireKitPicker(box);
   // A shift of the week is played once: the card's replay button would be a
   // way round the one rule a run has.
@@ -600,12 +652,12 @@ function paintWeek(box,again){const w=WEEK;
     const sp=$('savePoster');if(sp)sp.onclick=()=>{const pc2=$('poster');if(!pc2)return;pc2.toBlob(async blob=>{if(!blob)return;const name=`toko-move-week-${w.seed}.png`;
       try{const file=new File([blob],name,{type:'image/png'});if(navigator.canShare?.({files:[file]})){await navigator.share({files:[file],title:'Toko Move · the week'});sp.textContent='SHARED';return;}}catch(e){if(e?.name==='AbortError')return;}
       const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),4000);sp.textContent='SAVED';},'image/png');};}
-  if(over){const text=Week.shareText(w,location.origin+location.pathname+'?week');const btn=$('share');if(btn)btn.onclick=async()=>{
+  if(over){const text=trLines(Week.shareText(w,shareUrl('?week')));const btn=$('share');if(btn)btn.onclick=async()=>{
     try{if(navigator.share){await navigator.share({text});btn.textContent='SHARED';return;}}catch(e){if(e?.name==='AbortError')return;}
     try{await navigator.clipboard.writeText(text);btn.textContent='COPIED';return;}catch{}
     const pre=$('shareText');if(pre){pre.textContent=text;pre.hidden=false;}btn.textContent='COPY THIS';};}}
 
-function finish(){if(done)return;done=true;flow.clock.setPaused(true);$('endTitle').textContent=challenge.complete?'ALL DELIVERED':'DAY OVER';$('endStats').innerHTML=`<p>deliveries <b>${challenge.index}/${challenge.target}</b></p>${challenge.drops?`<p>drops on the way <b>${challenge.drops}</b></p>`:''}<p>score <b>${challenge.score}</b></p><p>best streak <b>×${(1+challenge.streakStep()*Math.max(0,Math.min(4,challenge.bestStreak-1))).toFixed(2).replace(/0+$/,'').replace(/\.$/,'')} (${challenge.bestStreak})</b></p>${challenge.tips?`<p>tips from regulars <b>${challenge.tips}</b></p>`:''}${challenge.goodwill?`<p>goodwill <b>${challenge.goodwill>0?'+':''}${challenge.goodwill}</b></p>`:''}${window.__tm?.rival?`<p>${window.__tm.rival.name} delivered <b>${window.__tm.rival.delivered}</b>${window.__tm.rival.taken.length?` · took ${window.__tm.rival.taken.join(', ')}`:''}</p>`:''}${window.__tm?.visited?`<p>stops you have been to <b>${window.__tm.visited.size}</b></p>`:''}<p>cargo bonuses <b>${challenge.bonuses}</b></p><p>late jobs <b>${challenge.late}</b></p><p class="hint">${cityDay?esc(cityDay.name)+' · ':''}${esc(shiftLabel())}</p>`;$('endNote').textContent=challenge.complete?'Every job delivered.':'The shift ended.';{const log=window.__tm?.shiftLog;log?.poll?.();log?.finish?.();const r=$('replay');if(r)r.remove();const html=log?.html?.()||'';if(html)$('endStats').insertAdjacentHTML('afterend',html);}paintDaily();$('end').hidden=false;}
+function finish(){if(done)return;done=true;flow.clock.setPaused(true);$('endTitle').textContent=challenge.complete?'ALL DELIVERED':'DAY OVER';const sealedNote=window.__tm?.sealed?.state?.note;$('endStats').innerHTML=`${sealedNote?`<p class="noteLine">✉ NOTEBOOK · ${esc(sealedNote)}</p>`:''}<p>deliveries <b>${challenge.index}/${challenge.target}</b></p>${challenge.drops?`<p>drops on the way <b>${challenge.drops}</b></p>`:''}<p>score <b>${challenge.score}</b></p><p>best streak <b>×${(1+challenge.streakStep()*Math.max(0,Math.min(4,challenge.bestStreak-1))).toFixed(2).replace(/0+$/,'').replace(/\.$/,'')} (${challenge.bestStreak})</b></p>${challenge.tips?`<p>tips from regulars <b>${challenge.tips}</b></p>`:''}${challenge.goodwill?`<p>goodwill <b>${challenge.goodwill>0?'+':''}${challenge.goodwill}</b></p>`:''}${window.__tm?.rival?`<p>${window.__tm.rival.name} delivered <b>${window.__tm.rival.delivered}</b>${window.__tm.rival.taken.length?` · took ${window.__tm.rival.taken.join(', ')}`:''}</p>`:''}${window.__tm?.visited?`<p>stops you have been to <b>${window.__tm.visited.size}</b></p>`:''}<p>cargo bonuses <b>${challenge.bonuses}</b></p><p>late jobs <b>${challenge.late}</b></p><p class="hint">${cityDay?esc(cityDay.name)+' · ':''}${esc(shiftLabel())}</p>`;$('endNote').textContent=challenge.complete?'Every job delivered.':'The shift ended.';{const log=window.__tm?.shiftLog;log?.poll?.();log?.finish?.();const r=$('replay');if(r)r.remove();const html=log?.html?.()||'';if(html)$('endStats').insertAdjacentHTML('afterend',html);}paintDaily();$('end').hidden=false;}
 
 // THE GROUND IS CACHED. Water, streets and place names are three of the four
 // most expensive layers on the board and NONE of them moves: they change when
@@ -622,7 +674,7 @@ function paintGround(dest){const c=$('map');
   if(key!==_groundKey){_groundKey=key;const g=_ground.getContext('2d');
     g.clearRect(0,0,_ground.width,_ground.height);
     g.save();const r=boardRect();g.beginPath();g.rect(r.x,r.y,r.w,r.h);g.clip();
-    g.fillStyle=NIGHT.paper;g.fillRect(r.x,r.y,r.w,r.h);
+    g.fillStyle=SK.paper;g.fillRect(r.x,r.y,r.w,r.h);
     drawWater(g);drawDistricts(g);drawRoads(g);drawLandmarkLayer(g);g.restore();}
   dest.drawImage(_ground,0,0);}
 
@@ -635,7 +687,7 @@ function frame(now){const dt=last?Math.min(120,now-last):0;last=now;
   if(flow){flow.update(dt);
     if(camera&&!transitView){const c=$('map');camera.step(dt,baseProjection(),c.width,c.height,courierLatLon());placeRail();paintRail();}
     if(transitView)drawTransitInspector();
-    else{const c=$('map'),ctx=c.getContext('2d');ctx.fillStyle=NIGHT.surround;ctx.fillRect(0,0,c.width,c.height);
+    else{const c=$('map'),ctx=c.getContext('2d');ctx.fillStyle=SK.surround;ctx.fillRect(0,0,c.width,c.height);
       paintGround(ctx);paintDawn(ctx);
       ctx.save();clipToBoard(ctx);
       drawTransit();drawStops();drawJobEnds();paintWeather(ctx);drawLegend();drawCredit();ctx.restore();drawBoardFrame();}
@@ -650,7 +702,7 @@ function frame(now){const dt=last?Math.min(120,now-last):0;last=now;
 
 async function init(){
   $('play').disabled=true;$('play').textContent='LOADING HELSINKI…';
-  try{const [r,g]=await Promise.all([fetch('./cities/helsinki.json',{cache:'no-store'}),loadGround()]);ground=g;water=g?.water||null;if(!r.ok)throw new Error(`HSL pack ${r.status}`);source=await r.json();transit=new TransitLayers(source);transit.showAll();city=buildRealHelsinki(source);box=boardBox(city.resolved);roads=roadPaths(city.resolved);camera=new Camera(box);openingScale();{const kx=Math.cos(((box.n+box.s)*.5)*Math.PI/180);$('map').style.aspectRatio=`${(box.e-box.w)*kx} / ${box.n-box.s}`;renderer?.resize?.();}paintTransitPanel();boot();$('play').disabled=false;$('play').textContent=WEEK?`START ${SHIFT_INFO.name}`:'START SHIFT';paintDayCard();requestAnimationFrame(frame);}catch(err){$('play').textContent='MAP LOAD FAILED';$('transitMeta').textContent=err.message;console.error(err);}
+  try{const [r,g]=await Promise.all([fetch('./cities/helsinki.json',{cache:'no-store'}),loadGround()]);ground=g;water=g?.water||null;if(!r.ok)throw new Error(`HSL pack ${r.status}`);source=await r.json();transit=new TransitLayers(source);applySkin(transit,SK);transit.showAll();city=buildRealHelsinki(source);box=boardBox(city.resolved);roads=roadPaths(city.resolved);camera=new Camera(box);openingScale();{const kx=Math.cos(((box.n+box.s)*.5)*Math.PI/180);$('map').style.aspectRatio=`${(box.e-box.w)*kx} / ${box.n-box.s}`;renderer?.resize?.();}paintTransitPanel();boot();$('play').disabled=false;$('play').textContent=WEEK?`START ${SHIFT_INFO.name}`:'START SHIFT';paintDayCard();requestAnimationFrame(frame);}catch(err){$('play').textContent='MAP LOAD FAILED';$('transitMeta').textContent=err.message;console.error(err);}
 }
 
 // Tapping the board. The whole verb set is READ the network and time it, and
@@ -713,24 +765,46 @@ function showStop(node,at=null){const pop=$('pop'),body=$('popBody');if(!pop||!b
 // THE DAY, ON THE TITLE CARD. The shift has a name before it starts, which is
 // the whole of roadmap item 7: a modifier you meet by losing is a different
 // genre, so the card says what today does and which lines it slows.
+// v2.73: THE LADDER on the title card. Four runs, EASY to NIGHT: an open run
+// is a link (a run is decided at boot), a locked one says what opens it, and a
+// finished one wears its stars. The run this page will play is lit and its one
+// sentence sits under the list. The two title lines say this run's clock and
+// how many jobs it asks for.
+const COUNT=['no','One','Two','Three','Four','Five','Six'];
+function paintRuns(){const row=$('mutRow');if(!row)return;
+  const target=RUN?.target||3,start=LIVE?null:START_MIN;
+  if(start!=null&&(start!==SHIFT.startHour*60||target!==3)){const w=$('titleWhen'),g=$('titleGoal');if(w)w.textContent=`Helsinki · ${hhmm(start)} · five minutes`;if(g)g.textContent=`${COUNT[target]||target} deliveries before ${hhmm(start+SHIFT.hours*60)}. Drops on the way are extra.`;}
+  if(LIVE||SHIFT_INFO.kind==='week'){row.innerHTML='';return;}
+  const all=Runs.loadRuns(),on=RUN?.id||null,star=n=>'★'.repeat(n)+'☆'.repeat(3-n);
+  row.innerHTML=`<p class="mutHead">RUNS</p><div class="runList">${Runs.RUNS.map((r,i)=>{const open=Runs.unlocked(r.id,all),rec=all[r.id],prev=Runs.RUNS[i-1];
+    return open?`<a class="run${r.id===on?' on':''}" href="${Runs.runHref(r.id,location.search)}" data-run="${r.id}"${r.id===on?' aria-current="true"':''}><span class="runG" aria-hidden="true">${r.glyph}</span><span class="runT"><b>${esc(r.name)}</b><small>${esc(r.title)} · ${r.target} jobs</small></span><span class="runS" title="${rec.stars} stars">${rec.done?star(rec.stars):''}</span></a>`
+    :`<span class="run locked" data-run="${r.id}" aria-disabled="true"><span class="runG" aria-hidden="true">🔒</span><span class="runT"><b>${esc(r.name)}</b><small>finish ${esc(prev.name)} to open</small></span></span>`;}).join('')}</div>${RUN?`<p class="hint mutBlurb">${esc(RUN.blurb)}</p>`:''}`;
+  // the daily and the week are the reward for clearing NIGHT (owner: ladder first)
+  const extras=Runs.extrasOpen(all),dl=$('dailyLink');if(dl)dl.hidden=!extras||SHIFT_INFO.kind==='daily';}
 function paintDayCard(){const el=$('dayCard');if(!el)return;
   const n=$('shiftNo');if(n){const rec=SHIFT_INFO.kind==='daily'?todayRecord(SHIFT_INFO.key):null;
     // Already played today: say so BEFORE the run, not after it — finding out
     // at the end that the run you just cared about was practice is a small
     // betrayal, and the whole point of one result a day is that it is one.
+    n.hidden=SHIFT_INFO.kind==='run';   // the ladder names the run
     n.innerHTML=SHIFT_INFO.kind==='week'?weekTitle():`${esc(shiftLabel())}${rec?`<br><span class="dailyDone">played · ${dailyGrid(rec.results,rec.target)} · ${Number(rec.score).toLocaleString('en-US')} — this run is practice</span>`:''}`;
     // A night left without a pick (the page was closed on the end card) is
     // offered again here, and the shift waits for it: the kit is applied at boot.
     if(SHIFT_INFO.kind==='week'&&Week.pending(WEEK)){n.insertAdjacentHTML('beforeend',kitPicker());wireKitPicker(n);const pl=$('play');pl.disabled=true;pl.textContent='TAKE ONE FIRST';}
-    const wl=$('weekLink');if(wl){const w=SHIFT_INFO.kind==='week'?null:Week.loadWeek();wl.hidden=SHIFT_INFO.kind==='week';
+    const wl=$('weekLink');if(wl){const w=SHIFT_INFO.kind==='week'?null:Week.loadWeek();wl.hidden=SHIFT_INFO.kind==='week'||!(Runs.extrasOpen()||(w&&!Week.isOver(w)&&w.shifts.length));
       wl.innerHTML=w&&!Week.isOver(w)&&w.shifts.length?`CONTINUE THE WEEK · ${Week.DAY_NAMES[w.day]} · €${Week.total(w)}/€${Week.RENT}`:`OR THE WEEK · five shifts, rent due Friday`;}
-    const ll=$('liveLink');if(ll)ll.hidden=SHIFT_INFO.kind==='week'||LIVE;}
-  const wx=WEATHER&&WEATHER.id!=='clear'?`<div class="dayCard wxCard"><span class="dayGlyph">${WEATHER.glyph}</span><div><b>${esc(WEATHER.name)}</b><p>${esc(WEATHER.blurb)}</p></div></div>`:'';
+    // LIVE stays off a store build until it has been seen working on a real
+    // phone (roadmap M6) — the store page must never sell a mode nobody played.
+    const ll=$('liveLink');if(ll)ll.hidden=SHIFT_INFO.kind==='week'||LIVE||STORE||!Runs.extrasOpen();}
+  paintRuns();
+  const wx=WEATHER&&WEATHER.id!=='clear'&&!RUN?.weather?`<div class="dayCard wxCard"><span class="dayGlyph">${WEATHER.glyph}</span><div><b>${esc(WEATHER.name)}</b><p>${esc(WEATHER.blurb)}</p></div></div>`:'';
   const live=LIVE?`<div class="dayCard"><span class="dayGlyph">●</span><div><b>LIVE · THE REAL MORNING</b><p>Every tram and metro train on the board is where HSL says it is right now. Real time: seventy-five minutes is seventy-five minutes. Nothing is recorded.</p></div></div>`:'';
-  if(!cityDay){el.innerHTML=live+wx;return;}
+  // v2.71: THE NOTEBOOK (sealed.js) — a line for every sealed parcel delivered, on this device; it never explains itself
+  const nb=loadNotebook(),note=nb.length?`<details class="notebook"><summary>✉ NOTEBOOK · ${nb.length}</summary><ol>${nb.map(l=>`<li>${esc(l)}</li>`).join('')}</ol></details>`:'';
+  if(!cityDay){el.innerHTML=live+wx+note;return;}
   const fams=(cityDay.crowds?.families||[]).map(f=>{const l=(transit?.layers||[]).find(x=>dayFamily(x.name)===f);
     return `<span class="lb" style="background:${esc(l?.colour||'#52676d')}">${esc(f)}</span>`;}).join(' ');
-  el.innerHTML=`<div class="dayCard"><span class="dayGlyph">${cityDay.glyph}</span><div><b>${esc(cityDay.name)}</b><p>${esc(cityDay.blurb)}</p>${fams?`<p class="dayChips">${fams} crowded all morning</p>`:''}</div></div>${wx}`;}
+  el.innerHTML=`<div class="dayCard"><span class="dayGlyph">${cityDay.glyph}</span><div><b>${esc(cityDay.name)}</b><p>${esc(cityDay.blurb)}</p>${fams?`<p class="dayChips">${fams} crowded all morning</p>`:''}</div></div>${wx}${note}`;}
 
 // size is decided by aspect-ratio and max-height, so there is no element in the
 // document whose box is the picture.
@@ -825,6 +899,17 @@ addEventListener('resize',()=>{renderer?.resize();_railAt='';placeRail();});
 const LIVE_SPEED=1/15;
 $('play').onclick=()=>{if(!flow)return;if(WEEK){Week.begin(WEEK);Week.saveWeek(WEEK);}$('title').hidden=true;if(LIVE){flow.clock.setSpeed(LIVE_SPEED);const sp=$('speed');if(sp){sp.disabled=true;sp.textContent='LIVE';}}flow.clock.setPaused(false);};
 $('pause').onclick=()=>{if(!flow)return;flow.clock.setPaused(!flow.clock.paused);$('pause').textContent=flow.clock.paused?'▶':'❚❚';};
+// LEAVING MID-SHIFT (v2.67). A phone that locks or switches apps stops the
+// animation frames, and the clock's catch-up cap already keeps a hidden tab
+// from fast-forwarding — but nothing said so: the player came back to the shift
+// running again under their thumb. Hidden now PAUSES the way the button does,
+// and coming back shows a card that waits to be tapped. LIVE is real time and
+// cannot wait, so it is left alone; a shift already paused by hand stays the
+// player's own pause and gets no card.
+function shiftRunning(){return !!flow&&!flow.clock.paused&&!LIVE&&!done&&$('title')?.hidden&&$('end')?.hidden;}
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState!=='hidden'||!shiftRunning())return;
+  flow.clock.setPaused(true);$('pause').textContent='▶';$('paused').hidden=false;});
+$('resume').onclick=()=>{$('paused').hidden=true;if(!flow||done)return;flow.clock.setPaused(false);$('pause').textContent='❚❚';};
 $('speed').onclick=()=>{if(!flow||LIVE)return;const s=flow.clock.speed>=4?1:flow.clock.speed*2;flow.clock.setSpeed(s);$('speed').textContent=`×${s}`;};
 $('again').onclick=()=>{
   // RUN THE DAY AGAIN used to boot a fresh flow and challenge in place — and

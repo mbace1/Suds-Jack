@@ -366,6 +366,33 @@ jobs:
       - name: the board's own geometry — box, line ink, night palette
         run: node toko-move/test/board.mjs
 
+      - name: the skins — day inks on paper, cyan kept for the courier, every key on every skin
+        run: node toko-move/test/skin.mjs
+
+      - name: the runs — the ladder, what opens what, the stars, the save, the levers
+        run: node toko-move/test/runs.mjs
+
+      - name: the journey (v3) — the network, the card grammar, the clock, the halt, the ladder's bands
+        run: node toko-move/test/journey.mjs
+
+      - name: the sea (v3.8) — solved from the coastline, the harbours water, the squares land, no stop in the sea
+        run: node toko-move/test/sea.mjs
+
+      - name: the scenarios (v3.9) — every stop actor cast from a stop card, both formats, clear of the card; every walk has its picture
+        run: node toko-move/test/scenarios.mjs
+
+      - name: the moments (v3.12) — the owner's approved art pack untouched, the game's copies are its crops, each at its beat of the job
+        run: node toko-move/test/moments.mjs
+
+      - name: the missions (v3.14) — real places and cards with art, a version per seed, the perk draft, strikes, unlocks, the runs untouched
+        run: node toko-move/test/missions.mjs
+
+      - name: the play log (v3.21) — what a person did, read off the run's machine, kept on the device
+        run: node toko-move/test/playlog.mjs
+
+      - name: the sealed parcel — which offer, the notebook, its store, the Finnish
+        run: node toko-move/test/sealed.mjs
+
       - name: the camera — three scales, the 2 km circle, zoom about a point
         run: node toko-move/test/camera.mjs
 
@@ -480,6 +507,30 @@ jobs:
 
       - name: the map names its hubs — a passing tram no longer hides the main station
         run: NODE_PATH=$(npm root -g) node toko-move/test/labels.cjs
+
+      - name: the itch.io upload, unzipped and played alone — no arcade, nothing outside the zip
+        run: NODE_PATH=$(npm root -g) node toko-move/test/itch.cjs
+
+      - name: a stranger who only taps what lights finishes a shift — and is never told two things at once
+        run: NODE_PATH=$(npm root -g) node toko-move/test/stranger.cjs
+
+      - name: the card journey (v3) — EASY tapped through on a phone to NEXT · MEDIUM; the scenes, the board, HARD, NIGHT, Finnish, sideways
+        run: NODE_PATH=$(npm root -g) node toko-move/test/play.cjs
+
+      - name: the ladder in the real-time game (?classic) — EASY played out by tapping opens MEDIUM; HARD, NIGHT and what clearing NIGHT opens
+        run: NODE_PATH=$(npm root -g) node toko-move/test/runs.cjs
+
+      - name: the sealed parcel taken, ridden to and written in the notebook, by tapping
+        run: NODE_PATH=$(npm root -g) node toko-move/test/sealed.cjs
+
+      - name: the game in Finnish — played, and nothing left in English
+        run: NODE_PATH=$(npm root -g) node toko-move/test/lang.cjs
+
+      - name: the ship bar — the week to the rent, leaving mid-shift, hostile storage, sideways phones, sound, credits
+        run: NODE_PATH=$(npm root -g) node toko-move/test/ship.cjs
+
+      - name: the ship bar on the journey (v3) — the week by tapping, leaving mid-shift, hostile storage, a 320px phone, no sound before a touch, credits
+        run: NODE_PATH=$(npm root -g) node toko-move/test/ship3.cjs
 
       # Nothing had ever finished a shift. Forty random-but-sane bots through
       # the real timetable and the real challenge; the fleet or the dispatcher

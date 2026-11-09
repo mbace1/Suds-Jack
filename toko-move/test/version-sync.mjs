@@ -16,7 +16,14 @@ const key=v=>{const[a,b='0']=String(v).split('.');return Number(a)*1000+Number(b
 assert.ok(hub.tokomove?.v,'hub lists a Toko Move version');
 assert.ok(key(hub.tokomove.v)<=key(top),`hub advertises v${hub.tokomove.v} but the tree only holds v${top} — that is a version nobody can play`);
 assert.equal(hub.tokomove?.n,key(hub.tokomove.v),'hub numeric version matches its own visible version');
-assert.match(html,/main-v212\.js/,'public page loads the v2.12 runtime entry');
+// v3.0: the page loads boot.js, which picks the card journey (play.js) for the
+// bare address and the real-time game (main-v212.js) for ?classic and the
+// tester links; both have to be in the chain and say the same number
+assert.match(html,/js\/boot\.js/,'public page loads the boot entry');
+const boot=read('../js/boot.js'),play=read('../js/play.js');
+assert.match(boot,/main-v212\.js/,'boot keeps the v2.12 runtime entry for ?classic');
+assert.match(boot,/play\.js/,'boot loads the v3 journey');
+assert.match(play,new RegExp(`BUILD_VERSION = ['"]${top.replace('.','\\.')}['"]`),'the v3 stage version matches VERSIONS.md');
 assert.doesNotMatch(html,/main-v21[01]\.js/,'the superseded v2.10/v2.11 wrappers are out of the runtime chain');
 const composer=read('../js/main-v212.js');
 assert.match(composer,/route-choice\.js/,'the v2.12 runtime includes route-choice guidance');

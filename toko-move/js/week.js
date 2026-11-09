@@ -57,7 +57,16 @@ export function newWeek(rnd=Math.random){const seed=1000+Math.floor(rnd()*9000);
 
 // ── the save ─────────────────────────────────────────────────────────────
 const store=()=>{try{return globalThis.localStorage;}catch{return null;}};
-export function loadWeek(s=store()){try{const v=JSON.parse(s?.getItem(KEY)||'null');return v&&typeof v==='object'&&Array.isArray(v.shifts)?v:null;}catch{return null;}}
+// A save is used only if it is the shape a week is (v2.67): a hand-edited or
+// half-written one used to load if it merely HAD a shifts array, and then broke
+// the kit night several screens later (`nights: 5`). One that is not a week is
+// a new week, the same as having none. Old saves from before the kit (v2.48)
+// have no kit or nights, and still load.
+const isObj=x=>!!x&&typeof x==='object'&&!Array.isArray(x);
+export function wellFormed(v){return isObj(v)&&Number.isInteger(v.seed)&&Number.isInteger(v.day)&&v.day>=0&&v.day<=LENGTH
+ &&Array.isArray(v.days)&&v.days.length===LENGTH&&Array.isArray(v.shifts)&&v.shifts.length<=LENGTH&&v.shifts.every(x=>x==null||isObj(x))
+ &&(v.kit==null||Array.isArray(v.kit))&&(v.nights==null||isObj(v.nights))&&(v.standing==null||isObj(v.standing))&&(v.live==null||isObj(v.live));}
+export function loadWeek(s=store()){try{const v=JSON.parse(s?.getItem(KEY)||'null');return wellFormed(v)?v:null;}catch{return null;}}
 export function saveWeek(w,s=store()){try{s?.setItem(KEY,JSON.stringify(w));}catch{}return w;}
 export function clearWeek(s=store()){try{s?.removeItem(KEY);}catch{}}
 

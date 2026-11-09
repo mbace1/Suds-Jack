@@ -1,0 +1,10 @@
+{
+  "status": "approved_subset",
+  "approval_context": "pt137u: The tram and metro low details are good too \u2014 park NOT approved.",
+  "approved_scenes": [
+    "metro",
+    "tram"
+  ],
+  "audit_date": "2026-11-07",
+  "approved_image_bytes_preserved": true
+}

@@ -1,0 +1,11 @@
+{
+  "status": "approved_subset",
+  "approval_context": "Sunny ones work, rain doesn\u2019t \u2014 sunny subset approval; rain excluded.",
+  "approved_scenes": [
+    "tram",
+    "harbour",
+    "metro"
+  ],
+  "audit_date": "2026-11-07",
+  "approved_image_bytes_preserved": true
+}

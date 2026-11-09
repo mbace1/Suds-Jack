@@ -56,9 +56,12 @@ export function resolveShift(params,now=new Date(),rnd=Math.random){
 // ── the record ───────────────────────────────────────────────────────────
 const store=()=>{try{return globalThis.localStorage;}catch{return null;}};
 export function loadDaily(s=store()){try{const v=JSON.parse(s?.getItem(KEY)||'{}');return v&&typeof v==='object'?v:{};}catch{return{};}}
-export function todayRecord(key,s=store()){return loadDaily(s)[key]||null;}
+// a record is used only if it is one (v2.67) — a mangled entry for today is
+// treated as no result yet, so a finish can still stand
+const isRecord=r=>!!r&&typeof r==='object'&&Array.isArray(r.results);
+export function todayRecord(key,s=store()){const r=loadDaily(s)[key];return isRecord(r)?r:null;}
 // Returns whether THIS finish became the day's result. Only the first does.
-export function recordDaily(key,result,s=store()){const all=loadDaily(s);if(all[key])return{first:false,record:all[key]};
+export function recordDaily(key,result,s=store()){const all=loadDaily(s);if(isRecord(all[key]))return{first:false,record:all[key]};
  all[key]={...result,at:Date.now()};
  // keep the last sixty days; a streak needs the recent past, not every day ever
  const keys=Object.keys(all).sort();for(const k of keys.slice(0,Math.max(0,keys.length-60)))delete all[k];

@@ -20,8 +20,11 @@ import {WALK_STREETS,walkLinks} from './hubs-walking.js?v=4';
 const KEY='tokoMoveVisited';
 export const SEEDED=['rautatientori','lasipalatsi','kamppi'];
 
-export function loadVisited(store=globalThis.localStorage){try{const raw=store?.getItem(KEY);const a=raw?JSON.parse(raw):[];return new Set([...SEEDED,...(Array.isArray(a)?a:[])]);}catch{return new Set(SEEDED);}}
-export function saveVisited(set,store=globalThis.localStorage){try{store?.setItem(KEY,JSON.stringify([...set].filter(s=>!SEEDED.includes(s))));}catch{}}
+// Reading localStorage can itself throw (private modes, blocked site data) —
+// and a default parameter is evaluated outside the try below (v2.67).
+const ls=()=>{try{return globalThis.localStorage;}catch{return null;}};
+export function loadVisited(store=ls()){try{const raw=store?.getItem(KEY);const a=raw?JSON.parse(raw):[];return new Set([...SEEDED,...(Array.isArray(a)?a:[])]);}catch{return new Set(SEEDED);}}
+export function saveVisited(set,store=ls()){try{store?.setItem(KEY,JSON.stringify([...set].filter(s=>!SEEDED.includes(s))));}catch{}}
 // Being somewhere is the whole mechanism. Returns true when it is new.
 export function visit(visited,stopId){if(!stopId||visited.has(stopId))return false;visited.add(stopId);return true;}
 export function knowsWay(visited,from,to){return visited.has(from)&&visited.has(to);}
