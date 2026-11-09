@@ -187,7 +187,7 @@ ok(RUNS.every(r => !r.cargo || r.cargo.every(c => CARGO[c])), 'every run deals r
 
 // ── 9. risk: the odds are words, and the words keep their promise
 { const tally = {}; for (const w in ODDS) tally[w] = { win: 0, n: 0 };
-  for (const run of RUNS) for (let k = 1; k <= 150; k++) for (const r of play(run, 20000 + k, 'left').outs) if (r.reveal?.odds) { tally[r.reveal.odds].n++; if (r.reveal.how === 'win') tally[r.reveal.odds].win++; }
+  for (const run of RUNS) for (let k = 1; k <= 320; k++) for (const r of play(run, 20000 + k, 'left').outs) if (r.reveal?.odds) { tally[r.reveal.odds].n++; if (r.reveal.how === 'win') tally[r.reveal.odds].win++; }
   for (const [w, p] of Object.entries(ODDS)) { const t = tally[w], rate = t.win / t.n;
     ok(t.n >= 60 && Math.abs(rate - p) < 0.08, `"${w}" lands ${Math.round(rate * 100)}% of ${t.n} rolls (promised ${p * 100}%)`); } }
 { const c = CARDS.find(x => x.id === 'runforit'), st = J.stakesOf(c.options[0]);

@@ -59,7 +59,7 @@ const look = page => page.evaluate(() => {
   const s = window.__tm3.state();
   return {
     end: !!end && !end.hidden, busy: window.__tm3.busy(), scene: window.__tm3.scene(), board: document.getElementById('v3board').classList.contains('on'),
-    kind: window.__tm3.card()?.kind || null, line: panel.querySelector('.evLine')?.textContent || '', sign: panel.querySelector('.v3sign')?.textContent || '',
+    kind: window.__tm3.card()?.kind || null, cardId: panel.querySelector('.eventCard')?.dataset.card || '', line: panel.querySelector('.evLine')?.textContent || '', sign: panel.querySelector('.v3sign')?.textContent || '',
     stamp: panel.querySelector('.v3stamp')?.textContent || '',
     buttons: btns.map(b => { const q = r(b); return { t: b.textContent, h: q.height, inside: q.left >= 0 && q.right <= vw + 0.5 && q.top >= 0 && q.bottom <= vh + 0.5 }; }),
     clock: document.getElementById('v3clock').textContent, strip: document.getElementById('v3strip').hidden ? '' : document.getElementById('v3strip').textContent,
@@ -118,7 +118,7 @@ server.listen(0, '127.0.0.1', async () => {
         runs: [...document.querySelectorAll('#mutRow .run[data-run]')].map(r => ({ id: r.dataset.run, open: !r.classList.contains('locked'), lit: r.classList.contains('on') })),
         goal: document.getElementById('titleGoal').textContent, play: document.getElementById('play').textContent,
         links: ['dailyLink', 'weekLink', 'liveLink'].filter(id => { const e = document.getElementById(id); return e && !e.hidden && getComputedStyle(e).display !== 'none'; }) }));
-      ok(`the bare address is the card journey, not the real-time game (v${t.v})`, !t.classic && t.v === '3.21' && /v3\.21/.test(t.hero));
+      ok(`the bare address is the card journey, not the real-time game (v${t.v})`, !t.classic && t.v === '3.22' && /v3\.22/.test(t.hero));
       ok(`it is Act 1, in Helsinki (${await page.evaluate(() => document.getElementById('titleWhen').textContent)})`, await page.evaluate(() => /^Act 1 · Helsinki · 07:00/.test(document.getElementById('titleWhen').textContent)));
       ok(`the ladder: EASY open and lit, three locked (${t.runs.map(r => r.id + (r.open ? '' : '🔒')).join(' ')})`, t.runs.map(r => r.id).join() === 'easy,medium,hard,night' && t.runs[0].open && t.runs[0].lit && t.runs.slice(1).every(r => !r.open) && t.run === 'easy');
       ok(`the goal and the button (${t.goal} · ${t.play})`, /^Three deliveries before 08:15/.test(t.goal) && t.play === 'START SHIFT');
@@ -248,11 +248,12 @@ server.listen(0, '127.0.0.1', async () => {
     }
     // ── more interiors (v3.11): the metro by day, the rush car, and the weather in the window.
     // MEDIUM 1162 is a rainy day that rides the metro and is dealt the crush aboard it;
-    // MEDIUM 1027 rides a tram in the rain and is dealt the crush there.
+    // MEDIUM 1027 rides a tram in the rain and is dealt the crush there. (&written since
+    // v3.22: the written deck only, so these seeds deal the cards they always did)
     for (const [seed, car] of [[1162, 'metro'], [1027, 'tram']]) {
       const ctx = await browser.newContext(PHONE); await seedRuns(ctx, { easy: { done: true } });
       const page = await ctx.newPage(), errs = watch(page);
-      await page.goto(`${base}/toko-move/?run=medium&seed=${seed}`, { waitUntil: 'load' }); await ready(page);
+      await page.goto(`${base}/toko-move/?run=medium&seed=${seed}&written`, { waitUntil: 'load' }); await ready(page);
       await page.tap('#play'); await page.waitForSelector('#v3panel .eventOpt', { timeout: 15000 });
       // the card is up a beat before the car behind it fills (the scene cross-fades in .2 s): look once it has
       let crush = 'never dealt';
@@ -289,7 +290,7 @@ server.listen(0, '127.0.0.1', async () => {
     // seat she saved
     {
       const ctx = await browser.newContext(PHONE), page = await ctx.newPage(), errs = watch(page);
-      await page.goto(`${base}/toko-move/?run=easy&seed=1152`, { waitUntil: 'load' }); await ready(page);
+      await page.goto(`${base}/toko-move/?run=easy&seed=1152&written`, { waitUntil: 'load' }); await ready(page);
       await page.tap('#play'); await page.waitForSelector('#v3panel .eventOpt', { timeout: 15000 });
       const seen = await playOut(page, { maxSteps: 400 }), ms = [...seen.scenes].filter(x => x.startsWith('m-')).map(x => x.slice(2));
       ok(`the tourist's card is played in front of her and her map (${ms.join(', ')})`, ms.includes('tourist'));
@@ -534,11 +535,24 @@ server.listen(0, '127.0.0.1', async () => {
       ok('no page or network errors (the board)', !errs.length, errs.slice(0, 3).join(' | '));
       await ctx.close();
     }
+    // ── cards made from modules (v3.22): the same seed without &written deals made
+    // cards among the written ones, three buttons on the phone, and in Finnish too
+    for (const lang of ['en', 'fi']) {
+      const ctx = await browser.newContext(PHONE), page = await ctx.newPage(), errs = watch(page);
+      await page.goto(`${base}/toko-move/?run=easy&seed=1152&lang=${lang}`, { waitUntil: 'load' }); await ready(page);
+      await page.tap('#play'); await page.waitForSelector('#v3panel .eventOpt', { timeout: 15000 });
+      const seen = await playOut(page, { maxSteps: 400 }), made = seen.cards.filter(c => c.cardId.startsWith('m:'));
+      ok(`${lang}: a shift deals cards made from modules (${made.map(c => c.cardId).join(', ') || 'none'})`, made.length >= 1 && seen.end);
+      ok(`${lang}: each with three buttons on the screen`, made.every(c => c.buttons.length === 3 && c.buttons.every(b => b.inside)));
+      if (lang === 'fi') ok(`and its line is Finnish (${made[0]?.line.slice(0, 60)})`, made.every(c => !/\b(the|is|with|has|your)\b/.test(c.line) && /[äö]/.test(c.line)));
+      ok(`no page or network errors (made cards, ${lang})`, !errs.length, errs.slice(0, 3).join(' | '));
+      await ctx.close();
+    }
     // ── scenarios in the scene (v3.9): a stop card's subject stands in the
     // scene while it is played (EASY seed 1000 deals the vappu student second)
     {
       const ctx = await browser.newContext(PHONE), page = await ctx.newPage(), errs = watch(page);
-      await page.goto(`${base}/toko-move/?run=easy&seed=1000`, { waitUntil: 'load' }); await ready(page);
+      await page.goto(`${base}/toko-move/?run=easy&seed=1000&written`, { waitUntil: 'load' }); await ready(page);
       await page.tap('#play');
       const actorNow = () => page.evaluate(() => { const el = document.querySelector('#v3frame .L.actor:not(.out)'); return el ? { id: el.dataset.actor, bg: getComputedStyle(el).backgroundImage } : null; });
       let met = null, after = null, card = '';

@@ -31,6 +31,7 @@
 // the same caveat toko/'s packs carry. test/lang.cjs plays real shifts in
 // Finnish and fails on any English left on screen, which is what keeps a new
 // English line from shipping silently untranslated.
+import { WHO, WANT, TWIST } from './modules.js?v=1';
 const KEY = 'tokoMoveLang';
 export const LANGS = ['en', 'fi'];
 
@@ -733,6 +734,18 @@ export const FI = new Map(Object.entries({
 
 // Lines that carry names and numbers. Each is [regexp, replacement] and is
 // tried on one " · " segment at a time.
+// (v3.22) the cards made from modules (modules.js) carry their own Finnish: every
+// button and what it says goes in the table, and a card's line — somebody,
+// what they want, the day around it — is found part by part (moduleLine)
+for (const w of Object.values(WANT)) for (const o of [...w.opts, ...w.thirds]) {
+  FI.set(o.label, o.fi); if (o.say) FI.set(o.say, o.sayFi);
+  if (o.risk) { FI.set(o.risk.win.say, o.risk.winFi); FI.set(o.risk.lose.say, o.risk.loseFi); } }
+const WANTS = Object.values(WANT), WHOS = new Map(Object.values(WHO).map(x => [x.en, x.fi])), TWISTS = new Map(Object.values(TWIST).map(x => [x.en, x.fi]));
+export function moduleLine(s) {
+  for (const w of WANTS) { const i = s.indexOf(` ${w.en} `); if (i < 0) continue;
+    const who = WHOS.get(s.slice(0, i)), tw = TWISTS.get(s.slice(i + w.en.length + 2)); if (who != null && tw != null) return `${who} ${w.fi} ${tw}`; }
+  return null;
+}
 const PATTERNS = [
   // v3.6 — the daily and the week on the journey (ACT1.md §12)
   [/^The same shift for everyone today\. (Three|Four|Five) deliveries before (\d\d:\d\d)\. Your first finish stands\.$/, (m, n, t) => `Sama vuoro kaikille tänään. ${({ Three: 'Kolme', Four: 'Neljä', Five: 'Viisi' })[n]} toimitusta ennen kello ${t}. Ensimmäinen tuloksesi jää voimaan.`],
@@ -955,6 +968,7 @@ export const misses = new Set();
 
 function seg(s) {
   if (FI.has(s)) return FI.get(s);
+  { const m = moduleLine(s); if (m != null) return m; }
   if (OUT.has(s)) return s;
   for (const [re, rep] of PATTERNS) if (re.test(s)) { const r = s.replace(re, rep); OUT.add(r); return r; }
   // a line the table knows, SHOUTED: the test card's toast uppercases its
