@@ -22,7 +22,7 @@ export function load(s = store()) { try { const v = JSON.parse(s?.getItem(KEY) |
 export function save(sessions, s = store()) { try { s?.setItem(KEY, JSON.stringify(sessions.slice(-MAX))); } catch {} }
 
 // A session: what was played, and nothing yet done.
-export const start = ({ version, mode, run, seed, at = Date.now() }) => ({ v: version, mode, run, seed, at, picks: [], shown: null, end: null });
+export const start = ({ version, mode, run, seed, day = null, at = Date.now() }) => ({ v: version, mode, run, seed, day, at, picks: [], shown: null, end: null });
 // A card became answerable (the screen's `card` state). Shown twice (a re-render) is one card.
 export function shown(sess, { state, at = Date.now() }) { if (sess.end || (sess.shown && sess.shown.state === state && !sess.shown.done)) return; sess.shown = { state, at, done: false }; }
 // A button pressed on that card: which, its tier, how long it took.
@@ -50,8 +50,10 @@ export function summarise(sessions) {
     if (tiers[p.tier]) { tiers[p.tier].offered++; if (p.i === 2) tiers[p.tier].taken++; } }
   const quits = ended.filter(x => x.end.quit), where = {}; for (const q of quits) where[q.end.state || '?'] = (where[q.end.state || '?'] || 0) + 1;
   const runs = {}; for (const x of ended) { const r = (runs[x.run] ||= { played: 0, done: 0, struck: 0, quit: 0 }); r.played++; if (x.end.quit) r.quit++; else if (x.end.failed) r.struck++; else if (x.end.done >= x.end.target) r.done++; }
+  // (v3.23) the kind of day each shift drew, and how those shifts ended
+  const days = {}; for (const x of ended) if (x.day && x.day !== 'ordinary') { const d = (days[x.day] ||= { played: 0, done: 0 }); d.played++; if (!x.end.quit && !x.end.failed && x.end.done >= x.end.target) d.done++; }
   const slowest = Object.entries(states).filter(([, v]) => v.medianMs != null).sort((a, b) => b[1].medianMs - a[1].medianMs)[0]?.[0] || null;
-  return { sessions: sessions.length, ended: ended.length, picks: picks.length, states, slowest, third, tiers, quits: quits.length, quitAt: where, runs };
+  return { sessions: sessions.length, ended: ended.length, picks: picks.length, states, slowest, third, tiers, quits: quits.length, quitAt: where, runs, days };
 }
 const pct = (a, b) => b ? `${Math.round(100 * a / b)}%` : '—';
 const sec = ms => ms == null ? '—' : `${(ms / 1000).toFixed(1)} s`;
@@ -64,8 +66,9 @@ export function report(sessions, version = '') {
   lines.push('Time to choose (median · slowest): ' + Object.entries(s.states).map(([k, v]) => `${k} ${sec(v.medianMs)} · ${sec(v.slowMs)}`).join(' | '));
   if (s.slowest) lines.push(`Slowest to decide: ${s.slowest} cards.`);
   lines.push(`Third option taken: ${s.third.taken} of ${s.third.offered} (${pct(s.third.taken, s.third.offered)}) · special ${s.tiers.special.taken}/${s.tiers.special.offered} · very special ${s.tiers.very.taken}/${s.tiers.very.offered}`);
+  if (Object.keys(s.days).length) lines.push('Days: ' + Object.entries(s.days).map(([id, d]) => `${id} ${d.done}/${d.played}`).join(' · '));
   if (s.quits) lines.push('Left early at: ' + Object.entries(s.quitAt).map(([k, n]) => `${k} ×${n}`).join(', '));
   return lines.join('\n');
 }
 // The one line the arcade's shared log gets.
-export const line = sess => ({ run: sess.run, mode: sess.mode, v: sess.v, ...(sess.end || {}), picks: sess.picks.length, third: sess.picks.filter(p => p.i === 2).length });
+export const line = sess => ({ run: sess.run, mode: sess.mode, v: sess.v, day: sess.day || null, ...(sess.end || {}), picks: sess.picks.length, third: sess.picks.filter(p => p.i === 2).length });

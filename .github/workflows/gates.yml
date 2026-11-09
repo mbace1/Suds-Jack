@@ -393,6 +393,9 @@ jobs:
       - name: the cards made from modules (v3.22) — thousands of cards from parts, both languages, fitted to the run
         run: node toko-move/test/modules.mjs
 
+      - name: the day, drawn (v3.23) — what kind of day a shift is, from the run's own levers
+        run: node toko-move/test/days.mjs
+
       - name: the sealed parcel — which offer, the notebook, its store, the Finnish
         run: node toko-move/test/sealed.mjs
 

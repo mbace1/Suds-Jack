@@ -108,10 +108,10 @@ needed."*
 
 14. ~~**v3.22 · Cards made from modules.**~~ Shipped: somebody × what they want ×
     the day, over 7,500 cards, about half of every deck.
-15. **Next · The run itself from modules.** A shift's own draw: the day's
-    modifier (a strike, a festival, a heatwave, the first snow), a perk pool
-    and a route to the drops, so a run is a roguelike draw rather than a
-    fixed ladder step; missions stay as written stories, not the spine.
+15. ~~**v3.23 · The day, drawn.**~~ Shipped: every shift draws its day
+    (festival, payday, heatwave, first snow, full moon…) from the run's own
+    levers. Next in the same direction: the perk pool and the route to the
+    drops drawn the same way, so missions stay written stories, not the spine.
 16. **More parts.** Every new WHO, WANT or TWIST multiplies the deck; the
     stop's cutouts (PR #633 §5) let each card show who it is about.
 

@@ -1,5 +1,43 @@
 # Toko Move — versions
 
+## v3.23 — 2026-11-09
+
+**THE DAY, DRAWN** — the next step of the owner's *"randomized from modules, so
+the game actually becomes like a roguelike, and no strict missions are
+needed"*: a shift is now a draw, not only a ladder step.
+
+- **Every shift draws its day** (`js/days.js`), on top of its run and its
+  weather. About two in five are ordinary. The rest:
+  - **Helsinki Festival**: tips +€2, fuller trams, the accordion out;
+  - **Payday**: fees ×1.15, every clock a little shorter;
+  - **A quiet Sunday**: fees ×0.9, clocks ×1.1;
+  - **A heatwave** (sun only): walking slower, tips +€1;
+  - **The first snow** (snow only): luck +5%, tips +€1;
+  - **Two cruise ships in**: fees ×1.05, tourists asking the way;
+  - **Derby day**: fuller trams, luck +5%, everyone talking hockey;
+  - **A full moon** (NIGHT only): fees ×1.1, luck −5%, the strange ones out.
+- **No new rule.** A day only moves the levers the run already has (the fee,
+  the clock, the tip, the luck, the walk, the wait) and which made cards come
+  up more (`boost`, on modules.js). It is drawn by a hash of the seed, so a
+  seed is still one shift, and an ordinary day plays exactly as before.
+  A mission is its own day.
+- **The first card says it**, above its line: *PAYDAY · FEES ×1.15 · EVERYONE
+  WANTS IT NOW*. Only the first. In Finnish too.
+- **The play log** notes each shift's day, and the readout says how the
+  shifts of each kind of day ended.
+- `?written` now also means an ordinary day: the shift exactly as v3.21
+  dealt it, for a test or a trailer that names a seed.
+- **Measured** (`test/journey.mjs`, 60 seeds, reader · tapper): EASY 60 · 56,
+  MEDIUM 59 · 52, HARD 53 · 35, NIGHT 54 · 30. The ladder holds.
+- **Gates.**
+  - `test/days.mjs` (new, also in CI): the draw against its weights, the
+    weather and the hour, an ordinary day identical to no days on every run,
+    each lever landing, the boost, the first card only, Finnish, missions.
+  - `test/journey.mjs`: the fee checks fold in the day's fee; the arc test
+    that names EASY 5 runs on an ordinary day.
+  - `test/play.cjs`: the festival on EASY 7's first card, in English and
+    Finnish, and on no card after it.
+
 ## v3.22 — 2026-11-09
 
 **CARDS MADE FROM MODULES** — the owner: *"game needs more variety, fun

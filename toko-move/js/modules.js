@@ -220,8 +220,9 @@ const twistFits = (id, weather, night) => { const t = TWIST[id].tags; return (!t
 export function makeCard(key, ctx = {}, avoid = []) {
   const night = !!ctx.night, weather = ctx.weather || 'clear';
   const wants = Object.keys(WANT).filter(w => fits(w, ctx) && !avoid.includes(w)); if (!wants.length) return null;
-  // a want is drawn as often as the run's tones ask for it (NIGHT is mostly scary)
-  const tw = wants.map(x => ctx.tones?.[WANT[x].tone] ?? 1), total = tw.reduce((a, b) => a + b, 0);
+  // a want is drawn as often as the run's tones ask for it (NIGHT is mostly scary),
+  // and the day's boost (days.js: a festival brings out the accordion)
+  const tw = wants.map(x => (ctx.tones?.[WANT[x].tone] ?? 1) * (ctx.boost?.[x] ?? 1)), total = tw.reduce((a, b) => a + b, 0);
   let r = (hash(`${key}|want`) / 4294967296) * total, want = wants[wants.length - 1];
   for (let i = 0; i < wants.length; i++) { r -= tw[i]; if (r < 0) { want = wants[i]; break; } }
   const w = WANT[want];
