@@ -50,10 +50,10 @@ import {
   Fn, uniform, attribute, texture, uv, vec2, vec3, vec4, float, normalize, dot, length, max, min, clamp, pow, sqrt,
   mix, cameraViewMatrix, varying, select, positionGeometry, step, smoothstep, mrt, fwidth, dFdx, dFdy, exp, abs, normalLocal, cameraPosition, positionWorld,
 } from 'three/tsl';
-import { TUNING } from '../tuning.js?v=130';
-import { GooSim, BODY, STAMP, wallLen, WALL_N, WALL_T } from './goo-sim.js?v=130';
-import { GEL_SUN, GEL_GLINT } from './gel.js?v=130';
-import { pickStyle, grainAt } from './style.js?v=130';
+import { TUNING } from '../tuning.js?v=131';
+import { GooSim, BODY, STAMP, wallLen, WALL_N, WALL_T } from './goo-sim.js?v=131';
+import { GEL_SUN, GEL_GLINT } from './gel.js?v=131';
+import { pickStyle, grainAt } from './style.js?v=131';
 
 const T = TUNING, G = T.goo;
 const MAX_BODIES = 256;
@@ -235,7 +235,9 @@ export class Goo {
       if (k >= MAX_BODIES) break;
       if (!g.alive || (g.state === 'appear' && g.t < 0) || g.cloak > 0.5) continue;
       const cube = T.species[g.kind]?.family === 'cube';
-      b.set([g.px + (g.x - g.px) * alpha, g.pz + (g.z - g.pz) * alpha, g.r, g.r * (cube ? 1.8 : 1.4), (g.x - g.px) / dt, (g.z - g.pz) / dt, g.id, cube ? 1 : 0], k * BODY); k++;
+      // v131: a dome's top is where its (flatter) shape puts it: its cut sphere × its species' squash
+      const top = cube ? 1.8 : (1 + T.blob.domeCut) * (T.blob.shapes[g.kind]?.y ?? T.blob.shape.y) * (T.blob.squat ?? 1);
+      b.set([g.px + (g.x - g.px) * alpha, g.pz + (g.z - g.pz) * alpha, g.r, g.r * top, (g.x - g.px) / dt, (g.z - g.pz) / dt, g.id, cube ? 1 : 0], k * BODY); k++;
     }
     this.nb = k;
   }

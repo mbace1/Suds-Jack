@@ -17,15 +17,17 @@
 // The face and the letters are the brand's own (master.js and wordmark.js,
 // vendored here from toko/js/): the traced master face, and — v130 (owner,
 // 2026-11-09: "the text in the beginning logo is a bit wrong, please use this
-// instead", with their lockup) — the OWNER'S words, traced from their original
-// (wordmark.js LOGO): Toko set large, Midori and Games under it, flush both
-// sides, no ™. MIDORI and GAMES go, and "drop" comes in where Midori stood,
-// made of the owner's own letters: Midori's d, r and o, and a p that is the d
-// turned over (a geometric face's p is its d, half a turn round).
+// instead") — the OWNER'S words, traced from their original (wordmark.js
+// LOGO). v131 (owner: "The Toko Midori Games text should still be horizontal
+// like before, then camera moves to Toko to show Drop"): set on ONE line as
+// the film always had it, each word standing the same height (the brand's
+// one-line setting, wordmark.js drawWord), no ™ (the original has none); and
+// "drop" is made of the owner's own letters — Midori's d, r and o, and a p
+// that is the d turned over (a geometric face's p is its d, half a turn round).
 import * as THREE from 'three/webgpu';
-import { fillMaster, masterBounds } from './master.js?v=130';
-import { LOGO } from './wordmark.js?v=130';
-import { CUES } from './sfx.js?v=130';
+import { fillMaster, masterBounds } from './master.js?v=131';
+import { LOGO } from './wordmark.js?v=131';
+import { CUES } from './sfx.js?v=131';
 
 export { CUES };
 
@@ -33,27 +35,29 @@ const MAGENTA = '#f0027f';            // TOKO.MAGENTA — the original colour
 const U = 0.03;                       // world units per logotype unit (Toko stands 100 → 3)
 const YTIP = 7.5;                     // the foot of the p, above the spawn point
 
-// ── the layout, in logotype units (y down): the owner's block as traced, Toko 100 units tall ──
-const WD = LOGO.words, PX = 100 / WD.Toko.h;         // logotype units a source pixel
-const box = (n) => ({ x: WD[n].x * PX, y: WD[n].y * PX, w: WD[n].w * PX, h: WD[n].h * PX });
-const BLOCK_W = LOGO.w * PX, BLOCK_H = LOGO.h * PX;
-// the face stands as tall as the block, a gap of 0.14 of it away (the brand's lockup, toko/js/lockup.js drawLockup)
-const FACE_H = BLOCK_H / 0.975, GAP = FACE_H * 0.14;
-// "drop", from Midori's own letters ([x0, x1] in Midori's source px), set at Midori's fit where Midori stood; the p is
-// the d half a turn round, dropped so its bowl stands on the x-height (`xh`) and its stem runs below the baseline
+// ── the layout, in logotype units (y down; line 1's cap box is 0..100) ──
+// line 1: Toko · Midori · Games, each word's ink 100 units tall on one baseline, a word space of `GAPW` between
+const WD = LOGO.words, GAPW = 46;
+const SC = Object.fromEntries(Object.keys(WD).map((n) => [n, 100 / WD[n].h]));       // a word's units a source pixel
+const WW = Object.fromEntries(Object.keys(WD).map((n) => [n, WD[n].w * SC[n]]));     // its width in units
+const XW = { Toko: 0, Midori: WW.Toko + GAPW, Games: WW.Toko + GAPW + WW.Midori + GAPW };
+const FACE_H = 125, GAP = FACE_H * 0.14;
+// line 2: "drop", from Midori's letters ([x0, x1] in Midori's source px) at Midori's size and fit, one line below
+// "Toko"; the p is the d half a turn round, dropped so its bowl stands on the x-height and its stem runs below
+const LINE2 = 106;
 const MID = { d: [343, 514.5], r: [741.2, 870.6], o: [545.3, 708.9], fit: 31, base: 266.1, xh: 47.9, ink: 267.6 };
 const DROP = (() => {
-  let x = WD.Midori.x;
+  let x = 0;
   return [['d', MID.d, false], ['r', MID.r, false], ['o', MID.o, false], ['p', MID.d, true]].map(([ch, src, turn]) => {
     const w = src[1] - src[0], h = WD.Midori.h, dy = turn ? MID.xh - (h - MID.ink) : 0;
-    const L = { ch, src, turn, w, h, x, y: WD.Midori.y + dy };
+    const L = { ch, src, turn, w, h, x, dy };
     x += w + MID.fit;
     return L;
   });
 })();
-const P_ = DROP[3], STEM = (460.8 + 514.5) / 2 - MID.d[0];      // the d's stem, its middle in the letter
-const TIP = { x: (P_.x + (P_.w - STEM)) * PX, y: (P_.y + P_.h) * PX };   // the foot of the p's stem
-const BASE = (WD.Midori.y + MID.base) * PX;                    // the line's baseline
+const SM = SC.Midori, P_ = DROP[3], STEM = (460.8 + 514.5) / 2 - MID.d[0];      // the d's stem, its middle in the letter
+const TIP = { x: (P_.x + (P_.w - STEM)) * SM, y: LINE2 + (P_.dy + P_.h) * SM };   // the foot of the p's stem
+const BASE2 = LINE2 + MID.base * SM;                                               // line 2's baseline
 const wx = (gx) => (gx - TIP.x) * U;
 const wy = (gy) => YTIP + (TIP.y - gy) * U;
 
@@ -69,13 +73,13 @@ const lerp = (a, b, k) => a + (b - a) * k;
 const PATHS = {};
 const pathOf = (n) => (PATHS[n] ||= new Path2D(WD[n].d));
 function word(c, n, px) {
-  c.save(); c.scale(px * PX, px * PX);
+  c.save(); c.scale(px * SC[n], px * SC[n]);
   c.fillStyle = MAGENTA; c.fill(pathOf(n), 'evenodd');
   c.restore();
 }
 // one of Midori's letters on its own: clipped out of the word, half a turn round for the p
 function letter(c, L, px) {
-  c.save(); c.scale(px * PX, px * PX);
+  c.save(); c.scale(px * SM, px * SM);
   if (L.turn) { c.translate(L.w, L.h); c.scale(-1, -1); }
   c.beginPath(); c.rect(0, 0, L.w, L.h); c.clip();
   c.translate(-L.src[0], 0);
@@ -119,27 +123,34 @@ export class Intro {
     if (this.built) return this.built;
     const group = new THREE.Group(), parts = {};
     const b = masterBounds(), FW = FACE_H * (b.w / b.h);
-    // the face, open and at two stages of a blink (the brand's resting animation), level with the block's middle
-    const faceBox = { x: -(FW + GAP), y: BLOCK_H / 2 - FACE_H / 2, w: FW, h: FACE_H };
+    // the face, open and at two stages of a blink (the brand's resting animation)
+    const faceBox = { x: -(FW + GAP), y: 50 - FACE_H / 2, w: FW, h: FACE_H };
     // three cards, open / half / shut, so the blink is a swap of which one shows
-    parts.faces = [1, 0.45, 0.08].map((sq) => element(faceBox, [faceBox.x + FW / 2, BLOCK_H / 2], 3.5, (c, px) => fillMaster(c, 0, 0, FW * px, { color: MAGENTA, squash: sq })));
+    parts.faces = [1, 0.45, 0.08].map((sq) => element(faceBox, [faceBox.x + FW / 2, 50], 7, (c, px) => fillMaster(c, 0, 0, FW * px, { color: MAGENTA, squash: sq })));
     parts.face = parts.faces[0];
-    // the owner's block: Toko, Midori, Games, each its own card (they come in one after another, and two of them go)
-    const card = (n, px) => { const bx = box(n); return element(bx, [bx.x + bx.w / 2, bx.y + bx.h / 2], px, (c, k) => word(c, n, k)); };
-    parts.toko = card('Toko', 7); parts.midori = card('Midori', 6); parts.games = card('Games', 6);
-    // "drop", each letter its own card so it can pop in; the p is drawn densest, because the camera ends up a
+    // line 1: Toko · Midori · Games, the owner's words, each its own card (they come in one after another, one goes)
+    const card = (n, px) => element({ x: XW[n], y: 0, w: WW[n], h: 100 }, [XW[n] + WW[n] / 2, 50], px, (c, k) => word(c, n, k));
+    parts.toko = card('Toko', 8); parts.midori = card('Midori', 6); parts.games = card('Games', 6);
+    // line 2: d r o p, each its own card so it can pop in; the p is drawn densest, because the camera ends up a
     // few letters' height from its foot
     parts.letters = DROP.map((L) => {
-      const bx = { x: L.x * PX, y: L.y * PX, w: L.w * PX, h: L.h * PX };
-      return element(bx, [bx.x + bx.w / 2, BASE], L.turn ? 14 : 10, (c, px) => letter(c, L, px));
+      const bx = { x: L.x * SM, y: LINE2 + L.dy * SM, w: L.w * SM, h: L.h * SM };
+      return element(bx, [bx.x + bx.w / 2, BASE2], L.turn ? 14 : 10, (c, px) => letter(c, L, px));
     });
     for (const p of [...parts.faces, parts.toko, parts.midori, parts.games, ...parts.letters]) group.add(p.mesh);
     // the thread between the p and the drop as it lets go: the hero's own gel
     const neck = new THREE.Mesh(new THREE.CylinderGeometry(1, 1, 1, 12, 1, true).translate(0, -0.5, 0), this.c.actors.hero.mat);
     neck.visible = false; group.add(neck); parts.neck = neck;
-    parts.extent = { x0: faceBox.x, x1: BLOCK_W, y0: Math.min(0, faceBox.y), y1: Math.max(BLOCK_H, faceBox.y + FACE_H) };
+    parts.extent = { x0: faceBox.x, x1: XW.Games + WW.Games };
     this.built = { group, parts };
     return this.built;
+  }
+
+  // v131: the lockup's cards drawn and sent to the GPU while the title is up (main.js, once its warm-up is done),
+  // so the film's first second does not stop to paint ten canvases and upload them
+  prepare(renderer) {
+    const { parts } = this.build();
+    for (const e of [...parts.faces, parts.toko, parts.midori, parts.games, ...parts.letters]) renderer.initTexture?.(e.tex);
   }
 
   begin() {
@@ -152,6 +163,7 @@ export class Intro {
     // summer haze and no rail), and finish() used to put world 1's dark and rail on it for the rest of the world
     const floor = this.c.floor(), set = this.c.scenery?.();
     this._was = { void: floor.reveal.void.value.clone(), bg: this.c.scene.background.clone(), border: floor.border.visible, set: set ? set.group.visible : true };
+    this._compiled = false;   // v131: the world's set is compiled on the film's first frame
     this._void.copy(this._was.void);
   }
 
@@ -159,15 +171,14 @@ export class Intro {
   _shots() {
     const asp = this.c.aspect(), vf = THREE.MathUtils.degToRad(this.cam.fov), th = Math.tan(vf / 2), tw = th * asp;
     const P = this.built.parts, ex = P.extent;
-    const halfW = ((ex.x1 - ex.x0) / 2) * U, cx = wx((ex.x0 + ex.x1) / 2), cy = wy((ex.y0 + ex.y1) / 2);
-    const dA = Math.max(halfW / 0.84 / tw, ((ex.y1 - ex.y0) * U) / 2 / 0.72 / th);
+    const halfW = ((ex.x1 - ex.x0) / 2) * U, cx = wx((ex.x0 + ex.x1) / 2), cy = wy(58);
+    const dA = Math.max(halfW / 0.84 / tw, (FACE_H * U) / 2 / 0.5 / th);
     const dB = Math.max(1.85 / th, 1.0 / tw);           // ~3.7 units tall around the foot of the p
     // M: "Toko" over "drop", the game's name, held for a beat on the way in
     // (the face and the stack together, so a phone held upright keeps the face)
-    const mx0 = ex.x0, mx1 = box('Toko').x + box('Toko').w, my0 = ex.y0, my1 = Math.max(TIP.y + 8, ex.y1);
-    const mw = ((mx1 - mx0) / 2) * U, mh = ((my1 - my0) / 2) * U;
-    const dM = Math.max(mw / 0.8 / tw, mh / 0.7 / th);
-    return { A: { x: cx, y: cy, d: dA }, M: { x: wx((mx0 + mx1) / 2), y: wy((my0 + my1) / 2), d: dM }, B: { x: 0, y: YTIP - 0.85, d: dB } };
+    const mx0 = ex.x0, mx1 = WW.Toko, mw = ((mx1 - mx0) / 2) * U, mh = ((TIP.y + 12) / 2) * U;
+    const dM = Math.max(mw / 0.8 / tw, mh / 0.66 / th);
+    return { A: { x: cx, y: cy, d: dA }, M: { x: wx((mx0 + mx1) / 2), y: wy(TIP.y / 2 - 6), d: dM }, B: { x: 0, y: YTIP - 0.85, d: dB } };
   }
 
   frame(t, world) {
@@ -189,11 +200,9 @@ export class Intro {
       e.mat.opacity = k * fadeAll;
       e.mesh.position.y = e.home.y - (1 - outCubic(k)) * 0.35;
     });
-    const mg = seg(t, C.midori, C.midori + 0.55), gg = seg(t, C.midori + 0.12, C.midori + 0.67);   // v130: and GAMES after it
+    const mg = seg(t, C.midori, C.midori + 0.55);
     P.midori.mat.opacity *= 1 - mg;
     P.midori.mesh.position.y -= smooth(mg) * 0.25;
-    P.games.mat.opacity *= 1 - gg;
-    P.games.mesh.position.y -= smooth(gg) * 0.25;
     P.letters.forEach((e, i) => {
       const k = seg(t, C.letters[i], C.letters[i] + 0.24);
       e.mesh.scale.setScalar(Math.max(0.001, outBack(k, 2.2)));
@@ -262,8 +271,22 @@ export class Intro {
     // v101 (owner: "The world one environment is now shown in the intro animations and it shouldn't be"): the
     // world's set — world 1's loops of neon (v123; its grid running on past the rail and its lit bollards before) — waits in the void with the
     // floor, and comes in as the grid reaches the rail; it stood along the bottom of the logo and the drop
-    const set = this.c.scenery?.();
-    if (set) set.group.visible = railK > 0.5;
+    const set = this.c.scenery?.(), posts = this.c.actors.posts, shown = railK > 0.5;
+    // v131 (owner, 2026-11-09: "It lagged through the intro and also it showed world 2 environment art when it
+    // started"): a later world's things that stand on its floor — the driveway's bollards and its beach ball — wait
+    // with the set (they stood under the logo and beside the falling drop), and on the film's first frame everything
+    // the world will show — its floor, its set, its posts — is COMPILED off the frame loop while it is hidden
+    // (three's compileAsync), so no shader is built mid-film when the grid reaches it
+    if (!this._compiled && this.c.renderer) {
+      this._compiled = true;
+      const all = [...(posts?.views ?? []), ...(posts?.extras ?? [])];
+      if (set) set.group.visible = true; floor.group.visible = true; for (const v of all) v.visible = true;
+      this.c.renderer.compileAsync(this.c.scene, cam).catch(() => {});
+    }
+    if (set) set.group.visible = shown;
+    for (const v of [...(posts?.views ?? []), ...(posts?.extras ?? [])]) v.visible = v.visible && shown;
+    // and the floor is the void until the drop lands: it is not drawn till then (a phone paid for every pixel of it)
+    floor.group.visible = t >= C.land - 0.05;
 
     // ── the camera ──
     const game = this.c.camera();
@@ -358,6 +381,7 @@ export class Intro {
     if (W.void) floor.reveal.void.value.copy(W.void); else floor.reveal.void.value.set(T.render.clearColor);
     floor.border.material.opacity = 1; floor.border.visible = W.border ?? true;
     const set = this.c.scenery?.(); if (set) set.group.visible = W.set ?? true;
+    floor.group.visible = true;   // v131: drawn again (the film kept it back until the drop landed)
     if (W.bg) this.c.scene.background.copy(W.bg); else this.c.scene.background.set(T.render.clearColor);
     hv.eyes.visible = true; hv.eyes.scale.set(1, 1, 1); hv.squash.scale.set(1, 1, 1); hv.root.position.y = 0;
     for (const el of this._hudEls) { el.style.transform = ''; el.style.opacity = ''; }

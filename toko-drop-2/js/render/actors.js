@@ -15,23 +15,23 @@
 // that springs in and fades (splats.js). Views are pooled per species, so a
 // gel's material is built once and reused, never compiled mid-fight.
 import * as THREE from 'three/webgpu';
-import { TUNING } from '../tuning.js?v=130';
+import { TUNING } from '../tuning.js?v=131';
 import * as TSL from 'three/tsl';
-import { gelMaterial, domeGeometry, cubeGeometry, heroGeometry, GEL_TIME, GEL_SUN, GEL_GLINT, GEL_CORE } from './gel.js?v=130';
-import { LOOKS } from './looks/index.js?v=130';
-import { styleName, setStyle as setStyleMode, styledBody } from './style.js?v=130';
-import { JellyBody } from './jelly.js?v=130';
-import { Juice } from './juice.js?v=130';
-import { ArenaLight } from './light.js?v=130';
-import { toSdf } from './sdf.js?v=130';
-import { PickupView } from './pickups.js?v=130';
-import { ChallengeView } from './challenge.js?v=130';
-import { PostView } from './posts.js?v=130';
-import { SlamView } from './slam.js?v=130';
-import { HintView } from './hints.js?v=130';
-import { Goo } from './goo.js?v=130';
-import { mult as heatMult } from '../sim/heat.js?v=130';
-import { strands as liveStrands } from '../sim/formation.js?v=130';
+import { gelMaterial, domeGeometry, cubeGeometry, heroGeometry, GEL_TIME, GEL_SUN, GEL_GLINT, GEL_CORE } from './gel.js?v=131';
+import { LOOKS } from './looks/index.js?v=131';
+import { styleName, setStyle as setStyleMode, styledBody } from './style.js?v=131';
+import { JellyBody } from './jelly.js?v=131';
+import { Juice } from './juice.js?v=131';
+import { ArenaLight } from './light.js?v=131';
+import { toSdf } from './sdf.js?v=131';
+import { PickupView } from './pickups.js?v=131';
+import { ChallengeView } from './challenge.js?v=131';
+import { PostView } from './posts.js?v=131';
+import { SlamView } from './slam.js?v=131';
+import { HintView } from './hints.js?v=131';
+import { Goo } from './goo.js?v=131';
+import { mult as heatMult } from '../sim/heat.js?v=131';
+import { strands as liveStrands } from '../sim/formation.js?v=131';
 
 const T = TUNING;
 const B = T.blob, D = T.death;
@@ -322,7 +322,7 @@ export class Actors {
     let dx = h ? e.x - h.x : 0, dz = h ? e.z - h.z : 1;
     const l = Math.hypot(dx, dz) || 1; dx /= l; dz /= l;
     const nrm = [-dz, 0, dx];                                   // square to the shot line
-    const halves = JellyBody.dome(e.r * sh.x, e.r * sh.y).cut([0, 0, 0], nrm);
+    const halves = JellyBody.dome(e.r * sh.x, e.r * sh.y * (B.squat ?? 1)).cut([0, 0, 0], nrm);   // v131: as squat as the body was
     halves.forEach((body, i) => {
       if (!body) return;
       const sgn = i === 0 ? 1 : -1;
@@ -367,6 +367,7 @@ export class Actors {
     const v = this._pool()[kind]?.pop() || this._makeGel(kind);
     v.vx = v.vz = 0; v.hit = 0; v.dyingT = 0; v.cd = v.cb = 0; v.press = null;
     v.jx = v.jz = v.jvx = v.jvz = 0; v.pvx = v.pvz = null; v.mat?.userData?.u?.lean?.value.set(0, 0);   // v129: no wobble carried over
+    v.squat = T.species[kind]?.family === 'blob' ? (B.squat ?? 1) : 1;                                     // v131: a dome is drawn squat
     if (v.mat?.gel) { v.mat.gel.hit.value = 0; v.mat.gel.tear.value = 0; v.mat.gel.contact?.value.set(0, 0, 0, 0); }
     v.mat?.emissive?.setScalar(0);
     v.L.reset?.(v);
@@ -690,7 +691,7 @@ export class Actors {
       v.vx += ((g.x - g.px) / T.sim.dt - v.vx) * 0.3;
       v.vz += ((g.z - g.pz) / T.sim.dt - v.vz) * 0.3;
       wobble(v, g, fdt);   // v129: the top carries the body's motion (a damped spring on its acceleration)
-      v.squash.scale.set(1 / Math.sqrt(g.sq), g.sq, 1 / Math.sqrt(g.sq));
+      v.squash.scale.set(1 / Math.sqrt(g.sq), g.sq * (v.squat ?? 1), 1 / Math.sqrt(g.sq));   // v131: a dome squats (TUNING.blob.squat)
       v.press = g; v.pressR = g.r;   // v82: what pressed on it this step (sim/press.js; eased below)
       // the swell is the view's alone (the body is live from its first step): a
       // child never swells, and a brood still waiting out its parent's pop is not drawn
@@ -913,7 +914,7 @@ export class Actors {
       const t = Math.min(1, 1 - v.dyingT / B.death);
       // 1.x destroy(): the squash resets and the body pops as a uniform dome
       // of its own size × (1 + 1.3t) (enemy.js:2968-2984, 3013-3029)
-      v.squash.scale.setScalar(1);
+      v.squash.scale.set(1, v.squat ?? 1, 1);   // (v131: still squat as it pops)
       if (v.own) v.root.scale.setScalar(1 + t * B.deathSwell);
       else v.body.scale.setScalar((v.r ?? v.S.radius) * (1 + t * B.deathSwell));
       if (v.mat?.gel) v.mat.gel.tear.value = Math.max(0, v.dyingT / B.death);

@@ -20,9 +20,18 @@
 // TUNING.light.arena.
 import * as THREE from 'three/webgpu';
 import { uv, vec2, vec3, float, length, clamp, pow, uniform, mix, smoothstep } from 'three/tsl';
-import { TUNING } from '../tuning.js?v=130';
+import { TUNING } from '../tuning.js?v=131';
 
 const T = TUNING, A = T.light.arena, _Y = new THREE.Vector3(0, 1, 0);
+// v131: how tall a thing stands, in its radii, for the length of its shadow in a low sun: a dome its cut sphere ×
+// its species' squash, a cube 1.8, the rest about one and a half; a bollard 2.5, the beach ball 2
+const POST_H = { bollard: 2.5, ball: 2 };
+function bodyHeight(kind) {
+  const S = T.species[kind], B = T.blob;
+  if (S?.family === 'cube') return 1.8;
+  if (S?.family === 'blob') return (1 + B.domeCut) * (B.shapes[kind]?.y ?? B.shape.y) * (B.squat ?? 1);
+  return 1.5;
+}
 const smooth = (t) => { t = Math.min(1, Math.max(0, t)); return t * t * (3 - 2 * t); };
 
 function quads(cap, mat) {
@@ -56,7 +65,17 @@ export class ArenaLight {
       blendEquationAlpha: THREE.MaxEquation, blendSrcAlpha: THREE.OneFactor, blendDstAlpha: THREE.OneFactor });
     this.pools = quads(A.cap, lightMat);
     this.shades = quads(A.shadow.cap, shadeMat);
-    this.scene.add(this.shades, this.pools);
+    // v131 (owner: "the enemy and characters look like they are full circles floating with the new shadow. They
+    // should be flatter and close to the ground"): where a world casts hard shadows, every body also sits in a soft
+    // CONTACT shade of its own, the dark where it meets the ground (TUNING.worlds.light[…].shadow.contact)
+    this.contactK = uniform(0);
+    const contactMat = new THREE.MeshBasicNodeMaterial({ transparent: true, depthTest: false, depthWrite: false });
+    contactMat.colorNode = vec3(0);
+    contactMat.opacityNode = pow(clamp(float(1).sub(length(uv().sub(vec2(0.5, 0.5))).mul(2)), 0, 1), float(A.shadow.contactPow ?? 0.8)).mul(this.contactK);
+    Object.assign(contactMat, { blending: THREE.CustomBlending, blendEquation: THREE.AddEquation, blendSrc: THREE.ZeroFactor, blendDst: THREE.OneFactor,
+      blendEquationAlpha: THREE.MaxEquation, blendSrcAlpha: THREE.OneFactor, blendDstAlpha: THREE.OneFactor });
+    this.contacts = quads(A.shadow.cap, contactMat);
+    this.scene.add(this.contacts, this.shades, this.pools);
     this.sunOff = { x: 0, z: 0 };   // where a caustic slides to, away from the world's sun (setSun)
     this.sunDir = { dx: 1, dz: 0, cot: 0, stretch: 1 };   // v93: the way the sun's shadows fall; straight down until setSun
     this._q = new THREE.Quaternion(); this._s = new THREE.Vector3(); this._p = new THREE.Vector3();
@@ -78,6 +97,10 @@ export class ArenaLight {
     // v128: and a hard shadow drawn where a ball's would fall (`r` × the radius across, its middle `offset` × cot θ × r
     // on), not the soft one's wider disc, whose sun side would show as a dark rim round the body's foot
     this.shadeR = L.shadow?.r != null ? L.shadow.r / A.shadow.r : 1; this.shadeOff = L.shadow?.offset ?? A.shadow.sun.offset;
+    // v131: a hard shadow runs from the body's foot to where its top's shadow falls (`cast`: its height × cot θ),
+    // as wide as the body at its foot, and the body sits in its contact shade (`contact`: r × the radius, k strong)
+    this.cast = L.shadow?.cast ?? null; this.contact = L.shadow?.contact ?? null;
+    this.contactK.value = this.contact?.k ?? 0;
   }
   shadeR = 1; shadeOff = A.shadow.sun.offset;
   setSun(x, y, z) {
@@ -94,13 +117,27 @@ export class ArenaLight {
   // times as long along the way from the sun as it is across, its middle `offset` × cot θ × r on from the foot,
   // so it still starts under the body (a contact shadow, not a cast one, keeps a body readable at its foot).
   // Before v93 every world's shadow was a disc straight under the body, whatever its light said
-  _putShade(mesh, n, x, z, r) {
-    r *= this.shadeR;
-    const d = this.sunDir, off = r * d.cot * this.shadeOff;
+  _putShade(mesh, n, x, z, r, H = 1.4) {
+    const d = this.sunDir, C = this.cast;
     this._q.setFromAxisAngle(_Y, Math.atan2(-d.dz, d.dx));
-    this._s.set(r * 2 * d.stretch, 1, r * 2); this._p.set(x + d.dx * off, 0, z + d.dz * off);
+    if (C) {
+      // v131: from just behind the foot (`near` radii) to where the top's shadow lands (H radii up × cot θ), as wide
+      // as the body (`w`); `r` came in at the soft disc's size (× A.shadow.r), the body's own radius is taken back
+      const rb = r / A.shadow.r, tip = H * d.cot, near = -C.near, half = Math.max((tip - near) / 2, C.w), mid = (tip + near) / 2;
+      this._s.set(rb * 2 * half, 1, rb * 2 * C.w); this._p.set(x + d.dx * mid * rb, 0, z + d.dz * mid * rb);
+    } else {
+      r *= this.shadeR;
+      const off = r * d.cot * this.shadeOff;
+      this._s.set(r * 2 * d.stretch, 1, r * 2); this._p.set(x + d.dx * off, 0, z + d.dz * off);
+    }
     mesh.setMatrixAt(n, this._m.compose(this._p, this._q, this._s));
     mesh.setColorAt(n, this._c.setHex(0));
+    // and its contact shade, where the world casts hard shadows
+    if (this.contact && this._nc < A.shadow.cap) {
+      const rc = (r / A.shadow.r) * this.contact.r;
+      this._m.makeScale(rc * 2, 1, rc * 2).setPosition(x, 0, z);
+      this.contacts.setMatrixAt(this._nc, this._m); this.contacts.setColorAt(this._nc++, this._c.setHex(0));
+    }
   }
 
   // the map covers the arena exactly, at A.perMetre texels a metre
@@ -170,9 +207,10 @@ export class ArenaLight {
         T.species[g.kind]?.color ?? 0xffffff, BL.k * (g.isBoss ? BL.boss : 1));
     }
     let s = 0;
+    this._nc = 0;
     const S = A.shadow, h = w.hero;
     // the hero's shadow narrows as it falls into a world from high up, and goes with it down a drain
-    if (h.alive) this._putShade(this.shades, s++, h.px + (h.x - h.px) * alpha, h.pz + (h.z - h.pz) * alpha, T.hero.radius * S.r * (1 - 0.6 * (h.fall || 0)) * (1 - (h.sink || 0)));
+    if (h.alive) this._putShade(this.shades, s++, h.px + (h.x - h.px) * alpha, h.pz + (h.z - h.pz) * alpha, T.hero.radius * S.r * (1 - 0.6 * (h.fall || 0)) * (1 - (h.sink || 0)), 2);
     for (const g of w.gels) {
       if (s >= S.cap) break;
       if (g.state === 'appear' && g.t < 0) continue;              // a brood still waiting out its parent's pop is not there yet
@@ -180,11 +218,11 @@ export class ArenaLight {
       if (v && v.root && !v.root.visible) continue;
       const grow = g.child || !(g.t < T.gel.swell) ? 1 : smooth(g.t / T.gel.swell);
       const r = g.r * S.r * grow * (v?.shadow ?? 1);
-      if (r > 0.02) this._putShade(this.shades, s++, g.px + (g.x - g.px) * alpha, g.pz + (g.z - g.pz) * alpha, r);
+      if (r > 0.02) this._putShade(this.shades, s++, g.px + (g.x - g.px) * alpha, g.pz + (g.z - g.pz) * alpha, r, bodyHeight(g.kind));
     }
     // v108: what stands on a later world's floor stands in its own shadow (sim/posts.js)
-    for (const p of w.posts ?? []) if (s < S.cap) this._putShade(this.shades, s++, p.px + (p.x - p.px) * alpha, p.pz + (p.z - p.pz) * alpha, p.r * S.r * (A.postShade ?? 1.15));
-    for (const [m, c] of [[this.pools, n], [this.shades, s]]) {
+    for (const p of w.posts ?? []) if (s < S.cap) this._putShade(this.shades, s++, p.px + (p.x - p.px) * alpha, p.pz + (p.z - p.pz) * alpha, p.r * S.r * (A.postShade ?? 1.15), POST_H[p.kind] ?? 2);
+    for (const [m, c] of [[this.pools, n], [this.shades, s], [this.contacts, this._nc]]) {
       m.count = c;
       m.instanceMatrix.needsUpdate = true;
       if (m.instanceColor) m.instanceColor.needsUpdate = true;
@@ -207,7 +245,7 @@ export class ArenaLight {
 
   // no run on the floor: no light and no shadow (the menu's arena is bare) — but while the title's warm-up holds
   // one of each (v116, warm), they stay
-  clear() { if (this.warming) return; this.pools.count = 0; this.shades.count = 0; }
+  clear() { if (this.warming) return; this.pools.count = 0; this.shades.count = 0; this.contacts.count = 0; }
 
   // v116: one pool and one shadow drawn at nothing's size for a frame on the title (actors.warmStep), so the first
   // light and the first shadow of a run do not compile their shaders mid-fight
@@ -215,6 +253,6 @@ export class ArenaLight {
     this.warming = on;
     if (!on) { this.clear(); return; }
     this._m.makeScale(0, 0, 0);
-    for (const m of [this.pools, this.shades]) { m.setMatrixAt(0, this._m); m.count = 1; m.instanceMatrix.needsUpdate = true; }
+    for (const m of [this.pools, this.shades, this.contacts]) { m.setMatrixAt(0, this._m); m.count = 1; m.instanceMatrix.needsUpdate = true; }
   }
 }

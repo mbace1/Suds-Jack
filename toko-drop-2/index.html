@@ -39,6 +39,8 @@
       text-shadow: 0 0 1px rgba(0,0,0,.95), 0 0 2px rgba(0,0,0,.8), 0 1px 2px rgba(0,0,0,.75), 0 0 10px rgba(0,0,0,.3); }
     #hud[hidden] { display: none; }
     #scorebox { position: absolute; left: max(14px, env(safe-area-inset-left)); top: max(10px, env(safe-area-inset-top)); }
+    /* v131: under the arcade's HOME button (hub/shell.js, top-left, 44px tall) when the game stands in the arcade */
+    body:has(.arcade-home) #scorebox { top: calc(max(10px, env(safe-area-inset-top)) + 52px); }
     #score { font-size: 22px; letter-spacing: .06em; }
     #mult { margin-left: 8px; color: var(--amber); font-size: 15px; }
     /* HEAT (v51): the ×, hotter as it climbs, a bar for how far into it you are, and BANK's pot */
@@ -278,7 +280,7 @@
   <div id="card" hidden><div class="t"></div><div class="s"></div></div>
   <div id="vignette" aria-hidden="true"></div>
   <div id="menu" class="menu" hidden></div>
-  <div id="ver">2.0 · v130<span id="backend"></span></div>
+  <div id="ver">2.0 · v131<span id="backend"></span></div>
   <pre id="fault" hidden></pre>
   <script>
     // A failure must be visible on the phone: there is no console there.
@@ -387,6 +389,17 @@
       });
     })();
   </script>
-  <script type="module" src="js/main.js?v=130"></script>
+  <script>
+    // v131 (owner, 2026-11-09: "drop 2.0 needs the hub button at the top left"): the arcade's way home — the hub's
+    // shell (hub/shell.js) puts a HOME button in the top-left corner and makes a held Start or Back go home, as on
+    // every other cabinet. Loaded only where the game stands in the arcade (/toko-drop-2/): the itch build and a local
+    // checkout have no hub beside them, and a request for it there would only 404
+    if (/\/toko-drop-2\//.test(location.pathname)) {
+      const shell = document.createElement('script');
+      shell.type = 'module'; shell.src = new URL('../hub/shell.js?v=232', location.href).href;
+      document.head.appendChild(shell);
+    }
+  </script>
+  <script type="module" src="js/main.js?v=131"></script>
 </body>
 </html>

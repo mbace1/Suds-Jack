@@ -7,10 +7,10 @@
 // things that work"). The arena is 1.x's, so every 1.x number ports as it is
 // instead of through a rescale. Axes: x across the screen (right +), y up,
 // z toward the bottom of the screen. The arena is centred on the origin.
-import { SPECIES } from './tuning/species/index.js?v=130';
-import WAVES from './tuning/waves.js?v=130';
-import PICKUPS from './tuning/pickups.js?v=130';
-import MUSIC from './tuning/music.js?v=130';
+import { SPECIES } from './tuning/species/index.js?v=131';
+import WAVES from './tuning/waves.js?v=131';
+import PICKUPS from './tuning/pickups.js?v=131';
+import MUSIC from './tuning/music.js?v=131';
 
 export const TUNING = {
   render: {
@@ -193,7 +193,10 @@ export const TUNING = {
       // `glint`: the sun's highlight in the jelly, its colour × strength; `core` × every gel's inner glow (lit through);
       // `shadow`: the bodies' shadows `k` × darker and `hard` of the way to a crisp edge (render/light.js)
       driveway: { sun: 0xffc488, sunI: 1.9, at: [-14, 8, -12],  ambient: 0xa8bce6, ambientI: 0.5, env: 1.0, hero: 0.3,
-                  glint: [1.0, 0.86, 0.66], core: 2.6, shadow: { k: 1.45, hard: 0.75, r: 1.05, offset: 1.0 },
+                  glint: [1.0, 0.86, 0.66], core: 2.6,
+                  // v131: `cast` the shadow from the foot (`near` radii behind it) to where the top's falls, `w` radii
+                  // wide; `contact` the soft shade a body sits in, `r` × its radius, `k` strong (render/light.js)
+                  shadow: { k: 1.45, hard: 0.75, r: 1.05, offset: 1.0, cast: { near: 0.35, w: 0.92 }, contact: { r: 1.12, k: 0.95 } },
                   // `caustic`: the light through each body falls in its shadow — `offset` × cot θ × r on, `stretch` of
                   // the shadow's length, `r` × the radius wide, the ring × `ring` (render/actors.js)
                   caustic: { offset: 1.05, stretch: 0.7, r: 1.0, ring: 0, soft: 1 },
@@ -675,6 +678,10 @@ export const TUNING = {
       spittor: { x: 1.02, y: 0.78, z: 1.26 },     // snouty
       fanner:  { x: 1.30, y: 0.66, z: 1.08 },     // wide flat pancake
     },
+    // v131 (owner: "They should be flatter and close to the ground"): 2.0 SQUATS every dome by this much as it is
+    // drawn (render/actors.js, on the body's squash), so it stands about its own radius, not most of a ball (1.4
+    // radii: a circle from the camera). The shapes above stay 1.x's, which the species checks hold them to
+    squat: 0.8,
     breatheAmp: 0.13, breatheAmpSplitta: 0.18, breatheHz: 2.4,
     dragStretchPerSpeed: 0.10, dragMax: 0.35, rearDragTilt: 0.35,
     // v129 (the owner's jelly notes): the top WOBBLES with the body's motion — a damped spring on its acceleration
