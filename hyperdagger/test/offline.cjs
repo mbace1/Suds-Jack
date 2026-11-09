@@ -11,7 +11,7 @@
 // anyway. The correct offline page has no HOME button, not a dead one.
 const { chromium } = require('playwright');
 const http = require('http'); const fs = require('fs'); const path = require('path');
-const ROOT = path.resolve(__dirname, '..', '..');
+const ROOT = process.env.HD_SITE_ROOT || path.resolve(__dirname, '..', '..');
 const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.webmanifest': 'application/manifest+json', '.png': 'image/png' };
 const server = http.createServer((req, res) => {
   const u = req.url.split('?')[0];
