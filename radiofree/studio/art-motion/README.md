@@ -101,7 +101,9 @@ gets the papercut sign-off; only new films, and remakes the owner names (the Dee
 made in clay. The sign-off is `scenes/so_ident.js` (papercut: the Cathedral over the rooftops,
 Toko at a mic beside the pirate mast) with `subs/signoff-captions.ass` and `synth_signoff.py`;
 its lettering is RADIO FREE HELSINKI and LOCAL · GLOBAL · FREE RADIO — no "Toko, from
-Helsinki" line (owner, 2026-10-14). **The clay films go to the Toko Midori Games socials and
+Helsinki" line (owner, 2026-10-14). **A refreshed v2** (owner, 2026-11-09: "feels slightly dated. Good general layout and all") is
+`clay/signoff/` → `previews/signoff-v2.mp4`: the same layout and the same jingle, with a night-blue sky, a floodlit
+Cathedral, full rings, a neon ON AIR and set lettering. It goes into `--signoff` once the owner approves it. **The clay films go to the Toko Midori Games socials and
 carry no end slate** (owner, same day: "no end slate for now") **and no RADIO FREE HELSINKI bug** (`build(..., bug=False)`).
 
 Cost: three.js under SwiftShader renders about 6.5 s a frame here — roughly 100 minutes for a
