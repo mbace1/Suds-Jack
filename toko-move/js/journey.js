@@ -33,7 +33,8 @@ import { CARDS, CONTENTS, TRAMS, ODDS, SLIPS, SOAKS, CALLBACKS, ARCS, SEALED_CAR
 import { regularAt, standingOf, tipFor, MAX_STANDING } from './regulars.js?v=4';
 import { haltFamily, haltMinutes } from './mutators.js?v=2';
 import { payFor } from './parcels.js?v=1';
-import { makeCard } from './modules.js?v=1';
+import { makeCard } from './modules.js?v=2';
+import { DAYS, dayFor, dayLine } from './days.js?v=1';
 import { lineFamily } from './board.js?v=8';
 import { CARGO } from './deliveries.js?v=28';
 import { MISSION_CARDS, MISSION_CALLBACKS, PERKS, STRIKES, perkPool } from './missions.js?v=4';
@@ -133,7 +134,7 @@ export function dealDeck(s, run, weather) {
   // are exactly what they were, and the slot is then given to a made one by a
   // hash of the seed — the same seed deals the same cards
   const share = run.modules ?? MODULE_SHARE;
-  if (share > 0) { const ctx = { places, weather, night: run.skin === 'night', tones }, wants = [];
+  if (share > 0) { const ctx = { places, weather, night: run.skin === 'night', tones, boost: DAYS[s.day]?.boost }, wants = [];
     for (const d of out) if (hashOf(`mix:${s.seed}:${d.job}`) % 100 < share * 100) {
       const m = makeCard(`${s.seed}:${d.job}`, ctx, wants); if (m) { d.card = m; wants.push(m.module.want); } } }
   return out;
@@ -176,7 +177,12 @@ export function newRun(net, run = {}, seed = 1, { start = 'lasipalatsi', memory 
   // fuller trams — the deadlines are set from THIS, so snow is slow, not unfair
   s.weather = run.skies?.length ? pickOf(s, run.skies) : 'clear';
   const W = WEATHER[s.weather] || WEATHER.clear;
-  s.run = { ...run, walkFactor: (run.walkFactor || 1) * W.walk, headway: (run.headway || 1) * W.wait };
+  // (v3.23) the kind of day it is (days.js): drawn by a hash of the seed, on its
+  // weather and its hour; a mission is its own day
+  s.day = run.mission || run.days === false ? 'ordinary' : dayFor(seed, { weather: s.weather, night: run.skin === 'night' });
+  const D = DAYS[s.day];
+  s.mods.deadline *= D.deadline || 1; s.mods.tip += D.tip || 0; s.mods.luck += D.luck || 0; s.dayFee = D.fee || 1;
+  s.run = { ...run, walkFactor: (run.walkFactor || 1) * W.walk * (D.walk || 1), headway: (run.headway || 1) * W.wait * (D.wait || 1) };
   Object.defineProperty(s, 'best', { value: bestTable(net, s.run), enumerable: false });
   s.deck = dealDeck(s, run, s.weather);
   // a mission deals its own: one event a step, drawn from the step's few — and
@@ -230,7 +236,7 @@ function dispatch(net, s, notTo = null) {
   const keys = s.run.cargo?.length ? s.run.cargo : Object.keys(CARGO);
   const cargo = keys[Math.floor(rand(s) * keys.length)];
   s.offer = { to: pick, cargo, best: best[pick], contents: pickOf(s, CONTENTS[cargo] || ['something']) };
-  s.offer.fee = Math.round(feeOf(s.offer) * s.trust);   // a sold parcel costs every fee after it (dispatch hears)
+  s.offer.fee = Math.round(feeOf(s.offer) * s.trust * (s.dayFee || 1));   // a sold parcel costs every fee after it (dispatch hears)
   const idx = s.done + s.sold, reg = regularAt(pick);
   // a fork (v3.16, `forks`: the jobs it falls on): a second job comes in with
   // the first, somewhere else, and the card asks which — never on the race's or
@@ -238,7 +244,7 @@ function dispatch(net, s, notTo = null) {
   if (s.run.forks?.includes(idx) && idx !== s.rivalJob && idx !== s.sealedJob) {
     const rest = pool.filter(id => id !== pick), other = rest.length ? rest[Math.floor(rand(s) * rest.length)] : null;
     if (other) { const cg = keys[Math.floor(rand(s) * keys.length)], b = { to: other, cargo: cg, best: best[other], contents: pickOf(s, CONTENTS[cg] || ['something']) };
-      b.fee = Math.round(feeOf(b) * s.trust); const rb = regularAt(other); if (rb) b.regular = { id: rb.id, name: rb.name };
+      b.fee = Math.round(feeOf(b) * s.trust * (s.dayFee || 1)); const rb = regularAt(other); if (rb) b.regular = { id: rb.id, name: rb.name };
       const ra = regularAt(pick); if (ra) s.offer.regular = { id: ra.id, name: ra.name };
       s.fork = [s.offer, b]; s.phase = 'dispatch'; return; } }
   if (reg) s.offer.regular = { id: reg.id, name: reg.name };
@@ -262,7 +268,7 @@ function missionOffer(net, s, st, to, from) {
   if (!to || to === from) to = st.to.find(t => t !== from) || [...net.nodes.keys()].find(t => t !== from);
   const best = s.best[from][to];
   const o = { to, cargo: st.cargo, best, contents: pickOf(s, CONTENTS[st.cargo] || ['something']), brief: st.brief.replace('{stop}', net.name(to)), step: st };
-  o.fee = Math.round(feeOf(o) * s.trust);
+  o.fee = Math.round(feeOf(o) * s.trust * (s.dayFee || 1));
   const reg = regularAt(to); if (reg) o.regular = { id: reg.id, name: reg.name };
   // the run's own modifiers, on a step that asks for them: the rival races you
   // for it, or the label is only a sticker and the line tells you where
@@ -432,7 +438,10 @@ const thirdDispatch = o => o.rival ? { label: 'Buy her a coffee', price: 30, tie
 const eligible = (c, s) => c.options.filter(o => !o.needs || o.needs === s.job?.cargo).slice(0, 3);
 // The card the run is showing now. Every card is the same shape: a mood, one
 // line, and up to two buttons, each with its price in time and its stakes.
-export function card(net, s) { const st = stateOf(s), c = cardFor(net, s, st); if (c) c.state = st; return c; }
+export function card(net, s) { const st = stateOf(s), c = cardFor(net, s, st); if (!c) return c; c.state = st;
+  // the shift's first job carries the kind of day it is (v3.23), above its line
+  if ((st === 'dispatch' || st === 'fork') && s.done + s.sold === 0 && !c.at) { const l = dayLine(s.day); if (l) { c.at = l; c.day = s.day; } }
+  return c; }
 function cardFor(net, s, st) {
   if (st === 'end') return null;
   if (st === 'perk') return { kind: 'perk', mood: 'opportunity', text: `Job ${s.done} of ${s.target} done. Pick one for the rest of the ${s.run.mission ? 'errand' : 'shift'}.`,

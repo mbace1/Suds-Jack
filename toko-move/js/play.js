@@ -25,11 +25,11 @@
 // nothing happens while you read. Every animation is skippable by a tap and
 // none of them is a timer the game waits on to be fair: the state has already
 // moved when it starts.
-import { tr } from './lang.js?v=18';
-import * as J from './journey.js?v=10';
+import { tr } from './lang.js?v=19';
+import * as J from './journey.js?v=11';
 import * as Runs from './runs.js?v=5';
 import { HopBoard } from './hopboard.js?v=4';
-import * as PL from './playlog.js?v=1';
+import * as PL from './playlog.js?v=2';
 import { loadGround } from './ground.js?v=12';
 import { skinFor } from './skin.js?v=1';
 import { moodFace, MOODS } from './events.js?v=10';
@@ -47,7 +47,7 @@ import { MOMENTS, faceIn, keepIn, pickupMoment, deliveryMoment, boardMoment, wal
 import { resolveMode, dailyShare, errandShare, errandStore, errandOf, W } from './modes.js?v=6';
 import { recordDaily, todayRecord, streak, dateKey } from './daily.js?v=2';
 
-export const BUILD_VERSION = '3.22';
+export const BUILD_VERSION = '3.23';
 const $ = id => document.getElementById(id);
 const params = new URLSearchParams(location.search);
 // a run of the ladder, today's daily, or a day of the week (modes.js, ACT1.md §12)
@@ -988,10 +988,11 @@ async function start() {
   const own = MODE.mode !== 'daily' && !MODE.errand;   // the daily is the same shift for everyone: nothing of this device's in it
   // a run's perks come from the same pool the missions grow (the daily's is the first three, the same for everyone)
   let run = MODE.mode === 'mission' || !RUN.perks ? RUN : { ...RUN, perkPool: perkPool(own ? doneCount(loadMissions()) : 0) };
-  // ?written deals the written deck only, none made from modules (v3.22): the deck as v3.21 dealt it, for a seed a test or a trailer names
-  if (params.has('written')) run = { ...run, modules: 0 };
+  // ?written is the shift as v3.21 dealt it, for a seed a test or a trailer names: the written deck only,
+  // none made from modules (v3.22), and an ordinary day (v3.23)
+  if (params.has('written')) run = { ...run, modules: 0, days: false };
   S = J.newRun(net, run, SEED, { memory: own ? Runs.memoryFor() : {}, standing: own ? loadStanding() : {} }); shownMin = null;
-  play = PL.start({ version: BUILD_VERSION, mode: MODE.errand ? 'errand' : MODE.mode, run: MODE.mode === 'mission' ? MODE.mission.id : RUN.id, seed: SEED });
+  play = PL.start({ version: BUILD_VERSION, mode: MODE.errand ? 'errand' : MODE.mode, run: MODE.mode === 'mission' ? MODE.mission.id : RUN.id, seed: SEED, day: S.day });
   if (MODE.mode === 'week') { W.begin(MODE.week); W.saveWeek(MODE.week, MODE.store); } shownEur = 0; shownDone = 0; arrived = null;
   sizeFrame(); paintHud();
   busy = true; try { await forecast(); } finally { busy = false; }

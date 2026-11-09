@@ -31,7 +31,7 @@
 // the same caveat toko/'s packs carry. test/lang.cjs plays real shifts in
 // Finnish and fails on any English left on screen, which is what keeps a new
 // English line from shipping silently untranslated.
-import { WHO, WANT, TWIST } from './modules.js?v=1';
+import { WHO, WANT, TWIST } from './modules.js?v=2';
 const KEY = 'tokoMoveLang';
 export const LANGS = ['en', 'fi'];
 
@@ -393,6 +393,12 @@ export const FI = new Map(Object.entries({
   'Say hello': 'Sano hei', 'Look out of the window': 'Katso ikkunasta', 'He runs the café at your next drop. "Your coffee is on the house. For a year."': 'Hän pitää kahvilaa seuraavassa kohteessasi. "Kahvisi on talon piikkiin. Vuoden."',
   'He nods at your reflection. That counts.': 'Hän nyökkää peilikuvallesi. Se lasketaan.',
   'Good shoes': 'Hyvät kengät', 'A season pass': 'Kausilippu', 'A paper map': 'Paperikartta', 'A lucky coin': 'Onnenkolikko', "A regular's number": 'Kanta-asiakkaan numero', 'An umbrella': 'Sateenvarjo',
+  // the day (v3.23, days.js), on the shift's first card — shown in capitals, found by the shouted lookup
+  'Helsinki Festival': 'Helsingin juhlaviikot', 'Payday': 'Palkkapäivä', 'A quiet Sunday': 'Hiljainen sunnuntai', 'A heatwave': 'Helleaalto',
+  'The first snow': 'Ensilumi', 'Two cruise ships in': 'Kaksi risteilyalusta satamassa', 'Derby day': 'Derbypäivä', 'A full moon': 'Täysikuu',
+  'tips +€2': 'tipit +2 €', 'tips +€1': 'tipit +1 €', 'fuller trams': 'täydemmät ratikat', 'fees ×1.15': 'palkkiot ×1,15', 'everyone wants it now': 'kaikki haluavat sen heti',
+  'fees ×0.9': 'palkkiot ×0,9', 'clocks ×1.1': 'kellot ×1,1', 'walking slower': 'kävely hitaampaa', 'luck +5%': 'onni +5 %', 'luck −5%': 'onni −5 %',
+  'fees ×1.05': 'palkkiot ×1,05', 'tourists everywhere': 'turisteja kaikkialla', 'fees ×1.1': 'palkkiot ×1,1',
   'walks a fifth quicker': 'kävely viidenneksen nopeampaa', 'trams come sooner': 'ratikat tulevat aiemmin', 'every deadline a fifth longer': 'joka määräaika viidenneksen pidempi', 'a risk lands more often': 'riski onnistuu useammin', '+€4 every drop': '+4 € joka toimitus', 'the weather leaves the parcel alone': 'sää jättää paketin rauhaan',
   'Flowers from Lasipalatsi, for a friend at the Opera.': 'Kukkia Lasipalatsista, ystävälle Oopperaan.', 'The last errand: a cake for the station café.': 'Viimeinen asia: kakku aseman kahvilaan.',
   'A box of programmes from the market quay to Katajanokka.': 'Laatikollinen käsiohjelmia torin laiturilta Katajanokalle.', "The harbour master's post, up to the station.": 'Satamakapteenin posti, ylös asemalle.',
