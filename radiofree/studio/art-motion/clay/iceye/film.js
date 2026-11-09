@@ -48,7 +48,7 @@ const out = document.createElement('canvas'); out.width = W; out.height = H; con
 // ------------------------------------------------------------------ copy and timing
 await CAP.loadFonts(FONT_DIR);
 const COPY = await CAP.loadCopy('copy.json');
-const BEATS = [['s1', 0], ['s2', 3.4], ['s3', 6.8], ['s4', 9.6], ['s5', 13.0], ['s6', 16.4], ['end', 20.2]];
+const BEATS = [['s1', 0], ['s2', 3.4], ['s3', 6.8], ['s4', 9.6], ['s5', 13.0], ['s6', 17.4], ['end', 21.2]];
 const P = CAP.plan(COPY, LANG, BEATS, { snap: 0.25 }), T = P.T, DUR = T.end, UI = P.ui;
 const GEO = await (await fetch('geo.json')).json();
 // every impact lands on its caption's word, to the frame
@@ -714,10 +714,10 @@ function frame(t, captions = true) {
   CAP.bug(g2d);
   const tg = (a0, a1) => clamp((t - a0) / 0.3) * clamp((a1 - t) / 0.3);
   tag(g2d, UI.tag1, tg(T.s1 + 1.4, EV.rise));
-  tag(g2d, UI.tag2, tg(T.s2 + 1.0, T.s2 + 2.4)); tag(g2d, UI.tag2b, tg(T.s2 + 2.5, T.s3 - 0.1));
+  tag(g2d, UI.tag2, tg(T.s2 + 0.7, T.s2 + 2.1)); tag(g2d, UI.tag2b, tg(T.s2 + 2.2, T.s3 - 0.1));
   tag(g2d, UI.tag3, tg(EV.worth + 0.35, T.s4 - 0.1));
-  tag(g2d, UI.tag4, tg(EV.grant + 0.15, EV.buys - 0.1)); tag(g2d, UI.tag4b, tg(EV.buys + 0.2, T.s5 - 0.1));
-  tag(g2d, UI.tag5, tg(EV.stamp + 0.25, EV.stamp + 1.55)); tag(g2d, UI.tag5b, tg(EV.stamp + 1.65, T.s6 - 0.1));
+  tag(g2d, UI.tag4, tg(EV.grant - 0.25, EV.buys - 0.1)); tag(g2d, UI.tag4b, tg(EV.buys + 0.2, T.s5 - 0.1));
+  tag(g2d, UI.tag5b, tg(EV.sheet + 0.45, EV.stamp - 0.12)); tag(g2d, UI.tag5, tg(EV.stamp + 0.3, T.s6 - 0.1));   // the Supo line while the stamp hangs; the ministry's after it lands
   tag(g2d, UI.tag6, tg(EV.sleep + 0.3, T.end + 1));
   if (captions) CAP.draw(g2d, P, t, { busy: BUSY || {} });
   return out;
