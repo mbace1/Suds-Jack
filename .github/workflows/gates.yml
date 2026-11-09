@@ -390,6 +390,9 @@ jobs:
       - name: the play log (v3.21) — what a person did, read off the run's machine, kept on the device
         run: node toko-move/test/playlog.mjs
 
+      - name: the cards made from modules (v3.22) — thousands of cards from parts, both languages, fitted to the run
+        run: node toko-move/test/modules.mjs
+
       - name: the sealed parcel — which offer, the notebook, its store, the Finnish
         run: node toko-move/test/sealed.mjs
 
