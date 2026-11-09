@@ -394,5 +394,9 @@
     "merged": false,
     "published": false,
     "approval": "required before merge/release; resync production before any approved publish"
+  },
+  "version_checks": {
+    "hyperdagger": "v60, 71-entry precache current; changed-module manifest verified",
+    "unrelated_generator_drift": "Full versions generator also changes pre-existing Radio Free 38 to module token 73. Left that unrelated row as main supplied it; Hyper row alone differs from main."
   }
 }

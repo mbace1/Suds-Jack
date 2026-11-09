@@ -325,3 +325,8 @@ enemy or 3D arena conversion has begun. The separate preview remains build 3.
 Main hub remains v59: no merge or deployment was performed. A local scoped
 release candidate (`56cce635`) exists for review; fetch and reconcile current
 production again before any explicitly approved merge/publish.
+
+Version generator verification: the Hyper row is v60 and precache is current.
+A full generation also proposes unrelated Radio Free 38 → token 73 on main;
+that pre-existing row drift was left in its own lane. Only the Hyper version
+row differs from main.
