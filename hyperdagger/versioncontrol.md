@@ -367,3 +367,11 @@ no next enemy/arena conversion or scoring change was started.
 
 Latest-production staging follow-up passed all six season/renderer loops
 (38.2 s) and offline (6/0, 4.0 s), with production shell 229 retained.
+## 2026-11-09 — shared-counter prerequisite (Toko lane)
+
+Toko idle-aside fix changes only the paused-table import in Hyper main
+(table 6), main/worker registration 111, signature 10 and worker cache v81.
+Generated precache has 69 entries (the old table 1/5 duplicate collapses).
+No Hyper mechanics or release number change. The v60 branch must retain its
+SDF work when incorporating this prerequisite and choose fresh main/cache
+tokens. Toko/PATCH_NOTES.md owns the behavior change and regression evidence.

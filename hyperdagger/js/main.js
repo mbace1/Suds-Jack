@@ -32,7 +32,7 @@ import { mosaicPalette, mosaicSkin } from './roster.js?v=85';
 import { Skullscape } from './inca.js?v=85';
 import { ARENA_ASSETS, buildFloorPanels } from './meshassets.js?v=107';
 import { preloadMeshEnemies, meshSkinState, setMeshSkins, meshSkinsOn, setRosterSkin } from './mesh-enemies.js?v=107';
-import { openTable } from '../../toko/js/table.js?v=1';   // v48 (theirs): Toko opens over the paused run
+import { openTable } from '../../toko/js/table.js?v=6';   // v48 (theirs): Toko opens over the paused run
 
 const ARENA_R = 26;
 const SDF_TEST_REQUESTED = new URLSearchParams(location.search).get('sdfTest') === '1';

@@ -1,0 +1,12 @@
+AssertionError [ERR_ASSERTION]: no aside across the old deadline while typing
+
+2 !== 1
+
+    at /workspace/toko-idle-fix/toko/test/idle-activity.cjs:42:10 {
+  generatedMessage: false,
+  code: 'ERR_ASSERTION',
+  actual: 2,
+  expected: 1,
+  operator: 'strictEqual',
+  diff: 'simple'
+}

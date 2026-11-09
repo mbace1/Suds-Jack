@@ -6,7 +6,7 @@
 //  - Tokened module requests (?v=N) stay network-first so a deploy with a
 //    bumped token always pulls the new graph; the old tokened entries age out.
 
-const CACHE = 'hyperdagger-v87';
+const CACHE = 'hyperdagger-v88';
 const PRECACHE = [
   './',
   './index.html',
@@ -15,18 +15,17 @@ const PRECACHE = [
   './apple-touch-icon.png',
   './icon-192.png',
   './icon-512.png',
-  '../toko/js/chat.js?v=25',
-  '../toko/js/dialogue.fi.js',
-  '../toko/js/dialogue.ja.js',
-  '../toko/js/dialogue.js',
+  '../toko/js/chat.js?v=26',
+  '../toko/js/dialogue.fi.js?v=26',
+  '../toko/js/dialogue.ja.js?v=26',
+  '../toko/js/dialogue.js?v=26',
   '../toko/js/face.js',
   '../toko/js/glitch.js',
   '../toko/js/master.js',
   '../toko/js/palette.js',
-  '../toko/js/signature.js?v=3',
+  '../toko/js/signature.js?v=10',
   '../toko/js/surface.js',
-  '../toko/js/table.js?v=1',
-  '../toko/js/table.js?v=5',
+  '../toko/js/table.js?v=6',
   '../toko/js/util.js',
   './js/audio.js?v=85',
   './js/avbd/body.js?v=1',
@@ -48,7 +47,7 @@ const PRECACHE = [
   './js/goo.js?v=85',
   './js/inca.js?v=85',
   './js/input.js?v=111',
-  './js/main.js?v=117',
+  './js/main.js?v=118',
   './js/mesh-enemies.js?v=107',
   './js/meshassets.js?v=107',
   './js/modes.js?v=109',

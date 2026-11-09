@@ -1,0 +1,49 @@
+{
+  "base": "6944c929ec58fa08b2db1f9d10940b1c677d7286",
+  "runtime_fix": "Activity re-arms idle wait; observer disconnected on destroy.",
+  "regression": "Final regression passes. Old counter fails while typing; retaining input listener but disconnecting transcript observer fails delayed-host-reply check.",
+  "checks": [
+    {
+      "gate": "toko-idle-fixed",
+      "code": 0,
+      "seconds": 52.4
+    },
+    {
+      "gate": "toko-live-fixed",
+      "code": 0,
+      "seconds": 7.8
+    },
+    {
+      "gate": "toko-shared-hub",
+      "code": 0,
+      "seconds": 119.2
+    },
+    {
+      "gate": "toko-shared-hyper-offline",
+      "code": 0,
+      "seconds": 5.5
+    },
+    {
+      "gate": "toko-shared-brand",
+      "code": 1,
+      "seconds": 156.3
+    }
+  ],
+  "final_regression": [
+    {
+      "gate": "toko-idle-final",
+      "code": 0,
+      "seconds": 50.6
+    },
+    {
+      "gate": "toko-idle-host-negative",
+      "code": 1,
+      "seconds": 30.3
+    }
+  ],
+  "precache": "Inherited dynamic dialogue/language URL regression passes; generated Hyper 69, hub 26 entries current.",
+  "version_check": "node scripts/versions.mjs . --check passes; public game/brand versions unchanged.",
+  "legacy_brand_diagnostic": "Broad brand.cjs is not green: external GDELT CORS, old menu/typing assumptions, phone target/layout assertions, and hard-coded Hyper START coordinate timeout. Untouched main comparison is running and reproduces these categories already. Assertions unchanged; not claimed as a passing check.",
+  "hardware": "Chromium 156 SwiftShader, no physical-device performance evidence.",
+  "deployment": "Not deployed by this commit."
+}
