@@ -104,7 +104,7 @@ let browser;
     await page.waitForTimeout(750);
     await page.touchscreen.tap(400,180);
     await page.waitForFunction(()=>window.__hd.debug.getState().state==='playing');
-    const retry=await page.evaluate(()=>({t:window.__hd.debug.getState().gameTime,saved:localStorage.getItem('hyperDaggerRenderer'),stuck:window.__hd.debug.inputObj().right.active}));
+    const retry=await page.evaluate(()=>({t:window.__hd.debug.getState().gameTime,saved:localStorage.getItem('hyperDaggerRenderer'),stuck:window.__hd.debug.inputObj().left.active || window.__hd.debug.inputObj().right.active}));
     assert.ok(retry.t<2);assert.equal(retry.saved,renderer);assert.equal(retry.stuck,false);
     assert.deepEqual(errors,[]);
     console.log(`PASS ${season}/${renderer}: v60 menu, START, weapon kill, simulation death, isolated free record, tap retry`);
