@@ -1100,3 +1100,34 @@ Everything below comes from search summaries. No article was opened.
   that are already on file: the JSN ruling, the mayor interview, and the Forssa power figure.
 - **Pattern note:** Monday-morning searches mostly return weekend-old or undated pages. For Finnish news, the evening
   run finds more.
+
+### Owner ask, Mon 9 Nov: Helsinki-centric leads (government, war, tech; ICEYE)
+Search summaries only; nothing opened. One device each, from STORY-DEVICES.md or new.
+- **ICEYE (Espoo), lead pick.** Began as an Aalto University student project (2012), company 2014, first small SAR
+  satellite 2018; radar under 100 kg that images **through clouds and in darkness**. June 2026 Series F: €450M primary,
+  valuation "above €10B" (figures differ by source). 1 Oct: Nokia + ICEYE plan a European LEO comms system, up to 50
+  satellites a year from 2028. Late Oct, during Orpo's Kyiv visit: a letter of intent with Ukraine's MoD; ICEYE's
+  spokesperson says it "does not commit Ukraine to ordering any system". Hook: Slush 17–18 Nov.
+  Devices: (a) NEW **Seeing in the dark**: the frame is Helsinki in November, black; only a radar sweep draws the city;
+  (b) **Scale shift**: one student satellite to a constellation to €10B; (c) **Caption vs picture** on the LOI (tone
+  risk: punches at Ukraine support, not recommended). Medium: first film for the **map** kit (3D-LOOKS.md).
+  [Breaking Defense](https://breakingdefense.com/2026/10/kyiv-eyes-purchase-of-planned-iceye-nokia-sovereign-communication-sats/),
+  [Wikipedia](https://en.wikipedia.org/wiki/ICEYE), [Aalto](https://www.aalto.fi/en/innovation-portfolio/iceye),
+  [newstimes](https://newstimes.com.ng/2026/05/a-university-project-that-became-finlands-crown-jewel-in-pioneering-space-technology/)
+- **Fitburg verdict (war/hybrid).** 5 Nov, Helsinki District Court: Russian captain 3 y 6 m, Azerbaijani boatswain
+  2 y 10 m, aggravated sabotage; court says the anchor dragged ~80 miles along the seabed, cutting two Elisa
+  Helsinki–Tallinn cables around New Year 2025/26. Both denied wrongdoing; not final, appealable.
+  Devices: **The object speaks** (the anchor) or **Borrowed format** (a video call to Tallinn: "Connection lost").
+  Medium: 3D seabed diorama. Rules: no faces, verdict attributed, appeal noted.
+  [Yle](https://yle.fi/a/74-20255306), [gCaptain/AP](https://gcaptain.com/finnish-court-jails-cargo-ship-captain-crew-member-for-baltic-sea-cable-sabotage/)
+- **Fighter jets on the highway (defense).** Protective Fence 26, 19–27 Nov: 20 Hornets dispersed to bases, civilian
+  airports and a highway strip; Dutch, French and Swedish jets join; Finland's new F-35As do not take part. Highway
+  location not confirmed. Device: **Borrowed format** (a traffic report: "delays expected: fighter jets"). Medium: the
+  **road** kit (the Cut First look). [AeroTime](https://www.aerotime.aero/articles/finland-hornets-highway-strip-protective-fence-26-ace)
+- **Green-and-yellow trams, €1.2M (city).** HSL is studying repainting all trams green and yellow (~€1.2M; board
+  decides in January); Yle ties it to planned fare rises. Helsinki already reverted to green-and-yellow in 1986–95
+  after the public disliked orange-grey. Device: **Closed loop** (the colours go round, the fare goes up). Medium:
+  papercut. Need: the Yle date, today's livery, the fare figures. [Yle](https://yle.fi/a/74-20255473),
+  [Helsinki City Museum](https://www.hel.fi/hel2/hkl/ratikka_historia/en/historia5_2.html)
+- Not usable yet: "Supo's biggest criminal case" (could not confirm); Ukraine-style anti-tank barriers on the eastern
+  border (Taipei Times 8 Nov; war-sensitive, no hook); Finnair hoax bomb threats (no angle).
