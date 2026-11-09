@@ -306,3 +306,37 @@ carried it. A 5 kHz squeak is heard over a tuba even when it barely moves the br
 - The hit check now reports each onset at its **half-rise point**. Its first-crossing reading
   showed −22 ms for Genius, because a fly or a bird in a quiet passage clears the 4 dB bar before
   the hit itself. With the half-rise point every film reads a median of 0 to −2 ms.
+
+## Sound per film, not per house (owner, 2026-11-09)
+
+**Owner, 9 Nov:** "can we plan some slightly different sounds? Now it's all the same sounds on all the videos". They
+were. The 3D films (Cut First, Right of Way, Unmarked Boxes, On the Label, Found in Pasila) and the pipeline papercuts
+all used the same few house parts: `stems.bed()` (the A-minor groove at 112 BPM), `motif()`, `accent()`, and the sfx
+`pop()` on every caption pop word.
+
+**The rule from now on: a film's sound comes from its story's world, the same way its picture and its device do.**
+- **One kit per world.** Each kit is built once in `pipeline/sound/<kit>.py` and reused by every film set in that
+  world, as the 3D kits are (`plan/3D-LOOKS.md`).
+- **What a kit holds:**
+  - a series class with its own tempo, key, chords and room;
+  - two or three signature instruments;
+  - its own caption-pop sound;
+  - one ambience.
+- **What stays the house's:** only the station's sting at the end and the sign-off after it.
+- **A pitch names its sound in one line**, next to its device: "Device: ... · Sound: ...".
+- **Two films in a row never share a kit.** If the story's world is the same, vary the tempo, the key or the lead
+  instrument.
+- The house bed (`stems.bed`) is the fallback for a film with no world of its own. It is no longer the default.
+
+| kit | world | signature sounds | caption pop | built |
+|---|---|---|---|---|
+| **cold war** (`coldwar.py`) | surveillance, defense, spies, the state watching | analog bass ostinato and sequencer arpeggio (96 BPM, D minor), a breathing drone, shortwave static, sonar | a teleprinter strike + a synth stab; tags are typed in | **yes: Sleep Tight v3** |
+| toy town | the 3D road: data centers, roads, sites (Cut First's world) | glockenspiel, woodblock, toy-engine putter, a level-crossing bell | a glock note | to build |
+| office | the room kit: emails, NDAs, HR (We Are Aware) | keyboard and mouse, fluorescent hum, a printer, an email whoosh | a keyboard key | to build |
+| marble run | the machine kit: circular money (The Round Trip) | wooden clacks, marble rolls, xylophone runs, coin chimes | a xylophone note | to build |
+| courtroom | rulings, hearings (Short Supply, On the Label's sequel) | a dry piano, a gavel, room tone, a paper shuffle | a gavel tap | to build |
+| outdoors | found objects, nature, photo films (Found in Pasila) | wind, birds by season, a distant tram, footsteps on gravel | a twig snap | to build |
+| hardware store | products and labels (On the Label's world) | a tape gun, a stapler, a shop's PA chime, a price-gun click | a price-gun click | to build |
+
+**Next films:** the next road film uses toy town, We Are Aware uses office, and The Round Trip uses marble run. Each
+kit is built when its first film is.

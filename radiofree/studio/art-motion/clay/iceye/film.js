@@ -59,6 +59,10 @@ const EV = { rise: T.s2 - 0.55, worth: T.s3 + 1.15,   // beat 3 has no caption: 
 EV.count0 = T.s3 + 0.35; EV.drop = EV.buys - 0.42; EV.stampDown = EV.stamp - 0.16;
 for (let i = 0, t = T.s2 + 0.45; t < T.s4 - 0.4; i++, t += 0.95) EV['ping' + i] = +t.toFixed(3);
 const KICKS = [[EV.grant, 0.45], [EV.buys, 1.1], [EV.stamp, 1.5]];
+// every tag: [ui key, on, off]; the on times go into the events, so the score can type each one in (the teletype)
+const TAGS = [['tag1', T.s1 + 1.4, EV.rise], ['tag2', T.s2 + 0.7, T.s2 + 2.1], ['tag2b', T.s2 + 2.2, T.s3 - 0.1], ['tag3', EV.worth + 0.35, T.s4 - 0.1],
+  ['tag4', EV.grant - 0.25, EV.buys - 0.1], ['tag4b', EV.buys + 0.2, T.s5 - 0.1], ['tag5b', EV.sheet + 0.45, EV.stamp - 0.12], ['tag5', EV.stamp + 0.3, T.s6 - 0.1], ['tag6', EV.sleep + 0.3, T.end + 1]];
+for (const [k, a0] of TAGS) EV['on_' + k] = +a0.toFixed(3);
 function kickAt(t) { let k = 0; for (const [t0, a] of KICKS) { const dt = t - t0; if (dt >= 0 && dt < 0.3) k += a * Math.exp(-dt * 24) * Math.cos(dt * 52); } return k; }
 
 // ------------------------------------------------------------------ shared helpers
@@ -538,9 +542,11 @@ const envTex = canvasTex(680, 480, (g, w, h) => { g.fillStyle = '#d8b878'; g.fil
   for (let i = 0; i < 1800; i++) { g.fillStyle = `rgba(${R() < 0.5 ? '120,90,40' : '250,230,180'},${R() * 0.08})`; g.fillRect(R() * w, R() * h, 3, 3); }
   g.fillStyle = '#f3ecd8'; g.fillRect(150, 150, 380, 180); g.fillStyle = '#1d1b19'; g.textAlign = 'center';
   g.font = '700 34px RobotoCondensed'; g.fillText(UI.envFrom, w / 2, 200); g.font = '800 64px RobotoCondensed'; g.fillText(UI.envAmt, w / 2, 268); g.font = '600 28px RobotoCondensed'; g.fillText(UI.envSub, w / 2, 310); });
-const tagTex = canvasTex(400, 200, (g, w, h) => { g.fillStyle = '#efe6cf'; g.fillRect(0, 0, w, h); g.strokeStyle = '#7a6a4a'; g.lineWidth = 6; g.strokeRect(10, 10, w - 20, h - 20);
-  g.fillStyle = '#1d1b19'; g.font = '800 46px RobotoCondensed'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(UI.govTag, w / 2, h / 2 + 4);
-  g.fillStyle = '#5b4d36'; g.beginPath(); g.arc(36, h / 2, 12, 0, TAU); g.fill(); });
+const tagTex = canvasTex(520, 200, (g, w, h) => { g.fillStyle = '#efe6cf'; g.fillRect(0, 0, w, h); g.strokeStyle = '#7a6a4a'; g.lineWidth = 6; g.strokeRect(10, 10, w - 20, h - 20);
+  g.fillStyle = '#5b4d36'; g.beginPath(); g.arc(40, h / 2, 12, 0, TAU); g.fill();
+  // the word is FITTED inside the tag, right of the eyelet (9 Nov: at a fixed size it ran off both edges)
+  let px = 60; g.font = `800 ${px}px RobotoCondensed`; while (g.measureText(UI.govTag).width > w - 110 && px > 20) { px -= 2; g.font = `800 ${px}px RobotoCondensed`; }
+  g.fillStyle = '#1d1b19'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(UI.govTag, 70 + (w - 90) / 2, h / 2 + 3); });
 const sheetTex = canvasTex(600, 800, (g, w, h) => { g.fillStyle = '#f2efe6'; g.fillRect(0, 0, w, h); const R = rng(13);
   g.fillStyle = '#1d1b19'; g.font = '800 40px RobotoCondensed'; g.fillText(UI.specHead, 40, 80); g.font = '600 26px RobotoCondensed'; g.fillText(UI.specSub, 40, 120);
   g.fillRect(40, 140, w - 80, 3);
@@ -581,14 +587,16 @@ const WR = {};
   // folders, back left
   for (let i = 0; i < 4; i++) mesh(new THREE.BoxGeometry(30, 1.6, 22), std(i % 2 ? '#c9a868' : '#bf9c5a', { roughness: 0.85 }), { pos: [-52 + i * 0.6, 0.8 + i * 1.6, -38 + i * 0.4], rot: [0, 0.2 - i * 0.05, 0], parent: WAR });
   // the grant
-  WR.env = new THREE.Group(); WAR.add(WR.env);
+  WR.env = new THREE.Group(); WAR.add(WR.env); WR.envScale = 0.85;
   mesh(new THREE.BoxGeometry(34, 0.8, 24), [std('#cfae6e'), std('#cfae6e'), std('#ffffff', { map: envTex, roughness: 0.85 }), std('#cfae6e'), std('#cfae6e'), std('#cfae6e')], { pos: [0, 0.4, 0], parent: WR.env });
   // the state's satellite: the student's model, on its stand, with a tag
   WR.sat = new THREE.Group(); WAR.add(WR.sat);
   mesh(new THREE.CylinderGeometry(5, 6, 1.4, 32), std('#151515', { roughness: 0.4 }), { pos: [0, 0.7, 0], parent: WR.sat });
   mesh(new THREE.CylinderGeometry(0.4, 0.4, 16, 8), std('#c8ccd2', { metalness: 1, roughness: 0.2 }), { pos: [0, 8, 0], parent: WR.sat });
   const SM = new THREE.Group(); WR.sat.add(SM); SM.position.set(0, 20, 0); SM.rotation.set(-0.55, 0.5, 0.22); SM.scale.setScalar(9); makeSat(SM);
-  mesh(new THREE.PlaneGeometry(17, 8.5), new THREE.MeshStandardMaterial({ map: tagTex, roughness: 0.8, side: THREE.DoubleSide, emissive: new THREE.Color(0.25, 0.25, 0.22), emissiveMap: tagTex }), { pos: [9.5, 6.5, 6.0], rot: [-0.9, 0.0, -0.12], parent: WR.sat });
+  // the tag lies on the glass in front of the stand, clear of the panel above it (9 Nov: it was clipped under the panel)
+  mesh(new THREE.PlaneGeometry(20.8, 8.0), new THREE.MeshStandardMaterial({ map: tagTex, roughness: 0.8, side: THREE.DoubleSide, emissive: new THREE.Color(0.25, 0.25, 0.22), emissiveMap: tagTex }), { pos: [15.5, 0.5, 3.0], rot: [-Math.PI / 2 + 0.12, 0, 0.08], parent: WR.sat, cast: false });
+  mesh(new THREE.CylinderGeometry(0.12, 0.12, 6, 5), std('#d9cfb4'), { pos: [5.0, 0.5, 2.0], rot: [0, 0.1, Math.PI / 2], parent: WR.sat, cast: false });
   // the requirements, the stamp and its ink
   WR.sheet = new THREE.Group(); WAR.add(WR.sheet);
   mesh(new THREE.BoxGeometry(30, 0.25, 40), [std('#f2efe6'), std('#f2efe6'), std('#ffffff', { map: sheetTex, roughness: 0.9 }), std('#f2efe6'), std('#f2efe6'), std('#f2efe6')], { pos: [0, 0.2, 0], parent: WR.sheet });
@@ -599,12 +607,12 @@ const WR = {};
   mesh(new THREE.CylinderGeometry(2.6, 3.4, 12, 20), std('#4a2f1d', { roughness: 0.5 }), { pos: [0, 9, 0], parent: WR.stamp });
   mesh(new THREE.SphereGeometry(4.2, 20, 14), std('#4a2f1d', { roughness: 0.5 }), { pos: [0, 16, 0], parent: WR.stamp });
 }
-const SATAT = onTable(26.2, 63.6), ENVAT = onTable(21.6, 62.2), SHEETAT = [24, 26];
+const SATAT = onTable(26.2, 63.6), ENVAT = onTable(23.6, 61.9), SHEETAT = [24, 26];
 function warAt(t) {
   // the envelope falls from above the frame onto the gulf on "grants"; a squash and a settle
   { const k = clamp((t - (EV.grant - 0.38)) / 0.38), dt = t - EV.grant; WR.env.visible = t > EV.grant - 0.38;
     WR.env.position.set(ENVAT[0] + (dt > 0 ? Math.min(dt, 0.25) * 6 : 0), dt < 0 ? 70 * (1 - k * k) : 0, ENVAT[1]); WR.env.rotation.set(dt < 0 ? (1 - k) * 0.5 : 0, 0.32 + (dt < 0 ? (1 - k) * 0.6 : 0), 0);
-    const sq = dt > 0 ? Math.max(0, Math.sin(dt * 30)) * Math.exp(-dt * 14) * 0.25 : 0; WR.env.scale.set(1 + sq * 0.2, 1 - sq, 1 + sq * 0.2); }
+    const sq = dt > 0 ? Math.max(0, Math.sin(dt * 30)) * Math.exp(-dt * 14) * 0.25 : 0; WR.env.scale.set(WR.envScale * (1 + sq * 0.2), 1 - sq, WR.envScale * (1 + sq * 0.2)); }
   // the satellite drops onto the map on "buys it": a heavy landing, a bounce, a wobble
   { const k = clamp((t - EV.drop) / (EV.buys - EV.drop)), dt = t - EV.buys; WR.sat.visible = t > EV.drop;
     const y = dt < 0 ? 90 * (1 - k * k) : Math.abs(Math.sin(dt * 14)) * Math.exp(-dt * 9) * 3.5;
@@ -689,7 +697,7 @@ function frame(t, captions = true) {
     post.render(ORBIT, camO, { focus: 1e5, aperture: 0, maxBlur: 0, tilt: 0, threshold: 0.75, knee: 0.5, bloomA: 0.7, bloomB: 0.55,
       exposure: 1.1, vignette: 0.5, grain: 0.045, seed: Math.floor(t * 24), sat: 1.05, contrast: 1.1, toe: 0.01, lift: [0.0, 0.006, 0.012], gain: [0.98, 1.02, 1.0], aberration: 0.0028 });
   } else if (S.kind === 'buys' || S.kind === 'classified') {
-    warAt(t);
+    warAt(t); if (S.kind === 'classified') WR.sat.visible = false;   // beat 5 is the sheet's: the model stays out of shot (its tag was cut by the frame)
     if (S.kind === 'buys') { camW.position.set(lerp(6, 4, k), lerp(128, 112, k), lerp(96, 84, k)); camW.lookAt(lerp(0, 1, k), 0, lerp(2, 0, k)); camW.fov = 36; }
     else { camW.position.set(lerp(36, 33, k), lerp(84, 76, k), lerp(78, 70, k)); camW.lookAt(SHEETAT[0] - 1, 0, SHEETAT[1] - 6); camW.fov = 30; }
     camW.position.y -= kk * 1.6; camW.fov -= kk * 1.2; camW.updateProjectionMatrix();
@@ -713,12 +721,7 @@ function frame(t, captions = true) {
   if (fl > 0) { g2d.save(); g2d.globalAlpha = fl * 0.9; g2d.fillStyle = '#dff7ff'; g2d.fillRect(0, 0, W, H); g2d.restore(); }
   CAP.bug(g2d);
   const tg = (a0, a1) => clamp((t - a0) / 0.3) * clamp((a1 - t) / 0.3);
-  tag(g2d, UI.tag1, tg(T.s1 + 1.4, EV.rise));
-  tag(g2d, UI.tag2, tg(T.s2 + 0.7, T.s2 + 2.1)); tag(g2d, UI.tag2b, tg(T.s2 + 2.2, T.s3 - 0.1));
-  tag(g2d, UI.tag3, tg(EV.worth + 0.35, T.s4 - 0.1));
-  tag(g2d, UI.tag4, tg(EV.grant - 0.25, EV.buys - 0.1)); tag(g2d, UI.tag4b, tg(EV.buys + 0.2, T.s5 - 0.1));
-  tag(g2d, UI.tag5b, tg(EV.sheet + 0.45, EV.stamp - 0.12)); tag(g2d, UI.tag5, tg(EV.stamp + 0.3, T.s6 - 0.1));   // the Supo line while the stamp hangs; the ministry's after it lands
-  tag(g2d, UI.tag6, tg(EV.sleep + 0.3, T.end + 1));
+  for (const [k, a0, a1] of TAGS) tag(g2d, UI[k], tg(a0, a1));
   if (captions) CAP.draw(g2d, P, t, { busy: BUSY || {} });
   return out;
 }
