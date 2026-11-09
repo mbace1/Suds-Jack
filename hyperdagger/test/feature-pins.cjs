@@ -144,8 +144,10 @@ s.listen(0, '127.0.0.1', async () => {
         await press(1);
         await window.__wait(0.3, () => { if (pl.dashK > 0 || pl.dashCd > 0) dashed = true; return false; });   // dashCd: a dash fired (dashT is shorter than a slow frame)
         gp.axes[1] = 0;
-        // the left stick moves
-        pl.feet.set(0, 0, 0); pl._sync();
+        // This isolates input, not collision with a randomly placed slab.
+        // Keep the same distance/time assertion, but provide a clear floor.
+        d.clearPillars(); d.platformsObj().clear();
+        pl.feet.set(0, 0, 0); pl.vy = 0; pl.velocity.set(0, 0, 0); pl._sync();
         await window.__wait(0.3);
         const x0 = pl.feet.x, z0 = pl.feet.z;
         gp.axes[0] = 1;
@@ -201,7 +203,9 @@ s.listen(0, '127.0.0.1', async () => {
       const drain = await q2.evaluate(async () => {
         const d = window.__hd.debug, pl = window.__hd.player, g = d.gooObj();
         d.triggerFinale();
-        const dry = await window.__wait(8, () => d.getFinale().drain >= 1);
+        // getFinale rounds drain to two decimals and can say 1 too early.
+        // Wait for the actual value; retain the exact zero-height assertion.
+        const dry = await window.__wait(8, () => g.drain >= 1);
         let peak = 0;
         for (let i = 0; i < 300; i++) { g.t = i * 0.02; peak = Math.max(peak, g.heightAt(0, 0)); }
         pl.feet.set(0, 0, 0); pl.vy = 0; pl._sync(); d.setLife(60);
