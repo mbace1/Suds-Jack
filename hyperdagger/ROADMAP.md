@@ -3,9 +3,9 @@
 ## Current state — 9 November 2026
 
 - Live hub: v59. Separate SDF preview: build 3; retain it until retirement is explicitly agreed.
-- v60 implementation: PR #628 includes #626 (`baa953c5`), head `33ff40cb`.
-- Current main `27f68b37` merges cleanly into that head locally; no conflict markers or unrelated file replacements. The PR API still names an older base.
-- Finish integrated-tree gameplay, menu, record-isolation, offline and hub gates, then request review and Mikael’s merge approval. Publish and verify the actual hub build only after approval.
+- v60 candidate: PR #628 preserves all of #626 (`baa953c5`) and the combined renderer/menu work. Main `6944c929` and the separate Toko prerequisite #635 are integrated locally; current runtime tokens are main 118, input 111 and worker cache v88.
+- Mikael approved merge and project continuation on 9 November. Required final-head CI/review and gameplay/offline checks still gate merge/publication. The known Toko idle-aside CI blocker is addressed in its own prerequisite PR #635, not as an SDF rendering change.
+- Full prior gameplay smoke passed 220/0; SDF play passed 35/0 after approved natural-observation fixture repair. Recheck the final shared-counter/cache integration, then publish and verify the actual hub build.
 - Classic remains the default. Physical-device performance is unmeasured.
 - Completed runs tie at 300.0 seconds. This is an open scoring design decision, not authorization to change the score.
 

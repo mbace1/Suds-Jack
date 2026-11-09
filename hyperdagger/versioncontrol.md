@@ -375,3 +375,22 @@ Generated precache has 69 entries (the old table 1/5 duplicate collapses).
 No Hyper mechanics or release number change. The v60 branch must retain its
 SDF work when incorporating this prerequisite and choose fresh main/cache
 tokens. Toko/PATCH_NOTES.md owns the behavior change and regression evidence.
+
+## 2026-11-09 — merge approved; isolated CI prerequisite integrated
+
+Mikael: “Continue merge and project.” This explicitly approves merge and
+continuation once required checks pass; no further routine merge approval
+is needed for this integration and its necessary prerequisites. PR #634
+(reviewed, green) merged at `6944c929`. Toko idle-activity fix is isolated
+in PR #635, head `35a458509`; it fixes the confirmed CI failure and adds
+positive plus two failing negative controls. The legacy brand diagnostic
+also fails on untouched main at its hard-coded Hyper START coordinate;
+required Toko Live/hub/offline checks pass locally and fresh CI is pending.
+
+Local integration merge `9cf7d63e8` preserves all SDF/menu work and combines
+table 6/signature 10 with fresh Hyper main/registration 118 and cache v88.
+Input stays 111; other enemy/shader tokens are unchanged. Generated precache
+has 70 entries, now including inherited dialogue/language token 26. The
+Toko prerequisite remains a separate PR; once it lands, #628's diff against
+main is Hyper-only plus its hub version row. Final runtime checks are being
+rerun before merging/publishing. No live v60 claim yet; preview is retained.

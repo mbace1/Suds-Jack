@@ -114,7 +114,7 @@ Note, 18 Oct (HD-018, v58): there is no haul scoring any more, and the missiles 
 
 ### HD-020 — SDF on the live menu: RENDER · CLASSIC | SDF
 
-- status: In progress
+- status: In progress (#628; merge approved 9 Nov 2026; waiting on prerequisite #635 and final gates)
 - size: S
 - blocked-by: —
 - design: Mikael, 22 Oct 2026 — *"Can you make an SDF toggle in the main menu?"*, *"It should also work"*; the SDF builds are #626 (`ROADMAP.md`, the SDF conversion track)

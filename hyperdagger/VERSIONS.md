@@ -1,4 +1,4 @@
-## v60 — in progress
+## v60 — 2026-11-09 (release candidate)
 **SDF on the live menu: RENDER · CLASSIC | SDF (HD-020)**
 
 Mikael, 22 Oct 2026: *"Can you make an SDF toggle in the main menu?"*, then
@@ -52,8 +52,9 @@ Multi-touch START now drains every contact from the initiating native
 event batch, preventing its second finger from becoming a jump. Later
 events keep the ordinary touch grammar.
 
-Tokens: `main.js` 117 and `sw.js` 117, worker cache `hyperdagger-v87`;
-`input.js` 111.
+Tokens: `main.js` 118 and `sw.js` 118, worker cache `hyperdagger-v88`;
+`input.js` 111. Shared counter: chat 26, table 6, signature 10; generated
+precache has 70 entries with inherited dialogue/language tokens.
 The original #628 used 114 / v84 after reconciling the two different 113 /
 v83 builds. `enemy.js`, `truck.js` and `convoy.js` remain at build 3's 113,
 and `sdf-skull.js` at 3; their bytes are unchanged by this integration.
