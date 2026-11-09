@@ -199,3 +199,6 @@ Deployment note, 2026-11-09: the scoped Hyper v60 rollout preserves the
 independently published Toko Move v3.23 tree. Its root worker already used
 cache v283, so the combined deployment advances to v284; shared module URLs
 remain chat 26, table 6, signature 10 and Toko Live main 22.
+Concurrent publication follow-up: Piritori v4.104 reached the live branch
+before the guarded push. Preserve that tree and its shell 231; the final
+combined root cache is v285. Shared module URLs remain unchanged.
