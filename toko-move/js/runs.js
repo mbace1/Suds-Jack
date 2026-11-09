@@ -60,7 +60,7 @@ export const RUNS = [
     blurb: 'Five jobs at the height of the rush, with one tram line halted.',
     target: 5, deadline: 0.9, cargo: null, encounters: 3, moods: { warning: 2, notice: 2 },
     headway: 0.6, rush: 'max', weather: null, cityDay: false,
-    halt: { atMin: 10, recoverJobs: 2, minutes: [28, 44] }, rival: true, sealed: true, reach: 14, par: 130, race: { pace: 1.1 },
+    halt: { atMin: 10, recoverJobs: 2, minutes: [28, 44] }, rival: true, sealed: true, reach: 14, par: 140, race: { pace: 1.1 },
     tones: { risky: 3, fun: 1 }, skies: ['snow', 'rain'], cards: 5, perks: true, forks: [3], strikes: 3 },
   { id: 'night', name: 'NIGHT', title: 'Last service', glyph: '☾',
     blurb: 'Five jobs from 23:00, half the trams, the lines lit like neon.',

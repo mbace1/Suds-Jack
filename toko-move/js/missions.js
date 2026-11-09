@@ -103,6 +103,14 @@ export const PERKS = {
   coin:     { name: 'A lucky coin', line: 'a risk lands more often', apply: s => { s.mods.luck += 0.15; } },
   number:   { name: 'A regular\'s number', line: '+€4 every drop', apply: s => { s.mods.tip += 4; } },
   umbrella: { name: 'An umbrella', line: 'the weather leaves the parcel alone', apply: s => { s.mods.dry = true; } },
+  // (v3.24) the trade-offs, drawn into a shift's pool (days.js perksFor): each
+  // gives one lever and takes another, so the draft is a choice, not a sum
+  hustle:   { name: 'Hustle', line: 'fees ×1.25, every clock shorter', drawn: true, apply: s => { s.dayFee = (s.dayFee || 1) * 1.25; s.mods.deadline *= 0.85; } },
+  easy:     { name: 'Take it easy', line: 'every clock a third longer, fees ×0.85', drawn: true, apply: s => { s.mods.deadline *= 1.35; s.dayFee = (s.dayFee || 1) * 0.85; } },
+  bike:     { name: 'A borrowed bike', line: 'walks a third quicker, trams later', drawn: true, apply: s => { s.run.walkFactor *= 0.67; s.run.headway *= 1.15; } },
+  nerve:    { name: 'Nerve', line: 'a risk lands much more often, every clock shorter', drawn: true, apply: s => { s.mods.luck += 0.25; s.mods.deadline *= 0.9; } },
+  charm:    { name: 'Charm', line: '+€3 every drop, a risk lands less often', drawn: true, apply: s => { s.mods.tip += 3; s.mods.luck -= 0.05; } },
+  thermos:  { name: 'A thermos', line: '+€2 every drop, every deadline a tenth longer', drawn: true, apply: s => { s.mods.tip += 2; s.mods.deadline *= 1.1; } },
 };
 // the pool grows with what you have finished: the first three from the start,
 // one more for each mission done
