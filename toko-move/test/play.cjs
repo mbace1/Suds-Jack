@@ -118,7 +118,7 @@ server.listen(0, '127.0.0.1', async () => {
         runs: [...document.querySelectorAll('#mutRow .run[data-run]')].map(r => ({ id: r.dataset.run, open: !r.classList.contains('locked'), lit: r.classList.contains('on') })),
         goal: document.getElementById('titleGoal').textContent, play: document.getElementById('play').textContent,
         links: ['dailyLink', 'weekLink', 'liveLink'].filter(id => { const e = document.getElementById(id); return e && !e.hidden && getComputedStyle(e).display !== 'none'; }) }));
-      ok(`the bare address is the card journey, not the real-time game (v${t.v})`, !t.classic && t.v === '3.19' && /v3\.19/.test(t.hero));
+      ok(`the bare address is the card journey, not the real-time game (v${t.v})`, !t.classic && t.v === '3.20' && /v3\.20/.test(t.hero));
       ok(`it is Act 1, in Helsinki (${await page.evaluate(() => document.getElementById('titleWhen').textContent)})`, await page.evaluate(() => /^Act 1 · Helsinki · 07:00/.test(document.getElementById('titleWhen').textContent)));
       ok(`the ladder: EASY open and lit, three locked (${t.runs.map(r => r.id + (r.open ? '' : '🔒')).join(' ')})`, t.runs.map(r => r.id).join() === 'easy,medium,hard,night' && t.runs[0].open && t.runs[0].lit && t.runs.slice(1).every(r => !r.open) && t.run === 'easy');
       ok(`the goal and the button (${t.goal} · ${t.play})`, /^Three deliveries before 08:15/.test(t.goal) && t.play === 'START SHIFT');
@@ -373,6 +373,25 @@ server.listen(0, '127.0.0.1', async () => {
       await page.goto(`${base}/toko-move/?errand&date=2026-11-08`, { waitUntil: 'load' }); await ready(page);
       ok('the title then shows what stands for the day', await page.evaluate(() => /TODAY'S STANDS/.test(document.getElementById('mutRow').textContent)));
       ok('no page or network errors (the errand)', !errs.length, errs.slice(0, 3).join(' | '));
+      await ctx.close();
+    }
+    // v3.20: the two machines, read as one (__tm3.machine(), body[data-ui], body[data-state]), and a
+    // shift played from the keyboard alone: 1, 2, 3 answer whatever card is waiting
+    {
+      const ctx = await browser.newContext(PHONE), page = await ctx.newPage(), errs = watch(page);
+      await page.goto(`${base}/toko-move/?run=easy&seed=1009`, { waitUntil: 'load' }); await ready(page);
+      const t = await page.evaluate(() => [document.body.dataset.ui, window.__tm3.machine().ui]);
+      ok(`the title is a state of the screen (${t})`, t[0] === 'title' && t[1] === 'title');
+      await page.tap('#play'); await page.waitForSelector('#v3panel .eventOpt', { timeout: 15000 }); await page.waitForTimeout(500);
+      const m0 = await page.evaluate(() => ({ ...window.__tm3.machine(), body: [document.body.dataset.ui, document.body.dataset.state] }));
+      ok(`the first card is the run's dispatch state, waiting, with where it may go (${m0.state} · ${m0.ui} → ${m0.next.join(' ')})`, m0.state === 'dispatch' && m0.ui === 'card' && m0.body.join() === 'card,dispatch' && m0.next.includes('route') && m0.options.length === 3 && !m0.problems.length);
+      const seen = new Set(), problems = [];
+      for (let i = 0; i < 400; i++) { const m = await page.evaluate(() => window.__tm3.machine()); seen.add(`${m.ui}:${m.state}`); problems.push(...m.problems); if (m.ui === 'end') break;
+        if (m.ui === 'card') { await page.keyboard.press(String(1 + (i % 3))); await page.waitForTimeout(140); } else await page.waitForTimeout(220); }
+      const uis = new Set([...seen].map(x => x.split(':')[0]));
+      ok(`a shift is played from the keyboard alone, 1·2·3, to its end card (${[...seen].join(' ')})`, uis.has('card') && uis.has('moving') && uis.has('end') && await page.evaluate(() => !document.getElementById('end').hidden));
+      ok('and nothing the machine checks breaks on the way', !problems.length, problems.slice(0, 3).join(' | '));
+      ok('no page or network errors (the machines)', !errs.length, errs.slice(0, 3).join(' | '));
       await ctx.close();
     }
     // ── story arcs (v3.4, ACT1.md §10): a second run meets Dispatch, and the city remembers

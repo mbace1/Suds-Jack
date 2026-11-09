@@ -1,5 +1,47 @@
 # Toko Move — versions
 
+## v3.20 — 2026-11-09
+
+**THE MACHINES, NAMED** — the owner: *"Find all of the implicit state machines
+in my app. Make the best decision that will elevate all three: the user
+experience (UX), developer experience (DX), and agent experience (AX) always,
+without breaking anything."*
+
+`STATE-MACHINES.md` lists every machine in the game: fourteen, with where each
+lives and its states. Two were implicit and central, and are now explicit. The
+rest are small, live in one module each, and are documented as they are.
+
+- **The run** (`journey.js` `STATES`, `stateOf`, `check`). The card a run
+  shows used to be a precedence chain inside `card()`: `phase` plus the flags
+  beside it. It is now one table:
+  - eight named states (dispatch, fork, errand, story, halt, route, perk,
+    end);
+  - for each, what must be true in it and where it may go next;
+  - `card()` switches on it, and every card carries its `state`.
+- **The screen** (`play.js` `UI`, `uiState`). It used to be loose variables.
+  Now: loading → title → card ⇄ moving, card ⇄ board, → end. It is derived
+  from the same variables, so it cannot disagree with them. The page wears
+  it as `body[data-ui]` and `body[data-state]`.
+- **For the player (UX):**
+  - **keys 1, 2, 3 answer any waiting card**, and the cabinet's pad does the
+    same: A, B and X are the three buttons and Y hurries what is playing
+    (`pad` in the arcade catalogue);
+  - the stricter checks guard every step against a broken card.
+- **For a developer (DX):** one table instead of a chain of flags, and
+  `check()` names what is wrong instead of a card that silently misbehaves.
+- **For an agent (AX):** `__tm3.machine()` gives the state, the screen,
+  where the run may go next, the card's options (label, price, tier) and any
+  problem, in one call. The doc says where every other machine lives.
+- **Nothing broke.** Over the four runs and six missions, 116,907 steps hash
+  identically before and after the table. The check found no broken state in
+  4,000 runs, or along a whole shift played from the keyboard.
+- **Gates.**
+  - `test/journey.mjs` §7d: 4,000 runs, every step keeps its state's
+    conditions and moves only where the table allows; every state is reached.
+  - `test/play.cjs`: the title is a state of the screen, the first card is
+    `dispatch`, and a shift is played from the keyboard alone to its end card
+    with nothing broken on the way.
+
 ## v3.19 — 2026-11-08
 
 **THE RIDE, INSIDE, AND THE NECK** — the owner, on v3.17: *"The traveling on a

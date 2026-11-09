@@ -26,7 +26,7 @@
 // none of them is a timer the game waits on to be fair: the state has already
 // moved when it starts.
 import { tr } from './lang.js?v=16';
-import * as J from './journey.js?v=8';
+import * as J from './journey.js?v=9';
 import * as Runs from './runs.js?v=5';
 import { HopBoard } from './hopboard.js?v=4';
 import { loadGround } from './ground.js?v=12';
@@ -46,7 +46,7 @@ import { MOMENTS, faceIn, keepIn, pickupMoment, deliveryMoment, boardMoment, wal
 import { resolveMode, dailyShare, errandShare, errandStore, errandOf, W } from './modes.js?v=6';
 import { recordDaily, todayRecord, streak, dateKey } from './daily.js?v=2';
 
-export const BUILD_VERSION = '3.19';
+export const BUILD_VERSION = '3.20';
 const $ = id => document.getElementById(id);
 const params = new URLSearchParams(location.search);
 // a run of the ladder, today's daily, or a day of the week (modes.js, ACT1.md §12)
@@ -590,7 +590,7 @@ function openBoard() {
   const cv = $('v3board'); cv.classList.add('on'); board.resize();
   const job = S.job || (S.offer ? { to: S.offer.to, cargo: S.offer.cargo, sealed: S.offer.sealed } : null);
   board.draw({ at: S.at, dest: dropOf(job), destColour: job ? colourOf(job.cargo) : undefined, previews: c.kind === 'route' ? c.options.map(o => o.hop).filter(h => h?.to) : [], lift: false, halted: haltedLayer });
-  hint('TAP TO CLOSE'); weather();
+  hint('TAP TO CLOSE'); weather(); markUi();
 }
 $('v3mini').addEventListener('click', openBoard);
 $('v3board').addEventListener('click', () => { if (!boardOpen) return; boardOpen = false; $('v3board').classList.remove('on'); panel.style.visibility = ''; hint(''); render(); });
@@ -655,14 +655,14 @@ function render() {
     else if (t && !CALM) setTimeout(() => drive('in'), wait);
   }
   stage.classList.toggle('halt', c.kind === 'halt');
-  paintCard(c); paintMini(c);
+  paintCard(c); paintMini(c); setTimeout(markUi, 320);   // once its buttons are armed
 }
 
 // Play the board for a hop from t0 to t1; resolves when done or tapped past.
 function showBoard(hop, t = 1, vignette = null) { const cv = $('v3board'); cv.classList.add('on'); board.resize(); board.draw({ at: S.at, hop, t, dest: dropOf(S.job), destColour: S.job ? colourOf(S.job.cargo) : undefined, halted: haltedLayer, vignette }); weather(); }
 function hideBoard() { $('v3board').classList.remove('on'); weather(); }
 function rideBoard(hop, t0 = 0, t1 = 1) {
-  game.boards++; sfx(hop.kind === 'walk' ? 'walk' : 'ride');
+  game.boards++; sfx(hop.kind === 'walk' ? 'walk' : 'ride'); markUi();
   return new Promise(done => {
     const cv = $('v3board'); cv.classList.add('on'); board.resize(); $('v3mini').hidden = true; weather();
     const dur = CALM ? 300 : (1300 + 700 * Math.min(1, hop.price / 900)) * (t1 - t0), start = performance.now();
@@ -687,6 +687,33 @@ let quietUntil = 0;
 stage.addEventListener('pointerup', e => { if (skip && !e.target.closest('button')) { quietUntil = performance.now() + 450; skip(); } });
 document.addEventListener('click', e => { if (performance.now() < quietUntil) { e.preventDefault(); e.stopPropagation(); } }, true);
 addEventListener('keydown', e => { if (skip && !stage.hidden && (e.key === ' ' || e.key === 'Enter' || e.key === 'Escape')) { e.preventDefault(); skip(); } });
+
+// ── THE SCREEN'S MACHINE (v3.20) ───────────────────────────────────────────
+// The screen was a state machine held in loose variables (S, busy, skip,
+// boardOpen, the title and end veils). Named once here, derived from those same
+// variables so it can never disagree with them:
+//   loading → title → card ⇄ moving (a hop, a moment, a reveal, a stamp)
+//                       card ⇄ board (the full map, opened from the corner)
+//                       … → end
+// The page wears it (body[data-ui], body[data-state] = the run's state, see
+// journey.js STATES) and __tm3.machine() reports it, so CSS, tests and agents
+// read one name instead of inferring it from the DOM.
+export const UI = {
+  loading: 'Helsinki is loading', title: 'the title card: pick a run or a mission, then START',
+  card: 'a card is waiting for a choice (keys 1, 2, 3 choose too)', moving: 'something is playing out; a tap hurries it',
+  board: 'the whole map is open; a tap closes it', end: 'the end card' };
+function uiState() {
+  if (!S) return net ? 'title' : 'loading';
+  if (!$('end').hidden || S.phase === 'end' && !busy) return 'end';
+  if (boardOpen) return 'board';
+  if (busy || skip) return 'moving';
+  return panel.querySelector('.eventOpt:not([disabled])') ? 'card' : 'moving';
+}
+function markUi() { const b = document.body; b.dataset.ui = uiState(); b.dataset.state = S ? J.stateOf(S) : ''; }
+// a card can be answered from the keyboard too: 1, 2, 3 are its buttons (the cabinet's keys, and a pad's through the hub)
+addEventListener('keydown', e => { const n = /^[1-3]$/.test(e.key) ? Number(e.key) : /^Digit[1-3]$/.test(e.code || '') ? Number(e.code.slice(5)) : 0;
+  if (!n || uiState() !== 'card') return;
+  const b = panel.querySelector(`.eventOpt[data-i="${n - 1}"]:not([disabled])`); if (b) { e.preventDefault(); b.click(); } });
 
 // The in-car display: the line, where it is going, the next stop — and, on a
 // tram, which tram (look only).
@@ -750,7 +777,7 @@ async function reveal(rv) {
 
 async function pick(i) {
   if (busy || !S || S.phase === 'end') return;
-  busy = true; panel.querySelectorAll('button').forEach(b => { b.disabled = true; });
+  busy = true; panel.querySelectorAll('button').forEach(b => { b.disabled = true; }); markUi();
   sfx('tap');
   const wasHop = pendingHop, before = J.card(net, S), hadJob = !!S.job;
   const r = J.choose(net, S, i);
@@ -838,6 +865,7 @@ async function forecast() {
 
 // ── the end: the run's result (runs.js), and what you carried ─────────────
 function finish() {
+  setTimeout(markUi, 0);                                  // the end card is up by then, whichever mode it is
   hideBoard(); setActor(null); $('v3mini').hidden = true; panel.innerHTML = ''; wxEl.className = ''; audio?.bed(null);
   if (MODE.mode !== 'run') return finishMode();
   Runs.remember(S.keep);                                  // what the city remembers (ACT1.md §10)
@@ -948,8 +976,14 @@ sizeFrame();
 // `board()` (v3.8) says what the board stands on, and `probe(lat, lon)` reads
 // the colour it painted at a real place — so a gate can ask whether the South
 // Harbour is water without knowing anything about the projection.
-const game = { version: BUILD_VERSION, mode: MODE.mode, run: RUN, seed: SEED, ready, state: () => S, net: () => net, card: () => (S ? J.card(net, S) : null), busy: () => busy, scene: () => scene, result: null, boards: 0,
+const game = { version: BUILD_VERSION, mode: MODE.mode, run: RUN, seed: SEED, ready, state: () => S,
+  // the two machines, as one reading (v3.20): where the run is (journey.js STATES), where the screen is (UI),
+  // where the run may go next, what the card offers, and anything that does not hold
+  machine: () => { const st = S ? J.stateOf(S) : null, c = S && st !== 'end' ? J.card(net, S) : null;
+    return { state: st, ui: uiState(), next: st ? J.STATES[st].next : [], about: st ? J.STATES[st].card : UI[uiState()],
+      options: c ? c.options.map(o => ({ label: o.label, price: o.price, tier: o.tier || null })) : [], problems: S ? J.check(net, S) : [] }; }, net: () => net, card: () => (S ? J.card(net, S) : null), busy: () => busy, scene: () => scene, result: null, boards: 0,
   board: () => ({ ground: !!board?.ground, sea: board?.sea?.sea.length || 0, islands: board?.sea?.islands.length || 0, streets: board?.streets.length || 0, marks: board?.marks.length || 0, ms: board?.baseMs ?? null, view: board?.view || null }),
   probe: (lat, lon) => { if (Array.isArray(lat)) return lat.map(([a, o]) => game.probe(a, o)); if (!board?.fit || !$('v3board').classList.contains('on')) return null; const p = board.fit(lat, lon), c = $('v3board'); if (p.x < 0 || p.y < 0 || p.x >= c.width || p.y >= c.height) return null; return [...c.getContext('2d').getImageData(Math.round(p.x), Math.round(p.y), 1, 1).data].slice(0, 3); } };
 globalThis.__tm3 = game;
+markUi(); ready.then(markUi, () => {});
 audio = mountAudio(game, { button: 'v3sound', clock: () => S?.clock ?? 0 });

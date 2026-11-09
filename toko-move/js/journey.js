@@ -366,6 +366,52 @@ export function stakesOf(o) {
   const sure = chips({ ...o, time: 0 }); return sure.length ? { sure } : null;   // a sure option's time IS its price
 }
 
+// ── THE MACHINE (v3.20) ─────────────────────────────────────────────────────
+// A run was always a state machine, but an implicit one: `phase` (dispatch,
+// stop, halt, perk, end) plus the flags beside it (`fork`, `offer.brief`,
+// `pending`), read in a precedence chain inside card(). It is named here, once:
+// the eight states a card can be, what must be true in each, and where each may
+// go next. card() switches on stateOf(); test/journey.mjs plays thousands of
+// runs and holds every step to this table (and every state and transition in it
+// to having been seen). Nothing here changes a rule: the same seed plays the
+// same run, byte for byte, as before the table existed.
+export const STATES = {
+  dispatch: { card: 'a job is offered: take it, ask for another, or take it express',
+    holds: s => !s.job && !!s.offer && !s.fork && !s.offer.brief, next: ['dispatch', 'story', 'route', 'halt', 'end'] },
+  fork:     { card: 'two jobs (or errands) at once, and a coin',
+    holds: s => !s.job && s.fork?.length === 2, next: ['story', 'route', 'halt', 'end'] },
+  errand:   { card: "a mission's job: take it, slow, or express (or race her)",
+    holds: s => !s.job && !!s.offer?.brief, next: ['story', 'route', 'halt', 'end'] },
+  story:    { card: 'a story card at the stop, aboard or on foot',
+    holds: s => !!s.job && !!s.pending?.card, next: ['route', 'halt', 'story', 'perk', 'dispatch', 'fork', 'errand', 'end'] },
+  halt:     { card: 'a line is halted here: find another way, wait it out, or a taxi',
+    holds: s => !!s.job && !!s.halt, next: ['route', 'story', 'perk', 'dispatch', 'fork', 'errand', 'end'] },
+  route:    { card: 'where to go from this stop: two ways and a third',
+    holds: s => !!s.job && Array.isArray(s.options), next: ['route', 'story', 'halt', 'perk', 'dispatch', 'fork', 'errand', 'end'] },
+  perk:     { card: 'between jobs: one of two perks, or the cash',
+    holds: s => !s.job && s.perkOffer?.length === 2, next: ['dispatch', 'fork', 'errand', 'end'] },
+  end:      { card: null, holds: () => true, next: [] },
+};
+// Which state a run is in: the precedence card() always had, written once.
+export function stateOf(s) {
+  if (s.phase === 'end') return 'end';
+  if (s.phase === 'perk') return 'perk';
+  if (s.phase === 'dispatch') return s.fork ? 'fork' : s.offer?.brief ? 'errand' : 'dispatch';
+  if (s.pending) return 'story';
+  return s.phase === 'halt' ? 'halt' : 'route';
+}
+// What is wrong with a run, if anything: its state's own conditions, and the
+// ones every state keeps (the clock, the counts, three buttons a card).
+export function check(net, s) {
+  const st = stateOf(s), bad = [];
+  if (!STATES[st].holds(s)) bad.push(`${st}: its conditions do not hold`);
+  if (!(s.clock >= 0 && s.clock <= SHIFT_SECONDS)) bad.push(`the clock is off the shift (${s.clock})`);
+  if (s.done + s.sold > s.target + 1 || s.late > s.done || s.strikes > s.late) bad.push('the counts disagree');
+  if ((s.phase === 'end') !== (st === 'end')) bad.push('end is not the end');
+  const c = st === 'end' ? null : card(net, s);
+  if (c && !(c.options.length === 3 || (st === 'route' && (isSealed(s) || c.options.length === 1)))) bad.push(`${st}: ${c.options.length} buttons`);
+  return bad;
+}
 const MOODS_FOR = { dispatch: 'info', halt: 'warning', route: 'info' };
 // the third of a dispatch (v3.18): express — more money, less clock (special);
 // with the rival, buy her a coffee and she lets it go (special)
@@ -375,26 +421,27 @@ const thirdDispatch = o => o.rival ? { label: 'Buy her a coffee', price: 30, tie
 const eligible = (c, s) => c.options.filter(o => !o.needs || o.needs === s.job?.cargo).slice(0, 3);
 // The card the run is showing now. Every card is the same shape: a mood, one
 // line, and up to two buttons, each with its price in time and its stakes.
-export function card(net, s) {
-  if (s.phase === 'end') return null;
-  if (s.phase === 'perk') return { kind: 'perk', mood: 'opportunity', text: `Job ${s.done} of ${s.target} done. Pick one for the rest of the ${s.run.mission ? 'errand' : 'shift'}.`,
+export function card(net, s) { const st = stateOf(s), c = cardFor(net, s, st); if (c) c.state = st; return c; }
+function cardFor(net, s, st) {
+  if (st === 'end') return null;
+  if (st === 'perk') return { kind: 'perk', mood: 'opportunity', text: `Job ${s.done} of ${s.target} done. Pick one for the rest of the ${s.run.mission ? 'errand' : 'shift'}.`,
     options: [...s.perkOffer.map(id => ({ label: PERKS[id].name, price: 0, perk: id, stakes: { sure: [PERKS[id].line] } })), { label: 'Keep the cash', price: 0, stakes: { sure: [`+€${PERK_CASH}`] } }] };
-  if (s.phase === 'dispatch' && s.fork) return { kind: 'dispatch', mood: MOODS_FOR.dispatch, text: s.run.mission ? 'Two errands for the next job. Pick one.' : 'Two jobs come in at once. Pick one.', mission: !!s.run.mission, fork: true,
+  if (st === 'fork') return { kind: 'dispatch', mood: MOODS_FOR.dispatch, text: s.run.mission ? 'Two errands for the next job. Pick one.' : 'Two jobs come in at once. Pick one.', mission: !!s.run.mission, fork: true,
     options: [...s.fork.map(o => ({ label: `${cargoWord(o.cargo)} → ${net.name(o.to)}`, price: 0, stakes: { sure: [`€${o.fee}`] } })), { label: 'Toss a coin', price: 0, tier: 'special', stakes: { sure: [`+€${COIN_CASH}`] } }] };
-  if (s.phase === 'dispatch' && s.offer?.brief) { const o = s.offer;
+  if (st === 'errand') { const o = s.offer;
     return { kind: 'dispatch', mood: o.rival ? 'warning' : MOODS_FOR.dispatch, text: o.rival ? `${o.brief} The other courier wants it too.` : o.brief, fee: o.fee, mission: true, sealed: !!o.sealed, rival: !!o.rival,
       options: [{ label: o.rival ? 'Race her' : 'Take it', price: 0, stakes: o.rival ? { odds: `beat ${clockAt(s, s.clock + o.rival.eta)}`, win: [`€${o.fee} ×1.3`], lose: ['×0.6'] } : { sure: [`€${o.fee}`] } },
         { label: 'Take it slow', price: 0, stakes: { sure: [`€${Math.round(o.fee * SLOW.fee)}`, `clock ×${SLOW.clock}`] } }, thirdDispatch(o)] }; }
-  if (s.phase === 'dispatch') { const o = s.offer;
+  if (st === 'dispatch') { const o = s.offer;
     const base = o.sealed ? 'A sealed parcel. No address, only a sticker.' : o.regular ? `${cargoWord(o.cargo)} for ${o.regular.name} at ${net.name(o.to)}.` : `${cargoWord(o.cargo)} for ${net.name(o.to)}.`;
     if (o.rival) return { kind: 'dispatch', mood: 'warning', text: `${base} The other courier wants it too.`, fee: o.fee, rival: true,
       options: [{ label: 'Race her', price: 0, stakes: { odds: `beat ${clockAt(s, s.clock + o.rival.eta)}`, win: [`€${o.fee} ×1.3`], lose: ['×0.6'] } }, { label: 'Let her have it', price: REROLL_S, stakes: null }, thirdDispatch(o)] };
     return { kind: 'dispatch', mood: MOODS_FOR.dispatch, text: base, fee: o.fee, sealed: !!o.sealed,
       options: [{ label: 'Take it', price: 0, stakes: { sure: [`€${o.fee}`] } }, { label: 'Ask for another', price: REROLL_S, stakes: null }, thirdDispatch(o)] }; }
-  if (s.pending) { const c = s.pending.card;
+  if (st === 'story') { const c = s.pending.card;
     return { kind: 'story', id: c.id, mood: c.mood || 'info', text: fill(s, c.text), where: c.where, tram: c.tram || null, sale: !!c.sale,
       options: eligible(c, s).map(o => ({ label: fill(s, o.label), price: o.time || 0, tier: o.tier || null, stakes: stakesOf(o) })) }; }
-  if (s.phase === 'halt') { const h = s.halt;
+  if (st === 'halt') { const h = s.halt;
     return { kind: 'halt', mood: MOODS_FOR.halt, cause: h.cause || null, text: h.cause === 'march' ? `A march on Mannerheimintie, by the Parliament House. The ${h.family} is halted.` : `The ${h.family} is halted.`, options: [{ label: 'Find another way', price: 0, stakes: null }, { label: 'Wait it out', price: round10(Math.max(0, h.until - s.clock)), stakes: null },
       ...(isSealed(s) ? [{ label: 'Walk to the next stop', price: 300, stakes: null }] : [(t => ({ label: optionLabel(net, t), price: t.price, hop: t, tier: 'special', stakes: { sure: chips({ cash: t.cash }) } }))(lift(net, s, 'taxi'))])] }; }
   const opts = s.options || [];
