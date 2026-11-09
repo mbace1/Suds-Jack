@@ -261,3 +261,28 @@ returned 403, “This workflow run cannot be retried”. These results are not
 code-test evidence and remain blocking. Fresh review was requested via the
 repository's `review` label; no fresh review result has been received yet.
 No merge or production publish has occurred.
+
+## 2026-11-09 — two-finger START input batch
+
+The intermittent focus failure is a real jump, not platform motion. A
+synchronous trace reproduced `jumps: 1`, `floor: 0`, rise 1.34: START's
+pointerdown changed the run state before the same native batch's second
+finger reached touchstart. The old coordinate-only drain recognized the
+START finger but let the second contact become a gameplay tap.
+
+The UI drain now retains the initiating native event timestamp. Every
+contact from that exact batch is UI; later event timestamps use the normal
+input path. This adds no blanket time window. Six repeated real two-finger
+START cases now had zero jumps/rise, and `menu-focus.cjs` passed 11/0,
+including a new real later-tap control proving deliberate jumping still
+works. Existing no-jump assertions and their thresholds remain unchanged.
+
+Tokens: input 111, main/worker registration 117, cache `hyperdagger-v87`,
+71-entry generated precache. Other runtime modules are unchanged. The final
+validation is serializing software-GPU work: a full smoke rerun hit its
+30-second navigation timeout while additional diagnostics were running.
+The unchanged Inca carry assertion has passed; no carry assertion was
+softened. The broad hub smoke's Pajatso A-button/navigation failure also
+reproduced on untouched main `27f68b37`, so that finding belongs in the hub
+lane and still blocks a clean release. Normal Toko Live runtime passed;
+the separately forced idle-typing probe still demonstrates its known bug.

@@ -6,7 +6,7 @@ import { AfterimagePass } from 'three/addons/postprocessing/AfterimagePass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
-import { InputManager } from './input.js?v=110';
+import { InputManager } from './input.js?v=111';
 import { Player } from './player.js?v=85';
 import { DaggerPool } from './daggers.js?v=85';
 import { GemPool } from './gems.js?v=85';
@@ -1686,7 +1686,7 @@ function showMenu() {
   }
   document.getElementById('startBtn').addEventListener('pointerdown', e => {
     e.stopPropagation();
-    if (e.pointerType === 'touch') input.swallowTouchAt(e.clientX, e.clientY);   // HD-003: its lift is not a jump
+    if (e.pointerType === 'touch') input.swallowTouchAt(e.clientX, e.clientY, e.timeStamp);   // HD-003: its lift is not a jump
     menuStart(e);
   });
 }
@@ -2098,7 +2098,7 @@ window.addEventListener('pointerdown', e => {
   audio.ensure();
   const isMouse = e.pointerType === 'mouse';
   // HD-003: a finger that taps to start, retry or resume is UI — its lift is not a jump
-  if (e.pointerType === 'touch' && (state === 'menu' || state === 'tips' || state === 'dead' || (state === 'playing' && paused))) input.swallowTouchAt(e.clientX, e.clientY);
+  if (e.pointerType === 'touch' && (state === 'menu' || state === 'tips' || state === 'dead' || (state === 'playing' && paused))) input.swallowTouchAt(e.clientX, e.clientY, e.timeStamp);
   if (state === 'menu') {
     // HD-019: a tap on the empty menu is not a start — START is (menuStart)
   } else if (state === 'tips') {

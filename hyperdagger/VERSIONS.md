@@ -48,7 +48,12 @@ The test arena’s pause-menu season choices now use the same full exit as
 the title tabs. This drops the HYPER URL pin before a normal season starts
 and prevents a test run from changing the normal best-score key.
 
-Tokens: `main.js` 116 and `sw.js` 116, worker cache `hyperdagger-v86`.
+Multi-touch START now drains every contact from the initiating native
+event batch, preventing its second finger from becoming a jump. Later
+events keep the ordinary touch grammar.
+
+Tokens: `main.js` 117 and `sw.js` 117, worker cache `hyperdagger-v87`;
+`input.js` 111.
 The original #628 used 114 / v84 after reconciling the two different 113 /
 v83 builds. `enemy.js`, `truck.js` and `convoy.js` remain at build 3's 113,
 and `sdf-skull.js` at 3; their bytes are unchanged by this integration.
