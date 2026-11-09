@@ -18,9 +18,9 @@
 // While a transition runs the run is held: no director, no bodies, no gun;
 // the hero is the transition's and cannot be hurt. Every number is
 // TUNING.worlds.
-import { TUNING } from '../tuning.js?v=125';
-import * as rules from './rules.js?v=125';
-import * as posts from './posts.js?v=125';
+import { TUNING } from '../tuning.js?v=126';
+import * as rules from './rules.js?v=126';
+import * as posts from './posts.js?v=126';
 
 const T = TUNING, WD = T.worlds;
 
@@ -78,7 +78,7 @@ const easeIn = (u) => u * u * u;
 export function step(w, dt) {
   const tr = w.trans, P = WD.trans, h = w.hero;
   tr.t += dt;
-  h.invinc = Math.max(h.invinc, P.grace);
+  h.grace = Math.max(h.grace || 0, P.grace);   // v126: the game's grace, not the pickup's timer (the ★ chip lit on every world change)
   if (!tr.swapped) {
     // pulled round and in: the radius closes and the turn winds up together,
     // slow at first, then all at once, as water goes down a plughole

@@ -8,6 +8,6 @@
 // pops flat where it died, exactly as REDD does (enemy.js:1542-1565,
 // 2739-2777, 3013-3029), with its own shared geometry. Its bullets are the
 // core's gel bullets in 0xcc66ff.
-import { cubeLook } from './redd.js?v=125';
+import { cubeLook } from './redd.js?v=126';
 
 export default cubeLook();

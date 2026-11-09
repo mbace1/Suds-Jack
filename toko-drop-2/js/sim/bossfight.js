@@ -10,9 +10,10 @@
 //
 //   w.fight  { kind, t, seen, done, tiers, hp, max, ids, x, z, grade, bonus }
 //   events   bossDown { kind, grade, time, bonus, tiers }
-import { TUNING } from '../tuning.js?v=125';
-import { BOSS_TIERS } from '../tuning/bossfights.js?v=125';
-import * as pickups from './pickups.js?v=125';
+import { TUNING } from '../tuning.js?v=126';
+import { BOSS_TIERS } from '../tuning/bossfights.js?v=126';
+import * as pickups from './pickups.js?v=126';
+import { endsWorld, endsRun } from './worlds.js?v=126';
 
 const T = TUNING;
 const ORDER = ['S', 'A', 'B', 'C'];
@@ -68,6 +69,12 @@ function finish(w, F, api) {
   for (const g of w.gels ?? []) if (g.alive) { if (api.pop) api.pop(w, g); else g.alive = false; }
   for (const b of w.bullets ?? []) if (!b.hero) b.dead = true;
   w.dir.queue.length = 0;
+  // v126 (the state audit): a world's boss down, the hero is safe until the floor opens (WORLD CLEAR's hold, then the
+  // world change keeps it so) — what the wave left in the air and on the floor (a lob, a puddle, HARDCADE's corpse
+  // rings, which still fire) hit the hero under the WORLD CLEAR card, and on a last life ended the run there. Only a
+  // boss whose wave ends a world or the run (every boss the arcade fights); a stand-in with the worlds off gets none
+  const wave = w.dir.wave || 0;
+  if (w.hero && (endsWorld(w, wave) || endsRun(w, wave))) w.hero.grace = Math.max(w.hero.grace || 0, T.waves.worldClear.hold + 1);
   F.grade = grade; F.bonus = bonus;
   w.events.push({ type: 'bossDown', kind: F.kind, grade, time: F.t, bonus, tiers: F.tiers, x: F.x, z: F.z });
 }

@@ -14,24 +14,24 @@
 // moves, then everything is tested, against post-move positions.
 //
 // Modes: 'arcade', 'hardcade' (corpses fire back) and 'survival'.
-import { TUNING } from '../tuning.js?v=125';
-import { press, pressReset } from './press.js?v=125';
-import { makeRng } from './rng.js?v=125';
-import { BEHAVIOUR } from './species/index.js?v=125';
-import { DIRECTORS } from './director/index.js?v=125';
-import * as fire from './fire.js?v=125';
-import { makeHero, heroStep, applyPull, hurtHero, invincible } from './hero.js?v=125';
-import { swarmForces, resolveCrowd } from './crowd.js?v=125';
-import { revengeColor } from './color.js?v=125';
-import * as pickups from './pickups.js?v=125';
-import * as worlds from './worlds.js?v=125';
-import * as reshape from './reshape.js?v=125';
-import { Arena, levelShape, levelMoves, levelEnvelope, KIND } from './shape.js?v=125';
-import * as rules from './rules.js?v=125';
-import * as heat from './heat.js?v=125';
-import * as formation from './formation.js?v=125';
-import * as posts from './posts.js?v=125';
-import * as slam from './slam.js?v=125';
+import { TUNING } from '../tuning.js?v=126';
+import { press, pressReset } from './press.js?v=126';
+import { makeRng } from './rng.js?v=126';
+import { BEHAVIOUR } from './species/index.js?v=126';
+import { DIRECTORS } from './director/index.js?v=126';
+import * as fire from './fire.js?v=126';
+import { makeHero, heroStep, applyPull, hurtHero, invincible } from './hero.js?v=126';
+import { swarmForces, resolveCrowd } from './crowd.js?v=126';
+import { revengeColor } from './color.js?v=126';
+import * as pickups from './pickups.js?v=126';
+import * as worlds from './worlds.js?v=126';
+import * as reshape from './reshape.js?v=126';
+import { Arena, levelShape, levelMoves, levelEnvelope, KIND } from './shape.js?v=126';
+import * as rules from './rules.js?v=126';
+import * as heat from './heat.js?v=126';
+import * as formation from './formation.js?v=126';
+import * as posts from './posts.js?v=126';
+import * as slam from './slam.js?v=126';
 
 const T = TUNING;
 
@@ -159,26 +159,31 @@ export function step(w, input) {
     if (w.shapeT) reshape.step(w, dt);
     posts.step(w);   // v108: the floor's moving posts go round
     w.director.step(w, dt, api);
-    pickups.afterDirector(w, dt);
-    heroStep(w, input, dt, api);
-    rules.step(w, dt, api);
-    swarmForces(w, dt);
-    for (const g of w.gels.slice()) gelStep(w, g, dt);
-    formation.step(w, dt);   // v106: the strands' springs, and a dash through one cuts it
-    applyPull(w);
-    resolveCrowd(w, dt);
-    pressHero(w);
-    for (const g of w.gels) { g.nudgedX += g.knockDX || 0; g.nudgedZ += g.knockDZ || 0; g.knockDX = g.knockDZ = 0; }
-    bulletsStep(w, dt);
-    seedsStep(w, dt);
-    lobsStep(w, dt);
-    hazardsStep(w, dt);
-    heroBulletsHit(w);
-    pickups.mothsHit(w);
-    gelBulletsHit(w);
-    contacts(w);
-    pickups.step(w, dt, api);
-    heat.step(w, dt);
+    // v126 (the state audit): the director decided the run on this step — the last world's boss cleared (WON), a
+    // room's end written with its grade — and nothing after it in the step may change what it wrote: a puddle under
+    // the hero hurt it after WON, and a room's last step changed its hits and score after its grade
+    if (!w.over) {
+      pickups.afterDirector(w, dt);
+      heroStep(w, input, dt, api);
+      rules.step(w, dt, api);
+      swarmForces(w, dt);
+      for (const g of w.gels.slice()) gelStep(w, g, dt);
+      formation.step(w, dt);   // v106: the strands' springs, and a dash through one cuts it
+      applyPull(w);
+      resolveCrowd(w, dt);
+      pressHero(w);
+      for (const g of w.gels) { g.nudgedX += g.knockDX || 0; g.nudgedZ += g.knockDZ || 0; g.knockDX = g.knockDZ = 0; }
+      bulletsStep(w, dt);
+      seedsStep(w, dt);
+      lobsStep(w, dt);
+      hazardsStep(w, dt);
+      heroBulletsHit(w);
+      pickups.mothsHit(w);
+      gelBulletsHit(w);
+      contacts(w);
+      pickups.step(w, dt, api);
+      heat.step(w, dt);
+    }
   }
   // a death in a campaign room ends the room (sim/director/campaign.js)
   if (w.over && w.director.onOver) w.director.onOver(w);
@@ -193,6 +198,22 @@ export function step(w, input) {
   for (const g of w.gels) { g.velX += ((g.x - g.px) / dt - g.velX) * 0.3; g.velZ += ((g.z - g.pz) / dt - g.velZ) * 0.3; }
   h.velX += ((h.x - h.px) / dt - h.velX) * 0.3; h.velZ += ((h.z - h.pz) / dt - h.velZ) * 0.3;
   return w;
+}
+
+// v126 (the state audit, docs/STATE.md): where the run is, as one word, read off the dozen fields across five objects
+// that encode it — for the bots, the tests and an agent (`__toko.machines.run`); nothing in the sim reads it, so it
+// cannot change a run. 'won' | 'dead' | 'room' (a campaign room ended alive: cleared, or lost on its goal) | 'transition' (between two worlds) |
+// 'worldClear' (a world's boss cleared, its floor about to open) | 'bossDown' (its boss down, the floor not yet
+// clear) | 'breather' (between waves) | 'wave'
+export function runPhase(w) {
+  if (!w) return null;
+  if (w.over) return w.won ? 'won' : w.hero && !w.hero.alive ? 'dead' : 'room';   // (a room cleared or lost on its clock)
+  if (w.trans) return 'transition';
+  const d = w.dir;
+  if (d?.worldOutT > 0) return 'worldClear';
+  if (d?.gapT > 0) return 'breather';          // (before the fight: a done fight is kept until the next wave starts)
+  if (w.fight?.done) return 'bossDown';
+  return 'wave';
 }
 
 // ── bodies ─────────────────────────────────────────────────────────

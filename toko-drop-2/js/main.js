@@ -7,36 +7,37 @@
 // The rules live in sim/ and run on a fixed step; this file feeds them input,
 // hands their events to the view and the sound, and draws in between steps.
 import * as THREE from 'three/webgpu';
-import { TUNING } from './tuning.js?v=125';
-import { buildFloor } from './render/floor.js?v=125';
-import { fitCamera, screenToWorld, screenDown } from './render/view.js?v=125';
-import * as worldsSim from './sim/worlds.js?v=125';
-import { shapeAt as shiftShape } from './sim/floorshift.js?v=125';
-import * as reshapeSim from './sim/reshape.js?v=125';
-import { Scenery } from './render/scenery.js?v=125';
-import { DRIFT } from './render/kit.js?v=125';
-import { Transit } from './render/transit.js?v=125';
-import { Splats } from './render/splats.js?v=125';
-import { Actors } from './render/actors.js?v=125';
-import { GEL_TIME } from './render/gel.js?v=125';
-import { studioEnvironment } from './render/env.js?v=125';
-import { Specimen } from './render/specimen.js?v=125';
-import { createWorld, step, api as simApi } from './sim/world.js?v=125';
-import { stage as stagePk } from './sim/pickups.js?v=125';
-import { Input } from './input.js?v=125';
-import { UI, t, timeText, LANGS, getLang, setLang, goalText, bossName } from './ui.js?v=125';
-import { Announcer } from './announcer.js?v=125';
-import { rooms as campaignRooms, isOpen as roomOpen, better as betterGrade } from './sim/director/campaign.js?v=125';
-import { levelShape, slots as regionSlots } from './sim/shape.js?v=125';
-import { Sound } from './audio.js?v=125';
-import { Music, worldWant, cueFor, renderMusicWav } from './music.js?v=125';
-import { Intro, CUES as INTRO } from './intro/intro.js?v=125';
-import { scheduleIntroSfx, renderIntroSfxWav } from './intro/sfx.js?v=125';
-import { Readout } from './readout.js?v=125';
-import { Meter, device, Quality } from './meter.js?v=125';
-import * as record from './record.js?v=125';
-import { dailySeed } from './sim/rng.js?v=125';
-import { machine } from './fsm.js?v=125';
+import { TUNING } from './tuning.js?v=126';
+import { buildFloor } from './render/floor.js?v=126';
+import { fitCamera, screenToWorld, screenDown } from './render/view.js?v=126';
+import * as worldsSim from './sim/worlds.js?v=126';
+import { shapeAt as shiftShape } from './sim/floorshift.js?v=126';
+import * as reshapeSim from './sim/reshape.js?v=126';
+import { Scenery } from './render/scenery.js?v=126';
+import { DRIFT } from './render/kit.js?v=126';
+import { Transit } from './render/transit.js?v=126';
+import { Splats } from './render/splats.js?v=126';
+import { Actors } from './render/actors.js?v=126';
+import { GEL_TIME } from './render/gel.js?v=126';
+import { studioEnvironment } from './render/env.js?v=126';
+import { Specimen } from './render/specimen.js?v=126';
+import { createWorld, step, api as simApi, runPhase } from './sim/world.js?v=126';
+import { heroState } from './sim/hero.js?v=126';
+import { stage as stagePk } from './sim/pickups.js?v=126';
+import { Input } from './input.js?v=126';
+import { UI, t, timeText, LANGS, getLang, setLang, goalText, bossName } from './ui.js?v=126';
+import { Announcer } from './announcer.js?v=126';
+import { rooms as campaignRooms, isOpen as roomOpen, better as betterGrade } from './sim/director/campaign.js?v=126';
+import { levelShape, slots as regionSlots } from './sim/shape.js?v=126';
+import { Sound } from './audio.js?v=126';
+import { Music, worldWant, cueFor, renderMusicWav } from './music.js?v=126';
+import { Intro, CUES as INTRO } from './intro/intro.js?v=126';
+import { scheduleIntroSfx, renderIntroSfxWav } from './intro/sfx.js?v=126';
+import { Readout } from './readout.js?v=126';
+import { Meter, device, Quality } from './meter.js?v=126';
+import * as record from './record.js?v=126';
+import { dailySeed } from './sim/rng.js?v=126';
+import { machine } from './fsm.js?v=126';
 
 const T = TUNING;
 const params = new URLSearchParams(location.search);
@@ -576,9 +577,9 @@ const specimen = new Specimen(T, actors, scene.environment);
 // menu). It takes effect at run start; the menu also redraws the world left
 // behind the title in the new style. The HUD label says ' · sdf' while on.
 const GELS = ['classic', 'sdf'];
-import { STYLES } from './render/style.js?v=125';
-import { Lens } from './render/lens.js?v=125';
-import { setSceneSun } from './render/sun.js?v=125';
+import { STYLES } from './render/style.js?v=126';
+import { Lens } from './render/lens.js?v=126';
+import { setSceneSun } from './render/sun.js?v=126';
 let urlGels = GELS.includes(params.get('gels')) ? params.get('gels') : null;
 const gels = () => urlGels ?? (GELS.includes(store.str('toko2.gels')) ? store.str('toko2.gels') : 'classic');
 // The LENS switch (render/lens.js, v94): NONE or TILT-SHIFT, localStorage toko2.lens; ?lens=tilt|none for a link
@@ -737,7 +738,7 @@ let lastRoom = null;   // AGAIN replays it
 const levels = new Map();
 async function loadLevel(id) {
   // v125: a load that failed is forgotten, so the room's START asks again (it was kept as a failure: START did nothing until a reload)
-  if (!levels.has(id)) levels.set(id, fetch(new URL(`../levels/${id}.json?v=125`, import.meta.url)).then((r) => { if (!r.ok) throw new Error(`levels/${id}.json ${r.status}`); return r.json(); }).catch((e) => { levels.delete(id); throw e; }));
+  if (!levels.has(id)) levels.set(id, fetch(new URL(`../levels/${id}.json?v=126`, import.meta.url)).then((r) => { if (!r.ok) throw new Error(`levels/${id}.json ${r.status}`); return r.json(); }).catch((e) => { levels.delete(id); throw e; }));
   return levels.get(id);
 }
 // the list the room screen draws: worlds, their rooms, open or not, best grades
@@ -1108,7 +1109,9 @@ const debug = {
   // and the sound's; and `capEnd()` gives the runs back to the player after a capture's bot and seed
   get flow() { return flow.snapshot(); },
   get machines() {
+    // v126: and the run's own two, from the sim: where the run is (wave … won) and the hero's dash and guard
     return { flow: flow.snapshot(), screen: ui.screen, transit: transit.phase ?? 'idle', runView,
+      run: runPhase(world), hero: world ? heroState(world.hero) : null,
       input: { enabled: input.enabled, dashBy: input.dashBy, source: input.source, left: input.left.active, right: input.right.active },
       sound: sound.state, warming: !!warming, capture: { on: capture.on, bot: capture.bot, seed: capture.seed } };
   },

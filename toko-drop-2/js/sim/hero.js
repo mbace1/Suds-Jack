@@ -21,11 +21,11 @@
 // (dashPlan). 1.x fires only
 // while the aim is valid AND the trigger is held: a touch or pad aim stick is
 // both at once, a mouse aims all the time and fires only while held.
-import { TUNING } from '../tuning.js?v=125';
-import * as heat from './heat.js?v=125';
-import { BEHAVIOUR } from './species/index.js?v=125';   // read at run time only (a species' hitTest)
-import { slip } from './rules.js?v=125';   // THE FOAM's slick floor
-import * as posts from './posts.js?v=125';
+import { TUNING } from '../tuning.js?v=126';
+import * as heat from './heat.js?v=126';
+import { BEHAVIOUR } from './species/index.js?v=126';   // read at run time only (a species' hitTest)
+import { slip } from './rules.js?v=126';   // THE FOAM's slick floor
+import * as posts from './posts.js?v=126';
 
 const T = TUNING, H = T.hero, L = T.heroLook;
 
@@ -39,6 +39,9 @@ export function makeHero() {
     lives: H.lives, alive: true,
     mercy: 0, flash: 0,          // 1.x _mercyT, _flashT
     invinc: 0, rapid: 0,         // 1.x _invincBoost, _fireRateBoost: the pickups' timers
+    // v126 (the state audit): the GRACE the game gives — the world change, and a world's boss down until its floor
+    // opens — apart from the INVINCIBLE pickup's `invinc`, which it shared: the HUD's ★ chip lit on every world change
+    grace: 0,
     dash: 0, dashCd: 0, dashX: 0, dashZ: 0, dashId: 0, ghostT: 0,
     // a flick dash in flight (dashPlan): its speed (0 = 1.x's dash), the
     // distance still to go, the cooldown it ends on, and its speed against
@@ -58,7 +61,14 @@ export function makeHero() {
 }
 
 // 1.x `invincible` (player.js:166-169): a dash, mercy, or the pickup
-export const invincible = (h) => h.dash > 0 || h.mercy > 0 || h.invinc > 0;
+export const invincible = (h) => h.dash > 0 || h.mercy > 0 || h.invinc > 0 || h.grace > 0;
+// v126 (the state audit, docs/STATE.md): the hero's two small machines, read rather than rebuilt from timers — the
+// dash (ready / dashing / cooldown) and what guards it now (the dash's i-frames, a hit's mercy, the pickup, the
+// game's grace, or nothing). For the bots, the HUD, a test, an agent (`__toko.machines.hero`)
+export const heroState = (h) => ({
+  dash: h.dash > 0 ? 'dashing' : h.dashCd > 0 ? 'cooldown' : 'ready',
+  guard: h.dash > 0 ? 'dash' : h.mercy > 0 ? 'mercy' : h.invinc > 0 ? 'pickup' : h.grace > 0 ? 'grace' : null,
+});
 
 export function heroStep(w, input, dt, api) {
   const h = w.hero;
@@ -102,6 +112,7 @@ export function heroStep(w, input, dt, api) {
   if (h.dashCd > 0) h.dashCd -= dt;
   if (h.fireCd > 0) h.fireCd -= dt;
   if (h.invinc > 0) h.invinc -= dt;
+  if (h.grace > 0) h.grace -= dt;
   if (h.rapid > 0) h.rapid -= dt;
   if (h.flash > 0) h.flash -= dt;
 
@@ -365,7 +376,9 @@ const _rp = { x: 0, z: 0 };
 // when it was the last life.
 export function hurtHero(w, by) {
   const h = w.hero;
-  if (!h.alive || invincible(h)) return false;
+  // v126: and never once the run is decided — won, or a room's end written, earlier in the same step (a puddle's hit
+  // after WON played the game-over voice under the WON screen; a no-hits room graded clear took a hit after its grade)
+  if (!h.alive || w.over || invincible(h)) return false;
   h.lives--;
   w.streak = 0;                     // 1.x: the streak resets only on a hit, the fatal one too
   heat.hit(w);                      // and the heat with it, and an unbanked pot (v51)

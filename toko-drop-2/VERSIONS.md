@@ -19,6 +19,19 @@
     Never `--no-verify`.
 -->
 
+## v126 — 2026-11-09
+**The run's own end made safe: nothing hurts you under WORLD CLEAR, a run decided on a step stays decided, and the ★ chip lights for the pickup alone**
+- THE SECOND HALF of the state audit (docs/STATE.md, v125 the first): the simulation's fixes, on their own, so they could be measured against v125 seed for seed.
+- WORLD CLEAR IS SAFE: a world's boss down gives the hero the game's grace until the floor opens, and the world change keeps it. Before, what the boss wave left behind (a lob, a puddle, a sweep, HARDCADE's corpse fire) could hit the hero under the WORLD CLEAR card, and on a last life end the run there.
+- A DECIDED RUN STAYS DECIDED: once the director decides the run on a step (the last world's boss cleared, a campaign room's end written with its grade), nothing after it runs on that step, and a hit is refused. Before, a puddle could hurt the hero under the WON screen, a corpse shot could kill the hero on the step its room was cleared (a game-over under a CLEAR), and kills went on adding to a graded room's score.
+- THE ★ CHIP: the world change lent its grace from the INVINCIBLE pickup's timer, so the chip lit on every world change. The grace has its own timer now, and the chip is the pickup's.
+- MEASURED: 2,916 bot runs through v125 and v126 from the same seeds — every campaign room on both routes at three skills, every arcade world at two, every HARDCADE world. 30 differ, all at a run's very end, and no grade, outcome or world clear moved: 28 rooms where the world went on counting after the grade (up to 1,200 points and a kill); HARD PACK ICE, cleared with a B and lost on the same step; one arcade run's hit under WORLD CLEAR (world 4, a sweep). The bots read the new grace as a guard, as they read the pickup's.
+- LOOKED AT AND LEFT: a challenge, a squeeze or a moving floor outliving its world (in 250 world ends by three bots none was still up at the boss down: a challenge's 22 s clock runs out first); a boss killed on its landing step never counting as seen (a landing body cannot be hit); `pop()` skipping a body's death (on purpose: a boss's adds go for nothing).
+- FOR AN AGENT: `__toko.machines.run` (wave, bossDown, worldClear, transition, breather, won, dead, room) and `__toko.machines.hero` (the dash: ready, dashing, cooldown; the guard: dash, mercy, pickup, grace). `runPhase(w)` and `heroState(h)` read the same for a bot or a test. test/run.mjs gates it all, and each of its checks fails with its fix taken out.
+- Cache tokens `?v=125` → `?v=126`; HUD label → `2.0 · v126`
+
+---
+
 ## v125 — 2026-11-09
 **The run's flow declared: one table owns what entering and leaving each state does, and eleven ways out that went wrong now go right**
 - THE ASK (owner, 2026-11-09: "Find all of the implicit state machines in my app. Make the best decision that will elevate all three: the user experience (UX), developer experience (DX), and agent experience (AX) always, without breaking anything"). Four read-only reviews — the flow and menus, the simulation, input and audio, the view — each proving its claims with probes against the real modules. The map is docs/STATE.md: every machine, where it lives, whether it is explicit, how to read it.
