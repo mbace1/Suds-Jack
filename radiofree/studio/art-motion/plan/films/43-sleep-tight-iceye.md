@@ -63,3 +63,17 @@ Sources for every line are in `clay/iceye/copy.json`. They are taken from search
 - The motion box on the eastern border stays (owner: "Go ahead" on the stills that showed it).
 - The disclosure rule does not apply, because the film does not touch Anthropic.
 - Post (en, 275 characters) is in `copy.json`.
+
+## v2.3 (9 Nov, owner: "Continue on ICEYE")
+
+A review of the filed film found three faults, now fixed:
+- **The rise into orbit:** the first second was a wash of pale beams. The rise is now gentler (760 to 1,150 km), and the
+  beams fade in once the camera settles.
+- **The war room:** the lamp blew the requirements sheet out to white. The lamp is down to 14,000, the map to 0.38 and
+  the bloom is lower, so the paper reads.
+- **Three tags shortened** so they hold the house size on a phone. The Supo tag now reads "ICEYE JOB ADS: SUPO
+  SCREENING WHERE REQUIRED". It keeps the ads' own "where required".
+
+Pipeline result: 93 checks pass. The filed MP4 measures −14.2 LUFS (−3.7 dBFS true peak) and runs 22.45 s plus the
+sign-off. The files are `films/09-11-Helsinki2-Sleep-Tight.mp4`, `-loop.mp4` and `.en.srt`, plus the preview
+`previews/09-11-RFH-Sleep-Tight-en.mp4`.

@@ -62,19 +62,19 @@
 | text | reading time en:dark | pass | on screen 3.00 s, needs 2.80 s (36 chars at 20/s + 1 s) |
 | text | last word en:dark | pass | last word up 1.85 s (at least 0.8) |
 | text | key detail en:dark | pass | covers nothing the shot needs |
-| text | scrim en:dark | pass | picture behind: edge 11.06 → scrim 0.26 |
+| text | scrim en:dark | pass | picture behind: edge 9.26 → scrim 0.17 |
 | text | width en:buys | pass | widest line 722 px (limit 800) |
 | text | safe zone en:buys | pass | box {'x': 168, 'y': 162, 'w': 744, 'h': 308} |
 | text | reading time en:buys | pass | on screen 3.50 s, needs 3.35 s (47 chars at 20/s + 1 s) |
 | text | last word en:buys | pass | last word up 2.06 s (at least 0.8) |
 | text | key detail en:buys | pass | covers nothing the shot needs |
-| text | scrim en:buys | pass | picture behind: edge 16.14 → scrim 0.52 |
+| text | scrim en:buys | pass | picture behind: edge 14.25 → scrim 0.42 |
 | text | width en:classified | pass | widest line 571 px (limit 800) |
 | text | safe zone en:classified | pass | box {'x': 243, 'y': 162, 'w': 593, 'h': 308} |
 | text | reading time en:classified | pass | on screen 2.90 s, needs 2.80 s (36 chars at 20/s + 1 s) |
 | text | last word en:classified | pass | last word up 1.89 s (at least 0.8) |
 | text | key detail en:classified | pass | covers nothing the shot needs |
-| text | scrim en:classified | pass | picture behind: edge 12.73 → scrim 0.35 |
+| text | scrim en:classified | pass | picture behind: edge 14.91 → scrim 0.46 |
 | text | width en:sleep | pass | widest line 481 px (limit 800) |
 | text | safe zone en:sleep | pass | box {'x': 289, 'y': 162, 'w': 503, 'h': 210} |
 | text | reading time en:sleep | pass | on screen 3.10 s, needs 2.05 s (21 chars at 20/s + 1 s) |
