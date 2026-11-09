@@ -1,4 +1,4 @@
-// SLEEP TIGHT (RFH, Helsinki 2 · ICEYE), v2 FULL BUILD, 9 Nov (v1 stills the same day; owner: "Go ahead"). Owner, Mon 9 Nov: "ICEYE is great. Let's go for impressive
+// SLEEP TIGHT (RFH, Helsinki 2 · ICEYE), v2.3, 9 Nov (v2.3: a gentler rise into orbit, the beams fade in; the war room's paper no longer blows out) (v1 stills the same day; owner: "Go ahead"). Owner, Mon 9 Nov: "ICEYE is great. Let's go for impressive
 // visuals. Modern cold war feel. Nanny state surveillance of the border. High-tech defence spending starting from Aalto
 // University start-up hub. Supo approved clearance for all employees etc".
 // DEVICE: SCALE SHIFT in one unbroken pull-back, from a student's desk in Otaniemi (2012) up through the snow and the
@@ -554,7 +554,7 @@ const WR = {};
 {
   const steel = std('#1a1e22', { metalness: 0.7, roughness: 0.4 });
   mesh(new THREE.BoxGeometry(TW + 12, 8, TD + 12), steel, { pos: [0, -4.1, 0], parent: WAR });
-  mesh(new THREE.PlaneGeometry(TW, TD), new THREE.MeshBasicMaterial({ map: warMapTex, color: new THREE.Color(0.52, 0.52, 0.52) }), { pos: [0, 0.03, 0], rot: [-Math.PI / 2, 0, 0], parent: WAR, cast: false, recv: false });
+  mesh(new THREE.PlaneGeometry(TW, TD), new THREE.MeshBasicMaterial({ map: warMapTex, color: new THREE.Color(0.38, 0.38, 0.38) }), { pos: [0, 0.03, 0], rot: [-Math.PI / 2, 0, 0], parent: WAR, cast: false, recv: false });
   const sh = mesh(new THREE.PlaneGeometry(TW, TD), new THREE.ShadowMaterial({ opacity: 0.55 }), { pos: [0, 0.08, 0], rot: [-Math.PI / 2, 0, 0], parent: WAR, cast: false }); sh.receiveShadow = true;
   mesh(new THREE.BoxGeometry(400, 4, 400), std('#0b0d10', { roughness: 0.9 }), { pos: [0, -60, 0], parent: WAR });
   const wall = std('#ffffff', { map: wallTex, roughness: 0.95, color: new THREE.Color(0.55, 0.62, 0.6) });
@@ -568,7 +568,7 @@ const WR = {};
   mesh(new THREE.ConeGeometry(16, 12, 40, 1, true), shade, { pos: [4, 92, 4], parent: WAR });
   mesh(new THREE.CylinderGeometry(0.3, 0.3, 80, 6), std('#111'), { pos: [4, 138, 4], parent: WAR });
   mesh(new THREE.SphereGeometry(4.2, 16, 12), new THREE.MeshBasicMaterial({ color: new THREE.Color(3.2, 3.4, 3.0) }), { pos: [4, 87, 4], parent: WAR, cast: false });
-  const key = new THREE.SpotLight('#e4fff0', 26000, 400, 0.62, 0.6, 2); key.position.set(4, 86, 4); key.target.position.set(4, 0, 0);
+  const key = new THREE.SpotLight('#e4fff0', 14000, 400, 0.62, 0.6, 2); key.position.set(4, 86, 4); key.target.position.set(4, 0, 0);
   key.castShadow = true; key.shadow.mapSize.set(2048, 2048); key.shadow.bias = -0.0003; key.shadow.radius = 5; WAR.add(key, key.target);
   for (const x of [-40, 40]) { const gl = new THREE.PointLight('#48ff96', 110, 140, 2); gl.position.set(x, 4, 10); WAR.add(gl); }
   WAR.add(new THREE.HemisphereLight('#1c2c3a', '#0a120c', 0.35));
@@ -683,9 +683,9 @@ function frame(t, captions = true) {
       exposure: 1.15, vignette: 0.55, grain: 0.05, seed: Math.floor(t * 24), sat: 1.0, contrast: 1.12, toe: 0.02, lift: [0.004, 0.01, 0.022], gain: [1.04, 1.0, 0.95], aberration: 0.0018 });
   } else if (S.kind === 'orbit' || S.kind === 'far') {
     placeHero(t);
-    if (S.kind === 'orbit') { poseOrbit(lerp(380, ORBIT_ALT, ease.out(lt / 1.5)), 24.0, 56.4); constellationAt(t, 0); }
+    if (S.kind === 'orbit') { poseOrbit(lerp(760, ORBIT_ALT, ease.out(lt / 1.4)), 24.0, 56.4); constellationAt(t, 0); }
     else { const q = ease.io(lt / (d + 0.6)); poseOrbit(lerp(ORBIT_ALT, 6800, q), lerp(24.0, 23.0, q), lerp(56.4, 50.0, q), lerp(ORBIT_AT[0], 25.5, q), lerp(ORBIT_AT[1], 63.5, q)); constellationAt(t, clamp(lt / (d * 0.75))); }
-    orbitAt(t, t - T.s2);
+    orbitAt(t, t - T.s2); beamMat.uniforms.uA.value = S.kind === 'orbit' ? smooth((lt - 0.35) / 0.9) : 1;
     post.render(ORBIT, camO, { focus: 1e5, aperture: 0, maxBlur: 0, tilt: 0, threshold: 0.75, knee: 0.5, bloomA: 0.7, bloomB: 0.55,
       exposure: 1.1, vignette: 0.5, grain: 0.045, seed: Math.floor(t * 24), sat: 1.05, contrast: 1.1, toe: 0.01, lift: [0.0, 0.006, 0.012], gain: [0.98, 1.02, 1.0], aberration: 0.0028 });
   } else if (S.kind === 'buys' || S.kind === 'classified') {
@@ -694,8 +694,8 @@ function frame(t, captions = true) {
     else { camW.position.set(lerp(36, 33, k), lerp(84, 76, k), lerp(78, 70, k)); camW.lookAt(SHEETAT[0] - 1, 0, SHEETAT[1] - 6); camW.fov = 30; }
     camW.position.y -= kk * 1.6; camW.fov -= kk * 1.2; camW.updateProjectionMatrix();
     _p.set(S.kind === 'buys' ? SATAT[0] : SHEETAT[0], 4, S.kind === 'buys' ? SATAT[1] : SHEETAT[1]).project(camW); const fc = clamp((_p.y + 1) / 2, 0.2, 0.8);
-    post.render(WAR, camW, { focus: 60, aperture: 0, maxBlur: 24, tilt: S.kind === 'buys' ? 9 : 8, tiltCenter: fc, tiltBand: 0.5, threshold: 0.85, knee: 0.5, bloomA: 0.4, bloomB: 0.32,
-      exposure: 1.1, vignette: 0.6, grain: 0.05, seed: Math.floor(t * 24), sat: 1.0, contrast: 1.12, toe: 0.02, lift: [0.0, 0.008, 0.016], gain: [1.02, 1.02, 0.98], aberration: 0.0018 });
+    post.render(WAR, camW, { focus: 60, aperture: 0, maxBlur: 24, tilt: S.kind === 'buys' ? 9 : 8, tiltCenter: fc, tiltBand: 0.5, threshold: 0.95, knee: 0.5, bloomA: 0.3, bloomB: 0.24,
+      exposure: S.kind === 'buys' ? 1.08 : 1.0, vignette: 0.6, grain: 0.05, seed: Math.floor(t * 24), sat: 1.0, contrast: 1.12, toe: 0.02, lift: [0.0, 0.008, 0.016], gain: [1.02, 1.02, 0.98], aberration: 0.0018 });
   } else {
     const on = t < EV.beep ? 0 : (t - EV.beep < 1.4 ? (Math.floor((t - EV.beep) * 3.2) % 2 === 0 ? 1 : 0) : 1);
     RM.screen.material.map = on ? scrOn : scrOff;

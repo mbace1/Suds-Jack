@@ -346,3 +346,5 @@ magenta.
   `films/08-11-Toko7-Toko-Drop-2-v1.mp4` and is NOT for posting.
 - **Flag for the brand lane:** `toko/js/wordmark.js`, the game's drawn logotype, differs from this lockup. The games and
   the arcade still draw it. That is not this film's lane, so it goes to the owner.
+
+**Owner, 9 Nov ~20:30:** "Actually, I will put it directly in the game." The film waits for the game to ship the lockup; then `tools/cap3.cjs` re-records the intro from the live build and the lockup segment goes (the game's own intro carries it). The overlay cut stays filed as the fallback.
