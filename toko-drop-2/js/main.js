@@ -7,35 +7,36 @@
 // The rules live in sim/ and run on a fixed step; this file feeds them input,
 // hands their events to the view and the sound, and draws in between steps.
 import * as THREE from 'three/webgpu';
-import { TUNING } from './tuning.js?v=124';
-import { buildFloor } from './render/floor.js?v=124';
-import { fitCamera, screenToWorld, screenDown } from './render/view.js?v=124';
-import * as worldsSim from './sim/worlds.js?v=124';
-import { shapeAt as shiftShape } from './sim/floorshift.js?v=124';
-import * as reshapeSim from './sim/reshape.js?v=124';
-import { Scenery } from './render/scenery.js?v=124';
-import { DRIFT } from './render/kit.js?v=124';
-import { Transit } from './render/transit.js?v=124';
-import { Splats } from './render/splats.js?v=124';
-import { Actors } from './render/actors.js?v=124';
-import { GEL_TIME } from './render/gel.js?v=124';
-import { studioEnvironment } from './render/env.js?v=124';
-import { Specimen } from './render/specimen.js?v=124';
-import { createWorld, step, api as simApi } from './sim/world.js?v=124';
-import { stage as stagePk } from './sim/pickups.js?v=124';
-import { Input } from './input.js?v=124';
-import { UI, t, timeText, LANGS, getLang, setLang, goalText, bossName } from './ui.js?v=124';
-import { Announcer } from './announcer.js?v=124';
-import { rooms as campaignRooms, isOpen as roomOpen, better as betterGrade } from './sim/director/campaign.js?v=124';
-import { levelShape, slots as regionSlots } from './sim/shape.js?v=124';
-import { Sound } from './audio.js?v=124';
-import { Music, worldWant, cueFor, renderMusicWav } from './music.js?v=124';
-import { Intro, CUES as INTRO } from './intro/intro.js?v=124';
-import { scheduleIntroSfx, renderIntroSfxWav } from './intro/sfx.js?v=124';
-import { Readout } from './readout.js?v=124';
-import { Meter, device, Quality } from './meter.js?v=124';
-import * as record from './record.js?v=124';
-import { dailySeed } from './sim/rng.js?v=124';
+import { TUNING } from './tuning.js?v=125';
+import { buildFloor } from './render/floor.js?v=125';
+import { fitCamera, screenToWorld, screenDown } from './render/view.js?v=125';
+import * as worldsSim from './sim/worlds.js?v=125';
+import { shapeAt as shiftShape } from './sim/floorshift.js?v=125';
+import * as reshapeSim from './sim/reshape.js?v=125';
+import { Scenery } from './render/scenery.js?v=125';
+import { DRIFT } from './render/kit.js?v=125';
+import { Transit } from './render/transit.js?v=125';
+import { Splats } from './render/splats.js?v=125';
+import { Actors } from './render/actors.js?v=125';
+import { GEL_TIME } from './render/gel.js?v=125';
+import { studioEnvironment } from './render/env.js?v=125';
+import { Specimen } from './render/specimen.js?v=125';
+import { createWorld, step, api as simApi } from './sim/world.js?v=125';
+import { stage as stagePk } from './sim/pickups.js?v=125';
+import { Input } from './input.js?v=125';
+import { UI, t, timeText, LANGS, getLang, setLang, goalText, bossName } from './ui.js?v=125';
+import { Announcer } from './announcer.js?v=125';
+import { rooms as campaignRooms, isOpen as roomOpen, better as betterGrade } from './sim/director/campaign.js?v=125';
+import { levelShape, slots as regionSlots } from './sim/shape.js?v=125';
+import { Sound } from './audio.js?v=125';
+import { Music, worldWant, cueFor, renderMusicWav } from './music.js?v=125';
+import { Intro, CUES as INTRO } from './intro/intro.js?v=125';
+import { scheduleIntroSfx, renderIntroSfxWav } from './intro/sfx.js?v=125';
+import { Readout } from './readout.js?v=125';
+import { Meter, device, Quality } from './meter.js?v=125';
+import * as record from './record.js?v=125';
+import { dailySeed } from './sim/rng.js?v=125';
+import { machine } from './fsm.js?v=125';
 
 const T = TUNING;
 const params = new URLSearchParams(location.search);
@@ -139,6 +140,41 @@ function applyControls() {
 // (never mid-run), with the floor made to match ──────────────────────────
 let arenaName = null, arena = null, floor = null;
 let state = 'menu', mode = 'arcade', world = null, acc = 0, pendingDash = false, dyingT = 0;
+// THE RUN'S FLOW, declared (v125; the state audit of 2026-11-09, docs/STATE.md): every state the game is in and the
+// moves meant between them, and what entering or leaving one must do, done once, here — setState() is the only
+// writer of `state` (its readers are many and unchanged). Input is live only in play; the HUD is up through play, a
+// pause and the death beat; the intro film is put away on ANY way out of it (only go() did, so a quit mid-film left
+// it in the scene); a dash pressed on a frame with no sim step does not outlive play (it fired after RESUME); and the
+// title's return ends the run's own view (`runView`: the world change and the camera on the hero — a QUIT in the
+// middle of a world change left the title frozen in the vortex or under the dark). A move the table lacks still
+// happens and is recorded (`__toko.flow.violations`), and the smoke fails on one (js/fsm.js)
+let runView = false;   // the run's own view, from start() until the title is back (the world change, the camera's follow)
+let nav = 0;           // v125: a count of the screens asked for; one that finishes loading after another was asked is not drawn
+const flow = machine('flow', {
+  initial: 'menu',
+  moves: {
+    menu: ['intro', 'play'],                  // ARCADE / CONTINUE / DAILY (with the film, or not); a room's START
+    intro: ['play', 'menu'],                  // the film ends or is skipped; left for the title
+    play: ['paused', 'dying', 'menu', 'over'],   // a pause, a death, a quit; `over` only by __toko.finish() (no death beat)
+    paused: ['play', 'menu'],                 // RESUME; QUIT
+    dying: ['over', 'menu'],                  // the death beat ends; left
+    over: ['menu', 'intro', 'play'],          // MENU / ROOMS; AGAIN (a room's straight, a DAILY's straight)
+  },
+  exit: {
+    intro: () => { introSfx?.stop(); introSfx = null; intro.finish(); },
+    play: () => { pendingDash = false; },
+  },
+  enter: {
+    menu: () => { runView = false; following = null; camAt.set(0, 0, 0); transit.reset(floor); },
+  },
+});
+function setState(to, why) {
+  flow.go(to, why, performance.now() / 1000);
+  state = flow.state;
+  input.enabled = state === 'play';
+  ui.setHud(state === 'play' || state === 'paused' || state === 'dying');
+  ui.hudEl?.classList.toggle('dying', state === 'dying');   // the death beat: the HUD's MENU does nothing then, so it is not shown (v125)
+}
 const screenArena = () => (stage.clientWidth >= stage.clientHeight ? 'landscape' : 'portrait');
 // The view's TURN (owner, 2026-10-23: "as long as the orientation is
 // right"). 1.x picks the arena once a run, so a phone turned mid-run used to
@@ -229,7 +265,7 @@ let fitHx = 0, fitHz = 0;   // the walls the camera was last fitted to
 // camera sits a little closer everywhere and follows the hero over world 1's floor as over a bigger one
 function viewBox() {
   const A = T.arena[arenaName], Z = T.camera.zoom ?? 1, zx = A.hx * Z, zz = A.hz * Z;
-  if (!world || (world.hx <= zx + 1e-6 && world.hz <= zz + 1e-6)) return null;
+  if (!world || !runView || (world.hx <= zx + 1e-6 && world.hz <= zz + 1e-6)) return null;   // v125: the title never follows the last run's hero
   return new THREE.Box3(new THREE.Vector3(-zx, 0, -zz), new THREE.Vector3(zx, T.floor.railHeight, zz));
 }
 
@@ -348,9 +384,11 @@ const tests = () => {
   const hp = store.num('toko2.gelHp'), d = store.str('toko2.dash'), by = store.str('toko2.dashBy');
   return { dash: DASHES.includes(d) ? d : 'pass', hp: HP_STEPS.includes(hp) ? hp : 1, by: DASH_BY.includes(by) ? by : 'lift' };
 };
-const showTitle = (keep = false) => ui.title(bests(), sound.on, input.source, tests(), keep);
-// a switch flipped: redraw the menu it is on (OPTIONS, or the title)
-const refreshMenu = () => (ui.inOptions ? ui.openOptions() : showTitle(true));
+const showTitle = (keep = false) => { nav++; ui.title(bests(), sound.on, input.source, tests(), keep); };
+// a switch flipped: redraw the menu it is on (OPTIONS, or the title). v125: by the screen that IS up (ui.screen) —
+// `inOptions` was a back-target being set, true on the rooms' grid and through a whole room, so an answer that came
+// late (the play record's share sheet) could draw the title over a paused run
+const refreshMenu = () => (ui.inOptions ? ui.openOptions() : ui.screen === 'title' ? showTitle(true) : null);
 // PLAY RECORD (OPTIONS, v61): the record as text a person can paste into a
 // message — the clipboard first, else the phone's share sheet, else a file
 let lost = [], recordSaid = null;
@@ -445,7 +483,8 @@ function recordsData() {
 }
 // a room or a run left from the pause menu goes in the record as a quit (js/record.js)
 function recordQuit() {
-  if (!world || world.over || (state !== 'paused' && state !== 'play')) return;
+  if (!world || world.over || world.recorded || (state !== 'paused' && state !== 'play')) return;
+  world.recorded = true;
   record.add(store, record.entryFor(world, mode, lost, recordHow(), true), T.record.cap);
 }
 
@@ -466,8 +505,10 @@ music.setVolume(store.str('toko2.music') !== '' ? Math.max(0, Math.min(1, Number
 const announcer = new Announcer();
 announcer.on = store.str('toko2.announcer') === 'on';
 announcer.volume = store.str('toko2.annVolume') !== '' ? Number(store.str('toko2.annVolume')) : 1;
-addEventListener('pointerdown', () => sound.unlock(), { once: true });
-addEventListener('keydown', () => sound.unlock(), { once: true });
+// a gesture wakes the sound — every one, not the first only (v125): a phone stops the context (a call, the screen
+// locked), and with the listeners spent nothing woke it again; unlock() is nothing when it is running
+addEventListener('pointerdown', () => sound.unlock());
+addEventListener('keydown', () => sound.unlock());
 
 const ui = new UI({
   // a start from the title plays the intro film first; AGAIN after a run does not (owner, 2026-10-24)
@@ -535,9 +576,9 @@ const specimen = new Specimen(T, actors, scene.environment);
 // menu). It takes effect at run start; the menu also redraws the world left
 // behind the title in the new style. The HUD label says ' · sdf' while on.
 const GELS = ['classic', 'sdf'];
-import { STYLES } from './render/style.js?v=124';
-import { Lens } from './render/lens.js?v=124';
-import { setSceneSun } from './render/sun.js?v=124';
+import { STYLES } from './render/style.js?v=125';
+import { Lens } from './render/lens.js?v=125';
+import { setSceneSun } from './render/sun.js?v=125';
 let urlGels = GELS.includes(params.get('gels')) ? params.get('gels') : null;
 const gels = () => urlGels ?? (GELS.includes(store.str('toko2.gels')) ? store.str('toko2.gels') : 'classic');
 // The LENS switch (render/lens.js, v94): NONE or TILT-SHIFT, localStorage toko2.lens; ?lens=tilt|none for a link
@@ -609,19 +650,26 @@ const intro = new Intro({
 let introT0 = 0, introSfx = null, introSkip = false, introStamp = 0;
 let introOff = params.has('nointro');
 const introWanted = (asked) => !introOff && (asked || params.has('intro'));
-const skipIntro = (e) => { if (state === 'intro' && e.timeStamp - introStamp > 350) introSkip = true; };
+// v125: a fresh press skips — a key's auto-repeat, or the start press still held (the pad's `padTap` below), did too
+const skipIntro = (e) => { if (state === 'intro' && !e.repeat && e.timeStamp - introStamp > 350) introSkip = true; };
 addEventListener('pointerdown', skipIntro);
 addEventListener('keydown', skipIntro);
 const padPressed = () => { for (const p of navigator.getGamepads?.() ?? []) if (p?.buttons.some((b) => b.pressed)) return true; return false; };
+let padWas = false;   // a pad button down at the last frame: a skip is a button going DOWN (v125)
+const padTapped = () => { const now = padPressed(), tap = now && !padWas; padWas = now; return tap; };
 
 function toMenu() {
   transit.reset(floor);
-  state = 'menu'; input.enabled = false; ui.setHud(false);
+  setState('menu', 'toMenu');
   useArena(screenArena());
   showTitle();
 }
 
 function start(m, { intro: asked = false, room = null, resume = null, daily: wantDaily = false } = {}) {
+  // a CAMPAIGN with no room to play goes to the rooms — before anything of a run is touched (v125: it set the mode,
+  // let the DAILY and the kept run's link go, and then did not start)
+  if ((MODES.includes(m) ? m : 'arcade') === 'campaign' && !room && !lastRoom) { showCampaign(); return; }
+  nav++;   // a screen still loading (the rooms' grid) is not drawn over the run (v125)
   debug.hold = false; debug.freeCam = false;
   mode = MODES.includes(m) ? m : 'arcade';
   const now = new Date();
@@ -652,6 +700,7 @@ function start(m, { intro: asked = false, room = null, resume = null, daily: wan
   if (world.room) useRoom(world);
   else if (world.world > 1) useWorld(world.world, world.hx, world.hz);
   if (world.shapeT) useSurvival();
+  runView = true;   // v125: the run's own view from here (the camera's follow box is fitted to it next)
   resize();   // v104: fitted to the run (the zoomed view box needs the world: main.js viewBox), not to the title's arena
   splats.clear(); actors.reset(); trauma = 0; transit.reset(floor);
   // v115: the first-time tags this browser has learned (render/hints.js): STEP OUT! for a giant's slam, CLEAR THE LANE! for a ram
@@ -661,7 +710,7 @@ function start(m, { intro: asked = false, room = null, resume = null, daily: wan
   actors.setGels(gels()); setLabel();
   ui.hide();
   if (mode !== 'campaign' && introWanted(asked)) {
-    state = 'intro'; input.enabled = false; ui.setHud(false);
+    setState('intro', 'start');
     ui.bannerEl.hidden = true; ui._bannerT = 0;          // nothing left over from a run before it
     introSkip = false; introStamp = performance.now(); introT0 = performance.now() + 40;
     intro.begin();
@@ -671,10 +720,9 @@ function start(m, { intro: asked = false, room = null, resume = null, daily: wan
   go();
 }
 // the run itself starts: straight from the title, or at the end of the intro
-function go() {
-  if (state === 'intro') { introSfx?.stop(); introSfx = null; intro.finish(); }
-  state = 'play'; input.enabled = true;
-  ui.hide(); ui.setHud(true);
+function go(why = 'go') {
+  setState('play', why);   // leaving the intro puts the film away (flow's exit action)
+  ui.hide();
   ui.banner(world?.room ? `${world.room.hard ? `${t('hardTag')} · ` : ''}${world.room.level.name} · ${goalText(world.room)}` : mode.toUpperCase(), world?.room ? 1.8 : 1.2);
   announcer.say('start');
 }
@@ -688,7 +736,8 @@ const campaignProgress = (hard = false) => { try { return JSON.parse(store.str(h
 let lastRoom = null;   // AGAIN replays it
 const levels = new Map();
 async function loadLevel(id) {
-  if (!levels.has(id)) levels.set(id, fetch(new URL(`../levels/${id}.json?v=124`, import.meta.url)).then((r) => { if (!r.ok) throw new Error(`levels/${id}.json ${r.status}`); return r.json(); }));
+  // v125: a load that failed is forgotten, so the room's START asks again (it was kept as a failure: START did nothing until a reload)
+  if (!levels.has(id)) levels.set(id, fetch(new URL(`../levels/${id}.json?v=125`, import.meta.url)).then((r) => { if (!r.ok) throw new Error(`levels/${id}.json ${r.status}`); return r.json(); }).catch((e) => { levels.delete(id); throw e; }));
   return levels.get(id);
 }
 // the list the room screen draws: worlds, their rooms, open or not, best grades
@@ -727,8 +776,12 @@ async function endingPreview(hard = false) {
   ui.campaignDone({ hard, tally, pts: all.reduce((n, r) => n + (p[r.id].pts || 0), 0), rooms: all.length, preview: true }, () => showCampaign());
 }
 async function showCampaign(played = null) {
-  if (world && state !== 'menu') { state = 'menu'; input.enabled = false; ui.setHud(false); }
+  const asked = ++nav;
+  if (world && state !== 'menu') setState('menu', 'rooms');
   const list = await campaignList();
+  // v125: the rooms load (36 levels, fetched once); a run started, or another screen asked for, meanwhile wins —
+  // the grid was drawn over the intro, or over play, when ARCADE was tapped while it loaded
+  if (asked !== nav || state !== 'menu') return;
   if (played) {
     const flat = list.flatMap((wd) => wd.rooms), i = flat.findIndex((r) => r.id === played.id);
     played.next = played.grade !== 'F' && flat[i + 1]?.open ? flat[i + 1].id : played.id;
@@ -806,16 +859,25 @@ function killer(by) {
   const how = by.startsWith('revenge:') ? 'shot' : by.startsWith('strand:') ? 'strand' : by.startsWith('slam:') ? 'slam' : false, k = how ? by.slice(by.indexOf(':') + 1) : by;
   return T.species[k] ? { kind: k, name: T.species[k].name, revenge: how } : { kind: null, name: t(`by_${k}`), revenge: false };
 }
-function pause() { if (state !== 'play') return; state = 'paused'; input.enabled = false; const K = killer(world?.killedBy); ui.pause(K.kind, K.revenge); }
-function resume() { if (state !== 'paused') return; state = 'play'; input.enabled = true; ui.hide(); }
-document.addEventListener('visibilitychange', () => { if (document.hidden) pause(); });
+function pause() { if (state !== 'play') return; setState('paused', 'pause'); const K = killer(world?.killedBy); ui.pause(K.kind, K.revenge); }
+function resume() { if (state !== 'paused') return; setState('play', 'resume'); ui.hide(); sound.unlock(); }   // v125: and the sound, if the phone stopped it meanwhile
+// hidden: the run pauses. v125: hidden during the intro film, the run is started and paused at once — the film is
+// timed off the wall clock and came back as a live, unpaused run; back, the sound is woken if the phone stopped it
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden) { if (sound.ctx) sound.unlock(); return; }
+  if (state === 'intro') go('hidden');
+  pause();
+});
+// v125: a run left by closing the page (hidden, so paused, then closed: a phone's commonest end) goes in the play
+// record as a quit, as QUIT's does — it went nowhere before. Once a run: a page kept and shown again does not file it twice
+addEventListener('pagehide', () => recordQuit());
 
 function finish() {
-  state = 'over'; input.enabled = false;
-  ui.setHud(false);
+  setState('over', 'finish');
   if (!world.room && !daily) clearContinue();   // v80: a run that ended is not taken up again (v118: a DAILY never held it)
-  // the play record (js/record.js, v61): every finished room and run, on this phone only
-  record.add(store, record.entryFor(world, mode, lost, recordHow()), T.record.cap);
+  // the play record (js/record.js, v61): every finished room and run, on this phone only (v125: once — not if the
+  // page hid, filed it as a quit, and came back)
+  if (!world.recorded) { world.recorded = true; record.add(store, record.entryFor(world, mode, lost, recordHow()), T.record.cap); }
   // a room: its grade is kept; a clear goes back to the rooms, a death to the death screen
   const R = world.roomResult;
   if (R) {
@@ -1041,6 +1103,16 @@ const debug = {
   // coalesced behind a slow software-GPU frame
   loop(on) { capture.on = !on; },
   start, pause, resume, toMenu, specimen,
+  // v125 (the state audit, docs/STATE.md): the machines, to be read rather than inferred — the run's flow (its
+  // state, since when, its last moves, any undeclared one), the screen up, the world change's phase, the input's
+  // and the sound's; and `capEnd()` gives the runs back to the player after a capture's bot and seed
+  get flow() { return flow.snapshot(); },
+  get machines() {
+    return { flow: flow.snapshot(), screen: ui.screen, transit: transit.phase ?? 'idle', runView,
+      input: { enabled: input.enabled, dashBy: input.dashBy, source: input.source, left: input.left.active, right: input.right.active },
+      sound: sound.state, warming: !!warming, capture: { on: capture.on, bot: capture.bot, seed: capture.seed } };
+  },
+  capEnd() { capture.bot = false; capture.think = null; capture.seed = null; },
   finish,   // v85: a run ended now, for a check of what it leaves behind (the death beat is paced by frames, slow under a software GPU)
   get daily() { return daily; }, dailySeed, dayOf,   // v118: the DAILY this run is, for the smoke
   endingPreview,   // v120: ?ending, for the smoke
@@ -1143,12 +1215,12 @@ function frame(now, dtFixed) {
   GEL_TIME.value = time;
   actors.light.extra = scenery.lightsAt(time);   // v123: world 1's neon lines light the floor's edge as they pass
   ui.pollPad(); ui.tick(dt);
-  const inp = input.read(null);
+  const inp = input.read(null), padTap = padTapped();
   let introT = 0;
 
   if (state === 'intro') {
     introT = (now - introT0) / 1000;
-    if (introT >= INTRO.end || introSkip || (!capture.on && introT > 0.35 && padPressed())) go();
+    if (introT >= INTRO.end || introSkip || (!capture.on && introT > 0.35 && padTap)) go(introT >= INTRO.end ? 'film' : 'skip');
   }
   if (state === 'intro') {
     // the run is built but holds still: the intro owns the screen
@@ -1176,7 +1248,7 @@ function frame(now, dtFixed) {
       meter.frame(wall, steps * T.sim.dt);   // the play record's frame times (js/meter.js)
       // v86: a window of slow frames steps the picture down; calm ones, in time, back up
       if (autoQ()) { const r = meter.recent(T.quality.window); if (r && quality.judge(r)) { applyQuality(); store.set('toko2.qstep', quality.step); } }
-      if (world.over) { state = 'dying'; dyingT = T.flow.deathBeat; input.enabled = false; }
+      if (world.over) { setState('dying', world.won ? 'won' : 'over'); dyingT = T.flow.deathBeat; }
     }
   } else if (state === 'paused') {
     if (inp.pause) resume();
@@ -1199,7 +1271,7 @@ function frame(now, dtFixed) {
     else if (shiftOpen) floor.setRegion?.(world.shift?.phase === 'on' && world.region ? regionSlots(world.region.shape) : shiftOpen);
     ui.hud(world);
   } else { floor.setPlayer(0, 0); actors.light.clear(); }
-  transit.frame(world, floor);
+  if (runView) transit.frame(world, floor);   // v125: the world change is the run's — never re-applied under the title
   if (world && boundsFloor) survivalFrame();
   else if (world && floor.bounds && !world.room) squeezeFrame();
   ruleFrame();

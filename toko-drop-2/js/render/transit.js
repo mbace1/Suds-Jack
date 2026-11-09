@@ -63,7 +63,13 @@ export class Transit {
   // once a frame, off the sim's clock
   frame(w, floor) {
     const V = this.T.worlds.view, P = this.T.worlds.trans, tr = w?.trans;
-    if (this.dim > 0 && --this.dim === 0) this.scenery.group.visible = false;   // v74: drawn once under the dark, then hidden until the reveal
+    // v74: drawn once under the dark, then hidden until the reveal — never after the landing (v125: `dim` counts
+    // frames, and a frame that steps the sim past the landing, a debug advance's, hid the new world's set for good)
+    if (this.dim > 0 && --this.dim === 0 && this.landAt < 0 && !tr?.landed) this.scenery.group.visible = false;
+    // v125 (the state audit): where the world change is, read off the sim's clock — for an agent or a test, one
+    // field in place of w.trans, landAt, dim and the fade's opacity: 'out' (the pull, the sink, the dark), 'fall',
+    // 'land' (landed, the world not yet going), 'reveal' (the floor still running out), 'idle'
+    this.phase = tr ? (!tr.swapped ? 'out' : !tr.landed ? 'fall' : 'land') : this.landAt >= 0 ? 'reveal' : 'idle';
     let dark = 0;
     if (tr && !tr.swapped) {
       const t = tr.t, drain = tr.kind === 'drain';
@@ -89,7 +95,7 @@ export class Transit {
 
   // a run ended or restarted: nothing of a transition left on screen
   reset(floor) {
-    this.landAt = -1; this.kind = null; this.dim = 0;
+    this.landAt = -1; this.kind = null; this.dim = 0; this.phase = 'idle';
     this.fade.style.opacity = '0';
     if (floor) { floor.swirl.k.value = 0; floor.swirl.hole.value = 0; floor.reveal.r.value = 1e4; floor.reveal.front.value = 0; }
     this.scenery.showDrain(0, 0, 0);

@@ -14,8 +14,8 @@
 // Reads the world, never writes it. Every number is TUNING.posts (sim) and the look's own below.
 import * as THREE from 'three/webgpu';
 import { Fn, float, vec2, vec3, smoothstep, mix, positionWorld, positionLocal, normalWorld } from 'three/tsl';
-import { TUNING } from '../tuning.js?v=124';
-import { noise } from './kit.js?v=124';
+import { TUNING } from '../tuning.js?v=125';
+import { noise } from './kit.js?v=125';
 
 const T = TUNING;
 const std = (color, rough = 0.6, metal = 0, extra = {}) => new THREE.MeshStandardNodeMaterial({ color, roughness: rough, metalness: metal, ...extra });
@@ -254,6 +254,10 @@ export class PostView {
         if (p.ram) this._ramFixtures(w, p);
       }
     }
+    // v125 (the state audit): the next world's posts are built at the swap, under the dark; they wait for the
+    // landing, as its floor and its set do — they stood in the void through the whole fall
+    const show = !(w?.trans && !w.trans.landed);
+    for (const v of [...this.views, ...this.extras]) if (v.visible !== show) v.visible = show;
     P.forEach((p, i) => {
       const v = this.views[i];
       if (!v) return;

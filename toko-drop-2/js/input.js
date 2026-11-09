@@ -33,8 +33,8 @@
 // world, because only it knows where the camera is. `dash` is false, true
 // (a button: 1.x's own dash) or a flick's gesture { kind: 'flick', sL, sV,
 // dirX, dirY }, its direction in screen axes too.
-import { TUNING } from './tuning.js?v=124';
-import { analyseTouch } from './flick.js?v=124';
+import { TUNING } from './tuning.js?v=125';
+import { analyseTouch } from './flick.js?v=125';
 
 const I = TUNING.input;
 // the standard Gamepad mapping, bound as 1.x bound it (input.js:135-150)
@@ -111,6 +111,7 @@ export class Input {
   // keys, buttons and sticks let go of; a stick let go of this way is no dash
   reset() {
     this.keys.clear(); this.mouse.down = false; this._space = false;
+    this._dash = false; this._pause = false;   // v125: an edge not yet read goes with the rest (it was safe only because read() runs every frame)
     this._release(this.left); this._release(this.right);
   }
 

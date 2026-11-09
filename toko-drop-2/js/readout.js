@@ -75,6 +75,7 @@ export class Readout {
   flick() {
     const g = this.input?.lastGesture, d = this.lastDash?.();
     if (!g) return '';
+    if (this.input?.dashBy === 'lift') return `${g.kind}: lift → dash`;   // v125: LIFT (v124's default) dashes on every let-go
     if (g.kind !== 'flick') return `${g.kind}: no dash`;
     const dash = d?.kind === 'flick' ? ` → ${d.d.toFixed(1)} u at ${Math.round(d.v)} u/s` : '';
     return `flick ${Math.round(g.lenPx)} px ${g.pxPerMs.toFixed(2)} px/ms${dash}`;

@@ -80,6 +80,7 @@
     #bossbar i { display: block; height: 100%; width: 100%; transition: width .15s linear; }
     #pausebtn { position: absolute; right: max(10px, env(safe-area-inset-right)); top: max(6px, env(safe-area-inset-top)); pointer-events: auto;
       min-width: 64px; height: 44px; padding: 0 14px; background: rgba(8, 8, 16, .45); border: 1px solid var(--line); color: var(--ink); font: inherit; font-size: 14px; letter-spacing: .14em; }
+    #hud.dying #pausebtn { visibility: hidden; }   /* v125: the death beat — the button does nothing then (the state audit) */
     #hud.under #pausebtn { visibility: hidden; }   /* v121: under a panel (the pause, OPTIONS) the run's MENU button is not shown */
     #vignette { position: fixed; inset: 0; pointer-events: none; opacity: 0;
       background: radial-gradient(ellipse at center, rgba(255,20,20,0) 35%, rgba(255,20,20,.55) 105%); }
@@ -277,7 +278,7 @@
   <div id="card" hidden><div class="t"></div><div class="s"></div></div>
   <div id="vignette" aria-hidden="true"></div>
   <div id="menu" class="menu" hidden></div>
-  <div id="ver">2.0 · v124<span id="backend"></span></div>
+  <div id="ver">2.0 · v125<span id="backend"></span></div>
   <pre id="fault" hidden></pre>
   <script>
     // A failure must be visible on the phone: there is no console there.
@@ -386,6 +387,6 @@
       });
     })();
   </script>
-  <script type="module" src="js/main.js?v=124"></script>
+  <script type="module" src="js/main.js?v=125"></script>
 </body>
 </html>

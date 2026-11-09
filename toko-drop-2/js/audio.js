@@ -1,7 +1,7 @@
 // audio.js — synthesised, never sampled. Every voice goes through one master
 // gain, so mute really mutes and a sound added later inherits it. Browsers
 // keep audio asleep until a gesture; unlock() is called from the first one.
-import { TUNING } from './tuning.js?v=124';
+import { TUNING } from './tuning.js?v=125';
 
 const A = TUNING.audio;
 
@@ -10,8 +10,12 @@ export class Sound {
   constructor() { this.ctx = null; this.master = null; this.on = true; this.volume = 1; this._shot = 0; this._noise = null; }
   get level() { return this.on ? A.master * this.volume : 0; }
 
+  // v125 (the state audit): the context's own state, for a test or an agent ('none' before the first gesture)
+  get state() { return this.ctx ? this.ctx.state : 'none'; }
   unlock() {
-    if (this.ctx) { if (this.ctx.state === 'suspended') this.ctx.resume(); return; }
+    // anything but running is woken: 'suspended', and Safari's 'interrupted' (a call, the phone locked), which the
+    // first cut ignored — the game then stayed silent for the rest of the run
+    if (this.ctx) { if (this.ctx.state !== 'running' && this.ctx.state !== 'closed') this.ctx.resume().catch(() => {}); return; }
     const AC = window.AudioContext || window.webkitAudioContext;
     if (!AC) return;
     this.attach(new AC());

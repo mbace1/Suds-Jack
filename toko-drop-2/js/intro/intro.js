@@ -20,9 +20,9 @@
 // here from the same parts as the logotype's d (a flat-sided bowl, one stem
 // weight), mirrored, with the stem run down below the baseline.
 import * as THREE from 'three/webgpu';
-import { fillMaster, masterBounds } from './master.js?v=124';
-import { GLYPHS, M } from './wordmark.js?v=124';
-import { CUES } from './sfx.js?v=124';
+import { fillMaster, masterBounds } from './master.js?v=125';
+import { GLYPHS, M } from './wordmark.js?v=125';
+import { CUES } from './sfx.js?v=125';
 
 export { CUES };
 
@@ -155,6 +155,12 @@ export class Intro {
     this.c.scene.add(group);
     this.active = true;
     this._hudEls = ['scorebox', 'clock', 'pausebtn'].map((id) => document.getElementById(id));
+    // v125 (the state audit): what the floor and the scene were before the film, so finish() puts back THIS
+    // world's look — a CONTINUE or a FROM WORLD run plays the film over a later world's floor (the driveway's
+    // summer haze and no rail), and finish() used to put world 1's dark and rail on it for the rest of the world
+    const floor = this.c.floor(), set = this.c.scenery?.();
+    this._was = { void: floor.reveal.void.value.clone(), bg: this.c.scene.background.clone(), border: floor.border.visible, set: set ? set.group.visible : true };
+    this._void.copy(this._was.void);
   }
 
   // the camera for each shot, for this screen's shape
@@ -246,7 +252,8 @@ export class Intro {
     hv.eyes.scale.set(1, Math.max(0.05, open), 1);
 
     // ── the floor: the void until the drop lands, then the grid runs out of it ──
-    const A = this.c.arena(), Rmax = Math.hypot(A.hx, A.hz) + 1.5;
+    // the floor the film reveals is the one built (a later world's is bigger than world 1's arena: v125)
+    const fa = floor.arena?.max, A = fa ? { hx: fa.x, hz: fa.z } : this.c.arena(), Rmax = Math.hypot(A.hx, A.hz) + 1.5;
     const rk = seg(t, C.grid, C.grid + 1.7);
     floor.reveal.at.value.set(0, 0);
     floor.reveal.r.value = t < C.land ? 0 : 0.3 + Rmax * Math.pow(rk, 1.7);   // slow out of the drop, then away
@@ -256,7 +263,7 @@ export class Intro {
     this.c.scene.background.copy(this._black).lerp(this._void, vk);
     const railK = seg(floor.reveal.r.value, Math.min(A.hx, A.hz) - 1, Rmax - 1);
     floor.border.material.opacity = railK;
-    floor.border.visible = railK > 0.001;
+    floor.border.visible = (this._was?.border ?? true) && railK > 0.001;   // a floor with no rail (the driveway's, the sewer's) gets none
     // v101 (owner: "The world one environment is now shown in the intro animations and it shouldn't be"): the
     // world's set — world 1's loops of neon (v123; its grid running on past the rail and its lit bollards before) — waits in the void with the
     // floor, and comes in as the grid reaches the rail; it stood along the bottom of the logo and the drop
@@ -351,11 +358,12 @@ export class Intro {
     this.active = false;
     const { group, parts } = this.built, floor = this.c.floor(), T = this.c.T, hv = this.c.actors.hero;
     this.c.scene.remove(group);
+    const W = this._was ?? {};
     floor.reveal.r.value = 1e4; floor.reveal.front.value = 0;
-    floor.reveal.void.value.set(T.render.clearColor);
-    floor.border.material.opacity = 1; floor.border.visible = true;
-    const set = this.c.scenery?.(); if (set) set.group.visible = true;
-    this.c.scene.background.set(T.render.clearColor);
+    if (W.void) floor.reveal.void.value.copy(W.void); else floor.reveal.void.value.set(T.render.clearColor);
+    floor.border.material.opacity = 1; floor.border.visible = W.border ?? true;
+    const set = this.c.scenery?.(); if (set) set.group.visible = W.set ?? true;
+    if (W.bg) this.c.scene.background.copy(W.bg); else this.c.scene.background.set(T.render.clearColor);
     hv.eyes.visible = true; hv.eyes.scale.set(1, 1, 1); hv.squash.scale.set(1, 1, 1); hv.root.position.y = 0;
     for (const el of this._hudEls) { el.style.transform = ''; el.style.opacity = ''; }
     const lives = document.getElementById('lives');

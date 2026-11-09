@@ -15,23 +15,23 @@
 // that springs in and fades (splats.js). Views are pooled per species, so a
 // gel's material is built once and reused, never compiled mid-fight.
 import * as THREE from 'three/webgpu';
-import { TUNING } from '../tuning.js?v=124';
+import { TUNING } from '../tuning.js?v=125';
 import * as TSL from 'three/tsl';
-import { gelMaterial, domeGeometry, cubeGeometry, heroGeometry, GEL_TIME } from './gel.js?v=124';
-import { LOOKS } from './looks/index.js?v=124';
-import { styleName, setStyle as setStyleMode, styledBody } from './style.js?v=124';
-import { JellyBody } from './jelly.js?v=124';
-import { Juice } from './juice.js?v=124';
-import { ArenaLight } from './light.js?v=124';
-import { toSdf } from './sdf.js?v=124';
-import { PickupView } from './pickups.js?v=124';
-import { ChallengeView } from './challenge.js?v=124';
-import { PostView } from './posts.js?v=124';
-import { SlamView } from './slam.js?v=124';
-import { HintView } from './hints.js?v=124';
-import { Goo } from './goo.js?v=124';
-import { mult as heatMult } from '../sim/heat.js?v=124';
-import { strands as liveStrands } from '../sim/formation.js?v=124';
+import { gelMaterial, domeGeometry, cubeGeometry, heroGeometry, GEL_TIME } from './gel.js?v=125';
+import { LOOKS } from './looks/index.js?v=125';
+import { styleName, setStyle as setStyleMode, styledBody } from './style.js?v=125';
+import { JellyBody } from './jelly.js?v=125';
+import { Juice } from './juice.js?v=125';
+import { ArenaLight } from './light.js?v=125';
+import { toSdf } from './sdf.js?v=125';
+import { PickupView } from './pickups.js?v=125';
+import { ChallengeView } from './challenge.js?v=125';
+import { PostView } from './posts.js?v=125';
+import { SlamView } from './slam.js?v=125';
+import { HintView } from './hints.js?v=125';
+import { Goo } from './goo.js?v=125';
+import { mult as heatMult } from '../sim/heat.js?v=125';
+import { strands as liveStrands } from '../sim/formation.js?v=125';
 
 const T = TUNING;
 const B = T.blob, D = T.death;
@@ -356,12 +356,7 @@ export class Actors {
   // After the species, the challenge's pieces and whatever `extra` steps the
   // game adds ({ on, off }: the drain). True while there is more to do
   warmStep(extra = []) {
-    const held = this.warmHeld;
-    if (held) {
-      this.warmHeld = null;
-      if (held.v) { held.v.root.traverse((o) => { if (o.userData.warmCull !== undefined) { o.frustumCulled = o.userData.warmCull; delete o.userData.warmCull; } }); this._release(held.v); }
-      else held.off();
-    }
+    this._unholdWarm();
     if (!this.warmQueue) this.warmQueue = [...Object.keys(T.species).map((kind) => ({ kind })), { on: () => this.challenge.warm(true), off: () => this.challenge.warm(false) },
       { on: () => this._warmFx(true), off: () => this._warmFx(false) }, ...extra];
     const step = this.warmQueue.shift();
@@ -375,6 +370,18 @@ export class Actors {
       } else { step.on(); this.warmHeld = step; }
     } catch (e) { console.warn('warm-up step skipped:', e); this.warmHeld = null; }
     return true;
+  }
+
+  // the step the warm-up holds, let go: a body back to its pool, the challenge's pieces back where they are drawn.
+  // v125 (the state audit): reset() does it too — a campaign room skips the intro, so a run could start while the
+  // title's warm-up held a step, and the challenge's group stayed 50 m under the floor at 1/10000 of its size: a
+  // HOLD ring, a heart, the orbs, invisible for the whole room
+  _unholdWarm() {
+    const held = this.warmHeld;
+    if (!held) return;
+    this.warmHeld = null;
+    if (held.v) { held.v.root.traverse((o) => { if (o.userData.warmCull !== undefined) { o.frustumCulled = o.userData.warmCull; delete o.userData.warmCull; } }); this._release(held.v); }
+    else held.off();
   }
 
   // v116: what a run's first seconds draw for the first time — the light map's first pool and shadow, the goo's
@@ -421,6 +428,7 @@ export class Actors {
   }
 
   reset() {
+    this._unholdWarm();
     for (const v of this.views.values()) this._release(v);
     for (const v of this.dying) this._release(v);
     this.views.clear(); this.dying.length = 0; this.chunks.length = 0; this.heat = 0;

@@ -2,13 +2,13 @@
 // crisp vector type on near-black (DIRECTION). Menus are pad-first — a d-pad
 // or arrow keys move a gold focus ring (1.x v134), A / Enter picks, B / Esc
 // backs out — and a tap or click works on every button just the same.
-import { TUNING } from './tuning.js?v=124';
-import { GEL_LINES } from './gels-said.js?v=124';
-import { goalOf, modsOf, speciesOf } from './sim/challenge.js?v=124';
-import { mult as heatMult } from './sim/heat.js?v=124';
-import { tiersFor, onCourse } from './sim/director/campaign.js?v=124';
-import { onCourse as fightCourse } from './sim/bossfight.js?v=124';
-import { roomChart, routeChart, goalGlyph, GRADE_COLORS } from './chart.js?v=124';
+import { TUNING } from './tuning.js?v=125';
+import { GEL_LINES } from './gels-said.js?v=125';
+import { goalOf, modsOf, speciesOf } from './sim/challenge.js?v=125';
+import { mult as heatMult } from './sim/heat.js?v=125';
+import { tiersFor, onCourse } from './sim/director/campaign.js?v=125';
+import { onCourse as fightCourse } from './sim/bossfight.js?v=125';
+import { roomChart, routeChart, goalGlyph, GRADE_COLORS } from './chart.js?v=125';
 
 const STR = {
   en: {
@@ -133,6 +133,7 @@ export function timeText(seconds) {
 export class UI {
   constructor(handlers) {
     this.h = handlers;
+    this.screen = 'none';   // v125: the panel up (hide() and each panel set it)
     document.documentElement.lang = lang;
     this.hudEl = document.getElementById('hud');
     this.scoreEl = document.getElementById('score');
@@ -292,7 +293,10 @@ export class UI {
     this.focusIndex = 0;
     this._focus();
   }
-  hide() { this.menuEl.hidden = true; this.buttons = []; this.hudEl?.classList.remove('under'); }
+  // v125 (the state audit): `screen` — which panel is up ('title', 'rooms', 'room', 'options', 'records', 'pause',
+  // 'results', 'ending', 'none'), set by each panel as it draws. What main.js redraws on a switch, what Start and P
+  // do in a pause, and what a test or an agent reads (`__toko.machines.screen`) instead of a heading's English text
+  hide() { this.menuEl.hidden = true; this.buttons = []; this.hudEl?.classList.remove('under'); this.screen = 'none'; }
   _button(label, sub, fn, disabled = false) {
     const b = el('button', 'item');
     if (disabled) { b.classList.add('off'); b.setAttribute('aria-disabled', 'true'); }
@@ -350,6 +354,7 @@ export class UI {
     if (dailyBtn) dailyBtn.classList.add('cont', 'daily');
     this.optBack = null;
     this._panel([logo, startRow, ...(contBtn ? [contBtn] : []), ...(fromBtn ? [fromBtn] : []), ...(dailyBtn ? [dailyBtn] : []), menuBtn, hint]);
+    this.screen = 'title';
     this.menuEl.classList.toggle('hardmode', hard);
     this.menuEl.classList.toggle('two', !!(contBtn && fromBtn));   // v85: both offered: side by side on a phone held sideways
     if (keep && prev > 0 && prev < this.buttons.length) { this.focusIndex = prev; this._focus(); }
@@ -362,6 +367,7 @@ export class UI {
   // `played` is the room just left; `focus` a tile to come back to.
   campaign(list, played = null) {
     this.optBack = () => this.h.onTitle?.(); this._list = list;   // Esc or B: back to the title
+    this.screen = 'rooms';
     const GC = GRADE_COLORS, flat = list.flatMap((wd) => wd.rooms);
     // the HARD CAMPAIGN (v49): the same grid on its own grades, behind the title's HARD switch
     const hard = !!this.h.hard?.();
@@ -415,6 +421,7 @@ export class UI {
   roomCard(r, wd) {
     const GC = GRADE_COLORS, L = r.level;
     this.optBack = () => this.campaign(this._list, { focus: r.id });
+    this.screen = 'room';
     const tiers = L ? tiersFor(r, L) : null;
     const fmt = (v) => `≥ ${pts(v)}`;
     const rows = el('div', 'tiers');
@@ -456,6 +463,7 @@ export class UI {
       this._button(`${t('gelHp')} ×${o.test.hp}`, t('gelHpSub'), () => this.h.onGelHp?.()),
     );
     this._panel([el('h2', 'opt', t('options')), switches, ...this._gelsRow(o.sound), this._button(t('back'), null, () => this.closeOptions()), el('p', 'hint', `${t('dash')} · ${t('gelHp')}: ${t('nextRun')}`)]);
+    this.screen = 'options';
     if (keep > 0 && keep < this.buttons.length) { this.focusIndex = keep; this._focus(); }
   }
   _focusOn(label) { const i = this.buttons.findIndex((b) => b.querySelector('.label')?.textContent === label); if (i >= 0) { this.focusIndex = i; this._focus(); } }
@@ -483,10 +491,15 @@ export class UI {
     const num = (x) => (lang === 'fi' ? String(x).replace('.', ',') : String(x)), f = d.phone;
     this._panel([el('h2', 'opt', t('records')), el('p', 'mode', t('recBests')), bests, el('p', 'mode', t('recRuns')), d.recent.length ? runs : el('p', 'hint', t('recNone')),
       ...(f ? [el('p', 'hint', t('recordPhone').replace('{hz}', f[3]).replace('{late}', num(f[2])) + (f[4] < 0.98 ? t('recordSlow').replace('{sim}', num(f[4])) : ''))] : []),
-      this._button(t('back'), null, () => this.openOptions())]);
+      this._button(t('back'), null, () => this.closeOptions())]);
+    // v125: one way back, whichever way it is asked — BACK opened OPTIONS, while Esc and B skipped past OPTIONS to
+    // wherever OPTIONS had been opened from (one back slot, inherited); OPTIONS' own way back is kept for it
+    const toOptions = this.optBack;
+    this.optBack = () => { this.optBack = toOptions; this.openOptions(); this._focusOn(t('records')); };
+    this.screen = 'records';
   }
   closeOptions() { const b = this.optBack; this.optBack = null; b?.(); }
-  get inOptions() { return !!this.optBack; }
+  get inOptions() { return this.screen === 'options'; }   // v125: the screen up, not a back-target (true on the grid, and through a room)
 
   // the GELS switch (render/sdf.js) beside SOUND: how the gels are drawn;
   // WORLDS (v23): which look worlds 2 and 3 wear; and below them SOUND and
@@ -562,10 +575,12 @@ export class UI {
     this.optBack = null;
     this._panel([el('h2', null, t('paused')), ...(card ? [card] : []), this._button(t('resume'), null, () => this.h.onResume()),
       this._button(t('options'), null, () => this.openOptions(() => { this.pause(lastHit, revenge); this._focusOn(t('options')); })), this._button(t('quit'), null, () => this.h.onMenu())]);
+    this.screen = 'pause';
   }
 
   results(r) {
     this.optBack = null;
+    this.screen = 'results';
     const rows = el('dl', 'stats');
     const row = (k, v) => rows.append(el('dt', null, k), el('dd', null, v));
     row(t('score'), r.score.toLocaleString('en-US') + (r.newBest ? `  ${t('newbest')}` : ''));
@@ -610,6 +625,7 @@ export class UI {
   // what each grade came to, the points, and where to go from here
   campaignDone(r, onRooms) {
     this.optBack = onRooms;
+    this.screen = 'ending';
     const T2 = r.tally, n = r.rooms, GC = GRADE_COLORS;
     const tally = el('div', 'tiers');
     for (const g of ['S', 'A', 'B', 'C']) { const k = el('span', 'tg', g); k.style.color = GC[g]; tally.append(k, el('span', 'tt', `× ${T2[g] || 0}`)); }
@@ -650,6 +666,7 @@ export class UI {
     else if (e.code === 'ArrowLeft' || e.code === 'KeyA') { this._dir(-1, 0); e.preventDefault(); }
     else if (e.code === 'Enter' || e.code === 'Space') { this._pick(); e.preventDefault(); }
     else if (e.code === 'Escape') { if (this.optBack) this.closeOptions(); else this.h.onBack?.(); }
+    else if (e.code === 'KeyP' && this.screen === 'pause') { this.h.onResume?.(); e.preventDefault(); }   // v125: P pauses, so P resumes
   }
   // The pad is read every frame, menu or not, so a button already held when
   // a menu opens is not a press in it: Options pauses on its way down, and
@@ -664,7 +681,9 @@ export class UI {
     if (edge('up')) this._dir(0, -1);
     if (edge('right')) this._dir(1, 0);
     if (edge('left')) this._dir(-1, 0);
-    if (edge('a') || edge('start')) this._pick();
+    // v125: Start in a pause resumes, whatever has the focus — it pressed the focused button, QUIT if focus had moved there
+    if (edge('start') && this.screen === 'pause') this.h.onResume?.();
+    else if (edge('a') || edge('start')) this._pick();
     if (edge('b')) { if (this.optBack) this.closeOptions(); else this.h.onBack?.(); }
     this._padPrev = now;
   }
@@ -688,8 +707,8 @@ export class UI {
       }
       g.globalAlpha = 1;
     }
-    if (input.source !== 'touch') return;
-    const R = TUNING.input.stickRadius;
+    if (input.source !== 'touch' || !input.enabled) return;   // v125: no stick drawn over a pause card or a menu (a thumb left down)
+    const R = input.stickRadius ?? TUNING.input.stickRadius;   // v125: OPTIONS' STICK size (SMALL / LARGE drew the NORMAL ring)   // v125: OPTIONS' STICK size (SMALL / LARGE drew the NORMAL ring)
     for (const s of [input.left, input.right]) {
       if (!s.active) continue;
       const l = Math.hypot(s.dx, s.dy), k = l > R ? R / l : 1;
