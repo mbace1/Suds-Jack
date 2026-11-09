@@ -3,7 +3,7 @@
 **PASSED**: 93 pass, 0 warn, 0 fail (preview build: unread languages warn)
 
 - length 22.45 s · holds none
-- delivered -14.0 LUFS, -1.5 dBTP, LRA 2.5
+- delivered -14.4 LUFS, -3.2 dBTP, LRA 4.3
 
 | stage | check | result | why |
 |---|---|---|---|
@@ -74,7 +74,7 @@
 | text | reading time en:classified | pass | on screen 2.90 s, needs 2.80 s (36 chars at 20/s + 1 s) |
 | text | last word en:classified | pass | last word up 1.89 s (at least 0.8) |
 | text | key detail en:classified | pass | covers nothing the shot needs |
-| text | scrim en:classified | pass | picture behind: edge 14.91 → scrim 0.46 |
+| text | scrim en:classified | pass | picture behind: edge 14.97 → scrim 0.46 |
 | text | width en:sleep | pass | widest line 481 px (limit 800) |
 | text | safe zone en:sleep | pass | box {'x': 289, 'y': 162, 'w': 503, 'h': 210} |
 | text | reading time en:sleep | pass | on screen 3.10 s, needs 2.05 s (21 chars at 20/s + 1 s) |
@@ -90,13 +90,13 @@
 | text | sidecar lines en:buys | pass | Public grants help build it. The state / buys it. |
 | text | sidecar lines en:classified | pass | What exactly it watches: classified. |
 | text | sidecar lines en:sleep | pass | Sleep tight, Finland. |
-| sound | loudness | pass | -14.0 LUFS integrated (target -14.0) |
-| sound | true peak | pass | -3.4 dBTP (at most -1.0) |
+| sound | loudness | pass | -14.3 LUFS integrated (target -14.0) |
+| sound | true peak | pass | -3.1 dBTP (at most -1.0) |
 | sound | silence | pass | no unmarked gap over 1.5 s |
-| sound | continuity | pass | 3% of the film below −35 dBFS outside the quiet spans (at most 8%) |
+| sound | continuity | pass | 5% of the film below −35 dBFS outside the quiet spans (at most 8%) |
 | sound | coverage | pass | 14/14 cues have a sound within 40 ms |
-| delivery | delivered loudness | pass | -14.0 LUFS in the MP4 |
-| delivery | delivered true peak | pass | -1.5 dBTP in the MP4 |
+| delivery | delivered loudness | pass | -14.4 LUFS in the MP4 |
+| delivery | delivered true peak | pass | -3.2 dBTP in the MP4 |
 | delivery | length | pass | 22.45 s, the picture says 22.45 s |
-| delivery | with sign-off: loudness | pass | -14.2 LUFS (sleep-tight.en+signoff.mp4) |
-| delivery | with sign-off: true peak | pass | -3.7 dBTP |
+| delivery | with sign-off: loudness | pass | -14.5 LUFS (sleep-tight.en+signoff.mp4) |
+| delivery | with sign-off: true peak | pass | -2.4 dBTP |

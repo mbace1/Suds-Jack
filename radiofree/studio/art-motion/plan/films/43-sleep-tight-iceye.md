@@ -77,3 +77,22 @@ A review of the filed film found three faults, now fixed:
 Pipeline result: 93 checks pass. The filed MP4 measures −14.2 LUFS (−3.7 dBFS true peak) and runs 22.45 s plus the
 sign-off. The files are `films/09-11-Helsinki2-Sleep-Tight.mp4`, `-loop.mp4` and `.en.srt`, plus the preview
 `previews/09-11-RFH-Sleep-Tight-en.mp4`.
+
+## v3 (9 Nov)
+
+**Owner, 9 Nov:** "Government owned text clips in two scenes. Also, can we plan some slightly different sounds? Now
+it's all the same sounds on all the videos".
+
+- **The tag:** the word was drawn at a fixed size and ran off both edges of the tag. It is now fitted inside the tag,
+  right of the eyelet. In beat 4 the tag lies on the glass in front of the stand, clear of the panel. In beat 5 the
+  model stays out of shot, because the frame's edge cut its tag. The grant envelope moved fully into frame.
+- **The sound** is the first per-film kit, the cold-war kit (`pipeline/sound/coldwar.py`):
+  - a 96 BPM ostinato in D minor and a drone;
+  - a radio between stations at the desk and under the turn;
+  - a boom into orbit and sonar pings;
+  - each tag typed in on a teleprinter, and caption pops as a strike plus a stab;
+  - the music thins to bass and drone in the war room and is out for the music box.
+  The house bed, motif, pop and accent are gone; only the RFH sting and sign-off stay. The plan for every film is in
+  `SOUND.md`, under "Sound per film".
+- **Pipeline:** 93 checks pass. The filed MP4 measures −14.5 LUFS with −2.4 dBFS true peak. Files:
+  `films/09-11-Helsinki2-Sleep-Tight.mp4` and `-loop.mp4`, and the preview `previews/09-11-RFH-Sleep-Tight-en.mp4`.
