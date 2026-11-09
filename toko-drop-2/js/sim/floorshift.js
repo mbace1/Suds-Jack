@@ -13,8 +13,8 @@
 //
 //   w.shift  { spec, t, phase: 'warn' | 'on', box: the floor it is sized off }
 //   events   shiftWarn { kind } · shift { kind } · shiftEnd { kind }
-import { TUNING } from '../tuning.js?v=127';
-import { Arena, rectShape, circleShape, unionShape, intersectShape, partAt } from './shape.js?v=127';
+import { TUNING } from '../tuning.js?v=129';
+import { Arena, rectShape, circleShape, unionShape, intersectShape, partAt } from './shape.js?v=129';
 
 const T = TUNING;
 

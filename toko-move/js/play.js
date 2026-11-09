@@ -25,8 +25,8 @@
 // nothing happens while you read. Every animation is skippable by a tap and
 // none of them is a timer the game waits on to be fair: the state has already
 // moved when it starts.
-import { tr } from './lang.js?v=17';
-import * as J from './journey.js?v=9';
+import { tr } from './lang.js?v=18';
+import * as J from './journey.js?v=10';
 import * as Runs from './runs.js?v=5';
 import { HopBoard } from './hopboard.js?v=4';
 import * as PL from './playlog.js?v=1';
@@ -47,7 +47,7 @@ import { MOMENTS, faceIn, keepIn, pickupMoment, deliveryMoment, boardMoment, wal
 import { resolveMode, dailyShare, errandShare, errandStore, errandOf, W } from './modes.js?v=6';
 import { recordDaily, todayRecord, streak, dateKey } from './daily.js?v=2';
 
-export const BUILD_VERSION = '3.21';
+export const BUILD_VERSION = '3.22';
 const $ = id => document.getElementById(id);
 const params = new URLSearchParams(location.search);
 // a run of the ladder, today's daily, or a day of the week (modes.js, ACT1.md §12)
@@ -175,6 +175,7 @@ const CSS = `
 #v3mini{position:absolute;right:12px;top:calc(env(safe-area-inset-top) + 98px);width:min(34vw,164px);aspect-ratio:1;padding:0;border:0;border-radius:18px;overflow:hidden;background:#f4f1e8;box-shadow:0 0 0 3px #fff,0 4px 14px rgba(21,38,43,.25);cursor:pointer;z-index:3;transition:opacity .2s}
 #v3mini canvas{display:block;width:100%;height:100%}
 #v3mini[hidden]{display:none}
+#v3mini.left{right:auto;left:12px}   /* v3.22: the inset steps aside when Toko's face would be under it */
 #v3mini .tag{position:absolute;left:8px;bottom:6px;font:800 10px/1 ui-monospace,Menlo,monospace;letter-spacing:1.5px;color:#15262b;background:rgba(255,255,255,.85);padding:3px 5px;border-radius:5px}
 #v3panel{position:absolute;left:12px;right:12px;bottom:calc(env(safe-area-inset-bottom) + 12px);max-width:520px;margin:0 auto;z-index:4}
 @media (orientation:landscape){#v3panel{left:auto;right:16px;width:min(440px,50vw)}#v3mini{top:calc(env(safe-area-inset-top) + 64px)}}
@@ -596,8 +597,17 @@ function paintMini(c) {
   // at dispatch the drop on offer is the job's; it shows where it is before you take it
   const job = S.job || (S.offer ? { to: S.offer.to, cargo: S.offer.cargo, sealed: S.offer.sealed } : null), show = !!job && c && c.kind !== 'story';
   btn.hidden = !show; if (!show) { still = null; return; }
+  clearFace(btn);
   still = () => { mini.resize(); mini.draw({ at: S.at, dest: dropOf(job), destColour: colourOf(job.cargo), previews: hops, labels: false, lift: false, halted: haltedLayer }); };
   still();
+}
+// Toko's face is never under the corner map (owner, 2026-11-09: "Toko face get buried behind map"):
+// where the scene puts the face on screen, against where the inset sits; if they meet, the inset goes left
+function clearFace(btn) {
+  const sc = SCENES[scene], f = sc?.face?.[fmt]; btn.classList.remove('left'); if (!f) return;
+  const fx = frameEl.offsetLeft + f[0] * frameEl.offsetWidth, fy = frameEl.offsetTop + f[1] * frameEl.offsetHeight, r = btn.getBoundingClientRect(), s0 = stage.getBoundingClientRect(), pad = 34;
+  const x = fx + s0.left, y = fy + s0.top;
+  if (x > r.left - pad && x < r.right + pad && y > r.top - pad && y < r.bottom + pad) btn.classList.add('left');
 }
 const haltedLayer = layer => !!S?.halt && String(layer.mode || '').toUpperCase() !== 'SUBWAY' && J.halted(S, lineFamily(layer.name));
 
@@ -757,7 +767,7 @@ function rideInside(hop, t0 = 0, t1 = 1) {
     for (let k = line.i + step; k !== line.k + step; k += step) stops.push(line.nodes[k]);
     const dur = CALM ? 400 : (2600 + 2600 * Math.min(1, hop.price / 900)) * (t1 - t0), start = performance.now();
     const tile = frameEl.querySelector('.L.tile, .L.drift'), anim = tile?.getAnimations?.()[0];
-    const btn = $('v3mini'); btn.hidden = false; mini.resize();
+    const btn = $('v3mini'); btn.hidden = false; clearFace(btn); mini.resize();
     const dest = dropOf(S.job), col = S.job ? colourOf(S.job.cargo) : undefined;
     let over = false, shown = -1;
     const end = () => { if (over) return; over = true; skip = null; if (anim) anim.playbackRate = 1; btn.hidden = true; done(); };
@@ -977,7 +987,9 @@ async function start() {
   if (MODE.mode === 'week' && W.isOver(MODE.week)) { W.clearWeek(MODE.store); location.href = location.href; return; }
   const own = MODE.mode !== 'daily' && !MODE.errand;   // the daily is the same shift for everyone: nothing of this device's in it
   // a run's perks come from the same pool the missions grow (the daily's is the first three, the same for everyone)
-  const run = MODE.mode === 'mission' || !RUN.perks ? RUN : { ...RUN, perkPool: perkPool(own ? doneCount(loadMissions()) : 0) };
+  let run = MODE.mode === 'mission' || !RUN.perks ? RUN : { ...RUN, perkPool: perkPool(own ? doneCount(loadMissions()) : 0) };
+  // ?written deals the written deck only, none made from modules (v3.22): the deck as v3.21 dealt it, for a seed a test or a trailer names
+  if (params.has('written')) run = { ...run, modules: 0 };
   S = J.newRun(net, run, SEED, { memory: own ? Runs.memoryFor() : {}, standing: own ? loadStanding() : {} }); shownMin = null;
   play = PL.start({ version: BUILD_VERSION, mode: MODE.errand ? 'errand' : MODE.mode, run: MODE.mode === 'mission' ? MODE.mission.id : RUN.id, seed: SEED });
   if (MODE.mode === 'week') { W.begin(MODE.week); W.saveWeek(MODE.week, MODE.store); } shownEur = 0; shownDone = 0; arrived = null;

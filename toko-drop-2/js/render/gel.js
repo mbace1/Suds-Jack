@@ -15,8 +15,8 @@ import {
   uniform, positionLocal, normalLocal, normalView, positionViewDirection, cameraViewMatrix,
   materialEmissive, modelScale, vec3, vec4, float, sin, cos, exp, dot, normalize, clamp, max, abs, smoothstep, length, materialColor, materialOpacity,
   materialReference } from 'three/tsl';
-import { TUNING } from '../tuning.js?v=127';
-import { styleName, styledBody } from './style.js?v=127';
+import { TUNING } from '../tuning.js?v=129';
+import { styleName, styledBody } from './style.js?v=129';
 
 const T = TUNING;
 
@@ -25,6 +25,13 @@ export const GEL_TIME = uniform(0);
 
 // The light the translucency is computed against: 1.x's sun.
 const SUN_DIR = new THREE.Vector3(...T.light.sun.position).normalize();
+// v128 (the owner's golden-hour concept: "light source reflected in enemies"): ONE sun for every gel, the world's
+// (main.js applyLight sets it from TUNING.worlds.light[…].at), where each body had 1.x's sun baked in at birth — and
+// the GLINT, the sun's own highlight in the jelly in the sun's colour (`glint` × it; 0 where a world says none), a
+// tight hot spot inside a broader sheen, so it reads at the floor's distance where a clearcoat's pinpoint does not
+export const GEL_SUN = uniform(SUN_DIR.clone());
+export const GEL_GLINT = uniform(new THREE.Color(0, 0, 0));
+export const GEL_CORE = uniform(1);   // v128: × every gel's inner glow, the world's (TUNING.worlds.light[…].core)
 
 // 1.x's contrast floor: a body darker than `minLum` gets a rim in its own hue,
 // lifted toward white, so its silhouette reads against the floor.
@@ -76,7 +83,7 @@ export function gelMaterial(hex, fam, radius, { wobble, jelly = T.material.jelly
     contact: uniform(new THREE.Vector4(0, 0, 0, 0)),   // v82: object-space xz toward what presses on it, how deep (radii); v90: w, how deep on the far side
     sss: uniform(jelly ? J.sss : M.sss),
     sssColor: uniform(col.clone().lerp(new THREE.Color(0xffffff), 0.25)),
-    lightDir: uniform(SUN_DIR.clone()),
+    lightDir: GEL_SUN,                              // v128: the world's sun, shared
     thick: uniform(jelly ? J.thickness : M.thickness),
     rim: uniform(contrastRim(baseLum)),
     rimPow: uniform(M.contrast.rimPow),
@@ -84,6 +91,7 @@ export function gelMaterial(hex, fam, radius, { wobble, jelly = T.material.jelly
     core: uniform(jelly ? J.core : 0),
     corePow: uniform(J.corePow),
     coreColor: uniform(deep.clone()),
+    lean: uniform(new THREE.Vector2(0, 0)),         // v129: the top's lag (radii, local xz), render/actors.js wobble
   };
   // the graph: one a kind of gel, shared (see graphOf), reading this body's numbers off userData.u as it is drawn
   const G = graphOf(fam, jelly, style);
@@ -117,7 +125,7 @@ export function gelMaterial(hex, fam, radius, { wobble, jelly = T.material.jelly
 // new body is a material, not a build. The numbers and their types:
 const U_TYPES = { phase: 'float', wobble: 'float', radius: 'float', hit: 'float', hitDir: 'vec2', tear: 'float', stretch: 'float',
   stretchDir: 'vec2', contact: 'vec4', sss: 'float', sssColor: 'color', lightDir: 'vec3', thick: 'float', rim: 'float',
-  rimPow: 'float', rimColor: 'color', core: 'float', corePow: 'float', coreColor: 'color' };
+  rimPow: 'float', rimColor: 'color', core: 'float', corePow: 'float', coreColor: 'color', lean: 'vec2' };
 const GRAPHS = new Map();
 export function graphOf(fam, jelly, style) {
   const key = `${fam}|${jelly ? 1 : 0}|${style}`;
@@ -133,6 +141,10 @@ export function graphOf(fam, jelly, style) {
   p = p.mul(float(1.0).add(r.tear.mul(DISP.inflate)));
   const sdir = vec3(r.stretchDir.x, 0.0, r.stretchDir.y);
   p = p.add(sdir.mul(dot(p, sdir)).mul(r.stretch));
+  // v129 (the owner's jelly notes: a body that carries its motion): the top lags where the body is pushed and swings
+  // back past rest when it stops — a shear, so it keeps its volume — more the higher up (`lean`, set each frame from
+  // a damped spring on the body's acceleration, render/actors.js); 0 at rest
+  p = p.add(vec3(r.lean.x, 0.0, r.lean.y).mul(clamp(p.y.mul(LEAN_H), 0.0, 1.0).pow(1.4)));
   G = {
     positionNode: vec3(p.x, p.y.mul(float(1.0).sub(r.stretch.mul(0.4))), p.z),
     // ── the glow and the dome's refraction depth ──
@@ -154,6 +166,7 @@ export function graphOf(fam, jelly, style) {
 // thrash. DISP holds its amplitudes, so gelReach (the most it can move, which
 // sizes the SDF proxy) cannot fall out of step with it.
 export const DISP = { lump: 0.13, simmer: 0.028, simmerHit: 0.075, ripple: 0.11, thrash: 0.22, inflate: 0.2 };
+const LEAN_H = 1 / 1.7;   // v129: the lean's full height, in radii (a dome stands ~1.7, a cube 1.8)
 
 // v82's contact squash (TUNING.blob.contact): the body cut by a plane
 // `depth` radii in from its rim on the side of what presses on it, over a
@@ -227,11 +240,18 @@ export function gelGlow(u, emissive) {
   const wrap = clamp(dot(N, L).mul(0.5).add(0.5), 0.0, 1.0);
   const fres = float(1.0).sub(clamp(dot(N, V), 0.0, 1.0)).pow(3.0);
   const rimF = float(1.0).sub(clamp(dot(N, V), 0.0, 1.0)).pow(u.rimPow);
+  // v128: the sun's glint, white-hot at its middle and a softer sheen round it (TUNING.material.glint)
+  const G = T.material.glint, Hs = normalize(L.add(V)), nh = clamp(dot(N, Hs), 0.0, 1.0);
+  const glint = GEL_GLINT.mul(nh.pow(G.pow).mul(G.hot).add(nh.pow(G.sheenPow).mul(G.sheen)));
+  // and the light it lets THROUGH: the side away from the sun lit in the body's own hue, strongest at its thin edge
+  const through = clamp(dot(N, L.negate()), 0.0, 1.0).pow(G.throughPow).mul(fres.mul(0.6).add(0.4)).mul(G.through).mul(GEL_GLINT.r.add(GEL_GLINT.g).add(GEL_GLINT.b).div(3));
   return emissive
+    .add(glint)
+    .add(u.coreColor.mul(through))
     .add(u.sssColor.mul(sss.add(wrap.mul(0.18).mul(u.sss)).add(u.tear.mul(fres.mul(1.1).add(0.7)))))
     .add(u.rimColor.mul(rimF).mul(u.rim))
     // the jelly's inner glow: the full hue where the body faces you
-    .add(u.coreColor.mul(clamp(dot(N, V), 0.0, 1.0).pow(u.corePow)).mul(u.core));
+    .add(u.coreColor.mul(clamp(dot(N, V), 0.0, 1.0).pow(u.corePow)).mul(u.core).mul(GEL_CORE));
 }
 
 // dome refraction: thick at the belly, thin at the crown (y local)

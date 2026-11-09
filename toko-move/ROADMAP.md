@@ -97,8 +97,23 @@ in menus and the intro screen."*
     stretch of travel: the ride held, more aboard (cards, the people moving),
     choices made riding; and the courier's neck mended (Toko's head sits left
     of the neck in the interior layers).
-13. **v3.22 · The stop, polished** toward the approved illustrations, with what
-    the repo holds (no new art invented).
+13. **v3.23 · The stop, polished** toward the approved illustrations, with the
+    art asked for in PR #633 (no new art invented). v3.22 kept the face clear
+    of the corner map in code.
+
+**Owner, 2026-11-09:** *"game needs more variety, fun options, etc. There can be
+100x content so it never feels stale. These can also be randomized from modules,
+so the game actually becomes like a roguelike, and no strict missions are
+needed."*
+
+14. ~~**v3.22 · Cards made from modules.**~~ Shipped: somebody × what they want ×
+    the day, over 7,500 cards, about half of every deck.
+15. **Next · The run itself from modules.** A shift's own draw: the day's
+    modifier (a strike, a festival, a heatwave, the first snow), a perk pool
+    and a route to the drops, so a run is a roguelike draw rather than a
+    fixed ladder step; missions stay as written stories, not the spine.
+16. **More parts.** Every new WHO, WANT or TWIST multiplies the deck; the
+    stop's cutouts (PR #633 §5) let each card show who it is about.
 
 Each step is measured, gated and deployed, and the trailer is re-filmed with
 what changed.

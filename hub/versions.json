@@ -70,8 +70,8 @@
     "from": "cache token"
   },
   "tokomove": {
-    "v": "3.21",
-    "n": 3021,
+    "v": "3.22",
+    "n": 3022,
     "from": "VERSIONS.md"
   },
   "tinyhawk": {
@@ -95,8 +95,8 @@
     "from": "VERSIONS.md"
   },
   "piritori": {
-    "v": "4.101",
-    "n": 4101,
+    "v": "4.103",
+    "n": 4103,
     "from": "VERSIONS.md"
   },
   "piritori-godot": {
@@ -110,8 +110,8 @@
     "from": "hand"
   },
   "tokodrop2": {
-    "v": "127",
-    "n": 127000,
+    "v": "129",
+    "n": 129000,
     "from": "hand"
   },
   "tokotrip": {

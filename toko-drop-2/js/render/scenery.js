@@ -50,22 +50,23 @@
 // bars stand up, so they are lit by the scene's lights. Every number is
 // TUNING.scenery.
 import * as THREE from 'three/webgpu';
-import { Fn, float, vec2, vec3, fract, sin, dot, floor as tfloor, mix, smoothstep, abs, positionWorld, positionLocal, normalWorld, normalView, clamp, max, min, length, step, fwidth, uv, attribute } from 'three/tsl';
-import { GEL_TIME } from './gel.js?v=127';
-import { hash, noise, seeded, motes, phase } from './kit.js?v=127';
-import { SUN_AT } from './sun.js?v=127';
-import { boiler } from './sets/boiler.js?v=127';
-import { river } from './sets/river.js?v=127';
-import { ice } from './sets/ice.js?v=127';
-import { deep } from './sets/deep.js?v=127';
-import { core } from './sets/core.js?v=127';
+import { Fn, float, vec2, vec3, fract, sin, cos, dot, texture, floor as tfloor, mix, smoothstep, abs, positionWorld, positionLocal, normalWorld, normalView, clamp, max, min, length, step, fwidth, uv, attribute } from 'three/tsl';
+import { GEL_TIME } from './gel.js?v=129';
+import { hash, noise, seeded, motes, phase } from './kit.js?v=129';
+import { SUN_AT } from './sun.js?v=129';
+import { treeAtlas } from './trees.js?v=129';
+import { boiler } from './sets/boiler.js?v=129';
+import { river } from './sets/river.js?v=129';
+import { ice } from './sets/ice.js?v=129';
+import { deep } from './sets/deep.js?v=129';
+import { core } from './sets/core.js?v=129';
 
 // worlds 5-9 (v72): a set of their own each, built to its brief (render/sets/)
 const SETS = { boiler, river, ice, deep, core };
 
 // the noise, the cracks and the seeded numbers are the kit's (v72: render/kit.js),
 // and the floor still takes them from here
-export { noise, cells } from './kit.js?v=127';
+export { noise, cells } from './kit.js?v=129';
 
 // the storm drain's grate (v65, the owner's world-2 sheet), in its own units
 // (q, its frame's radius 1): x the grate, y a slot, z the frame. Rows of
@@ -86,6 +87,30 @@ export const grate = Fn(([q]) => {
 // stands the shafts and the pipe mouths on these, and the floor lays the
 // pools of light and the rivulets on the same, so the two cannot disagree.
 // `a` runs along the tunnel, `c` across it
+// v129 (the owner on v128: "The tree shadows look weird"): the TREES' shade past a slab of `hx` × `hz` (floor.js
+// daylight, and the lawn round it), 0 in the open sun and up to `k` under a crown. Each tree is a silhouette drawn
+// once (trees.js: trunk, forking limbs, leaves in clumps), standing `out` m past the edge at `at` [fx, fz] (fractions
+// of the half sizes), `h` m tall and its silhouette `w` m across (tile `tile` of the atlas, `flip`ped or not). A point
+// on the ground is in its shadow where the sun's ray from it, climbing at the sun's elevation, meets the silhouette:
+// its height on the tree is how far the point lies from the foot along the shadow × tan θ (cot θ held to `cotMax`).
+// The higher the leaf, the softer its shadow (`penumbra` mip levels at the top), and the crown sways (`sway`)
+export function treeShade(wp, C, hx, hz, cotMax) {
+  const tex = treeAtlas(C);
+  const sunH = max(length(SUN_AT.xz), 1e-3), cot = min(sunH.div(max(SUN_AT.y, 1e-3)), cotMax);
+  const away = vec2(SUN_AT.x.negate(), SUN_AT.z.negate()).div(sunH), side = vec2(away.y.negate(), away.x);
+  let shade = float(0);
+  C.at.forEach(([fx, fz, out, h, w, tile, flip], i) => {
+    const bx = fx * hx + (Math.abs(fx) >= 1 ? Math.sign(fx) * out : 0), bz = fz * hz + (Math.abs(fz) >= 1 ? Math.sign(fz) * out : 0);
+    const q = wp.sub(vec2(bx, bz)), v = dot(q, away).div(cot.mul(h));
+    let u = dot(q, side).div(w).add(0.5).add(sin(GEL_TIME.mul(0.9).add(i * 1.7)).mul(C.sway).mul(v));
+    if (flip) u = float(1).sub(u);
+    const inside = step(0, v).mul(step(v, 1)).mul(step(0, u)).mul(step(u, 1));
+    const t = texture(tex, vec2(clamp(u, 0.002, 0.998).add(tile).div(C.n), clamp(v, 0, 1)), clamp(v, 0, 1).mul(C.penumbra)).r;
+    shade = max(shade, t.mul(inside));
+  });
+  return shade.mul(C.k);
+}
+
 export function sewerSpots(T, hx, hz) {
   const S = T.scenery.sewer, alongX = hx >= hz, L = alongX ? hx : hz, Wd = alongX ? hz : hx;
   const n = Math.max(1, Math.floor((2 * L) / S.sun.every));
@@ -219,6 +244,14 @@ export class Scenery {
       // it goes into the summer haze the further it is from the slab (v66; it fell into the night)
       const dx = max(abs(p.x).sub(hx), 0), dz = max(abs(p.y).sub(hz), 0);
       const far = clamp(length(vec2(dx, dz)).div(S.fade), 0, 1);
+      // v128: under the driveway's DAYLIGHT (TUNING.worlds.lit.concrete) the grass is lit as the slab is — the sun
+      // warm where it reaches, the sky's cool where the curb or the trees take it — kept at the brightness it had
+      const DL = this.T.worlds.lit?.concrete?.daylight;
+      if (DL) {
+        const vis = float(1).sub(shade).mul(float(1).sub(treeShade(p, DL.trees, hx, hz, this.T.worlds.floor.concrete.sunShadow.cotMax)));
+        const E = vec3(...DL.sky).add(vec3(...DL.sun).mul(vis)).div((DL.sky[1] + DL.sun[1]) * (DL.lawn ?? 1));
+        return mix(col.mul(E), vec3(...S.haze), far.mul(S.fadeTo));
+      }
       return mix(col.mul(float(1).sub(shade.mul(S.curbShadow))), vec3(...S.haze), far.mul(S.fadeTo));
     })();
     const lawn = this._add(new THREE.Mesh(new THREE.PlaneGeometry(2 * (hx + out), 2 * (hz + out)).rotateX(-Math.PI / 2), lawnMat));
