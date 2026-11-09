@@ -8,7 +8,7 @@
 // the nadir) that three's renderer prefilters for reflections on its own.
 // Every number is TUNING.env; nothing here is loaded from a file.
 import * as THREE from 'three/webgpu';
-import { TUNING } from '../tuning.js?v=127';
+import { TUNING } from '../tuning.js?v=128';
 
 const hex = (c) => `#${new THREE.Color(c).getHexString()}`;
 
@@ -53,5 +53,36 @@ export function studioEnvironment() {
   const tex = new THREE.CanvasTexture(cv);
   tex.mapping = THREE.EquirectangularReflectionMapping;
   tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
+}
+
+// v128 (the owner's golden-hour concept for the driveway: "light source reflected in enemies"): an OUTDOOR sky for
+// the jelly to reflect. The studio above is a dark room, and out in the sun the gels reflected it: dull, with no sun
+// in them. This is a half-float equirect in three's own mapping (u the bearing atan2(z, x), v the height asin(y)):
+// the sky from `horizon` up to `zenith`, the ground below, and the sun where the world's light stands, far brighter
+// than white (`radiance`) — a clearcoat gives back a few per cent of what it faces, so a sun painted at 1.0 is no
+// glint at all — with a `halo` round it for the softer highlight round the glint. Built once a world, for the worlds
+// whose light carries a `sky` (TUNING.worlds.light), and handed to scene.environment in place of the studio
+export function skyEnvironment(S, at) {
+  const W = S.size ?? 512, H = W / 2, data = new Uint16Array(W * H * 4), toH = THREE.DataUtils.toHalfFloat;
+  const s = new THREE.Vector3(...at).normalize(), Z = S.zenith, R = S.horizon, G = S.ground, C = S.sun.color;
+  for (let j = 0; j < H; j++) {
+    const lat = ((j + 0.5) / H - 0.5) * Math.PI, y = Math.sin(lat), c = Math.cos(lat);
+    const k = y >= 0 ? Math.pow(y, S.curve ?? 0.45) : Math.min(1, -y * (S.groundFade ?? 5));
+    const A = y >= 0 ? Z : G;   // up: horizon → zenith; down: the horizon fading into the ground
+    for (let i = 0; i < W; i++) {
+      const phi = ((i + 0.5) / W - 0.5) * Math.PI * 2, x = c * Math.cos(phi), z = c * Math.sin(phi);
+      const ang = Math.acos(Math.max(-1, Math.min(1, x * s.x + y * s.y + z * s.z)));
+      const sun = (ang < S.sun.size ? S.sun.radiance : 0) + S.sun.halo * Math.exp(-ang / S.sun.haloWidth);
+      const o = (j * W + i) * 4;
+      for (let q = 0; q < 3; q++) data[o + q] = toH(R[q] + (A[q] - R[q]) * k + C[q] * sun);
+      data[o + 3] = toH(1);
+    }
+  }
+  const tex = new THREE.DataTexture(data, W, H, THREE.RGBAFormat, THREE.HalfFloatType);
+  tex.mapping = THREE.EquirectangularReflectionMapping;
+  tex.colorSpace = THREE.LinearSRGBColorSpace;
+  tex.magFilter = THREE.LinearFilter; tex.minFilter = THREE.LinearFilter;
+  tex.needsUpdate = true;
   return tex;
 }

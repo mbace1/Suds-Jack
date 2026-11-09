@@ -15,29 +15,40 @@
 // that springs in and fades (splats.js). Views are pooled per species, so a
 // gel's material is built once and reused, never compiled mid-fight.
 import * as THREE from 'three/webgpu';
-import { TUNING } from '../tuning.js?v=127';
+import { TUNING } from '../tuning.js?v=128';
 import * as TSL from 'three/tsl';
-import { gelMaterial, domeGeometry, cubeGeometry, heroGeometry, GEL_TIME } from './gel.js?v=127';
-import { LOOKS } from './looks/index.js?v=127';
-import { styleName, setStyle as setStyleMode, styledBody } from './style.js?v=127';
-import { JellyBody } from './jelly.js?v=127';
-import { Juice } from './juice.js?v=127';
-import { ArenaLight } from './light.js?v=127';
-import { toSdf } from './sdf.js?v=127';
-import { PickupView } from './pickups.js?v=127';
-import { ChallengeView } from './challenge.js?v=127';
-import { PostView } from './posts.js?v=127';
-import { SlamView } from './slam.js?v=127';
-import { HintView } from './hints.js?v=127';
-import { Goo } from './goo.js?v=127';
-import { mult as heatMult } from '../sim/heat.js?v=127';
-import { strands as liveStrands } from '../sim/formation.js?v=127';
+import { gelMaterial, domeGeometry, cubeGeometry, heroGeometry, GEL_TIME, GEL_SUN, GEL_GLINT, GEL_CORE } from './gel.js?v=128';
+import { LOOKS } from './looks/index.js?v=128';
+import { styleName, setStyle as setStyleMode, styledBody } from './style.js?v=128';
+import { JellyBody } from './jelly.js?v=128';
+import { Juice } from './juice.js?v=128';
+import { ArenaLight } from './light.js?v=128';
+import { toSdf } from './sdf.js?v=128';
+import { PickupView } from './pickups.js?v=128';
+import { ChallengeView } from './challenge.js?v=128';
+import { PostView } from './posts.js?v=128';
+import { SlamView } from './slam.js?v=128';
+import { HintView } from './hints.js?v=128';
+import { Goo } from './goo.js?v=128';
+import { mult as heatMult } from '../sim/heat.js?v=128';
+import { strands as liveStrands } from '../sim/formation.js?v=128';
 
 const T = TUNING;
 const B = T.blob, D = T.death;
 // v114: how much of itself a big body has lost — it draws a little smaller as its life goes (TUNING.sizes.wear)
 const worn = (g) => (g.size >= 3 && g.maxHp > 0 ? 1 - T.sizes.wear.shrink * (1 - Math.max(0, g.hp) / g.maxHp) : 1);
 const rand = (a, b) => a + Math.random() * (b - a);
+// v128: a chunk of a cube: a rounded cube `h` half a side, corners `round` round, centred (unit-ish, as the sphere was)
+function roundedCube(h, round, seg) {
+  const g = new THREE.BoxGeometry(2 * h, 2 * h, 2 * h, seg, seg, seg), p = g.attributes.position, v = new THREE.Vector3(), c = new THREE.Vector3(), inner = h - round;
+  for (let i = 0; i < p.count; i++) {
+    v.fromBufferAttribute(p, i); c.copy(v).clampScalar(-inner, inner);
+    const n = v.sub(c); if (n.lengthSq() > 1e-10) n.normalize().multiplyScalar(round);
+    p.setXYZ(i, c.x + n.x, c.y + n.y, c.z + n.z);
+  }
+  g.computeVertexNormals();
+  return g;
+}
 const BULLET_Y = 0.45;
 
 export class Actors {
@@ -95,10 +106,17 @@ export class Actors {
       const ph = TSL.fract(TSL.instanceIndex.toFloat().mul(0.618)).mul(6.2832);
       const core = TSL.pow(TSL.clamp(TSL.float(1).sub(d.div(C.core)), 0, 1), 2);
       const arcs = TSL.sin(ang.mul(C.lobes).add(GEL_TIME.mul(C.shimmer)).add(ph)).mul(0.5).add(0.5);
-      const ring = TSL.float(1).sub(TSL.smoothstep(0, C.ring[1], TSL.abs(d.sub(C.ring[0])))).mul(C.ring[2]).mul(arcs.mul(0.7).add(0.3));
+      // v128: `causticRing` × the ring (TUNING.worlds.light[…].caustic.ring; 1 where unsaid): in a low sun the light
+      // through a body falls as a patch in its shadow, not a ring round its foot
+      this.causticRing = TSL.uniform(1);
+      const ring = TSL.float(1).sub(TSL.smoothstep(0, C.ring[1], TSL.abs(d.sub(C.ring[0])))).mul(C.ring[2]).mul(arcs.mul(0.7).add(0.3)).mul(this.causticRing);
       const glow = TSL.pow(TSL.clamp(TSL.float(1).sub(d), 0, 1), 3).mul(C.glow);
       const mat = new THREE.MeshBasicNodeMaterial({ transparent: true, depthWrite: false, blending: THREE.AdditiveBlending });
-      mat.opacityNode = core.add(ring).add(glow).mul(C.k);
+      // v128: or a soft PATCH (`causticSoft` of the way, TUNING.worlds.light[…].caustic.soft): in a low sun the light
+      // through a body lies in its shadow as one soft pool in its colour, brightest nearest the body
+      this.causticSoft = TSL.uniform(0);
+      const patch = TSL.pow(TSL.clamp(TSL.float(1).sub(d), 0, 1), 1.8).mul(TSL.float(1).sub(q.x.mul(0.35))).mul(C.patch ?? 0.9);
+      mat.opacityNode = TSL.mix(core.add(ring).add(glow), patch, this.causticSoft).mul(C.k);
       this.caustics = new THREE.InstancedMesh(new THREE.PlaneGeometry(2, 2).rotateX(-Math.PI / 2), mat, C.cap);
       this.caustics.instanceMatrix.setUsage(THREE.DynamicDrawUsage); this.caustics.setColorAt(0, new THREE.Color());
       this.caustics.count = 0; this.caustics.frustumCulled = false; this.caustics.renderOrder = 1;
@@ -129,8 +147,10 @@ export class Actors {
     this.chunkMax = 300;
     this.chunks = [];
     const chunkMat = () => this._chunkMat();
-    this.chunkMesh = { blob: new THREE.InstancedMesh(new THREE.SphereGeometry(1, 9, 7), chunkMat(), this.chunkMax),
-                       cube: new THREE.InstancedMesh(new THREE.SphereGeometry(1, 5, 3), chunkMat(), this.chunkMax) };
+    // v128: a chunk is a piece of the JELLY it came from — smooth, and a cube's a small rounded cube (it was a
+    // 5 × 3 sphere, which read as a cut gem)
+    this.chunkMesh = { blob: new THREE.InstancedMesh(new THREE.SphereGeometry(1, 14, 10), chunkMat(), this.chunkMax),
+                       cube: new THREE.InstancedMesh(roundedCube(0.82, 0.3, 3), chunkMat(), this.chunkMax) };
     for (const m of Object.values(this.chunkMesh)) {
       m.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
       m.setColorAt(0, new THREE.Color());
@@ -179,7 +199,18 @@ export class Actors {
   _chunkMat() {
     const m = new THREE.MeshPhysicalNodeMaterial({ roughness: 0.16, clearcoat: 1, clearcoatRoughness: 0.06, sheen: 0.45 });
     const look = styleName();
-    if (look !== 'physical') m.fragmentNode = TSL.vec4(styledBody(look, TSL.instanceColor.mul(TSL.materialColor), TSL.positionLocal.xz, TSL.vec3(...T.light.sun.position)), 1);
+    if (look !== 'physical') m.fragmentNode = TSL.vec4(styledBody(look, TSL.instanceColor.mul(TSL.materialColor), TSL.positionLocal.xz, GEL_SUN), 1);
+    else {
+      // v128: lit through like the body it came from — its hue glowing where it faces you (× the world's core) and the
+      // sun's glint in it (gel.js), so a chunk reads as jelly and not as painted plastic
+      const N = TSL.normalize(TSL.normalView), V = TSL.positionViewDirection, L = TSL.normalize(TSL.cameraViewMatrix.mul(TSL.vec4(GEL_SUN, 0)).xyz);
+      const C = T.goo.chunk, sunK = GEL_GLINT.r.add(GEL_GLINT.g).add(GEL_GLINT.b).div(3);
+      const core = TSL.instanceColor.mul(TSL.clamp(TSL.dot(N, V), 0, 1).pow(1.6)).mul(C.core).mul(GEL_CORE);
+      const glint = GEL_GLINT.mul(TSL.clamp(TSL.dot(N, TSL.normalize(L.add(V))), 0, 1).pow(C.pow).mul(C.glint));
+      const through = TSL.instanceColor.mul(TSL.clamp(TSL.dot(N, L.negate()), 0, 1).pow(1.4)).mul(C.through).mul(sunK);
+      m.emissiveNode = core.add(glint).add(through);
+      m.roughness = C.roughness; m.clearcoatRoughness = C.coatRoughness;
+    }
     return m;
   }
 
@@ -562,6 +593,15 @@ export class Actors {
       goo.spray(e.x, y, e.z, n - nx, e.color, { speed: K.speed, up: K.up });
       goo.spray(e.x + dx * R * 0.5, y, e.z + dz * R * 0.5, nx, e.color, { dx, dz, cone: K.exitCone, speed: K.speed.map((s) => s * K.exitBoost), up: K.up });
       goo.puddle(e.x, e.z, R * K.puddleR, K.puddle * R * R, e.color);
+      // v128: the splash's crown, evenly round the rim, each drop thrown straight out from where it leaves
+      const Cr = K.crown;
+      if (Cr) {
+        const m = Math.round(Cr.n + Cr.perR * R), a0 = Math.random() * Math.PI * 2;
+        for (let i = 0; i < m; i++) {
+          const a = a0 + (i / m) * Math.PI * 2 + (Math.random() - 0.5) * (Math.PI / m), cx = Math.cos(a), cz = Math.sin(a);
+          goo.spray(e.x + cx * R * Cr.at, Cr.y, e.z + cz * R * Cr.at, 1, e.color, { dx: cx, dz: cz, cone: 0.05, speed: Cr.speed, up: Cr.up, size: Cr.size });
+        }
+      }
     } else if (e.type === 'hit') {
       // back out of the entry toward the gun, and a few out of the far side
       const H = E.hit, g = w?.gels.find((x) => x.id === e.id);
@@ -721,7 +761,15 @@ export class Actors {
         const spread = Math.max(0.6, Math.min(1.6, v.squash.scale.x));
         const r = g.r * C.r * grow * spread * (v.shadow ?? 1);
         if (r < 0.1) continue;
-        M.makeScale(r, 1, r).setPosition(g.px + (g.x - g.px) * alpha + O.x * r, C.y, g.pz + (g.z - g.pz) * alpha + O.z * r);
+        const LC = this.causticShape;
+        if (LC) {
+          // v128: thrown INTO the body's shadow — `offset` × cot θ × r on from its foot, `stretch` × the shadow's own
+          // stretch long along it, `r` × as wide (the world's sun, light.js sunDir)
+          const d = this.light.sunDir, off = g.r * d.cot * LC.offset, long = 1 + (d.stretch - 1) * LC.stretch, wd = g.r * LC.r * grow * spread;
+          this._cq ||= new THREE.Quaternion(); this._cs ||= new THREE.Vector3(); this._cp ||= new THREE.Vector3();
+          this._cq.setFromAxisAngle(this._cy ||= new THREE.Vector3(0, 1, 0), Math.atan2(-d.dz, d.dx));
+          M.compose(this._cp.set(g.px + (g.x - g.px) * alpha + d.dx * off, C.y, g.pz + (g.z - g.pz) * alpha + d.dz * off), this._cq, this._cs.set(wd * long, 1, wd));
+        } else M.makeScale(r, 1, r).setPosition(g.px + (g.x - g.px) * alpha + O.x * r, C.y, g.pz + (g.z - g.pz) * alpha + O.z * r);
         cm.setMatrixAt(c, M);
         col.setHex(T.species[g.kind]?.color ?? 0xffffff).multiplyScalar((g.isBoss ? C.boss : 1) * (g.heavy ? C.heavy : 1) / Math.sqrt(spread));
         cm.setColorAt(c++, col);

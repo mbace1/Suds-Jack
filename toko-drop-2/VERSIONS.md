@@ -19,6 +19,17 @@
     Never `--no-verify`.
 -->
 
+## v128 — 2026-11-09
+**The driveway at golden hour: the sun glints in every gel, the shadows run long and the trees' shade falls across the slab — and the goo splashes as jelly**
+- THE ASK (owner, 2026-11-09, with a concept picture of the driveway at golden hour: "Do you have any new visual additions or polish? Goo particles, light source reflected in enemies. Just thinking of going for this concept parity"). Measured against the picture with the concept's own composition staged in the game (five gels, the hero firing, a kill), render → look → redo, eight rounds.
+- THE SUN IN THE JELLY: one sun for every gel, each world's (it was 1.x's, baked into every body), and its GLINT — a white-hot spot in the sun's colour inside a softer sheen — in every gel, the drops and the chunks, wherever a world gives the sun a glint (the driveway). The jelly reflects the world's own SKY where a world has one: the driveway's is painted in code (render/env.js skyEnvironment: a cool zenith down to a warm horizon, the sun far brighter than white), where it reflected the dark studio of world 1. And the light comes THROUGH: the side of a body away from the sun lit in its own hue, its inner glow ×2.6 in the sun.
+- GOLDEN HOUR: the driveway's sun stands low behind the far-left corner (23°), warm, with a cool sky. The slab is LIT, not tinted (floor.js daylight): warm where the sun reaches it, the sky's cool where something takes the sun away — the curb, the bodies (their shadows now long and crisp, a ball's shadow cast where a low sun would put it), and the TREES past the slab, whose dappled shade, leaves and gaps stretched by the low sun, falls across the far-left of the slab and the lawn (scenery.js canopyShade). The light through each gel falls as a soft pool of its colour inside its shadow, where it was a ring round its foot.
+- THE GOO: a kill throws a CROWN — drops evenly round the body's rim, out and up, a ring for a moment before they fall round the puddle (every world). A drop is lit by the world's sun, with its glint and its light through it. A chunk is a piece of jelly, smooth, a cube's a small rounded cube (it was a cut gem), glossier, its hue glowing where it faces you and lit through on its far side.
+- Only the driveway changes its light; the other worlds keep theirs (their gels' translucency now follows their own sun, as their floors' shadows have since v93). Unchanged: the sim, every rule, the lines.
+- Cache tokens `?v=127` → `?v=128`; HUD label → `2.0 · v128`
+
+---
+
 ## v127 — 2026-11-09
 **The title after a run is the title again: nothing of the run is drawn under it — and the progress trailer re-cut without its glitches**
 - THE ASK (owner, 2026-11-09: "The trailer had some glitches still"). Every frame of v122's trailer read by a script (the change from frame to frame, shot by shot) and the flagged frames looked at. Three glitches, two of them the trailer's and one the game's.

@@ -50,9 +50,10 @@ import {
   Fn, uniform, attribute, texture, uv, vec2, vec3, vec4, float, normalize, dot, length, max, min, clamp, pow, sqrt,
   mix, cameraViewMatrix, varying, select, positionGeometry, step, smoothstep, mrt, fwidth, dFdx, dFdy, exp, abs, normalLocal, cameraPosition, positionWorld,
 } from 'three/tsl';
-import { TUNING } from '../tuning.js?v=127';
-import { GooSim, BODY, STAMP, wallLen, WALL_N, WALL_T } from './goo-sim.js?v=127';
-import { pickStyle, grainAt } from './style.js?v=127';
+import { TUNING } from '../tuning.js?v=128';
+import { GooSim, BODY, STAMP, wallLen, WALL_N, WALL_T } from './goo-sim.js?v=128';
+import { GEL_SUN, GEL_GLINT } from './gel.js?v=128';
+import { pickStyle, grainAt } from './style.js?v=128';
 
 const T = TUNING, G = T.goo;
 const MAX_BODIES = 256;
@@ -352,12 +353,17 @@ const _c = new THREE.Color();
 // over the dark floor keeps its colour
 function shadeDrop(col, N) {
   const D = G.drop;
-  const L = normalize(cameraViewMatrix.mul(vec4(...T.light.sun.position, 0)).xyz);
+  // v128: lit by the world's sun (gel.js GEL_SUN, where it was 1.x's for every world), with the sun's own GLINT in
+  // its colour where the world has one, and its light coming THROUGH the drop on the side away from it (`through`)
+  const L = normalize(cameraViewMatrix.mul(vec4(GEL_SUN, 0)).xyz);
   const Vd = vec3(0, 0, 1), H = normalize(L.add(Vd));
   const wrap = clamp(dot(N, L).mul(0.5).add(0.5), 0, 1);
   const fres = pow(float(1).sub(clamp(dot(N, Vd), 0, 1)), float(2.5));
-  const spec = pow(clamp(dot(N, H), 0, 1), float(D.gloss));
-  const physical = col.mul(wrap.mul(D.diffuse).add(D.ambient)).add(mix(col, vec3(1), 0.6).mul(fres).mul(D.rim)).add(vec3(spec.mul(D.glint))).add(col.mul(D.glow));
+  const nh = clamp(dot(N, H), 0, 1), spec = pow(nh, float(D.gloss));
+  const sunK = GEL_GLINT.r.add(GEL_GLINT.g).add(GEL_GLINT.b).div(3);
+  const glint = GEL_GLINT.mul(pow(nh, float(D.sunPow ?? 160)).mul(D.sunGlint ?? 0));
+  const through = col.mul(pow(clamp(dot(N, L.negate()), 0, 1), float(1.2)).mul(sunK).mul(D.through ?? 0));
+  const physical = col.mul(wrap.mul(D.diffuse).add(D.ambient)).add(mix(col, vec3(1), 0.6).mul(fres).mul(D.rim)).add(vec3(spec.mul(D.glint))).add(col.mul(D.glow)).add(glint).add(through);
   // v92, the STYLE switch (render/style.js): CEL two flat tones and an ink rim, WATERCOLOR pigment dark at the edge
   const CD = T.style.cel.drop, WD = T.style.watercolor.drop;
   const celTone = mix(float(CD.shadow), float(1), step(float(CD.lit), wrap)), celInk = step(float(CD.inkAt), float(1).sub(clamp(dot(N, Vd), 0, 1)));

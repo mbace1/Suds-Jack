@@ -19,8 +19,8 @@
 // Reads the world and its events, never writes them. Every number is
 // TUNING.light.arena.
 import * as THREE from 'three/webgpu';
-import { uv, vec2, vec3, float, length, clamp, pow } from 'three/tsl';
-import { TUNING } from '../tuning.js?v=127';
+import { uv, vec2, vec3, float, length, clamp, pow, uniform, mix, smoothstep } from 'three/tsl';
+import { TUNING } from '../tuning.js?v=128';
 
 const T = TUNING, A = T.light.arena, _Y = new THREE.Vector3(0, 1, 0);
 const smooth = (t) => { t = Math.min(1, Math.max(0, t)); return t * t * (3 - 2 * t); };
@@ -47,7 +47,11 @@ export class ArenaLight {
       blendEquationAlpha: THREE.AddEquation, blendSrcAlpha: THREE.ZeroFactor, blendDstAlpha: THREE.OneFactor });
     // shadow: rgb left alone, the darkest shadow kept in alpha
     const shadeMat = new THREE.MeshBasicNodeMaterial({ transparent: true, depthTest: false, depthWrite: false });
-    shadeMat.colorNode = vec3(0); shadeMat.opacityNode = falloff.mul(A.shadow.strength);
+    // v128: a world in a low sun throws HARDER, darker shadows (TUNING.worlds.light[…].shadow: `k` × the strength, and
+    // `hard` of the way from the soft falloff to an edge `edge` wide); 1 and 0 where a world says nothing
+    this.shadeK = uniform(1); this.shadeHard = uniform(0);
+    const disc = length(uv().sub(vec2(0.5, 0.5))).mul(2), edgy = float(1).sub(smoothstep(float(1).sub(A.shadow.edge ?? 0.35), 1, disc));
+    shadeMat.colorNode = vec3(0); shadeMat.opacityNode = mix(falloff, edgy, this.shadeHard).mul(A.shadow.strength).mul(this.shadeK);
     Object.assign(shadeMat, { blending: THREE.CustomBlending, blendEquation: THREE.AddEquation, blendSrc: THREE.ZeroFactor, blendDst: THREE.OneFactor,
       blendEquationAlpha: THREE.MaxEquation, blendSrcAlpha: THREE.OneFactor, blendDstAlpha: THREE.OneFactor });
     this.pools = quads(A.cap, lightMat);
@@ -68,7 +72,14 @@ export class ArenaLight {
   // v123: and how strong the bullets' (`shots`), and whether every body is a light of its own (`bodies`)
   heroK = 1; shotK = 1; bodyLight = null;
   extra = [];   // v123: pools of light from outside the floor, { x, z, r, hex, k } (scenery.lightsAt)
-  setWorldLight(L = {}) { this.heroK = L.hero ?? 1; this.shotK = L.shots ?? 1; this.bodyLight = L.bodies ?? null; }
+  setWorldLight(L = {}) {
+    this.heroK = L.hero ?? 1; this.shotK = L.shots ?? 1; this.bodyLight = L.bodies ?? null;
+    this.shadeK.value = L.shadow?.k ?? 1; this.shadeHard.value = L.shadow?.hard ?? 0;   // v128
+    // v128: and a hard shadow drawn where a ball's would fall (`r` × the radius across, its middle `offset` × cot θ × r
+    // on), not the soft one's wider disc, whose sun side would show as a dark rim round the body's foot
+    this.shadeR = L.shadow?.r != null ? L.shadow.r / A.shadow.r : 1; this.shadeOff = L.shadow?.offset ?? A.shadow.sun.offset;
+  }
+  shadeR = 1; shadeOff = A.shadow.sun.offset;
   setSun(x, y, z) {
     const l = Math.hypot(x, z) || 1, lean = l / (Math.abs(y) || 1);
     this.sunOff.x = (-x / l) * Math.min(1, lean) * A.caustic.offset; this.sunOff.z = (-z / l) * Math.min(1, lean) * A.caustic.offset;
@@ -84,7 +95,8 @@ export class ArenaLight {
   // so it still starts under the body (a contact shadow, not a cast one, keeps a body readable at its foot).
   // Before v93 every world's shadow was a disc straight under the body, whatever its light said
   _putShade(mesh, n, x, z, r) {
-    const d = this.sunDir, off = r * d.cot * A.shadow.sun.offset;
+    r *= this.shadeR;
+    const d = this.sunDir, off = r * d.cot * this.shadeOff;
     this._q.setFromAxisAngle(_Y, Math.atan2(-d.dz, d.dx));
     this._s.set(r * 2 * d.stretch, 1, r * 2); this._p.set(x + d.dx * off, 0, z + d.dz * off);
     mesh.setMatrixAt(n, this._m.compose(this._p, this._q, this._s));

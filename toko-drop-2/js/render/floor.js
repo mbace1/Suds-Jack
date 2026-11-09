@@ -24,11 +24,11 @@
 // `swirlAt`, out to `swirlR`, and opens a hole of `hole` m in the middle).
 import * as THREE from 'three/webgpu';
 import { Fn, If, uv, uniform, float, abs, fract, min, max, sin, cos, length, smoothstep, step, mix, fwidth, texture, clamp, vec2, vec3, pow, floor as tfloor, round, select, mod, dFdx, dFdy, exp, normalize, dot, cameraPosition, positionWorld, vec4 } from 'three/tsl';
-import { pickStyle, grainAt } from './style.js?v=127';
-import { SUN_AT } from './sun.js?v=127';
-import { GEL_TIME } from './gel.js?v=127';
-import { noise, grate, cells, sewerSpots } from './scenery.js?v=127';
-import { lilyPads, DRIFT, hash } from './kit.js?v=127';
+import { pickStyle, grainAt } from './style.js?v=128';
+import { SUN_AT } from './sun.js?v=128';
+import { GEL_TIME } from './gel.js?v=128';
+import { noise, grate, cells, sewerSpots, canopyShade } from './scenery.js?v=128';
+import { lilyPads, DRIFT, hash } from './kit.js?v=128';
 
 const _white = new THREE.Color(0xffffff);
 
@@ -248,12 +248,15 @@ export function buildFloor(T, hx, hz, light, { style = 'grid', bounds: hasBounds
     const band = (dist, len) => float(1).sub(smoothstep(len.sub(SS.soft), len.add(SS.soft), dist)).mul(step(0.05, len));
     const farLen = cot.mul(ch).mul(max(awayZ, 0)), leftLen = cot.mul(ch).mul(max(awayX, 0)), rightLen = cot.mul(ch).mul(max(awayX.negate(), 0));
     const sunShade = max(max(band(w.y.add(hz), farLen), band(w.x.add(hx), leftLen)), band(float(hx).sub(w.x), rightLen));
-    col = col.mul(float(1).sub(sunShade.mul(SS.depth)));
+    // v128: under a DAYLIGHT rig (TUNING.worlds.lit.concrete) the curb's shadow takes the sun away (worldLight), so it
+    // goes the sky's cool colour, rather than darkening the warm slab
+    if (!WL?.daylight) col = col.mul(float(1).sub(sunShade.mul(SS.depth)));
     // the sun, a little warmer toward the far end (it was the garage's flood at night)
     const flood = smoothstep(float(hz * 2.2), float(-hz * 0.2), w.y.add(hz)).mul(C.flood);
     col = mix(col.mul(float(C.ambient).add(flood)).add(vec3(...C.floodTint).mul(flood.mul(0.06))), vec3(...G.slot), g.y);
     const pool = float(1).sub(smoothstep(0, F.poolRadius * 0.6, length(p.sub(player))));
-    return { col: col.add(col.mul(pool).mul(C.pool)), mask: groove.add(lip.mul(0.5)).add(crack.mul(float(1).sub(g.x)).mul(0.3)).add(g.z.mul(0.4)), lineCol: vec3(...C.lip) };
+    return { col: col.add(col.mul(pool).mul(C.pool)), mask: groove.add(lip.mul(0.5)).add(crack.mul(float(1).sub(g.x)).mul(0.3)).add(g.z.mul(0.4)), lineCol: vec3(...C.lip),
+             sunVis: float(1).sub(sunShade).mul(float(1).sub(g.y)) };
   };
 
   const sewer = (p, w) => {
@@ -695,8 +698,18 @@ export function buildFloor(T, hx, hz, light, { style = 'grid', bounds: hasBounds
     }
     return out;
   };
-  const worldLight = (col, wp, rip) => {
+  // v128 DAYLIGHT (the owner's golden-hour concept for the driveway): the floor lit by a low warm `sun` and a cool
+  // `sky`, each as the light it throws on the slab (linear rgb, E = sky + sun × what of the sun reaches the point).
+  // What blocks the sun takes the SUN away, not the light: the curb's band, the bodies' shadows (`bodies` of it,
+  // and `contact` of all the light right under them), and the trees past the slab (scenery.js canopyShade)
+  const canopy = (wp, D) => canopyShade(wp, D.canopy, hx, hz, W.concrete.sunShadow.cotMax);
+  const worldLight = (col, wp, rip, S) => {
     if (!WL) return [col, null];
+    if (WL.daylight) {
+      const D = WL.daylight, vis = (S?.sunVis ?? float(1)).mul(float(1).sub(canopy(wp, D)));
+      const sunE = v3(D.sun).mul(vis);
+      return [col.mul(v3(D.sky).add(sunE)), v3(D.sky).add(sunE), sunE];
+    }
     const V = normalize(cameraPosition.sub(positionWorld)), sh = WL.sheen;
     let E = vec3(WL.ambient ?? 1), spec = vec3(0), glow = vec3(0);
     const point = (x, z, L, fl) => {
@@ -750,7 +763,7 @@ export function buildFloor(T, hx, hz, light, { style = 'grid', bounds: hasBounds
     const d1 = vec2(d0.x.mul(ca).sub(d0.y.mul(sa)), d0.x.mul(sa).add(d0.y.mul(ca))).mul(float(1).add(k.mul(W.swirl.pull)));
     const w = swirlAt.add(d1), p = toUv(w);
     const S = surface(p, w);
-    let [out, E] = worldLight(S.col, w0, S.rip);   // v93: the world's own light falls on the picture before anything stands on it
+    let [out, E, sunE] = worldLight(S.col, w0, S.rip, S);   // v93: the world's own light falls on the picture before anything stands on it
     if (light) {
       // a shadow darkens what is under it; light lifts the floor a little and
       // its lines a lot, the way a lit surface shows its texture (wet stone
@@ -760,7 +773,9 @@ export function buildFloor(T, hx, hz, light, { style = 'grid', bounds: hasBounds
       const L = texture(light, vec2(p.x, float(1).sub(p.y))), shade = clamp(L.a, 0, 1);
       let take = S.mask.mul(LF.grid).add(LF.spill);
       if (S.wet) take = take.add(S.wet.mul(W.sewer.wetLight));
-      out = out.mul(float(1).sub(shade)).add(L.rgb.mul(take));
+      // v128: under DAYLIGHT a body's shadow is the sun taken away (and a little of everything right under it)
+      if (sunE) out = out.sub(S.col.mul(sunE).mul(shade.mul(WL.daylight.bodies))).mul(float(1).sub(shade.mul(WL.daylight.contact))).add(L.rgb.mul(take));
+      else out = out.mul(float(1).sub(shade)).add(L.rgb.mul(take));
       // the goo over the floor, before the hole and the walls: they cut it
       if (film) out = goo(out, L.rgb, vec2(p.x, float(1).sub(p.y)), E);
     }

@@ -7,10 +7,10 @@
 // things that work"). The arena is 1.x's, so every 1.x number ports as it is
 // instead of through a rescale. Axes: x across the screen (right +), y up,
 // z toward the bottom of the screen. The arena is centred on the origin.
-import { SPECIES } from './tuning/species/index.js?v=127';
-import WAVES from './tuning/waves.js?v=127';
-import PICKUPS from './tuning/pickups.js?v=127';
-import MUSIC from './tuning/music.js?v=127';
+import { SPECIES } from './tuning/species/index.js?v=128';
+import WAVES from './tuning/waves.js?v=128';
+import PICKUPS from './tuning/pickups.js?v=128';
+import MUSIC from './tuning/music.js?v=128';
 
 export const TUNING = {
   render: {
@@ -144,6 +144,11 @@ export const TUNING = {
     // m between their pools); `sun` the world's sun's sheen on water and ice; `sheen` how much the floor
     // mirrors its point lights (wet stone, water, steel: k, shine). Worlds 1 and 2 are lit by the sky alone.
     lit: {
+      // v128 (the owner's golden-hour concept): the driveway under DAYLIGHT (floor.js): a low warm sun and a cool sky,
+      // the slab in the trees' dappled shade toward the far left (the sun stands there, past the far-left corner)
+      concrete: { daylight: { sky: [0.45, 0.47, 0.56], sun: [1.28, 0.92, 0.52], bodies: 0.95, contact: 0.18,
+                              canopy: { at: [[-1, -1], [-0.45, -1], [0.15, -1], [-1, -0.3]], out: 4, h: 5.5, r: 3.4, edge: [0.9, 0.45], sway: 0.04,
+                                        holes: { scale: 1.3, lo: 0.42, hi: 0.66, k: 0.85, clump: 0.3, clumpK: 0.55 } } } },
       sewer:   { ambient: 0.72, pools: { h: 7, r: 4.4, k: 0.85, color: [1, 0.84, 0.6] }, sheen: { k: 0.4, shine: 34 } },
       // the cistern: the shaft through the roof is a broad, soft key on the far-left half (the approved picture's
       // god rays), not a lamp — at 0.9 with a sharp sheen it read as a white fog blob; the lamps warm the back rim
@@ -177,7 +182,18 @@ export const TUNING = {
       // body's shadow falls away toward the far right, and the bodies are lit from the camera's side
       // v121: `hero`, how strong the light the hero carries is in this world (TUNING.light.arena.hero × it): in the sun a
       // pool of light only washes out the floor round a pale hero — a screenshot pass found it white on white on the ice
-      driveway: { sun: 0xfff1d8, sunI: 1.5, at: [-16, 15, 10],  ambient: 0xdce8ff, ambientI: 0.55, env: 1.05, hero: 0.3 },
+      // v128 (the owner's concept: the driveway at golden hour): the sun low behind the slab on the left (23°), so every
+      // shadow runs long toward you and the jelly is lit THROUGH; a warm sun and a cool sky fill. `sky`: the outdoor
+      // sky the gels reflect (render/env.js skyEnvironment, linear colours), its sun a glint in every body
+      // `glint`: the sun's highlight in the jelly, its colour × strength; `core` × every gel's inner glow (lit through);
+      // `shadow`: the bodies' shadows `k` × darker and `hard` of the way to a crisp edge (render/light.js)
+      driveway: { sun: 0xffc488, sunI: 1.9, at: [-14, 8, -12],  ambient: 0xa8bce6, ambientI: 0.5, env: 1.0, hero: 0.3,
+                  glint: [1.0, 0.86, 0.66], core: 2.6, shadow: { k: 1.45, hard: 0.75, r: 1.05, offset: 1.0 },
+                  // `caustic`: the light through each body falls in its shadow — `offset` × cot θ × r on, `stretch` of
+                  // the shadow's length, `r` × the radius wide, the ring × `ring` (render/actors.js)
+                  caustic: { offset: 1.05, stretch: 0.7, r: 1.0, ring: 0, soft: 1 },
+                  sky: { zenith: [0.16, 0.3, 0.62], horizon: [1.0, 0.66, 0.36], ground: [0.09, 0.11, 0.05], curve: 0.45,
+                         sun: { color: [1.0, 0.8, 0.52], size: 0.05, radiance: 40, halo: 1.4, haloWidth: 0.22 } } },
       sewer:    { sun: 0xd4ecdc, sunI: 1.0, at: [3, 22, 4],     ambient: 0x9cc6c0, ambientI: 0.42, env: 0.85 },
       cistern:  { sun: 0xffc98e, sunI: 1.0, at: [-6, 10, -14],  ambient: 0x7fa2aa, ambientI: 0.40, env: 0.9 },
       boiler:   { sun: 0xffbd7a, sunI: 1.3, at: [4, 9, -16],    ambient: 0xb49070, ambientI: 0.38, env: 0.8 },
@@ -603,6 +619,10 @@ export const TUNING = {
     sss: 0.70, roughness: 0.16, clearcoat: 1.00, clearcoatRoughness: 0.06,
     sheen: 0.45, transmission: 0.15, thickness: 0.8, ior: 1.38,
     contrast: { minLum: 0.16, rim: 2.2, rimPow: 2.0, rimWhite: 0.55, lift: 0.6 },
+    // v128: the sun's GLINT in every gel (render/gel.js), × the world's `glint` (TUNING.worlds.light[…], none where
+    // unsaid): `hot` at Blinn power `pow`, a `sheen` round it at `sheenPow`, and the light let `through` on the
+    // side away from the sun (power `throughPow`), in the body's own hue
+    glint: { pow: 220, hot: 2.4, sheenPow: 24, sheen: 0.22, through: 1.0, throughPow: 1.4 },
     families: {
       blob: {},
       cube: { roughness: 0.10, transmission: 0.25, jelly: { transmission: 0.82, roughness: 0.07 } },   // firmer candy-glass
@@ -1312,7 +1332,14 @@ export const TUNING = {
     ride: { creep: 0.6, creepR: 60, max: 1.6, carry: 0.6, out: 1.2, proud: 0.35, heroMaxR: 0.03 },
     // the impostor: stretched by `stretch` × its screen speed (at most
     // `maxStretch`), wrap-lit, with a fresnel rim, a glint and a glow of its own
-    drop: { stretch: 0.09, maxStretch: 3.2, gloss: 28, glint: 0.7, diffuse: 0.75, ambient: 0.35, rim: 0.8, glow: 0.18, draw: 1.6 },
+    // v128: `sunGlint` the world's sun in a drop (× its glint colour, at Blinn power `sunPow`), `through` its light let
+    // through the side away from it (× the glint's strength: nothing where a world has no glint)
+    drop: { stretch: 0.09, maxStretch: 3.2, gloss: 28, glint: 0.7, diffuse: 0.75, ambient: 0.35, rim: 0.8, glow: 0.18, draw: 1.6,
+            sunGlint: 3.0, sunPow: 140, through: 0.55 },
+    // v128: a burst's CHUNKS (render/actors.js) are jelly: an inner glow in the hue (`core` × the world's), the sun's
+    // glint (`glint` at power `pow`) and its light let `through` on the side away from it, glossier (`roughness`,
+    // `coatRoughness`). Opaque: see-through (three's transmission) read pale pink on chunks this small
+    chunk: { core: 0.1, glint: 2.4, pow: 140, through: 0.6, roughness: 0.1, coatRoughness: 0.08 },
     // its shadow straight below it: `size` × its radius on the floor, `grow`
     // × its radius wider a metre up, `alpha` at the floor and 1/(1 + fade·h) above
     shadow: { size: 1.3, grow: 4, alpha: 0.5, fade: 1.5, y: 0.006 },
@@ -1393,7 +1420,11 @@ export const TUNING = {
       // a kill: base + perR × its radius drops (more while kills come fast:
       // `heat`), `exit` of them thrown on the way the shot or dash went, and
       // `puddle` × r² m³ poured where it stood, over `puddleR` × its radius
-      kill: { base: 16, perR: 64, heat: 0.5, exit: 0.45, exitCone: 0.7, exitBoost: 1.3, speed: [1.5, 7], up: [2.5, 7], puddle: 0.03, puddleR: 0.8 },
+      kill: { base: 16, perR: 64, heat: 0.5, exit: 0.45, exitCone: 0.7, exitBoost: 1.3, speed: [1.5, 7], up: [2.5, 7], puddle: 0.03, puddleR: 0.8,
+              // v128 (the owner's concept: a SPLASH): a CROWN as the body lets go — `n` + `perR` × r drops thrown evenly
+              // round from its rim (`at` × r out, `y` m up), out at `speed` and up at `up`, so for a moment they stand
+              // as a ring before they fall round the puddle
+              crown: { n: 12, perR: 22, at: 0.85, y: 0.08, speed: [2.4, 3.6], up: [3.2, 4.6], size: { min: 0.045, max: 0.1, skew: 1.2 } } },
       // a hit: back-spray out of the entry toward the gun, a few out of the far side
       hit: { count: 5, cone: 0.8, speed: [2, 6], up: [1, 4], size: { min: 0.016, max: 0.04, skew: 1.6 }, through: 1 },
       lob: { count: 26, speed: [2.5, 6.5], up: [2, 5], puddle: 0.04, puddleR: 0.6 },          // a lob's splashdown
