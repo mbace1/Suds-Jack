@@ -46,8 +46,20 @@ Sources for every line are in `clay/iceye/copy.json`. They are taken from search
 - **The baby monitor's motion box** sits on the eastern border. It is a picture of the joke, not a claim. The owner
   decides whether to keep it.
 
-## Open
+## v2 full build (owner, Mon 9 Nov: "Go ahead")
 
-- The owner approves the device, the look and the copy.
-- Then: build beats 3, 4 and 5, write the score, and do a full build through `pipeline/build.py`.
+- **Beat 3:** the camera keeps pulling back from 1,150 km to about 6,800 km. Nine sun-synchronous orbit planes light up
+  one by one, and a counter rolls to €10,000,000,000+ on the pop word.
+- **Beat 4:** a war-room plotting table, lit from inside by the radar map, with three clocks (Helsinki 22:47, Moscow
+  23:47, Washington 15:47) and a red phone. The grant envelope drops on "grants". The student's own model from beat 1
+  lands on the map on "buys it", tagged GOVERNMENT-OWNED (the Ministry's own words). The scale shift comes home.
+- **Beat 5:** a TECHNICAL REQUIREMENTS sheet slides in. Its headings are generic SAR headings and every value is
+  redacted. The stamp SLAMS on "classified".
+- **Beat 6:** the monitor beeps twice and MOTION DETECTED blinks. A satellite crosses the window sky.
+- **Sound:** the RFH bed runs under beats 1–5. It adds wind and a lamp hum at the desk, radar pings in orbit, a glass
+  chip as each orbit plane lights, the counter ticking to a lock, the landing and the stamp (each with a duck), and the
+  monitor's hiss and beeps. Then the bed goes OUT for the turn: a music box plays the opening of Brahms's lullaby
+  (1868, public domain).
+- The motion box on the eastern border stays (owner: "Go ahead" on the stills that showed it).
 - The disclosure rule does not apply, because the film does not touch Anthropic.
+- Post (en, 275 characters) is in `copy.json`.

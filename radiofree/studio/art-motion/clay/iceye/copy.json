@@ -1,11 +1,15 @@
 {
   "film": "sleep-tight",
-  "cut": "v1 stills (9 Nov, en only) for the owner's approval; not for posting. Owner, Mon 9 Nov: 'ICEYE is great. Let's go for impressive visuals. Modern cold war feel. Nanny state surveillance of the border. High-tech defence spending starting from Aalto University start-up hub. Supo approved clearance for all employees etc'. Device: SCALE SHIFT in one unbroken pull-back, from a student desk in Otaniemi to a radar constellation that watches Finland in the dark; it ends as a BORROWED FORMAT, the nanny state's baby monitor. Two corrections to the brief, from the record: (1) Supo screening is 'where required', per ICEYE's own job ads, not for all employees; (2) the Ministry's word is 'surveillance' (space-based ISR), and no source says the satellites watch the border, so no caption claims it. US spelling.",
+  "cut": "v2 full build (9 Nov, en only; owner, Mon 9 Nov: 'Go ahead' on the v1 stills). v1 stills: Owner, Mon 9 Nov: 'ICEYE is great. Let's go for impressive visuals. Modern cold war feel. Nanny state surveillance of the border. High-tech defence spending starting from Aalto University start-up hub. Supo approved clearance for all employees etc'. Device: SCALE SHIFT in one unbroken pull-back, from a student desk in Otaniemi to a radar constellation that watches Finland in the dark; it ends as a BORROWED FORMAT, the nanny state's baby monitor. Two corrections to the brief, from the record: (1) Supo screening is 'where required', per ICEYE's own job ads, not for all employees; (2) the Ministry's word is 'surveillance' (space-based ISR), and no source says the satellites watch the border, so no caption claims it. US spelling.",
   "series": "rfh",
   "captionSize": "big",
   "argument": "ICEYE began as an Aalto University course project in 2012; its small radar satellites see through cloud and darkness; Business Finland granted it EUR 28.3M in June 2026, Finland's military bought its own ICEYE satellites in Sep 2025 (technical requirements classified), some staff are screened by Supo, and the company is now valued at over EUR 10B.",
-  "langs": ["en"],
-  "native_read": { "en": true },
+  "langs": [
+    "en"
+  ],
+  "native_read": {
+    "en": true
+  },
   "syntax": "'/' breaks a line, [word] is the pop word",
   "captions": [
     {
@@ -14,7 +18,9 @@
       "at": "s1+0.4",
       "until": "s2-0.25",
       "hold": "s2",
-      "text": { "en": "Otaniemi, 2012. / A student / [project]." },
+      "text": {
+        "en": "Otaniemi, 2012. / A student / [project]."
+      },
       "source": "Aalto University: 'ICEYE was founded as a course project at Aalto University in 2012'; students Antti Kestila, Rafal Modrzewski and Pekka Laurila set up the ICEYE project; the company followed (2014 in company profiles, early 2015 per Aalto). Otaniemi: Laurila, 'We are located in Otaniemi partly so we can stay in close contact with the Department of Radio Science and Engineering'. Sources: aalto.fi/en/news/space-conquerors-win-the-finnish-engineering-award; aalto.fi/en/innovation-portfolio/iceye; en.wikipedia.org/wiki/ICEYE. Search summaries, 9 Nov."
     },
     {
@@ -23,7 +29,9 @@
       "at": "s2+0.4",
       "until": "s3-0.25",
       "hold": "s3",
-      "text": { "en": "2018: a radar / that sees / in the [dark]." },
+      "text": {
+        "en": "2018: a radar / that sees / in the [dark]."
+      },
       "source": "ICEYE launched the world's first small synthetic-aperture radar (SAR) satellite in 2018; its innovation was shrinking SAR satellites below 100 kg 'to image through clouds and in darkness' (Wikipedia, ICEYE; newstimes.com.ng May 2026; Aalto: SAR imaging 'regardless of the weather conditions or time of day'). Search summaries, 9 Nov."
     },
     {
@@ -32,7 +40,9 @@
       "at": "s3+0.4",
       "until": "s4-0.25",
       "hold": "s4",
-      "text": { "en": "Today: worth / over [€10 billion]." },
+      "text": {
+        "en": "Today: worth / over [€10 billion]."
+      },
       "source": "June 2026 Series F, about EUR 1B in total including a EUR 450M primary round led by General Atlantic; reported valuation 'above EUR 10 billion' (Breaking Defense Oct 2026; startbase.de; intellinews 'values it at 10bn'). Figures differ by source (DefiLlama lists $11.81B), so the caption says 'over EUR 10 billion' and the tag says REPORTED. Search summaries, 9 Nov."
     },
     {
@@ -41,7 +51,9 @@
       "at": "s4+0.4",
       "until": "s5-0.25",
       "hold": "s5",
-      "text": { "en": "Public grants / help build it. / The state [buys it]." },
+      "text": {
+        "en": "Public grants / help build it. / The state [buys it]."
+      },
       "source": "Business Finland (the state innovation agency) approved a EUR 28.3M continuation grant for ICEYE's R&D program, 1 Jun 2026 (ICEYE press release; satnews; defence-industry.eu); an earlier Business Finland package was EUR 41.1M (EUR 5.7M grants + EUR 35.4M loans). Finland's Ministry of Defence signed a letter of intent 27 Jun 2025 for 'the first government-owned satellites for Finland'; the Finnish Defence Forces signed the procurement contract 8 Sep 2025 (ICEYE press release), reported at EUR 158M (European Spaceflight; Seraphim says $186M), number of satellites undisclosed. 'Help build it' because grants are one input among private rounds. Search summaries, 9 Nov."
     },
     {
@@ -50,7 +62,9 @@
       "at": "s5+0.4",
       "until": "s6-0.25",
       "hold": "s6",
-      "text": { "en": "What exactly / it watches: / [classified]." },
+      "text": {
+        "en": "What exactly / it watches: / [classified]."
+      },
       "source": "Coverage of the June 2025 letter of intent: the package covers satellites and ground infrastructure, but 'the technical requirements are classified' (Janes; fragoutmag; search summary). The Ministry describes the purpose as 'space-based intelligence and surveillance capabilities' (ICEYE press release title). No source names the targets, so the caption says what is documented: the requirements are classified. Search summaries, 9 Nov."
     },
     {
@@ -59,24 +73,82 @@
       "at": "s6+0.5",
       "until": "end-0.2",
       "hold": "end",
-      "text": { "en": "Sleep tight, / [Finland]." },
+      "text": {
+        "en": "Sleep tight, / [Finland]."
+      },
       "source": "The turn: the satire's own line (the nanny state's baby monitor). Not a factual claim. The tag beside it carries ICEYE's own description of itself: 'the world leader in sovereign intelligence from space' (ICEYE press release, 1 Jun 2026)."
     }
   ],
   "ui": {
-    "tag1": { "en": "AALTO UNIVERSITY COURSE PROJECT · COMPANY 2014" },
-    "tag2": { "en": "FIRST SMALL RADAR SATELLITE 2018 · UNDER 100 KG" },
-    "tag2b": { "en": "SEES THROUGH CLOUD AND DARK · ALSO FLOODS, WILDFIRES" },
-    "tag3": { "en": "SERIES F · JUNE 2026 · REPORTED VALUATION" },
-    "tag4": { "en": "BUSINESS FINLAND GRANT €28.3M · JUNE 2026" },
-    "tag4b": { "en": "FINLAND'S MILITARY BUYS ITS OWN · SEP 2025 · REPORTED €158M" },
-    "tag5": { "en": "MINISTRY: TECHNICAL REQUIREMENTS CLASSIFIED" },
-    "tag5b": { "en": "ICEYE JOB ADS: SECURITY SCREENING (INCL. SUPO, WHERE REQUIRED)" },
-    "tag6": { "en": "ICEYE: \"SOVEREIGN INTELLIGENCE FROM SPACE\"" },
-    "monCam": { "en": "CAM 1 · FINLAND" },
-    "monMotion": { "en": "MOTION DETECTED" },
-    "monTemp": { "en": "−18°C" },
-    "stamp": { "en": "CLASSIFIED" }
+    "tag1": {
+      "en": "AALTO UNIVERSITY COURSE PROJECT · COMPANY 2014"
+    },
+    "tag2": {
+      "en": "FIRST SMALL RADAR SATELLITE 2018 · UNDER 100 KG"
+    },
+    "tag2b": {
+      "en": "SEES THROUGH CLOUD AND DARK · ALSO FLOODS, WILDFIRES"
+    },
+    "tag3": {
+      "en": "SERIES F · JUNE 2026 · REPORTED VALUATION"
+    },
+    "tag4": {
+      "en": "BUSINESS FINLAND GRANT €28.3M · JUNE 2026"
+    },
+    "tag4b": {
+      "en": "FINLAND'S MILITARY BUYS ITS OWN · SEP 2025 · REPORTED €158M"
+    },
+    "tag5": {
+      "en": "MINISTRY: TECHNICAL REQUIREMENTS CLASSIFIED"
+    },
+    "tag5b": {
+      "en": "ICEYE JOB ADS: SECURITY SCREENING (INCL. SUPO, WHERE REQUIRED)"
+    },
+    "tag6": {
+      "en": "ICEYE: \"SOVEREIGN INTELLIGENCE FROM SPACE\""
+    },
+    "monCam": {
+      "en": "CAM 1 · FINLAND"
+    },
+    "monMotion": {
+      "en": "MOTION DETECTED"
+    },
+    "monTemp": {
+      "en": "−18°C"
+    },
+    "stamp": {
+      "en": "CLASSIFIED"
+    },
+    "valLabel": {
+      "en": "VALUATION · REPORTED"
+    },
+    "envFrom": {
+      "en": "BUSINESS FINLAND"
+    },
+    "envAmt": {
+      "en": "GRANT €28.3M"
+    },
+    "envSub": {
+      "en": "R&D PROGRAM · JUNE 2026"
+    },
+    "govTag": {
+      "en": "GOVERNMENT-OWNED"
+    },
+    "specHead": {
+      "en": "TECHNICAL REQUIREMENTS"
+    },
+    "specSub": {
+      "en": "SAR SATELLITE SYSTEM"
+    },
+    "specRows": {
+      "en": "ORBIT|RESOLUTION|REVISIT TIME|AREA OF INTEREST|GROUND SEGMENT|DELIVERY"
+    },
+    "specFoot": {
+      "en": "PAGE 1 OF 1"
+    }
   },
-  "props": "No ICEYE logo or brand art anywhere: the company is named in plain type in the tags only. The satellites are a generic flat-panel radar design (long antenna panel, small bus, one solar wing), not a copy of ICEYE's hardware. The desk, the model and the notes are invented props (a student's desk), not a depiction of any real person or room. No people, no faces. Map data: Natural Earth (public domain), see GEO-NOTICE.md."
+  "props": "No ICEYE logo or brand art anywhere: the company is named in plain type in the tags only. The satellites are a generic flat-panel radar design (long antenna panel, small bus, one solar wing), not a copy of ICEYE's hardware. The desk, the model and the notes are invented props (a student's desk), not a depiction of any real person or room. No people, no faces. Map data: Natural Earth (public domain), see GEO-NOTICE.md. Beat 4: the envelope carries only the documented grant (Business Finland, EUR 28.3M, R&D program, June 2026); the tag GOVERNMENT-OWNED is the Ministry's own description ('the first government-owned satellites for Finland'). Beat 5: the sheet's headings are generic SAR system headings and every value is redacted, because the requirements are classified; nothing on it is a claim about what the satellites watch. The war-room clocks read 22:47 in Helsinki, 23:47 in Moscow and 15:47 in Washington (the zones are right for November). The red phone is a cold-war prop.",
+  "post": {
+    "en": "ICEYE began as a 2012 Aalto University course project. Its radar satellites see through cloud and dark. Business Finland granted it €28.3M in June; Finland's military bought its own ICEYE satellites in 2025, requirements classified. Valued at over €10B. Sleep tight, Finland."
+  }
 }
