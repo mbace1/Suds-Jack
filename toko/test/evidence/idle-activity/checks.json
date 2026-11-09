@@ -43,7 +43,14 @@
   ],
   "precache": "Inherited dynamic dialogue/language URL regression passes; generated Hyper 69, hub 26 entries current.",
   "version_check": "node scripts/versions.mjs . --check passes; public game/brand versions unchanged.",
-  "legacy_brand_diagnostic": "Broad brand.cjs is not green: external GDELT CORS, old menu/typing assumptions, phone target/layout assertions, and hard-coded Hyper START coordinate timeout. Untouched main comparison is running and reproduces these categories already. Assertions unchanged; not claimed as a passing check.",
+  "legacy_brand_diagnostic": "Broad brand.cjs is not green: external GDELT CORS, old menu/typing assumptions, phone target/layout assertions, and hard-coded Hyper START coordinate timeout. Untouched main 6944c929 reproduces these categories and the same brand.cjs:1151 START-coordinate timeout (152.9 seconds). Assertions unchanged; not claimed as a passing check.",
   "hardware": "Chromium 156 SwiftShader, no physical-device performance evidence.",
-  "deployment": "Not deployed by this commit."
+  "deployment": "Not deployed by this commit.",
+  "deployment_token_recheck": {
+    "production_Toko_Live_main": 21,
+    "new_Toko_Live_main": 22,
+    "production_hub_cache": 282,
+    "new_hub_cache": 283,
+    "reason": "Keep source and publish candidate ahead of both live/source URL lineages."
+  }
 }
