@@ -426,3 +426,8 @@ verifier without changing any cleanup or offline-use assertion.
 This publication commit is prepared for Pages verification. Hardware
 performance remains unmeasured; the 300-second scoring tie is unchanged.
 No articulated enemy or 3D arena conversion has started before integration.
+
+Concurrent publication note: the first fast-forward push was rejected
+because Piritori v4.104 (`b3ec97d99`) reached production first. Its work is
+merged intact; production shell advances to 231 and the combined root cache
+to v285. Hyper runtime modules/cache remain 118/111/v88. No force push.

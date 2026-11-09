@@ -881,3 +881,8 @@ See `toko/PATCH_NOTES.md` for the behavior fix and regression evidence.
 - v7: Silent convoy — always sinusoidal sweep; per-kill drifting powerup drops; no announcements
 - v8: Boss waves (8th, 2.5×) — guaranteed top-tier enemy, 3× HP / 1.5× scale
 - v9: Minimal wave announcement — small "WAVE N" flash only (22 px, 900 ms)
+
+Shared-counter publication coordination, 2026-11-09: preserve the concurrent
+Piritori v4.104/global shell update while publishing Hyper v60. This cabinet
+keeps its existing game release/module tokens; only shared signature and
+cache maintenance from the approved Toko prerequisite apply.
