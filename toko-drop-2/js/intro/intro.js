@@ -15,32 +15,45 @@
 // white satin gel, standing on the spawn point the run starts from.
 //
 // The face and the letters are the brand's own (master.js and wordmark.js,
-// vendored here from toko/js/): the traced master face, and the logotype's
-// drawn letterforms. "drop" needs a p the logotype never had; it is built
-// here from the same parts as the logotype's d (a flat-sided bowl, one stem
-// weight), mirrored, with the stem run down below the baseline.
+// vendored here from toko/js/): the traced master face, and — v130 (owner,
+// 2026-11-09: "the text in the beginning logo is a bit wrong, please use this
+// instead", with their lockup) — the OWNER'S words, traced from their original
+// (wordmark.js LOGO): Toko set large, Midori and Games under it, flush both
+// sides, no ™. MIDORI and GAMES go, and "drop" comes in where Midori stood,
+// made of the owner's own letters: Midori's d, r and o, and a p that is the d
+// turned over (a geometric face's p is its d, half a turn round).
 import * as THREE from 'three/webgpu';
-import { fillMaster, masterBounds } from './master.js?v=129';
-import { GLYPHS, M } from './wordmark.js?v=129';
-import { CUES } from './sfx.js?v=129';
+import { fillMaster, masterBounds } from './master.js?v=130';
+import { LOGO } from './wordmark.js?v=130';
+import { CUES } from './sfx.js?v=130';
 
 export { CUES };
 
 const MAGENTA = '#f0027f';            // TOKO.MAGENTA — the original colour
-const U = 0.03;                       // world units per logotype unit (cap height 100 → 3)
+const U = 0.03;                       // world units per logotype unit (Toko stands 100 → 3)
 const YTIP = 7.5;                     // the foot of the p, above the spawn point
-const DESC = 28;                      // the p's descender, in logotype units
-const XT = M.cap - M.x;               // top of a lowercase letter
-const GL = {
-  ...GLYPHS,
-  p: { w: 56, s: [{ rr: [0, XT, 56, M.x, M.bowl] }, { r: [0, XT, M.stem, M.x + DESC] }], h: [{ rr: [M.stem, XT + M.stem, 16, 34, 2] }] },
-};
 
-// ── the layout, in logotype units (y down; line 1's cap box is 0..100) ──
-const LINE2 = 106;                                     // "drop" stands one line below "Toko"
-const LETTERS = [['d', 0], ['r', 62], ['o', 106], ['p', 168]];
-const TIP = { x: 168 + M.stem / 2, y: LINE2 + M.cap + DESC };   // the foot of the p's stem
-const FACE_H = 125, GAP = FACE_H * 0.14;
+// ── the layout, in logotype units (y down): the owner's block as traced, Toko 100 units tall ──
+const WD = LOGO.words, PX = 100 / WD.Toko.h;         // logotype units a source pixel
+const box = (n) => ({ x: WD[n].x * PX, y: WD[n].y * PX, w: WD[n].w * PX, h: WD[n].h * PX });
+const BLOCK_W = LOGO.w * PX, BLOCK_H = LOGO.h * PX;
+// the face stands as tall as the block, a gap of 0.14 of it away (the brand's lockup, toko/js/lockup.js drawLockup)
+const FACE_H = BLOCK_H / 0.975, GAP = FACE_H * 0.14;
+// "drop", from Midori's own letters ([x0, x1] in Midori's source px), set at Midori's fit where Midori stood; the p is
+// the d half a turn round, dropped so its bowl stands on the x-height (`xh`) and its stem runs below the baseline
+const MID = { d: [343, 514.5], r: [741.2, 870.6], o: [545.3, 708.9], fit: 31, base: 266.1, xh: 47.9, ink: 267.6 };
+const DROP = (() => {
+  let x = WD.Midori.x;
+  return [['d', MID.d, false], ['r', MID.r, false], ['o', MID.o, false], ['p', MID.d, true]].map(([ch, src, turn]) => {
+    const w = src[1] - src[0], h = WD.Midori.h, dy = turn ? MID.xh - (h - MID.ink) : 0;
+    const L = { ch, src, turn, w, h, x, y: WD.Midori.y + dy };
+    x += w + MID.fit;
+    return L;
+  });
+})();
+const P_ = DROP[3], STEM = (460.8 + 514.5) / 2 - MID.d[0];      // the d's stem, its middle in the letter
+const TIP = { x: (P_.x + (P_.w - STEM)) * PX, y: (P_.y + P_.h) * PX };   // the foot of the p's stem
+const BASE = (WD.Midori.y + MID.base) * PX;                    // the line's baseline
 const wx = (gx) => (gx - TIP.x) * U;
 const wy = (gy) => YTIP + (TIP.y - gy) * U;
 
@@ -52,36 +65,22 @@ const outCubic = (k) => 1 - Math.pow(1 - k, 3);
 const outBack = (k, s = 1.70158) => 1 + (s + 1) * Math.pow(k - 1, 3) + s * Math.pow(k - 1, 2);
 const lerp = (a, b, k) => a + (b - a) * k;
 
-// ── drawing the letters ─────────────────────────────────────────────────
-function rrect(c, x, y, w, h, r) {
-  const k = Math.max(0, Math.min(r, w / 2, h / 2));
-  c.moveTo(x + k, y); c.lineTo(x + w - k, y); c.quadraticCurveTo(x + w, y, x + w, y + k);
-  c.lineTo(x + w, y + h - k); c.quadraticCurveTo(x + w, y + h, x + w - k, y + h);
-  c.lineTo(x + k, y + h); c.quadraticCurveTo(x, y + h, x, y + h - k);
-  c.lineTo(x, y + k); c.quadraticCurveTo(x, y, x + k, y); c.closePath();
+// ── drawing the letters: the owner's traced outlines (holes are other loops of the path: evenodd) ──
+const PATHS = {};
+const pathOf = (n) => (PATHS[n] ||= new Path2D(WD[n].d));
+function word(c, n, px) {
+  c.save(); c.scale(px * PX, px * PX);
+  c.fillStyle = MAGENTA; c.fill(pathOf(n), 'evenodd');
+  c.restore();
 }
-function shape(c, sh) {
-  if (sh.r) c.rect(...sh.r);
-  else if (sh.rr) rrect(c, ...sh.rr);
-  else if (sh.p) { sh.p.forEach(([x, y], i) => (i ? c.lineTo(x, y) : c.moveTo(x, y))); c.closePath(); }
-}
-function textWidth(text) {
-  let w = 0;
-  for (const ch of text) w += ch === ' ' ? M.space : (GL[ch]?.w ?? 0) + M.track;
-  return Math.max(0, w - M.track);
-}
-// solids union, then the counters are punched out of this canvas only
-function drawText(c, text, x, y, k, color) {
-  let cx = x;
-  for (const ch of text) {
-    if (ch === ' ') { cx += M.space * k; continue; }
-    const g = GL[ch]; if (!g) continue;
-    c.save(); c.translate(cx, y); c.scale(k, k);
-    c.fillStyle = color; c.beginPath(); for (const sh of g.s) shape(c, sh); c.fill();
-    if (g.h) { c.globalCompositeOperation = 'destination-out'; c.beginPath(); for (const sh of g.h) shape(c, sh); c.fill(); }
-    c.restore();
-    cx += (g.w + M.track) * k;
-  }
+// one of Midori's letters on its own: clipped out of the word, half a turn round for the p
+function letter(c, L, px) {
+  c.save(); c.scale(px * PX, px * PX);
+  if (L.turn) { c.translate(L.w, L.h); c.scale(-1, -1); }
+  c.beginPath(); c.rect(0, 0, L.w, L.h); c.clip();
+  c.translate(-L.src[0], 0);
+  c.fillStyle = MAGENTA; c.fill(pathOf('Midori'), 'evenodd');
+  c.restore();
 }
 
 // one element of the lockup: a canvas texture on a plane, anchored at (ax, ay)
@@ -120,32 +119,25 @@ export class Intro {
     if (this.built) return this.built;
     const group = new THREE.Group(), parts = {};
     const b = masterBounds(), FW = FACE_H * (b.w / b.h);
-    // the face, open and at two stages of a blink (the brand's resting animation)
-    const faceBox = { x: -(FW + GAP), y: 50 - FACE_H / 2, w: FW, h: FACE_H };
+    // the face, open and at two stages of a blink (the brand's resting animation), level with the block's middle
+    const faceBox = { x: -(FW + GAP), y: BLOCK_H / 2 - FACE_H / 2, w: FW, h: FACE_H };
     // three cards, open / half / shut, so the blink is a swap of which one shows
-    parts.faces = [1, 0.45, 0.08].map((sq) => element(faceBox, [faceBox.x + FW / 2, 50], 7, (c, px) => fillMaster(c, 0, 0, FW * px, { color: MAGENTA, squash: sq })));
+    parts.faces = [1, 0.45, 0.08].map((sq) => element(faceBox, [faceBox.x + FW / 2, BLOCK_H / 2], 3.5, (c, px) => fillMaster(c, 0, 0, FW * px, { color: MAGENTA, squash: sq })));
     parts.face = parts.faces[0];
-    // line 1: Toko · Midori · Games™, the logotype's own word spacing
-    const toko = textWidth('Toko'), midori = textWidth('Midori'), games = textWidth('Games');
-    const xMid = toko + M.space, xGames = xMid + midori + M.space;
-    parts.toko = element({ x: 0, y: 0, w: toko, h: M.cap }, [toko / 2, 50], 8, (c, px) => drawText(c, 'Toko', 0, 0, px, MAGENTA));
-    parts.midori = element({ x: xMid, y: 0, w: midori, h: M.cap }, [xMid + midori / 2, 50], 6, (c, px) => drawText(c, 'Midori', 0, 0, px, MAGENTA));
-    const tmW = textWidth('TM') * 0.3, gamesW = games + 7 + tmW;
-    parts.games = element({ x: xGames, y: 0, w: gamesW, h: M.cap }, [xGames + gamesW / 2, 50], 6, (c, px) => {
-      drawText(c, 'Games', 0, 0, px, MAGENTA);
-      drawText(c, 'TM', (games + 7) * px, 8 * px, px * 0.3, MAGENTA);
-    });
-    // line 2: d r o p, each its own card so it can pop in; the p is drawn
-    // densest, because the camera ends up a few letters' height from its foot
-    parts.letters = LETTERS.map(([ch, x], i) => {
-      const w = GL[ch].w, h = M.cap + (ch === 'p' ? DESC : 0);
-      return element({ x, y: LINE2, w, h }, [x + w / 2, LINE2 + M.cap], ch === 'p' ? 14 : 10, (c, px) => drawText(c, ch, 0, 0, px, MAGENTA));
+    // the owner's block: Toko, Midori, Games, each its own card (they come in one after another, and two of them go)
+    const card = (n, px) => { const bx = box(n); return element(bx, [bx.x + bx.w / 2, bx.y + bx.h / 2], px, (c, k) => word(c, n, k)); };
+    parts.toko = card('Toko', 7); parts.midori = card('Midori', 6); parts.games = card('Games', 6);
+    // "drop", each letter its own card so it can pop in; the p is drawn densest, because the camera ends up a
+    // few letters' height from its foot
+    parts.letters = DROP.map((L) => {
+      const bx = { x: L.x * PX, y: L.y * PX, w: L.w * PX, h: L.h * PX };
+      return element(bx, [bx.x + bx.w / 2, BASE], L.turn ? 14 : 10, (c, px) => letter(c, L, px));
     });
     for (const p of [...parts.faces, parts.toko, parts.midori, parts.games, ...parts.letters]) group.add(p.mesh);
     // the thread between the p and the drop as it lets go: the hero's own gel
     const neck = new THREE.Mesh(new THREE.CylinderGeometry(1, 1, 1, 12, 1, true).translate(0, -0.5, 0), this.c.actors.hero.mat);
     neck.visible = false; group.add(neck); parts.neck = neck;
-    parts.extent = { x0: faceBox.x, x1: xGames + gamesW };
+    parts.extent = { x0: faceBox.x, x1: BLOCK_W, y0: Math.min(0, faceBox.y), y1: Math.max(BLOCK_H, faceBox.y + FACE_H) };
     this.built = { group, parts };
     return this.built;
   }
@@ -167,14 +159,15 @@ export class Intro {
   _shots() {
     const asp = this.c.aspect(), vf = THREE.MathUtils.degToRad(this.cam.fov), th = Math.tan(vf / 2), tw = th * asp;
     const P = this.built.parts, ex = P.extent;
-    const halfW = ((ex.x1 - ex.x0) / 2) * U, cx = wx((ex.x0 + ex.x1) / 2), cy = wy(58);
-    const dA = Math.max(halfW / 0.84 / tw, (FACE_H * U) / 2 / 0.5 / th);
+    const halfW = ((ex.x1 - ex.x0) / 2) * U, cx = wx((ex.x0 + ex.x1) / 2), cy = wy((ex.y0 + ex.y1) / 2);
+    const dA = Math.max(halfW / 0.84 / tw, ((ex.y1 - ex.y0) * U) / 2 / 0.72 / th);
     const dB = Math.max(1.85 / th, 1.0 / tw);           // ~3.7 units tall around the foot of the p
     // M: "Toko" over "drop", the game's name, held for a beat on the way in
     // (the face and the stack together, so a phone held upright keeps the face)
-    const mx0 = ex.x0, mx1 = textWidth('Toko'), mw = ((mx1 - mx0) / 2) * U, mh = ((TIP.y + 12) / 2) * U;
-    const dM = Math.max(mw / 0.8 / tw, mh / 0.66 / th);
-    return { A: { x: cx, y: cy, d: dA }, M: { x: wx((mx0 + mx1) / 2), y: wy(TIP.y / 2 - 6), d: dM }, B: { x: 0, y: YTIP - 0.85, d: dB } };
+    const mx0 = ex.x0, mx1 = box('Toko').x + box('Toko').w, my0 = ex.y0, my1 = Math.max(TIP.y + 8, ex.y1);
+    const mw = ((mx1 - mx0) / 2) * U, mh = ((my1 - my0) / 2) * U;
+    const dM = Math.max(mw / 0.8 / tw, mh / 0.7 / th);
+    return { A: { x: cx, y: cy, d: dA }, M: { x: wx((mx0 + mx1) / 2), y: wy((my0 + my1) / 2), d: dM }, B: { x: 0, y: YTIP - 0.85, d: dB } };
   }
 
   frame(t, world) {
@@ -196,9 +189,11 @@ export class Intro {
       e.mat.opacity = k * fadeAll;
       e.mesh.position.y = e.home.y - (1 - outCubic(k)) * 0.35;
     });
-    const mg = seg(t, C.midori, C.midori + 0.55);
+    const mg = seg(t, C.midori, C.midori + 0.55), gg = seg(t, C.midori + 0.12, C.midori + 0.67);   // v130: and GAMES after it
     P.midori.mat.opacity *= 1 - mg;
     P.midori.mesh.position.y -= smooth(mg) * 0.25;
+    P.games.mat.opacity *= 1 - gg;
+    P.games.mesh.position.y -= smooth(gg) * 0.25;
     P.letters.forEach((e, i) => {
       const k = seg(t, C.letters[i], C.letters[i] + 0.24);
       e.mesh.scale.setScalar(Math.max(0.001, outBack(k, 2.2)));
