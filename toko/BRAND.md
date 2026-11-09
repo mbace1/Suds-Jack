@@ -331,35 +331,30 @@ Measure all ten when they land and move `STICKER` once.
 
 ## 4. The logotype
 
-A **condensed squarish grotesque**: flat-sided bowls, square counters, tight
-tracking, a clipped corner on the *G*, splayed *M*. Set in three lines that
-stack almost solid, flush left, with the ™ at the foot of *Games*. A one-line
-setting exists for anywhere too short to stack.
+**The original, traced** (owner, 2026-11-09: *"the toko Midori Games logo face
+part is good but the text is bad, use the original I have given you"*). The
+owner's lockup is [`master/logo-original.png`](master/logo-original.png),
+2048 × 1024, from their Drive (`logo_tokomidari.png`): the face on a magenta disc
+and, beside it, **Toko** set large with **Midori** and **Games** under it, all
+three lines flush on both sides. There is no ™ in it, so the stack carries none
+unless asked (`tm: true`).
 
-**The logotype is DRAWN, not set** — [`js/wordmark.js`](js/wordmark.js). It only
-ever says three words, so those three words are outlines: no font file to
-licence, to load, or to fail to load, which is the same rule the face already
-keeps. The letterforms are drawn *after* the owner's face, by eye. They are
-close, and they are ours.
+Its lettering is **traced, not redrawn** — `LOGO` in
+[`js/wordmark.js`](js/wordmark.js), made by
+[`tools/trace-logotype.py`](tools/trace-logotype.py) (marching squares at the
+half-alpha edge, each loop simplified to within 0.45 px). Filled back and laid
+over the file it reads **99.2% IoU**, eleven pixels off by more than half a
+shade. The three-line stack draws the owner's block exactly as set; a one-line
+setting (*Toko Midori Games*) stands each traced word at the same height.
+Counters are other loops of the same path and fill `evenodd`, which is safe for
+a trace because its contours never overlap.
 
-Twelve glyphs exist, and only twelve — the letters `Toko Midori Games` needs.
-That is deliberate. An alphabet would be a typeface, and a typeface is not ours
-to redraw; a logotype is a drawing of three particular words.
-
-Each glyph is a set of **solids** unioned together and a set of **holes**
-punched out afterwards. The first cut filled them with `evenodd`, and wherever
-two solids overlapped — a *d*'s stem crossing its bowl, an *s*'s bars meeting
-its spines — the overlap cancelled and cut a white notch through the letter.
-
-Leading is **1.06 × cap height**. The drawn glyphs fill 0…cap exactly, so the
-size *is* the cap height; the 0.92 that suits a font (whose em box is taller
-than its caps) laps the three lines over each other.
-
-If the original vector artwork surfaces, its outlines belong in `GLYPHS`.
+The twelve glyphs drawn by eye before the original surfaced are still in the
+file as `GLYPHS`; only the ™ reads them now.
 
 ### The lockup
 
-Face, gap, three lines, ™. **The logotype stands the same height as the face.**
+Face, gap, three lines (the owner's block). **The logotype stands the same height as the face.**
 That relationship *is* the lockup; nothing else about it is adjustable.
 
 ---
@@ -819,7 +814,7 @@ toko/
     toko3d.js     the 3D badge from the trace — enamel, or style: 'clay'
     face.js       GEO, the older measurement by eye — canvas and SVG out of it
     palette.js    the two colours, the sticker sheet, the type spec, the words
-    wordmark.js   the logotype, drawn — twelve glyphs, no font file
+    wordmark.js   the logotype, traced from the owner's original (LOGO)
     lockup.js     the lockups, the sticker sheet, the credit line
     surface.js    a device-pixel-ratio canvas with a reduced-motion-safe loop
     glitch.js     tear / split / dropout / shuffle / scanlines / carrier / hit
