@@ -112,15 +112,6 @@ Plan sketch: change the truck mesh/visuals only — remove wheels, add a hover h
 
 Note, 18 Oct (HD-018, v58): there is no haul scoring any more, and the missiles no longer jackknife a truck. The fold itself stays, for the pile-up and HD-016. Read "do not change haul scoring" as "do not bring a cargo score back", and "jackknife" as the fold.
 
-### HD-019 — The menu is the season: pick 1-3, see its arena and rules, press START
-
-- status: In progress
-- size: M
-- blocked-by: —
-- design: Mikael, 18 Oct 2026 — *"Redesign menu. Make it look very different and nicer. Only show season1-3, have the back ground and rules change as you choose it. Have a start button under neath"*
-
-The menu offers seasons 1-3 only, as three tabs. Picking one builds that season's arena behind the menu, live, and shows its rules; START underneath starts it. Picking no longer starts a run. The mode row goes (the season declares its mode, v50), and RUN FREE / DAILY moves to the pause menu, applying from the next run (HD-004's daily runs keep their way in).
-
 ## Landed
 
 ### HD-001 — short press jumps, hold fires
@@ -236,6 +227,15 @@ v53 made the cabs gaze targets (three missiles jackknife a truck). v54 let a sto
 - The clock is the run time again (TIME SURVIVED, the TRUCK mode's words).
 
 Crates still ride and spill as floor and spectacle, and the fold stays for the pile-up and HD-016. The convoy's now-unused hit and cab proxy, and the cargo's unused stomp, are removed with HD-016, so that the HD-014 stack's files are not touched twice.
+
+### HD-019 — The menu is the season: pick 1-3, see its arena and rules, press START
+
+- status: Landed (#624, a6f299ec)
+- size: M
+- blocked-by: —
+- design: Mikael, 18 Oct 2026 — *"Redesign menu. Make it look very different and nicer. Only show season1-3, have the back ground and rules change as you choose it. Have a start button under neath"*
+
+The menu offers seasons 1-3 only, as three tabs. Picking one builds that season's arena behind the menu, live, and shows its rules; START underneath starts it. Picking no longer starts a run. The mode row goes (the season declares its mode, v50), and RUN FREE / DAILY moves to the pause menu, applying from the next run (HD-004's daily runs keep their way in).
 
 ## Blocked
 
