@@ -97,7 +97,7 @@ in menus and the intro screen."*
     stretch of travel: the ride held, more aboard (cards, the people moving),
     choices made riding; and the courier's neck mended (Toko's head sits left
     of the neck in the interior layers).
-13. **v3.20 · The stop, polished** toward the approved illustrations, with what
+13. **v3.21 · The stop, polished** toward the approved illustrations, with what
     the repo holds (no new art invented).
 
 Each step is measured, gated and deployed, and the trailer is re-filmed with

@@ -130,6 +130,25 @@ ok(RUNS.every(r => !r.cargo || r.cargo.every(c => CARGO[c])), 'every run deals r
   ok(forks >= 40 && forkOk, `a fork offers two jobs on one card (${forks})`);
   ok(struck >= 1, `a left-tapper can strike out of a run (${struck} of 80)`); }
 
+// ── 7d. the machine (v3.20): every step of every run is one of STATES, keeps its
+// conditions, and goes only where the table says it may — over the four runs and
+// the six missions, four ways of playing (the first button, the second, the third,
+// and a scatter), a hundred seeds each
+{ const M = await import('../js/missions.js');
+  const sets = [...RUNS, ...M.MISSIONS.map(m => M.missionRun(BY_ID[m.base || 'medium'], m, 3))];
+  const seen = {}, broken = [], stray = []; let steps = 0;
+  for (const run of sets) for (let k = 1; k <= 100; k++) for (const pol of [0, 1, 2, 'r']) {
+    const s = J.newRun(net, run, 8000 + k * 7, { memory: { runs: k % 5 } }); let st = 0;
+    while (s.phase !== 'end' && st++ < 600) { const a = J.stateOf(s), bad = J.check(net, s); if (bad.length && broken.length < 3) broken.push(`${run.id} ${8000 + k * 7} ${bad.join('; ')}`);
+      const c = J.card(net, s); if (c.state !== a) broken.push(`card.state ${c.state} is not ${a}`);
+      J.choose(net, s, pol === 'r' ? (k * 31 + st) % c.options.length : Math.min(pol, c.options.length - 1)); steps++;
+      const b = J.stateOf(s); (seen[a] ||= new Set()).add(b); if (!J.STATES[a].next.includes(b) && stray.length < 3) stray.push(`${a} → ${b}`); } }
+  const states = Object.keys(J.STATES);
+  ok(!broken.length, `every step keeps its state's conditions and the run's (${steps} steps)${broken.length ? ': ' + broken.join(' | ') : ''}`);
+  ok(!stray.length, `and goes only where the table says${stray.length ? ': ' + stray.join(', ') : ''}`);
+  ok(states.filter(x => x !== 'end').every(x => seen[x]?.size) && Object.values(seen).some(n => n.has('end')), `every state is reached and the runs end (${states.map(x => `${x}→${[...(seen[x] || [])].length}`).join(' ')})`);
+  ok(J.stateOf({ phase: 'stop', pending: { card: {} } }) === 'story' && J.stateOf({ phase: 'dispatch', fork: [1, 2] }) === 'fork' && J.stateOf({ phase: 'dispatch', offer: { brief: 'x' } }) === 'errand', 'the precedence card() always had: a fork or an errand before a dispatch, a story before the stop'); }
+
 // ── 8. Act 1's deck (ACT1.md §5): every card well formed; a run deals its own
 //      tones, places and weather, one card a job, at most one buyer
 { const bad = [], ids = new Set();
