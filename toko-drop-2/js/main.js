@@ -7,35 +7,35 @@
 // The rules live in sim/ and run on a fixed step; this file feeds them input,
 // hands their events to the view and the sound, and draws in between steps.
 import * as THREE from 'three/webgpu';
-import { TUNING } from './tuning.js?v=123';
-import { buildFloor } from './render/floor.js?v=123';
-import { fitCamera, screenToWorld, screenDown } from './render/view.js?v=123';
-import * as worldsSim from './sim/worlds.js?v=123';
-import { shapeAt as shiftShape } from './sim/floorshift.js?v=123';
-import * as reshapeSim from './sim/reshape.js?v=123';
-import { Scenery } from './render/scenery.js?v=123';
-import { DRIFT } from './render/kit.js?v=123';
-import { Transit } from './render/transit.js?v=123';
-import { Splats } from './render/splats.js?v=123';
-import { Actors } from './render/actors.js?v=123';
-import { GEL_TIME } from './render/gel.js?v=123';
-import { studioEnvironment } from './render/env.js?v=123';
-import { Specimen } from './render/specimen.js?v=123';
-import { createWorld, step, api as simApi } from './sim/world.js?v=123';
-import { stage as stagePk } from './sim/pickups.js?v=123';
-import { Input } from './input.js?v=123';
-import { UI, t, timeText, LANGS, getLang, setLang, goalText, bossName } from './ui.js?v=123';
-import { Announcer } from './announcer.js?v=123';
-import { rooms as campaignRooms, isOpen as roomOpen, better as betterGrade } from './sim/director/campaign.js?v=123';
-import { levelShape, slots as regionSlots } from './sim/shape.js?v=123';
-import { Sound } from './audio.js?v=123';
-import { Music, worldWant, cueFor, renderMusicWav } from './music.js?v=123';
-import { Intro, CUES as INTRO } from './intro/intro.js?v=123';
-import { scheduleIntroSfx, renderIntroSfxWav } from './intro/sfx.js?v=123';
-import { Readout } from './readout.js?v=123';
-import { Meter, device, Quality } from './meter.js?v=123';
-import * as record from './record.js?v=123';
-import { dailySeed } from './sim/rng.js?v=123';
+import { TUNING } from './tuning.js?v=124';
+import { buildFloor } from './render/floor.js?v=124';
+import { fitCamera, screenToWorld, screenDown } from './render/view.js?v=124';
+import * as worldsSim from './sim/worlds.js?v=124';
+import { shapeAt as shiftShape } from './sim/floorshift.js?v=124';
+import * as reshapeSim from './sim/reshape.js?v=124';
+import { Scenery } from './render/scenery.js?v=124';
+import { DRIFT } from './render/kit.js?v=124';
+import { Transit } from './render/transit.js?v=124';
+import { Splats } from './render/splats.js?v=124';
+import { Actors } from './render/actors.js?v=124';
+import { GEL_TIME } from './render/gel.js?v=124';
+import { studioEnvironment } from './render/env.js?v=124';
+import { Specimen } from './render/specimen.js?v=124';
+import { createWorld, step, api as simApi } from './sim/world.js?v=124';
+import { stage as stagePk } from './sim/pickups.js?v=124';
+import { Input } from './input.js?v=124';
+import { UI, t, timeText, LANGS, getLang, setLang, goalText, bossName } from './ui.js?v=124';
+import { Announcer } from './announcer.js?v=124';
+import { rooms as campaignRooms, isOpen as roomOpen, better as betterGrade } from './sim/director/campaign.js?v=124';
+import { levelShape, slots as regionSlots } from './sim/shape.js?v=124';
+import { Sound } from './audio.js?v=124';
+import { Music, worldWant, cueFor, renderMusicWav } from './music.js?v=124';
+import { Intro, CUES as INTRO } from './intro/intro.js?v=124';
+import { scheduleIntroSfx, renderIntroSfxWav } from './intro/sfx.js?v=124';
+import { Readout } from './readout.js?v=124';
+import { Meter, device, Quality } from './meter.js?v=124';
+import * as record from './record.js?v=124';
+import { dailySeed } from './sim/rng.js?v=124';
 
 const T = TUNING;
 const params = new URLSearchParams(location.search);
@@ -132,6 +132,7 @@ function applyControls() {
   const C = T.controls;
   input.swap = handLeft(); input.stickRadius = C.stick[stickSize()];
   input.aimDead = C.dead[deadSize()]; input.padDead = C.padDead * (C.dead[deadSize()] / C.dead.normal);
+  input.dashBy = tests().by;   // v124: LIFT (1.x) or FLICK
 }
 
 // ── the arena: 1.x's size for the screen's shape, chosen at each run start
@@ -332,16 +333,20 @@ let startedAt = 1;   // the world this run started at
 // be tested as it may be a better dynamic, allowing for more bullet sponge
 // enemies", then "likely we want dashes that go through and do damage in the
 // end"): the dash, PUSH (TUNING.hero.push) or CUT (TUNING.hero.cut), and
-// every non-boss gel's hit points ×1, ×2 or ×3. PUSH is what the test began
-// with, so it is what a first run gets. 1.x's PASS has left the switch
-// (owner, 2026-10-22: PUSH and CUT in the menu) but not the game: it is the
-// sim's own dash, createWorld's default, the base 1.x's dash levels build on.
-// A browser that saved it, as v7's 'pass' or v6's toko2.dashPass (no longer
-// read), plays PUSH.
-const DASHES = ['push', 'cut'], HP_STEPS = [1, 2, 3];
+// every non-boss gel's hit points ×1, ×2 or ×3. PUSH was what the test began
+// with, and what a first run got until v123 (owner, 2026-10-22: PUSH and CUT in
+// the menu). v124 (owner, 2026-11-09: "The dash needs to be better, more like
+// in v. 1.x"): 1.x's PASS is back on the switch and is the first run's — the
+// sim's own dash, createWorld's default, what every bot measured the game
+// with, the base 1.x's dash levels build on — and so is 1.x's LIFT (DASH BY:
+// every let-go of the aim stick dashes, where you walk; FLICK is v18's).
+// A dash saved before v124 (PUSH was the default then) is let go once, so a
+// phone that played v123 meets 1.x's dash too; a choice made after it stays.
+const DASHES = ['pass', 'push', 'cut'], DASH_BY = ['lift', 'flick'], HP_STEPS = [1, 2, 3];
+if (store.str('toko2.dash124') !== '1') { try { localStorage.removeItem('toko2.dash'); } catch { /* private mode */ } store.set('toko2.dash124', '1'); }
 const tests = () => {
-  const hp = store.num('toko2.gelHp'), d = store.str('toko2.dash');
-  return { dash: DASHES.includes(d) ? d : 'push', hp: HP_STEPS.includes(hp) ? hp : 1 };
+  const hp = store.num('toko2.gelHp'), d = store.str('toko2.dash'), by = store.str('toko2.dashBy');
+  return { dash: DASHES.includes(d) ? d : 'pass', hp: HP_STEPS.includes(hp) ? hp : 1, by: DASH_BY.includes(by) ? by : 'lift' };
 };
 const showTitle = (keep = false) => ui.title(bests(), sound.on, input.source, tests(), keep);
 // a switch flipped: redraw the menu it is on (OPTIONS, or the title)
@@ -497,6 +502,7 @@ const ui = new UI({
   onAutoQ: () => { store.set('toko2.autoq', autoQ() ? 'off' : 'on'); applyQuality(); refreshMenu(); },
   onLang: () => { setLang(LANGS[(LANGS.indexOf(getLang()) + 1) % LANGS.length]); refreshMenu(); },
   onDash: () => { store.set('toko2.dash', DASHES[(DASHES.indexOf(tests().dash) + 1) % DASHES.length]); refreshMenu(); },
+  onDashBy: () => { store.set('toko2.dashBy', DASH_BY[(DASH_BY.indexOf(tests().by) + 1) % DASH_BY.length]); applyControls(); refreshMenu(); },   // v124
   onGelHp: () => { const h = tests().hp; store.set('toko2.gelHp', HP_STEPS[(HP_STEPS.indexOf(h) + 1) % HP_STEPS.length]); refreshMenu(); },
   gels: () => gels(), onGels: () => flipGels(),
   lens: () => lensOf(), onLens: () => flipLens(),   // v94
@@ -529,9 +535,9 @@ const specimen = new Specimen(T, actors, scene.environment);
 // menu). It takes effect at run start; the menu also redraws the world left
 // behind the title in the new style. The HUD label says ' · sdf' while on.
 const GELS = ['classic', 'sdf'];
-import { STYLES } from './render/style.js?v=123';
-import { Lens } from './render/lens.js?v=123';
-import { setSceneSun } from './render/sun.js?v=123';
+import { STYLES } from './render/style.js?v=124';
+import { Lens } from './render/lens.js?v=124';
+import { setSceneSun } from './render/sun.js?v=124';
 let urlGels = GELS.includes(params.get('gels')) ? params.get('gels') : null;
 const gels = () => urlGels ?? (GELS.includes(store.str('toko2.gels')) ? store.str('toko2.gels') : 'classic');
 // The LENS switch (render/lens.js, v94): NONE or TILT-SHIFT, localStorage toko2.lens; ?lens=tilt|none for a link
@@ -682,7 +688,7 @@ const campaignProgress = (hard = false) => { try { return JSON.parse(store.str(h
 let lastRoom = null;   // AGAIN replays it
 const levels = new Map();
 async function loadLevel(id) {
-  if (!levels.has(id)) levels.set(id, fetch(new URL(`../levels/${id}.json?v=123`, import.meta.url)).then((r) => { if (!r.ok) throw new Error(`levels/${id}.json ${r.status}`); return r.json(); }));
+  if (!levels.has(id)) levels.set(id, fetch(new URL(`../levels/${id}.json?v=124`, import.meta.url)).then((r) => { if (!r.ok) throw new Error(`levels/${id}.json ${r.status}`); return r.json(); }));
   return levels.get(id);
 }
 // the list the room screen draws: worlds, their rooms, open or not, best grades

@@ -19,6 +19,17 @@
     Never `--no-verify`.
 -->
 
+## v124 — 2026-11-09
+**1.x's dash is back: lift the right thumb and it dashes, where you walk, 1.x's length — and it passes through, as 1.x's did**
+- THE ASK (owner, 2026-11-09: "The dash needs to be better, more like in v. 1.x"). Measured first: the same 27 thumb gestures (9 strokes of the aim stick, each standing still, walking right at 2/3 stick and walking up at full; real touch events with their own timestamps, scratch `dash2/`) through v123 and against 1.x's rule (docs/port-1x/player-controls.md §8, §10). 1.x dashes on all 27; v123 on 18 — a tap, a lift after aiming and a lift after a sweep were no dash — and every one of v123's went where the right thumb had flicked, never where you walked, a long flick 11 u with a 1.36 s cooldown where 1.x's is 4.77 u and 0.75 s.
+- DASH BY (a new switch in OPTIONS): LIFT, 1.x's and the default — every let-go of the aim stick dashes, a tap included: 1.x's own dash, along the move stick (half a stick, half a dash, as 1.x), standing still along the last shot, 26 u/s for 11 steps, 0.75 s to the next. FLICK is v18-v123's flick dash, as it was. Measured again: 27 of 27 dash, each where 1.x's would and as far.
+- A thumb RESTING on the move stick (a few px of jitter, under 0.15 of the stick) is not a walk: the dash is a still one, the full 4.77 u the way of the last shot. 1.x's move stick had no deadzone, so the same thumb dashed a tenth of a unit there (port trap T1).
+- PASS is back on the DASH switch and is what a first run plays: 1.x's dash, straight through the bodies with its i-frames and touching nothing — the sim's own dash, and what every bot measured the curve and the lines with. PUSH and CUT are one tap away (DASH · PASS → PUSH → CUT). A dash saved before v124, when PUSH was the default, is let go once so a phone that played v123 meets 1.x's; one chosen after it stays.
+- The title's hint says LIFT IT TO DASH under LIFT and FLICK TO DASH under FLICK, in all three languages.
+- Cache tokens `?v=123` → `?v=124`; HUD label → `2.0 · v124`
+
+---
+
 ## v123 — 2026-11-08
 **World 1 alone in the void: the grid round it gone, lines of neon running round it, every body a light, the grid sharper**
 - THE DIRECTION (owner, 2026-11-08: "take out the environment art away from world 1, let's keep it super minimalistic. Only ... some moving neon lines in the void around the arena. Push for more lights and sharper visuals"). World 1's surround — the grid running on past the rail into the dark and the lit bollards along three sides — is gone: the arena stands alone in the void.

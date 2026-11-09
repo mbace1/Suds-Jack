@@ -21,11 +21,11 @@
 // (dashPlan). 1.x fires only
 // while the aim is valid AND the trigger is held: a touch or pad aim stick is
 // both at once, a mouse aims all the time and fires only while held.
-import { TUNING } from '../tuning.js?v=123';
-import * as heat from './heat.js?v=123';
-import { BEHAVIOUR } from './species/index.js?v=123';   // read at run time only (a species' hitTest)
-import { slip } from './rules.js?v=123';   // THE FOAM's slick floor
-import * as posts from './posts.js?v=123';
+import { TUNING } from '../tuning.js?v=124';
+import * as heat from './heat.js?v=124';
+import { BEHAVIOUR } from './species/index.js?v=124';   // read at run time only (a species' hitTest)
+import { slip } from './rules.js?v=124';   // THE FOAM's slick floor
+import * as posts from './posts.js?v=124';
 
 const T = TUNING, H = T.hero, L = T.heroLook;
 
@@ -79,7 +79,9 @@ export function heroStep(w, input, dt, api) {
     let dx = h.aimX, dz = h.aimZ;
     const gl = g ? Math.hypot(g.dx || 0, g.dz || 0) : 0;
     if (gl > 1e-9) { dx = g.dx / gl; dz = g.dz / gl; }
-    else if (mx !== 0 || mz !== 0) {
+    // v124: a move stick under `dashMoveMin` is a thumb resting on it, not a walk: the dash takes the last shot's
+    // way at full length (1.x's touch stick had no deadzone, so a resting thumb's jitter dashed ~0.1 u: trap T1)
+    else if (Math.hypot(mx, mz) >= (H.dashMoveMin ?? 0)) {
       const l = Math.hypot(mx, mz);
       dx = H.dashNormalise || plan ? mx / l : mx; dz = H.dashNormalise || plan ? mz / l : mz;
     }

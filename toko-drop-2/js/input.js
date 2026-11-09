@@ -4,12 +4,14 @@
 //
 // Touch is 1.x's twin-stick: a touch on the left half of the screen is a
 // floating move stick (analog, no deadzone, full at 60 px), a touch on the
-// right half a floating aim stick that aims and fires past 15 px. 1.x
-// dashed on every let-go of the aim stick; since v18 only a FLICK of it
-// dashes (owner, 2026-10-23), and how long and how fast the flick was says
-// how far and how fast the dash goes (js/flick.js reads it, hero.js
-// dashPlan prices it). A plain let-go, a tap or the system cancelling the
-// touch is no dash. A second finger on a side already held is ignored; the
+// right half a floating aim stick that aims and fires past 15 px. How the
+// aim stick dashes is OPTIONS' DASH BY (`dashBy`): LIFT, 1.x's (and since v124
+// the default again, owner 2026-11-09: "The dash needs to be better, more like
+// in v. 1.x"), dashes on every let-go of it, a tap included — 1.x's own dash,
+// where you walk; FLICK (v18-v123's, owner 2026-10-23) dashes only on a flick
+// of it, as long and as fast as the flick (js/flick.js reads it, hero.js
+// dashPlan prices it). The system cancelling the touch is no dash in either.
+// A second finger on a side already held is ignored; the
 // side is decided where the thumb lands. The top-centre strip is the pause
 // button.
 // Keys: WASD / arrows move (normalised), Space dashes when it is RELEASED (1.x
@@ -31,8 +33,8 @@
 // world, because only it knows where the camera is. `dash` is false, true
 // (a button: 1.x's own dash) or a flick's gesture { kind: 'flick', sL, sV,
 // dirX, dirY }, its direction in screen axes too.
-import { TUNING } from './tuning.js?v=123';
-import { analyseTouch } from './flick.js?v=123';
+import { TUNING } from './tuning.js?v=124';
+import { analyseTouch } from './flick.js?v=124';
 
 const I = TUNING.input;
 // the standard Gamepad mapping, bound as 1.x bound it (input.js:135-150)
@@ -44,6 +46,7 @@ export class Input {
     this.left = { active: false, id: null, ox: 0, oy: 0, dx: 0, dy: 0, hist: [], wander: 0 };
     this.right = { active: false, id: null, ox: 0, oy: 0, dx: 0, dy: 0, hist: [], wander: 0 };
     this.lastGesture = null;     // the aim stick's last let-go as flick.js read it (the ?fps readout, the tests)
+    this.dashBy = 'lift';        // v124: 'lift' (1.x: every let-go of the aim stick dashes) or 'flick' (main.js sets it from OPTIONS)
     this.resetCounts();
     this.keys = new Set();
     this.mouse = { x: 0, y: 0, down: false, seen: false };
@@ -138,8 +141,9 @@ export class Input {
     }
   }
 
-  // the aim stick let go: a flick dashes, as far and as fast as it was
-  // flicked; anything else is the thumb coming off the glass
+  // the aim stick let go. LIFT (1.x, input.js:106): every let-go is 1.x's own dash, where you walk. FLICK: a flick
+  // dashes, as far and as fast as it was flicked; anything else is the thumb coming off the glass. The gesture is
+  // read either way, for the play record
   _letGo(s, t, stamp) {
     const F = I.flick;
     s.hist.push({ x: t.clientX, y: t.clientY, t: stamp });
@@ -149,7 +153,8 @@ export class Input {
     if (g.kind === 'tap' && s.wander > F.tapPx) g.kind = 'release';
     this.lastGesture = g;
     this.letGos[g.kind === 'release' && g.V >= F.peakFloor ? 'near' : g.kind]++;
-    if (g.kind === 'flick' || (g.kind === 'tap' && F.tap)) this._dash = g.kind === 'flick' ? g : true;
+    if (this.dashBy === 'lift') this._dash = true;
+    else if (g.kind === 'flick' || (g.kind === 'tap' && F.tap)) this._dash = g.kind === 'flick' ? g : true;
   }
 
   // One frame of input. `heroScreen` is where the hero is on screen (a

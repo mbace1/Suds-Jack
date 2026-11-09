@@ -7,10 +7,10 @@
 // things that work"). The arena is 1.x's, so every 1.x number ports as it is
 // instead of through a rescale. Axes: x across the screen (right +), y up,
 // z toward the bottom of the screen. The arena is centred on the origin.
-import { SPECIES } from './tuning/species/index.js?v=123';
-import WAVES from './tuning/waves.js?v=123';
-import PICKUPS from './tuning/pickups.js?v=123';
-import MUSIC from './tuning/music.js?v=123';
+import { SPECIES } from './tuning/species/index.js?v=124';
+import WAVES from './tuning/waves.js?v=124';
+import PICKUPS from './tuning/pickups.js?v=124';
+import MUSIC from './tuning/music.js?v=124';
 
 export const TUNING = {
   render: {
@@ -833,6 +833,9 @@ export const TUNING = {
     // so half a stick is half a dash; only with no move at all does it take the
     // last shot's direction. true normalises it (player-controls.md trap T1).
     dashNormalise: false,
+    // v124: under this much stick the dash is a still one, along the last shot (a thumb resting on the move stick
+    // jitters a few px: in 1.x that dashed a tenth of a unit, a dash in name only)
+    dashMoveMin: 0.15,
     // The FLICK dash (owner, 2026-10-23: the dash reacts to the flick's
     // length and speed, goes where it was flicked, and runs longer than
     // 1.x's). input.js reads the gesture, dashPlan below prices it: sL 0..1
