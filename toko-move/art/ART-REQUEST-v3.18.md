@@ -1,4 +1,4 @@
-# Toko Move — art request, after v3.18 (2026-11-08)
+# Toko Move — art request, after v3.18 (2026-11-08; the stop, the modules and the logo added 2026-11-09)
 
 The owner's direction on v3.17:
 
@@ -50,49 +50,55 @@ The rules those packs settled, and the game relies on:
 - **Each pack:** a `CONTACT.png`, an approval record and source notes, like the
   packs in PR #632.
 
-## 1 · THE STOP, in the illustration style — priority 1 (v3.20)
+## 1 · THE STOP, in the illustration style — priority 1
 
-The waiting scene is the one main view still in the older flat vector style. It
-is on screen at every card, so it matters most.
+The owner, 2026-11-09: *"The waiting for a tram art needs to be replaced with
+better styles, but otherwise same layout works. Toko face get buried behind
+map though. Ask for this and all modular elements."*
 
-Today it is a stack, from the back. The game composes these and drives the tram
-in and out:
+**Same layout, better style.** Keep today's composition: the shelter left of
+centre, the street and rails running diagonally, the tram arriving along
+them, the courier standing right of centre, the place's landmark behind. Redraw
+it in the approved illustration style.
 
-| layer | today | what it is |
+**Keep the courier's face clear of the corner map.** The game shows a small
+map in the top-right corner (about a third of the screen's width, square,
+just below the top bar).
+- Keep the courier's face out of the top third of the picture, in both
+  formats. Today it stands at about a third of the height, right of centre,
+  which is exactly where the map sits on a phone.
+- The game moves the map aside when they still meet (v3.22), but the
+  composition should not need it.
+
+**Every element as its own layer.** Full-frame transparent PNGs, at the stop's
+sizes (1080 × 1920 and 1920 × 1080). The game composes them and moves some
+(the tram drives in and out, people come and go):
+
+| layer | how many | notes |
 |---|---|---|
-| `01-backdrop` | 1 | the city behind |
-| `01b-land-<place>` | 23 | each place's landmark behind the stop |
-| `02-street` | 1 | the road and rails |
-| `03-tram-<model>` | 7 | the arriving tram: Artic, Nr II+, Variotram, Nr II, Nr I, the museum tram, metro |
-| `04-shelter` | 1 | the shelter, bench and stop pole |
-| `05-people` | 1 | who waits |
-| `05b-wx-rain`, `05b-wx-snow` | 2 | weather on the stop |
-| `06-courier` | 1 | the courier |
-| `07-actor-<card>` | 16 | the person a story card is about (the busker, the granny, the tourist and her map, the gull…) |
+| `01-backdrop` | 1 generic, plus one each for Rautatientori, Kamppi, Lasipalatsi, Kauppatori, Hakaniemi, Kalasatama if possible | the city behind, sunny |
+| `01b-land-<place>` | 23 (today's places) | the landmark behind the stop, its own layer, so one backdrop can serve many places |
+| `02-street` | 1 | the road, rails and pavement |
+| `03-tram-<model>` | 7: artic, nr2plus, vario, nr2, nr1, museum, metro | the arriving vehicle, alone, so it can drive in |
+| `04-shelter` | 1 (+ a snow cap variant) | the shelter, bench, pole and timetable |
+| `05-person-<n>` | 8–12 single waiting figures | **one person per layer**, so the game can choose who waits: a commuter, a student, a pensioner, a parent with a pram, a cyclist, a tourist… |
+| `05b-wx-snow` | 1 | snow on the ground and in the air (no rain) |
+| `06-courier` | 1 (+ a snow variant) | the courier with the parcel; the face on its own registered layer as before |
+| `07-actor-<card>` | 16 | the story cards' people, standing at the stop |
+| `08-night-<layer>` | the backdrop, street, shelter and people again | the night palette |
 
-What is asked:
+**Naming and placement:** the same names as today, so a new layer replaces an
+old one file for file.
 
-- **A generic stop** in the illustration style, as the same layers. The tram
-  must be its own layer, so it can drive in and out.
-- **Per-place backdrops** for the busiest stops, if possible: Rautatientori,
-  Kamppi, Lasipalatsi, Kauppatori, Hakaniemi, Kalasatama. The other places can
-  keep a generic backdrop with their landmark.
-- **Snow** for the stop. **Night** for the stop, in the night palette.
-- **The 16 actors** redrawn standing at the new stop, if the budget allows. A
-  card without its actor still works.
-
-How it is used: every stop card stands in front of it. When a card is about
-someone, they stand at the stop.
-
-## 2 · THE RIDE, longer — priority 2 (v3.19)
+## 2 · THE RIDE, longer — priority 2
 
 The tram interior works. The window band scrolls behind the car and the
 courier. The owner wants more of it: a longer stretch of travel, with things
 happening and choices made aboard.
 
 - **The neck.** In `04-courier` (all variants: base, old, museum, rush),
-  Toko's disc sits left of the neck, and the skin shows beside it. Please
-  correct it at the source.
+  Toko's disc sat above the neck. v3.19 moved it down onto the collar in the
+  game's copies. Please redraw it at the source, which replaces that fix.
 - **Window views, seamless on the horizontal**, at the tile sizes above, for:
   1. the city centre;
   2. the harbour and the sea;
@@ -109,9 +115,9 @@ happening and choices made aboard.
 - **Snow and night** for the window tiles. The night window already exists
   and works.
 
-How it is used: a ride holds on the interior longer, the window band carries
-the travel, and aboard cards (the choir, the spruce, the inspector…) are
-played in the car.
+How it is used: a ride holds on the interior for its whole length (v3.19), the
+window band carries the travel, and aboard cards (the choir, the spruce, the
+inspector…) are played in the car.
 
 ## 3 · THE NEW SPECIAL OPTIONS — priority 3
 
@@ -137,6 +143,45 @@ the crossing and the wallet. One scene each, both formats, sunny unless noted:
 6. The wallet's owner, found in the library corner.
 7. The two gulls escorting the courier along the quay.
 8. Aino at her door, with the flowers and the coffee.
+
+## 5 · MODULAR PEOPLE AND THINGS, for cards made from modules — priority 2
+
+The owner wants *"100x content so it never feels stale … randomized from
+modules"*. From v3.22 the game assembles story cards from parts: a person, what
+they want, a twist, three options. For those cards to show who they are about,
+the stop needs **people and things as cutouts**, in the stop's camera, standing
+where an actor stands today:
+
+- **People (20–30):** a man in a Marimekko scarf, a woman with a dog, a
+  student in overalls, a pensioner with a trolley, a tourist with a backpack,
+  a cyclist, a busker with a guitar, a child in a snowsuit, a kiosk worker,
+  a hockey fan in a jersey, a commuter with coffee, a jogger, a mother with a
+  pram, a delivery robot, a man carrying a ladder, a woman with a cello case,
+  twins in matching coats, a chef on a break, a priest, a grandfather with a
+  grandson.
+- **Things (15–20), carried or set down:** a sofa, a spruce, a cello case, a
+  birthday cake, a mattress, a fishing rod, a bag of cinnamon buns, a cat
+  carrier, a bike with a flat tyre, a wedding dress bag, a lost glove, a
+  shopping trolley, a stack of pizza boxes, a stroller, a rug.
+- One figure or thing per file, full frame, transparent, standing at the
+  actor's mark; snow variants where clothes would change.
+
+## 6 · THE LOGO — priority 1
+
+The owner, 2026-11-09: *"The toko Midori Games logo face part is good but the
+text is bad, use the original I have given you."*
+- The original lockup is not in the repository. Every branch was searched:
+  only the face masters (`toko/master/`) and banners set in a stock font
+  (`branding/toko-midori/`).
+- The game's lettering (`toko/js/wordmark.js`) was drawn by eye after the
+  face.
+
+**Asked for:** the original *Toko Midori Games* logotype, as the owner gave it.
+- The vector (SVG/PDF/AI) if it exists, else the largest PNG, on white and on
+  transparent.
+- It goes to `toko/master/`. Its outlines then replace the drawn ones in
+  `wordmark.js`, which every lockup, the sting, the trailer's title card and
+  the end card already draw from.
 
 ## Not asked for
 
