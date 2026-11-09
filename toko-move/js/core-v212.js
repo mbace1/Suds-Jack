@@ -2,7 +2,7 @@
 import {createFlow} from '../../flow-core/sim.js?v=2';
 import {FlowRenderer} from '../../flow-core/render.js?v=3';
 import {THEME} from './palette.js?v=1';
-import {tr} from './lang.js?v=16';
+import {tr} from './lang.js?v=17';
 const trLines=t=>String(t).split('\n').map(l=>tr(l)).join('\n');
 import {shareUrl,STORE} from './platform.js?v=1';
 import {DeliveryChallenge,DELIVERY_TARGET} from './deliveries.js?v=28';
@@ -24,13 +24,13 @@ import {skinFor,applySkin,CORAL as SK_CORAL} from './skin.js?v=1';
 import {rushWith,startMinute} from './mutators.js?v=2';
 import * as Runs from './runs.js?v=5';
 import {loadNotebook} from './sealed.js?v=2';
-import {drawPoster} from './poster.js?v=17';
+import {drawPoster} from './poster.js?v=18';
 import * as WalkPath from './walkpath.js?v=1';
 import * as Rush from './rush.js?v=1';
 import {colourOf,parcelHtml,bagHtml} from './parcels.js?v=1';
 
 const $=id=>document.getElementById(id);
-const BUILD_VERSION='3.20';
+const BUILD_VERSION='3.21';
 const MAP_THEME={...THEME,latent:THEME.paper,hideQueues:true,hideLoadMarks:true,hideCarriers:true,modeColours:{metro:'rgba(0,0,0,0)',tram:'rgba(0,0,0,0)',car:'rgba(0,0,0,0)'}};
 const cargoColour=colourOf;   // ONE palette: this file and the job board drew the same parcel in two different colours until v2.43
 const esc=s=>String(s??'').replace(/[&<>\"]/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[ch]||ch));

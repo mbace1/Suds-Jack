@@ -118,7 +118,7 @@ server.listen(0, '127.0.0.1', async () => {
         runs: [...document.querySelectorAll('#mutRow .run[data-run]')].map(r => ({ id: r.dataset.run, open: !r.classList.contains('locked'), lit: r.classList.contains('on') })),
         goal: document.getElementById('titleGoal').textContent, play: document.getElementById('play').textContent,
         links: ['dailyLink', 'weekLink', 'liveLink'].filter(id => { const e = document.getElementById(id); return e && !e.hidden && getComputedStyle(e).display !== 'none'; }) }));
-      ok(`the bare address is the card journey, not the real-time game (v${t.v})`, !t.classic && t.v === '3.20' && /v3\.20/.test(t.hero));
+      ok(`the bare address is the card journey, not the real-time game (v${t.v})`, !t.classic && t.v === '3.21' && /v3\.21/.test(t.hero));
       ok(`it is Act 1, in Helsinki (${await page.evaluate(() => document.getElementById('titleWhen').textContent)})`, await page.evaluate(() => /^Act 1 · Helsinki · 07:00/.test(document.getElementById('titleWhen').textContent)));
       ok(`the ladder: EASY open and lit, three locked (${t.runs.map(r => r.id + (r.open ? '' : '🔒')).join(' ')})`, t.runs.map(r => r.id).join() === 'easy,medium,hard,night' && t.runs[0].open && t.runs[0].lit && t.runs.slice(1).every(r => !r.open) && t.run === 'easy');
       ok(`the goal and the button (${t.goal} · ${t.play})`, /^Three deliveries before 08:15/.test(t.goal) && t.play === 'START SHIFT');
@@ -392,6 +392,26 @@ server.listen(0, '127.0.0.1', async () => {
       ok(`a shift is played from the keyboard alone, 1·2·3, to its end card (${[...seen].join(' ')})`, uis.has('card') && uis.has('moving') && uis.has('end') && await page.evaluate(() => !document.getElementById('end').hidden));
       ok('and nothing the machine checks breaks on the way', !problems.length, problems.slice(0, 3).join(' | '));
       ok('no page or network errors (the machines)', !errs.length, errs.slice(0, 3).join(' | '));
+      await ctx.close();
+    }
+    // v3.21: the play log — a shift played is written down on this device, one left mid-way is a QUIT
+    // with the state it was left in, and the title offers the readout to copy back
+    {
+      const ctx = await browser.newContext(PHONE), page = await ctx.newPage(), errs = watch(page);
+      await page.goto(`${base}/toko-move/?run=easy&seed=1009`, { waitUntil: 'load' }); await ready(page);
+      ok('a new device has no play log on its title', await page.evaluate(() => !document.getElementById('playsBtn')));
+      await page.tap('#play'); await page.waitForSelector('#v3panel .eventOpt', { timeout: 15000 });
+      await playOut(page, { maxSteps: 400, pick: s => s.buttons.length > 2 ? 2 : 0 });
+      const one = await page.evaluate(() => window.__tm3.plays());
+      ok(`a shift played is written down: its choices, how long each took, the third taken (${one.picks} choices, third ${one.third.taken}/${one.third.offered})`, one.ended === 1 && one.picks > 5 && one.third.taken > 0 && Object.values(one.states).some(v => v.medianMs > 0));
+      await page.goto(`${base}/toko-move/?run=easy&seed=1009`, { waitUntil: 'load' }); await ready(page);
+      await page.tap('#play'); await page.waitForSelector('#v3panel .eventOpt', { timeout: 15000 }); await page.waitForTimeout(500);
+      await page.goto(`${base}/toko-move/?run=easy&seed=1009`, { waitUntil: 'load' }); await ready(page);
+      const two = await page.evaluate(() => window.__tm3.plays());
+      ok(`a shift left mid-way is a QUIT, with the state it was left in (${JSON.stringify(two.quitAt)})`, two.ended === 2 && two.quits === 1 && two.quitAt.dispatch === 1);
+      const t = await page.evaluate(() => { document.getElementById('playsBtn').click(); return { b: document.getElementById('playsBtn').textContent, box: !document.getElementById('playsBox').hidden, txt: document.querySelector('.playsText').textContent }; });
+      ok(`the title offers the readout to copy back (${t.b}: ${t.txt.split('\n')[0]})`, t.b === 'YOUR PLAY LOG · 2' && t.box && /^Toko Move play log · v[\d.]+ · 2 shifts \(1 left early\)/.test(t.txt) && /Third option taken/.test(t.txt));
+      ok('no page or network errors (the play log)', !errs.length, errs.slice(0, 3).join(' | '));
       await ctx.close();
     }
     // ── story arcs (v3.4, ACT1.md §10): a second run meets Dispatch, and the city remembers

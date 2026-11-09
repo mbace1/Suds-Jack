@@ -387,6 +387,9 @@ jobs:
       - name: the missions (v3.14) — real places and cards with art, a version per seed, the perk draft, strikes, unlocks, the runs untouched
         run: node toko-move/test/missions.mjs
 
+      - name: the play log (v3.21) — what a person did, read off the run's machine, kept on the device
+        run: node toko-move/test/playlog.mjs
+
       - name: the sealed parcel — which offer, the notebook, its store, the Finnish
         run: node toko-move/test/sealed.mjs
 

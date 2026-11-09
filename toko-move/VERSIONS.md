@@ -1,5 +1,43 @@
 # Toko Move — versions
 
+## v3.21 — 2026-11-09
+
+**WHAT A PERSON DID** — the owner said yes to reading the cabinet's own play,
+and to the trailer and the store page catching up with v3.18–v3.20.
+
+- **The play log** (`js/playlog.js`). Every balance number so far came from
+  bots, and a bot has no clock and never closes the tab. The game now writes
+  down what a person does, off the run's own machine (v3.20):
+  - every card: its state, which button (1, 2, 3), its tier, and how long it
+    took to choose;
+  - every shift's end: done, late, strikes, struck out, the euros;
+  - a shift left mid-way: QUIT, with the state it was left in.
+- **Kept on this device only:** the last 60 shifts, on their own key. One
+  summary line goes to the arcade's shared log, when the cabinet has loaded
+  it; the itch build carries no path out of itself.
+- **YOUR PLAY LOG** on the title, once anything has been played. The readout
+  covers:
+  - runs done, struck out and left;
+  - the time to choose by state (median and slowest);
+  - how often the third option is taken (special, very special);
+  - where shifts were left.
+
+  COPY THE LOG puts it on the clipboard, to paste back to the developer.
+  `__tm3.plays()` and `__tm3.playReport()` give the same to a test or an
+  agent.
+- **The trailer** adds two takes: the choir's very special *"Join in"*
+  aboard (EASY 1001), and a ride stop by stop inside the car (EASY 1357,
+  the 2 to Senaatintori).
+- **The store page** (`store/ITCH.md`): three choices with a special third,
+  the ride inside the car, perks and strikes, the missions on the map and
+  the day's errand, the march, and the keys 1, 2, 3.
+- **Gates.**
+  - `test/playlog.mjs` (new, also in CI): the timing, a re-render counted
+    once, QUIT, the readout, the 60-session store, a store in the wrong
+    shape, and a real run read in the machine's own states.
+  - `test/play.cjs`: a shift written down, a shift left mid-way read as a
+    QUIT, the title's readout.
+
 ## v3.20 — 2026-11-09
 
 **THE MACHINES, NAMED** — the owner: *"Find all of the implicit state machines

@@ -27,7 +27,7 @@ real phone; the page must never sell a mode nobody has played.
 | Tags | `roguelike`, `card-game`, `turn-based`, `trams`, `helsinki`, `narrative`, `funny`, `mobile`, `minimalist`, `transport` |
 | Content | no mature content (the spin-off *Toko Move: Piritori* is a separate project with its own rating) |
 | Languages | English, Finnish (a Finnish browser starts in Finnish; the title card switches) |
-| Inputs | mouse, touchscreen (sound is synthesised in the page; the ♪ top-right mutes it) |
+| Inputs | mouse, touchscreen, keyboard (1, 2, 3 choose; sound is synthesised in the page; the ♪ top-right mutes it) |
 
 ## Short description (one line)
 
@@ -36,9 +36,11 @@ A courier's shift in Helsinki, one card at a time: which tram, which way, who to
 ## Description
 
 **Toko Move** is a courier game set in Helsinki, played one card at a time.
-Each card shows you where you stand and offers two choices, each with its
-price in time. Pick a tram, a walk or a favour for a stranger, and the clock
-moves only when you choose.
+Each card shows you where you stand and offers three choices, each with its
+price in time: two ordinary, and a third that is sometimes special (a taxi
+straight to the drop, an express job) and now and then very special (a cargo
+bike's lift, joining the choir on the tram). Pick, and the clock moves only
+when you choose. A tram ride plays out inside the car, stop by stop.
 
 The trams run on HSL's real network. Every line and every stop is real, so
 when you ride the 4 to Katajanokka, that's where the 4 goes.
@@ -47,7 +49,12 @@ when you ride the 4 to Katajanokka, that's where the 4 goes.
   a first shift, three plain parcels and a quiet city. **Medium** is a real
   morning. **Hard** is the rush with one tram line halted. **Night** starts
   at 23:00, and something is off about the trams. Every attempt is a fresh
-  shift.
+  shift: between jobs you pick a perk, and too many late drops lose it.
+- **Missions.** Six errands across real places, each on the city map, a
+  different version every time you run it. And one errand a day, the same
+  for everyone.
+- **The city happens to you.** Some mornings a march on Mannerheimintie
+  halts the trams along it; find another way, wait, or take a taxi.
 - **Choices with stakes.** Run for the tram on a red light? The button says
   *maybe*. Euros, not points: a job pays its fee, an on-time streak raises
   it, late halves it, and every risk can move it either way.
@@ -74,16 +81,19 @@ Lähettipeli Helsingissä, kortti kerrallaan: mikä ratikka, mihin suuntaan,
 ketä autat ja mitä uskallat. Kello liikkuu vain, kun valitset. Neljä tasoa
 (helppo, keskitaso, vaikea ja yö), joista jokainen aukeaa edellisen
 jälkeen. Riskit lukevat napissa sanoin, paketin voi myydä ja ostaja kertoo,
-mitä siinä oli. Lumi, sade, kuusi ratikkamallia uusimmasta museoratikkaan,
-ja kaupunki muistaa sinut. Lopuksi päivän vuoro, joka on sama kaikille, ja
-viikko, jonka vuokra erääntyy perjantaina.
+mitä siinä oli. Joka valinnassa on kolme vaihtoehtoa, ja kolmas on joskus
+erikoinen: taksi, pikakeikka tai tavarapyöräkyyti. Kuusi tehtävää kartalla
+ja päivän asia, sama kaikille. Lumi, sade, mielenosoitus Mannerheimintiellä,
+kuusi ratikkamallia uusimmasta museoratikkaan, ja kaupunki muistaa sinut.
+Lopuksi päivän vuoro ja viikko, jonka vuokra erääntyy perjantaina.
 
 ## Controls
 
 Tap a choice. Each button shows its price in time and, when it is a risk,
 its odds in a word (*usually*, *maybe*, *long shot*). Tap the scene to hurry
 a hop or a stamp. MAP, in the corner, opens the whole board. ♪ mutes. On a
-desktop, click works the same, and Space or Enter hurries.
+desktop, click works the same, the keys 1, 2 and 3 choose, and Space or
+Enter hurries.
 
 ## Media
 
