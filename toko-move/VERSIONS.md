@@ -39,7 +39,8 @@ can draft are drawn too.
     missions drawing nothing.
   - `test/journey.mjs`: a draft's third is the drawn perk or the cash; the
     par check prints every run's 70th percentile.
-  - `test/play.cjs`: EASY 7's first card adds *DROPS EAST OF THE BRIDGE*.
+  - `test/play.cjs`: EASY 7's first card adds *DROPS EAST OF THE BRIDGE*;
+    the moments test that names EASY 1003's route plays it `&written`.
 
 ## v3.23 — 2026-11-09
 

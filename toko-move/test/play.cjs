@@ -268,11 +268,12 @@ server.listen(0, '127.0.0.1', async () => {
     }
     // ── the moments (v3.12, the owner's approved art, PR #632): EASY 1003 (a clear day)
     // takes jobs, boards trams, delivers, and boards the metro at Kalasatama, each
-    // beat with its picture
+    // beat with its picture (&written: the shift as v3.21 dealt it, so the route
+    // these pictures are on is the one named)
     {
       const M = await import(require('url').pathToFileURL(require('path').join(__dirname, '../js/moments.js')).href);
       const ctx = await browser.newContext(PHONE), page = await ctx.newPage(), errs = watch(page);
-      await page.goto(`${base}/toko-move/?run=easy&seed=1003`, { waitUntil: 'load' }); await ready(page);
+      await page.goto(`${base}/toko-move/?run=easy&seed=1003&written`, { waitUntil: 'load' }); await ready(page);
       await page.tap('#play'); await page.waitForSelector('#v3panel .eventOpt', { timeout: 15000 });
       const seen = await playOut(page, { maxSteps: 400 }), ms = [...seen.scenes].filter(x => x.startsWith('m-')).map(x => x.slice(2));
       const among = pool => ms.some(m => pool.includes(m)), hand = [...Object.values(M.HANDOFF_AT).flat()];
