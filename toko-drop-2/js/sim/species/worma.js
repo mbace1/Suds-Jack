@@ -12,7 +12,7 @@
 //   SINK   `sink` s going down, still hittable, then UNDER
 // g.s.up is how far out of the floor it stands (0..1), for the look.
 // Numbers: js/tuning/species/worma.js. Seeded: w.rng only.
-import { steerTo } from './base.js?v=128';
+import { steerTo } from './base.js?v=129';
 
 const range = (w, [a, b]) => a + w.rng.next() * (b - a);
 

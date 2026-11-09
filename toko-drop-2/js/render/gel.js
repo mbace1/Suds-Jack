@@ -15,8 +15,8 @@ import {
   uniform, positionLocal, normalLocal, normalView, positionViewDirection, cameraViewMatrix,
   materialEmissive, modelScale, vec3, vec4, float, sin, cos, exp, dot, normalize, clamp, max, abs, smoothstep, length, materialColor, materialOpacity,
   materialReference } from 'three/tsl';
-import { TUNING } from '../tuning.js?v=128';
-import { styleName, styledBody } from './style.js?v=128';
+import { TUNING } from '../tuning.js?v=129';
+import { styleName, styledBody } from './style.js?v=129';
 
 const T = TUNING;
 
@@ -91,6 +91,7 @@ export function gelMaterial(hex, fam, radius, { wobble, jelly = T.material.jelly
     core: uniform(jelly ? J.core : 0),
     corePow: uniform(J.corePow),
     coreColor: uniform(deep.clone()),
+    lean: uniform(new THREE.Vector2(0, 0)),         // v129: the top's lag (radii, local xz), render/actors.js wobble
   };
   // the graph: one a kind of gel, shared (see graphOf), reading this body's numbers off userData.u as it is drawn
   const G = graphOf(fam, jelly, style);
@@ -124,7 +125,7 @@ export function gelMaterial(hex, fam, radius, { wobble, jelly = T.material.jelly
 // new body is a material, not a build. The numbers and their types:
 const U_TYPES = { phase: 'float', wobble: 'float', radius: 'float', hit: 'float', hitDir: 'vec2', tear: 'float', stretch: 'float',
   stretchDir: 'vec2', contact: 'vec4', sss: 'float', sssColor: 'color', lightDir: 'vec3', thick: 'float', rim: 'float',
-  rimPow: 'float', rimColor: 'color', core: 'float', corePow: 'float', coreColor: 'color' };
+  rimPow: 'float', rimColor: 'color', core: 'float', corePow: 'float', coreColor: 'color', lean: 'vec2' };
 const GRAPHS = new Map();
 export function graphOf(fam, jelly, style) {
   const key = `${fam}|${jelly ? 1 : 0}|${style}`;
@@ -140,6 +141,10 @@ export function graphOf(fam, jelly, style) {
   p = p.mul(float(1.0).add(r.tear.mul(DISP.inflate)));
   const sdir = vec3(r.stretchDir.x, 0.0, r.stretchDir.y);
   p = p.add(sdir.mul(dot(p, sdir)).mul(r.stretch));
+  // v129 (the owner's jelly notes: a body that carries its motion): the top lags where the body is pushed and swings
+  // back past rest when it stops — a shear, so it keeps its volume — more the higher up (`lean`, set each frame from
+  // a damped spring on the body's acceleration, render/actors.js); 0 at rest
+  p = p.add(vec3(r.lean.x, 0.0, r.lean.y).mul(clamp(p.y.mul(LEAN_H), 0.0, 1.0).pow(1.4)));
   G = {
     positionNode: vec3(p.x, p.y.mul(float(1.0).sub(r.stretch.mul(0.4))), p.z),
     // ── the glow and the dome's refraction depth ──
@@ -161,6 +166,7 @@ export function graphOf(fam, jelly, style) {
 // thrash. DISP holds its amplitudes, so gelReach (the most it can move, which
 // sizes the SDF proxy) cannot fall out of step with it.
 export const DISP = { lump: 0.13, simmer: 0.028, simmerHit: 0.075, ripple: 0.11, thrash: 0.22, inflate: 0.2 };
+const LEAN_H = 1 / 1.7;   // v129: the lean's full height, in radii (a dome stands ~1.7, a cube 1.8)
 
 // v82's contact squash (TUNING.blob.contact): the body cut by a plane
 // `depth` radii in from its rim on the side of what presses on it, over a

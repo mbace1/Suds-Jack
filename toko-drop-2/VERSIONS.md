@@ -19,6 +19,15 @@
     Never `--no-verify`.
 -->
 
+## v129 — 2026-11-09
+**The trees' shade is cast from trees — trunk, limbs and leaves, sun coming through — and a gel carries its motion: its top lags when it is pushed and swings back when it stops**
+- THE ASK (owner, 2026-11-09, on v128's before-and-after: "The tree shadows look weird in these screens"). v128 made the shade out of noise — blobs with holes in them, which read as camouflage. A tree's shadow is a tree: each one is now DRAWN once (render/trees.js: a trunk, limbs forking into twigs, leaves in clumps at their ends with gaps between), and the slab and the lawn CAST it (scenery.js treeShade): a point on the ground is in a tree's shade when the sun's ray from it, climbing at the sun's elevation, meets the tree, so the shadow is the tree stretched by the low sun, the higher the leaf the softer its edge, the crown swaying a little. Four trees past the far and the left edge, off the picture; the sun comes through between the leaves.
+- THE ASK, TOO ("Maybe you can check GitHub for latest jelly things"): the owner's own notes on GitHub (branch docs/jelly-softbody-notes, from the Jelly Baby soft-body demo) ask for a body that carries its motion — an impulse as a damped wave, its volume kept, settling back to rest. 2.0 had the hit's dent and ripple, the contact squash and the squeeze, but its motion only stretched a body with its SPEED. Now its top is a mass on a spring over its foot (render/actors.js wobble, TUNING.blob.wobble): pushed, it lags behind; stopped or turned, it swings on past and settles — a shear, so it keeps its volume (gel.js), slower in a bigger body, never more than a quarter of a radius. Measured on a tumbling YELA and a lunging PIKE: it follows every push, stays inside its bound, and comes back to rest. Drawn only — the sim never sees it, and the hero stays as he was (his settling is the controls').
+- Unchanged: the sim, every rule, the lines; the other worlds' light.
+- Cache tokens `?v=128` → `?v=129`; HUD label → `2.0 · v129`
+
+---
+
 ## v128 — 2026-11-09
 **The driveway at golden hour: the sun glints in every gel, the shadows run long and the trees' shade falls across the slab — and the goo splashes as jelly**
 - THE ASK (owner, 2026-11-09, with a concept picture of the driveway at golden hour: "Do you have any new visual additions or polish? Goo particles, light source reflected in enemies. Just thinking of going for this concept parity"). Measured against the picture with the concept's own composition staged in the game (five gels, the hero firing, a kill), render → look → redo, eight rounds.

@@ -24,11 +24,11 @@
 // `swirlAt`, out to `swirlR`, and opens a hole of `hole` m in the middle).
 import * as THREE from 'three/webgpu';
 import { Fn, If, uv, uniform, float, abs, fract, min, max, sin, cos, length, smoothstep, step, mix, fwidth, texture, clamp, vec2, vec3, pow, floor as tfloor, round, select, mod, dFdx, dFdy, exp, normalize, dot, cameraPosition, positionWorld, vec4 } from 'three/tsl';
-import { pickStyle, grainAt } from './style.js?v=128';
-import { SUN_AT } from './sun.js?v=128';
-import { GEL_TIME } from './gel.js?v=128';
-import { noise, grate, cells, sewerSpots, canopyShade } from './scenery.js?v=128';
-import { lilyPads, DRIFT, hash } from './kit.js?v=128';
+import { pickStyle, grainAt } from './style.js?v=129';
+import { SUN_AT } from './sun.js?v=129';
+import { GEL_TIME } from './gel.js?v=129';
+import { noise, grate, cells, sewerSpots, treeShade } from './scenery.js?v=129';
+import { lilyPads, DRIFT, hash } from './kit.js?v=129';
 
 const _white = new THREE.Color(0xffffff);
 
@@ -701,8 +701,8 @@ export function buildFloor(T, hx, hz, light, { style = 'grid', bounds: hasBounds
   // v128 DAYLIGHT (the owner's golden-hour concept for the driveway): the floor lit by a low warm `sun` and a cool
   // `sky`, each as the light it throws on the slab (linear rgb, E = sky + sun × what of the sun reaches the point).
   // What blocks the sun takes the SUN away, not the light: the curb's band, the bodies' shadows (`bodies` of it,
-  // and `contact` of all the light right under them), and the trees past the slab (scenery.js canopyShade)
-  const canopy = (wp, D) => canopyShade(wp, D.canopy, hx, hz, W.concrete.sunShadow.cotMax);
+  // and `contact` of all the light right under them), and the trees past the slab (scenery.js treeShade, v129)
+  const canopy = (wp, D) => treeShade(wp, D.trees, hx, hz, W.concrete.sunShadow.cotMax);
   const worldLight = (col, wp, rip, S) => {
     if (!WL) return [col, null];
     if (WL.daylight) {

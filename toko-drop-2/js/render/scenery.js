@@ -50,22 +50,23 @@
 // bars stand up, so they are lit by the scene's lights. Every number is
 // TUNING.scenery.
 import * as THREE from 'three/webgpu';
-import { Fn, float, vec2, vec3, fract, sin, cos, dot, floor as tfloor, mix, smoothstep, abs, positionWorld, positionLocal, normalWorld, normalView, clamp, max, min, length, step, fwidth, uv, attribute } from 'three/tsl';
-import { GEL_TIME } from './gel.js?v=128';
-import { hash, noise, seeded, motes, phase } from './kit.js?v=128';
-import { SUN_AT } from './sun.js?v=128';
-import { boiler } from './sets/boiler.js?v=128';
-import { river } from './sets/river.js?v=128';
-import { ice } from './sets/ice.js?v=128';
-import { deep } from './sets/deep.js?v=128';
-import { core } from './sets/core.js?v=128';
+import { Fn, float, vec2, vec3, fract, sin, cos, dot, texture, floor as tfloor, mix, smoothstep, abs, positionWorld, positionLocal, normalWorld, normalView, clamp, max, min, length, step, fwidth, uv, attribute } from 'three/tsl';
+import { GEL_TIME } from './gel.js?v=129';
+import { hash, noise, seeded, motes, phase } from './kit.js?v=129';
+import { SUN_AT } from './sun.js?v=129';
+import { treeAtlas } from './trees.js?v=129';
+import { boiler } from './sets/boiler.js?v=129';
+import { river } from './sets/river.js?v=129';
+import { ice } from './sets/ice.js?v=129';
+import { deep } from './sets/deep.js?v=129';
+import { core } from './sets/core.js?v=129';
 
 // worlds 5-9 (v72): a set of their own each, built to its brief (render/sets/)
 const SETS = { boiler, river, ice, deep, core };
 
 // the noise, the cracks and the seeded numbers are the kit's (v72: render/kit.js),
 // and the floor still takes them from here
-export { noise, cells } from './kit.js?v=128';
+export { noise, cells } from './kit.js?v=129';
 
 // the storm drain's grate (v65, the owner's world-2 sheet), in its own units
 // (q, its frame's radius 1): x the grate, y a slot, z the frame. Rows of
@@ -86,27 +87,28 @@ export const grate = Fn(([q]) => {
 // stands the shafts and the pipe mouths on these, and the floor lays the
 // pools of light and the rivulets on the same, so the two cannot disagree.
 // `a` runs along the tunnel, `c` across it
-// v128 (the owner's golden-hour concept): the TREES' shade past a slab of `hx` × `hz` (floor.js daylight, and the lawn
-// round it), 0 in the open sun and up to 1 deep under a crown. Crowns `r` m round, `h` m up, standing `out` m past the
-// edge at `at` (fractions of the half sizes), each throwing its shadow away from the world's sun cot θ × h along the
-// ground (cot θ held to `cotMax`), stretched 1/sin θ, its edge broken by `edge` [cycles a metre, how much], the light
-// coming through the leaves in `holes` (noise over [lo, hi] at `scale` cycles a metre, `k` of the way, gathered in
-// clumps `clump` cycles a metre, `clumpK` strong), the whole of it swaying `sway` m
-export function canopyShade(wp, C, hx, hz, cotMax) {
-  const sunH = max(length(SUN_AT.xz), 1e-3), cot = min(sunH.div(max(SUN_AT.y, 1e-3)), cotMax), stretch = float(1).add(cot.mul(cot)).sqrt();
+// v129 (the owner on v128: "The tree shadows look weird"): the TREES' shade past a slab of `hx` × `hz` (floor.js
+// daylight, and the lawn round it), 0 in the open sun and up to `k` under a crown. Each tree is a silhouette drawn
+// once (trees.js: trunk, forking limbs, leaves in clumps), standing `out` m past the edge at `at` [fx, fz] (fractions
+// of the half sizes), `h` m tall and its silhouette `w` m across (tile `tile` of the atlas, `flip`ped or not). A point
+// on the ground is in its shadow where the sun's ray from it, climbing at the sun's elevation, meets the silhouette:
+// its height on the tree is how far the point lies from the foot along the shadow × tan θ (cot θ held to `cotMax`).
+// The higher the leaf, the softer its shadow (`penumbra` mip levels at the top), and the crown sways (`sway`)
+export function treeShade(wp, C, hx, hz, cotMax) {
+  const tex = treeAtlas(C);
+  const sunH = max(length(SUN_AT.xz), 1e-3), cot = min(sunH.div(max(SUN_AT.y, 1e-3)), cotMax);
   const away = vec2(SUN_AT.x.negate(), SUN_AT.z.negate()).div(sunH), side = vec2(away.y.negate(), away.x);
-  const sway = vec2(sin(GEL_TIME.mul(0.7)), cos(GEL_TIME.mul(0.53))).mul(C.sway);
-  const la = dot(wp, away).div(stretch), lc = dot(wp, side), lf = vec2(la, lc).add(sway);
-  const brk = noise(lf.mul(C.edge[0])).sub(0.5).mul(C.edge[1]);
-  let crown = float(0);
-  for (const [fx, fz] of C.at) {
-    const c = vec2(fx * (hx + C.out), fz * (hz + C.out)).add(away.mul(cot.mul(C.h)));
-    const q = wp.sub(c), d = length(vec2(dot(q, away).div(stretch.mul(C.r)), dot(q, side).div(C.r))).add(brk);
-    crown = max(crown, float(1).sub(smoothstep(0.62, 1.0, d)));
-  }
-  const Hh = C.holes, leaf = noise(lf.mul(Hh.scale)).mul(0.62).add(noise(lf.mul(Hh.scale * 2.7).add(vec2(3.7, 1.3))).mul(0.38));
-  const clump = noise(lf.mul(Hh.clump ?? 0.3).add(vec2(9.1, 4.4))).sub(0.5).mul(Hh.clumpK ?? 0);
-  return crown.mul(float(1).sub(smoothstep(Hh.lo, Hh.hi, leaf.add(clump)).mul(Hh.k)));
+  let shade = float(0);
+  C.at.forEach(([fx, fz, out, h, w, tile, flip], i) => {
+    const bx = fx * hx + (Math.abs(fx) >= 1 ? Math.sign(fx) * out : 0), bz = fz * hz + (Math.abs(fz) >= 1 ? Math.sign(fz) * out : 0);
+    const q = wp.sub(vec2(bx, bz)), v = dot(q, away).div(cot.mul(h));
+    let u = dot(q, side).div(w).add(0.5).add(sin(GEL_TIME.mul(0.9).add(i * 1.7)).mul(C.sway).mul(v));
+    if (flip) u = float(1).sub(u);
+    const inside = step(0, v).mul(step(v, 1)).mul(step(0, u)).mul(step(u, 1));
+    const t = texture(tex, vec2(clamp(u, 0.002, 0.998).add(tile).div(C.n), clamp(v, 0, 1)), clamp(v, 0, 1).mul(C.penumbra)).r;
+    shade = max(shade, t.mul(inside));
+  });
+  return shade.mul(C.k);
 }
 
 export function sewerSpots(T, hx, hz) {
@@ -246,7 +248,7 @@ export class Scenery {
       // warm where it reaches, the sky's cool where the curb or the trees take it — kept at the brightness it had
       const DL = this.T.worlds.lit?.concrete?.daylight;
       if (DL) {
-        const vis = float(1).sub(shade).mul(float(1).sub(canopyShade(p, DL.canopy, hx, hz, this.T.worlds.floor.concrete.sunShadow.cotMax)));
+        const vis = float(1).sub(shade).mul(float(1).sub(treeShade(p, DL.trees, hx, hz, this.T.worlds.floor.concrete.sunShadow.cotMax)));
         const E = vec3(...DL.sky).add(vec3(...DL.sun).mul(vis)).div((DL.sky[1] + DL.sun[1]) * (DL.lawn ?? 1));
         return mix(col.mul(E), vec3(...S.haze), far.mul(S.fadeTo));
       }

@@ -15,23 +15,23 @@
 // that springs in and fades (splats.js). Views are pooled per species, so a
 // gel's material is built once and reused, never compiled mid-fight.
 import * as THREE from 'three/webgpu';
-import { TUNING } from '../tuning.js?v=128';
+import { TUNING } from '../tuning.js?v=129';
 import * as TSL from 'three/tsl';
-import { gelMaterial, domeGeometry, cubeGeometry, heroGeometry, GEL_TIME, GEL_SUN, GEL_GLINT, GEL_CORE } from './gel.js?v=128';
-import { LOOKS } from './looks/index.js?v=128';
-import { styleName, setStyle as setStyleMode, styledBody } from './style.js?v=128';
-import { JellyBody } from './jelly.js?v=128';
-import { Juice } from './juice.js?v=128';
-import { ArenaLight } from './light.js?v=128';
-import { toSdf } from './sdf.js?v=128';
-import { PickupView } from './pickups.js?v=128';
-import { ChallengeView } from './challenge.js?v=128';
-import { PostView } from './posts.js?v=128';
-import { SlamView } from './slam.js?v=128';
-import { HintView } from './hints.js?v=128';
-import { Goo } from './goo.js?v=128';
-import { mult as heatMult } from '../sim/heat.js?v=128';
-import { strands as liveStrands } from '../sim/formation.js?v=128';
+import { gelMaterial, domeGeometry, cubeGeometry, heroGeometry, GEL_TIME, GEL_SUN, GEL_GLINT, GEL_CORE } from './gel.js?v=129';
+import { LOOKS } from './looks/index.js?v=129';
+import { styleName, setStyle as setStyleMode, styledBody } from './style.js?v=129';
+import { JellyBody } from './jelly.js?v=129';
+import { Juice } from './juice.js?v=129';
+import { ArenaLight } from './light.js?v=129';
+import { toSdf } from './sdf.js?v=129';
+import { PickupView } from './pickups.js?v=129';
+import { ChallengeView } from './challenge.js?v=129';
+import { PostView } from './posts.js?v=129';
+import { SlamView } from './slam.js?v=129';
+import { HintView } from './hints.js?v=129';
+import { Goo } from './goo.js?v=129';
+import { mult as heatMult } from '../sim/heat.js?v=129';
+import { strands as liveStrands } from '../sim/formation.js?v=129';
 
 const T = TUNING;
 const B = T.blob, D = T.death;
@@ -366,6 +366,7 @@ export class Actors {
   _take(kind) {
     const v = this._pool()[kind]?.pop() || this._makeGel(kind);
     v.vx = v.vz = 0; v.hit = 0; v.dyingT = 0; v.cd = v.cb = 0; v.press = null;
+    v.jx = v.jz = v.jvx = v.jvz = 0; v.pvx = v.pvz = null; v.mat?.userData?.u?.lean?.value.set(0, 0);   // v129: no wobble carried over
     if (v.mat?.gel) { v.mat.gel.hit.value = 0; v.mat.gel.tear.value = 0; v.mat.gel.contact?.value.set(0, 0, 0, 0); }
     v.mat?.emissive?.setScalar(0);
     v.L.reset?.(v);
@@ -688,6 +689,7 @@ export class Actors {
       // velocity, smoothed the way 1.x smoothed it (0.3 a frame)
       v.vx += ((g.x - g.px) / T.sim.dt - v.vx) * 0.3;
       v.vz += ((g.z - g.pz) / T.sim.dt - v.vz) * 0.3;
+      wobble(v, g, fdt);   // v129: the top carries the body's motion (a damped spring on its acceleration)
       v.squash.scale.set(1 / Math.sqrt(g.sq), g.sq, 1 / Math.sqrt(g.sq));
       v.press = g; v.pressR = g.r;   // v82: what pressed on it this step (sim/press.js; eased below)
       // the swell is the view's alone (the body is live from its first step): a
@@ -992,6 +994,30 @@ const VOLC = 4 / 3 * Math.PI;   // a chunk of radius s is drawn as VOLC s³ of g
 // plus the balance, the far side the balance alone — one body against you
 // flattens one side, two either side flatten both. Before this the vector
 // alone was read, and a squeeze from both sides read as nothing.
+// v129 (the owner's jelly notes, docs/jelly-softbody-notes: "propagate an impact through the body as a damped wave",
+// "wobble returns to a stable rest state"): the top of a body is a mass on a spring over its foot — pushed, it lags
+// behind; stopped, it swings on past and settles (TUNING.blob.wobble: `hz` for a body `r0` m round, slower the bigger,
+// `damp` of critical, `gain` radii of lean a m/s² of push, never past `max`). Drawn only: the sim never sees it, and
+// the shear keeps the body's volume (gel.js). Sub-stepped, so a slow frame cannot blow it up
+function wobble(v, g, dt) {
+  const W = T.blob.wobble, u = v.mat?.userData?.u;
+  if (!W || !u?.lean) return;
+  if (v.pvx == null || !(dt > 0)) { v.pvx = v.vx; v.pvz = v.vz; return; }
+  const ax = (v.vx - v.pvx) / dt, az = (v.vz - v.pvz) / dt;
+  v.pvx = v.vx; v.pvz = v.vz;
+  const w = 2 * Math.PI * W.hz / Math.sqrt(Math.max(1, (g.r || W.r0) / W.r0)), k = w * w, c = 2 * W.damp * w;
+  const n = Math.max(1, Math.ceil(dt / 0.008)), h = dt / n;
+  for (let i = 0; i < n; i++) {
+    v.jvx += (-k * v.jx - c * v.jvx - ax * W.gain) * h; v.jvz += (-k * v.jz - c * v.jvz - az * W.gain) * h;
+    v.jx += v.jvx * h; v.jz += v.jvz * h;
+  }
+  const m = Math.hypot(v.jx, v.jz);
+  if (m > W.max) { v.jx *= W.max / m; v.jz *= W.max / m; v.jvx *= 0.5; v.jvz *= 0.5; }
+  // into the body's own frame (it is turned to face where it goes)
+  const cy = Math.cos(v.yaw || 0), sy = Math.sin(v.yaw || 0);
+  u.lean.value.set(v.jx * cy - v.jz * sy, v.jx * sy + v.jz * cy);
+}
+
 function contactEase(v, dt, yaw) {
   const u = v.mat?.gel?.contact;
   if (!u) return;

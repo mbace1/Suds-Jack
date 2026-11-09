@@ -7,10 +7,10 @@
 // things that work"). The arena is 1.x's, so every 1.x number ports as it is
 // instead of through a rescale. Axes: x across the screen (right +), y up,
 // z toward the bottom of the screen. The arena is centred on the origin.
-import { SPECIES } from './tuning/species/index.js?v=128';
-import WAVES from './tuning/waves.js?v=128';
-import PICKUPS from './tuning/pickups.js?v=128';
-import MUSIC from './tuning/music.js?v=128';
+import { SPECIES } from './tuning/species/index.js?v=129';
+import WAVES from './tuning/waves.js?v=129';
+import PICKUPS from './tuning/pickups.js?v=129';
+import MUSIC from './tuning/music.js?v=129';
 
 export const TUNING = {
   render: {
@@ -147,8 +147,13 @@ export const TUNING = {
       // v128 (the owner's golden-hour concept): the driveway under DAYLIGHT (floor.js): a low warm sun and a cool sky,
       // the slab in the trees' dappled shade toward the far left (the sun stands there, past the far-left corner)
       concrete: { daylight: { sky: [0.45, 0.47, 0.56], sun: [1.28, 0.92, 0.52], bodies: 0.95, contact: 0.18,
-                              canopy: { at: [[-1, -1], [-0.45, -1], [0.15, -1], [-1, -0.3]], out: 4, h: 5.5, r: 3.4, edge: [0.9, 0.45], sway: 0.04,
-                                        holes: { scale: 1.3, lo: 0.42, hi: 0.66, k: 0.85, clump: 0.3, clumpK: 0.55 } } } },
+                              // v129: the trees past the slab, drawn as trees (render/trees.js, scenery.js treeShade): [fx, fz,
+                              // out m, h m tall, w m across, atlas tile, flipped]; the leaves block `k` of the sun
+                              trees: { n: 4, px: 512, seed: 11, k: 0.85, sway: 0.006, penumbra: 2.2,
+                                       at: [[-1, -1, 3, 9.5, 9, 0, 0], [-0.42, -1, 5, 10.5, 10, 1, 1], [0.28, -1, 7, 9, 8.5, 2, 0], [-1, -0.12, 4, 10, 9.5, 3, 1]],
+                                       shape: { trunk: 0.03, lean: 0.07, fork0: [0.24, 0.08], limbs: [3, 4], spread: 0.55, limb: [0.15, 0.05], depth: 4,
+                                                third: 0.35, fork: [0.42, 0.3], shrink: [0.68, 0.12], thin: 0.6, leafDepth: 2, leaves: [3, 6],
+                                                leaf: [0.009, 0.012], clump: 0.09, blur: 0.003 } } } },
       sewer:   { ambient: 0.72, pools: { h: 7, r: 4.4, k: 0.85, color: [1, 0.84, 0.6] }, sheen: { k: 0.4, shine: 34 } },
       // the cistern: the shaft through the roof is a broad, soft key on the far-left half (the approved picture's
       // god rays), not a lamp — at 0.9 with a sharp sheen it read as a white fog blob; the lamps warm the back rim
@@ -672,6 +677,10 @@ export const TUNING = {
     },
     breatheAmp: 0.13, breatheAmpSplitta: 0.18, breatheHz: 2.4,
     dragStretchPerSpeed: 0.10, dragMax: 0.35, rearDragTilt: 0.35,
+    // v129 (the owner's jelly notes): the top WOBBLES with the body's motion — a damped spring on its acceleration
+    // (render/actors.js wobble): `hz` for a body `r0` m round (slower the bigger), `damp` of critical, `gain` radii
+    // of lean a m/s² of push, `max` radii at most. Drawn only; the sim never sees it
+    wobble: { hz: 2.3, r0: 0.8, damp: 0.2, gain: 0.85, max: 0.24 },
     hitRipple: 0.28,        // seconds a hit ripple takes to die out
     // 2.0's dent (the graphics pass): a shot pushes the jelly in where it lands
     // and the dent springs back with an overshoot, over the ripple's 0.28 s.
