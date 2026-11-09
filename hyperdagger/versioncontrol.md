@@ -69,3 +69,12 @@ The live page did move. gh-pages `3b8fb141`, 18 Oct 2026, 15:37:18 EEST, message
 The publish carried `hyperdagger/` (minus `test/`, where the site's own two files were left as they were) and the one `hub/versions.json` row. No catalogue line changed, so no token cascade was needed. The deployed `VERSIONS.md` still read "v58 — in progress"; the dated heading in this entry's commit reaches the site with the next Hyper Dagger publish.
 
 Not verified: the live page was not opened. This session's network policy refuses `mbace1.github.io`. Before the push, the offline, press-edges, hud-lock and goal-card gates passed against the site tree, with the site's own hub and toko files.
+
+## 2026-11-09 — shared-counter prerequisite (Toko lane)
+
+Toko idle-aside fix changes only the paused-table import in Hyper main
+(table 6), main/worker registration 111, signature 10 and worker cache v81.
+Generated precache has 69 entries (the old table 1/5 duplicate collapses).
+No Hyper mechanics or release number change. The v60 branch must retain its
+SDF work when incorporating this prerequisite and choose fresh main/cache
+tokens. Toko/PATCH_NOTES.md owns the behavior change and regression evidence.

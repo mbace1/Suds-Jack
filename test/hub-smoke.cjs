@@ -154,6 +154,10 @@ function check(name, cond) {
   // catalogue order, is the order the cabinets appear in
   const games = [...active, ...archived];
   offRepo = games.filter(g => g.inRepo === false && g.path).map(g => g.path.replace(/^\//, ''));
+  // The controller launch below can select a deployment-only cabinet (for
+  // example Pajatso). Serve its existing stand-in before that navigation,
+  // not only when the later one-button checks happen to register a stub.
+  for (const pathname of offRepo) STUB.add(`/${pathname.split(/[?#]/)[0]}`);
 
   // THE HOST. Toko Live is injected onto the floor by hub/toko-cabinet-dom.js
   // rather than coming out of the catalogue, and that is deliberate: he is the

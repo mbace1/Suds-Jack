@@ -619,6 +619,12 @@ export function mountChat(anchor, opts = {}) {
   // A Sierra front desk was never silent. He gets a few of these a visit and
   // then he lets it be quiet, because a counter that keeps talking at you is
   // a shop.
+  // An aside answers silence. Typed input and lines appended by a host
+  // (Toko Live owns its own replies) both restart that silence interval.
+  const idleActivity = new MutationObserver(() => { if (open) armIdle(); });
+  idleActivity.observe(log, { childList: true });
+  parse.addEventListener('input', () => { if (open) armIdle(); });
+
   function armIdle() {
     clearTimeout(idle);
     if (still || asides >= 3 || !open) return;
@@ -1250,6 +1256,7 @@ export function mountChat(anchor, opts = {}) {
     destroy() {
       if (typing) { typing.after = null; finishTyping(); }
       clearTimeout(idle);
+      idleActivity.disconnect();
       keyHost.removeEventListener('keydown', onKey);
       removeEventListener('hashchange', fromHash);
       removeEventListener('keydown', sawKey, true);
