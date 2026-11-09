@@ -10,11 +10,13 @@
   subsequent silence, closing and destruction. The old counter fails it.
 - Shared module URLs: chat 26, table 6, signature 10. Update their direct
   importers and worker graphs, preserving each file’s newline convention.
-  Toko Live main 12 and Hyper main/worker registration 111 (only import URLs
+  Toko Live main 22 and Hyper main/worker registration 111 (only import URLs
   changed); no game mechanics or brand/game release labels change. Root
-  cache v105, Hyper cache v81; shared-counter cache suffix toko26 for Radio
+  cache v283, Hyper cache v81; shared-counter cache suffix toko26 for Radio
   Free/Toko Drop. Source precaches regenerated. This prerequisite is separate
   from Hyper Dagger’s v60 feature PR #628.
+  Production already used Toko Live main URL 21 and hub cache 282; choose
+  22/283 to advance both lineages instead of reusing a deployed URL.
 - Hyper’s precache walker now carries a module’s URL token into built
   dialogue/language imports. The old walker cached untokened substitutes,
   leaving a first offline counter opening dependent on an earlier online
