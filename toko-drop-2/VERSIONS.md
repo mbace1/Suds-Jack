@@ -19,115 +19,12 @@
     Never `--no-verify`.
 -->
 
-## v129 — 2026-11-09
-**The trees' shade is cast from trees — trunk, limbs and leaves, sun coming through — and a gel carries its motion: its top lags when it is pushed and swings back when it stops**
-- THE ASK (owner, 2026-11-09, on v128's before-and-after: "The tree shadows look weird in these screens"). v128 made the shade out of noise — blobs with holes in them, which read as camouflage. A tree's shadow is a tree: each one is now DRAWN once (render/trees.js: a trunk, limbs forking into twigs, leaves in clumps at their ends with gaps between), and the slab and the lawn CAST it (scenery.js treeShade): a point on the ground is in a tree's shade when the sun's ray from it, climbing at the sun's elevation, meets the tree, so the shadow is the tree stretched by the low sun, the higher the leaf the softer its edge, the crown swaying a little. Four trees past the far and the left edge, off the picture; the sun comes through between the leaves.
-- THE ASK, TOO ("Maybe you can check GitHub for latest jelly things"): the owner's own notes on GitHub (branch docs/jelly-softbody-notes, from the Jelly Baby soft-body demo) ask for a body that carries its motion — an impulse as a damped wave, its volume kept, settling back to rest. 2.0 had the hit's dent and ripple, the contact squash and the squeeze, but its motion only stretched a body with its SPEED. Now its top is a mass on a spring over its foot (render/actors.js wobble, TUNING.blob.wobble): pushed, it lags behind; stopped or turned, it swings on past and settles — a shear, so it keeps its volume (gel.js), slower in a bigger body, never more than a quarter of a radius. Measured on a tumbling YELA and a lunging PIKE: it follows every push, stays inside its bound, and comes back to rest. Drawn only — the sim never sees it, and the hero stays as he was (his settling is the controls').
-- Unchanged: the sim, every rule, the lines; the other worlds' light.
-- Cache tokens `?v=128` → `?v=129`; HUD label → `2.0 · v129`
-
----
-
-## v128 — 2026-11-09
-**The driveway at golden hour: the sun glints in every gel, the shadows run long and the trees' shade falls across the slab — and the goo splashes as jelly**
-- THE ASK (owner, 2026-11-09, with a concept picture of the driveway at golden hour: "Do you have any new visual additions or polish? Goo particles, light source reflected in enemies. Just thinking of going for this concept parity"). Measured against the picture with the concept's own composition staged in the game (five gels, the hero firing, a kill), render → look → redo, eight rounds.
-- THE SUN IN THE JELLY: one sun for every gel, each world's (it was 1.x's, baked into every body), and its GLINT — a white-hot spot in the sun's colour inside a softer sheen — in every gel, the drops and the chunks, wherever a world gives the sun a glint (the driveway). The jelly reflects the world's own SKY where a world has one: the driveway's is painted in code (render/env.js skyEnvironment: a cool zenith down to a warm horizon, the sun far brighter than white), where it reflected the dark studio of world 1. And the light comes THROUGH: the side of a body away from the sun lit in its own hue, its inner glow ×2.6 in the sun.
-- GOLDEN HOUR: the driveway's sun stands low behind the far-left corner (23°), warm, with a cool sky. The slab is LIT, not tinted (floor.js daylight): warm where the sun reaches it, the sky's cool where something takes the sun away — the curb, the bodies (their shadows now long and crisp, a ball's shadow cast where a low sun would put it), and the TREES past the slab, whose dappled shade, leaves and gaps stretched by the low sun, falls across the far-left of the slab and the lawn (scenery.js canopyShade). The light through each gel falls as a soft pool of its colour inside its shadow, where it was a ring round its foot.
-- THE GOO: a kill throws a CROWN — drops evenly round the body's rim, out and up, a ring for a moment before they fall round the puddle (every world). A drop is lit by the world's sun, with its glint and its light through it. A chunk is a piece of jelly, smooth, a cube's a small rounded cube (it was a cut gem), glossier, its hue glowing where it faces you and lit through on its far side.
-- Only the driveway changes its light; the other worlds keep theirs (their gels' translucency now follows their own sun, as their floors' shadows have since v93). Unchanged: the sim, every rule, the lines.
-- Cache tokens `?v=127` → `?v=128`; HUD label → `2.0 · v128`
-
----
-
-## v127 — 2026-11-09
-**The title after a run is the title again: nothing of the run is drawn under it — and the progress trailer re-cut without its glitches**
-- THE ASK (owner, 2026-11-09: "The trailer had some glitches still"). Every frame of v122's trailer read by a script (the change from frame to frame, shot by shot) and the flagged frames looked at. Three glitches, two of them the trailer's and one the game's.
-- THE GAME'S: back on the title after a run, the run was still drawn under it — its bodies frozen where they stood, on world 1's floor (the trailer's CAMPAIGN grid sat over HARDCADE's sewer gels), its bullets in the air, a burst's chunks, the trails SLUDGE pours and YELA's slime, its hero in its last pose (gone after a death, shrunk in the vortex, the HEAT halo burning where it stood), and its floor's walls where the run's squeeze had left them. The run's world is kept (the play record reads it), but the title's arrival now lets go of everything the run drew — the species that keep a pool of their own (SLUDGE, YELA, PYRA, BAMBU) let go of theirs too — stands the hero as a first visit does, and draws nothing of the kept world until a run starts. Checked by listing every mesh the scene draws on a first visit's title and on the title after a HARDCADE run in the sewer: what differs is the title's own shader warm-up. The smoke checks a title after a quit draws none of the run's bodies.
-- THE TRAILER'S (scripts/itch-clips.mjs, not the game): the camera's shake, 1.x's trauma wobble at 6–7 Hz, sampled at a film's 30 frames a second jumps the whole picture from frame to frame — through the world 9 boss's landing and the first frames of four shots. A film is shot without it now; the game keeps it. And the closing NOW AT shot replayed the NINE WORLDS shot of world 9 from twelve seconds before (one seed, and two run-aheads that met on the same frame): it has a run of its own.
-- Cache tokens `?v=126` → `?v=127`; HUD label → `2.0 · v127`
----
-
-## v126 — 2026-11-09
-**The run's own end made safe: nothing hurts you under WORLD CLEAR, a run decided on a step stays decided, and the ★ chip lights for the pickup alone**
-- THE SECOND HALF of the state audit (docs/STATE.md, v125 the first): the simulation's fixes, on their own, so they could be measured against v125 seed for seed.
-- WORLD CLEAR IS SAFE: a world's boss down gives the hero the game's grace until the floor opens, and the world change keeps it. Before, what the boss wave left behind (a lob, a puddle, a sweep, HARDCADE's corpse fire) could hit the hero under the WORLD CLEAR card, and on a last life end the run there.
-- A DECIDED RUN STAYS DECIDED: once the director decides the run on a step (the last world's boss cleared, a campaign room's end written with its grade), nothing after it runs on that step, and a hit is refused. Before, a puddle could hurt the hero under the WON screen, a corpse shot could kill the hero on the step its room was cleared (a game-over under a CLEAR), and kills went on adding to a graded room's score.
-- THE ★ CHIP: the world change lent its grace from the INVINCIBLE pickup's timer, so the chip lit on every world change. The grace has its own timer now, and the chip is the pickup's.
-- MEASURED: 2,916 bot runs through v125 and v126 from the same seeds — every campaign room on both routes at three skills, every arcade world at two, every HARDCADE world. 30 differ, all at a run's very end, and no grade, outcome or world clear moved: 28 rooms where the world went on counting after the grade (up to 1,200 points and a kill); HARD PACK ICE, cleared with a B and lost on the same step; one arcade run's hit under WORLD CLEAR (world 4, a sweep). The bots read the new grace as a guard, as they read the pickup's.
-- LOOKED AT AND LEFT: a challenge, a squeeze or a moving floor outliving its world (in 250 world ends by three bots none was still up at the boss down: a challenge's 22 s clock runs out first); a boss killed on its landing step never counting as seen (a landing body cannot be hit); `pop()` skipping a body's death (on purpose: a boss's adds go for nothing).
-- FOR AN AGENT: `__toko.machines.run` (wave, bossDown, worldClear, transition, breather, won, dead, room) and `__toko.machines.hero` (the dash: ready, dashing, cooldown; the guard: dash, mercy, pickup, grace). `runPhase(w)` and `heroState(h)` read the same for a bot or a test. test/run.mjs gates it all, and each of its checks fails with its fix taken out.
-- Cache tokens `?v=125` → `?v=126`; HUD label → `2.0 · v126`
-
----
-
-## v125 — 2026-11-09
-**The run's flow declared: one table owns what entering and leaving each state does, and eleven ways out that went wrong now go right**
-- THE ASK (owner, 2026-11-09: "Find all of the implicit state machines in my app. Make the best decision that will elevate all three: the user experience (UX), developer experience (DX), and agent experience (AX) always, without breaking anything"). Four read-only reviews — the flow and menus, the simulation, input and audio, the view — each proving its claims with probes against the real modules. The map is docs/STATE.md: every machine, where it lives, whether it is explicit, how to read it.
-- THE DECISION: one declared machine owns the run's lifecycle (js/fsm.js, `flow` in main.js: menu → intro → play ⇄ paused → dying → over). `setState()` is the only writer of the state: it derives input, the HUD and the death beat's HUD from it, runs what leaving and entering a state must do (the film put away on ANY way out of the intro, a pending dash not outliving play, the title's return ending the run's own view), and records every move — an undeclared one too, which the smoke fails on. The simulation is not touched here; its fixes are their own version, so the lines can be measured against them alone.
-- FIXED, verified by the reviews: QUIT in the middle of a world change left the title frozen in the vortex or under the dark (the change was re-applied to the kept world every frame); the film before a FROM WORLD or CONTINUE start gave the floor back with world 1's dark and rail (the driveway lost its summer haze until the next world: the film now puts back what it found); the tab hidden during the film came back as a live, unpaused run (it starts paused now); a campaign room started in the title warm-up's held frame kept its rings, heart and orbs 50 m under the floor; a dash pressed on a frame with no sim step fired after RESUME; the next world's posts stood in the void through the fall. The smoke checks the first two.
-- FIXED, read from the code: RECORDS' BACK went to OPTIONS while Esc and B skipped past it; a late answer (the share sheet) could draw the title over a paused run (the screen up is named now — `ui.screen` — and only it is redrawn); the rooms' grid could be drawn over a run started while it loaded; Start in a pause pressed the focused button — QUIT, if focus had moved there — and now resumes, and so does P; the death beat's MENU button did nothing and is not shown; a held button or a key's auto-repeat skipped the film; a phone that stopped the sound (a call, the screen locked) left the game silent for good; the drawn sticks ignored OPTIONS' STICK size; `?fps` said "no dash" under LIFT; a level that failed to load could not be asked for again; a run closed while hidden was never filed in the play record (it is a quit now, once).
-- FOR AN AGENT: `__toko.flow` (the state, since when, the last moves, any undeclared one) and `__toko.machines` (the flow, the screen, the world change's phase, the run's view, the input's and the sound's state, the capture), and `__toko.capEnd()` to give runs back to the player after a capture's bot. test/fsm.mjs gates the machine itself.
-- Cache tokens `?v=124` → `?v=125`; HUD label → `2.0 · v125`
-
----
-
-## v124 — 2026-11-09
-**1.x's dash is back: lift the right thumb and it dashes, where you walk, 1.x's length — and it passes through, as 1.x's did**
-- THE ASK (owner, 2026-11-09: "The dash needs to be better, more like in v. 1.x"). Measured first: the same 27 thumb gestures (9 strokes of the aim stick, each standing still, walking right at 2/3 stick and walking up at full; real touch events with their own timestamps, scratch `dash2/`) through v123 and against 1.x's rule (docs/port-1x/player-controls.md §8, §10). 1.x dashes on all 27; v123 on 18 — a tap, a lift after aiming and a lift after a sweep were no dash — and every one of v123's went where the right thumb had flicked, never where you walked, a long flick 11 u with a 1.36 s cooldown where 1.x's is 4.77 u and 0.75 s.
-- DASH BY (a new switch in OPTIONS): LIFT, 1.x's and the default — every let-go of the aim stick dashes, a tap included: 1.x's own dash, along the move stick (half a stick, half a dash, as 1.x), standing still along the last shot, 26 u/s for 11 steps, 0.75 s to the next. FLICK is v18-v123's flick dash, as it was. Measured again: 27 of 27 dash, each where 1.x's would and as far.
-- A thumb RESTING on the move stick (a few px of jitter, under 0.15 of the stick) is not a walk: the dash is a still one, the full 4.77 u the way of the last shot. 1.x's move stick had no deadzone, so the same thumb dashed a tenth of a unit there (port trap T1).
-- PASS is back on the DASH switch and is what a first run plays: 1.x's dash, straight through the bodies with its i-frames and touching nothing — the sim's own dash, and what every bot measured the curve and the lines with. PUSH and CUT are one tap away (DASH · PASS → PUSH → CUT). A dash saved before v124, when PUSH was the default, is let go once so a phone that played v123 meets 1.x's; one chosen after it stays.
-- The title's hint says LIFT IT TO DASH under LIFT and FLICK TO DASH under FLICK, in all three languages.
-- Cache tokens `?v=123` → `?v=124`; HUD label → `2.0 · v124`
-
----
-
-## v123 — 2026-11-08
-**World 1 alone in the void: the grid round it gone, lines of neon running round it, every body a light, the grid sharper**
-- THE DIRECTION (owner, 2026-11-08: "take out the environment art away from world 1, let's keep it super minimalistic. Only ... some moving neon lines in the void around the arena. Push for more lights and sharper visuals"). World 1's surround — the grid running on past the rail into the dark and the lit bollards along three sides — is gone: the arena stands alone in the void.
-- THE NEON: five loops round the arena, each further out and deeper into the dark (0.8 m out at the floor's level to 8.8 m out, 3.5 m down), cyan, magenta and violet, each a faint line of its own with lines of light running round it — a white-hot head and a streak of its colour 9–18 m long, 4–6 to a loop, the loops turning opposite ways at 2.5–6.5 m/s, the deeper the slower. One mesh, one shader, run off the game's clock: nothing moves on the CPU. Flat on the void, so the near side's loops hide nothing. NEON's floors and SURVIVAL wear it too, and the title stands in front of it.
-- MORE LIGHT: the inner loop's lines light the floor's edge in their colour as they pass, the light running along the edge with each streak (pools down the streak from its head, weaker behind — round pools at the head alone read as blobs). Every body on world 1's floor is a light of its own, a pool of its colour lighting the grid round its foot (a boss's brighter), and the bullets throw twice the light. The hero's light is put on the light map first, so a floor full of bullets and bodies cannot crowd it out.
-- SHARPER: the grid's lines brighter (strength 0.55 → 0.8) and the darkening toward the floor's rim shallower (0.55 → 0.38, the lines' fade 0.45 → 0.3), so the grid reads crisp to its edge against the void.
-- Looked at as a phone shows it, upright and sideways: the title, a challenge wave, the boss, and a 3-second clip of a run, before and after; five bodies staged with their light on and off.
-- Cache tokens `?v=122` → `?v=123`; HUD label → `2.0 · v123`
-
----
-
-## v122 — 2026-11-07
-**A sound pass, standing in for the owner's ears: the game 4 dB louder on a phone, and the boiler's song brought up to the others**
-- THE PASS (owner, 2026-11-07: "Use bots instead of me"): every song at every level beside the game's own effects (scripts/music-render.mjs measure), and a bot's real runs of worlds 2, 5 and 8 rendered with the music and every effect its play set off (replay), measured to EBU R128 (ffmpeg) and drawn as spectrograms. Clean: no clipping anywhere, the songs within about 2 dB of each other, a kill or a hurt 8 dB over the music, the melodies clear at 500–900 Hz, nothing harsh above 5 kHz. Written up in docs/SOUND.md.
-- QUIET FOR A PHONE: the real runs measured −27 to −29 LUFS, about 10 dB under what a phone's speaker usually plays, with 6–10 dB of headroom unused. The master goes 0.5 → 0.8 (+4 dB): −23 to −25 LUFS, and the limiter (v58) holds the loudest moment of the lot, world 5's, at −2.3 dBFS true peak. VOLUME and MUSIC in OPTIONS are as they were.
-- THE BOILER ON A PHONE: its weight is low, where a phone's speaker gives little back, and it played 2.6 dB under the other songs there; its lead was the quietest of the ten. Lead 0.17 → 0.21: the songs on a phone now sit within 2.9 dB of each other (4.3 before).
-- Found and left: heat levels 3 and 4 add a ride, a metal tick and the lead an octave up, texture rather than loudness (the songs measure the same from level 2 up); each step of the × still plays its own cue.
-- Cache tokens `?v=121` → `?v=122`; HUD label → `2.0 · v122`
-
----
-
-## v121 — 2026-11-07
-**A screenshot pass, standing in for the owner's eye: every screen and world shot on a phone and read, and what it found fixed**
-- THE PASS (owner, 2026-11-07: "Use bots instead of me. Analyze screenshots."): the real game on WebGPU, phone-sized upright (390 × 844) and sideways (844 × 390), the look-ahead bot playing — the title, OPTIONS, RECORDS, the grid and a room card, the ending, all nine worlds mid-fight and every world's boss, HARDCADE's corpse fire, a heat of ×8, the pause card, the results (a run, a DAILY, a room cleared and a room failed), and one room of every goal and every mutator: 54 shots, no page error. Read one by one, with the hero found on each and cropped.
-- THE CLOCK LINE BROKE MID-PHRASE in every room and challenge wave: one line in a box under MENU, wrapped wherever a phone's width ran out ("SURVIVE · 18s · F →" over "C 36k", PROTECT THE HEART's over three lines). It is two lines now: in a room the goal, then its seconds and the grade it is on course for, kept whole; in an arcade challenge wave the run's clock, then the challenge kept whole. A boss's health bar stands in one column with the clock, so it is always under the clock's lines.
-- THE HUD ON THE ICE: white score and lives on the snow nearly vanished. The HUD's text has a tight dark outline under its shadow, each life a dark ring, the heat bar a dark edge: they read on the snow as on the night.
-- THE HERO'S OWN LIGHT WASHED OUT THE FLOOR round a pale hero on a sunlit floor (v104's pool of light, on every world). A world says how strong it is (TUNING.worlds.light[…].hero): a third on the driveway and the ice, 0.6 on the river; as it was everywhere else.
-- A LABEL OVER THE HERO: DASH THROUGH! and BOUNTY were written across the hero. Where a label stands over the hero ON SCREEN (worked out with the camera, so it holds as the view turns) it fades to a third.
-- A BOSS'S CARD OUTLIVED ITS RUN: the banner and the card count down by frames, and one up as a run ended rode on into the results and the next run (OMEGA's card over world 3, over a challenge banner). They go when the HUD comes or goes, and a banner takes the band from a card there.
-- Paused, the run's MENU button no longer stands over the OPTIONS panel's corner. RECORDS stacks each row, its name over its value, on a phone held upright (two columns wrapped "reached WORLD" over "9").
-- The title says "Nine worlds of waves" where it said "1.x waves" (a player does not know 1.x), and HARDCADE "a life comes back each world". In English, Finnish and Japanese.
-- Cache tokens `?v=120` → `?v=121`; HUD label → `2.0 · v121`
-
----
-
-## v120 — 2026-11-06
-**The lines pass: eight lines drawn again by the bots that read the warning, PACK ICE a little harder for a beginner, and the campaign's ending previewed**
-- THE LINES (plan items 2–4, shown to the owner before they shipped). v117's bot test drew every room's lines again with bots that read the warning, as a person does. Eight of them were more than 25% off what each room carries now, and they are drawn again by the same rule as every line since v56 (scripts/lines.mjs, 24 seeds a skill): S is the sharp bot's median score, A the average bot's, B the average's weaker quarter, C the rough bot's median or the average's weakest tenth.
-  - Normal route, THE CORE: 110,000 / 87,000 / 76,000 / 63,000 (A, B and C were 66,000 / 59,000 / 53,000). THREE RINGS: 42,000 / 32,000 / 29,000 / 20,000 (S was 43,000, C 15,000).
-  - HARD route, harder to reach than drawn: FORGE 58,000 / 24,000 / 4,700 / 2,100 (was 57,000 / 41,000 / 9,700 / 2,300) and THE CORE 180,000 / 130,000 / 100,000 / 90,000 (was 170,000 / 150,000 / 140,000 / 130,000).
-  - HARD route, easier to reach than drawn: EDDY 14,000 / 9,800 / 7,900 / 5,500 (was 12,000 / 7,200 / 6,500 / 5,400) and THE BRAID 12,000 / 10,000 / 8,600 / 5,300 (was 14,000 / 8,400 / 5,900 / 3,500).
-- PACK ICE: its boss's life goes from 65 to 72. The rough bot got through 67% of the time, and a d7 room asks for 0–60%; now it gets through 42% (the sharp and average bots still 100%). Its lines are drawn again on both routes: 15,000 / 14,000 / 13,000 / 12,000 (was 14,000 / 13,000 / 12,000 / 11,000), and on HARD 22,000 / 20,000 / 18,000 / 16,000 (was 20,000 / 18,000 / 16,000 / 14,000; the rough bot gets through 13%, down from 21%).
-- A grade already earned stays as it is. The new lines grade the next run.
-- THE ENDING, PREVIEWED: `?ending` (or `?ending=hard`) opens the CAMPAIGN CLEAR card at once, marked PREVIEW, so the ending can be seen and judged without clearing thirty-six rooms first. The tally uses your own grades where you have them and made-up ones for the rest. Nothing is saved, and ROOMS goes to the campaign as it really is. Debug `endingPreview(hard)`. In English, Finnish and Japanese.
-- Tests: the smoke opens the preview and checks the title, the PREVIEW line, four grades in the tally, a total, and that the campaign's storage is untouched.
-- Cache tokens `?v=119` → `?v=120`; HUD label → `2.0 · v120`
+## v130 — 2026-11-09
+**The opening logo says the owner's words in the owner's letters: Toko, Midori and Games as their original sets them — and "drop" made of the same letters**
+- THE ASK (owner, 2026-11-09, with their lockup: "the text in the beginning logo is a bit wrong, please use this instead"). The intro drew "Toko Midori Games™" on one line in letters drawn by eye before the original was found (an M with a slash through it, a G that was a C, a boxed a and e). The brand has since TRACED the owner's original (toko/js/wordmark.js, 99.2% of its pixels), and the intro now draws that (intro/wordmark.js, vendored from it): Toko set large, Midori and Games under it, flush both sides, and no ™ — the original carries none. The face stays as it was (the owner, to the brand: "the face part is good"), as tall as the block beside it, as in the brand's lockup.
+- "drop": MIDORI and GAMES go, and "drop" comes in where Midori stood, built from the owner's own letters — Midori's d, r and o, and a p that is the d turned half round, its stem below the line where the drop gathers. The camera's shots are refitted to the stacked lockup, on a landscape screen and an upright phone.
+- Unchanged: the rest of the film, the sim, the rules, the lines.
+- Cache tokens `?v=129` → `?v=130`; HUD label → `2.0 · v130`
 
 ---
 
@@ -135,6 +32,16 @@
 
 One line per version; the full entries are in git history (`git log -p VERSIONS.md`).
 
+- **v129** (2026-11-09) — The trees' shade is cast from trees — trunk, limbs and leaves, sun coming through — and a gel carries its motion: its top lags when it is pushed and swings back when it stops
+- **v128** (2026-11-09) — The driveway at golden hour: the sun glints in every gel, the shadows run long and the trees' shade falls across the slab — and the goo splashes as jelly
+- **v127** (2026-11-09) — The title after a run is the title again: nothing of the run is drawn under it — and the progress trailer re-cut without its glitches
+- **v126** (2026-11-09) — The run's own end made safe: nothing hurts you under WORLD CLEAR, a run decided on a step stays decided, and the ★ chip lights for the pickup alone
+- **v125** (2026-11-09) — The run's flow declared: one table owns what entering and leaving each state does, and eleven ways out that went wrong now go right
+- **v124** (2026-11-09) — 1.x's dash is back: lift the right thumb and it dashes, where you walk, 1.x's length — and it passes through, as 1.x's did
+- **v123** (2026-11-08) — World 1 alone in the void: the grid round it gone, lines of neon running round it, every body a light, the grid sharper
+- **v122** (2026-11-07) — A sound pass, standing in for the owner's ears: the game 4 dB louder on a phone, and the boiler's song brought up to the others
+- **v121** (2026-11-07) — A screenshot pass, standing in for the owner's eye: every screen and world shot on a phone and read, and what it found fixed
+- **v120** (2026-11-06) — The lines pass: eight lines drawn again by the bots that read the warning, PACK ICE a little harder for a beginner, and the campaign's ending previewed
 - **v119** (2026-11-06) — Clips for the itch page: the real game, filmed frame by frame, played by the look-ahead bot, under its own music
 - **v118** (2026-11-06) — DAILY: one run a day, the same waves for everyone — its own best and tries, and a line to share
 - **v117** (2026-11-04) — Every level played by bots: corpse fire now passes through a heart (on HARD, CLOT could not be won), and the bots read the warning lines a person reads
