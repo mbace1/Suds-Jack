@@ -1381,3 +1381,22 @@ Everything below comes from search summaries. No article was opened.
   [StateScoop](https://statescoop.com/pennsylvania-sues-character-ai-over-chatbots-impersonating-medical-professionals/),
   [Engadget](https://engadget.com/2165373/pennsylvania-is-suing-characterai-over-chatbots-that-pretend-to-be-licensed-doctors)
 - **2, 8, 1, 3, 4, 13:** nothing new.
+
+### Check Mon 9 Nov 17:16 (evening; search summaries only; nothing opened)
+- **Big development:** none.
+- **12 The Round Trip: HOLD.** No price range filed. Secondary only (not used): an aggregator credits Reuters with
+  investor-day talk of ~$1.5T (down from ~$2T); a 6 Nov report credits the WSJ with three institutions calling $1.5T
+  too high, one suggesting ~$1T. Earliest roadshow start reportedly 10 Nov.
+  [aiweekly](https://aiweekly.co/alerts/reuters-anthropic-ipo-investors-push-valuation-down-to-15t-from-2t-over-q3)
+- **On the Label (posted):** no settlement ruling; remand of 17 Jun stands, appeal pending.
+- **5 Short Supply:** no hearing date found; re-check 12 Nov. **Memory prices (context):** TrendForce forecasts Q4
+  conventional DRAM contract prices up 10–15% QoQ, slower than earlier quarters (secondary summary).
+  [Tom's Hardware](https://www.tomshardware.com/tech-industry/samsung-and-sk-hynix-shorten-memory-contracts-as-pricing-power-shifts-back-to-suppliers)
+- **10/11 Whistleblowers:** S. 1792 no action found on the first day back. No new named AI whistleblower testimony.
+- **Military AI:** nothing new since the May classified-network deals that left Anthropic out (on file).
+- **Data-center NDAs:** nothing dated November; the known set (Bessemer, Hubbard, Farmington, Beloit) unchanged.
+- **Pennsylvania v. Character.AI (MED):** docket 220 MD 2026; no ruling. Company's response now logged: no comment on
+  pending litigation; "highest priority is the safety and well-being of our users".
+  [Insurance Journal](https://www.insurancejournal.com/news/east/2026/05/06/868729.htm)
+- **Reactions:** counts not visible through search. **Pattern note:** IPO valuation news arrives through aggregators
+  first; wait for the Reuters/WSJ original or an EDGAR S-1/A before any number goes on screen.

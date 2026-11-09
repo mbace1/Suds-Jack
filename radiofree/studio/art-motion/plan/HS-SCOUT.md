@@ -1131,3 +1131,26 @@ Search summaries only; nothing opened. One device each, from STORY-DEVICES.md or
   [Helsinki City Museum](https://www.hel.fi/hel2/hkl/ratikka_historia/en/historia5_2.html)
 - Not usable yet: "Supo's biggest criminal case" (could not confirm); Ukraine-style anti-tank barriers on the eastern
   border (Taipei Times 8 Nov; war-sensitive, no hook); Finnair hoax bomb threats (no angle).
+
+### Check Mon 9 Nov 17:16 (evening; search summaries only; nothing opened)
+- **Helsinki (Five Pins, posts Tue 10 Nov ~12:52): CLEAR.** No November data-center item; five areas unchanged.
+- **Found in Pasila:** yle.fi first, then the wider sweep: no Pasila or Roundup item, no HS, city or Tukes reaction.
+- **Muhos (Cut First):** no water-plan delivery report. **Hamina (Right of Way):** nothing new.
+- **Owner's leads, follow-ups:**
+  - **ICEYE:** no November item found. On file: Arianespace MoU (Sept), one satellite a week in 2026 (secondary).
+  - **Fitburg:** no appeal reported yet. Extra: the sentences exceed the prosecutor's minimum demand (2.5 years each);
+    the defense argued Finland lacked jurisdiction (much of the damage in Estonia's EEZ; ship flagged in St Vincent).
+    [Verkkouutiset](https://www.verkkouutiset.fi/a/fitburg-aluksen-kapteenille-ja-pursimiehelle-ehdottomat-vankeustuomiot/)
+  - **Protective Fence 26:** the highway strip is **Jännevirta, Highway 9 near Kuopio**; road parts closed 18–25 Nov;
+    traffic limits around Rissala air base. [Nordic Defence Sector](https://nordicdefencesector.com/en/article/finnish-air-force-exercise-closes-road-9-near-kuopio-in-november),
+    [Siilinjärvi](https://siilinjarvi.fi/?p=16082)
+  - **Trams:** HSL's livery is by mode and trams are already green-and-yellow; the option is to make **all** trams
+    the same (so some currently differ). Cost €1.2M, ~€237k a year over five years; a customer survey is open; the
+    board decides in January. Fares rise ~1.8% on 1 Jan 2027 (AB 30-day subscription €61.60 → €62.80); the Greens
+    and Left Alliance oppose. Sources do not link the two; Yle only notes the timing. This **weakens** the
+    "closed loop" device: it's a uniformity repaint, not a return to old colors.
+    [Verkkouutiset](https://verkkouutiset.fi/a/pitaisiko-ratikoiden-varia-vaihtaa-nyt-sita-kysytaan-kaupunkilaisilta),
+    [Yle](https://yle.fi/a/74-20255473)
+- **Reactions:** counts not visible through search.
+- **Pattern note:** Finnish-language queries found every gap the English ones missed tonight (the highway strip,
+  the tram costs, the Fitburg detail). For Finnish leads, search in Finnish first.

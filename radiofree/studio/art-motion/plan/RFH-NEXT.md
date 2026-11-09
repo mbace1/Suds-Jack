@@ -934,3 +934,35 @@ All facts below come from search summaries; no article was opened.
   17 Apr, per the complaint). Device: **Borrowed format**, a license lookup that answers "NO RECORD FOUND" while the chat
   counter climbs. The company's response is not yet found. Logged in GLOBAL-SCOUT.
 - **Films now wrong:** none.
+
+## Daily check, Mon 9 Nov 17:16 (evening; search summaries only, nothing opened)
+- **Big development:** none that changes a film. **Anthropic IPO: still no price range filed.** New since this morning,
+  secondary only: an aggregator credits Reuters with saying investors at Anthropic's San Francisco investor day are
+  discussing about $1.5T, down from ~$2T. A 6 Nov report credits the WSJ with saying three large institutions think
+  $1.5T is still too high; one suggests ~$1T. One source says the roadshow can start no earlier than 10 Nov, 15 days
+  after the 26 Oct public S-1. None of this is from the originals, so none of it is used. The Round Trip stays on hold.
+  [aiweekly (Reuters, secondary)](https://aiweekly.co/alerts/reuters-anthropic-ipo-investors-push-valuation-down-to-15t-from-2t-over-q3),
+  [letsdatascience (Reuters, secondary)](https://letsdatascience.com/news/investors-doubt-anthropic-can-hold-november-ipo-roadshow-reu-a69a034f)
+- **Tue 10 Nov ~12:52, Doodle 9 Five Pins: CLEAR to post.** Second search of the day: no November Helsinki
+  data-center item. The five areas and the city's principles are unchanged; the first build could start around 2028
+  (Verkkouutiset). [Verkkouutiset](https://www.verkkouutiset.fi/a/naille-viidelle-helsingin-alueelle-voi-tulla-datakeskus)
+- **Found in Pasila (EN then FI, NOW): no reaction, record holds.** I searched yle.fi first again: only older glyphosate
+  pieces (2015–2019) and MTV. No HS, city or Tukes item.
+- **Coxon 14 On the Label (posted): still true.** No ruling on the settlement; the latest step is still the 17 Jun
+  remand (*King v. Monsanto*, back to Judge Boyer in St. Louis) with the objectors' appeal pending.
+  [Claims Journal](https://amp.claimsjournal.com/news/national/2026/06/17/338274.htm)
+- **Global 3 Short Supply (posted):** no hearing date found again; still unconfirmed. Re-check 12 Nov.
+- **Doodle 8 Cut First (posted):** no report on whether the water plan reached LVV by 5 Nov. No correction.
+  [Kaleva](https://kaleva.fi/lvv-on-tehnyt-poliisille-tutkintapyynnon-googlen-m/13720712)
+- **S. 1792:** no action found on the Senate's first day back; Deseret (25 Sep) said Grassley could try unanimous
+  consent. Watch the next runs. [Deseret](https://www.deseret.com/politics/2026/09/25/john-curtis-back-bill-protecting-ai-whistleblower/)
+- **Pennsylvania v. Character.AI:** docket No. 220 MD 2026 (filed 1 May; some outlets say 5 May). No injunction ruling
+  or hearing found. **The company's side is now on file**: a spokesperson said it does not comment on pending
+  litigation, its "highest priority is the safety and well-being of our users", and it has taken "innovative and
+  decisive steps" on safety (Insurance Journal / Bloomberg). Still MED; needs a court step first.
+  [Insurance Journal](https://www.insurancejournal.com/news/east/2026/05/06/868729.htm)
+- **Owner's Helsinki leads (afternoon):** ICEYE: no November news. Fitburg: no appeal reported yet. Protective Fence 26:
+  **the highway strip is Jännevirta on Highway 9 near Kuopio** (closed 18–25 Nov). Trams: HSL's study puts the repaint
+  at €1.2M (~€237k a year over five years), with a customer survey and a board decision in January; separately,
+  fares rise ~1.8% on 1 Jan 2027 (AB 30-day subscription €61.60 → €62.80). Details in HS-SCOUT.
+- **Films now wrong:** none.
