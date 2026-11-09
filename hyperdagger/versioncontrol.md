@@ -232,3 +232,32 @@ full smoke, resolve every Gate finding in its proper lane, and obtain review
 and Mikael's explicit merge approval. Exit: approved tested head merged,
 scoped publish to `/hyperdagger/`, successful Pages deployment and actual
 live hub/menu/combat verification. Until then v60 is neither merged nor live.
+
+## 2026-11-09 — test-arena pause exit closes the remaining pin/key path
+
+Source inspection found that #628's title tabs used a clean-page exit, but
+the pause menu still changed the test run's season in place. Selecting HAUL
+there retained `?mode=hyper`, so the season could use HYPER's disc/rules;
+`hiKey()` could also select a normal best while that test run was active.
+The title and pause handlers now share `leaveSdfTestArenaForSeason()`, which
+remembers the normal season and reloads `./` before changing run state.
+
+`test/sdf-exit.cjs` passed all three exits with real taps: normal menu → test
+chip → START → pause → season → clean normal menu → START. EMBER and INCA
+resume HYPER, HAUL starts TRUCK with a convoy, all URL pins are gone, and
+sentinel normal best/history/log and daily records stay unchanged. No debug
+hook selects, exits, starts or ends the action under test.
+
+This changes `main.js` again: module and worker-registration tokens are 116,
+cache `hyperdagger-v86`, generated precache still 71 entries. No other runtime
+module changed. The final full-tree validation is being refreshed for this
+fix. The earlier Inca carry assertion passed unchanged in the ongoing smoke
+rerun; a CSS-fade fixture synchronization fix still needs its complete rerun.
+
+GitHub CI on `653df868c` failed before creating any jobs; the public gates
+summary says “Internal server error”, correlation
+`189172f1-f550-4623-9a18-d7807a63837e`. A bounded retry of each affected run
+returned 403, “This workflow run cannot be retried”. These results are not
+code-test evidence and remain blocking. Fresh review was requested via the
+repository's `review` label; no fresh review result has been received yet.
+No merge or production publish has occurred.

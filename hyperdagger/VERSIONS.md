@@ -44,7 +44,11 @@ targets. A separate `sdf-loop.cjs` acceptance gate covers the Hub
 entry, both renderers, actual weapon kills, simulation-driven death and tap
 retry; it also checks loaded Meshy skins against the SDF safeguard.
 
-Tokens: `main.js` 115 and `sw.js` 115, worker cache `hyperdagger-v85`.
+The test arena’s pause-menu season choices now use the same full exit as
+the title tabs. This drops the HYPER URL pin before a normal season starts
+and prevents a test run from changing the normal best-score key.
+
+Tokens: `main.js` 116 and `sw.js` 116, worker cache `hyperdagger-v86`.
 The original #628 used 114 / v84 after reconciling the two different 113 /
 v83 builds. `enemy.js`, `truck.js` and `convoy.js` remain at build 3's 113,
 and `sdf-skull.js` at 3; their bytes are unchanged by this integration.
