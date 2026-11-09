@@ -1,4 +1,4 @@
-## v60 — 2026-11-09 (release candidate)
+## v60 — 2026-11-09
 **SDF on the live menu: RENDER · CLASSIC | SDF (HD-020)**
 
 Mikael, 22 Oct 2026: *"Can you make an SDF toggle in the main menu?"*, then
