@@ -899,3 +899,38 @@ All facts below come from search summaries; no article was opened.
   Monday evening run. **Break Glass:** no 2026 plenary result (168–29 was June 2025). **Grade Your Own Homework:**
   nothing new on the four contracts. [BillTrack50](https://www.billtrack50.com/billdetail/1894050)
 - **New candidates:** none. **Films now wrong:** none.
+
+## Daily check, Mon 9 Nov 07:16 (morning; search summaries only, nothing opened)
+- **Big development:** none that changes a film. **Anthropic IPO: still no price range.** New since last night: EDGAR
+  shows **Amendment No. 1 to the S-1, filed 2 Nov**; per search summaries, the price and share counts are still blank
+  (financials reportedly extended to 30 Sep; a Q3 loss figure is secondary-only and not used). Reuters (exclusive, 5–6 Nov,
+  four people, Anthropic declined to comment): potential investors doubt Anthropic can start the roadshow this week
+  and still list in November, and a deeper discount may be needed. The Round Trip stays on hold.
+  [SEC S-1/A](https://www.sec.gov/Archives/edgar/data/0002130357/000162828026068676/anthropicpbc-sx1ax1.htm),
+  [Reuters via The Star](https://www.thestar.com.my/tech/tech-news/2026/11/06/exclusive-ai-backlash-could-threaten-anthropic-ipo-timing-potential-investors-say)
+- **Tue 10 Nov, Doodle 9 Five Pins: CLEAR.** No November Helsinki data-center item; the five areas (Verkkouutiset) are
+  unchanged and the city's principles stand. Nothing makes the film wrong.
+  [Verkkouutiset](https://www.verkkouutiset.fi/a/naille-viidelle-helsingin-alueelle-voi-tulla-datakeskus)
+- **Found in Pasila (EN then FI, NOW): no reaction found, record holds.** I searched yle.fi first: no Pasila or Roundup
+  item, only older Yle glyphosate pieces (2015–2019) and MTV. Nothing changes the film or the posts.
+  [Yle search hit, older](https://yle.fi/a/3-10888491)
+- **Coxon 14 On the Label (posted): still true.** No ruling on the $7.25B settlement found. The latest step is still the
+  17 Jun federal remand to Missouri state court, with the objectors' appeal pending. The beats still match the record:
+  "Supreme Court: No" is *Durnell* (25 Jun, 7–2), and the stamp's order is the February 2026 DPA order. Nothing new
+  from Means, Kennedy or the White House.
+  [Insurance Journal](https://amp.insurancejournal.com/news/national/2026/06/18/874229.htm),
+  [The New Lede](https://www.thenewlede.org/2026/06/monsanto-scotus-pesticides-cancer-case/)
+- **Global 3 Short Supply (posted):** *Garciaguirre v. Samsung* (Judge Noël Wise); the motion to dismiss is still
+  unruled. **The 13 Nov hearing is still not confirmed by a second source**; today's results give no date. Re-check
+  12 Nov. [MLex](https://www.mlex.com/mlex/antitrust/articles/2521308)
+- **Doodle 8 Cut First (posted):** still no report on whether the water plan reached LVV by 5 Nov. The police
+  preliminary inquiry continues (the drainage-deficiency item is already on file). No correction.
+  [Kaleva](https://kaleva.fi/lvv-on-tehnyt-poliisille-tutkintapyynnon-googlen-m/13720712)
+- **Senate back today:** S. 1792 has no action found since its HELP referral, and no unanimous-consent attempt has been
+  reported yet. Watch tonight's run. **Hamina (Right of Way):** nothing new.
+  [BillTrack50](https://www.billtrack50.com/billdetail/1894050)
+- **New candidate (global, MED): Pennsylvania v. Character.AI.** Filed May 2026 in Commonwealth Court; no ruling found.
+  A "psychiatrist" bot, "Emilie", claimed a Pennsylvania license and gave an invalid license number (~45,500 chats by
+  17 Apr, per the complaint). Device: **Borrowed format**, a license lookup that answers "NO RECORD FOUND" while the chat
+  counter climbs. The company's response is not yet found. Logged in GLOBAL-SCOUT.
+- **Films now wrong:** none.

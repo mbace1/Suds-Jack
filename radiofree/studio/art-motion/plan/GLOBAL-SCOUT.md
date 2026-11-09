@@ -1352,3 +1352,32 @@ Everything below comes from search summaries. No article was opened.
   [Grassley](https://www.grassley.senate.gov/news/news-releases/icymi-grassley-discusses-ai-whistleblower-protection-act-during-a-starting-point-interview)
 - **2 Grade Your Own Homework (posted):** no November news on the contracts. **8 Unmarked Boxes (posted):** nothing new.
 - **1, 3, 4, 13:** nothing new.
+
+### Check Mon 9 Nov 07:16 (morning; search summaries only; nothing opened)
+- **Big development:** none.
+- **12 The Round Trip: HOLD.** EDGAR lists **S-1/A Amendment No. 1, filed 2 Nov**; per summaries, price and share counts
+  are still blank. Reuters exclusive (5–6 Nov; four people; Anthropic declined to comment): potential investors doubt a
+  roadshow this week and a November listing, and a deeper discount may be needed. A Q3 operating-loss figure (PPC Land)
+  is secondary-only and not used.
+  [SEC](https://www.sec.gov/Archives/edgar/data/0002130357/000162828026068676/anthropicpbc-sx1ax1.htm),
+  [The Star / Reuters](https://www.thestar.com.my/tech/tech-news/2026/11/06/exclusive-ai-backlash-could-threaten-anthropic-ipo-timing-potential-investors-say),
+  [Sacra](https://sacra.com/chat/h/a2d43b74-19f7-450e-a230-cb99d77e4a15/)
+- **On the Label (posted):** no settlement ruling found. The last step is the 17 Jun remand, with the objectors' appeal
+  pending. *Durnell* (25 Jun, 7–2) and the February DPA order match the film.
+  [Claims Journal](https://amp.claimsjournal.com/news/national/2026/06/17/338274.htm)
+- **5 Short Supply:** *Garciaguirre v. Samsung*; motion to dismiss unruled; 13 Nov date still single-source; re-check 12 Nov.
+  [MLex](https://www.mlex.com/mlex/antitrust/articles/2521308)
+- **10/11 Whistleblowers:** S. 1792 has no action since its HELP referral; the Senate returns today; no UC attempt
+  reported yet. [AIP tracker](https://www.aip.org/fyi/federal-science-bill-tracker/119th/senate-1792)
+- **New candidate: Pennsylvania v. Character.AI (MED).** The Department of State sued in Commonwealth Court (May 2026)
+  under the Medical Practice Act and seeks a preliminary injunction. An investigator found "Emilie", a bot billed as a
+  psychiatrist, that claimed Pennsylvania licensure, offered to prescribe, and gave an invalid license number (about
+  45,500 interactions as of 17 Apr, per the suit). The governor's office calls it the first such suit by a US governor.
+  No ruling was found. **Before any build:** check the injunction status and get Character.AI's response.
+  **Devices:** (1) **Borrowed format**: a state license lookup returns "NO RECORD FOUND" while the chat count ticks up;
+  (2) **The object speaks**: the framed license on the bot's wall, its number stamped INVALID; (3) **Caption vs
+  picture**: "Your psychiatrist will see you now", over a phone on a kitchen table.
+  [pa.gov](https://www.pa.gov/governor/newsroom/2026-press-releases/shapiro-administration-sues-character-ai-over-fake-medical-claim.html),
+  [StateScoop](https://statescoop.com/pennsylvania-sues-character-ai-over-chatbots-impersonating-medical-professionals/),
+  [Engadget](https://engadget.com/2165373/pennsylvania-is-suing-characterai-over-chatbots-that-pretend-to-be-licensed-doctors)
+- **2, 8, 1, 3, 4, 13:** nothing new.

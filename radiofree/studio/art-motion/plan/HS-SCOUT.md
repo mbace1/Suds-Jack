@@ -1086,3 +1086,17 @@ Everything below comes from search summaries. No article was opened.
 - **Reactions:** counts not visible through search. Right of Way and Found in Pasila are too fresh for pickup.
 - **Pattern note:** a found-object story addressed to a newsroom (Yle) gets its reaction, if any, in that newsroom's own
   outlet first. Tomorrow morning, search yle.fi for "Pasila" + "Roundup"/"glyfosaatti" before the wider sweep.
+
+### Check Mon 9 Nov 07:16 (morning; search summaries only; nothing opened)
+- **Glyphosate / Found in Pasila (NOW, EN then FI):** I searched yle.fi first, as last night's note said. No Pasila
+  or Roundup item; only older Yle glyphosate pieces (2015–2019) and MTV. No HS, City of Helsinki or Tukes reaction
+  surfaced. The record holds. [Yle, older](https://yle.fi/a/3-10888491)
+- **Helsinki (Five Pins, Tue 10 Nov):** CLEAR. No November data-center item; the five areas are unchanged.
+  [Verkkouutiset](https://www.verkkouutiset.fi/a/naille-viidelle-helsingin-alueelle-voi-tulla-datakeskus)
+- **Muhos (Cut First):** no report on the water plan's delivery (5 Nov deadline); police preliminary inquiry continues.
+  [Kaleva](https://kaleva.fi/lvv-on-tehnyt-poliisille-tutkintapyynnon-googlen-m/13720712)
+- **Hamina (Right of Way):** nothing new. **Break Glass:** no plenary result.
+- **HS/Finland sweep:** nothing new. No November AI or data-center candidate surfaced. Search kept returning older items
+  that are already on file: the JSN ruling, the mayor interview, and the Forssa power figure.
+- **Pattern note:** Monday-morning searches mostly return weekend-old or undated pages. For Finnish news, the evening
+  run finds more.
