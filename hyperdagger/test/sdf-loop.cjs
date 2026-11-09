@@ -86,14 +86,18 @@ let browser;
     if(season!=='haul') await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
     assert.ok(killed.dead,`${season}/${renderer}: weapon kills target`);
     if(renderer==='sdf')assert.ok(killed.released,'shader released on kill');
-    // A nearly exhausted clock or a player just below the road stages a
-    // failure. The normal simulation must detect it and show the death UI.
+    // Shorten the clock as setup, then let it expire normally. HAUL has
+    // no draining clock: use the real left stick to walk off the convoy.
     await page.evaluate(season=>{
       const h=window.__hd;h.debug.setInvulnerable(false);
-      if(season==='haul')h.player.feet.y=-30;
-      else h.debug.setLife(.05);
+      if(season!=='haul')h.debug.setLife(.05);
     },season);
+    if(season==='haul'){
+      await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x:180,y:260,id:8}]});
+      await cdp.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:50,y:260,id:8}]});
+    }
     await page.waitForFunction(()=>window.__hd.debug.getState().state==='dead');
+    if(season==='haul')await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
     assert.match(await page.locator('#msg').innerText(),/to retry/);
     const records=await page.evaluate(()=>({h:JSON.parse(localStorage.getItem('hyperDaggerHistory')||'[]'),t:localStorage.getItem('hyperDaggerSdfTestHistory'),daily:Object.keys(localStorage).filter(k=>k.startsWith('hyperDaggerDaily:'))}));
     assert.equal(records.h.length,1);assert.equal(records.t,null);assert.deepEqual(records.daily,[]);

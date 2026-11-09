@@ -121,7 +121,15 @@ s.listen(0, '127.0.0.1', async () => {
   await p.waitForFunction(() =>
     document.querySelector('.arcade-home') && document.querySelector('.toko-signature'),
   null, { timeout: 5000 });
-  await p.waitForTimeout(700); // let shell/signature fades settle under SwiftShader
+  // Wait for the actual finite opacity transitions, rather than sampling a
+  // partly composited frame after a wall-clock sleep under SwiftShader.
+  // Removing the in-run fade still fails the unchanged opacity assertions.
+  await p.evaluate(async () => {
+    const fades = [...document.querySelectorAll('.arcade-home, .toko-signature, #pauseBtn')]
+      .flatMap(el => el.getAnimations()).filter(a => a.transitionProperty === 'opacity');
+    await Promise.allSettled(fades.map(a => a.finished));
+    await new Promise(r => requestAnimationFrame(r));
+  });
   const frame30 = await p.evaluate(() => {
     const css = id => getComputedStyle(document.getElementById(id));
     const weapon = window.__hd.debug.getWeaponView();
