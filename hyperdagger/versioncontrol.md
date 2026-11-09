@@ -330,3 +330,40 @@ Version generator verification: the Hyper row is v60 and precache is current.
 A full generation also proposes unrelated Radio Free 38 → token 73 on main;
 that pre-existing row drift was left in its own lane. Only the Hyper version
 row differs from main.
+
+## 2026-11-09 — approved observation follow-up, all SDF play checks pass
+
+Owner replied “Continue” to the specific 20-to-60-game-second observation
+request. This authorizes that fixture change, not merge or publication.
+The seed (628), three-body target, 4,000-frame cap and every original
+assertion remain. The first longer observation caught a second fixture
+problem: invulnerability stops hits, not Ember's 30-second life clock. At
+30 seconds the run timed out; the next fire touch retried it, disposing the
+parked skull without killing it. Both original kill/debris assertions
+failed as they should (33/2); this intermediate log is retained.
+
+Stage 90 seconds of life before the longer natural observation. No runtime
+behavior changes. The complete follow-up `sdf-play.cjs` passes **35/0**:
+Ember naturally supplied three SDF skulls at 26.2 game seconds; Haul supplied
+three at 17.9 seconds. All real weapon kills, gibs/spray, splitter minis,
+Watcher volley, Totem wounds/death, arena exits and Classic recovery pass.
+Both logs live in `test/evidence/v60-integration/`.
+
+Fetched and merged main `3e3513628` (Toko original-logotype work) cleanly at
+`27804313d`; Hyper runtime still matches frozen `6939caade8` byte for byte.
+Codex's review of that runtime completed with no major issues (PR #628,
+comment 6749109493). This supersedes the earlier pending-review report.
+CI on `e14fb56b` passed gates, looks and Night Shift, but Toko Live failed:
+the Betterment question received two replies (3→5), job 129386639785. The
+known idle-aside bug remains a release blocker under AGENTS.md §2b; no
+Toko runtime fix is mixed into Hyper. PR discussion also reports the same
+failure on one retry. Final follow-up source still needs fresh CI/review.
+
+Production advanced to `d1b31eed4`; local release staging merged it cleanly,
+preserving shell token 229 and all unrelated production changes. Live HTTPS
+recheck still reports hub v59 and separate SDF preview build 3. Neither
+branch was merged or published. Hardware performance remains unmeasured;
+no next enemy/arena conversion or scoring change was started.
+
+Latest-production staging follow-up passed all six season/renderer loops
+(38.2 s) and offline (6/0, 4.0 s), with production shell 229 retained.

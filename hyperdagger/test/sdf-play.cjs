@@ -55,8 +55,9 @@ s.listen(0, '127.0.0.1', async () => {
       p.on('pageerror', e => errs.push('pageerror: ' + e.message));
       p.on('console', m => { if (m.type() === 'error') errs.push('console: ' + m.text()); });
       // Reproducible scene setup: waveDirector rolls spawns and breathers
-      // per frame. Keep the original 20-second/three-body observation and
-      // every assertion; seed its random input so failures can be replayed.
+      // per frame. Allow 60 game seconds for natural breathers/spawn rolls;
+      // retain the three-body target, frame cap and every assertion.
+      // Observation-only extension approved by the owner on 2026-11-09.
       await p.addInitScript(() => {
         let seed = 628;
         Math.random = () => { seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0; return seed / 4294967296; };
@@ -79,8 +80,12 @@ s.listen(0, '127.0.0.1', async () => {
         const seen = await p.evaluate(async () => {
           const d = window.__hd.debug, hd = window.__hd, f = () => new Promise(r => requestAnimationFrame(r));
           d.setInvulnerable(true);
+          // Invulnerability blocks hits, not Ember's 30-second life clock.
+          // Stage enough life for this longer observation and the combat below;
+          // otherwise the next fire touch retries a timed-out run.
+          d.setLife(90);
           const t0 = d.getState().gameTime; const seen = new Map();
-          for (let i = 0; i < 4000 && d.getState().gameTime - t0 < 20 && seen.size < 3; i++) {
+          for (let i = 0; i < 4000 && d.getState().gameTime - t0 < 60 && seen.size < 3; i++) {
             await f();
             for (const e of hd.enemies) if (e.type === 'skull' || e.type === 'dread') seen.set(e, { type: e.type, sdf: e.sdfRoot?.userData.sdfVariant ?? null, skin: !!e.meshRoot });
           }

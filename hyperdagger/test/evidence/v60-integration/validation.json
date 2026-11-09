@@ -378,8 +378,8 @@
     "gates_run": 42678075818,
     "latest_jobs": "all success after one retry; original Toko Move event-card assertion failed, retry passed without code changes",
     "other_workflows": "Toko Live, Night Shift, looks successful",
-    "final_source_ci": "pending new push",
-    "fresh_review": "requested, no new submitted review at evidence capture"
+    "final_source_ci": "e14fb56b: gates/Night Shift/looks success; Toko Live failure (merge blocker). Follow-up push pending.",
+    "fresh_review": "Codex review found no major issues at frozen runtime 6939caade8, comment 6749109493"
   },
   "limitations": [
     "No physical iPad, Android or desktop GPU measurements; performance targets unverified.",
@@ -398,5 +398,87 @@
   "version_checks": {
     "hyperdagger": "v60, 71-entry precache current; changed-module manifest verified",
     "unrelated_generator_drift": "Full versions generator also changes pre-existing Radio Free 38 to module token 73. Left that unrelated row as main supplied it; Hyper row alone differs from main."
+  },
+  "followup_2026_11_09": {
+    "upstream_main": "3e3513628",
+    "upstream_production": "d1b31eed4",
+    "integration_merge": "27804313d47868aac9e9c7bc2b1808b6439e7a41",
+    "approval": "Owner replied Continue to the observation-only 20-to-60 request. Merge/release approval remains separate.",
+    "scope": "Only natural-spawn observation changes: 60 game seconds, same seed 628, target 3, cap 4000, original assertions unchanged. Fixture life 90 because invulnerability does not stop the 30-second Ember clock.",
+    "intermediate_run": {
+      "passed": 33,
+      "failed": 2,
+      "natural_spawn": "Ember passed: 1 SDF skull in 30 game seconds",
+      "failure": "Life clock expired; next real fire touch retried and cleared the staged skull (disposed but alive). Original kill and debris assertions caught it. No runtime fix or relaxed assertion."
+    },
+    "codex_review": {
+      "commit": "6939caade8",
+      "result": "No major issues",
+      "url": "https://github.com/mbace1/Suds-Jack/pull/628#issuecomment-6749109493"
+    },
+    "ci_e14fb56b": {
+      "gates": "success",
+      "looks": "success",
+      "Night Shift": "success",
+      "Toko Live": "failure, job 129386639785: Betterment response count 3 to 5; remains a merge blocker"
+    },
+    "live_recheck": {
+      "main": {
+        "url": "https://mbace1.github.io/Suds-Jack/hyperdagger/",
+        "status": 200,
+        "version": null,
+        "main_token": [
+          "js/main.js?v=110"
+        ],
+        "title": [
+          "Hyper Dagger"
+        ]
+      },
+      "preview": {
+        "url": "https://mbace1.github.io/Suds-Jack/hyperdagger-sdf/?skull=sdf",
+        "status": 200,
+        "version": null,
+        "main_token": [
+          "js/main.js?v=113"
+        ],
+        "title": [
+          "Hyper Dagger SDF \u2014 build 3 preview"
+        ]
+      },
+      "versions": {
+        "url": "https://mbace1.github.io/Suds-Jack/hub/versions.json",
+        "status": 200,
+        "version": {
+          "v": "59",
+          "n": 59000,
+          "from": "VERSIONS.md"
+        },
+        "main_token": [],
+        "title": []
+      }
+    },
+    "final_sdf_play": {
+      "passed": 35,
+      "failed": 0,
+      "Ember_natural": "3 SDF skulls at 26.2 game seconds",
+      "Haul_natural": "3 SDF skulls at 17.9 game seconds",
+      "runtime_changed": false
+    },
+    "release_staging_checks": [
+      {
+        "gate": "continued-release-loop",
+        "code": 0,
+        "seconds": 38.2,
+        "production_base": "d1b31eed4",
+        "shell_token": 229
+      },
+      {
+        "gate": "continued-release-offline",
+        "code": 0,
+        "seconds": 4.0,
+        "production_base": "d1b31eed4",
+        "shell_token": 229
+      }
+    ]
   }
 }
