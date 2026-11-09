@@ -48,13 +48,14 @@ const out = document.createElement('canvas'); out.width = W; out.height = H; con
 // ------------------------------------------------------------------ copy and timing
 await CAP.loadFonts(FONT_DIR);
 const COPY = await CAP.loadCopy('copy.json');
-const BEATS = [['s1', 0], ['s2', 3.4], ['s3', 6.8], ['s4', 10.0], ['s5', 13.4], ['s6', 16.8], ['end', 20.6]];
+const BEATS = [['s1', 0], ['s2', 3.4], ['s3', 6.8], ['s4', 9.6], ['s5', 13.0], ['s6', 16.4], ['end', 20.2]];
 const P = CAP.plan(COPY, LANG, BEATS, { snap: 0.25 }), T = P.T, DUR = T.end, UI = P.ui;
 const GEO = await (await fetch('geo.json')).json();
 // every impact lands on its caption's word, to the frame
 const popT = (id) => { const c = P.captions.find((c) => c.id === id); return (c.words.find((w) => w.pop) || c.words[0]).t; };
 const wordT = (id, w0) => { const c = P.captions.find((c) => c.id === id); return (c.words.find((w) => w.w.toLowerCase().startsWith(w0)) || c.words[0]).t; };
-const EV = { rise: T.s2 - 0.55, worth: popT('worth'), grant: wordT('buys', 'grants') + 0.06, buys: popT('buys'), sheet: T.s5 + 0.2, stamp: popT('classified'), beep: T.s6 + 0.45, sleep: popT('sleep') };
+const EV = { rise: T.s2 - 0.55, worth: T.s3 + 1.15,   // beat 3 has no caption: the counter IS the line, locking at 1.15 s
+  grant: wordT('buys', 'grants') + 0.06, buys: popT('buys'), sheet: T.s5 + 0.2, stamp: popT('classified'), beep: T.s6 + 0.45, sleep: popT('sleep') };
 EV.count0 = T.s3 + 0.35; EV.drop = EV.buys - 0.42; EV.stampDown = EV.stamp - 0.16;
 for (let i = 0, t = T.s2 + 0.45; t < T.s4 - 0.4; i++, t += 0.95) EV['ping' + i] = +t.toFixed(3);
 const KICKS = [[EV.grant, 0.45], [EV.buys, 1.1], [EV.stamp, 1.5]];
@@ -666,9 +667,9 @@ function placeHero(t) {   // relative to the camera's steady orbit pose, so the 
 const fmt = (v) => '€' + Math.floor(v).toLocaleString('en-US');
 function counter(g, t) {   // beat 3: the valuation rolls up to the pop word, then holds and blinks once
   if (t < EV.count0) return; const k = ease.out((t - EV.count0) / (EV.worth - EV.count0)), v = 10e9 * k, a = clamp((t - EV.count0) / 0.2) * clamp((T.s4 - t) / 0.2);
-  g.save(); g.globalAlpha = a; g.textAlign = 'center'; g.font = '600 30px RobotoCondensed'; g.fillStyle = 'rgba(170,255,200,.9)'; g.fillText(UI.valLabel, W / 2, 1300);
-  g.font = '700 92px RobotoCondensed'; g.shadowColor = 'rgba(80,255,150,.8)'; g.shadowBlur = 24; g.fillStyle = (t > EV.worth && t < EV.worth + 0.2) ? '#ffffff' : '#9dffc4';
-  g.fillText(fmt(v) + (t >= EV.worth ? '+' : ''), W / 2, 1400); g.restore();
+  g.save(); g.globalAlpha = a; g.textAlign = 'center'; g.font = '600 30px RobotoCondensed'; g.fillStyle = 'rgba(170,255,200,.9)'; g.fillText(UI.valLabel, W / 2, 250);
+  g.font = '700 104px RobotoCondensed'; g.shadowColor = 'rgba(80,255,150,.8)'; g.shadowBlur = 24; g.fillStyle = (t > EV.worth && t < EV.worth + 0.2) ? '#ffffff' : '#9dffc4';
+  g.fillText(fmt(v) + (t >= EV.worth ? '+' : ''), W / 2, 368); g.restore();
 }
 
 function frame(t, captions = true) {
@@ -714,7 +715,7 @@ function frame(t, captions = true) {
   const tg = (a0, a1) => clamp((t - a0) / 0.3) * clamp((a1 - t) / 0.3);
   tag(g2d, UI.tag1, tg(T.s1 + 1.4, EV.rise));
   tag(g2d, UI.tag2, tg(T.s2 + 1.0, T.s2 + 2.4)); tag(g2d, UI.tag2b, tg(T.s2 + 2.5, T.s3 - 0.1));
-  tag(g2d, UI.tag3, tg(EV.worth + 0.2, T.s4 - 0.1));
+  tag(g2d, UI.tag3, tg(EV.worth + 0.35, T.s4 - 0.1));
   tag(g2d, UI.tag4, tg(EV.grant + 0.15, EV.buys - 0.1)); tag(g2d, UI.tag4b, tg(EV.buys + 0.2, T.s5 - 0.1));
   tag(g2d, UI.tag5, tg(EV.stamp + 0.25, EV.stamp + 1.55)); tag(g2d, UI.tag5b, tg(EV.stamp + 1.65, T.s6 - 0.1));
   tag(g2d, UI.tag6, tg(EV.sleep + 0.3, T.end + 1));

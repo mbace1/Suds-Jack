@@ -3,7 +3,7 @@
   "cut": "v2 full build (9 Nov, en only; owner, Mon 9 Nov: 'Go ahead' on the v1 stills). v1 stills: Owner, Mon 9 Nov: 'ICEYE is great. Let's go for impressive visuals. Modern cold war feel. Nanny state surveillance of the border. High-tech defence spending starting from Aalto University start-up hub. Supo approved clearance for all employees etc'. Device: SCALE SHIFT in one unbroken pull-back, from a student desk in Otaniemi to a radar constellation that watches Finland in the dark; it ends as a BORROWED FORMAT, the nanny state's baby monitor. Two corrections to the brief, from the record: (1) Supo screening is 'where required', per ICEYE's own job ads, not for all employees; (2) the Ministry's word is 'surveillance' (space-based ISR), and no source says the satellites watch the border, so no caption claims it. US spelling.",
   "series": "rfh",
   "captionSize": "big",
-  "argument": "ICEYE began as an Aalto University course project in 2012; its small radar satellites see through cloud and darkness; Business Finland granted it EUR 28.3M in June 2026, Finland's military bought its own ICEYE satellites in Sep 2025 (technical requirements classified), some staff are screened by Supo, and the company is now valued at over EUR 10B.",
+  "argument": "A 2012 Aalto student project became radar satellites that see in the dark, valued at over EUR 10B, helped by public grants and bought by the state, which keeps the requirements classified.",
   "langs": [
     "en"
   ],
@@ -35,17 +35,6 @@
       "source": "ICEYE launched the world's first small synthetic-aperture radar (SAR) satellite in 2018; its innovation was shrinking SAR satellites below 100 kg 'to image through clouds and in darkness' (Wikipedia, ICEYE; newstimes.com.ng May 2026; Aalto: SAR imaging 'regardless of the weather conditions or time of day'). Search summaries, 9 Nov."
     },
     {
-      "id": "worth",
-      "role": "evidence",
-      "at": "s3+0.4",
-      "until": "s4-0.25",
-      "hold": "s4",
-      "text": {
-        "en": "Today: worth / over [€10 billion]."
-      },
-      "source": "June 2026 Series F, about EUR 1B in total including a EUR 450M primary round led by General Atlantic; reported valuation 'above EUR 10 billion' (Breaking Defense Oct 2026; startbase.de; intellinews 'values it at 10bn'). Figures differ by source (DefiLlama lists $11.81B), so the caption says 'over EUR 10 billion' and the tag says REPORTED. Search summaries, 9 Nov."
-    },
-    {
       "id": "buys",
       "role": "evidence",
       "at": "s4+0.4",
@@ -58,7 +47,7 @@
     },
     {
       "id": "classified",
-      "role": "turn",
+      "role": "evidence",
       "at": "s5+0.4",
       "until": "s6-0.25",
       "hold": "s6",
@@ -69,7 +58,7 @@
     },
     {
       "id": "sleep",
-      "role": "button",
+      "role": "punchline",
       "at": "s6+0.5",
       "until": "end-0.2",
       "hold": "end",
@@ -147,7 +136,7 @@
       "en": "PAGE 1 OF 1"
     }
   },
-  "props": "No ICEYE logo or brand art anywhere: the company is named in plain type in the tags only. The satellites are a generic flat-panel radar design (long antenna panel, small bus, one solar wing), not a copy of ICEYE's hardware. The desk, the model and the notes are invented props (a student's desk), not a depiction of any real person or room. No people, no faces. Map data: Natural Earth (public domain), see GEO-NOTICE.md. Beat 4: the envelope carries only the documented grant (Business Finland, EUR 28.3M, R&D program, June 2026); the tag GOVERNMENT-OWNED is the Ministry's own description ('the first government-owned satellites for Finland'). Beat 5: the sheet's headings are generic SAR system headings and every value is redacted, because the requirements are classified; nothing on it is a claim about what the satellites watch. The war-room clocks read 22:47 in Helsinki, 23:47 in Moscow and 15:47 in Washington (the zones are right for November). The red phone is a cold-war prop.",
+  "props": "No ICEYE logo or brand art anywhere: the company is named in plain type in the tags only. The satellites are a generic flat-panel radar design (long antenna panel, small bus, one solar wing), not a copy of ICEYE's hardware. The desk, the model and the notes are invented props (a student's desk), not a depiction of any real person or room. No people, no faces. Map data: Natural Earth (public domain), see GEO-NOTICE.md. Beat 4: the envelope carries only the documented grant (Business Finland, EUR 28.3M, R&D program, June 2026); the tag GOVERNMENT-OWNED is the Ministry's own description ('the first government-owned satellites for Finland'). Beat 5: the sheet's headings are generic SAR system headings and every value is redacted, because the requirements are classified; nothing on it is a claim about what the satellites watch. The war-room clocks read 22:47 in Helsinki, 23:47 in Moscow and 15:47 in Washington (the zones are right for November). The red phone is a cold-war prop. Beat 3 has no caption: the counter IS the line (as On the Label's stamp beat), so the film keeps three facts; its source: June 2026 Series F, about EUR 1B in total including a EUR 450M primary round led by General Atlantic; reported valuation 'above EUR 10 billion' (Breaking Defense Oct 2026; startbase.de; intellinews 'values it at 10bn'). Figures differ by source (DefiLlama lists $11.81B), so the caption says 'over EUR 10 billion' and the tag says REPORTED. Search summaries, 9 Nov.",
   "post": {
     "en": "ICEYE began as a 2012 Aalto University course project. Its radar satellites see through cloud and dark. Business Finland granted it €28.3M in June; Finland's military bought its own ICEYE satellites in 2025, requirements classified. Valued at over €10B. Sleep tight, Finland."
   }
