@@ -50,6 +50,11 @@ And: *"Toko face get buried behind map."*
     played through them, and the written deck untouched underneath.
   - `test/journey.mjs`: the odds sample is 320 seeds a run (the made cards
     took some of the "long shot" rolls it counted).
+  - `test/play.cjs`: a real shift on the phone deals made cards, three
+    buttons on screen, its line in Finnish under `?lang=fi`. The tests that
+    name a seed for a written card's art (the crush, the tourist, the vappu
+    student) add `&written`, which deals the written deck only, exactly as
+    v3.21 did.
 
 ## v3.21 — 2026-11-09
 
