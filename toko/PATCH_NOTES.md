@@ -194,3 +194,8 @@
 - Shared local news inbox API for Toko and later Helsinki Free Radio use.
 - First hidden DOS layer: `DIR`, `WHOAMI`, `MEMORY`, `TYPE MANIFESTO.TXT`, `NATURE.EXE`, and `MIRROR.EXE`.
 - `MIRROR.EXE` is the first rare full-screen fourth-wall event.
+
+Deployment note, 2026-11-09: the scoped Hyper v60 rollout preserves the
+independently published Toko Move v3.23 tree. Its root worker already used
+cache v283, so the combined deployment advances to v284; shared module URLs
+remain chat 26, table 6, signature 10 and Toko Live main 22.

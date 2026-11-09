@@ -394,3 +394,35 @@ has 70 entries, now including inherited dialogue/language token 26. The
 Toko prerequisite remains a separate PR; once it lands, #628's diff against
 main is Hyper-only plus its hub version row. Final runtime checks are being
 rerun before merging/publishing. No live v60 claim yet; preview is retained.
+
+## 2026-11-09 — reviewed merge and scoped v60 publication
+
+PR #628 merged at `fe9a50b73c982a194f6a310119fa225dda24aa3a` after the
+owner’s later “Continue merge and project” instruction and a protected
+expected-head merge. Actual merge tree `a47bb765` matches the verified
+prospective tree exactly: Toko Move v3.23 is preserved, #626 remains an
+ancestor, and every Hyper file matches the 21 passing final local gates.
+Gameplay smoke 220/0, SDF play 35/0, all six encounter loops, input/focus,
+pause/retry, run-end, daily/normal record isolation, offline and full hub
+passed. Required CI and final-head Codex review were green. Separate hub
+fixture #634 and Toko prerequisite #635 merged first.
+
+Production advanced to `3ac30a45` during final checks. This scoped publish
+merges it intact, retaining its Toko Move v3.23 and other game work. Root
+cache advances to v284 because both independent candidates used v283;
+Hyper stays main/registration 118, input 111, cache v88 and 70 entries.
+Production shell 230 and Toko Live’s extra layers stay intact; its main URL
+advances 21→22 for the reviewed shared-counter import. No file in the
+separate `hyperdagger-sdf/` preview is changed. Native Radio Free cadence
+stays 73; the shared-counter exception is documented in its AGENTS.md.
+
+Staging passed all six encounter loops, all three arena exits and offline.
+The same-origin cached v59→v60 upgrade also passed: worker v80 is replaced
+by activated v88 with all 70 URLs, then offline SDF START and the FIRST ASK
+TOKO opening/real typed reply succeed. The extra verifier initially checked
+async lifecycle promises too early; explicit awaited polling fixed the
+verifier without changing any cleanup or offline-use assertion.
+
+This publication commit is prepared for Pages verification. Hardware
+performance remains unmeasured; the 300-second scoring tie is unchanged.
+No articulated enemy or 3D arena conversion has started before integration.

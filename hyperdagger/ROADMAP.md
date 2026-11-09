@@ -2,10 +2,10 @@
 
 ## Current state — 9 November 2026
 
-- Live hub: v59. Separate SDF preview: build 3; retain it until retirement is explicitly agreed.
-- v60 candidate: PR #628 preserves all of #626 (`baa953c5`) and the combined renderer/menu work. Main `6944c929` and the separate Toko prerequisite #635 are integrated locally; current runtime tokens are main 118, input 111 and worker cache v88.
-- Mikael approved merge and project continuation on 9 November. Required final-head CI/review and gameplay/offline checks still gate merge/publication. The known Toko idle-aside CI blocker is addressed in its own prerequisite PR #635, not as an SDF rendering change.
-- Full prior gameplay smoke passed 220/0; SDF play passed 35/0 after approved natural-observation fixture repair. Recheck the final shared-counter/cache integration, then publish and verify the actual hub build.
+- Live hub: v60 on `/hyperdagger/`; separate SDF preview remains build 3 until retirement is explicitly agreed.
+- v60 merged in PR #628 at `fe9a50b73`, preserving #626 ancestry and the combined renderer/menu work. Separate prerequisites #634 (hub fixture) and #635 (Toko idle-aside/offline dialogue fix) are merged.
+- Final source: all 21 local gates passed, including gameplay smoke 220/0, SDF play 35/0 and all six real season/renderer encounter loops. Current-main prospective merge also passed full hub/version/precache checks; all required CI and final-head review passed.
+- Runtime: main/registration 118, input 111, cache v88, 70 generated entries. Classic remains the default. Publication preserves the independent Toko Move v3.23 release and production shell 230.
 - Classic remains the default. Physical-device performance is unmeasured.
 - Completed runs tie at 300.0 seconds. This is an open scoring design decision, not authorization to change the score.
 

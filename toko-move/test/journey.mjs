@@ -204,14 +204,14 @@ ok(RUNS.every(r => !r.cargo || r.cargo.every(c => CARGO[c])), 'every run deals r
         const r = J.choose(net, s, 0); done++;
         ok(r.reveal?.sold && r.reveal.say.includes(contents), `the buyer names what was inside ("${r.reveal.say}")`);
         ok(s.score === score + r.reveal.sold.cash && s.sold === 1 && s.trust === 0.85 && s.done === 0 + s.results.length, `the cash lands, the job is gone, fees after are ×0.85 (€${r.reveal.sold.cash})`);
-        ok(s.phase === 'dispatch' && s.offer && s.offer.fee === Math.round(J.feeOf(s.offer) * 0.85), `and dispatch offers the next job at the lower fee (€${s.offer.fee})`);
+        ok(s.phase === 'dispatch' && s.offer && s.offer.fee === Math.round(J.feeOf(s.offer) * 0.85 * (s.dayFee || 1)), `and dispatch offers the next job at the lower fee (€${s.offer.fee})`);
         break; }
       J.choose(net, s, POLICIES.reader(c, s)); } }
   ok(done === 1, 'a buyer is met and sold to'); }
 
 // ── 11. the money (ACT1.md §2): a fee in euros; the job's multiplier moves it
 { ok(J.feeOf({ best: 600, cargo: 'parts' }) === 19 && J.feeOf({ best: 600, cargo: 'equipment' }) === 28 && J.feeOf({ best: 600, cargo: 'documents' }) === 16, 'ten minutes pays €19 for parts, €28 for equipment (large), €16 for documents (small)');
-  const s = J.newRun(net, BY_ID.easy, 31); ok(s.offer.fee === J.feeOf(s.offer) && J.card(net, s).options[0].stakes?.sure?.join() === `€${s.offer.fee}`, `Take it says the fee (€${s.offer.fee})`);
+  const s = J.newRun(net, BY_ID.easy, 31); ok(s.offer.fee === Math.round(J.feeOf(s.offer) * (s.dayFee || 1)) && J.card(net, s).options[0].stakes?.sure?.join() === `€${s.offer.fee}`, `Take it says the fee (€${s.offer.fee})`);
   let out = null, st = 0, fee = 0, cargo = null; while (!out && st++ < 100) { const c = J.card(net, s); const r = J.choose(net, s, POLICIES.reader(c, s)); if (s.job) { fee = s.job.fee; cargo = s.job.cargo; } if (r.delivered) out = r.delivered; }
   ok(out && !out.late && out.pay === Math.round(fee * out.mult), `the first drop on time pays its fee × the job's multiplier (€${fee} ×${out?.mult} = €${out?.pay})`);
   ok(out && CONTENTS[cargo].includes(out.contents), `and the drop names what was inside ("${out?.contents}")`); }
@@ -269,7 +269,7 @@ ok(RUNS.every(r => !r.cargo || r.cargo.every(c => CARGO[c])), 'every run deals r
   { const s = J.newRun(net, BY_ID.easy, 5, { memory: { runs: 3 } }); let met = null, steps = 0;
     while (s.phase !== 'end' && steps++ < 500) { const c = J.card(net, s); if (!c) break; if (c.id === 'dispatch1') met = c; J.choose(net, s, c.id === 'dispatch1' ? 1 : 0); }
     ok(!!met && s.keep.dispatch === 1, `Dispatch's first step is met on a second run, and kept (${JSON.stringify(s.keep)})`); }
-  { const s = J.newRun(net, BY_ID.easy, 5, { memory: { runs: 3, ticket: 1 } }); let met = false, steps = 0;
+  { const s = J.newRun(net, { ...BY_ID.easy, days: false }, 5, { memory: { runs: 3, ticket: 1 } }); let met = false, steps = 0;
     while (s.phase !== 'end' && steps++ < 500) { const c = J.card(net, s); if (!c) break; if (c.id === 'inspector1987') met = true; J.choose(net, s, 0); }
     ok(met && s.keep.ticket === 2, 'the inspector asks about the ticket, once: the arc closes'); }
   // in a run: a callback is dealt only after its choice, and then it comes
