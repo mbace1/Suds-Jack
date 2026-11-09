@@ -324,3 +324,25 @@ Toko accounts.)
 > Toko Drop 2.0: nine worlds, giants that slam, sewer rams, goo everywhere. Free in the arcade: mbace1.github.io/Suds-Jack/toko-drop-2/
 
 (4 Nov: the version number is dropped from the post, because the game ships daily and a number in the copy dates it.)
+
+## The owner's lockup (9 Nov)
+
+**Owner, 9 Nov:** "Fyi, the text in the beginning logo is a bit wrong, please use this instead", with the official Toko
+Midori Games lockup attached as a 2000×1000 RGBA PNG: a magenta disc with a white face, and the three-line logotype in
+magenta.
+
+- The PNG is filed as `looks/gl/tokodrop2/lockup.png`, exactly as sent, and is never redrawn.
+- **Opening (first four beats, 0–1.40 s):** a new `lockup` segment. The disc pops in, then the three lines slide in.
+  The game's own logo sound plays under it.
+- **The cut:** on the beat, the film cuts to the game's own intro from source 3.52 s. By then the game's drawn
+  "Toko Midori Games™" has left the frame and its title "Toko drop" is building. The old lockup frames (source
+  1.9–3.5 s) are gone.
+- **End slate:** the same image replaces the traced face and drawn logotype. There is no ™, because the owner's
+  lockup has none.
+- **Re-render:** only frames 0–73 and the slate (586–752) were re-rendered. The compilation is unchanged.
+- **Score:** `score.py` cuts the game's intro sound under the lockup segment too. It is −14.0 LUFS by its own check, and
+  the filed MP4 measures −14.1 LUFS and −2.9 dBFS true peak. Length 25.1 s.
+- **Files:** `films/08-11-Toko7-Toko-Drop-2.mp4` is the new cut. The 8 Nov cut is kept as
+  `films/08-11-Toko7-Toko-Drop-2-v1.mp4` and is NOT for posting.
+- **Flag for the brand lane:** `toko/js/wordmark.js`, the game's drawn logotype, differs from this lockup. The games and
+  the arcade still draw it. That is not this film's lane, so it goes to the owner.

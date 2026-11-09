@@ -121,7 +121,7 @@ for b in (3, 4.5, 6): at(CB * BAR + b * B, stab([PROG[0][1][0] + 24], 0.1), 0.09
 if SFX:
     sfx, ssr = sf.read(SFX, always_2d=True); sfx = sfx.mean(axis=1)
     if ssr != SR: sfx = np.interp(np.arange(int(len(sfx) * SR / ssr)) * ssr / SR, np.arange(len(sfx)), sfx)
-    for s in [s for s in PLAN['segs'] if s['kind'] == 'intro']:
+    for s in [s for s in PLAN['segs'] if s['kind'] in ('intro', 'lockup')]:   # under the owner's lockup (9 Nov): the game's own logo sound
         a, d = int(s['from'] * SR), int((s['t1'] - s['t0']) * SR); seg = sfx[a:a + d].copy()
         fade = int(0.012 * SR); seg[:fade] *= np.linspace(0, 1, fade); seg[-fade:] *= np.linspace(1, 0, fade)
         at(s['t0'], seg, 0.9)

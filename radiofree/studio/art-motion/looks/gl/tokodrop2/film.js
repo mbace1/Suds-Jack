@@ -2,8 +2,11 @@
 // re-cut for the Toko Midori Games accounts on the owner's word (8 Nov: "end slate with those socials, no links of any
 // kind just logo and Toko details. Saying coming in 2027. Make the video a bit shorter edit out glitched shooting part.
 // Use current world 1 visuals"):
-//   1. the game's OWN intro, recorded frame by frame from the deployed build (v123), trimmed to three runs (the Toko
-//      Midori Games lockup lands → "drop" → the drop lets go and lands, the grid rings → it opens its eyes, the HUD).
+//   0. (9 Nov, owner: "the text in the beginning logo is a bit wrong, please use this instead") the OWNER'S lockup,
+//      lockup.png as sent, never redrawn: the disc pops in and the three lines slide in over the first four beats.
+//      The same image is the end slate's lockup. The game's drawn "Toko Midori Games™" no longer appears anywhere.
+//   1. the game's OWN intro, recorded frame by frame from the deployed build (v123), from the moment its own title
+//      builds ("Toko" → "drop" → the drop lets go and lands, the grid rings → it opens its eyes, the HUD).
 //      Nothing is drawn over it.
 //   2. a fast compilation of real v123 play, cut on the beats of a 172 BPM score (score.py). The game's frames are
 //      shown as they were rendered, full bleed, with a punch-in and a flash on each cut and one light tag along the
@@ -31,6 +34,17 @@ const MAG = '#F0027F', INK = '#000000';   // the brand's two colours (toko/js/pa
 const { fillMaster, masterBounds } = await import('/toko/js/master.js');
 const { drawWord, widthOf, M: WM } = await import('/toko/js/wordmark.js');
 { const f = new FontFace('Anton', `url(${Q.get('fonts') || '/_fonts/'}Anton-400.woff)`); document.fonts.add(await f.load()); }
+// the owner's lockup (9 Nov), 2000×1000: the disc on the left, the three lines on the right (source rects measured)
+const LOCKUP = await new Promise((res, rej) => { const im = new Image(); im.onload = () => res(im); im.onerror = () => rej(new Error('lockup.png')); im.src = './lockup.png'; });
+const LK = { face: [0, 0, 1000, 1000], lines: [[1010, 40, 990, 370], [1010, 405, 990, 290], [1010, 688, 990, 292]] };
+function drawLockup(g, cx, cy, w, tl, delays = [0.14, 0.24, 0.34]) {   // tl: seconds since the lockup began
+  const sc = w / 2000, x0 = cx - w / 2, y0 = cy - w / 4;
+  const kf = (() => { const x = clamp(tl / 0.38), c = 1.7; return 1 + (c + 1) * Math.pow(x - 1, 3) + c * Math.pow(x - 1, 2); })();
+  if (tl > 0) { const [sx, sy, sw, sh] = LK.face, fx = x0 + (sx + sw / 2) * sc, fy = y0 + (sy + sh / 2) * sc;
+    g.save(); g.translate(fx, fy); g.scale(kf, kf); g.drawImage(LOCKUP, sx, sy, sw, sh, -sw * sc / 2, -sh * sc / 2, sw * sc, sh * sc); g.restore(); }
+  LK.lines.forEach(([sx, sy, sw, sh], i) => { const a = 1 - Math.pow(1 - clamp((tl - delays[i]) / 0.25), 3); if (a <= 0) return;
+    g.save(); g.globalAlpha = a; g.drawImage(LOCKUP, sx, sy, sw, sh, x0 + sx * sc + (1 - a) * 60, y0 + sy * sc, sw * sc, sh * sc); g.restore(); });
+}
 const ROWS = ['#fff070', '#ffd040', '#ffa030', '#ff6a40', '#f03c70', '#c02090', '#8a1aa0'];   // the GL logo's ramp
 
 // ------------------------------------------------------------------ the game's frames, loaded on demand
@@ -152,25 +166,17 @@ async function drawTitleCard(g, tc, s) {
 }
 
 // ------------------------------------------------------------------ end card C: the Toko Midori Games slate (8 Nov)
-// Magenta on black, the two colours and nothing else. The lockup is the canon's: the TRACED face (master.js, never
-// face.js's GEO) beside the drawn three-line logotype, standing the face's height (lockup.js's proportions).
+// Magenta on black, the two colours (and the face's white, as the owner's lockup carries it). The lockup is the owner's
+// own image (9 Nov), never redrawn; until then it was the traced face beside the drawn logotype, which the owner said
+// was "a bit wrong".
 // Then TOKO DROP 2.0, COMING IN 2027 reversed out of a magenta band, and the handles as words — no links of any kind.
 const ease = { out: (x) => 1 - Math.pow(1 - clamp(x), 3), back: (x) => { x = clamp(x); const c = 1.7; return 1 + (c + 1) * Math.pow(x - 1, 3) + c * Math.pow(x - 1, 2); } };
 function fit(g, str, px, maxW) { g.font = `${px}px Anton`; const w = g.measureText(str).width; if (w > maxW) { px = Math.floor(px * maxW / w); g.font = `${px}px Anton`; } return px; }
 function drawTokoCard(g, tc) {
   g.fillStyle = INK; g.fillRect(0, 0, OUT_W, OUT_H);
   const at = (b) => tc - BEAT * b;
-  // the lockup: face h = 250, logotype lines = h / 3.2, gap h * 0.14, centred as a block at y 330
-  const b = masterBounds(), H = 280, FW = H * b.w / b.h, gap = H * 0.14, size = H / 3.2, lh = size * 1.06;
-  const lines = ['Toko', 'Midori', 'Games'], lw = lines.map((l) => widthOf(l) * size / WM.cap), block = Math.max(...lw);
-  const LW = FW + gap + block + size * 0.42, X0 = Math.round((OUT_W - LW) / 2), Y0 = 260;
-  const blink = (() => { const d = at(9); return d > 0 && d < 0.14 ? 0.12 : 1; })();
-  const kf = ease.back(at(0) / 0.38);
-  if (kf > 0) { g.save(); g.translate(X0 + FW / 2, Y0 + H / 2); g.scale(kf, kf); fillMaster(g, -FW / 2, -H / 2, FW, { color: MAG, squash: blink }); g.restore(); }
-  lines.forEach((ln, i) => { const a = ease.out(at(1 + i * 0.5) / 0.25); if (a <= 0) return;
-    g.save(); g.globalAlpha = a; drawWord(g, ln, X0 + FW + gap + (1 - a) * 40, Y0 + size + i * lh + (H - (size + 2 * lh)) / 2, size, MAG);
-    if (i === 2) drawWord(g, 'TM', X0 + FW + gap + lw[2] + size * 0.07 + (1 - a) * 40, Y0 + size + i * lh + (H - (size + 2 * lh)) / 2 - size * 0.62, size * 0.3, MAG);
-    g.restore(); });
+  // the lockup: the owner's own (lockup.png), 880 wide, centred at y 420; the disc on the downbeat, a line a half-beat apart
+  drawLockup(g, OUT_W / 2, 420, 880, tc, [BEAT, BEAT * 1.5, BEAT * 2]);
   // the game's name, slammed in on beat 3
   const k3 = at(3); if (k3 > 0) { const s = 1 + 0.18 * Math.pow(1 - clamp(k3 / 0.2), 2);
     g.save(); g.translate(OUT_W / 2, 770); g.scale(s, s); const px = fit(g, 'TOKO DROP 2.0', 210, 920); g.fillStyle = MAG; g.textAlign = 'center'; g.textBaseline = 'alphabetic'; g.fillText('TOKO DROP 2.0', 0, px * 0.36); g.restore(); }
@@ -192,6 +198,7 @@ function drawTokoCard(g, tc) {
 const out = makeScreen(OUT_W, OUT_H); document.body.appendChild(out.c); out.c.style.width = '270px';
 async function frameAt(t) {
   const g = out.g, s = segAt(t); g.imageSmoothingEnabled = true; g.fillStyle = '#000'; g.fillRect(0, 0, OUT_W, OUT_H);
+  if (s.kind === 'lockup') { drawLockup(g, OUT_W / 2, 960, 920, t - s.t0); return out.c; }
   if (s.kind === 'card') {
     if (CARD === 'toko') drawTokoCard(g, t - s.t0); else if (CARD === 'title') await drawTitleCard(g, t - s.t0, PLAN.title); else drawGlCard(g, t - s.t0);
     return out.c;
@@ -213,7 +220,7 @@ async function frameAt(t) {
 
 const events = { end: END, bpm: PLAN.bpm, cuts: PLAN.segs.filter((s) => s.kind === 'play').map((s) => +s.t0.toFixed(3)),
   introSegs: PLAN.segs.filter((s) => s.kind === 'intro').map((s) => ({ t0: s.t0, t1: s.t1, from: s.from })), card: PLAN.segs.find((s) => s.kind === 'card')?.t0 };
-window.__film = { fps: FPS, frames: Math.round(END * FPS), events, report: { look: document.title, card: CARD, slate: CARD === 'toko' ? ['Toko Midori Games (lockup)', 'TOKO DROP 2.0', 'COMING IN 2027', 'Instagram tokomidorigames', 'X @tokomidori'] : null },
+window.__film = { fps: FPS, frames: Math.round(END * FPS), events, report: { look: document.title, card: CARD, slate: CARD === 'toko' ? ['Toko Midori Games (the owner\'s lockup.png)', 'TOKO DROP 2.0', 'COMING IN 2027', 'Instagram tokomidorigames', 'X @tokomidori'] : null },
   async frame(i) { return (await frameAt(i / FPS)).toDataURL('image/jpeg', 0.92); },
   async still(t) { return (await frameAt(t)).toDataURL('image/png'); } };
 window.__ready = true;

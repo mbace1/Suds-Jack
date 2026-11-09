@@ -4,12 +4,20 @@
  "end": 25.1163,
  "segs": [
   {
-   "kind": "intro",
+   "kind": "lockup",
    "t0": 0.0,
-   "t1": 2.4419,
+   "t1": 1.3953,
    "src": "intro",
    "from": 1.9,
-   "note": "the Toko Midori Games lockup, then \"Toko drop\" builds in its place"
+   "note": "the owner's lockup (lockup.png, 9 Nov): the disc pops in, the three lines slide in; under it, the game's own intro sound from the logo"
+  },
+  {
+   "kind": "intro",
+   "t0": 1.3953,
+   "t1": 2.4419,
+   "src": "intro",
+   "from": 3.52,
+   "note": "the game's own title builds: \"Toko\" \u2192 \"drop\" (from source 3.52 s: the game's drawn \"Games\u2122\" has left the frame)"
   },
   {
    "kind": "intro",
