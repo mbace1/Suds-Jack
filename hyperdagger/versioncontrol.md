@@ -286,3 +286,84 @@ softened. The broad hub smoke's Pajatso A-button/navigation failure also
 reproduced on untouched main `27f68b37`, so that finding belongs in the hub
 lane and still blocks a clean release. Normal Toko Live runtime passed;
 the separately forced idle-typing probe still demonstrates its known bug.
+
+## 2026-11-09 — v60 integrated validation and release hold
+
+Merged current main `84cb8eff` into the integration (`7a852114`), preserving
+Toko Move v3.22 and all unrelated upstream changes. Hyper runtime bytes remain
+identical to tested `6939caad`: main 117, input 111, cache v87, 71 precache
+entries. Full serial gameplay smoke passed **220/0**, including unchanged
+Inca carry checks. All six Classic/SDF season encounter loops, three test-arena
+pause exits, menu/input/focus, pause/resume, run-end, daily keys/GC, offline,
+HUD, action feedback and software correctness checks passed. Local production
+staging also passed all six loops, exits and offline. After merging latest
+main, real hub entry and offline were checked again and passed.
+
+Feature-pins initially exposed two fixture issues: rounded drain reached 1
+before actual drain completion, and isolated pad movement inherited arena
+obstacles/motion. Wait for actual drain and reset that movement fixture;
+all original zero-height/strike and distance assertions remain. Follow-up
+passed 19/0. The unrelated hub deployment-only Pajatso stand-in now has its
+own four-line test-only PR #634; full hub smoke passes on latest main with
+that fixture fix. It is not folded into this Hyper branch.
+
+`sdf-play` remains **34/1**: Ember's natural director can produce no skull
+in its unchanged 20-game-second window. Automatic approval review rejected
+extending observation to 60 seconds as weakening the gate; the requested
+user decision is pending. No extension or assertion weakening was applied.
+The final runtime CI gate jobs are green after one retry of an unrelated
+Toko Move event-card failure, with no Toko code change. Toko Live/Night Shift/
+looks are green; the forced Toko Live idle-typing diagnostic still reproduces
+its separate issue. Fresh Codex review was requested and is pending. Final
+source push will need its own CI result.
+
+Evidence: `test/evidence/v60-integration/validation.json` and six settled
+phone-landscape menu captures. Software rendering is correctness evidence,
+not physical GPU validation. iPad/Android/desktop hardware measurements are
+unavailable. The 300-second scoring tie remains a design decision. No next
+enemy or 3D arena conversion has begun. The separate preview remains build 3.
+Main hub remains v59: no merge or deployment was performed. A local scoped
+release candidate (`56cce635`) exists for review; fetch and reconcile current
+production again before any explicitly approved merge/publish.
+
+Version generator verification: the Hyper row is v60 and precache is current.
+A full generation also proposes unrelated Radio Free 38 → token 73 on main;
+that pre-existing row drift was left in its own lane. Only the Hyper version
+row differs from main.
+
+## 2026-11-09 — approved observation follow-up, all SDF play checks pass
+
+Owner replied “Continue” to the specific 20-to-60-game-second observation
+request. This authorizes that fixture change, not merge or publication.
+The seed (628), three-body target, 4,000-frame cap and every original
+assertion remain. The first longer observation caught a second fixture
+problem: invulnerability stops hits, not Ember's 30-second life clock. At
+30 seconds the run timed out; the next fire touch retried it, disposing the
+parked skull without killing it. Both original kill/debris assertions
+failed as they should (33/2); this intermediate log is retained.
+
+Stage 90 seconds of life before the longer natural observation. No runtime
+behavior changes. The complete follow-up `sdf-play.cjs` passes **35/0**:
+Ember naturally supplied three SDF skulls at 26.2 game seconds; Haul supplied
+three at 17.9 seconds. All real weapon kills, gibs/spray, splitter minis,
+Watcher volley, Totem wounds/death, arena exits and Classic recovery pass.
+Both logs live in `test/evidence/v60-integration/`.
+
+Fetched and merged main `3e3513628` (Toko original-logotype work) cleanly at
+`27804313d`; Hyper runtime still matches frozen `6939caade8` byte for byte.
+Codex's review of that runtime completed with no major issues (PR #628,
+comment 6749109493). This supersedes the earlier pending-review report.
+CI on `e14fb56b` passed gates, looks and Night Shift, but Toko Live failed:
+the Betterment question received two replies (3→5), job 129386639785. The
+known idle-aside bug remains a release blocker under AGENTS.md §2b; no
+Toko runtime fix is mixed into Hyper. PR discussion also reports the same
+failure on one retry. Final follow-up source still needs fresh CI/review.
+
+Production advanced to `d1b31eed4`; local release staging merged it cleanly,
+preserving shell token 229 and all unrelated production changes. Live HTTPS
+recheck still reports hub v59 and separate SDF preview build 3. Neither
+branch was merged or published. Hardware performance remains unmeasured;
+no next enemy/arena conversion or scoring change was started.
+
+Latest-production staging follow-up passed all six season/renderer loops
+(38.2 s) and offline (6/0, 4.0 s), with production shell 229 retained.
