@@ -1,0 +1,128 @@
+[
+  {
+    "gate": "smoke",
+    "code": 0,
+    "seconds": 871.5,
+    "head": "6993ae35ba35a017f4fef4cdcbe8a12c75324a8c"
+  },
+  {
+    "gate": "sdf-play",
+    "code": 0,
+    "seconds": 156.8,
+    "head": "6993ae35ba35a017f4fef4cdcbe8a12c75324a8c"
+  },
+  {
+    "gate": "sdf-build3",
+    "code": 0,
+    "seconds": 14.8,
+    "head": "6993ae35ba35a017f4fef4cdcbe8a12c75324a8c"
+  },
+  {
+    "gate": "sdf-menu",
+    "code": 0,
+    "seconds": 24.7,
+    "head": "6993ae35ba35a017f4fef4cdcbe8a12c75324a8c"
+  },
+  {
+    "gate": "sdf-skull",
+    "code": 0,
+    "seconds": 16.4,
+    "head": "6993ae35ba35a017f4fef4cdcbe8a12c75324a8c"
+  },
+  {
+    "gate": "sdf-loop",
+    "code": 0,
+    "seconds": 38.6,
+    "head": "6993ae35ba35a017f4fef4cdcbe8a12c75324a8c"
+  },
+  {
+    "gate": "sdf-exit",
+    "code": 0,
+    "seconds": 26.6,
+    "head": "6993ae35ba35a017f4fef4cdcbe8a12c75324a8c"
+  },
+  {
+    "gate": "menu-input",
+    "code": 0,
+    "seconds": 25.4,
+    "head": "6993ae35ba35a017f4fef4cdcbe8a12c75324a8c"
+  },
+  {
+    "gate": "menu-focus",
+    "code": 0,
+    "seconds": 33.5,
+    "head": "6993ae35ba35a017f4fef4cdcbe8a12c75324a8c"
+  },
+  {
+    "gate": "pause-resume-tap",
+    "code": 0,
+    "seconds": 11.1,
+    "head": "6993ae35ba35a017f4fef4cdcbe8a12c75324a8c"
+  },
+  {
+    "gate": "press-edges",
+    "code": 0,
+    "seconds": 39.7,
+    "head": "6993ae35ba35a017f4fef4cdcbe8a12c75324a8c"
+  },
+  {
+    "gate": "run-end",
+    "code": 0,
+    "seconds": 11.1,
+    "head": "6993ae35ba35a017f4fef4cdcbe8a12c75324a8c"
+  },
+  {
+    "gate": "daily-key",
+    "code": 0,
+    "seconds": 4.6,
+    "head": "6993ae35ba35a017f4fef4cdcbe8a12c75324a8c"
+  },
+  {
+    "gate": "daily-gc",
+    "code": 0,
+    "seconds": 3.4,
+    "head": "6993ae35ba35a017f4fef4cdcbe8a12c75324a8c"
+  },
+  {
+    "gate": "offline",
+    "code": 0,
+    "seconds": 3.8,
+    "head": "6993ae35ba35a017f4fef4cdcbe8a12c75324a8c"
+  },
+  {
+    "gate": "hud-lock",
+    "code": 0,
+    "seconds": 14.7,
+    "head": "6993ae35ba35a017f4fef4cdcbe8a12c75324a8c"
+  },
+  {
+    "gate": "feature-pins",
+    "code": 0,
+    "seconds": 83.1,
+    "head": "6993ae35ba35a017f4fef4cdcbe8a12c75324a8c"
+  },
+  {
+    "gate": "action-feedback",
+    "code": 0,
+    "seconds": 88.3,
+    "head": "6993ae35ba35a017f4fef4cdcbe8a12c75324a8c"
+  },
+  {
+    "gate": "touch-move-no-fire",
+    "code": 0,
+    "seconds": 11.6,
+    "head": "6993ae35ba35a017f4fef4cdcbe8a12c75324a8c"
+  },
+  {
+    "gate": "hub-smoke",
+    "code": 0,
+    "seconds": 105.6,
+    "head": "6993ae35ba35a017f4fef4cdcbe8a12c75324a8c"
+  },
+  {
+    "gate": "toko-live",
+    "code": 0,
+    "seconds": 6.8,
+    "head": "6993ae35ba35a017f4fef4cdcbe8a12c75324a8c"
+  }
+]

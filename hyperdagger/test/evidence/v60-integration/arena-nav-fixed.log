@@ -1,0 +1,6 @@
+arena navigation request 1
+PASS test-arena START → pause → ember: clean URL, selected menu, correct rules/floor, normal and daily records untouched
+arena navigation request 1
+PASS test-arena START → pause → inca: clean URL, selected menu, correct rules/floor, normal and daily records untouched
+arena navigation request 1
+PASS test-arena START → pause → haul: clean URL, selected menu, correct rules/floor, normal and daily records untouched

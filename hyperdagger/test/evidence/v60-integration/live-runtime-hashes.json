@@ -1,0 +1,121 @@
+{
+  "checked_utc": "2026-11-09T23:20:58.552281+00:00",
+  "attempt": 1,
+  "source_head": "fe9a50b73c982a194f6a310119fa225dda24aa3a",
+  "staging_head": "6b8d06f48bf1c971f7f94d5ee6d5a754ae33d4fc",
+  "checks": [
+    {
+      "path": "hyperdagger/index.html",
+      "url": "https://mbace1.github.io/Suds-Jack/hyperdagger/index.html",
+      "status": 200,
+      "match": true,
+      "actual_sha256": "954178b1b7a581be7c0e50eae40d9bcdb686ba2125d73a4c07fcf99e6b397c02",
+      "expected_sha256": "954178b1b7a581be7c0e50eae40d9bcdb686ba2125d73a4c07fcf99e6b397c02"
+    },
+    {
+      "path": "hyperdagger/js/main.js",
+      "url": "https://mbace1.github.io/Suds-Jack/hyperdagger/js/main.js?v=118",
+      "status": 200,
+      "match": true,
+      "actual_sha256": "033c997fa2c78e60413450f2d1dece3b0aed7ad4c29a3e7894df6c66a0e965a2",
+      "expected_sha256": "033c997fa2c78e60413450f2d1dece3b0aed7ad4c29a3e7894df6c66a0e965a2"
+    },
+    {
+      "path": "hyperdagger/js/input.js",
+      "url": "https://mbace1.github.io/Suds-Jack/hyperdagger/js/input.js?v=111",
+      "status": 200,
+      "match": true,
+      "actual_sha256": "de74e7e5c191250ebdaf77fa203b3ea95db5bc5a299b7d3eb91b13ee8db5cb0c",
+      "expected_sha256": "de74e7e5c191250ebdaf77fa203b3ea95db5bc5a299b7d3eb91b13ee8db5cb0c"
+    },
+    {
+      "path": "hyperdagger/js/enemy.js",
+      "url": "https://mbace1.github.io/Suds-Jack/hyperdagger/js/enemy.js?v=113",
+      "status": 200,
+      "match": true,
+      "actual_sha256": "005116f65ca0511594a3dd90762342e3d6445e03a056b5af8d9fe6f27264cb10",
+      "expected_sha256": "005116f65ca0511594a3dd90762342e3d6445e03a056b5af8d9fe6f27264cb10"
+    },
+    {
+      "path": "hyperdagger/js/sdf-skull.js",
+      "url": "https://mbace1.github.io/Suds-Jack/hyperdagger/js/sdf-skull.js?v=3",
+      "status": 200,
+      "match": true,
+      "actual_sha256": "ef5faa5babd666761292311fb0d1f35f201f00229cfe7dadb8fbd6272adafd67",
+      "expected_sha256": "ef5faa5babd666761292311fb0d1f35f201f00229cfe7dadb8fbd6272adafd67"
+    },
+    {
+      "path": "hyperdagger/sw.js",
+      "url": "https://mbace1.github.io/Suds-Jack/hyperdagger/sw.js?v=118",
+      "status": 200,
+      "match": true,
+      "actual_sha256": "858beb43ec593dd7961d7d8d22a921d7e00c5e9b262b79f4866e676268910f7d",
+      "expected_sha256": "858beb43ec593dd7961d7d8d22a921d7e00c5e9b262b79f4866e676268910f7d"
+    },
+    {
+      "path": "toko/js/chat.js",
+      "url": "https://mbace1.github.io/Suds-Jack/toko/js/chat.js?v=26",
+      "status": 200,
+      "match": true,
+      "actual_sha256": "240eed208ad577a4d1bf74789d22daec9d1a80d7afdc0ea7bc0c76e792afc09c",
+      "expected_sha256": "240eed208ad577a4d1bf74789d22daec9d1a80d7afdc0ea7bc0c76e792afc09c"
+    },
+    {
+      "path": "toko/js/table.js",
+      "url": "https://mbace1.github.io/Suds-Jack/toko/js/table.js?v=6",
+      "status": 200,
+      "match": true,
+      "actual_sha256": "0bce2cf230434a40a14931a5511b8ec804905db86506d44559719f150284aca0",
+      "expected_sha256": "0bce2cf230434a40a14931a5511b8ec804905db86506d44559719f150284aca0"
+    },
+    {
+      "path": "toko/js/signature.js",
+      "url": "https://mbace1.github.io/Suds-Jack/toko/js/signature.js?v=10",
+      "status": 200,
+      "match": true,
+      "actual_sha256": "bd1c08fe3e4251a9297178174c789f6e435dca1e38d0be30e8e6a82a9b06866f",
+      "expected_sha256": "bd1c08fe3e4251a9297178174c789f6e435dca1e38d0be30e8e6a82a9b06866f"
+    },
+    {
+      "path": "toko-live/main.js",
+      "url": "https://mbace1.github.io/Suds-Jack/toko-live/main.js?v=22",
+      "status": 200,
+      "match": true,
+      "actual_sha256": "a01dbdd8800379f3e2991fa8fad25d2cb7e89256e702331cd5a5c5da37d84ea3",
+      "expected_sha256": "a01dbdd8800379f3e2991fa8fad25d2cb7e89256e702331cd5a5c5da37d84ea3"
+    },
+    {
+      "path": "toko-live/index.html",
+      "url": "https://mbace1.github.io/Suds-Jack/toko-live/index.html",
+      "status": 200,
+      "match": true,
+      "actual_sha256": "2f817be12d0f6deabbfc5de592ad76d4df91c7686a5d443aecdbeb5fbda9afc6",
+      "expected_sha256": "2f817be12d0f6deabbfc5de592ad76d4df91c7686a5d443aecdbeb5fbda9afc6"
+    },
+    {
+      "path": "index.html",
+      "url": "https://mbace1.github.io/Suds-Jack/index.html",
+      "status": 200,
+      "match": true,
+      "actual_sha256": "aeee7b86ffefea29635217760acbf0057b978e8cc0936352d687ee0633236707",
+      "expected_sha256": "aeee7b86ffefea29635217760acbf0057b978e8cc0936352d687ee0633236707"
+    },
+    {
+      "path": "sw.js",
+      "url": "https://mbace1.github.io/Suds-Jack/sw.js",
+      "status": 200,
+      "match": true,
+      "actual_sha256": "82ed9fd5a37ab78d025881ffbbd33be1fd1692043f7bc0e00cfb5c5ead791dfd",
+      "expected_sha256": "82ed9fd5a37ab78d025881ffbbd33be1fd1692043f7bc0e00cfb5c5ead791dfd"
+    },
+    {
+      "path": "hub/versions.json",
+      "url": "https://mbace1.github.io/Suds-Jack/hub/versions.json",
+      "status": 200,
+      "match": true,
+      "actual_sha256": "5a4cba019be18d9a0c50db2a32f1974c465af3ffb8517f5d408fa594f0652faf",
+      "expected_sha256": "5a4cba019be18d9a0c50db2a32f1974c465af3ffb8517f5d408fa594f0652faf"
+    }
+  ],
+  "all_match": true
+}

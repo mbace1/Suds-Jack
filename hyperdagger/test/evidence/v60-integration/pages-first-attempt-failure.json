@@ -1,0 +1,11 @@
+{
+  "run": 42713787003,
+  "job": 129490462554,
+  "head": "14c298e813e1e1ca0672d3d309fcc3ea49476b3c",
+  "build": "success",
+  "deployment": "failed",
+  "reason": "actions/deploy-pages@v5 stayed at syncing_files until its 600000ms timeout, then canceled deployment.",
+  "error_timestamp": "2026-11-09T22:50:36.0854077Z",
+  "recovery": "One retry of failed deployment job only, same commit/artifact; no source changes or assertion changes.",
+  "last_verified_live": "v59, separate preview build3"
+}

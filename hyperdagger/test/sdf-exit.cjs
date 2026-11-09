@@ -14,7 +14,10 @@ let browser;
  browser=await chromium.launch({executablePath:process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE||undefined,args:['--no-sandbox','--use-gl=angle','--use-angle=swiftshader','--enable-unsafe-swiftshader','--disable-dev-shm-usage']});
  for(const season of ['ember','inca','haul']){
   const ctx=await browser.newContext({viewport:{width:844,height:390},isMobile:true,hasTouch:true});
-  const p=await ctx.newPage();p.setDefaultTimeout(90000);const errors=[];p.on('pageerror',e=>errors.push(e.message));
+  const p=await ctx.newPage();let arenaRequests=0;
+  p.on('request',r=>{if(r.isNavigationRequest() && new URL(r.url()).searchParams.get('sdfTest')==='1'){arenaRequests++;console.log('arena navigation request',arenaRequests)}});
+  await ctx.route('**/*sdfTest=1',async r=>{await new Promise(resolve=>setTimeout(resolve,100));await r.continue();});
+  p.setDefaultTimeout(90000);const errors=[];p.on('pageerror',e=>errors.push(e.message));
   await p.addInitScript(()=>{
    if(sessionStorage.getItem('exitSeed'))return;sessionStorage.setItem('exitSeed','1');
    localStorage.setItem('hyperDaggerSeenTips','1');localStorage.setItem('hyperDaggerRenderer','sdf');
@@ -27,7 +30,7 @@ let browser;
   await p.goto(`http://127.0.0.1:${server.address().port}/hyperdagger/?assets=0`);
   await p.waitForFunction(()=>window.__hd);const before=await readRecords();
   await Promise.all([p.waitForURL(/sdfTest=1/),p.locator('[data-sdf-arena]').tap()]);
-  await p.waitForFunction(()=>window.__hd);await p.locator('#startBtn').tap();
+  await p.waitForFunction(()=>window.__hd);assert.equal(arenaRequests,1,'one touch gesture starts exactly one arena navigation');await p.locator('#startBtn').tap();
   await p.waitForFunction(()=>window.__hd.debug.getState().state==='playing');
   await p.locator('#pauseBtn').tap();
   await p.locator(`#msg button.season[data-season="${season}"]`).waitFor();

@@ -1664,7 +1664,9 @@ function showMenu() {
   const arenaLink=elMsg.querySelector('[data-sdf-arena]');
   if(arenaLink){
     arenaLink.addEventListener('pointerdown',e=>e.stopPropagation());
-    const open=e=>{e.preventDefault();e.stopPropagation();location.href=arenaLink.href;};
+    // Touch can deliver pointerup and touchend before the new page loads.
+    let opening=false;
+    const open=e=>{e.preventDefault();e.stopPropagation();if(opening)return;opening=true;location.href=arenaLink.href;};
     arenaLink.addEventListener('pointerup',open);
     arenaLink.addEventListener('touchend',open,{passive:false});
   }

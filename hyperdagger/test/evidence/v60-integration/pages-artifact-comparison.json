@@ -1,0 +1,10 @@
+{
+  "last_successful_build": "b3ec97d99",
+  "last_successful_artifact_bytes": 495954666,
+  "v60_build": "14c298e81",
+  "v60_artifact_bytes": 496004487,
+  "delta_bytes": 49821,
+  "site_disk_megabytes": 719,
+  "artifact_expired": false,
+  "first_failure": "syncing_files timeout; build succeeded; no global incident reported by GitHub Status"
+}
