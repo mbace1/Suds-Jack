@@ -121,12 +121,12 @@ ok(RUNS.every(r => !r.cargo || r.cargo.every(c => CARGO[c])), 'every run deals r
 { let perks = 0, offered = 0, forks = 0, struck = 0, forkOk = true;
   for (const run of RUNS) for (let k = 1; k <= 20; k++) { const s = J.newRun(net, run, 7000 + k); let st = 0;
     while (s.phase !== 'end' && st++ < 500) { const c = J.card(net, s);
-      if (c.kind === 'perk') { perks++; if (c.options.length === 3 && c.options[0].label !== c.options[1].label && c.options[2].label === 'Keep the cash' && /rest of the shift\.$/.test(c.text)) offered++; }
+      if (c.kind === 'perk') { perks++; if (c.options.length === 3 && c.options[0].label !== c.options[1].label && (c.options[2].label === 'Keep the cash' || (c.options[2].tier === 'special' && s.perksToday.includes(c.options[2].perk))) && /rest of the shift\.$/.test(c.text)) offered++; }
       if (c.fork) { forks++; if (!(c.text === 'Two jobs come in at once. Pick one.' && c.options.length === 3 && c.options.slice(0, 2).every(o => /→/.test(o.label)) && c.options[2].label === 'Toss a coin')) forkOk = false; }
       J.choose(net, s, 0); }
     if (J.strikesOf(run) && s.strikes >= J.strikesOf(run)) { struck++; ok(!J.complete(s) && s.late >= J.strikesOf(run), `${run.id}: struck out is not complete`); }
     ok(s.perks.length <= Math.max(0, s.done - (J.complete(s) ? 1 : 0)) && new Set(s.perks).size === s.perks.length, `${run.id} ${7000 + k}: a perk per job done, never twice`); }
-  ok(perks > 100 && offered === perks, `a perk is drafted between jobs on every run, two different ones a card, or the cash (${perks})`);
+  ok(perks > 100 && offered === perks, `a perk is drafted between jobs on every run, two different ones a card, and the shift's drawn perk or the cash (${perks})`);
   ok(forks >= 40 && forkOk, `a fork offers two jobs on one card (${forks})`);
   ok(struck >= 1, `a left-tapper can strike out of a run (${struck} of 80)`); }
 
@@ -333,6 +333,6 @@ ok(band['medium.reader'].won >= 52 && band['hard.reader'].won >= 48 && band['nig
 for (const r of RUNS) ok(band[`${r.id}.reader`].won >= band[`${r.id}.left`].won, `${r.id}: reading the board beats tapping left`);
 ok(band['easy.left'].won > band['medium.left'].won && band['medium.left'].won > band['hard.left'].won && band['hard.left'].won > band['night.left'].won, 'and the left-tapper is stopped higher up each rung');
 for (const r of RUNS) { const sc = band[`${r.id}.reader`].scores, p70 = sc[Math.floor(0.7 * (sc.length - 1))];
-  ok(Math.abs(p70 - r.par) <= r.par * 0.12, `${r.id}: par ${r.par} is about the reader's 70th percentile (${p70})`); }
+  console.log(`  p70 ${r.id} ${p70} par ${r.par}`); ok(Math.abs(p70 - r.par) <= r.par * 0.12, `${r.id}: par ${r.par} is about the reader's 70th percentile (${p70})`); }
 
 console.log(`  journey: ${n} checks`);

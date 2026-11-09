@@ -25,9 +25,9 @@
 // nothing happens while you read. Every animation is skippable by a tap and
 // none of them is a timer the game waits on to be fair: the state has already
 // moved when it starts.
-import { tr } from './lang.js?v=19';
-import * as J from './journey.js?v=11';
-import * as Runs from './runs.js?v=5';
+import { tr } from './lang.js?v=20';
+import * as J from './journey.js?v=12';
+import * as Runs from './runs.js?v=6';
 import { HopBoard } from './hopboard.js?v=4';
 import * as PL from './playlog.js?v=2';
 import { loadGround } from './ground.js?v=12';
@@ -42,12 +42,12 @@ import { TRAMS } from './cards.js?v=4';
 import { mountAudio } from './audio.js?v=2';
 import { loadStanding, saveStanding } from './regulars.js?v=4';
 import { addNote } from './sealed.js?v=2';
-import { MISSIONS, PERKS, STRIKES, loadMissions, missionOpen, recordMission, perkPool, doneCount } from './missions.js?v=4';
+import { MISSIONS, PERKS, STRIKES, loadMissions, missionOpen, recordMission, perkPool, doneCount } from './missions.js?v=5';
 import { MOMENTS, faceIn, keepIn, pickupMoment, deliveryMoment, boardMoment, walkMoment, cardMoment, choiceMoment, haltMoment } from './moments.js?v=4';
-import { resolveMode, dailyShare, errandShare, errandStore, errandOf, W } from './modes.js?v=6';
+import { resolveMode, dailyShare, errandShare, errandStore, errandOf, W } from './modes.js?v=7';
 import { recordDaily, todayRecord, streak, dateKey } from './daily.js?v=2';
 
-export const BUILD_VERSION = '3.23';
+export const BUILD_VERSION = '3.24';
 const $ = id => document.getElementById(id);
 const params = new URLSearchParams(location.search);
 // a run of the ladder, today's daily, or a day of the week (modes.js, ACT1.md §12)

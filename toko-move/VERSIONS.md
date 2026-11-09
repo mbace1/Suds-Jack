@@ -1,5 +1,46 @@
 # Toko Move — versions
 
+## v3.24 — 2026-11-09
+
+**THE SHIFT, DRAWN** — the rest of v3.23's step toward the owner's *"like a
+roguelike, and no strict missions are needed"*: where a shift goes and what it
+can draft are drawn too.
+
+- **Where the drops lean** (`days.js` `AREAS`). Three shifts in five lean
+  to one part of the city: the harbour, the centre, Kallio, east of the
+  bridge or the west side. A stop there comes up three times as often (on
+  HARD, a shift leaning to the harbour sends 61% of its jobs there, against
+  31% leaning nowhere). The first card says so, after the day: *PAYDAY · FEES ×1.15 ·
+  EVERYONE WANTS IT NOW · DROPS AROUND THE HARBOUR*.
+- **Six new perks, all trade-offs** (`missions.js` `PERKS`, `drawn`):
+  - **Hustle**: fees ×1.25, every clock shorter;
+  - **Take it easy**: clocks a third longer, fees ×0.85;
+  - **A borrowed bike**: walking a third quicker, trams later;
+  - **Nerve**: a risk lands much more often, clocks shorter;
+  - **Charm**: +€3 a drop, a risk lands less often;
+  - **A thermos**: +€2 a drop, deadlines a tenth longer.
+- **Each shift draws two of the perks it has not unlocked**, and the draft
+  offers one as its **special third button** (v3.18's grammar: two regular,
+  a special third) while one is left to take; after that the third is the
+  cash again. The two regular buttons are the unlocked pool, as before.
+  - The first cut put the drawn perks in the regular pool. A player who taps
+    the first button then took a trade-off blind, and the tapper bot lost six
+    points on MEDIUM and eight on NIGHT. As the special third, a trade-off is
+    a choice somebody makes.
+- **Missions draw nothing**: their drops and their perks are written.
+- `?written` stays the v3.21 shift: no day, no area, no drawn perks.
+- **Measured** (`test/journey.mjs`, 60 seeds, reader · tapper): EASY 60 · 56,
+  MEDIUM 58 · 51, HARD 54 · 36, NIGHT 50 · 31. HARD's par moves 130 → 140:
+  the days' fees and tips put the reader's 70th percentile at 148.
+- **Gates.**
+  - `test/days.mjs`: the area's share and pull, its line, a day and an area
+    sharing it, the six trade-offs (never unlocked, in Finnish), two drawn a
+    shift, the draft's special third and then the cash, Hustle's two levers,
+    missions drawing nothing.
+  - `test/journey.mjs`: a draft's third is the drawn perk or the cash; the
+    par check prints every run's 70th percentile.
+  - `test/play.cjs`: EASY 7's first card adds *DROPS EAST OF THE BRIDGE*.
+
 ## v3.23 — 2026-11-09
 
 **THE DAY, DRAWN** — the next step of the owner's *"randomized from modules, so

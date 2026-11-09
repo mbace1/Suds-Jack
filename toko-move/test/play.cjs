@@ -118,7 +118,7 @@ server.listen(0, '127.0.0.1', async () => {
         runs: [...document.querySelectorAll('#mutRow .run[data-run]')].map(r => ({ id: r.dataset.run, open: !r.classList.contains('locked'), lit: r.classList.contains('on') })),
         goal: document.getElementById('titleGoal').textContent, play: document.getElementById('play').textContent,
         links: ['dailyLink', 'weekLink', 'liveLink'].filter(id => { const e = document.getElementById(id); return e && !e.hidden && getComputedStyle(e).display !== 'none'; }) }));
-      ok(`the bare address is the card journey, not the real-time game (v${t.v})`, !t.classic && t.v === '3.23' && /v3\.23/.test(t.hero));
+      ok(`the bare address is the card journey, not the real-time game (v${t.v})`, !t.classic && t.v === '3.24' && /v3\.24/.test(t.hero));
       ok(`it is Act 1, in Helsinki (${await page.evaluate(() => document.getElementById('titleWhen').textContent)})`, await page.evaluate(() => /^Act 1 · Helsinki · 07:00/.test(document.getElementById('titleWhen').textContent)));
       ok(`the ladder: EASY open and lit, three locked (${t.runs.map(r => r.id + (r.open ? '' : '🔒')).join(' ')})`, t.runs.map(r => r.id).join() === 'easy,medium,hard,night' && t.runs[0].open && t.runs[0].lit && t.runs.slice(1).every(r => !r.open) && t.run === 'easy');
       ok(`the goal and the button (${t.goal} · ${t.play})`, /^Three deliveries before 08:15/.test(t.goal) && t.play === 'START SHIFT');
@@ -535,8 +535,9 @@ server.listen(0, '127.0.0.1', async () => {
       ok('no page or network errors (the board)', !errs.length, errs.slice(0, 3).join(' | '));
       await ctx.close();
     }
-    // ── the day (v3.23): EASY 7 is the Helsinki Festival, said on the shift's first card, in both languages
-    for (const [lang, want] of [['en', 'HELSINKI FESTIVAL · TIPS +€2 · FULLER TRAMS'], ['fi', 'HELSINGIN JUHLAVIIKOT · TIPIT +2 € · TÄYDEMMÄT RATIKAT']]) {
+    // ── the day (v3.23) and the area (v3.24): EASY 7 is the Helsinki Festival with its drops east
+    // of the bridge, said on the shift's first card, in both languages
+    for (const [lang, want] of [['en', 'HELSINKI FESTIVAL · TIPS +€2 · FULLER TRAMS · DROPS EAST OF THE BRIDGE'], ['fi', 'HELSINGIN JUHLAVIIKOT · TIPIT +2 € · TÄYDEMMÄT RATIKAT · KOHTEET SILLAN ITÄPUOLELLA']]) {
       const ctx = await browser.newContext(PHONE), page = await ctx.newPage(), errs = watch(page);
       await page.goto(`${base}/toko-move/?run=easy&seed=7&lang=${lang}`, { waitUntil: 'load' }); await ready(page);
       await page.tap('#play'); await page.waitForSelector('#v3panel .eventOpt', { timeout: 15000 });
