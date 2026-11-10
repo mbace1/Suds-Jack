@@ -27,9 +27,9 @@
 // go through the actors' own chunks.
 import * as THREE from 'three/webgpu';
 import * as TSL from 'three/tsl';
-import { TUNING } from '../tuning.js?v=134';
-import { itemLook, gateLook, glyphOf, colorOf } from '../sim/pickups.js?v=134';
-import { t as say } from '../ui.js?v=134';
+import { TUNING } from '../tuning.js?v=135';
+import { itemLook, gateLook, glyphOf, colorOf } from '../sim/pickups.js?v=135';
+import { t as say } from '../ui.js?v=135';
 
 const T = TUNING, P = T.pickups, G = P.gate, C = P.convoy, B = P.bounty, GL = G.look, FAM = G.family;
 // v121: a label over the floor lets the hero show through it. A screenshot pass found DASH THROUGH! and BOUNTY

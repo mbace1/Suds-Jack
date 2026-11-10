@@ -19,6 +19,44 @@
     Never `--no-verify`.
 -->
 
+## v135 — 2026-11-10
+**The campaign's C lines where a beginner reaches them: 26 lowered, nothing raised**
+- THE ASK (owner, 2026-11-10, asked the C-line rule measured at v128 and shown before it shipped: "Yes, lower them"). C is a room's passing grade — under it the room is an F and the next stays shut — and v121's stand-in beginner stopped at THREE RINGS, through three times and each time just under its C line of 20,000. The rule: C at the beginner bot's lower quartile (it was its median), every room, both routes; S, A and B do not move, and a line never goes up. 26 C lines come down (each room's tiers `source` says so); the beginner bot now clears C about three times in four where it cleared it about half the time (THREE RINGS 54% → 75%, PULSE 41% → 76%, HARD PAIN NEEDLE 27% → 82%). HIGH GROUND, the other flag, was drawn again on 48 seeds and stays.
+- The 26, from → to:
+
+| room | route | C was | C now |
+|---|---|---|---|
+| THREE RINGS | normal | 20,000 | 15,000 |
+| IN ORDER | normal | 7,000 | 6,900 |
+| EDDY | normal | 3,500 | 3,400 |
+| THE SLUDGE | normal | 7,800 | 7,000 |
+| FLOTSAM | normal | 22,000 | 18,000 |
+| SLUG RUN | normal | 3,500 | 3,100 |
+| UNDERTOW | normal | 3,300 | 3,200 |
+| SPLITTER | normal | 5,400 | 5,200 |
+| CLOT | normal | 35,000 | 30,000 |
+| PULSE | normal | 24,000 | 20,000 |
+| NEEDLE | normal | 13,000 | 11,000 |
+| THE PULL | normal | 5,200 | 5,000 |
+| RINK | normal | 6,200 | 6,100 |
+| SALMON | normal | 12,000 | 11,000 |
+| ANVIL | normal | 2,900 | 2,800 |
+| GATE RUN | HARD PAIN | 32,000 | 27,000 |
+| IN ORDER | HARD PAIN | 12,000 | 11,000 |
+| EDDY | HARD PAIN | 5,500 | 5,300 |
+| THE SLUDGE | HARD PAIN | 12,000 | 11,000 |
+| FLOTSAM | HARD PAIN | 34,000 | 31,000 |
+| SPLITTER | HARD PAIN | 8,000 | 7,900 |
+| NEEDLE | HARD PAIN | 19,000 | 16,000 |
+| THE PULL | HARD PAIN | 7,900 | 7,200 |
+| SIX SHOTS | HARD PAIN | 5,000 | 3,900 |
+| RINK | HARD PAIN | 9,900 | 9,200 |
+| SALMON | HARD PAIN | 18,000 | 17,000 |
+- Decided the same day: the itch page is PAY WHAT YOU WANT (docs/ITCH.md); the upload is the owner's.
+- Cache tokens `?v=134` → `?v=135`; HUD label → `2.0 · v135`
+
+---
+
 ## v134 — 2026-11-10
 **A heart room started again shows its heart whole**
 - THE ASK (owner, 2026-11-10: "In campaign mode, save the heart. The previous damage to the heart remains after a restart"). The heart itself was new and whole every time (the sim makes it fresh for each start), but the ring round it that shows what it has left kept the last attempt's: the view's reset marked the ring whole without redrawing it, so a fresh heart matched the mark and the old ring stayed until the heart was next hit. Measured in the game: CLOT bitten to 4/8 and played AGAIN — the new heart 8/8 under half a ring; FLOTSAM bitten to 7/10, quit and started again — 10/10 under 0.7 of a ring.
