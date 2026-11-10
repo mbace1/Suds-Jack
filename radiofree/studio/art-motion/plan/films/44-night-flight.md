@@ -119,3 +119,17 @@ track, and its pitch follows the speed:
     softer pulses repeat until the end.
   - Out-of-focus snowflakes drift right in front of the lens.
   - The camera pushes in slowly through the hold.
+
+**v3 filed (10 Nov, 20:45).**
+- **Picture:** 828 frames, 27.6 s at 30 fps. Rendered in one process (two halves, about 100 minutes in all); several
+  processes side by side only fight over the CPU.
+- **Sound:** 5 checks pass. It measures −13.7 LUFS with a true peak of −3.0 dBTP, and all 16 cues are covered within
+  40 ms.
+- **Files:**
+  - `films/10-11-RFH-Promo-Night-Flight.mp4` (with no sign-off, because the last frame is the slate, so this is also
+    the loop master);
+  - the preview, `previews/10-11-RFH-Night-Flight-en.mp4`;
+  - QA in `qa/night-flight/`.
+
+**Proposed post (en), for the owner to approve:** "Radio Free Helsinki. Pirate radio from the front lines. Local
+insights, global outlook, concerned skepticism on all."
