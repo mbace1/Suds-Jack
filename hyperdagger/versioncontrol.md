@@ -469,3 +469,31 @@ original three season exit/record assertions remain. Main/registration
 119, cache v89 and generated precache follow the changed main module.
 This maintenance follow-up is part of closing the approved integration;
 no new enemy or arena geometry is included.
+
+
+## 2026-11-10 — final v60 acceptance and navigation deployment
+
+HD-021 merged via #638 at `f8353e757`; its exact reviewed head `d73328a98`
+passed all 21 final local gates and all required CI. Full smoke 220/0
+(850.3 s), SDF play 35/0, all six encounter loops, three delayed arena
+exits, input/focus, pause/resume, run-end, daily keys/cleanup, offline,
+feature pins 19/0, feedback 12/0, full hub and Toko Live all pass. The Inca
+bone-carry assertion did not recur as a failure and was not weakened.
+Cached worker v88 upgrades to v89 with all 70 URLs and first-use offline
+SDF play plus a real typed Toko reply pass. Shared-counter receipt #637
+also merged at `a2862c818` after clean final-head review and green CI.
+
+Scoped publication `458ce6822` preserves production `24e428332` and Toko
+Move v3.24. Only Hyper main/index/worker and release records move; gameplay
+modules, preview build 3 and all other games remain intact. Pages run
+42724111873 attempt 1 built successfully but timed out after ten minutes
+in `syncing_files`. One fresh full build of the unchanged commit is
+pending. The public game is still the earlier v60 (main 118/cache v88);
+do not claim the guard (119/v89) live until actual hashes and live exits pass.
+
+Goal: close v60's final live arena-navigation finding. Done: reviewed merge
+and every final source/staging gate. Next: finish Pages delivery, verify all
+14 public hashes, six encounter loops, three delayed exits and offline.
+Exit: the actual guarded build passes those checks before any new conversion.
+Physical devices remain unavailable; 60 fps desktop/30 fps tablet targets
+are unverified. Completed runs still tie at 300.0 s; no scoring change.
