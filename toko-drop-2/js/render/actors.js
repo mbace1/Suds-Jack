@@ -15,23 +15,23 @@
 // that springs in and fades (splats.js). Views are pooled per species, so a
 // gel's material is built once and reused, never compiled mid-fight.
 import * as THREE from 'three/webgpu';
-import { TUNING } from '../tuning.js?v=131';
+import { TUNING } from '../tuning.js?v=132';
 import * as TSL from 'three/tsl';
-import { gelMaterial, domeGeometry, cubeGeometry, heroGeometry, GEL_TIME, GEL_SUN, GEL_GLINT, GEL_CORE } from './gel.js?v=131';
-import { LOOKS } from './looks/index.js?v=131';
-import { styleName, setStyle as setStyleMode, styledBody } from './style.js?v=131';
-import { JellyBody } from './jelly.js?v=131';
-import { Juice } from './juice.js?v=131';
-import { ArenaLight } from './light.js?v=131';
-import { toSdf } from './sdf.js?v=131';
-import { PickupView } from './pickups.js?v=131';
-import { ChallengeView } from './challenge.js?v=131';
-import { PostView } from './posts.js?v=131';
-import { SlamView } from './slam.js?v=131';
-import { HintView } from './hints.js?v=131';
-import { Goo } from './goo.js?v=131';
-import { mult as heatMult } from '../sim/heat.js?v=131';
-import { strands as liveStrands } from '../sim/formation.js?v=131';
+import { gelMaterial, domeGeometry, cubeGeometry, heroGeometry, GEL_TIME, GEL_SUN, GEL_GLINT, GEL_CORE } from './gel.js?v=132';
+import { LOOKS } from './looks/index.js?v=132';
+import { styleName, setStyle as setStyleMode, styledBody } from './style.js?v=132';
+import { JellyBody } from './jelly.js?v=132';
+import { Juice } from './juice.js?v=132';
+import { ArenaLight } from './light.js?v=132';
+import { toSdf } from './sdf.js?v=132';
+import { PickupView } from './pickups.js?v=132';
+import { ChallengeView } from './challenge.js?v=132';
+import { PostView } from './posts.js?v=132';
+import { SlamView } from './slam.js?v=132';
+import { HintView } from './hints.js?v=132';
+import { Goo } from './goo.js?v=132';
+import { mult as heatMult } from '../sim/heat.js?v=132';
+import { strands as liveStrands } from '../sim/formation.js?v=132';
 
 const T = TUNING;
 const B = T.blob, D = T.death;
@@ -766,15 +766,16 @@ export class Actors {
         if (r < 0.1) continue;
         const LC = this.causticShape;
         if (LC) {
-          // v128: thrown INTO the body's shadow — `offset` × cot θ × r on from its foot, `stretch` × the shadow's own
-          // stretch long along it, `r` × as wide (the world's sun, light.js sunDir)
-          const d = this.light.sunDir, off = g.r * d.cot * LC.offset, long = 1 + (d.stretch - 1) * LC.stretch, wd = g.r * LC.r * grow * spread;
+          // v128: thrown INTO the body's shadow (the world's sun, light.js sunDir). v132: a pool just past its foot —
+          // `at` × its radius on, `long` × and `wide` × its radius in size — where v128's ran most of the shadow's
+          // length and read as a glowing tail where the dark should be (the concept: dark, with a pool in it)
+          const d = this.light.sunDir, R = g.r * grow * spread, off = R * LC.at;
           this._cq ||= new THREE.Quaternion(); this._cs ||= new THREE.Vector3(); this._cp ||= new THREE.Vector3();
           this._cq.setFromAxisAngle(this._cy ||= new THREE.Vector3(0, 1, 0), Math.atan2(-d.dz, d.dx));
-          M.compose(this._cp.set(g.px + (g.x - g.px) * alpha + d.dx * off, C.y, g.pz + (g.z - g.pz) * alpha + d.dz * off), this._cq, this._cs.set(wd * long, 1, wd));
+          M.compose(this._cp.set(g.px + (g.x - g.px) * alpha + d.dx * off, C.y, g.pz + (g.z - g.pz) * alpha + d.dz * off), this._cq, this._cs.set(R * LC.long, 1, R * LC.wide));
         } else M.makeScale(r, 1, r).setPosition(g.px + (g.x - g.px) * alpha + O.x * r, C.y, g.pz + (g.z - g.pz) * alpha + O.z * r);
         cm.setMatrixAt(c, M);
-        col.setHex(T.species[g.kind]?.color ?? 0xffffff).multiplyScalar((g.isBoss ? C.boss : 1) * (g.heavy ? C.heavy : 1) / Math.sqrt(spread));
+        col.setHex(T.species[g.kind]?.color ?? 0xffffff).multiplyScalar((g.isBoss ? C.boss : 1) * (g.heavy ? C.heavy : 1) / Math.sqrt(spread) * (LC?.k ?? 1));
         cm.setColorAt(c++, col);
       }
       cm.count = c; cm.instanceMatrix.needsUpdate = true; if (cm.instanceColor) cm.instanceColor.needsUpdate = true;

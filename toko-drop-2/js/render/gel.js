@@ -15,8 +15,8 @@ import {
   uniform, positionLocal, normalLocal, normalView, positionViewDirection, cameraViewMatrix,
   materialEmissive, modelScale, vec3, vec4, float, sin, cos, exp, dot, normalize, clamp, max, abs, smoothstep, length, materialColor, materialOpacity,
   materialReference } from 'three/tsl';
-import { TUNING } from '../tuning.js?v=131';
-import { styleName, styledBody } from './style.js?v=131';
+import { TUNING } from '../tuning.js?v=132';
+import { styleName, styledBody } from './style.js?v=132';
 
 const T = TUNING;
 
@@ -166,7 +166,7 @@ export function graphOf(fam, jelly, style) {
 // thrash. DISP holds its amplitudes, so gelReach (the most it can move, which
 // sizes the SDF proxy) cannot fall out of step with it.
 export const DISP = { lump: 0.13, simmer: 0.028, simmerHit: 0.075, ripple: 0.11, thrash: 0.22, inflate: 0.2 };
-const LEAN_H = 1 / 1.7;   // v129: the lean's full height, in radii (a dome stands ~1.7, a cube 1.8)
+const LEAN_H = 1 / (1 + T.blob.domeCut);   // v129: the lean's full height, in radii (a dome's top, 1 + its cut; a cube 1.8)
 
 // v82's contact squash (TUNING.blob.contact): the body cut by a plane
 // `depth` radii in from its rim on the side of what presses on it, over a

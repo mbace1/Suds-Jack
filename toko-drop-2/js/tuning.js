@@ -7,10 +7,10 @@
 // things that work"). The arena is 1.x's, so every 1.x number ports as it is
 // instead of through a rescale. Axes: x across the screen (right +), y up,
 // z toward the bottom of the screen. The arena is centred on the origin.
-import { SPECIES } from './tuning/species/index.js?v=131';
-import WAVES from './tuning/waves.js?v=131';
-import PICKUPS from './tuning/pickups.js?v=131';
-import MUSIC from './tuning/music.js?v=131';
+import { SPECIES } from './tuning/species/index.js?v=132';
+import WAVES from './tuning/waves.js?v=132';
+import PICKUPS from './tuning/pickups.js?v=132';
+import MUSIC from './tuning/music.js?v=132';
 
 export const TUNING = {
   render: {
@@ -194,12 +194,17 @@ export const TUNING = {
       // `shadow`: the bodies' shadows `k` × darker and `hard` of the way to a crisp edge (render/light.js)
       driveway: { sun: 0xffc488, sunI: 1.9, at: [-14, 8, -12],  ambient: 0xa8bce6, ambientI: 0.5, env: 1.0, hero: 0.3,
                   glint: [1.0, 0.86, 0.66], core: 2.6,
-                  // v131: `cast` the shadow from the foot (`near` radii behind it) to where the top's falls, `w` radii
-                  // wide; `contact` the soft shade a body sits in, `r` × its radius, `k` strong (render/light.js)
-                  shadow: { k: 1.45, hard: 0.75, r: 1.05, offset: 1.0, cast: { near: 0.35, w: 0.92 }, contact: { r: 1.12, k: 0.95 } },
-                  // `caustic`: the light through each body falls in its shadow — `offset` × cot θ × r on, `stretch` of
-                  // the shadow's length, `r` × the radius wide, the ring × `ring` (render/actors.js)
-                  caustic: { offset: 1.05, stretch: 0.7, r: 1.0, ring: 0, soft: 1 },
+                  // v132 (owner: "Shadows should not be as circular at the point where they connect with character"):
+                  // `cast`, each body throws its own projection — its foot, then the rest of it laid out away from the
+                  // sun, as wide as the body where it leaves it (render/light.js): its edge `near` (of the foot's radius)
+                  // wide at the foot and `far` at the tip, `tip` as dark at the tip as at the foot; a cube's outline `box`;
+                  // a jelly dome's run × `dome` — the concept's domes throw theirs about half as far again as a dome one
+                  // radius tall would in this sun, and so do ours (a choice of the look, not the sun's geometry)
+                  shadow: { k: 1.45, cast: { near: 0.08, far: 0.45, tip: 0.55, box: 6, dome: 1.45 } },
+                  // `caustic`: the light through each body pools in its shadow just past its foot — `at` × its radius
+                  // on, `long` × and `wide` × its radius in size, `k` as bright (render/actors.js): a pool in the dark,
+                  // not a tail down the shadow that washes it out
+                  caustic: { at: 1.0, long: 0.42, wide: 0.36, k: 0.7, ring: 0, soft: 1 },
                   sky: { zenith: [0.16, 0.3, 0.62], horizon: [1.0, 0.66, 0.36], ground: [0.09, 0.11, 0.05], curve: 0.45,
                          sun: { color: [1.0, 0.8, 0.52], size: 0.05, radiance: 40, halo: 1.4, haloWidth: 0.22 } } },
       sewer:    { sun: 0xd4ecdc, sunI: 1.0, at: [3, 22, 4],     ambient: 0x9cc6c0, ambientI: 0.42, env: 0.85 },
@@ -672,16 +677,20 @@ export const TUNING = {
   // bottom, squat by default, per-species silhouettes, a breath, and a smear
   // along the floor when it moves.
   blob: {
-    domeCut: 0.7, domeRound: 0.22,
+    // v132 (owner, 2026-11-09: "the enemy and characters look like they are full circles floating … They should be
+    // flatter and close to the ground"): 1.x cut its sphere 0.7 below the middle — 85% of a ball, widest above the
+    // floor and curling in under itself, so the floor showed lit under every body's rim. Cut 0.25 below, a dome stands
+    // on the widest of it (about one radius tall, as v131's squat drew it) — the concept's jelly dome
+    domeCut: 0.25, domeRound: 0.22,
     shape: { x: 1.05, y: 0.82, z: 1.05 },
     shapes: {
       spittor: { x: 1.02, y: 0.78, z: 1.26 },     // snouty
       fanner:  { x: 1.30, y: 0.66, z: 1.08 },     // wide flat pancake
     },
     // v131 (owner: "They should be flatter and close to the ground"): 2.0 SQUATS every dome by this much as it is
-    // drawn (render/actors.js, on the body's squash), so it stands about its own radius, not most of a ball (1.4
-    // radii: a circle from the camera). The shapes above stay 1.x's, which the species checks hold them to
-    squat: 0.8,
+    // drawn (render/actors.js, on the body's squash); 1 from v132, whose lower cut (domeCut) stands it about one
+    // radius tall without squeezing it. The shapes above stay 1.x's, which the species checks hold them to
+    squat: 1,
     breatheAmp: 0.13, breatheAmpSplitta: 0.18, breatheHz: 2.4,
     dragStretchPerSpeed: 0.10, dragMax: 0.35, rearDragTilt: 0.35,
     // v129 (the owner's jelly notes): the top WOBBLES with the body's motion — a damped spring on its acceleration
@@ -1300,10 +1309,10 @@ export const TUNING = {
     // puddle over `life` s. At most `max` at once; the rest pop as 1.x did.
     // XPBD: `substeps` a frame, edge `edgeCompliance` (the wobble), volume
     // held, `damp` 1/s, `friction` on the floor. The dome is the unit sphere
-    // raised `lift` (= blob.domeCut) and cut at the floor; `cells` the lattice.
+    // raised blob.domeCut and cut at the floor (the living dome's); `cells` the lattice.
     jelly: {
       on: true, minRadius: 0.75, max: 3, life: 1.3, push: 1.6, up: 0.8, shrinkFrom: 0.55,
-      cells: 4, lift: 0.7, segs: 32, rings: 12, faceRings: 3, faceArc: 24, faceChord: 6,   // the skin, and the clean cut face (rings, arc and floor-chord samples)
+      cells: 4, segs: 32, rings: 12, faceRings: 3, faceArc: 24, faceChord: 6,   // the skin, and the clean cut face (rings, arc and floor-chord samples)
       match: 0.04,   // its set: the pull toward its rest shape, a substep (0 = syrup, and unstable)
       sliver: 0.25,  // a tet under this share of the mean volume (the cut flattened it) keeps no volume
       substeps: 6, edgeCompliance: 0.02, volCompliance: 0, damp: 1.6, friction: 0.6, gravity: -9.8,

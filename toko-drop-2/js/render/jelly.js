@@ -9,7 +9,7 @@
 //
 // A dome of tetrahedra (a cube lattice, six Kuhn tets a cube, a cube kept if
 // any corner is inside the dome, so the tets COVER it) in the body's own
-// silhouette: the unit sphere raised `lift` and cut at the floor, scaled by
+// silhouette: the unit sphere raised `lift` (blob.domeCut) and cut at the floor, scaled by
 // the body's radius and species shape. XPBD (Macklin, Müller & Chentanez
 // 2016), small steps: `substeps` a frame, one iteration each, edge lengths
 // compliant (the wobble) and tet volumes held (jelly does not compress),
@@ -19,7 +19,7 @@
 //
 // PURELY A LOOK, and pure JS: no three.js, no DOM, no clock. The kill, the
 // score and the revenge happened before a body is handed to this.
-import { TUNING } from '../tuning.js?v=131';
+import { TUNING } from '../tuning.js?v=132';
 
 const J = () => TUNING.death.jelly;
 
@@ -79,7 +79,7 @@ function baryFor(jb) {
 const templates = new Map();
 export function template(cells) {
   if (templates.has(cells)) return templates.get(cells);
-  const { lift, segs, rings } = J();
+  const { segs, rings } = J(), lift = TUNING.blob.domeCut;   // v132: the living dome's own cut
   const inside = (x, y, z) => y >= -1e-6 && Math.hypot(x, y - lift, z) <= 1 + 1e-6;
   const top = 1 + lift, cell = 2 / cells, ny = Math.max(2, Math.ceil(top / cell)), cy = top / ny;
   const idx = new Map(), pts = [], tets = [];
@@ -311,7 +311,7 @@ export class JellyBody {
   // silhouette; render triangles go to the side their centre is on and are
   // re-pinned to tets of their own half (never a tet the flattening squashed).
   cut(point, nrm) {
-    const { lift } = J(), X = this.x, T = this.tets, nt = T.length / 4;
+    const lift = TUNING.blob.domeCut, X = this.x, T = this.tets, nt = T.length / 4;
     const side = new Uint8Array(nt);
     const ofs = (q) => (q[0] - point[0]) * nrm[0] + (q[1] - point[1]) * nrm[1] + (q[2] - point[2]) * nrm[2];
     const centroid = (t, src = X) => {
@@ -473,7 +473,7 @@ export class JellyBody {
 // toward (−1: against the normal). Its vertices join the half's render
 // vertices; its triangles are `fIdx`, wound to face outward.
 function cutFace(jb, point, nrm, facing, volOk, ctrs, reach, baryT) {
-  const { lift, faceRings, faceArc, faceChord } = J(), [sx, sy] = jb.shape;
+  const { faceRings, faceArc, faceChord } = J(), lift = TUNING.blob.domeCut, [sx, sy] = jb.shape;
   const d = (point[0] * nrm[0] + point[2] * nrm[2]) / sx;
   const k2 = 1 - d * d;
   if (k2 <= 0.01) { jb.fIdx = new Int32Array(0); return; }

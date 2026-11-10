@@ -19,6 +19,18 @@
     Never `--no-verify`.
 -->
 
+## v132 — 2026-11-09
+**Every shadow grows out of its body — as wide as the body where it leaves it, darkest at the foot — and the domes stand on the widest of themselves**
+- THE ASK (owner, 2026-11-09: "Shadows should not be as circular at the point where they connect with character, because now that makes them look like they are floating"). Read off crops of the driveway beside the owner's golden-hour concept: v128–v131's shadow was an ellipse whose round end met the body NARROWER than the body and was darkest two radii out, so each body hung over a separate blob; v131's round contact shade drew a ring round every foot; and on the gels there was hardly a shadow to see at all — the light through the jelly, laid as a long coloured patch down the shadow, washed it out (a glowing tail where the concept has dark).
+- THE SHADOW (render/light.js, where a world casts hard shadows: the driveway): each body throws its own projection — the foot it stands on, then the rest of it laid away from the sun. A dome's and a ball's is the foot and half of the ellipse its top throws (the exact shadow of a dome); a bollard's runs straight on to a round cap, a cube's to a square one. So it leaves the body at the body's full width, with no neck and no round cap at the foot, sharpest and darkest there, softer and lighter toward its tip (TUNING.worlds.light.driveway.shadow.cast). One quad a body, its shape carried in the instance colour; v131's contact disc is gone. A jelly dome's shadow runs half as far again as a dome one radius tall would in this sun (`dome` 1.45) — the concept's length, a choice of the look rather than the sun's geometry.
+- THE POOL: the light through each gel now pools in its shadow just past its foot (`caustic` at 1.0 radius on, 0.42 × 0.36 radii, 0.7 as bright), not along the shadow's length.
+- THE DOMES (the owner's v131 ask, "flatter and close to the ground", taken one step further): 1.x cut its sphere 0.7 below the middle — 85% of a ball, widest above the floor and curling in under itself, so the floor showed lit under every rim. Cut 0.25 below (TUNING.blob.domeCut), a dome stands on the widest of itself, about one radius tall, as the concept's; v131's squat goes back to 1 (the lower cut makes the height). The jelly death's halves, the lids and crowns on the domes and the lean all read the same cut. The species' shapes stay 1.x's.
+- Fixed on the way: the itch check took the build's number from the first `?v=` on the page, which since v131 is the arcade's HOME button script (it read v230 for v131); it reads main.js's now.
+- Unchanged: the sim (a body's reach and hits are its radius), the rules, the lines; the worlds without a hard sun keep their soft shadow.
+- Cache tokens `?v=131` → `?v=132`; HUD label → `2.0 · v132`
+
+---
+
 ## v131 — 2026-11-09
 **The bodies sit on the ground — flatter domes, a shade where each one meets the slab, its shadow from its foot — and the opening film is the one it was, in the owner's letters, smooth, and shows nothing of a later world**
 - THE FILM (owner, 2026-11-09: "The Toko Midori Games text should still be horizontal like before, then camera moves to Toko to show Drop. And so on, see how it was before, just needs the new text now"): v130 had stacked the words as the owner's block; the film is back to its own staging — "Toko Midori Games" on one line beside the face, MIDORI goes, the camera comes in on Toko and "drop" comes in under it — with only the letters the owner's (each word on one baseline, the same height, the brand's one-line setting; no ™, the original has none), and "drop" made of the same letters.
