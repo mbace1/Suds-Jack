@@ -14,24 +14,24 @@
 // moves, then everything is tested, against post-move positions.
 //
 // Modes: 'arcade', 'hardcade' (corpses fire back) and 'survival'.
-import { TUNING } from '../tuning.js?v=136';
-import { press, pressReset } from './press.js?v=136';
-import { makeRng } from './rng.js?v=136';
-import { BEHAVIOUR } from './species/index.js?v=136';
-import { DIRECTORS } from './director/index.js?v=136';
-import * as fire from './fire.js?v=136';
-import { makeHero, heroStep, applyPull, hurtHero, invincible } from './hero.js?v=136';
-import { swarmForces, resolveCrowd } from './crowd.js?v=136';
-import { revengeColor } from './color.js?v=136';
-import * as pickups from './pickups.js?v=136';
-import * as worlds from './worlds.js?v=136';
-import * as reshape from './reshape.js?v=136';
-import { Arena, levelShape, levelMoves, levelEnvelope, KIND } from './shape.js?v=136';
-import * as rules from './rules.js?v=136';
-import * as heat from './heat.js?v=136';
-import * as formation from './formation.js?v=136';
-import * as posts from './posts.js?v=136';
-import * as slam from './slam.js?v=136';
+import { TUNING } from '../tuning.js?v=137';
+import { press, pressReset } from './press.js?v=137';
+import { makeRng } from './rng.js?v=137';
+import { BEHAVIOUR } from './species/index.js?v=137';
+import { DIRECTORS } from './director/index.js?v=137';
+import * as fire from './fire.js?v=137';
+import { makeHero, heroStep, applyPull, hurtHero, invincible } from './hero.js?v=137';
+import { swarmForces, resolveCrowd } from './crowd.js?v=137';
+import { revengeColor } from './color.js?v=137';
+import * as pickups from './pickups.js?v=137';
+import * as worlds from './worlds.js?v=137';
+import * as reshape from './reshape.js?v=137';
+import { Arena, levelShape, levelMoves, levelEnvelope, KIND } from './shape.js?v=137';
+import * as rules from './rules.js?v=137';
+import * as heat from './heat.js?v=137';
+import * as formation from './formation.js?v=137';
+import * as posts from './posts.js?v=137';
+import * as slam from './slam.js?v=137';
 
 const T = TUNING;
 
@@ -230,6 +230,9 @@ function spawn(w, kind, x, z, o = {}) {
   if (SZ) { r *= SZ.r; if (!S.noHpMult) hp = Math.max(1, Math.ceil(hp * SZ.hp)); }
   if (o.hp != null) hp = o.hp;
   if (!o.isBoss && w.hpMult !== 1) hp = Math.max(1, Math.round(hp * w.hpMult));
+  // v137: never put down inside what stands on the floor — a wave's group lands round a cleared point, and an
+  // island is big enough now for one of them to land on it (a child is out of it on its next step, as ever)
+  if (w.posts?.length && !o.child) { const q = { x, z }; if (posts.clear(w, q, r)) { x = q.x; z = q.z; } }
   const g = {
     id: w.nextId++, kind, x, z, px: x, pz: z, vx: 0, vz: 0, kx: 0, kz: 0, velX: 0, velZ: 0,
     r, hp, maxHp: hp, state: 'active', t: 0, alive: true,

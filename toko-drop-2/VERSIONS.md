@@ -19,6 +19,21 @@
     Never `--no-verify`.
 -->
 
+## v137 — 2026-11-10
+**The blockers block out the floor: rounded islands and footprints of each world's own material, and pits**
+- THE ASK (owner, 2026-11-08: "the circular level blockers look weird, they should block the levels out more around it somehow"; shown four pitches — footprints, islands, walls, pits — 2026-11-10: "Mix of A and B, so always rounded. But we need the pits somewhere as well"). No blocker is a small circle dropped on the floor any more (sim/posts.js, render/posts.js, TUNING.posts):
+  - FOOT: a post stands on a round base of its floor's own material, and the base is what blocks — the sewer's pipe stubs in brick collars, the cistern's broken columns on stepped stone plinths, the ice's blocks riding pans of floe ice, the core's crystals on plinths that go round with them.
+  - ISLAND: a raised slab whose outline is the union of a few circles drawn as one smooth curve, so always rounded, with the world's things standing on it — the driveway's traffic islands (its own curb round a lawn, a bollard at each end and a shrub between), the boiler's riveted decks with two drums each, the river's rock islands with their boulders, the deep's reef mounds with coral on them. Every circle blocks as a post does, so nothing that meets one needed a new rule.
+  - PIT: a hole in the floor that nothing walks over and every shot flies over — two wells in the cistern (a ring of its stone, dark water under) and two holes cut in the ice (its blue walls going dark to the water). Each is a disc whose every pixel follows its own view ray down into the cylinder under it, so the far wall shows as you move.
+- A shot flies over what is low — an island's slab, a post's foot — and stops on what stands on it: the post at its own size, an island's props. Slabs that stopped shots made the river and the deep about 20 points harder (bodies sheltering behind them where you could not shoot); over them, the worlds started on their own read within a few points of the old blockers (the sewer 88 → 82, the boiler 72 → 68, the river 60 → 54, the deep 51 → 50), where slabs that stopped shots read 89, 63, 40, 32.
+- The bots slide round a blocker as the game slides you round one (sim/posts.js push): their planner stopped dead at a post, which made every path that touched one a dead end, and blockers this size made that most paths (scripts/bot.mjs).
+- Measured, whole runs, six skilled bots × 24 seeds, old blockers against new on the same bot: ARCADE 98.7, 95.8, 93.2, 86.3, 75.8, 69.5, 70.8, 53.5, 41.5 where the old blockers read 98.7, 95.8, 87.0, 79.2, 77.0, 62.7, 71.7, 59.5, 40.3 — every world within seven points, some up and some down, which is what 24 seeds cannot tell from level. HARDCADE is not measured with the new blockers yet (its ice now has holes in it): the next version's job.
+- Nothing is put down inside a blocker or a pit (a wave's group landed round a cleared point, and an island is big enough to take one of it); the ice's blocks glance off its holes' rims; its holes sit where its drifting floe (wave 7) always holds them; a world's pits share one shader.
+- Cache tokens `?v=136` → `?v=137`; HUD label → `2.0 · v137`
+
+---
+
+
 ## v136 — 2026-11-10
 **HARDCADE's BERG lunges at you, and lunges again**
 - THE ASK (owner, 2026-11-10, asked what to do about HARDCADE's ice playing easier than its river: "New BERG attack (HARDCADE)"). The ice's waves cost about what the river's do; its boss did not kill — BERG's icicle walls are told and walked round (5 of HARDCADE world 7's deaths at its boss, against PIKE's 47 at the river's). In HARDCADE only, while BERG slides it now LUNGES: no frost and no lane, it turns on you at three times its slide for 0.6 s — then, 0.3 s after, turns on you and lunges again — every 2.2–3.4 s. Nothing tells the first; the beat before the second is the time a person has to read it. ARCADE's BERG and the campaign's (HARD PAIN too) are as they were.

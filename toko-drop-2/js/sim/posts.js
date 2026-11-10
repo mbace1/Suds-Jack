@@ -16,11 +16,23 @@
 // off the rail, the posts and the gates' beams; the hero and the bodies are heavier, so one walking into it SHOVES
 // it (as hard as it came on) and is never pushed by it, and a shot dying on it nudges it on. Moving cover you can
 // steer. (A spawn, a gate or a drop placed on it is moved, as off any post: `place`.)
+// v137 (owner, 2026-11-10, shown four ways a blocker could block out more of the floor — footprints, islands,
+// walls, pits: "Mix of A and B, so always rounded. But we need the pits somewhere as well"): no post is a small
+// circle dropped on the floor any more. A world's floor carries any of
+//   FOOT    its post on a round base of the floor's own material (`foot` { r, h }): the base is what blocks, the post
+//           stands on it (`prop` across)
+//   ISLAND  a raised slab of the floor's own material whose outline is the union of a few circles — so always
+//           rounded — with the world's props standing on top (`islands` [{ h, at: [[x, z, r]…], props: [[x, z, s, kind?]…] }]):
+//           every circle blocks as a post does, so nothing new is asked of anything that meets one
+//   PIT     a hole in the floor (`pits` { depth, at: [[x, z, r]…] }): nothing walks over it, a shot flies over it
+// Islands and pits are laid out in metres on the upright floor, and turned for a sideways one (`at` stays fractions).
 // Pure: no DOM, no clock but the run's, no Math.random.
 //
-//   w.posts  [{ x, z, r, kind, px, pz, orbit? { a0, R, w }, drift? { vx, vz }, ram? { ... }, ball? { vx, vz, roll } }]
+//   w.posts  [{ x, z, r, kind, px, pz, orbit? { a0, R, w }, drift? { vx, vz }, ram? { ... }, ball? { vx, vz, roll },
+//               foot? h, prop?, g? (an island's), h? (its height), pit? true, depth? }]
 //            none in world 1 (1.x's floor) or a campaign room
-import { TUNING } from '../tuning.js?v=136';
+//   w.props  [{ kind, x, z, s, y, g }]  what stands on an island (render only: the island's circles block)
+import { TUNING } from '../tuning.js?v=137';
 
 const T = TUNING, G = T.pickups.gate;
 const smooth = (k) => k * k * (3 - 2 * k), _q = { x: 0, z: 0 };
@@ -28,15 +40,16 @@ const smooth = (k) => k * k * (3 - 2 * k), _q = { x: 0, z: 0 };
 // a world's posts, laid out on its floor (`w.hx`, `w.hz` already its own)
 export function layout(w) {
   const L = T.worlds.modes.includes(w.mode) ? T.posts.worlds[w.world] : null;
-  w.posts = [];
+  w.posts = []; w.props = [];
   if (!L) return;
-  const m = Math.min(w.hx, w.hz);
-  for (const p of L.at) {
-    const r = L.r * (p[2] ?? 1);
+  const m = Math.min(w.hx, w.hz), F = L.foot;
+  for (const p of L.at ?? []) {
+    // v137: on a foot, the base is what blocks; the post stands on it, its own size
+    const k = p[2] ?? 1, r = (F ? F.r : L.r) * k, on = F ? { foot: F.h, prop: L.r * k } : null;
     if (L.orbit) {
       const a0 = Math.atan2(p[1], p[0]), R = Math.hypot(p[0] * w.hx, p[1] * w.hz) || L.orbit.r * m;
-      w.posts.push({ kind: L.kind, r, x: Math.cos(a0) * R, z: Math.sin(a0) * R, px: 0, pz: 0, orbit: { a0, R, w: (2 * Math.PI) / L.orbit.period } });
-    } else w.posts.push({ kind: L.kind, r, x: p[0] * w.hx, z: p[1] * w.hz, px: 0, pz: 0 });
+      w.posts.push({ kind: L.kind, r, x: Math.cos(a0) * R, z: Math.sin(a0) * R, px: 0, pz: 0, orbit: { a0, R, w: (2 * Math.PI) / L.orbit.period }, ...on });
+    } else w.posts.push({ kind: L.kind, r, x: p[0] * w.hx, z: p[1] * w.hz, px: 0, pz: 0, ...on });
   }
   if (L.drift) w.posts.forEach((p, i) => { const d = L.drift.dirs[i % L.drift.dirs.length], n = Math.hypot(d[0], d[1]) || 1; p.drift = { vx: (d[0] / n) * L.drift.speed, vz: (d[1] / n) * L.drift.speed }; });
   // the rams, in the long walls (the pair nearer the middle): `along` a fraction of the long half, `side` which wall
@@ -51,6 +64,13 @@ export function layout(w) {
     const B = L.ball, n = Math.hypot(B.dir[0], B.dir[1]) || 1;
     w.posts.push({ kind: B.kind, r: B.r, x: B.at[0] * w.hx, z: B.at[1] * w.hz, px: 0, pz: 0, ball: { vx: (B.dir[0] / n) * B.speed, vz: (B.dir[1] / n) * B.speed, roll: 0 } });
   }
+  // v137: the islands (each circle a post, the props on top) and the pits, in metres upright, turned for a sideways floor
+  const turn = w.hx > w.hz, at = (x, z) => (turn ? [z, x] : [x, z]);
+  (L.islands ?? []).forEach((I, g) => {
+    for (const [x0, z0, r] of I.at) { const [x, z] = at(x0, z0); w.posts.push({ kind: 'island', r, x, z, px: 0, pz: 0, g, h: I.h }); }
+    for (const [x0, z0, s, kind] of I.props ?? []) { const [x, z] = at(x0, z0); w.props.push({ kind: kind ?? L.kind, x, z, s, y: I.h, g }); }
+  });
+  for (const [x0, z0, r] of L.pits?.at ?? []) { const [x, z] = at(x0, z0); w.posts.push({ kind: 'pit', r, x, z, px: 0, pz: 0, pit: true, depth: L.pits.depth }); }
   for (const p of w.posts) { p.px = p.x; p.pz = p.z; }
 }
 
@@ -102,6 +122,18 @@ export function step(w) {
       }
       place(p, ext);
     } else if (p.ball) ballStep(w, p, L.ball, dt);
+  }
+  // v137: a drifting block glances off what does not move — an island, a post on its foot, a pit's rim — as off the rail
+  for (const a of w.posts) {
+    if (!a.drift) continue;
+    for (const b of w.posts) {
+      if (b === a || b.drift || b.orbit || b.ram || b.ball) continue;
+      const dx = a.x - b.x, dz = a.z - b.z, d = Math.hypot(dx, dz), min = a.r + b.r + (L?.drift?.gap ?? 1.6);
+      if (d >= min || d < 1e-6) continue;
+      const nx = dx / d, nz = dz / d, vn = a.drift.vx * nx + a.drift.vz * nz;
+      a.x = b.x + nx * min; a.z = b.z + nz * min;
+      if (vn < 0) { a.drift.vx -= 2 * vn * nx; a.drift.vz -= 2 * vn * nz; }
+    }
   }
   // drifting blocks glance off each other (equal weights: they trade what they had along the line between them)
   for (let i = 0; i < w.posts.length; i++) {
@@ -192,7 +224,9 @@ export function push(w, o, r, press = null, place = false) {
 // keep a circle of radius r at o clear of every post, and of every ram's whole lane (where it will punch, not
 // only where it is now): a spawn, a gate, a drop. The push back, or null
 export function clear(w, o, r) {
+  // v137: an island is circles side by side, and out of one can be into the next: again, until it is out of all
   let moved = push(w, o, r, null, true);
+  for (let k = 0; k < 6 && moved && inside(w, o.x, o.z, r - 1e-6); k++) moved = push(w, o, r, null, true) ?? moved;
   for (const p of w.posts ?? []) {
     const out = inLane(w, p, o.x, o.z, r);   // push it out of the lane's end, into the floor (never into the wall)
     if (out < 0) continue;
@@ -213,10 +247,18 @@ export function inLane(w, p, x, z, r = 0) {
   return Math.abs(across) < p.r + r && depth < R.reach + r ? R.reach + r - depth : -1;
 }
 
-// the post (x, z) is inside, with a margin, or null
+// the post (x, z) is inside, with a margin, or null — a shot's test (v137: a shot flies over a pit, and over what is
+// low: an island's slab and a post's foot, `T.posts.over`; what stands on them stops it — the post on its foot, at
+// its own size, and an island's props)
 export function hit(w, x, z, r = 0) {
   if (!w.posts?.length) return null;
-  for (const p of w.posts) if (Math.hypot(x - p.x, z - p.z) < p.r + r) return p;
+  const over = T.posts.over;
+  for (const p of w.posts) {
+    if (p.pit || (over && p.kind === 'island')) continue;
+    const R = over && p.foot ? p.prop : p.r;
+    if (Math.hypot(x - p.x, z - p.z) < R + r) return p;
+  }
+  if (over) for (const q of w.props ?? []) if (Math.hypot(x - q.x, z - q.z) < q.s * T.posts.propR + r) return q;
   return null;
 }
 // a shot died on post p (v111): the ball takes a little of its way

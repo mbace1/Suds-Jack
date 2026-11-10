@@ -20,7 +20,7 @@
 // TUNING.light.arena.
 import * as THREE from 'three/webgpu';
 import { uv, vec2, vec3, float, length, clamp, pow, uniform, mix, smoothstep, abs, max, step, instanceColor } from 'three/tsl';
-import { TUNING } from '../tuning.js?v=136';
+import { TUNING } from '../tuning.js?v=137';
 
 const T = TUNING, A = T.light.arena, _Y = new THREE.Vector3(0, 1, 0);
 // v131: how tall a thing stands, in its radii, for the length of its shadow in a low sun: a dome its cut sphere ×
@@ -247,8 +247,20 @@ export class ArenaLight {
       if (r * A.shadow.r > 0.02) this._putShade(g.px + (g.x - g.px) * alpha, g.pz + (g.z - g.pz) * alpha, r, bodyHeight(g.kind), formOf(g.kind), footOf(g.kind) * spread);
     }
     // v108: what stands on a later world's floor stands in its own shadow (sim/posts.js)
-    for (const p of w.posts ?? []) this._putShade(p.px + (p.x - p.px) * alpha, p.pz + (p.z - p.pz) * alpha, p.r, POST_H[p.kind] ?? 2,
-      p.kind === 'ball' ? 'ball' : 'post', 1, A.postShade ?? 1.15);
+    // v137: a pit throws none; an island's circles and a foot are low (`H` is in radii), and what stands on a foot or an
+    // island throws its own from the top of it
+    for (const p of w.posts ?? []) {
+      if (p.pit) continue;
+      const x = p.px + (p.x - p.px) * alpha, z = p.pz + (p.z - p.pz) * alpha;
+      if (p.kind === 'island') { this._putShade(x, z, p.r, p.h / p.r, 'post', 1, A.postShade ?? 1.15); continue; }
+      if (p.foot) {
+        this._putShade(x, z, p.r, p.foot / p.r, 'post', 1, A.postShade ?? 1.15);
+        this._putShade(x, z, p.prop, (POST_H[p.kind] ?? 2) + p.foot / p.prop, 'post', 1, A.postShade ?? 1.15);
+        continue;
+      }
+      this._putShade(x, z, p.r, POST_H[p.kind] ?? 2, p.kind === 'ball' ? 'ball' : 'post', 1, A.postShade ?? 1.15);
+    }
+    for (const q of w.props ?? []) this._putShade(q.x, q.z, q.s, (POST_H[q.kind] ?? 2) + q.y / q.s, q.kind === 'shrub' ? 'ball' : 'post', 1, A.postShade ?? 1.15);
     for (const [m, c] of [[this.pools, n], [this.shades, this._ns], [this.casts, this._ncast]]) {
       m.count = c;
       m.instanceMatrix.needsUpdate = true;

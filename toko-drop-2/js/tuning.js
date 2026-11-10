@@ -7,10 +7,10 @@
 // things that work"). The arena is 1.x's, so every 1.x number ports as it is
 // instead of through a rescale. Axes: x across the screen (right +), y up,
 // z toward the bottom of the screen. The arena is centred on the origin.
-import { SPECIES } from './tuning/species/index.js?v=136';
-import WAVES from './tuning/waves.js?v=136';
-import PICKUPS from './tuning/pickups.js?v=136';
-import MUSIC from './tuning/music.js?v=136';
+import { SPECIES } from './tuning/species/index.js?v=137';
+import WAVES from './tuning/waves.js?v=137';
+import PICKUPS from './tuning/pickups.js?v=137';
+import MUSIC from './tuning/music.js?v=137';
 
 export const TUNING = {
   render: {
@@ -1231,24 +1231,54 @@ export const TUNING = {
       // eased back to `speed` m/s at `ease` /s and never past `max`; it comes back off the rail, the posts and a gate's
       // beam (a rod `rod` thick) with `bounce` of its speed; something walking into it sends it on at `carry` × the
       // speed it came on, + `nudge`; a shot dying on it adds `shot` m/s its way; a bounce harder than `thud` is heard
-      2: { kind: 'bollard', r: 0.6, at: [[-0.42, -0.45], [0.42, -0.45], [-0.42, 0.45], [0.42, 0.45]],
+      // v137 (owner, 2026-11-10, shown footprints / islands / walls / pits: "Mix of A and B, so always rounded. But we
+      // need the pits somewhere as well"; sim/posts.js): `foot` { r, h } stands each post on a round base of the floor's
+      // own material, the base what blocks; `islands` [{ h, at: [[x, z, r]…], props: [[x, z, s, kind?]…] }] are raised
+      // slabs whose outline is the union of their circles, the props standing on them; `pits` { depth, at: [[x, z, r]…] }
+      // are holes nothing walks over and every shot flies over. Islands and pits in metres on the upright floor (turned
+      // for a sideways one), `at` in fractions as before
+      // world 2: two traffic islands — the driveway's own curb round a lawn, a bollard at each end and a shrub between
+      2: { kind: 'bollard', r: 0.6,
+           islands: [{ h: 0.55, at: [[-6.7, -15.2, 1.7], [-6.7, -13.8, 1.7], [-6.7, -12.4, 1.7], [-6.7, -11, 1.7], [-6.7, -9.6, 1.7]],
+                       props: [[-6.7, -14.8, 0.7], [-6.7, -10, 0.7], [-6.7, -12.4, 1.15, 'shrub']] },
+                     { h: 0.55, at: [[6.7, 9.6, 1.7], [6.7, 11, 1.7], [6.7, 12.4, 1.7], [6.7, 13.8, 1.7], [6.7, 15.2, 1.7]],
+                       props: [[6.7, 10, 0.7], [6.7, 14.8, 0.7], [6.7, 12.4, 1.15, 'shrub']] }],
            ball: { kind: 'ball', r: 1.7, at: [-0.3, -0.2], dir: [0.8, 0.6], speed: 1.6, ease: 0.6, max: 6, bounce: 0.85, rod: 0.3, carry: 1.3, nudge: 0.6, shot: 0.12, thud: 1.2 } },
       // v110: the sewer's RAMS punch out of its long walls (the pair nearer the middle) by turns: `at` [along, side,
       // phase] — `along` a fraction of the long half, `side` which wall, `phase` of the beat; every `period` s a ram
       // shows its face in its slot for `warn` s (`peek` m out of the wall), punches out to `reach` m in `punch` s,
       // holds `hold` s and goes back in `back` s; at rest it is `hide` m inside the wall
-      3: { kind: 'pipe', r: 0.75, at: [[-0.33, -0.62], [0.33, -0.62], [-0.33, 0.62], [0.33, 0.62]],
+      // v137: each stub of pipe stands in a round collar of the sewer's own brick
+      3: { kind: 'pipe', r: 0.75, foot: { r: 1.6, h: 0.35 }, at: [[-0.33, -0.62], [0.33, -0.62], [-0.33, 0.62], [0.33, 0.62]],
            rams: { kind: 'ram', r: 1.1, at: [[0, -1, 0], [0, 1, 0.5]], period: 6.5, warn: 0.9, peek: 0.35, punch: 0.22, hold: 1.3, back: 0.9, reach: 4.2, hide: -0.5 } },
-      4: { kind: 'pillar', r: 1.05, at: [[-0.36, -0.42], [0.36, -0.42], [-0.36, 0.42], [0.36, 0.42]] },
-      5: { kind: 'drum', r: 1.55, at: [[-0.45, 0], [0.45, 0]] },
-      6: { kind: 'boulder', r: 1.0, at: [[-0.5, 0.32, 1.1], [0, -0.45, 0.9], [0.5, 0.32, 1.1]] },
+      // v137: two of its columns on round stepped plinths, and two wells — the cistern open to the water under it
+      4: { kind: 'pillar', r: 1.05, foot: { r: 2.1, h: 0.5 }, at: [[-0.36, -0.42], [0.36, 0.42]],
+           pits: { depth: 2.6, at: [[5.04, -10.92, 2.1], [-5.04, 10.92, 2.1]] } },
+      // v137: two raised decks of riveted plate, rounded at the ends, two drums on each
+      5: { kind: 'drum', r: 1.2,
+           islands: [{ h: 0.5, at: [[-7, 0.8, 1.9], [-7, 3, 1.9], [-7, 5.2, 1.9]], props: [[-7, 1.2, 1.15], [-7, 4.8, 1.15]] },
+                     { h: 0.5, at: [[7, -0.8, 1.9], [7, -3, 1.9], [7, -5.2, 1.9]], props: [[7, -1.2, 1.15], [7, -4.8, 1.15]] }] },
+      // v137: two rock islands in the stream, its boulders on them
+      6: { kind: 'boulder', r: 1.0,
+           islands: [{ h: 0.45, at: [[-5, 6.8, 1.8], [-5.3, 9.3, 2.3], [-5, 11.9, 2.1], [-4.6, 14.5, 1.6]], props: [[-5.3, 9.8, 1.0], [-4.7, 13.2, 0.75]] },
+                     { h: 0.45, at: [[5, -6.8, 1.8], [5.3, -9.3, 2.3], [5, -11.9, 2.1], [4.6, -14.5, 1.6]], props: [[5.3, -9.8, 1.0], [4.7, -13.2, 0.75]] }] },
       // v110: the ice's blocks DRIFT at `speed` m/s along `dirs`, turning back off a line `gap` in from the rail and
       // glancing off each other
-      7: { kind: 'block', r: 0.95, at: [[-0.4, -0.55], [0.4, 0.55]], drift: { speed: 1.1, dirs: [[1, 0], [-1, 0]], gap: 1.6 } },
-      8: { kind: 'coral', r: 1.0, at: [[-0.45, -0.35], [0.45, -0.35], [0, 0.45]] },
-      9: { kind: 'crystal', r: 0.95, at: [[0.45, 0], [-0.45, 0]], orbit: { period: 22 } },
+      // v137: each block rides a round pan of old floe ice, and two holes are cut in the sheet, down to the dark water
+      // under it (the blocks glance off their rims)
+      7: { kind: 'block', r: 0.95, foot: { r: 1.45, h: 0.22 }, at: [[-0.4, -0.55], [0.4, 0.55]], drift: { speed: 1.1, dirs: [[1, 0], [-1, 0]], gap: 1.6 },
+           pits: { depth: 2.2, at: [[-3, 4.5, 2.3], [3, -4.5, 2.3]] } },   // inside the floe (wave 7) wherever it drifts
+      // v137: reef mounds of the deep's rock, the coral growing on them
+      8: { kind: 'coral', r: 1.0,
+           islands: [{ h: 0.4, at: [[-8.2, -10, 1.8], [-6.7, -8.4, 2.2], [-5.3, -6.7, 1.7]], props: [[-7.6, -9.4, 1.05], [-5.6, -7.1, 0.85]] },
+                     { h: 0.4, at: [[8.2, 10, 1.8], [6.7, 8.4, 2.2], [5.3, 6.7, 1.7]], props: [[7.6, 9.4, 1.05], [5.6, 7.1, 0.85]] }] },
+      // v137: each crystal on a round plinth that goes round with it
+      9: { kind: 'crystal', r: 0.95, foot: { r: 1.45, h: 0.28 }, at: [[0.45, 0], [-0.45, 0]], orbit: { period: 22 } },
     },
     bulletSplash: 0.4,                       // a bullet dying on a post throws a little of its colour (render)
+    // v137: a shot flies over what is low — an island's slab, a post's foot — and stops on what stands on it: the post
+    // at its own size, an island's props `propR` × their scale across (sim/posts.js hit())
+    over: true, propR: 0.85,
   },
   // v106 FORMATIONS (sim/formation.js; owner: "more unique patterns and synergies"): bodies laid out as one unit
   forms: {
