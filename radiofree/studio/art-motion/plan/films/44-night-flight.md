@@ -59,3 +59,36 @@ Its own kit, per the rule in `SOUND.md` ("Sound per film"): not the cold-war kit
 - The landing place is the station's own rooftop, with the Cathedral behind it. Another high place can be built if
   the owner prefers one (for example the Cathedral's terrace or a tower).
 - The wording of the three flags.
+
+## v2 (10 Nov): the most impressive pass
+
+**Owner, Tue 10 Nov, on the stills:** "This should be the most impressive looking video yet", then "Continue".
+
+What changed in the picture:
+- **Real motion blur.** Each frame is now 5 exposures averaged across half a frame's shutter (11 for the fly-by,
+  3 for the landing, 1 for the still slate). Fast moves smear the way a camera does, not the way a game does.
+- **Light shafts** (new optional pass in `clay/welcome/lib/post.js`, off for every other film). They come from the
+  drone's searchlight in the fly-by, the harvester's work lights, the floodlight on the boxes, the hall's yard light,
+  the moon over the lake, and the mast's beacon when ON AIR strikes. The shafts are masked to the light itself.
+- **An anamorphic streak** on the brightest lamps only (same file, also optional).
+- **Shadows.** In the forest, the moon is low and ahead, so every trunk lays a long shadow toward the lens. The work
+  lights, the floodlight and the yard light cast their own shadows, so the fence mesh is drawn on the snow. Over the
+  lake country, 13,500 trees shadow the snowfields. On the roof, the mast, the hut, Toko and the drone shadow the snow,
+  and the drone's landing light makes a pool that tightens as it settles.
+- **The forest, rebuilt.** It now has spruces with snow lying on every bough (two shapes), tall pines, birches with
+  bark and bare twigs, and boulders with snow caps. It also has mist banks between the trunks, and four times the
+  snow in the air.
+- **The roof tells a story.** Toko's footprints run in the snow from the hut door to the mic, and out to the mast and
+  back. There is also a warm skylight, a dish, aerial whips, the cable from the hut to the mast, and snow falling.
+- The lake country has moonlit snow instead of black ground, frosted trees, low mist on the water and a softer cottage.
+
+**Sound: its own kit, `pipeline/sound/nightflight.py`** (now in the `SOUND.md` table). The rotor is the engine of the
+track, and its pitch follows the speed:
+- **The fly-by:** it Dopplers over the lens.
+- **The forest:** the drone slows at each flag, and each lock is three rising beeps and a thump. A muted A-minor pulse
+  runs under it.
+- **The lake:** a wide F add9 chord opens with the land, with aurora bells and a loon.
+- **The city:** sixteenths, a kick, a ferry horn and a tram bell lift the music.
+- **The landing:** a single held G sus chord plays, the rotor winds down, and there is a tick on the perch.
+- **ON AIR:** the relay closes and the neon catches. The station's call rings on the three rings, and the chord
+  resolves to C. Sound checks: 5 pass, −13.8 LUFS, −2.7 dBTP.

@@ -114,8 +114,23 @@ void main() {
   gl_FragColor = vec4(c / t, 1.0);
 }`;
 
+// light shafts: the bright pass smeared along the line to a light (off unless a film asks for `rays`)
+const RAYS = /* glsl */`
+uniform sampler2D tColor; uniform vec2 center; uniform float density, decay, seed, cut, radius, aspect; varying vec2 vUv;
+float hash(vec2 p) { p = fract(p * vec2(443.897, 441.423)); p += dot(p, p.yx + 19.19); return fract((p.x + p.y) * p.x); }
+void main() {
+  const int N = 64;
+  vec2 d = (vUv - center) * density / float(N);
+  vec2 uv = vUv - d * hash(vUv * 917.0 + seed);
+  vec3 c = vec3(0.0); float il = 1.0, tw = 0.0;
+  for (int i = 0; i < N; i++) { float m = 1.0 - smoothstep(radius * 0.35, radius, length((uv - center) * vec2(1.0, aspect)));   // only the light and what is near it sends shafts
+    c += max(texture2D(tColor, clamp(uv, 0.001, 0.999)).rgb - cut, 0.0) * m * il; tw += il; il *= decay; uv -= d; }
+  gl_FragColor = vec4(c / tw, 1.0);
+}`;
+
 const GRADE = /* glsl */`
-uniform sampler2D tColor, tBloomA, tBloomB, tAO;
+uniform sampler2D tColor, tBloomA, tBloomB, tAO, tRays, tStreak;
+uniform float rays, streak; uniform vec3 streakTint;
 uniform float useAO, aoStrength, bloomA, bloomB, exposure, vignette, grain, seed;
 uniform float sat, contrast; uniform vec3 lift, gain, tint; uniform float toe;
 uniform vec2 res; uniform float aberration;
@@ -135,6 +150,8 @@ void main() {
     c = vec3(texture2D(tColor, vUv - o).r, texture2D(tColor, vUv).g, texture2D(tColor, vUv + o).b);
   } else c = texture2D(tColor, vUv).rgb;
   c += texture2D(tBloomA, vUv).rgb * bloomA + texture2D(tBloomB, vUv).rgb * bloomB;
+  if (rays > 0.0) c += texture2D(tRays, vUv).rgb * rays;
+  if (streak > 0.0) c += texture2D(tStreak, vUv).rgb * streakTint * streak;
   c *= exposure * tint;
   c = aces(c);
   // grade in display-ish space
@@ -163,6 +180,8 @@ export class Post {
     const q = 4, e = 16;
     this.rtB1 = rt(W / q | 0, H / q | 0); this.rtB2 = rt(W / q | 0, H / q | 0);
     this.rtC1 = rt(W / e | 0, H / e | 0); this.rtC2 = rt(W / e | 0, H / e | 0);
+    this.q4 = [W / q | 0, H / q | 0]; this.rtR = null; this.rtS1 = null; this.rtS2 = null;   // made on first use
+    this.raysP = quadPass(RAYS, { tColor: { value: null }, center: { value: new THREE.Vector2(0.5, 0.5) }, density: { value: 0.9 }, decay: { value: 0.965 }, seed: { value: 0 }, cut: { value: 0 }, radius: { value: 4 }, aspect: { value: H / W } });
     this.cam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
     this.dof = quadPass(DOF, {
       tColor: { value: null }, tDepth: { value: depthTex }, px: { value: new THREE.Vector2(1 / W, 1 / H) },
@@ -185,6 +204,7 @@ export class Post {
       sat: { value: 1 }, contrast: { value: 1 }, lift: { value: new THREE.Vector3() },
       gain: { value: new THREE.Vector3(1, 1, 1) }, tint: { value: new THREE.Vector3(1, 1, 1) }, toe: { value: 0 },
       res: { value: new THREE.Vector2(W, H) }, aberration: { value: 0 },
+      tRays: { value: null }, tStreak: { value: null }, rays: { value: 0 }, streak: { value: 0 }, streakTint: { value: new THREE.Vector3(0.55, 0.75, 1.0) },
     });
   }
 
@@ -216,13 +236,23 @@ export class Post {
     this.bright.u.tColor.value = this.rtDof.texture;
     this.bright.u.threshold.value = o.threshold ?? 1.0; this.bright.u.knee.value = o.knee ?? 0.5;
     this.pass(this.bright, this.rtB1);
+    const g = this.grade.u, useRays = (o.rays ?? 0) > 0, useStreak = (o.streak ?? 0) > 0;
+    if (useRays) {   // shafts, from the sharp bright pass (before it is blurred for the bloom)
+      this.rtR ||= rt(...this.q4); const R = this.raysP.u; R.tColor.value = this.rtB1.texture; R.center.value.set(...(o.raysCenter || [0.5, 0.5]));
+      R.density.value = o.raysDensity ?? 0.9; R.decay.value = o.raysDecay ?? 0.965; R.seed.value = o.seed ?? 0; R.cut.value = o.raysCut ?? 0; R.radius.value = o.raysRadius ?? 4; this.pass(this.raysP, this.rtR); g.tRays.value = this.rtR.texture; }
+    if (useStreak) {   // a long horizontal smear of the brights: the streak an anamorphic lens draws
+      this.rtS1 ||= rt(...this.q4); this.rtS2 ||= rt(...this.q4);
+      this.bright.u.threshold.value = o.streakThreshold ?? 3.0; this.bright.u.knee.value = 0.5; this.pass(this.bright, this.rtS1);   // lamps only
+      this.blur.u.tColor.value = this.rtS1.texture; this.blur.u.dir.value.set(3.0 / this.q4[0], 0); this.pass(this.blur, this.rtS2);
+      this.blur.u.tColor.value = this.rtS2.texture; this.blur.u.dir.value.set(7.0 / this.q4[0], 0); this.pass(this.blur, this.rtS1); g.tStreak.value = this.rtS1.texture;
+      if (o.streakTint) g.streakTint.value.set(...o.streakTint); }
+    g.rays.value = useRays ? o.rays : 0; g.streak.value = useStreak ? o.streak : 0;
     this.blurInto(this.rtB1, this.rtB1, this.rtB2, 1.0);
     this.blurInto(this.rtB1, this.rtB1, this.rtB2, 2.0);
     this.bright.u.tColor.value = this.rtB1.texture; this.bright.u.threshold.value = 0.0; this.bright.u.knee.value = 0.0001;
     this.pass(this.bright, this.rtC1);
     this.blurInto(this.rtC1, this.rtC1, this.rtC2, 1.0);
     this.blurInto(this.rtC1, this.rtC1, this.rtC2, 2.0);
-    const g = this.grade.u;
     g.tColor.value = this.rtDof.texture; g.tBloomA.value = this.rtB1.texture; g.tBloomB.value = this.rtC1.texture;
     for (const k of ['bloomA', 'bloomB', 'exposure', 'vignette', 'grain', 'seed', 'sat', 'contrast', 'toe', 'aberration'])
       if (o[k] !== undefined) g[k].value = o[k];

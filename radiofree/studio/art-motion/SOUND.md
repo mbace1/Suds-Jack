@@ -331,6 +331,7 @@ all used the same few house parts: `stems.bed()` (the A-minor groove at 112 BPM)
 | kit | world | signature sounds | caption pop | built |
 |---|---|---|---|---|
 | **cold war** (`coldwar.py`) | surveillance, defense, spies, the state watching | analog bass ostinato and sequencer arpeggio (96 BPM, D minor), a breathing drone, shortwave static, sonar | a teleprinter strike + a synth stab; tags are typed in | **yes: Sleep Tight v3** |
+| **night flight** (`nightflight.py`) | flight over Finland at night: the channel's own promos, anything seen from the air | a drone rotor whose pitch follows the speed, a muted pulse that opens into wide supersaw chords (100 BPM, A minor into C), aurora bells, an owl, a loon, a ferry horn, a tram bell, the ON AIR relay and neon | three rising beeps and a low thump (a lock); labels are written in data blips | **yes: Night Flight** |
 | toy town | the 3D road: data centers, roads, sites (Cut First's world) | glockenspiel, woodblock, toy-engine putter, a level-crossing bell | a glock note | to build |
 | office | the room kit: emails, NDAs, HR (We Are Aware) | keyboard and mouse, fluorescent hum, a printer, an email whoosh | a keyboard key | to build |
 | marble run | the machine kit: circular money (The Round Trip) | wooden clacks, marble rolls, xylophone runs, coin chimes | a xylophone note | to build |
