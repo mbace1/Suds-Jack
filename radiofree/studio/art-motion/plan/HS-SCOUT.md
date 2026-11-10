@@ -1154,3 +1154,35 @@ Search summaries only; nothing opened. One device each, from STORY-DEVICES.md or
 - **Reactions:** counts not visible through search.
 - **Pattern note:** Finnish-language queries found every gap the English ones missed tonight (the highway strip,
   the tram costs, the Fitburg detail). For Finnish leads, search in Finnish first.
+
+### Check Tue 10 Nov 07:16 (morning; search summaries only; nothing opened)
+- **Helsinki (Five Pins, posts today ~12:52): CLEAR.** The city board approved the data-center principles on 2.11.2026
+  (hel.fi, STT), which matches the board tag. The five areas are unchanged, and the first build could start around
+  2028. The Greens opposed the Heikinlaakso forest reservation, and the budget goes to the council on 18 Nov.
+  [hel.fi](https://www.hel.fi/fi/uutiset/kaupunginhallitus-hyvaksyi-datakeskusperiaatteet)
+- **NEW: a data-center protest in Helsinki on Saturday (7 Nov).**
+  - Organizers counted ~1,500 people and police ~1,300 at the peak, and it was calm (Kaleva/STT).
+  - It was organized by the Datakeskukset kuriin citizens' initiative, Metsäliike, Elokapina, Aseistakieltäytyjäliitto,
+    Emilia and Maan ystävät.
+  - Other cities: Tampere (~500), Turku, Oulu (~150) and Jyväskylä.
+  - Spokesperson Sommer Ackerman (Luontoliitto youth policy coordinator) said data centers must be regulated better and
+    "we have not been asked".
+  - It is a candidate follow-up to Five Pins, and the owner decides.
+  - [Kaleva](https://www.kaleva.fi/yli-tuhat-ihmista-osoitti-mielta-datakeskuksia-vas/13745207)
+- **Found in Pasila:** I searched yle.fi first. There are only older glyphosate pieces (3-10888491, 74-20138908), and
+  no HS, city or Tukes reaction.
+- **Muhos (Cut First):** there is no report that the water plan was delivered. LVV can demand it under threat of a
+  fine, and the drainage needs a Water Act permit. The police investigation opened on 29 Oct.
+- **Hamina (Right of Way):** nothing new on the flying squirrels. On file: Google bought ~56 ha for €10.7M (DCD,
+  30 Oct). Kaleva says an environmental permit was sought for an eighth server center, but the date is not clear.
+- **Owner's leads, follow-ups:**
+  - **ICEYE (Sleep Tight): CLEAR.** No November item. A Bloomberg Gov headline confirms the valuation tops €10B.
+    [Bloomberg Gov](https://news.bgov.com/private-equity/satellite-startup-iceye-valuation-tops-10-billion-on-new-funds)
+  - **Fitburg:** no appeal has been reported. Under the general rule, a notice of dissatisfaction is due within 7 days of
+    the 5 Nov verdict. Watch around 12 Nov.
+  - **Protective Fence 26:** unchanged (19–27 Nov; Jännevirta on Highway 9 closed 18–25 Nov).
+- **HS sweep:** no new AI or data-center candidate beyond the protest. The JSN ruling against HS/IS over the AI
+  fabrication is already on file.
+- **Reactions:** counts are not visible through search.
+- **Pattern note:** the protest showed up only in Finnish-language queries (STT via Kaleva). For Finnish leads, search
+  in Finnish first.

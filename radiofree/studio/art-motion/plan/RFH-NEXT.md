@@ -966,3 +966,64 @@ All facts below come from search summaries; no article was opened.
   at €1.2M (~€237k a year over five years), with a customer survey and a board decision in January; separately,
   fares rise ~1.8% on 1 Jan 2027 (AB 30-day subscription €61.60 → €62.80). Details in HS-SCOUT.
 - **Films now wrong:** none.
+
+## Daily check, Tue 10 Nov 07:16 (morning; search summaries only, nothing opened)
+- **Big development:** none that changes a film. **Anthropic IPO: still no price range.** The 2 Nov S-1/A still leaves
+  the range blank. The roadshow can start no earlier than today (10 Nov), but the reports that it starts "next week"
+  are secondary and unconfirmed. A Reuters report, seen only through an aggregator, says investors doubt a November
+  listing. The Round Trip stays on hold.
+  [implicator](https://www.implicator.ai/anthropic-could-start-ipo-roadshow-week-of-nov-9-putting-debut-before-thanksgiving/),
+  [letsdatascience (Reuters, secondary)](https://letsdatascience.com/news/investors-doubt-anthropic-can-hold-november-ipo-roadshow-reu-a69a034f)
+- **Today ~12:52, Doodle 9 Five Pins: CLEAR to post.** The city board approved the data-center principles on
+  2.11.2026 (hel.fi, STT), which matches the film's board tag. The principles cover siting, power, the environment and
+  waste heat. The five areas are unchanged (Myllypuro, Salmisaari, Heikinlaakso, Malmi, Östersundom), and so is "the
+  first build could start around 2028". The Greens opposed the Heikinlaakso forest reservation, and the budget goes to
+  the council on 18 Nov. Nothing contradicts a caption, a tag or the post.
+  [hel.fi](https://www.hel.fi/fi/uutiset/kaupunginhallitus-hyvaksyi-datakeskusperiaatteet),
+  [STT](https://www.sttinfo.fi/tiedote/72466598/helsingin-kaupunginhallitus-hyvaksyi-datakeskusperiaatteet?lang=fi)
+- **NEW, a reaction to the same story: a Helsinki data-center protest.**
+  - Kaleva/STT report that organizers counted ~1,500 people and police ~1,300 at the peak, and that it was calm. It
+    took place on Saturday (7 Nov) as part of the Europe-wide Stop Dirty Data Centers days (6–7 Nov).
+  - The organizers included:
+    - the Datakeskukset kuriin citizens' initiative;
+    - Metsäliike;
+    - Elokapina;
+    - Aseistakieltäytyjäliitto;
+    - Emilia;
+    - Maan ystävät.
+  - There were also protests in Tampere (~500), Turku, Oulu (~150) and Jyväskylä.
+  - Spokesperson Sommer Ackerman said data centers must be regulated better and that "we have not been asked".
+  - Elsewhere in Europe, protesters broke into a Microsoft site in Amsterdam (Al Jazeera, 6 Nov). The campaign wants a
+    moratorium on large builds.
+  - This does not change Five Pins. It is a candidate follow-up: the city drew the map, and a week later 1,300–1,500
+    people asked to be asked. It needs the owner's call.
+  - [Kaleva](https://www.kaleva.fi/yli-tuhat-ihmista-osoitti-mielta-datakeskuksia-vas/13745207),
+    [Al Jazeera](https://aljazeera.com/news/2026/11/6/protesters-break-into-microsoft-data-centre-site-in-amsterdam),
+    [DCD](https://www.datacenterdynamics.com/en/news/two-days-of-anti-data-center-protest-planned-across-europe/)
+- **Sleep Tight (ICEYE), pre-posting check: CLEAR.**
+  - There is no ICEYE news from November.
+  - The Series F (over €1B, valuation over €10B) is confirmed again by a Bloomberg Government headline ("Valuation
+    Tops €10 Billion") and by coverager. The tag still says REPORTED and the counter says "over".
+  - Nothing found contradicts the €28.3M Business Finland grant, the Defence Forces contract, "classified" or the Supo
+    "where required" wording.
+  - [Bloomberg Gov](https://news.bgov.com/private-equity/satellite-startup-iceye-valuation-tops-10-billion-on-new-funds),
+    [coverager](https://coverager.com/iceye-raises-over-e1-billion-at-a-valuation-exceeding-e10-billion/)
+- **Found in Pasila: no reaction, and the record holds.** I searched yle.fi first. It has only older glyphosate pieces.
+  There is no HS, city or Tukes item.
+- **Coxon 14 On the Label (posted): still true.** No settlement ruling was found for November. Judge Boyer's
+  final-approval hearing was in September, and the 17 Jun remand still stands.
+  [Claims Journal](https://www.claimsjournal.com/news/national/2026/09/14/340085.htm)
+- **Global 3 Short Supply (posted):** the DRAM case is 3:26-cv-06345 (N.D. Cal., *Garciaguirre v. Samsung*, Judge
+  Noël Wise). No source confirms a 13 Nov hearing, and no trial date is set. Re-check 12 Nov.
+- **Doodle 8 Cut First (posted):** no report says the water plan reached LVV by 5 Nov. LVV can demand it under threat
+  of a fine. The police investigation opened on 29 Oct and is still the latest step. No correction.
+  [Kaleva](https://kaleva.fi/lvv-on-tehnyt-poliisille-tutkintapyynnon-googlen-m/13720712)
+- **S. 1792:** no action beyond the HELP Committee referral. Advocates have written to Chair Cassidy (Bloomberg Gov).
+  [AIP tracker](https://www.aip.org/fyi/federal-science-bill-tracker/119th/senate-1792)
+- **Pennsylvania v. Character.AI:** no hearing or ruling found. The company's response is already on file. It stays MED.
+- **Owner's Helsinki leads:**
+  - **Fitburg:** no appeal has been reported. Under the general Finnish rule, a notice of dissatisfaction is due within
+    7 days of the 5 Nov verdict, so watch around 12 Nov.
+    [Verkkouutiset](https://www.verkkouutiset.fi/a/fitburg-aluksen-kapteenille-ja-pursimiehelle-ehdottomat-vankeustuomiot/)
+  - **Protective Fence 26:** unchanged (19–27 Nov, with Jännevirta on Highway 9 closed 18–25 Nov).
+- **Films now wrong:** none.

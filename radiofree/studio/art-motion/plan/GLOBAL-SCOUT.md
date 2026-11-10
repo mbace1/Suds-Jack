@@ -1400,3 +1400,24 @@ Everything below comes from search summaries. No article was opened.
   [Insurance Journal](https://www.insurancejournal.com/news/east/2026/05/06/868729.htm)
 - **Reactions:** counts not visible through search. **Pattern note:** IPO valuation news arrives through aggregators
   first; wait for the Reuters/WSJ original or an EDGAR S-1/A before any number goes on screen.
+
+### Check Tue 10 Nov 07:16 (morning; search summaries only; nothing opened)
+- **Big development:** none.
+- **12 The Round Trip: HOLD.** There is still no price range, and the 2 Nov S-1/A leaves it blank. Today is the
+  earliest day the roadshow can start. The "next week" roadshow reports are unconfirmed, and a Reuters report seen
+  only through an aggregator says investors doubt a November listing. None of it is used.
+  [implicator](https://www.implicator.ai/anthropic-could-start-ipo-roadshow-week-of-nov-9-putting-debut-before-thanksgiving/)
+- **On the Label (posted):** no November ruling; the 17 Jun remand still stands.
+- **5 Short Supply:** case 3:26-cv-06345 (N.D. Cal., Judge Noël Wise). No source confirms a 13 Nov hearing, and no
+  trial date is set. Re-check 12 Nov.
+- **10/11 Whistleblowers:** S. 1792 has had no action beyond the HELP referral. Advocates have written to Chair
+  Cassidy. There is no new named AI whistleblower testimony.
+- **Military AI / data-center NDAs:** nothing dated November.
+- **NEW, Europe: Stop Dirty Data Centers (6–7 Nov).** Protesters broke into a Microsoft site in Amsterdam (Al
+  Jazeera, 6 Nov). The campaign wants a moratorium on large builds and has ~85 sites in its sights. The Helsinki leg
+  is in HS-SCOUT. [Al Jazeera](https://aljazeera.com/news/2026/11/6/protesters-break-into-microsoft-data-centre-site-in-amsterdam),
+  [DCD](https://www.datacenterdynamics.com/en/news/two-days-of-anti-data-center-protest-planned-across-europe/)
+- **Pennsylvania v. Character.AI (MED):** no hearing or ruling.
+- **Reactions:** counts are not visible through search. **Pattern note:** the Europe-wide protest days came up through a
+  Finnish wire story (STT via Kaleva) before any English-language search found them. Run the Finnish sweep before
+  deciding a global item is quiet.
