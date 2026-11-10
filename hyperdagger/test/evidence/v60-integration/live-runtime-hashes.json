@@ -1,24 +1,24 @@
 {
-  "checked_utc": "2026-11-09T23:20:58.552281+00:00",
-  "attempt": 1,
-  "source_head": "fe9a50b73c982a194f6a310119fa225dda24aa3a",
-  "staging_head": "6b8d06f48bf1c971f7f94d5ee6d5a754ae33d4fc",
+  "checked_utc": "2026-11-10T00:40:14.433025+00:00",
+  "attempt": 12,
+  "source_head": "f8353e757e8114f4bcb6a343a739839efa19764d",
+  "staging_head": "3f40cc410e9287379eb73c767f210653f49ed36a",
   "checks": [
     {
       "path": "hyperdagger/index.html",
       "url": "https://mbace1.github.io/Suds-Jack/hyperdagger/index.html",
       "status": 200,
-      "match": true,
+      "match": false,
       "actual_sha256": "954178b1b7a581be7c0e50eae40d9bcdb686ba2125d73a4c07fcf99e6b397c02",
-      "expected_sha256": "954178b1b7a581be7c0e50eae40d9bcdb686ba2125d73a4c07fcf99e6b397c02"
+      "expected_sha256": "a444a2765ddbfad69ebd47a5ae85868b9c5ab0eefafcabe9a933ee4bba30b233"
     },
     {
       "path": "hyperdagger/js/main.js",
-      "url": "https://mbace1.github.io/Suds-Jack/hyperdagger/js/main.js?v=118",
+      "url": "https://mbace1.github.io/Suds-Jack/hyperdagger/js/main.js?v=119",
       "status": 200,
-      "match": true,
+      "match": false,
       "actual_sha256": "033c997fa2c78e60413450f2d1dece3b0aed7ad4c29a3e7894df6c66a0e965a2",
-      "expected_sha256": "033c997fa2c78e60413450f2d1dece3b0aed7ad4c29a3e7894df6c66a0e965a2"
+      "expected_sha256": "24cd23829b9b98bf5ae147f52fdd3e6243f89b219b8ce8adb234046644b22d48"
     },
     {
       "path": "hyperdagger/js/input.js",
@@ -46,11 +46,11 @@
     },
     {
       "path": "hyperdagger/sw.js",
-      "url": "https://mbace1.github.io/Suds-Jack/hyperdagger/sw.js?v=118",
+      "url": "https://mbace1.github.io/Suds-Jack/hyperdagger/sw.js?v=119",
       "status": 200,
-      "match": true,
+      "match": false,
       "actual_sha256": "858beb43ec593dd7961d7d8d22a921d7e00c5e9b262b79f4866e676268910f7d",
-      "expected_sha256": "858beb43ec593dd7961d7d8d22a921d7e00c5e9b262b79f4866e676268910f7d"
+      "expected_sha256": "00c1311fad653bfbd6d82262a9b5bc94588483a5cc7f81b8aaba5861b0b30325"
     },
     {
       "path": "toko/js/chat.js",
@@ -88,34 +88,34 @@
       "path": "toko-live/index.html",
       "url": "https://mbace1.github.io/Suds-Jack/toko-live/index.html",
       "status": 200,
-      "match": true,
+      "match": false,
       "actual_sha256": "2f817be12d0f6deabbfc5de592ad76d4df91c7686a5d443aecdbeb5fbda9afc6",
-      "expected_sha256": "2f817be12d0f6deabbfc5de592ad76d4df91c7686a5d443aecdbeb5fbda9afc6"
+      "expected_sha256": "14007dc38234737959a0d0476c0256b2d05554bed800e4839c9126044678a442"
     },
     {
       "path": "index.html",
       "url": "https://mbace1.github.io/Suds-Jack/index.html",
       "status": 200,
-      "match": true,
+      "match": false,
       "actual_sha256": "aeee7b86ffefea29635217760acbf0057b978e8cc0936352d687ee0633236707",
-      "expected_sha256": "aeee7b86ffefea29635217760acbf0057b978e8cc0936352d687ee0633236707"
+      "expected_sha256": "7456a7fcb8d7339928a8505d285f965fc2a3f0d430bc8eff5c9c87fc6c5e04fc"
     },
     {
       "path": "sw.js",
       "url": "https://mbace1.github.io/Suds-Jack/sw.js",
       "status": 200,
-      "match": true,
-      "actual_sha256": "82ed9fd5a37ab78d025881ffbbd33be1fd1692043f7bc0e00cfb5c5ead791dfd",
-      "expected_sha256": "82ed9fd5a37ab78d025881ffbbd33be1fd1692043f7bc0e00cfb5c5ead791dfd"
+      "match": false,
+      "actual_sha256": "8b77f9ddeb15910f9c6a22daabe4a04f81a4a670673f187e4f3601fb051c194a",
+      "expected_sha256": "e2168aa28e953e3c08d897b3a20956d685d9052a74e80b83129b7629014271f1"
     },
     {
       "path": "hub/versions.json",
       "url": "https://mbace1.github.io/Suds-Jack/hub/versions.json",
       "status": 200,
-      "match": true,
-      "actual_sha256": "5a4cba019be18d9a0c50db2a32f1974c465af3ffb8517f5d408fa594f0652faf",
-      "expected_sha256": "5a4cba019be18d9a0c50db2a32f1974c465af3ffb8517f5d408fa594f0652faf"
+      "match": false,
+      "actual_sha256": "477f1395ebacf1d8cdb3ef6506f9be7d64dfaeb6adf1aee31ec23f2d1631497b",
+      "expected_sha256": "4b19fc711216506bed8990f527e0bb55f4632e673d228a9576417dab83e0c4b0"
     }
   ],
-  "all_match": true
+  "all_match": false
 }

@@ -1,26 +1,27 @@
 {
-  "source_head": "fe9a50b73c982a194f6a310119fa225dda24aa3a",
-  "staging_head": "6b8d06f48bf1c971f7f94d5ee6d5a754ae33d4fc",
-  "production_base": "b3ec97d99ab4ad1d0acbcaf6534d84686d7e2ad1",
-  "source_hyper_runtime": "Identical to reviewed source except production shell URL 231 in index.",
-  "preview": "No file under hyperdagger-sdf differs from production base.",
+  "source_head": "f8353e757e8114f4bcb6a343a739839efa19764d",
+  "staging_head": "3f40cc410e9287379eb73c767f210653f49ed36a",
+  "production_base": "24e428332",
+  "source_hyper_runtime": "Exact reviewed #638 main and worker; index preserves current production hub shell233.",
+  "preview": "The Hyper publication leaves preview build3/runtime untouched. Concurrent TokoDrop2v132 advances only its shared hub-shell reference232->233.",
   "sha256": {
-    "hyperdagger/index.html": "954178b1b7a581be7c0e50eae40d9bcdb686ba2125d73a4c07fcf99e6b397c02",
-    "hyperdagger/js/main.js": "033c997fa2c78e60413450f2d1dece3b0aed7ad4c29a3e7894df6c66a0e965a2",
+    "hyperdagger/index.html": "a444a2765ddbfad69ebd47a5ae85868b9c5ab0eefafcabe9a933ee4bba30b233",
+    "hyperdagger/js/main.js": "24cd23829b9b98bf5ae147f52fdd3e6243f89b219b8ce8adb234046644b22d48",
     "hyperdagger/js/input.js": "de74e7e5c191250ebdaf77fa203b3ea95db5bc5a299b7d3eb91b13ee8db5cb0c",
     "hyperdagger/js/enemy.js": "005116f65ca0511594a3dd90762342e3d6445e03a056b5af8d9fe6f27264cb10",
     "hyperdagger/js/sdf-skull.js": "ef5faa5babd666761292311fb0d1f35f201f00229cfe7dadb8fbd6272adafd67",
-    "hyperdagger/sw.js": "858beb43ec593dd7961d7d8d22a921d7e00c5e9b262b79f4866e676268910f7d",
+    "hyperdagger/sw.js": "00c1311fad653bfbd6d82262a9b5bc94588483a5cc7f81b8aaba5861b0b30325",
     "toko/js/chat.js": "240eed208ad577a4d1bf74789d22daec9d1a80d7afdc0ea7bc0c76e792afc09c",
     "toko/js/table.js": "0bce2cf230434a40a14931a5511b8ec804905db86506d44559719f150284aca0",
     "toko/js/signature.js": "bd1c08fe3e4251a9297178174c789f6e435dca1e38d0be30e8e6a82a9b06866f",
     "toko-live/main.js": "a01dbdd8800379f3e2991fa8fad25d2cb7e89256e702331cd5a5c5da37d84ea3",
-    "toko-live/index.html": "2f817be12d0f6deabbfc5de592ad76d4df91c7686a5d443aecdbeb5fbda9afc6",
-    "index.html": "aeee7b86ffefea29635217760acbf0057b978e8cc0936352d687ee0633236707",
-    "sw.js": "82ed9fd5a37ab78d025881ffbbd33be1fd1692043f7bc0e00cfb5c5ead791dfd",
-    "hub/versions.json": "5a4cba019be18d9a0c50db2a32f1974c465af3ffb8517f5d408fa594f0652faf"
+    "toko-live/index.html": "14007dc38234737959a0d0476c0256b2d05554bed800e4839c9126044678a442",
+    "index.html": "7456a7fcb8d7339928a8505d285f965fc2a3f0d430bc8eff5c9c87fc6c5e04fc",
+    "sw.js": "e2168aa28e953e3c08d897b3a20956d685d9052a74e80b83129b7629014271f1",
+    "hub/versions.json": "4b19fc711216506bed8990f527e0bb55f4632e673d228a9576417dab83e0c4b0"
   },
-  "approved_release_head": "14c298e813e1e1ca0672d3d309fcc3ea49476b3c",
-  "actual_target_head": "6b8d06f48bf1c971f7f94d5ee6d5a754ae33d4fc",
-  "concurrent_publication": "Toko Drop2 v131 superseded deployment14c; newer commit contains14c, all approved Hyper/shared runtime bytes unchanged except production shell URL in index."
+  "approved_release_head": "458ce6822280d0d6ad0eed0b6ad60cd14d44ccab",
+  "actual_target_head": "3f40cc410e9287379eb73c767f210653f49ed36a",
+  "concurrent_publication": "TokoDrop2v132 supersedes retry;3f40cc410 includes approved458ce6822. Every Hyper/shared runtime module remains byte-identical; only HDindex production shell233 and normal root metadata advance.",
+  "initial_source_head": "fe9a50b73c982a194f6a310119fa225dda24aa3a"
 }

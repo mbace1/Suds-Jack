@@ -1,0 +1,20 @@
+{
+  "checked_utc": "2026-11-10T00:40:14.433025+00:00",
+  "visible_game_version": 60,
+  "public_main_and_registration": 118,
+  "public_cache": "hyperdagger-v88",
+  "guard_source_merge": "f8353e757e8114f4bcb6a343a739839efa19764d",
+  "guard_release": "458ce6822280d0d6ad0eed0b6ad60cd14d44ccab",
+  "current_production_target": "3f40cc410e9287379eb73c767f210653f49ed36a",
+  "pages_run": 42727139262,
+  "pages_attempts": 2,
+  "pages_result": "build success, both deployment attempts timed out",
+  "new_target_matches": 7,
+  "earlier_public_hyper_hashes": {
+    "hyperdagger/index.html": "954178b1b7a581be7c0e50eae40d9bcdb686ba2125d73a4c07fcf99e6b397c02",
+    "hyperdagger/js/main.js": "033c997fa2c78e60413450f2d1dece3b0aed7ad4c29a3e7894df6c66a0e965a2",
+    "hyperdagger/sw.js": "858beb43ec593dd7961d7d8d22a921d7e00c5e9b262b79f4866e676268910f7d"
+  },
+  "guard_live": false,
+  "new_conversion_started": false
+}

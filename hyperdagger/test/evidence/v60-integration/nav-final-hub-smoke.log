@@ -1,0 +1,202 @@
+PASS  the host is on the floor, exactly once
+PASS  the host keeps his feedback inside the cabinet, not on the card
+PASS  the host is not counted as one of the games
+PASS  the catalogue is not empty
+PASS  every entry declares a status
+PASS  active and archived account for the whole catalogue
+PASS  a secret cabinet is not on the floor
+PASS  and it is not rendered either
+PASS  the code puts it on the floor
+PASS  and its marquee is painted
+PASS  one cabinet per game
+PASS  the live floor holds only what is being worked on
+PASS  the archive holds the rest
+PASS  the archive is still playable, not hidden — bar anything not up
+PASS  the archive names itself
+PASS  and does not promise every archived cabinet is playable
+PASS  a playable cabinet can still carry a state note
+PASS  every cabinet that has something behind it offers Play
+PASS  every cabinet offers Feedback
+PASS  the sketch shelf is there too
+PASS  the page names itself
+PASS  Play opens the game it is under, pinned to the release the log names
+PASS  a cabinet with nothing behind it has no Play link
+PASS  it shows a dead button instead
+PASS  and that button cannot be pressed
+PASS  its marquee is not a link either
+PASS  but feedback on it is still open
+PASS  and it says why it is not up
+PASS  every link this branch can see resolves
+PASS  the complete source tree carries every visible cabinet
+PASS  every marquee is painted
+PASS  every cabinet's marquee key is a real drawing
+PASS  the panel opens on the game it was asked from
+PASS  the rating offers five steps
+PASS  an empty note closes without ceremony
+PASS  and nothing is recorded for it
+PASS  the hub says 69 things, and says them in Finnish
+PASS  and in Japanese
+PASS  every cabinet carries its own words in all three
+PASS  the language row is at the top of the page
+PASS  by code, with the full name kept as the accessible name (Suomi,English,日本語)
+PASS  and each is a 44px target
+PASS  switching relabels the page's own words ("Sali — työn alla")
+PASS  and the cabinets' words with them ("[ Pelaa ]")
+PASS  and the games' own copy
+PASS  <html lang> follows
+PASS  and the row marks which one is on
+PASS  the choice survives a reload
+PASS  and Japanese is there too
+PASS  and back to English
+PASS  the offline shell IS the page's module graph (26)
+PASS  the retired find-a-game controls stay off the floor
+PASS  a link to one cabinet lands on it (#pajatso)
+PASS  and the /feedback form opens its note panel straight away
+PASS  a link to a cabinet that is gone clears itself
+PASS  every cabinet title is its own link
+PASS  nothing is marked before you have played anything
+PASS  pressing Play marks that cabinet tried
+PASS  and the heading keeps a tally (1 of 29 tried)
+PASS  it survives a reload
+PASS  and the tally survives the version numbers landing (1 of 28 tried)
+PASS  and the floor does not rearrange itself
+PASS  the status line offers three shapes
+PASS  and each is a 44px target
+PASS  the rack puts several across at this width (3)
+PASS  wide gives the cover the row to itself (1052px)
+PASS  list drops the covers entirely and keeps every Play (28)
+PASS  and fits the floor in about a row's height per game (1495px for 28)
+PASS  the shape survives a reload
+PASS  a note records the shape and language it was written in (list/en)
+PASS  every project gets a full set of kinds
+PASS  and most of them lead with their own question (27 of 28)
+PASS  every project-and-kind pair offers a suggestion
+PASS  the panel offers the kinds in this cabinet's order (How it handles)
+PASS  picking one brings up its suggestions
+PASS  a suggestion fills the box rather than sending ("Does not do what I meant")
+PASS  a real note is thanked for
+PASS  the note reached the endpoint
+PASS  it carries the game, the rating and the words
+PASS  and what it is about, so it can be sorted (controls)
+PASS  and it is kept locally too
+PASS  the panel closes when it is done
+PASS  an undeliverable note is held, not lost
+PASS  and the player is told so, not thanked
+PASS  the status line offers the notes once there are any
+PASS  and says how many
+PASS  both notes are listed, newest first (2)
+PASS  the stuck one is marked held and the sent one is not
+PASS  each says what it was about (CONCRETE · How it handles)
+PASS  and which shape of the floor it was written in (11/9/2026 · 1/5 · rack)
+PASS  sending the held ones from here clears them
+PASS  and the panel says so without a reload
+PASS  forgetting asks once
+PASS  and then does it
+PASS  the link goes away with the last note
+PASS  the outbox drains when the endpoint comes back
+PASS  the held note arrives too
+PASS  and it leaves the outbox
+PASS  every note is still kept locally
+PASS  Escape closes the panel
+PASS  the backdrop closes the panel
+PASS  and the keyboard goes back where it was
+PASS  every text colour clears WCAG AA
+PASS  every control is a 44px target
+PASS  the row grows 2-2-3-4 with the screen
+PASS  and no step shrinks the marquee past what it can carry
+PASS  and two cabinets to a row on a phone
+PASS  the marquee is still big enough to read (161px)
+PASS  nothing overflows a phone (0px)
+PASS  the short URL carries a <base> to the site root
+PASS  and is otherwise the same page (no drift)
+PASS  the short URL renders the same floor
+PASS  and its Play links point back up at the games, not into itself
+PASS  every link resolves from the short URL too
+PASS  unversioned cabinets are missing both a log and their own token ()
+PASS  every version came from a log or a real cache token
+PASS  every version label agrees with its sort key
+PASS  every cabinet asks for the same hub/shell.js (43)
+PASS  versions.json agrees with every log
+PASS  every module in hub/ is reachable from the page
+PASS  the cabinets show a version (23 of 28)
+PASS  and it is the number the generator found
+PASS  a project with a VERSIONS.md reports its release number, not its token
+PASS  a first visit is not told everything is new
+PASS  coming back marks what moved (24: tokolive,optionc-lab,concrete,sudsjack)
+PASS  the three it had already seen at a lower number are among them
+PASS  and a project it had never seen reads as new, not updated
+PASS  the heading says how many (24 moved since you were last here)
+PASS  and exactly one tag per cabinet, never two
+PASS  a rebuild during the fetch does not double the tag
+PASS  and the heading's count still matches the tags (23)
+PASS  a connected pad announces itself in the status line
+PASS  and takes the first cabinet
+PASS  right moves one cabinet along
+PASS  down crosses a whole row of 3, not one card
+PASS  left comes back
+PASS  the selection is real focus, so the keyboard agrees
+PASS  and it is visible without a mouse
+PASS  Y leaves a note on the selected cabinet
+PASS  the d-pad sets the rating
+PASS  B closes the panel
+PASS  A plays the selected cabinet (pajatso/)
+PASS  the arrow keys move the same selection
+PASS  every game carries the home button
+PASS  and it points at the hub
+PASS  and it is a 44px target
+PASS  a tap gets home even when the game swallows touches
+PASS  the catalogue declares an on-screen button somewhere (tiny2d)
+PASS  tiny2d: the button is on screen under a thumb
+PASS  tiny2d: and it is a thumb-sized target (92px)
+PASS  tiny2d: and it sits where a thumb already is
+PASS  tiny2d: holding it holds Space down
+PASS  tiny2d: and the button reads as pressed
+PASS  tiny2d: letting go releases it, once
+PASS  tiny2d: and a mouse never sees it
+PASS  a thumb gets TOKO beside HOME on a game with a table
+PASS  and it is a 44px target clear of HOME (44x44)
+PASS  a tap seats him at the table, in the game
+PASS  no TOKO on a game with no table
+PASS  and a mouse never sees it — the sticker is the way there
+PASS  holding Start starts filling the home button
+PASS  and holding it long enough goes back to the arcade
+PASS  tokomove gets a pad bridged onto it
+PASS  tokomove is matched to its own catalogue entry
+PASS  neonronin gets a pad bridged onto it
+PASS  neonronin is matched to its own catalogue entry
+PASS  gameoflife gets a pad bridged onto it
+PASS  gameoflife is matched to its own catalogue entry
+PASS  kindling gets a pad bridged onto it
+PASS  kindling is matched to its own catalogue entry
+PASS  radiofree gets a pad bridged onto it
+PASS  radiofree is matched to its own catalogue entry
+PASS  tiny2d gets a pad bridged onto it
+PASS  tiny2d is matched to its own catalogue entry
+PASS  concrete reads its own pad, so nothing is layered on it
+PASS  the stick presses the game's own run key (2 events)
+PASS  and releases it when the stick comes back
+PASS  A presses the roll key the game documents
+PASS  and lets go of it when the button comes up
+PASS  in that order, and once each (down:Space up:Space)
+PASS  the power-on veil takes itself off the page
+PASS  the intro opens across the whole screen
+PASS  any key skips it from the first frame
+PASS  and a skipped mark is still unseen next time
+PASS  a deep link gets no intro at all
+PASS  reduced motion gets no tube
+PASS  an unintroduced browser has not seen the mark
+PASS  starting a game plays the mark first
+PASS  and it records WHICH of the two was shown
+PASS  the mark is skippable and still takes you to the game
+PASS  the next game start is a plain link, no mark
+PASS  sound is off on arrival
+PASS  and the toggle says so when it is on
+PASS  an untouched machine has no counters on the wall
+PASS  pressing Play puts a credit on the wall
+PASS  and a game you have played shows your best, off your own disk
+PASS  a game you have not played shows no score line at all
+PASS  chat waits for hub initialization on /, including reload
+PASS  chat waits for hub initialization on /AnotherHUB/, including reload
+PASS  zero console/page errors overall
+
+all hub checks passed
