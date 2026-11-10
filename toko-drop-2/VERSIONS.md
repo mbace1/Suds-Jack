@@ -19,6 +19,21 @@
     Never `--no-verify`.
 -->
 
+## v141 — 2026-11-10
+**Chips of broken ice lie on the sheet, and they skitter: a kick sends one a long way, off the banks and the blocks — and into a hole, and gone**
+- THE ASK (owner, 2026-11-10): "we can go way beyond with geometry and art assets", and of the worlds after the driveway "we can do a lot better than the concept art". The driveway has leaves that answer the fight (v138); the ice has holes broken through it (v139). This is what broke off.
+- CHIPS OF ICE (render/leaves.js, kind 'chips'): 64 of them scattered over the sheet, each a broken five-sided plate 30 to 60 cm long, its top smaller than its foot, in the sheet's own blues and whites; ice lets light through, so a chip never goes as dark as a stone in shade would.
+- THEY SKITTER. It is ice on ice: the same kick that moves a leaf a metre and a half sends a chip several times as far, spinning. A body going by knocks them on, a dash sweeps them ahead of it, a burst throws them. They come back off the banks on all four sides, the near one too, and off the blocks that stand on the sheet.
+- AND A HOLE TAKES THEM: a chip that slides to within 0.6 of a hole's radius of its middle tips, goes down it and is gone for the rest of the world. One that slides past lies on. So the sheet remembers the fight, as the driveway does: by the end the chips are along the banks, and fewer.
+- Looks only, as the leaves are: the sim never knows a chip, their dice are their own, and nothing here can change a run.
+- The leaves' code is the chips' code: LeafLitter takes a kind (its numbers, its shape, where it lies, what stops it). The driveway's leaves are as they were — the same seed lays the same leaves, and their nine checks stand.
+- test/view.mjs holds the chips (6 checks): the same chips in the same places every time, all on the sheet; a kicked chip goes more than two and a half times as far as a kicked leaf; one comes back off the near bank; one that slides into a hole is gone and one that slides past is not; nothing brings a sunk chip back; the leaves carry none of the chips' numbers.
+- Tried and left out: cinders on the boiler's deck. Dark lumps on a dark deck under the paint of a fight: sixty of them added nothing you could see.
+- Cache tokens `?v=140` → `?v=141`; HUD label → `2.0 · v141`
+- Cache tokens `?v=140` → `?v=141`; HUD label → `2.0 · v141`
+
+---
+
 ## v140 — 2026-11-10
 **The floors of worlds 3 to 9, past their concepts: no two flagstones, slabs or plates alike — and fish in the river, snow drifted over the ice, starfish on the seabed, light running through the core's deck**
 - THE ASK (owner, 2026-11-10): "Also look at all other worlds, and like said we can do a lot better than the concept art". The driveway got pours that differ (v138); this is the same for the seven worlds after it. Each floor was a single material ruled by joints. Now each is made of pieces, and has places in it.

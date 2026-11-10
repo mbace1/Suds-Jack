@@ -51,23 +51,23 @@
 // TUNING.scenery.
 import * as THREE from 'three/webgpu';
 import { Fn, float, vec2, vec3, fract, sin, cos, dot, texture, floor as tfloor, mix, smoothstep, abs, positionWorld, positionLocal, normalWorld, normalView, clamp, max, min, length, step, fwidth, uv, attribute } from 'three/tsl';
-import { GEL_TIME } from './gel.js?v=140';
-import { hash, noise, seeded, motes, phase } from './kit.js?v=140';
-import { SUN_AT } from './sun.js?v=140';
-import { treeAtlas } from './trees.js?v=140';
-import { LeafLitter } from './leaves.js?v=140';
-import { boiler } from './sets/boiler.js?v=140';
-import { river } from './sets/river.js?v=140';
-import { ice } from './sets/ice.js?v=140';
-import { deep } from './sets/deep.js?v=140';
-import { core } from './sets/core.js?v=140';
+import { GEL_TIME } from './gel.js?v=141';
+import { hash, noise, seeded, motes, phase } from './kit.js?v=141';
+import { SUN_AT } from './sun.js?v=141';
+import { treeAtlas } from './trees.js?v=141';
+import { LeafLitter } from './leaves.js?v=141';
+import { boiler } from './sets/boiler.js?v=141';
+import { river } from './sets/river.js?v=141';
+import { ice } from './sets/ice.js?v=141';
+import { deep } from './sets/deep.js?v=141';
+import { core } from './sets/core.js?v=141';
 
 // worlds 5-9 (v72): a set of their own each, built to its brief (render/sets/)
 const SETS = { boiler, river, ice, deep, core };
 
 // the noise, the cracks and the seeded numbers are the kit's (v72: render/kit.js),
 // and the floor still takes them from here
-export { noise, cells } from './kit.js?v=140';
+export { noise, cells } from './kit.js?v=141';
 
 // the storm drain's grate (v65, the owner's world-2 sheet), in its own units
 // (q, its frame's radius 1): x the grate, y a slot, z the frame. Rows of
@@ -522,7 +522,13 @@ export class Scenery {
   // ── every other world: a ground past the floor, its edge, props round it ──
   _surround(id, hx, hz) {
     if (id === 'cistern') { this._cistern(hx, hz); return; }   // v71: built to its brief, as worlds 2 and 3
-    if (SETS[id]) { SETS[id](this, hx, hz); return; }           // v72: worlds 5-9, the same
+    if (SETS[id]) {                                              // v72: worlds 5-9, the same
+      SETS[id](this, hx, hz);
+      // v141: what lies loose on its floor and answers the fight, as the driveway's leaves do (render/leaves.js)
+      const kind = { ice: 'chips' }[id];
+      if (kind && this.T.scenery[id][kind]) { this.leaves = new LeafLitter(kind); this.leaves.build(hx, hz, (m) => this._add(m)); }
+      return;
+    }
     const S = this.T.scenery.surround[id];
     if (S.ground) this._ground(S.ground, hx, hz);
     this._edgeAndProps(S, id, hx, hz);

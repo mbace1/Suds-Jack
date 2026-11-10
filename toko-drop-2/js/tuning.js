@@ -7,10 +7,10 @@
 // things that work"). The arena is 1.x's, so every 1.x number ports as it is
 // instead of through a rescale. Axes: x across the screen (right +), y up,
 // z toward the bottom of the screen. The arena is centred on the origin.
-import { SPECIES } from './tuning/species/index.js?v=140';
-import WAVES from './tuning/waves.js?v=140';
-import PICKUPS from './tuning/pickups.js?v=140';
-import MUSIC from './tuning/music.js?v=140';
+import { SPECIES } from './tuning/species/index.js?v=141';
+import WAVES from './tuning/waves.js?v=141';
+import PICKUPS from './tuning/pickups.js?v=141';
+import MUSIC from './tuning/music.js?v=141';
 
 export const TUNING = {
   render: {
@@ -544,6 +544,15 @@ export const TUNING = {
     // their feet, snow-capped `rock`s between. Never along the near side
     // v95: a snowfield by DAY, to the approved picture: white snow, pale crystals, blue shadows in the drifts
     ice: { ground: { out: 16, fade: 10, lo: [0.58, 0.66, 0.76], hi: [0.85, 0.9, 0.96], wind: 1.1, wisp: [0.95, 0.97, 1.0], wispGain: 0.12 },
+           // v141: CHIPS of broken ice lying on the sheet (render/leaves.js 'chips'): `n` of them, `size` m long and
+           // `thick` (× its length), in `tones`. Ice on ice — a kick sends one a long way (`drag`, the leaves' is
+           // 3.2), spinning (`spinDrag`), back off the banks and the blocks (`bounce`); one that slides within
+           // `sink` × a hole's radius of its middle goes down it; `lit`: the light it lets through. The rest as the
+           // driveway's leaves
+           chips: { seed: 141, n: 64, size: [0.3, 0.62], thick: 0.42, tilt: 0.12, lie: 0.012, rough: 0.14, shadow: 0.25, lit: [0.2, 0.3, 0.42],
+                    tones: [[0.9, 0.96, 1.0], [0.72, 0.88, 1.0], [0.95, 0.98, 1.0], [0.6, 0.8, 1.0]],
+                    scuff: 0.3, gust: 2.0, gustK: 1.5, minSpeed: 1.0, push: 0.75, carry: 0.55, liftAt: 9, lift: 1.6, max: 16,
+                    drag: 0.75, airDrag: 0.5, fall: 12, spin: 16, spinDrag: 0.7, rest: 0.1, burst: 8, burstR: 3.2, bounce: 0.6, sink: 0.6 },
            edge: { color: 0xbfe6ff, glow: 1.2, width: 0.1, height: 0.04 },
            // v100 (the approved picture's banks): the LEDGE of ice round the floor, never along the near side —
            // blocks `len` m along, `deep` m back, `h` m tall, `gap` m off the floor's edge, turned `tilt` rad at
