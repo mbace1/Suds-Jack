@@ -55,7 +55,7 @@ s.listen(0, '127.0.0.1', async () => {
         localStorage.setItem('hyperDaggerOptsV26', JSON.stringify(Object.assign({ perf: 'high', music: false }, o)));
       }, [season, opts]);
       await p.goto(base + query);
-      await p.waitForFunction(() => window.__hd && window.__hd.debug && window.__hd.debug.getLook, null, { timeout: 90000 });
+      await p.waitForFunction(() => window.__hd && window.__hd.debug && window.__hd.debug.getSeasonLook, null, { timeout: 90000 });
       return { ctx, p, errs };
     };
     const gameWait = (p, sec, until) => p.evaluate(async ([sec, until]) => {
@@ -86,7 +86,7 @@ s.listen(0, '127.0.0.1', async () => {
     // 1. VOID is the control: no look at all
     {
       const { ctx, p, errs } = await open('ember', {}, '?assets=0&season=void');
-      const L = await p.evaluate(() => window.__hd.debug.getLook());
+      const L = await p.evaluate(() => window.__hd.debug.getSeasonLook());
       ok('void: the control has no look (no style, nothing in the air, a plain floor)', L.active === false && L.style === null && L.particles.ambient === 0 && L.fluid.mode === 0, JSON.stringify(L));
       ok('void: no page errors', errs.length === 0, errs.slice(0, 2).join(' | '));
       await ctx.close();
@@ -95,30 +95,30 @@ s.listen(0, '127.0.0.1', async () => {
     for (const season of ['ember', 'inca', 'haul']) {
       const { ctx, p, errs } = await open(season);
       const cdp = await ctx.newCDPSession(p);
-      const menu = await p.evaluate(() => window.__hd.debug.getLook());
+      const menu = await p.evaluate(() => window.__hd.debug.getSeasonLook());
       ok(`${season}: the season declares its own look (${STYLE[season]})`, menu.active && menu.style === STYLE[season], JSON.stringify({ style: menu.style, active: menu.active }));
       ok(`${season}: the air is seeded once, on the menu already`, menu.particles.ambient > 50, `ambient ${menu.particles.ambient}`);
 
       await p.tap('#startBtn');
       await p.waitForFunction(() => window.__hd.debug.getState().state === 'playing', null, { timeout: 60000 });
       await p.evaluate(() => { const d = window.__hd.debug; d.setInvulnerable(true); d.setLife(90); d.freezeDirector(true); });
-      const run = await p.evaluate(() => window.__hd.debug.getLook());
+      const run = await p.evaluate(() => window.__hd.debug.getSeasonLook());
       ok(`${season}: the floor's liquid is the season's (${['none', 'water', 'magma'][FLUID[season]]})`, run.fluid.mode === FLUID[season], JSON.stringify(run.fluid));
 
       // a real kill: the held right stick in EMBER and INCA, the look in HAUL
       await park(p);
       if (season !== 'haul') await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: 640, y: 260, id: 5 }] });
       let killed = false;
-      for (let i = 0; i < 40 && !killed; i++) { await park(p); killed = await gameWait(p, 0.5, 'd.getLook().counts.kill >= 1'); }
+      for (let i = 0; i < 40 && !killed; i++) { await park(p); killed = await gameWait(p, 0.5, 'd.getSeasonLook().counts.kill >= 1'); }
       if (season !== 'haul') await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
-      const L = await p.evaluate(() => window.__hd.debug.getLook());
+      const L = await p.evaluate(() => window.__hd.debug.getSeasonLook());
       ok(`${season}: a shot leaves the hand as light`, L.counts.muzzle >= 1, JSON.stringify(L.counts));
       ok(`${season}: a projectile leaves a trail`, L.counts.trail >= 1, JSON.stringify(L.counts));
       ok(`${season}: a hit throws its sparks`, L.counts.hit >= 1, JSON.stringify(L.counts));
       ok(`${season}: a kill by the season's own weapon fires the season's death`, killed && L.counts.kill >= 1, JSON.stringify(L.counts));
       if (FLUID[season]) {
-        const spilled = await gameWait(p, 3, 'd.getLook().fluid.splatted >= 1');
-        const F = (await p.evaluate(() => window.__hd.debug.getLook())).fluid;
+        const spilled = await gameWait(p, 3, 'd.getSeasonLook().fluid.splatted >= 1');
+        const F = (await p.evaluate(() => window.__hd.debug.getSeasonLook())).fluid;
         ok(`${season}: the kill reaches the floor (${season === 'ember' ? 'a pool' : 'a ring'}) and the field is stepping`, spilled && F.steps > 0, JSON.stringify(F));
       } else {
         ok(`${season}: nothing is spilled on a road that has no floor`, L.fluid.splatted === 0 && L.fluid.steps === 0, JSON.stringify(L.fluid));
@@ -131,7 +131,7 @@ s.listen(0, '127.0.0.1', async () => {
       await p.evaluate(() => { const d = window.__hd.debug; for (const e of [...window.__hd.enemies]) if (e.alive) d.killEnemy(e, 0, -1); });
       // (staged a few units off: on the road a weapon kill happens on top of the
       // eye, where the liquid's box is skipped by design and the sparks carry it)
-      const ich = (await p.evaluate(() => window.__hd.debug.getLook())).ichor;
+      const ich = (await p.evaluate(() => window.__hd.debug.getSeasonLook())).ichor;
       ok(`${season}: an SDF body also dies as a liquid`, ich.bursts >= 1 && ich.live >= 1, JSON.stringify(ich));
       await gameWait(p, 0.25);
       await p.evaluate(() => window.__hd.debug.setTimeScale(0.02));
@@ -144,22 +144,22 @@ s.listen(0, '127.0.0.1', async () => {
       ok(`${season}: the look is on screen — the same frozen frame without it differs`, moved > 0.004, `${(moved * 100).toFixed(2)}% of pixels`);
 
       // OFF is off
-      const off0 = await p.evaluate(() => window.__hd.debug.getLook());
+      const off0 = await p.evaluate(() => window.__hd.debug.getSeasonLook());
       ok(`${season}: EFFECTS OFF — no style in force, the air empty, the floor plain`, off0.active === false && off0.particles.ambient === 0 && off0.fluid.mode === 0, JSON.stringify({ a: off0.active, amb: off0.particles.ambient, f: off0.fluid.mode }));
       await p.evaluate(() => window.__hd.debug.setTimeScale(1));
       await park(p, 2, 6);
       const kills0 = await p.evaluate(() => window.__hd.debug.getRun?.().kills ?? null);
       await p.evaluate(() => { const d = window.__hd.debug; for (const e of [...window.__hd.enemies]) if (e.alive) d.killEnemy(e, 0, -1); });
       await gameWait(p, 0.2);
-      const off1 = await p.evaluate(() => ({ L: window.__hd.debug.getLook(), state: window.__hd.debug.getState().state, enemies: window.__hd.enemies.filter(e => e.alive).length }));
+      const off1 = await p.evaluate(() => ({ L: window.__hd.debug.getSeasonLook(), state: window.__hd.debug.getState().state, enemies: window.__hd.enemies.filter(e => e.alive).length }));
       ok(`${season}: EFFECTS OFF — a kill still kills, and fires nothing`, off1.L.counts.kill === off0.counts.kill && off1.enemies === 0 && off1.state === 'playing', JSON.stringify({ kill: [off0.counts.kill, off1.L.counts.kill], enemies: off1.enemies, kills0 }));
 
       // back on, then the floor tier
       await p.evaluate(() => window.__hd.debug.setOpt('fx', true));
-      const on2 = await p.evaluate(() => window.__hd.debug.getLook());
+      const on2 = await p.evaluate(() => window.__hd.debug.getSeasonLook());
       ok(`${season}: EFFECTS ON brings it back`, on2.active && on2.particles.ambient > 50 && on2.fluid.mode === FLUID[season], JSON.stringify({ a: on2.active, amb: on2.particles.ambient, f: on2.fluid.mode }));
       await p.evaluate(() => { window.__hd.debug.setOpt('perf', 'low'); });
-      const low = await p.evaluate(() => window.__hd.debug.getLook());
+      const low = await p.evaluate(() => window.__hd.debug.getSeasonLook());
       ok(`${season}: the lowest perf tier thins the bursts, empties the air and drops the fluid`, low.tier === 4 && low.particles.budget < 0.35 && low.particles.ambient === 0 && low.fluid.enabled === false, JSON.stringify({ tier: low.tier, b: low.particles.budget, amb: low.particles.ambient, f: low.fluid.enabled }));
       await p.evaluate(() => { window.__hd.debug.setOpt('perf', 'high'); });
 
@@ -180,7 +180,7 @@ s.listen(0, '127.0.0.1', async () => {
       await park(p, 2, 6);
       await p.evaluate(() => { const d = window.__hd.debug; for (const e of [...window.__hd.enemies]) if (e.alive) d.killEnemy(e, 0, -1); });
       await gameWait(p, 0.1);
-      const L = await p.evaluate(() => window.__hd.debug.getLook());
+      const L = await p.evaluate(() => window.__hd.debug.getSeasonLook());
       ok('motion reduced: a kill still bursts, but lights no floor', L.counts.kill >= 1 && L.lights === 0, JSON.stringify({ kill: L.counts.kill, lights: L.lights }));
       ok('motion reduced: no page errors', errs.length === 0, errs.slice(0, 2).join(' | '));
       await ctx.close();

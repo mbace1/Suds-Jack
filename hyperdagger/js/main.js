@@ -4613,7 +4613,7 @@ window.__hd = {
     getFx() { return { smear: afterimage.enabled, chroma: chromaPass.enabled, edge: edgePass.enabled, sphere: spherePass.enabled, threat: threatPass.enabled, rearSignal: threatPass.uniforms.uRear.value, edgeAmt: edgePass.uniforms.uAmt.value, damp: afterimage.uniforms['damp'].value, gridGlow: floorMat.uniforms.uGlow.value, fov: camera.fov, uRed: floorMat.uniforms.uRed.value, bloomStrength: bloom.strength }; },
     getProjection() { return { enabled: spherePass.enabled, worldCaptures: sphereWorldCaptures, threatCaptures: sphereThreatCaptures, worldSize: sphereWorldTarget.width, threatSize: sphereThreatTarget.width }; },
     getEnvironment() { return environment.getState(); },
-    getLook() { return look.getState(); },   // v61 (HD-022): what the season's look has done so far
+    getSeasonLook() { return look.getState(); },   // v61 (HD-022): what the season's look has done so far (getLook is the cube/smooth one)
     getVfx() { return { shadows: shadows.count, sparks: sparks.length, speedOn: speedPass.enabled, rippleT, rippleOn: ripplePass.enabled, ember: skyMat.uniforms.uEmber.value }; },
     /** Everything that could leak over a long run: pool occupancy, scene graph
      *  size, and GPU resource counts. A survival game lives or dies on the
