@@ -19,6 +19,21 @@
     Never `--no-verify`.
 -->
 
+## v139 — 2026-11-10
+**A hole in the ice is broken through, not bored; and the blockers of worlds 3 to 9 belong to their floors — a rock is a mound, and everything stands in what gathers round it**
+- THE ASKS (owner, 2026-11-10): "The holes in ice could be less circular and more like cracked holes with sharp edges", and before it "Can you make the visuals even better? How about the alternative visual options?"
+- A HOLE IN THE ICE IS BROKEN (render/posts.js `shatter`). Its opening is a jagged polygon: eight to eleven corners at uneven angles, some bitten deep, straight between them, inside the circle a body stops at. Round it, out to that circle, lies a collar of broken floes: flat plates, each tipped its own way, some lying low and wet, some split in two, with dark water in the gaps between them. Each straight side of the opening is a wall of the sheet's own ice — a facet of its own brightness, snow-white along its broken top edge, its old layers showing, going blue-dark to the water 0.75 m down — and angular bits of brash float in that water. Cracks run on from the collar's corners: a few straight runs each, turning, thinning out, some forking, each lying in a line of rime. No two holes break alike (each has its own dice, from where it is). What a body can and cannot cross is unchanged: the pit is the same circle in the sim.
+- A ROCK IS A ROCK (the river, the deep): an island is a MOUND heaped inside its outline — steep at its foot, rounded over, lumpy on top — where it was a slab cut out with a cutter. Moss lies on what faces up on a river rock and it is wet and dark at the waterline; a reef is crusted with coralline, and small anemones stand on it. What stands on a mound stands at the mound's height there.
+- EVERYTHING MEETS ITS FLOOR: the stream's foam breaks round a river rock (thick against it, torn to lace further out, lapping), silt is banked against a reef, the flagstones are dark and wet round a sewer pipe's collar and a cistern's plinths and wells, soot lies round a boiler deck, and rime round a hole in the ice.
+- AND EACH WORLD'S OWN HARDWARE: an iron hoop bolted round a sewer collar; a boiler deck riveted round its edge with a pipe run between its two drums; a line of the core's own light round a plinth's top edge.
+- THE OTHER LOOKS: rendered in CEL-SHADED and WATERCOLOR (worlds 6, 7 and 8) and on NEON's floors (worlds 2 and 3). The styles change the gels and the goo and leave the blockers as they are — a rock is not drawn in a gel's ink — and they sit right in both. On NEON a blocker is still v138's slab of dark glass with a lit edge: none of the stone's hardware or bands is drawn there.
+- HARDCADE with the blockers (v137 left it unmeasured): measured now — six skilled bots, 24 seeds, whole runs: 98.7, 91.2, 65.3, 45.8, 46.0, 25.2, 27.2, 29.3 and 21.7% for worlds 1 to 9, against v136's 98.7, 90.5, 61.8, 43.3, 39.2, 31.5, 27.3, 29.8 and 20.0 (read without the blockers, and by the bot that stopped dead at a post where it now slides round). Every world is within seven points, which 24 seeds cannot tell from level, and the ice with its holes reads 27.2 where v136 had it at 27.3. The river is the one to watch — six points down, at the edge of the noise; nothing is retuned on that (docs/CURVE.md).
+- test/view.mjs holds the broken hole: the same hole breaks the same way every time and two holes differently; every corner of the opening lies inside the circle a body stops at; the floes lie between the opening and that circle; the cracks start at the collar's corners.
+- Cache tokens `?v=138` → `?v=139`; HUD label → `2.0 · v139`
+- Cache tokens `?v=138` → `?v=139`; HUD label → `2.0 · v139`
+
+---
+
 ## v138 — 2026-11-10
 **World 2 to the owner's concept, and past it: an old slab, worn curb stones, a puddle with the sky in it, and fallen leaves that are really there**
 - THE ASK (owner, 2026-11-10, with a picture: "Here is a concept art for world 2 but we can go way beyond with geometry and art assets"). The picture is kept (art-ref/world-2-driveway-concept.jpg) and read as traits that can be checked (art-ref/briefs/world-2-driveway.md); the driveway was compared to it trait by trait, render by render.
