@@ -21,11 +21,11 @@
 // (dashPlan). 1.x fires only
 // while the aim is valid AND the trigger is held: a touch or pad aim stick is
 // both at once, a mouse aims all the time and fires only while held.
-import { TUNING } from '../tuning.js?v=133';
-import * as heat from './heat.js?v=133';
-import { BEHAVIOUR } from './species/index.js?v=133';   // read at run time only (a species' hitTest)
-import { slip } from './rules.js?v=133';   // THE FOAM's slick floor
-import * as posts from './posts.js?v=133';
+import { TUNING } from '../tuning.js?v=134';
+import * as heat from './heat.js?v=134';
+import { BEHAVIOUR } from './species/index.js?v=134';   // read at run time only (a species' hitTest)
+import { slip } from './rules.js?v=134';   // THE FOAM's slick floor
+import * as posts from './posts.js?v=134';
 
 const T = TUNING, H = T.hero, L = T.heroLook;
 

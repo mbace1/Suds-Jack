@@ -19,6 +19,14 @@
     Never `--no-verify`.
 -->
 
+## v134 — 2026-11-10
+**A heart room started again shows its heart whole**
+- THE ASK (owner, 2026-11-10: "In campaign mode, save the heart. The previous damage to the heart remains after a restart"). The heart itself was new and whole every time (the sim makes it fresh for each start), but the ring round it that shows what it has left kept the last attempt's: the view's reset marked the ring whole without redrawing it, so a fresh heart matched the mark and the old ring stayed until the heart was next hit. Measured in the game: CLOT bitten to 4/8 and played AGAIN — the new heart 8/8 under half a ring; FLOTSAM bitten to 7/10, quit and started again — 10/10 under 0.7 of a ring.
+- THE FIX (render/challenge.js): the reset marks the ring unknown, so the next room's heart draws its own. Both rooms, both ways back in (AGAIN; QUIT and START), now show the whole ring from the start; a check in test/view.mjs draws a heart at 4/8, resets, and holds the ring at 8/8 to all of it (it fails on v133: 0.5 → 0.5).
+- Cache tokens `?v=133` → `?v=134`; HUD label → `2.0 · v134`
+
+---
+
 ## v133 — 2026-11-10
 **The film builds its shaders before it starts, behind black, and plays without a hitch**
 - THE ASK (owner, 2026-11-09: "It lagged through the intro"). v131's fix was measured and was not enough (a phone-sized window, 390×844, on a software GPU, the film started on world 2): v130 built 43 shaders while the film played, its worst frame 3.8 s; v132 39, worst 2.1 s, 35 of them in the film's first 0.7 s (frames of 0.8, 2.1 and 1.1 s). Starting on a later world puts every lit thing under that world's light, which is a new shader for each, so what the title built does not carry over; and three's compileAsync, which v131 asked on the film's first frame, works through a scene an object a frame — the film drew on and built them itself, blocking.

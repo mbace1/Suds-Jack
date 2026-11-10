@@ -1,8 +1,8 @@
 // maw.js — how MAW looks: WORMA's worm (a bulge under the floor; up, a head
 // and its segments arching back into the stone), five segments long, with a
 // dark ring of a mouth on its head and the boss ring under it.
-import worma from './worma.js?v=133';
-import { auraBuild, auraUpdate, auraReset } from './bossaura.js?v=133';
+import worma from './worma.js?v=134';
+import { auraBuild, auraUpdate, auraReset } from './bossaura.js?v=134';
 
 export default {
   build(ctx) {

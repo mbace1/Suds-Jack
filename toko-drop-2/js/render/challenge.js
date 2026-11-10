@@ -4,7 +4,7 @@
 // that says it is the one that can be hurt. Reads w.ch and nothing else; the
 // gates are pickups.js's, a moving floor is floor.js's.
 import * as THREE from 'three/webgpu';
-import { TUNING } from '../tuning.js?v=133';
+import { TUNING } from '../tuning.js?v=134';
 
 const V = TUNING.campaign.view;
 const flat = (g) => g.rotateX(-Math.PI / 2);
@@ -51,7 +51,10 @@ export class ChallengeView {
   reset() {
     for (const o of this.group.children) o.visible = false;
     for (const o of this.orbs) { this.group.remove(o); o.children[0].material.dispose(); }
-    this.orbs = []; this.arcAt = 1;
+    // v134 (owner, 2026-11-10: "save the heart. The previous damage to the heart remains after a restart"): the arc is
+    // marked unknown, so the next room's heart draws its own; set to 1 (whole), a fresh heart matched it and the arc
+    // went on showing what the last attempt had left (measured: AGAIN on CLOT at 4/8, the new heart 8/8 under half a ring)
+    this.orbs = []; this.arcAt = -1;
   }
 
   sync(w, alpha, time) {

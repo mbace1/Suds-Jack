@@ -15,7 +15,7 @@
 // Tones are factors on the body's own colour (TUNING.style), so a species'
 // colour survives the switch, as it must survive any light.
 import { uniform, float, vec2, vec3, vec4, select, step, smoothstep, dot, normalize, mix, clamp, fract, sin, cameraViewMatrix, normalView, positionViewDirection } from 'three/tsl';
-import { TUNING as T } from '../tuning.js?v=133';
+import { TUNING as T } from '../tuning.js?v=134';
 
 export const STYLES = ['physical', 'cel', 'watercolor'];
 export const STYLE_U = uniform(0);       // 0 physical, 1 cel, 2 watercolor: what the single shaders read
