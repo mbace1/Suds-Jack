@@ -15,23 +15,23 @@
 // that springs in and fades (splats.js). Views are pooled per species, so a
 // gel's material is built once and reused, never compiled mid-fight.
 import * as THREE from 'three/webgpu';
-import { TUNING } from '../tuning.js?v=139';
+import { TUNING } from '../tuning.js?v=140';
 import * as TSL from 'three/tsl';
-import { gelMaterial, domeGeometry, cubeGeometry, heroGeometry, GEL_TIME, GEL_SUN, GEL_GLINT, GEL_CORE } from './gel.js?v=139';
-import { LOOKS } from './looks/index.js?v=139';
-import { styleName, setStyle as setStyleMode, styledBody } from './style.js?v=139';
-import { JellyBody } from './jelly.js?v=139';
-import { Juice } from './juice.js?v=139';
-import { ArenaLight } from './light.js?v=139';
-import { toSdf } from './sdf.js?v=139';
-import { PickupView } from './pickups.js?v=139';
-import { ChallengeView } from './challenge.js?v=139';
-import { PostView } from './posts.js?v=139';
-import { SlamView } from './slam.js?v=139';
-import { HintView } from './hints.js?v=139';
-import { Goo } from './goo.js?v=139';
-import { mult as heatMult } from '../sim/heat.js?v=139';
-import { strands as liveStrands } from '../sim/formation.js?v=139';
+import { gelMaterial, domeGeometry, cubeGeometry, heroGeometry, GEL_TIME, GEL_SUN, GEL_GLINT, GEL_CORE } from './gel.js?v=140';
+import { LOOKS } from './looks/index.js?v=140';
+import { styleName, setStyle as setStyleMode, styledBody } from './style.js?v=140';
+import { JellyBody } from './jelly.js?v=140';
+import { Juice } from './juice.js?v=140';
+import { ArenaLight } from './light.js?v=140';
+import { toSdf } from './sdf.js?v=140';
+import { PickupView } from './pickups.js?v=140';
+import { ChallengeView } from './challenge.js?v=140';
+import { PostView } from './posts.js?v=140';
+import { SlamView } from './slam.js?v=140';
+import { HintView } from './hints.js?v=140';
+import { Goo } from './goo.js?v=140';
+import { mult as heatMult } from '../sim/heat.js?v=140';
+import { strands as liveStrands } from '../sim/formation.js?v=140';
 
 const T = TUNING;
 const B = T.blob, D = T.death;

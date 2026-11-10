@@ -7,10 +7,10 @@
 // things that work"). The arena is 1.x's, so every 1.x number ports as it is
 // instead of through a rescale. Axes: x across the screen (right +), y up,
 // z toward the bottom of the screen. The arena is centred on the origin.
-import { SPECIES } from './tuning/species/index.js?v=139';
-import WAVES from './tuning/waves.js?v=139';
-import PICKUPS from './tuning/pickups.js?v=139';
-import MUSIC from './tuning/music.js?v=139';
+import { SPECIES } from './tuning/species/index.js?v=140';
+import WAVES from './tuning/waves.js?v=140';
+import PICKUPS from './tuning/pickups.js?v=140';
+import MUSIC from './tuning/music.js?v=140';
 
 export const TUNING = {
   render: {
@@ -269,6 +269,15 @@ export const TUNING = {
       sewer: { stone: [0.042, 0.05, 0.058], groutCol: [0.008, 0.009, 0.011], water: [0.007, 0.032, 0.036], waterHi: [0.09, 0.27, 0.25],
                kerbStone: { w: 0.34, joint: 1.15, color: [0.1, 0.1, 0.098], lit: [0.07, 0.08, 0.08], shadow: 0.45 },
                kerb: [0.06, 0.06, 0.062], channel: 2.4, slab: [1.7, 0.85], grout: 0.035, flow: 1.2, wetLight: 0.9,
+               // v140: no two flagstones alike (floor.js sewer). `long`/`short`: the share of pairs along a course that
+               // are one long stone / cut in halves; `tone` how far a stone's brightness strays, between the tints
+               // `cool` and `warm` (and `greens` of them toward `green`); `tilt` how far out of level; the edges worn
+               // round over `bevel` m, lit by `relief` from `sun` (along, across: where the light stands); `crack`
+               // the share cracked across (`crackW` m); `chip` how far a joint's width wanders; the stones `damp`
+               // within `dampReach` m of the channel (and of the walls, 0.6 as far), `slime` in the joints there
+               vary: { long: 0.26, short: 0.16, tone: 0.55, cool: [0.9, 1.0, 1.12], warm: [1.16, 1.04, 0.86], green: [0.86, 1.1, 0.92], greens: 0.18,
+                       tilt: 0.5, bevel: 0.12, relief: 0.5, sun: [-0.55, -0.83], crack: 0.1, crackW: 0.012, chip: 0.8,
+                       damp: 0.3, dampReach: 2.6, slime: [0.03, 0.075, 0.035], slimeK: 0.8 },
                sky: [0.005, 0.014, 0.017],   // v70: the dark past the walls and the gates, a deep teal
                // v78 (owner, 2026-10-31: the waters must differ): PUDDLES on the flagstones —
                // `scale` cells/m, more of them the lower `t`, the stone `dark` under them and the
@@ -288,6 +297,16 @@ export const TUNING = {
       // elsewhere), and no column stumps in the pool (the picture's columns stand at the back): `plinthK` 0
       cistern: { slab: 2.4, grout: 0.04, stone: [0.075, 0.11, 0.115], water: [0.012, 0.085, 0.1], depth: 0.42, caustic: [0.55, 0.95, 1.0],
                  net: { scale: 0.27, sharp: 13, gain: 0.2, inPool: 0.3, speed: 0.22 }, plinthK: 0,
+                 // v141: the pool's floor is laid, not ruled (floor.js cistern). `long`: the share of pairs along a
+                 // row that are one long slab; `small`: the share of slabs that are four small ones; a slab's `tone`,
+                 // between `cool` and `warm` (`greens` of them toward `green`), `tilt` out of level, its edges worn
+                 // over `bevel` m and lit `relief` from `sun`; `sunk`: the share lying `sunkDepth` deeper; `silt` in
+                 // the joints where a noise passes `siltAt`; `border`: a band of `tile` m tiles `w` m wide, `in` m in
+                 // from the pool's edge, `light` and `dark`, `gone` of them missing
+                 vary: { long: 0.24, small: 0.14, tone: 0.5, cool: [0.9, 1.0, 1.1], warm: [1.14, 1.05, 0.9], green: [0.85, 1.12, 0.95], greens: 0.16,
+                         tilt: 0.4, bevel: 0.14, relief: 0.32, sun: [-0.5, -0.86], sunk: 0.07, sunkDepth: 0.32,
+                         silt: [0.2, 0.22, 0.2], siltAt: 0.58, siltK: 0.7,
+                         border: { in: 0.9, w: 0.9, tile: 0.3, grout: 0.022, light: [0.17, 0.25, 0.25], dark: [0.04, 0.075, 0.085], gone: 0.16 } },
                  column: 8, plinth: 0.75, rim: [0.2, 0.6, 0.7],
                  // v71: the cut top of a fallen column in each plinth (`stump` × its
                  // half size), and drip rings: in every `drip.cell` m a drip from the
@@ -299,6 +318,14 @@ export const TUNING = {
       // frame, bars and frame lit by the fire under them, its `core` white-hot in the middle — and fire in the seams
       // along the edge (`veins`: within `reach` m, `width` of a noise's contour at `scale`, `haze` the glow at the foot)
       boiler: { plate: [3.2, 2.1], seam: 0.035, steel: [0.085, 0.07, 0.06], rivet: [0.2, 0.15, 0.11], grate: 7.2, grateW: [0.85, 0.65],
+                // v142: no two plates alike (floor.js boiler). A plate's `tone`, between `blued`, `bare` and `rusty`;
+                // a third are tread plate (lozenges on a `tread` m lattice, `treadK` bright), a third rolled
+                // (`rolledK` streaks), the rest bare and scraped (`scrapeK`); each stands proud of the deck (`bevel` m,
+                // `relief`, lit from `sun`); `patch`: the share with a patch welded on; `rust` blooms `rustK`; and
+                // `temper`: the colours the fire leaves in the steel round a grate, out to `reach` m
+                vary: { tone: 0.5, blued: [0.78, 0.92, 1.2], bare: [1.0, 1.0, 1.0], rusty: [1.3, 0.9, 0.62], tread: 0.16, treadK: 0.5, rolledK: 0.16, scrapeK: 0.22,
+                        bevel: 0.12, relief: 0.5, sun: [-0.5, -0.86], patch: 0.08, rust: [0.16, 0.06, 0.025], rustK: 0.45,
+                        temper: { reach: 1.1, k: 0.6, straw: [1.0, 0.82, 0.42], bronze: [0.85, 0.5, 0.28], purple: [0.55, 0.3, 0.7], blue: [0.3, 0.5, 0.95] } },
                 lattice: { hole: 0.17, pitch: 0.26, frame: 0.12, steel: [0.03, 0.026, 0.024], core: [1.0, 0.85, 0.45], barGlow: 0.18, frameGlow: 0.05 },
                 veins: { reach: 1.6, scale: 0.9, width: 0.025, gain: 1.4, haze: 0.22, pulse: 1.3, color: [1.0, 0.38, 0.07] },
                 glow: [1.0, 0.35, 0.06], scorch: [0.012, 0.008, 0.006], pulse: 1.6, sky: [0.012, 0.008, 0.006],
@@ -308,7 +335,11 @@ export const TUNING = {
       // v95: in DAYLIGHT, to the owner's approved arena picture (the concept handoff): clear turquoise over sand and
       // pebbles, deep teal down the middle, foam at the banks; `flecks` the share of v78's white dashes kept (they
       // fought the bullets, and the picture has none)
-      river: { water: [0.03, 0.36, 0.36], waterHi: [0.36, 0.8, 0.74], flow: 1.6, bank: 0.78, pebble: [0.34, 0.29, 0.2], foam: [0.85, 0.95, 0.95], sky: [0.1, 0.16, 0.08], flecks: 0,
+      // v143: FISH in the river's deep middle (floor.js river `fish`): cells `cell` m (along, across), one in `keep`
+      // holds a fish `len` m long, working its tail `beat` a second, making `swim` m/s upstream; the water `dark`
+      // over it; gone within `shy`[0] m of the hero, all there by `shy`[1]
+      river: { fish: { cell: [3.6, 1.5], keep: 0.34, len: [0.55, 0.95], beat: 5.5, swim: 0.35, dark: [0.35, 0.5, 0.52], k: 0.8, shy: [1.6, 3.6] },
+               water: [0.03, 0.36, 0.36], waterHi: [0.36, 0.8, 0.74], flow: 1.6, bank: 0.78, pebble: [0.34, 0.29, 0.2], foam: [0.85, 0.95, 0.95], sky: [0.1, 0.16, 0.08], flecks: 0,
                // v78: a river that RUNS — streaks `stretch`:1 along the flow at `scale`, lifting the water
                // `lift` toward waterHi; `deep` down the middle (`deepK` of the way), the bed showing
                // through the shallows from `shallow` of the half width to the bank, tinted `shallowTint`
@@ -324,6 +355,9 @@ export const TUNING = {
       // v95: in DAYLIGHT, to the approved arena picture: pale blue ice with white cracks and frost — kept mid blue, not
       // white, so the white hero and the pale gels still stand out on it
       ice: { base: [0.26, 0.46, 0.66], deep: [0.11, 0.26, 0.48], crack: [0.92, 0.97, 1.0], lines: 0.45, scale: 0.35, frost: [0.85, 0.92, 1.0],
+             // v143: SNOW drifted over the pale ice (floor.js ice `snow`): it lies where the sheet's broad field passes
+             // `at` (`soft` to full), broken at `scale`, `k` thick in `color`, ridged `ridge` across the `wind` every 1/`ripple` m
+             snow: { at: 0.56, soft: 0.05, scale: 0.4, k: 0.55, color: [0.74, 0.82, 0.92], wind: [0.8, 0.6], ripple: 5, ridge: 0.07, scallop: 0.012 },
              ledgeShadow: { depth: 0.35, soft: 0.25, cotMax: 2.2 },   // v100: the ledge's sun shadow on the ice (scenery.ice.ledge)
              // v100: the FRACTURES — plates `cell[0]` m across with cracks `width[0]` m wide between them (half widths),
              // finer cracks across the plates (`cell[1]`, `width[1]`, `minor` as bright), the field warped `warp` m over
@@ -337,14 +371,24 @@ export const TUNING = {
       // v101 (the approved picture's seabed): the `bed` — silt in lumps `cell` m across from `lo` to `hi`, `swept`
       // brighter in a band `band` of the half width down the middle, `cold` within `coldReach` m of the edge; the
       // specks in POOLS round the deep's lights (`poolR` × each light's r, `poolGlow`, `strays` elsewhere), `green`
-      deep: { silt: [0.006, 0.008, 0.02], ripple: [0.012, 0.018, 0.04], glow: [0.2, 0.5, 1.0], glow2: [0.5, 1.0, 0.7], specks: 2.6, sky: [0.002, 0.004, 0.01],
+      // v143: the seabed's FINDS (floor.js deep `finds`): the silt's ripples `relief` lit and dark; in cells `cell` m
+      // one in `keep` holds a starfish (`stars` of them, `star` m across the arms, `starLo`…`starHi`) or a scallop's
+      // shell (`shell` m, `shellCol`)
+      deep: { finds: { cell: 3.1, keep: 0.3, stars: 0.5, relief: 0.1, star: 0.34, starLo: [0.2, 0.05, 0.04], starHi: [0.3, 0.12, 0.05], shell: 0.2, shellCol: [0.16, 0.15, 0.14], k: 0.9 },
+              silt: [0.006, 0.008, 0.02], ripple: [0.012, 0.018, 0.04], glow: [0.2, 0.5, 1.0], glow2: [0.5, 1.0, 0.7], specks: 2.6, sky: [0.002, 0.004, 0.01],
               bed: { cell: 0.9, lumpK: 0.45, lo: [0.03, 0.026, 0.022], hi: [0.1, 0.078, 0.05], swept: 1.35, band: 0.45, cold: [0.012, 0.03, 0.06], coldReach: 3, coldK: 0.65,
                      ripple: 0.5, poolR: [0.25, 0.75], poolGlow: 0.05, strays: 0.12, green: 0.85 } },
       // v101 (the approved picture and module sheet): `tiles` — dark tiles `cell` m on a magenta grid (`line` of the
       // tile, glowing `lineGlow`), two disc `pads` (fractions of the half sizes) `padR` m, glowing `padGlow`, rings
       // every `ringEvery` m washing out to `reach` m at `ringSpeed`, lighting the lines (`washGlow`) and the floor
       core: { base: [0.004, 0.0, 0.008], line: [0.8, 0.1, 0.7], pulse: [0.3, 0.9, 1.0], cell: 1.6, ringEvery: 2.4, ringSpeed: 4.5, sky: [0.006, 0.002, 0.01],
-              tiles: { cell: 2.2, line: 0.045, tile: [0.016, 0.012, 0.022], line_: [1.0, 0.18, 0.72], lineGlow: 0.55, glow: [1.0, 0.25, 0.7],
+              // v143: the deck is a machine's (floor.js core `vary`): `vents` of the tiles are slotted (`slots` to a tile,
+              // the core's light `ventGlow` under them), `lamps` of them carry a status `lamp`; and `packet`s of light
+              // run along the grid's lines — one every `every` tiles, `len` of that long, `speed` tiles a second, on
+              // `lanes` of the lines
+              tiles: { vary: { vents: 0.16, slots: 7, ventGlow: 0.035, lamps: 0.14, lamp: [0.25, 0.85, 1.0],
+                               packet: { every: 5, len: 0.12, speed: 0.5, lanes: 0.45, color: [0.5, 0.95, 1.0], gain: 0.9 } },
+                       cell: 2.2, line: 0.045, tile: [0.016, 0.012, 0.022], line_: [1.0, 0.18, 0.72], lineGlow: 0.55, glow: [1.0, 0.25, 0.7],
                        pads: [[-0.32, 0.18], [0.3, -0.22]], padR: 1.5, padGlow: 0.85, ringEvery: 2.2, ringSpeed: 0.45, reach: 9, washGlow: 1.2, washFloor: 0.035, halo: 0.06 } },
     },
   },

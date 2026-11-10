@@ -13,9 +13,9 @@
 // Every number is TUNING.scenery.driveway.leaves.
 import * as THREE from 'three/webgpu';
 import { uv, vec3, float, abs, smoothstep, mix } from 'three/tsl';
-import { TUNING } from '../tuning.js?v=139';
-import { seeded } from './kit.js?v=139';
-import { SUN_AT } from './sun.js?v=139';
+import { TUNING } from '../tuning.js?v=140';
+import { seeded } from './kit.js?v=140';
+import { SUN_AT } from './sun.js?v=140';
 
 const T = TUNING;
 

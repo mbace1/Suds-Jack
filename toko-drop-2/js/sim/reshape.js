@@ -17,7 +17,7 @@
 //   reshape      { hx, hz }                        the walls start to move
 //   reshaped     { hx, hz }                        they are there
 // Every number is TUNING.survival.reshape.
-import { TUNING } from '../tuning.js?v=139';
+import { TUNING } from '../tuning.js?v=140';
 
 const T = TUNING;
 

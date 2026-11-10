@@ -19,148 +19,21 @@
     Never `--no-verify`.
 -->
 
-## v139 — 2026-11-10
-**A hole in the ice is broken through, not bored; and the blockers of worlds 3 to 9 belong to their floors — a rock is a mound, and everything stands in what gathers round it**
-- THE ASKS (owner, 2026-11-10): "The holes in ice could be less circular and more like cracked holes with sharp edges", and before it "Can you make the visuals even better? How about the alternative visual options?"
-- A HOLE IN THE ICE IS BROKEN (render/posts.js `shatter`). Its opening is a jagged polygon: eight to eleven corners at uneven angles, some bitten deep, straight between them, inside the circle a body stops at. Round it, out to that circle, lies a collar of broken floes: flat plates, each tipped its own way, some lying low and wet, some split in two, with dark water in the gaps between them. Each straight side of the opening is a wall of the sheet's own ice — a facet of its own brightness, snow-white along its broken top edge, its old layers showing, going blue-dark to the water 0.75 m down — and angular bits of brash float in that water. Cracks run on from the collar's corners: a few straight runs each, turning, thinning out, some forking, each lying in a line of rime. No two holes break alike (each has its own dice, from where it is). What a body can and cannot cross is unchanged: the pit is the same circle in the sim.
-- A ROCK IS A ROCK (the river, the deep): an island is a MOUND heaped inside its outline — steep at its foot, rounded over, lumpy on top — where it was a slab cut out with a cutter. Moss lies on what faces up on a river rock and it is wet and dark at the waterline; a reef is crusted with coralline, and small anemones stand on it. What stands on a mound stands at the mound's height there.
-- EVERYTHING MEETS ITS FLOOR: the stream's foam breaks round a river rock (thick against it, torn to lace further out, lapping), silt is banked against a reef, the flagstones are dark and wet round a sewer pipe's collar and a cistern's plinths and wells, soot lies round a boiler deck, and rime round a hole in the ice.
-- AND EACH WORLD'S OWN HARDWARE: an iron hoop bolted round a sewer collar; a boiler deck riveted round its edge with a pipe run between its two drums; a line of the core's own light round a plinth's top edge.
-- THE OTHER LOOKS: rendered in CEL-SHADED and WATERCOLOR (worlds 6, 7 and 8) and on NEON's floors (worlds 2 and 3). The styles change the gels and the goo and leave the blockers as they are — a rock is not drawn in a gel's ink — and they sit right in both. On NEON a blocker is still v138's slab of dark glass with a lit edge: none of the stone's hardware or bands is drawn there.
-- HARDCADE with the blockers (v137 left it unmeasured): measured now — six skilled bots, 24 seeds, whole runs: 98.7, 91.2, 65.3, 45.8, 46.0, 25.2, 27.2, 29.3 and 21.7% for worlds 1 to 9, against v136's 98.7, 90.5, 61.8, 43.3, 39.2, 31.5, 27.3, 29.8 and 20.0 (read without the blockers, and by the bot that stopped dead at a post where it now slides round). Every world is within seven points, which 24 seeds cannot tell from level, and the ice with its holes reads 27.2 where v136 had it at 27.3. The river is the one to watch — six points down, at the edge of the noise; nothing is retuned on that (docs/CURVE.md).
-- test/view.mjs holds the broken hole: the same hole breaks the same way every time and two holes differently; every corner of the opening lies inside the circle a body stops at; the floes lie between the opening and that circle; the cracks start at the collar's corners.
-- Cache tokens `?v=138` → `?v=139`; HUD label → `2.0 · v139`
-- Cache tokens `?v=138` → `?v=139`; HUD label → `2.0 · v139`
-
----
-
-## v138 — 2026-11-10
-**World 2 to the owner's concept, and past it: an old slab, worn curb stones, a puddle with the sky in it, and fallen leaves that are really there**
-- THE ASK (owner, 2026-11-10, with a picture: "Here is a concept art for world 2 but we can go way beyond with geometry and art assets"). The picture is kept (art-ref/world-2-driveway-concept.jpg) and read as traits that can be checked (art-ref/briefs/world-2-driveway.md); the driveway was compared to it trait by trait, render by render.
-- THE SLAB is an old one: big pours (a joint every 8 m, where it was a tile grid every 4), warm ochre in the sun and cool in the shade, damp in broad patches and bleached in others, dirt along the joints and against the curb, and moss grown out of both; the storm drain stands in the damp that has run to it for years.
-- NO TWO POURS ALIKE (owner, the same day: "Can we make the concrete ground in world 1 look better (more detailed) and maybe with better slate visual variety" — read as the driveway's slabs, the one concrete floor there is). Each pour has a number of its own, and from it: its tone and warmth, which way the float was dragged over it (a third one way, a third the other, a third floated smooth), how far the whole pour leans damp or bleached, its frost pitting, and a mottling that stops at its joints. Some were SAW-CUT in two or in four, and the pieces have weathered apart. Here and there a square was dug out and poured again: a REPAIR, paler and smoother, with a cut edge. The pours have SETTLED: along a joint one stands a little proud of the next, its edge catching the light and the low one's lying in the step's shade. The joints themselves have opened here and held there.
-- PUDDLES, two, at the edges (a bright pool in the middle of the fight would hide shots): each shows the evening sky with cloud drifting over, the trees' crowns dark across it, the low sun's glitter, and rings going out from where the hero stands near it. The slab round them is dark and wet.
-- THE CURB is worn stones: each its own length and height, a little out of line, its ends rounded over, stained down its faces, lichen on top, moss in the seams and at its foot. The islands that block the floor (v137) are edged with the same stones.
-- FALLEN LEAVES (render/leaves.js), real ones: 150 on the slab, thicker toward its edges, heaps in the far corners, more on the lawn — a cupped, curled blade with a midrib, its own autumn colour, its own shadow. And they are there: a body going by scuffs them along, a dash blows them out of its road, a burst throws them up; they tumble, settle against the curb and stay where the fight left them. Looks only — the sim never knows them.
-- THE LAWN is rough and lived in: darker clumps, dry patches, daisies in clumps past the curb, more tufts of grass along it. The light is the golden hour's: the sun warmer and stronger, the sky's shade cooler.
-- On NEON's floors (the title's other look for worlds 2 and 3) a blocker is a slab of dark glass with its edge lit in the floor's line colour: a lawn in a kerb of stone had no place on a grid of light.
-- Cost: the slab's and the lawn's new marks are read off noise their shaders already made (the first cut added about a fifth to world 2's frame on the software GPU; measured against v137 on the software GPU, six runs a side, the driveway now costs about a tenth more a frame, inside that machine's run-to-run spread; the slab's per-pour numbers are spun off one hash a slab, where a sine each had cost a tenth more again). test/view.mjs holds the leaves: seeded, scuffed by a walk, blown by a dash and not by a walk at the same distance, thrown by a burst, at rest again, never inside a blocker, the lawn's never moved.
-- Still different from the picture, on purpose: no curb along the near side (the standing rule), the game's own camera, and the game's own blockers and beach ball.
-- Cache tokens `?v=137` → `?v=138`; HUD label → `2.0 · v138`
-- Cache tokens `?v=137` → `?v=138`; HUD label → `2.0 · v138`
-
----
-
-## v137 — 2026-11-10
-**The blockers block out the floor: rounded islands and footprints of each world's own material, and pits**
-- THE ASK (owner, 2026-11-08: "the circular level blockers look weird, they should block the levels out more around it somehow"; shown four pitches — footprints, islands, walls, pits — 2026-11-10: "Mix of A and B, so always rounded. But we need the pits somewhere as well"). No blocker is a small circle dropped on the floor any more (sim/posts.js, render/posts.js, TUNING.posts):
-  - FOOT: a post stands on a round base of its floor's own material, and the base is what blocks — the sewer's pipe stubs in brick collars, the cistern's broken columns on stepped stone plinths, the ice's blocks riding pans of floe ice, the core's crystals on plinths that go round with them.
-  - ISLAND: a raised slab whose outline is the union of a few circles drawn as one smooth curve, so always rounded, with the world's things standing on it — the driveway's traffic islands (its own curb round a lawn, a bollard at each end and a shrub between), the boiler's riveted decks with two drums each, the river's rock islands with their boulders, the deep's reef mounds with coral on them. Every circle blocks as a post does, so nothing that meets one needed a new rule.
-  - PIT: a hole in the floor that nothing walks over and every shot flies over — two wells in the cistern (a ring of its stone, dark water under) and two holes cut in the ice (its blue walls going dark to the water). Each is a disc whose every pixel follows its own view ray down into the cylinder under it, so the far wall shows as you move.
-- A shot flies over what is low — an island's slab, a post's foot — and stops on what stands on it: the post at its own size, an island's props. Slabs that stopped shots made the river and the deep about 20 points harder (bodies sheltering behind them where you could not shoot); over them, the worlds started on their own read within a few points of the old blockers (the sewer 88 → 82, the boiler 72 → 68, the river 60 → 54, the deep 51 → 50), where slabs that stopped shots read 89, 63, 40, 32.
-- The bots slide round a blocker as the game slides you round one (sim/posts.js push): their planner stopped dead at a post, which made every path that touched one a dead end, and blockers this size made that most paths (scripts/bot.mjs).
-- Measured, whole runs, six skilled bots × 24 seeds, old blockers against new on the same bot: ARCADE 98.7, 95.8, 93.2, 86.3, 75.8, 69.5, 70.8, 53.5, 41.5 where the old blockers read 98.7, 95.8, 87.0, 79.2, 77.0, 62.7, 71.7, 59.5, 40.3 — every world within seven points, some up and some down, which is what 24 seeds cannot tell from level. HARDCADE is not measured with the new blockers yet (its ice now has holes in it): the next version's job.
-- Nothing is put down inside a blocker or a pit (a wave's group landed round a cleared point, and an island is big enough to take one of it); the ice's blocks glance off its holes' rims; its holes sit where its drifting floe (wave 7) always holds them; a world's pits share one shader.
-- Cache tokens `?v=136` → `?v=137`; HUD label → `2.0 · v137`
-
----
-
-
-## v136 — 2026-11-10
-**HARDCADE's BERG lunges at you, and lunges again**
-- THE ASK (owner, 2026-11-10, asked what to do about HARDCADE's ice playing easier than its river: "New BERG attack (HARDCADE)"). The ice's waves cost about what the river's do; its boss did not kill — BERG's icicle walls are told and walked round (5 of HARDCADE world 7's deaths at its boss, against PIKE's 47 at the river's). In HARDCADE only, while BERG slides it now LUNGES: no frost and no lane, it turns on you at three times its slide for 0.6 s — then, 0.3 s after, turns on you and lunges again — every 2.2–3.4 s. Nothing tells the first; the beat before the second is the time a person has to read it. ARCADE's BERG and the campaign's (HARD PAIN too) are as they were.
-- How it was found (HARDCADE world 7 on its own, six skilled bots × 24 seeds, mean clears; the river 27.8, the deep 28.5): as it was 46.5; a lunge alone 41.8 (2.4×) → 32.8 (3×, more often) and no lower whatever its speed, length or pace (3.4×: 32.7, 0.85 s: 34.3, every 1.6–2.6 s: 34.2); aimed where you are going 38.3 (the bots stepped out of it); shards thrown as it turns 37.7 (they kept the bots away); a second lunge straight after the first 20.3–22.3 whatever its speed or pace (the re-aim is what the bots cannot read); a second one half the time 29.8; **a second one 0.3 s after the first 26.5** (BERG's own deaths 78, PIKE's 73) — the one kept, the beat being what a person needs.
-- Measured as shipped: the whole HARDCADE run (six skilled bots × 24 seeds, each world walked into with what the run carried) clears world 7 **27.3%** of the time where v127 measured 41.7 — the river before it 31.5, the deep after it 29.8, worlds 1–6 within a point of v127's. The bump is gone; world 7 sits 2.5 under the deep, inside what 24 seeds can tell apart. (Started bare it reads 34.2: a world on its own and a run that carries its lives in are different instruments, docs/CURVE.md.).
-- Cache tokens `?v=135` → `?v=136`; HUD label → `2.0 · v136`
-
----
-
-## v135 — 2026-11-10
-**The campaign's C lines where a beginner reaches them: 26 lowered, nothing raised**
-- THE ASK (owner, 2026-11-10, asked the C-line rule measured at v128 and shown before it shipped: "Yes, lower them"). C is a room's passing grade — under it the room is an F and the next stays shut — and v121's stand-in beginner stopped at THREE RINGS, through three times and each time just under its C line of 20,000. The rule: C at the beginner bot's lower quartile (it was its median), every room, both routes; S, A and B do not move, and a line never goes up. 26 C lines come down (each room's tiers `source` says so); the beginner bot now clears C about three times in four where it cleared it about half the time (THREE RINGS 54% → 75%, PULSE 41% → 76%, HARD PAIN NEEDLE 27% → 82%). HIGH GROUND, the other flag, was drawn again on 48 seeds and stays.
-- The 26, from → to:
-
-| room | route | C was | C now |
-|---|---|---|---|
-| THREE RINGS | normal | 20,000 | 15,000 |
-| IN ORDER | normal | 7,000 | 6,900 |
-| EDDY | normal | 3,500 | 3,400 |
-| THE SLUDGE | normal | 7,800 | 7,000 |
-| FLOTSAM | normal | 22,000 | 18,000 |
-| SLUG RUN | normal | 3,500 | 3,100 |
-| UNDERTOW | normal | 3,300 | 3,200 |
-| SPLITTER | normal | 5,400 | 5,200 |
-| CLOT | normal | 35,000 | 30,000 |
-| PULSE | normal | 24,000 | 20,000 |
-| NEEDLE | normal | 13,000 | 11,000 |
-| THE PULL | normal | 5,200 | 5,000 |
-| RINK | normal | 6,200 | 6,100 |
-| SALMON | normal | 12,000 | 11,000 |
-| ANVIL | normal | 2,900 | 2,800 |
-| GATE RUN | HARD PAIN | 32,000 | 27,000 |
-| IN ORDER | HARD PAIN | 12,000 | 11,000 |
-| EDDY | HARD PAIN | 5,500 | 5,300 |
-| THE SLUDGE | HARD PAIN | 12,000 | 11,000 |
-| FLOTSAM | HARD PAIN | 34,000 | 31,000 |
-| SPLITTER | HARD PAIN | 8,000 | 7,900 |
-| NEEDLE | HARD PAIN | 19,000 | 16,000 |
-| THE PULL | HARD PAIN | 7,900 | 7,200 |
-| SIX SHOTS | HARD PAIN | 5,000 | 3,900 |
-| RINK | HARD PAIN | 9,900 | 9,200 |
-| SALMON | HARD PAIN | 18,000 | 17,000 |
-- Decided the same day: the itch page is PAY WHAT YOU WANT (docs/ITCH.md); the upload is the owner's.
-- Cache tokens `?v=134` → `?v=135`; HUD label → `2.0 · v135`
-
----
-
-## v134 — 2026-11-10
-**A heart room started again shows its heart whole**
-- THE ASK (owner, 2026-11-10: "In campaign mode, save the heart. The previous damage to the heart remains after a restart"). The heart itself was new and whole every time (the sim makes it fresh for each start), but the ring round it that shows what it has left kept the last attempt's: the view's reset marked the ring whole without redrawing it, so a fresh heart matched the mark and the old ring stayed until the heart was next hit. Measured in the game: CLOT bitten to 4/8 and played AGAIN — the new heart 8/8 under half a ring; FLOTSAM bitten to 7/10, quit and started again — 10/10 under 0.7 of a ring.
-- THE FIX (render/challenge.js): the reset marks the ring unknown, so the next room's heart draws its own. Both rooms, both ways back in (AGAIN; QUIT and START), now show the whole ring from the start; a check in test/view.mjs draws a heart at 4/8, resets, and holds the ring at 8/8 to all of it (it fails on v133: 0.5 → 0.5).
-- Cache tokens `?v=133` → `?v=134`; HUD label → `2.0 · v134`
-
----
-
-## v133 — 2026-11-10
-**The film builds its shaders before it starts, behind black, and plays without a hitch**
-- THE ASK (owner, 2026-11-09: "It lagged through the intro"). v131's fix was measured and was not enough (a phone-sized window, 390×844, on a software GPU, the film started on world 2): v130 built 43 shaders while the film played, its worst frame 3.8 s; v132 39, worst 2.1 s, 35 of them in the film's first 0.7 s (frames of 0.8, 2.1 and 1.1 s). Starting on a later world puts every lit thing under that world's light, which is a new shader for each, so what the title built does not carry over; and three's compileAsync, which v131 asked on the film's first frame, works through a scene an object a frame — the film drew on and built them itself, blocking.
-- THE FIX (main.js warmDraw): the film HOLDS on black for one frame in which the whole scene is drawn into a corner eight pixels square — everything shown and nothing culled, every empty pool given one of its kind — and then the film itself at the eight moments it switches things on (its cards, the gather, the land, the grid, the eyes, the HUD); the black drawn over it is all that shows, and the film is put back at its start. It rolls, with its sound, once the GPU reports that work done (WebGPU's queue, WebGL 2's fence), three seconds at most. A press during the hold still skips into the run; a capture (the clips, the shots) runs unheld.
-- Measured the same way: no shader is built during the film now (all 49 in the held frame), its frames run at a median 100 ms on the software GPU (v132 150, v130 267); the price is the black before the logo, all of it the GPU compiling — about six seconds on the software GPU; a phone's own GPU compiles far faster, which the PLAY RECORD's frame times will say.
-- Not covered: the TILT-SHIFT lens draws through its own pipeline; the hold builds for it all the same (its pass is the one drawn), but it was not measured.
-- Fixed on the way: v131's compile on the film's first frame is gone (the hold replaces it).
-- Cache tokens `?v=132` → `?v=133`; HUD label → `2.0 · v133`
-
----
-
-## v132 — 2026-11-09
-**Every shadow grows out of its body — as wide as the body where it leaves it, darkest at the foot — and the domes stand on the widest of themselves**
-- THE ASK (owner, 2026-11-09: "Shadows should not be as circular at the point where they connect with character, because now that makes them look like they are floating"). Read off crops of the driveway beside the owner's golden-hour concept: v128–v131's shadow was an ellipse whose round end met the body NARROWER than the body and was darkest two radii out, so each body hung over a separate blob; v131's round contact shade drew a ring round every foot; and on the gels there was hardly a shadow to see at all — the light through the jelly, laid as a long coloured patch down the shadow, washed it out (a glowing tail where the concept has dark).
-- THE SHADOW (render/light.js, where a world casts hard shadows: the driveway): each body throws its own projection — the foot it stands on, then the rest of it laid away from the sun. A dome's and a ball's is the foot and half of the ellipse its top throws (the exact shadow of a dome); a bollard's runs straight on to a round cap, a cube's to a square one. So it leaves the body at the body's full width, with no neck and no round cap at the foot, sharpest and darkest there, softer and lighter toward its tip (TUNING.worlds.light.driveway.shadow.cast). One quad a body, its shape carried in the instance colour; v131's contact disc is gone. A jelly dome's shadow runs half as far again as a dome one radius tall would in this sun (`dome` 1.45) — the concept's length, a choice of the look rather than the sun's geometry.
-- THE POOL: the light through each gel now pools in its shadow just past its foot (`caustic` at 1.0 radius on, 0.42 × 0.36 radii, 0.7 as bright), not along the shadow's length.
-- THE DOMES (the owner's v131 ask, "flatter and close to the ground", taken one step further): 1.x cut its sphere 0.7 below the middle — 85% of a ball, widest above the floor and curling in under itself, so the floor showed lit under every rim. Cut 0.25 below (TUNING.blob.domeCut), a dome stands on the widest of itself, about one radius tall, as the concept's; v131's squat goes back to 1 (the lower cut makes the height). The jelly death's halves, the lids and crowns on the domes and the lean all read the same cut. The species' shapes stay 1.x's.
-- Fixed on the way: the itch check took the build's number from the first `?v=` on the page, which since v131 is the arcade's HOME button script (it read v230 for v131); it reads main.js's now.
-- Unchanged: the sim (a body's reach and hits are its radius), the rules, the lines; the worlds without a hard sun keep their soft shadow.
-- Cache tokens `?v=131` → `?v=132`; HUD label → `2.0 · v132`
-
----
-
-## v131 — 2026-11-09
-**The bodies sit on the ground — flatter domes, a shade where each one meets the slab, its shadow from its foot — and the opening film is the one it was, in the owner's letters, smooth, and shows nothing of a later world**
-- THE FILM (owner, 2026-11-09: "The Toko Midori Games text should still be horizontal like before, then camera moves to Toko to show Drop. And so on, see how it was before, just needs the new text now"): v130 had stacked the words as the owner's block; the film is back to its own staging — "Toko Midori Games" on one line beside the face, MIDORI goes, the camera comes in on Toko and "drop" comes in under it — with only the letters the owner's (each word on one baseline, the same height, the brand's one-line setting; no ™, the original has none), and "drop" made of the same letters.
-- THE ASK (owner, 2026-11-09): "the enemy and characters look like they are full circles floating with the new shadow. They should be flatter and close to the ground". v128's hard shadow started a body's length away from it, narrow where it began, so in the low sun every body read as a ball hanging over its shadow. Now a shadow runs from the foot to where the top's shadow falls (its height × cot θ: a dome short, a cube and a bollard longer), as wide as the body where it starts, and every body sits in a soft CONTACT shade where it meets the slab (render/light.js; the driveway's light, TUNING.worlds.light.driveway.shadow). And a dome stands about its own radius now, not most of a ball: every dome is drawn SQUAT (TUNING.blob.squat 0.8, on the body's squash node — its shapes stay 1.x's, which the species checks hold them to), so from the camera it is a dome, not a circle; its death halves and its shadow's length follow, and the goo lands on the lower tops.
-- THE ASK, TOO ("It lagged through the intro and also it showed world 2 environment art when it started"): a run that starts on a later world plays the film over that world, and the driveway's bollards and beach ball stood under the logo and beside the falling drop — they wait with the world's set now, until the grid reaches the rail. And the lag: that world's floor, set and posts compiled their shaders mid-film (v128's floor is the dearest yet); they are compiled on the film's first frame, off the frame loop, while hidden. The floor, which is the void until the drop lands, is not drawn until then, and the lockup's cards are painted and sent to the GPU on the title, not in the film's first second.
-- THE WAY HOME (owner: "drop 2.0 needs the hub button at the top left"): the arcade's HUB button, as every other cabinet has (the hub's own hub/shell.js: top-left, and a held Start or Back goes home too), loaded only where the game stands in the arcade — the itch build and a local checkout have no hub beside them — with the score and lives moved down under it when it is there.
-- Unchanged: the sim (a body's reach and hits are its radius, as before), the rules, the lines.
-- Cache tokens `?v=130` → `?v=131`; HUD label → `2.0 · v131`
-
----
-
-## v130 — 2026-11-09
-**The opening logo says the owner's words in the owner's letters: Toko, Midori and Games as their original sets them — and "drop" made of the same letters**
-- THE ASK (owner, 2026-11-09, with their lockup: "the text in the beginning logo is a bit wrong, please use this instead"). The intro drew "Toko Midori Games™" on one line in letters drawn by eye before the original was found (an M with a slash through it, a G that was a C, a boxed a and e). The brand has since TRACED the owner's original (toko/js/wordmark.js, 99.2% of its pixels), and the intro now draws that (intro/wordmark.js, vendored from it): Toko set large, Midori and Games under it, flush both sides, and no ™ — the original carries none. The face stays as it was (the owner, to the brand: "the face part is good"), as tall as the block beside it, as in the brand's lockup.
-- "drop": MIDORI and GAMES go, and "drop" comes in where Midori stood, built from the owner's own letters — Midori's d, r and o, and a p that is the d turned half round, its stem below the line where the drop gathers. The camera's shots are refitted to the stacked lockup, on a landscape screen and an upright phone.
-- Unchanged: the rest of the film, the sim, the rules, the lines.
-- Cache tokens `?v=129` → `?v=130`; HUD label → `2.0 · v130`
+## v140 — 2026-11-10
+**The floors of worlds 3 to 9, past their concepts: no two flagstones, slabs or plates alike — and fish in the river, snow drifted over the ice, starfish on the seabed, light running through the core's deck**
+- THE ASK (owner, 2026-11-10): "Also look at all other worlds, and like said we can do a lot better than the concept art". The driveway got pours that differ (v138); this is the same for the seven worlds after it. Each floor was a single material ruled by joints. Now each is made of pieces, and has places in it.
+- THE SEWER (3) is STONES. The courses start where they start (each was offset by exactly half a stone); of each pair along a course about a quarter are ONE long stone and a sixth are cut in halves. Every stone has its own tone and its own tint between a cool blue-grey and a warm brown-grey (a few greenish), lies a little out of level, and is worn round at its edges — the edge toward the light bright, the one away from it dark, so it reads as stones lying in a floor and not as a drawing of joints. One in ten is cracked across. Within 2.6 m of the channel, and at the walls' feet, the stones lie damp, and slime has taken in the joints.
+- THE CISTERN (4) is LAID: long slabs and slabs of four small tiles among the square ones, each its own tone and tint, out of level, its edges catching the light through the water; a slab here and there has SUNK and lies deeper, in its neighbours' shade; silt has settled pale in the joints in patches; and round the pool, 0.9 m in from its edge, runs a BORDER of small tiles, light and dark, some of them gone. The border follows the pool's edge as it stands (a wave's floor may be smaller than the room) and is left out of a room whose floor is not a rectangle.
+- THE BOILER (5) is PLATES: each its own tone, blued or bare or rusting; a third are TREAD plate (rows of raised lozenges catching the light), a third were rolled and show it, the rest are bare and scraped; each stands a hair proud of the deck, lit on one edge and shaded on the other; a few carry a PATCH welded on, with its bead; rust blooms where the soot is not; and round every grate the steel is TEMPERED by the fire under it — straw, bronze, purple, blue, going out.
+- THE RIVER (6) has FISH: dark shapes holding against the current in the deep middle, a loose school here and there, each working its tail; they make upstream slowly, and scatter from where you stand. Under the water: they darken it, they are not drawn on it.
+- THE ICE (7) has SNOW: it has drifted over the pale ice, its edge scalloped and its surface ridged across the wind, the cracks gone under it, and the dark windows between are swept clear. The sheet has places now.
+- THE DEEP (8) has FINDS: the ripples in the silt have a lit side and a dark one, and here and there lies a starfish or a scallop's shell, each in its own place at its own angle.
+- THE CORE (9) is a MACHINE's deck: some tiles are VENTS (a block of slots, the core's light faint under them), some carry a status LAMP that blinks on its own beat, and light RUNS along the grid's lines in packets, each lane at its own speed and most lanes quiet.
+- Cost: every stone, slab, plate, tile, fish and find is arithmetic on one hash, the rest of its numbers spun off that one (v138's lesson); the sewer's and the cistern's old per-piece noise went to pay for it. Measured against v139 on the software GPU (portrait, the set alone): the sewer, the cistern and the boiler cost between a twentieth and a tenth more a frame, the ice about a twentieth, and the river, the deep and the core nothing that machine can tell from its own run-to-run spread.
+- Checked by render: every world in both orientations on WebGPU, and all seven on the WebGL 2 fallback, with no shader or page error (a derivative may not sit in a branch on WebGPU, v68: the fish's and the finds' edges take a pixel's width from outside theirs). test/view.mjs holds what must not overlap: a piece's kind is read off one hash against shares, so the sewer's long and cut stones, and the core's vents and lamps, may not add up past the whole; the cistern's border fits inside its pool; the boiler's temper colours stop short of the next grate; the fish and the finds fit their cells; the snow is a dusting the floor shows through (7 checks).
+- The v13x entries are rolled into the Archive, one line each.
+- Cache tokens `?v=139` → `?v=140`; HUD label → `2.0 · v140`
+- Cache tokens `?v=139` → `?v=140`; HUD label → `2.0 · v140`
 
 ---
 
@@ -168,6 +41,16 @@
 
 One line per version; the full entries are in git history (`git log -p VERSIONS.md`).
 
+- **v139** (2026-11-10) — A hole in the ice is broken through, not bored; and the blockers of worlds 3 to 9 belong to their floors — a rock is a mound, and everything stands in what gathers round it
+- **v138** (2026-11-10) — World 2 to the owner's concept, and past it: an old slab, worn curb stones, a puddle with the sky in it, and fallen leaves that are really there
+- **v137** (2026-11-10) — The blockers block out the floor: rounded islands and footprints of each world's own material, and pits
+- **v136** (2026-11-10) — HARDCADE's BERG lunges at you, and lunges again
+- **v135** (2026-11-10) — The campaign's C lines where a beginner reaches them: 26 lowered, nothing raised
+- **v134** (2026-11-10) — A heart room started again shows its heart whole
+- **v133** (2026-11-10) — The film builds its shaders before it starts, behind black, and plays without a hitch
+- **v132** (2026-11-09) — Every shadow grows out of its body — as wide as the body where it leaves it, darkest at the foot — and the domes stand on the widest of themselves
+- **v131** (2026-11-09) — The bodies sit on the ground — flatter domes, a shade where each one meets the slab, its shadow from its foot — and the opening film is the one it was, in the owner's letters, smooth, and shows nothing of a later world
+- **v130** (2026-11-09) — The opening logo says the owner's words in the owner's letters: Toko, Midori and Games as their original sets them — and "drop" made of the same letters
 - **v129** (2026-11-09) — The trees' shade is cast from trees — trunk, limbs and leaves, sun coming through — and a gel carries its motion: its top lags when it is pushed and swings back when it stops
 - **v128** (2026-11-09) — The driveway at golden hour: the sun glints in every gel, the shadows run long and the trees' shade falls across the slab — and the goo splashes as jelly
 - **v127** (2026-11-09) — The title after a run is the title again: nothing of the run is drawn under it — and the progress trailer re-cut without its glitches

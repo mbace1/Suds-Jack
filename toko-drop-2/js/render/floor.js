@@ -23,12 +23,12 @@
 // vortex (sim/worlds.js's transition: `swirl` 0 → 1 winds it up round
 // `swirlAt`, out to `swirlR`, and opens a hole of `hole` m in the middle).
 import * as THREE from 'three/webgpu';
-import { Fn, If, uv, uniform, float, abs, fract, min, max, sin, cos, length, smoothstep, step, mix, fwidth, texture, clamp, vec2, vec3, pow, floor as tfloor, round, select, mod, dFdx, dFdy, exp, normalize, dot, cameraPosition, positionWorld, vec4 } from 'three/tsl';
-import { pickStyle, grainAt } from './style.js?v=139';
-import { SUN_AT } from './sun.js?v=139';
-import { GEL_TIME } from './gel.js?v=139';
-import { noise, grate, cells, sewerSpots, treeShade } from './scenery.js?v=139';
-import { lilyPads, DRIFT, hash } from './kit.js?v=139';
+import { Fn, If, uv, uniform, float, abs, fract, min, max, sin, cos, atan, length, smoothstep, step, mix, fwidth, texture, clamp, vec2, vec3, pow, floor as tfloor, round, select, mod, dFdx, dFdy, exp, normalize, dot, cameraPosition, positionWorld, vec4 } from 'three/tsl';
+import { pickStyle, grainAt } from './style.js?v=140';
+import { SUN_AT } from './sun.js?v=140';
+import { GEL_TIME } from './gel.js?v=140';
+import { noise, grate, cells, sewerSpots, treeShade } from './scenery.js?v=140';
+import { lilyPads, DRIFT, hash } from './kit.js?v=140';
 
 const _white = new THREE.Color(0xffffff);
 
@@ -367,19 +367,59 @@ export function buildFloor(T, hx, hz, light, { style = 'grid', bounds: hasBounds
     const inCh = float(1).sub(smoothstep(S.channel / 2 - 0.04, S.channel / 2 + 0.04, abs(c)));
     const kerb = float(1).sub(smoothstep(0.0, 0.12, abs(abs(c).sub(S.channel / 2 + 0.12))));
     // flagstones in running bond
-    const u = a.div(S.slab[0]), v = c.div(S.slab[1]);
-    const row = tfloor(v), off = fract(row.mul(0.5));
-    const fu = fract(u.add(off)), fv = fract(v);
-    const gu = min(fu, float(1).sub(fu)).mul(S.slab[0]), gv = min(fv, float(1).sub(fv)).mul(S.slab[1]);
+    // v140 (owner, 2026-11-10: "look at all other worlds ... we can do a lot better than the concept art"): NO TWO
+    // FLAGSTONES ALIKE, as the driveway's pours (v138). The courses start where they start (`vary`: a row's own
+    // offset); of each pair of stones along a course some are ONE long stone (`long`) and some are cut in halves
+    // (`short`); every stone has its own tone and tint, lies a little out of level (`tilt`: it catches the light its
+    // own way), is worn round at its edges (`bevel` m, `relief`: the edge toward the light bright, the one away from
+    // it dark — the floor reads as STONES, not as a drawing of joints), and here and there one is cracked across.
+    // Slime has taken in the joints by the channel and at the walls' feet, and the stones lie damp there. One hash
+    // a stone, the rest spun off it; the old per-stone noise went to pay for it
+    const u = a.div(S.slab[0]), v = c.div(S.slab[1]), Vy = S.vary;
+    const row = tfloor(v), off = Vy ? hash(vec2(row, 3.3)) : fract(row.mul(0.5));
+    const si = tfloor(u.add(off)), fu = fract(u.add(off)), fv = fract(v), n31 = noise(w.mul(3.1));
+    let gu = min(fu, float(1).sub(fu)).mul(S.slab[0]), sgnU = select(fu.lessThan(0.5), float(-1), float(1)), stoneId = si;
+    if (Vy) {
+      const pi = tfloor(si.mul(0.5)), first = si.sub(pi.mul(2)).lessThan(0.5), hp = hash(vec2(pi, row).add(7.7));
+      const isLong = hp.greaterThan(1 - Vy.long), isShort = hp.lessThan(Vy.short), low = fu.lessThan(0.5);
+      // how far to the joint on either hand: none between the two halves of a long stone, one more through a cut one
+      let dl = select(isLong.and(first.not()), float(9), fu), dr = select(isLong.and(first), float(9), float(1).sub(fu));
+      dl = select(isShort.and(low.not()), fu.sub(0.5), dl); dr = select(isShort.and(low), float(0.5).sub(fu), dr);
+      gu = min(dl, dr).mul(S.slab[0]); sgnU = select(dl.lessThan(dr), float(-1), float(1));
+      stoneId = select(isLong, pi.mul(2).add(0.25), select(isShort, si.add(step(0.5, fu).mul(0.5)), si));
+    }
+    const sgnV = select(fv.lessThan(0.5), float(-1), float(1)), gv = min(fv, float(1).sub(fv)).mul(S.slab[1]);
     const gd = min(gu, gv), aa = max(fwidth(gd), 1e-4);
-    const grout = float(1).sub(smoothstep(float(S.grout).sub(aa), float(S.grout).add(aa), gd));
-    const tone = noise(vec2(tfloor(u.add(off)), row).mul(1.9)).mul(0.5).add(noise(w.mul(3.1)).mul(0.25)).add(0.55);
-    let stone = vec3(...S.stone).mul(tone);
+    const gw = Vy ? n31.mul(Vy.chip).add(1 - Vy.chip / 2).mul(S.grout) : float(S.grout);
+    const grout = float(1).sub(smoothstep(gw.sub(aa), gw.add(aa), gd));
+    const dch = abs(c).sub(S.channel / 2 + (S.kerbStone?.w ?? 0)), dwall = float(alongX ? hz : hx).sub(abs(c));
+    let stone, slime = float(0);
+    if (Vy) {
+      const h1 = hash(vec2(stoneId, row).add(1.7)), spin = (k) => fract(h1.mul(k));
+      const tone = h1.mul(Vy.tone).add(1 - Vy.tone / 2).mul(n31.mul(0.25).add(0.875));
+      const tint = mix(mix(vec3(...Vy.cool), vec3(...Vy.warm), spin(37.1)), vec3(...Vy.green), step(1 - Vy.greens, spin(71.3)).mul(0.7));
+      // out of level: brighter toward the corner it has risen at
+      const tilt = fu.sub(0.5).mul(spin(53.7).sub(0.5)).add(fv.sub(0.5).mul(spin(91.3).sub(0.5))).mul(Vy.tilt);
+      // worn round at its edges: the nearest edge faces out along (sgnU, 0) or (0, sgnV); `sun` is where the light is
+      const nearU = gu.lessThan(gv), facing = select(nearU, sgnU.mul(Vy.sun[0]), sgnV.mul(Vy.sun[1]));
+      const bev = float(1).sub(smoothstep(gw, float(Vy.bevel), gd)).mul(facing).mul(Vy.relief);
+      stone = vec3(...S.stone).mul(tint).mul(tone).mul(float(1).add(tilt).add(bev));
+      // a crack across one here and there: a straight break through it, at its own angle
+      const th = spin(197.3).mul(3.1416), lm = vec2(fu.sub(0.5).mul(S.slab[0]), fv.sub(0.5).mul(S.slab[1]));
+      const cd = abs(lm.x.mul(cos(th)).add(lm.y.mul(sin(th))).sub(spin(151.9).sub(0.5).mul(0.3)).add(n31.sub(0.5).mul(0.07)));
+      const crack = float(1).sub(smoothstep(float(Vy.crackW).sub(aa), float(Vy.crackW).add(aa), cd)).mul(step(1 - Vy.crack, spin(113.7)));
+      stone = stone.mul(float(1).sub(crack.mul(0.55)));
+      // damp by the channel and at the walls' feet, and slime in the joints there (and creeping onto the stones' edges)
+      const near = max(float(1).sub(smoothstep(0, Vy.dampReach, dch)), float(1).sub(smoothstep(0, Vy.dampReach * 0.6, dwall)));
+      stone = stone.mul(float(1).sub(near.mul(Vy.damp)));
+      slime = near.mul(smoothstep(0.3, 0.6, n31)).mul(Vy.slimeK);
+      stone = mix(stone, vec3(...Vy.slime), slime.mul(float(1).sub(smoothstep(gw, float(Vy.bevel * 1.6), gd))).mul(0.6));
+    } else stone = vec3(...S.stone).mul(noise(vec2(si, row).mul(1.9)).mul(0.5).add(n31.mul(0.25)).add(0.55));
     // v78: puddles standing in the hollows (they were a darkening): the stone dark
     // and the vault's dim teal reflected in them, a bright meniscus at the rim
     const PD = S.puddle, pd = puddles(w, PD), wet = pd.mask;
     stone = mix(stone, mix(stone.mul(PD.dark), vec3(...PD.sky), PD.reflect), wet).add(vec3(...PD.rimCol).mul(pd.rim.mul(PD.rim)));
-    stone = mix(stone, vec3(...S.groutCol), grout.mul(float(1).sub(wet.mul(0.7))));
+    stone = mix(stone, mix(vec3(...S.groutCol), vec3(...(Vy?.slime ?? S.groutCol)), slime), grout.mul(float(1).sub(wet.mul(0.7))));
     // v78: the channel's water is murky and RUNS (it wore the cistern's net): streaks
     // stretched along the flow, foam along the kerbs, flecks going by
     const flow = a.sub(GEL_TIME.mul(S.flow)), M = S.murk;
@@ -525,12 +565,59 @@ export function buildFloor(T, hx, hz, light, { style = 'grid', bounds: hasBounds
   // THE CISTERN: a flooded vault — stone slabs under shallow water, the
   // light off the surface wandering over them, the bases of the columns
   const cistern = (p, w) => {
-    const C = W.cistern;
-    const u = w.div(C.slab), f = fract(u), g = min(min(f.x, float(1).sub(f.x)), min(f.y, float(1).sub(f.y))).mul(C.slab);
+    const C = W.cistern, Vy = C.vary;
+    // v141 (owner, 2026-11-10: "look at all other worlds ... we can do a lot better than the concept art"): the pool's
+    // floor is LAID, not ruled — as the sewer's (v140). Of each pair of slabs along a row some are ONE long slab
+    // (`long`), and some slabs are four small ones (`small`); every slab has its own tone and tint and lies a little
+    // out of level; its edges are worn round and catch the light (softer than the sewer's: this is under water);
+    // one here and there has SUNK and lies deeper and darker (`sunk`), with the shadow of its neighbours' edges in
+    // it; silt has settled pale in the joints in patches; and round the pool, `border.in` m in from its edge, runs
+    // a BORDER of small tiles, light and dark, with some gone. One hash a slab, the rest spun off it
+    const u = w.div(C.slab), cid = tfloor(u), f0 = fract(u), n22 = noise(w.mul(2.2));
+    let g, stone, sink = float(0);
+    if (Vy) {
+      const shift = cid.y.sub(tfloor(cid.y.mul(0.5)).mul(2)), cx = cid.x.add(shift), pi = tfloor(cx.mul(0.5)), first = cx.sub(pi.mul(2)).lessThan(0.5);
+      const isLong = hash(vec2(pi, cid.y).add(7.7)).greaterThan(1 - Vy.long), hs = hash(cid.add(4.1)), isSmall = isLong.not().and(hs.lessThan(Vy.small));
+      const fs = fract(f0.mul(2));
+      const dl = select(isLong.and(first.not()), float(9), f0.x), dr = select(isLong.and(first), float(9), float(1).sub(f0.x));
+      const gx = select(isSmall, min(fs.x, float(1).sub(fs.x)).mul(C.slab / 2), min(dl, dr).mul(C.slab));
+      const gy = select(isSmall, min(fs.y, float(1).sub(fs.y)).mul(C.slab / 2), min(f0.y, float(1).sub(f0.y)).mul(C.slab));
+      const sgnX = select(isSmall, select(fs.x.lessThan(0.5), float(-1), float(1)), select(dl.lessThan(dr), float(-1), float(1)));
+      const sgnY = select(isSmall, select(fs.y.lessThan(0.5), float(-1), float(1)), select(f0.y.lessThan(0.5), float(-1), float(1)));
+      g = min(gx, gy);
+      const id = select(isLong, vec2(pi.mul(2).add(0.25), cid.y), select(isSmall, cid.add(tfloor(f0.mul(2)).mul(0.37)).add(0.11), cid));
+      const h1 = hash(id.add(1.7)), spin = (k) => fract(h1.mul(k));
+      const tone = h1.mul(Vy.tone).add(1 - Vy.tone / 2).mul(n22.mul(0.2).add(0.9));
+      const tint = mix(mix(v3(Vy.cool), v3(Vy.warm), spin(37.1)), v3(Vy.green), step(1 - Vy.greens, spin(71.3)).mul(0.7));
+      const fl = select(isSmall, fs, f0), tilt = fl.x.sub(0.5).mul(spin(53.7).sub(0.5)).add(fl.y.sub(0.5).mul(spin(91.3).sub(0.5))).mul(Vy.tilt);
+      // a slab that has sunk (never a small one or half of a long one): deeper, and its neighbours' edges shade it
+      sink = step(1 - Vy.sunk, spin(113.7)).mul(float(1).sub(select(isSmall.or(isLong), float(1), float(0))));
+      const facing = select(gx.lessThan(gy), sgnX.mul(Vy.sun[0]), sgnY.mul(Vy.sun[1])), edge = float(1).sub(smoothstep(float(C.grout), float(Vy.bevel), g));
+      const bev = edge.mul(facing).mul(Vy.relief).mul(mix(float(1), float(-1.6), sink));
+      stone = v3(C.stone).mul(tint).mul(tone).mul(float(1).add(tilt).add(bev));
+    } else {
+      g = min(min(f0.x, float(1).sub(f0.x)), min(f0.y, float(1).sub(f0.y))).mul(C.slab);
+      stone = v3(C.stone).mul(noise(cid.mul(1.7)).mul(0.5).add(n22.mul(0.2)).add(0.55));
+    }
     const aa = max(fwidth(g), 1e-4), grout = float(1).sub(smoothstep(float(C.grout).sub(aa), float(C.grout).add(aa), g));
-    const tone = noise(tfloor(u).mul(1.7)).mul(0.5).add(noise(w.mul(2.2)).mul(0.2)).add(0.55);
-    let stone = v3(C.stone).mul(tone);
-    stone = mix(stone, stone.mul(0.45), grout);
+    // the joints: dark, and pale where silt has settled in them
+    const silt = Vy ? smoothstep(Vy.siltAt, Vy.siltAt + 0.15, n22) : float(0);
+    stone = mix(stone, mix(stone.mul(0.45), v3(Vy?.silt ?? C.stone), silt.mul(Vy?.siltK ?? 0)), grout);
+    // the border: a band of small tiles round the pool
+    // (from the pool's edge as it stands NOW — the floor of a wave may be smaller than the room — and never in a
+    // room whose floor is not a rectangle: a band cut off by the shape's edge is a mistake, not a border)
+    if (Vy?.border && !region) {
+      const B = Vy.border, de = bounds ? min(bounds.cur.x.sub(abs(w.x)), bounds.cur.y.sub(abs(w.y))) : min(float(hx).sub(abs(w.x)), float(hz).sub(abs(w.y))), inB = step(B.in, de).mul(step(de, B.in + B.w));
+      // (tiles counted along the edge they run beside, so the band turns the corners whole)
+      const tq = w.div(B.tile), tc = tfloor(tq), tf = fract(tq), tg = min(min(tf.x, float(1).sub(tf.x)), min(tf.y, float(1).sub(tf.y))).mul(B.tile);
+      const taa = max(fwidth(tg), 1e-4), tgr = float(1).sub(smoothstep(float(B.grout).sub(taa), float(B.grout).add(taa), tg));
+      const th = hash(tc.add(9.3)), check = fract(tc.x.add(tc.y).mul(0.5)).mul(2), gone = step(1 - B.gone, th);
+      const tile = mix(v3(B.dark), v3(B.light), check).mul(th.mul(0.3).add(0.85));
+      // an edge line either side of it
+      const lineD = min(abs(de.sub(B.in)), abs(de.sub(B.in + B.w))), line = float(1).sub(smoothstep(0.02, 0.05, lineD));
+      stone = mix(stone, mix(tile, tile.mul(0.4), tgr), inB.mul(float(1).sub(gone)));
+      stone = mix(stone, v3(B.dark).mul(0.6), line.mul(0.7));
+    }
     const t = GEL_TIME;
     // v97: the caustic NETWORK the approved picture shows — light focused by the moving surface into thin bright
     // cells over the slabs — from a domain-warped field (four warps of sines, the classic water caustic), brightest
@@ -541,7 +628,7 @@ export function buildFloor(T, hx, hz, light, { style = 'grid', bounds: hasBounds
     const q = fract(w.div(C.column).add(0.5)).sub(0.5).mul(C.column), dq = max(abs(q.x), abs(q.y));
     const plinth = float(1).sub(smoothstep(C.plinth - 0.03, C.plinth + 0.03, dq));
     const rim = float(1).sub(smoothstep(0, 0.07, abs(dq.sub(C.plinth))));
-    let col = mix(stone, v3(C.water), C.depth).add(v3(C.caustic).mul(caustic.mul(N.gain).mul(mix(float(N.inPool), float(1), pool))));
+    let col = mix(stone, v3(C.water), sink.mul(Vy?.sunkDepth ?? 0).add(C.depth)).add(v3(C.caustic).mul(caustic.mul(N.gain).mul(mix(float(N.inPool), float(1), pool))));
     col = mix(col, v3(C.stone).mul(0.35), plinth.mul(C.plinthK ?? 1)).add(v3(C.rim).mul(rim.mul(0.5 * (C.plinthK ?? 1))));
     // v71: in each plinth the cut top of a fallen column, a round stone disc
     // with a groove round it, under the same water
@@ -569,10 +656,47 @@ export function buildFloor(T, hx, hz, light, { style = 'grid', bounds: hasBounds
     const seam = float(1).sub(smoothstep(float(B.seam).sub(aa), float(B.seam).add(aa), sd));
     const rv = length(vec2(min(sx, 0.35).sub(0.18), min(sz, 0.35).sub(0.18)));
     const rivet = float(1).sub(smoothstep(0.05, 0.075, rv));
-    const tone = noise(tfloor(u).mul(2.3)).mul(0.35).add(0.75);
-    let col = v3(B.steel).mul(tone).add(v3(B.rivet).mul(rivet.mul(0.8)));
+    const Vy = B.vary, pid = tfloor(u), soot = noise(w.mul(0.21).add(3.3));
+    let col;
+    if (Vy) {
+      // v142 (owner, 2026-11-10: "look at all other worlds ... we can do a lot better than the concept art"): NO TWO
+      // PLATES ALIKE. Each has its own tone and tint (blued, bare, rusting); a third are TREAD plate (rows of raised
+      // lozenges, each catching the light), a third were ROLLED and show it (streaks down their length), and the rest
+      // are bare and SCRAPED where things were dragged over them; a plate stands a hair proud of the deck, so its
+      // edge toward the light is bright and the other in shade; here and there a PATCH is welded on, a bead round
+      // it; rust blooms where the soot is not; and round every grate the steel is TEMPERED by the fire under it —
+      // straw, bronze, purple, blue, going out. All arithmetic on one hash a plate
+      const h1 = hash(pid.add(vec2(2.3, 5.9))), spin = (k) => fract(h1.mul(k)), kind = spin(29.3);
+      const tone = h1.mul(Vy.tone).add(1 - Vy.tone / 2);
+      const tint = mix(mix(v3(Vy.blued), v3(Vy.bare), smoothstep(0.2, 0.6, spin(37.1))), v3(Vy.rusty), smoothstep(0.75, 0.95, spin(37.1)));
+      const px = max(length(fwidth(w)), 1e-4);
+      // tread: lozenges on a `tread` m lattice, turned the other way in every other cell; gone where a pixel is wider than one
+      const tq = w.div(Vy.tread), tc = tfloor(tq), tf = fract(tq).sub(0.5), turn = fract(tc.x.add(tc.y).mul(0.5)).greaterThan(0.25);
+      const lz = select(turn, abs(tf.x).mul(3.2).add(abs(tf.y)), abs(tf.x).add(abs(tf.y).mul(3.2)));
+      const loz = float(1).sub(smoothstep(0.34, 0.42, lz)).mul(float(1).sub(smoothstep(Vy.tread * 0.25, Vy.tread * 0.6, px)));
+      const isTread = step(kind, 0.34), isRolled = step(0.34, kind).mul(step(kind, 0.68)), isBare = step(0.68, kind);
+      // rolled: streaks down the plate's length, two beats that never line up
+      const rs = sin(w.y.mul(41).add(h1.mul(40)).add(sin(w.x.mul(0.9)).mul(2.2))).mul(0.6).add(sin(w.y.mul(17.3).add(h1.mul(11)))).mul(0.4);
+      // scrapes: three straight bright scratches across a bare plate, each at the plate's own angle
+      const lm = f.sub(0.5).mul(P), th = spin(197.3).mul(3.1416), along = lm.x.mul(cos(th)).add(lm.y.mul(sin(th)));
+      const scr = (k) => float(1).sub(smoothstep(0.0, px.add(0.008), abs(along.sub(spin(k).sub(0.5).mul(1.4)))));
+      const scrape = max(max(scr(151.9), scr(83.7)), scr(61.3)).mul(isBare);
+      // proud of the deck: the nearest seam faces out along x or z; `sun` is where the light stands
+      const facing = select(sx.lessThan(sz), select(f.x.lessThan(0.5), float(-1), float(1)).mul(Vy.sun[0]), select(f.y.lessThan(0.5), float(-1), float(1)).mul(Vy.sun[1]));
+      const bev = float(1).sub(smoothstep(float(B.seam), float(Vy.bevel), sd)).mul(facing).mul(Vy.relief);
+      col = v3(B.steel).mul(tint).mul(tone).mul(float(1).add(bev).add(loz.mul(isTread).mul(Vy.treadK)).add(rs.mul(isRolled).mul(Vy.rolledK)));
+      col = col.add(v3(B.rivet).mul(scrape.mul(Vy.scrapeK)));
+      // a patch welded on
+      const pc = vec2(spin(53.7), spin(89.1)).mul(0.3).add(0.35), ph = vec2(spin(151.3), spin(67.9)).mul(0.08).add(0.12);
+      const pd = max(abs(f.x.sub(pc.x)).sub(ph.x).mul(B.plate[0]), abs(f.y.sub(pc.y)).sub(ph.y).mul(B.plate[1])), has = step(1 - Vy.patch, spin(271.9));
+      const inP = has.mul(float(1).sub(smoothstep(px.negate(), px, pd))), bead = has.mul(float(1).sub(smoothstep(0.02, float(0.03).add(px), abs(pd))));
+      col = mix(col, v3(B.steel).mul(v3(Vy.bare)).mul(1.25), inP).add(v3(B.rivet).mul(bead.mul(sin(along.mul(90)).mul(0.25).add(0.75)).mul(0.5)));
+      // rust where the soot is not
+      col = mix(col, v3(Vy.rust), float(1).sub(smoothstep(0.18, 0.34, soot)).mul(Vy.rustK).mul(h1.mul(0.6).add(0.4)));
+      col = col.add(v3(B.rivet).mul(rivet.mul(0.8)));
+    } else col = v3(B.steel).mul(noise(pid.mul(2.3)).mul(0.35).add(0.75)).add(v3(B.rivet).mul(rivet.mul(0.8)));
     // soot, not the shadow of something standing there (v43: at 0.8 it read as a hole in the floor)
-    col = mix(col, v3(B.scorch), smoothstep(0.6, 0.85, noise(w.mul(0.21).add(3.3))).mul(0.4));
+    col = mix(col, v3(B.scorch), smoothstep(0.6, 0.85, soot).mul(0.4));
     col = col.mul(float(1).sub(seam.mul(0.7)));
     // v78: oily puddles standing on the plate along the long sides, under the pipe
     // runs: the steel dark under a film with a sheen on it, and the grates' fire in them
@@ -592,6 +716,12 @@ export function buildFloor(T, hx, hz, light, { style = 'grid', bounds: hasBounds
     const fireCol = mix(v3(B.glow), v3(G.core), heat.mul(heat)).mul(pulse.mul(0.5).add(0.5)).mul(heat.mul(0.6).add(0.55));
     const fire = hole.mul(pulse);
     const frame = inG.mul(float(1).sub(inner)), bars = inner.mul(float(1).sub(hole));
+    // v142: the steel round a grate, tempered: out from its frame over `temper.reach` m the colours a fire leaves
+    if (B.vary?.temper) {
+      const Tm = B.vary.temper, k = clamp(gd.div(Tm.reach), 0, 1), on = step(0, gd).mul(float(1).sub(k)).mul(Tm.k);
+      const tc2 = mix(mix(v3(Tm.straw), v3(Tm.bronze), smoothstep(0.0, 0.3, k)), mix(v3(Tm.purple), v3(Tm.blue), smoothstep(0.55, 0.9, k)), smoothstep(0.25, 0.6, k));
+      col = mix(col, col.mul(tc2).mul(2.2), on);
+    }
     col = mix(col, v3(G.steel), frame.add(bars).min(1));   // the frame and the bars, dark iron
     col = col.add(v3(B.glow).mul(bars.mul(heat).mul(G.barGlow))).add(v3(B.glow).mul(frame.mul(G.frameGlow)));   // lit from the fire under them
     col = mix(col, fireCol, hole);
@@ -643,6 +773,30 @@ export function buildFloor(T, hx, hz, light, { style = 'grid', bounds: hasBounds
     let col = mix(v3(R.water), v3(R.waterHi), smoothstep(0.35, 0.8, st).mul(U.lift).mul(depth.mul(0.6).add(0.4)));
     col = mix(col, v3(U.deep), depth.mul(U.deepK));
     col = mix(mix(bed, col, U.shallowTint), col, depth);
+    // v143 (owner, 2026-11-10: "look at all other worlds ... we can do a lot better than the concept art"): FISH. Dark
+    // shapes holding against the current in the deep middle of the river, a loose school here and there, each
+    // working its tail; they make upstream slowly, and scatter from where the hero stands. Under the water: they
+    // darken it, they are not drawn on it. One hash a fish
+    const Fi = R.fish;
+    if (Fi) {
+      const fa = a.add(t.mul(Fi.swim)), fc = vec2(fa.div(Fi.cell[0]), c.div(Fi.cell[1])), fid = tfloor(fc), fh = hash(fid.add(3.1)), fh2 = fract(fh.mul(37.7));
+      const fish = float(0).toVar(), faa = max(length(fwidth(w)), 1e-4);   // (a pixel's width in the world: a derivative may not sit in a branch, v68)
+      If(fh.greaterThan(1 - Fi.keep), () => {
+        const sway = sin(t.mul(0.45).add(fh.mul(40))).mul(0.07);
+        const q = fract(fc).sub(vec2(fh2.mul(0.5).add(0.25), fract(fh.mul(91.3)).mul(0.5).add(0.25).add(sway))).mul(vec2(...Fi.cell));
+        const len = fh2.mul(Fi.len[1] - Fi.len[0]).add(Fi.len[0]), s01 = q.x.div(len).add(0.5);   // 0 at its nose (upstream), 1 at its tail
+        // the wave that runs down it: nothing at the head, widest at the tail
+        const bend = sin(t.mul(Fi.beat).add(fh.mul(30)).sub(s01.mul(4))).mul(s01.mul(s01)).mul(len.mul(0.13));
+        const y = abs(q.y.sub(bend));
+        // its outline: a body widest a third of the way back, pinched before the tail, then the tail's fork
+        const body = sin(clamp(s01.div(0.86), 0, 1).pow(0.7).mul(3.1416)).mul(len.mul(0.13));
+        const tail = clamp(s01.sub(0.8).div(0.22), 0, 1).mul(len.mul(0.16));
+        const wide = max(body, tail).mul(step(0, s01)).mul(step(s01, 1.02));
+        fish.assign(float(1).sub(smoothstep(wide.sub(faa), wide.add(faa), y)).mul(step(0.001, wide)));
+      });
+      const hw = toWorld(player), away = smoothstep(Fi.shy[0], Fi.shy[1], length(w.sub(hw)));
+      col = mix(col, col.mul(v3(Fi.dark)), fish.mul(smoothstep(0.55, 0.85, depth)).mul(away).mul(Fi.k));
+    }
     // v72: lily pads near the banks, drifting the way the current rule pushes (kit.js DRIFT)
     const Pd = T.scenery.river.pads, lp = lilyPads(w.sub(DRIFT), Pd.cell, Pd.keep);
     const near = smoothstep(half * 0.42, half * 0.52, ac).mul(smoothstep(bankAt, bankAt.sub(half * 0.06), ac));
@@ -688,8 +842,20 @@ export function buildFloor(T, hx, hz, light, { style = 'grid', bounds: hasBounds
     let col = mix(v3(I.deep), v3(I.base), depth.mul(0.55).add(plate.mul(F.plates)).add(0.3 - F.plates * 0.5));
     col = col.add(v3(I.frost).mul(frost.mul(0.1))).add(v3(I.crack).mul(min(crack, 1).mul(0.3)));
     // v72: frost creeping in from the floor's edge, and air caught in the ice, both faint
-    const e = min(float(hx).sub(abs(w.x)), float(hz).sub(abs(w.y)));
-    col = col.add(v3(I.frost).mul(smoothstep(I.edgeFrost, 0, e).mul(noise(w.mul(5.3)).mul(0.6).add(0.4)).mul(I.edgeFrostGain)));
+    const e = min(float(hx).sub(abs(w.x)), float(hz).sub(abs(w.y))), n53 = noise(w.mul(5.3));
+    col = col.add(v3(I.frost).mul(smoothstep(I.edgeFrost, 0, e).mul(n53.mul(0.6).add(0.4)).mul(I.edgeFrostGain)));
+    // v143: SNOW has drifted over the sheet. Where the ice is pale (the same broad field that makes it deep or
+    // shallow) a dusting lies over it — the cracks under it gone — ridged across the wind in fine ripples, its edge
+    // scalloped; and the dark windows between are swept clear. The sheet has places now: drift and clear ice
+    const Sn = I.snow;
+    let drift = float(0);
+    if (Sn) {
+      // (its edge scalloped by the same ridges that ripple it: a fine noise there showed its grid as steps)
+      const wd = w.x.mul(Sn.wind[0]).add(w.y.mul(Sn.wind[1])), ridge = sin(wd.mul(Sn.ripple).add(depth.mul(20)));
+      const lay = depth.mul(0.75).add(noise(w.mul(Sn.scale).add(8.8)).mul(0.25)).add(ridge.mul(Sn.scallop));
+      drift = smoothstep(Sn.at, Sn.at + Sn.soft, lay);
+      col = mix(col, v3(Sn.color).mul(ridge.mul(Sn.ridge).add(1)), drift.mul(Sn.k));
+    }
     const Bb = I.bubble, bc = tfloor(w.div(Bb.cell)), bh = noise(bc.mul(1.7).add(0.5));
     const bq = fract(w.div(Bb.cell)).sub(0.5).sub(vec2(noise(bc.add(3.1)), noise(bc.add(7.7))).sub(0.5).mul(0.5)).mul(Bb.cell);
     const br = bh.mul(Bb.r[1] - Bb.r[0]).add(Bb.r[0]), bd = length(bq);
@@ -705,7 +871,7 @@ export function buildFloor(T, hx, hz, light, { style = 'grid', bounds: hasBounds
       col = col.mul(float(1).sub(max(max(band(w.y.add(hz), farLen), band(w.x.add(hx), leftLen)), band(float(hx).sub(w.x), rightLen)).mul(LS.depth)));
     }
     // the cracks are a texture under the fight, not lines across it (v48: at full strength they were the loudest thing on screen)
-    return { col, mask: min(crack, 1).mul(I.lines), lineCol: v3(I.crack), wet: float(0.6) };
+    return { col, mask: min(crack, 1).mul(I.lines).mul(float(1).sub(drift.mul(Sn?.k ?? 0))), lineCol: v3(I.crack), wet: float(0.6) };
   };
   // THE DEEP: black silt in slow ripples, lit only by what lives in it
   const deep = (p, w) => {
@@ -733,6 +899,28 @@ export function buildFloor(T, hx, hz, light, { style = 'grid', bounds: hasBounds
         pool = max(pool, float(1).sub(smoothstep(L.r * S.poolR[0], L.r * S.poolR[1], d)));
       }
       col = col.add(v3(D.glow2).mul(pool.mul(pool).mul(S.poolGlow)));
+    }
+    // v143: THINGS LIE ON THE SEABED. The ripples in the silt have a lit side and a dark one; and here and there, in
+    // its own place and at its own angle, a starfish or a scallop's shell (`finds`: one cell in `keep` has one,
+    // `stars` of those a starfish). A cell with nothing in it costs one hash
+    const Fd = D.finds;
+    if (Fd) {
+      const ph = w.x.mul(0.9).add(noise(w.mul(0.3)).mul(6));
+      col = col.mul(float(1).add(cos(ph).mul(Fd.relief)));
+      const fc = w.div(Fd.cell), fid = tfloor(fc), fh = hash(fid.add(6.7)), fh2 = fract(fh.mul(37.7));
+      const find = vec4(0).toVar(), faa = max(length(fwidth(w)), 1e-4);
+      If(fh.greaterThan(1 - Fd.keep), () => {
+        const q = fract(fc).sub(vec2(fh2.mul(0.5).add(0.25), fract(fh.mul(91.3)).mul(0.5).add(0.25))).mul(Fd.cell);
+        const d = length(q), ang = atan(q.y, q.x).add(fh.mul(6.283));
+        const isStar = fract(fh.mul(113.7)).lessThan(Fd.stars);
+        // a starfish: five arms; a shell: a fan, ribbed, cut flat at its hinge
+        const arm = abs(cos(ang.mul(2.5))).pow(1.6).mul(0.62).add(0.38).mul(Fd.star), inStar = float(1).sub(smoothstep(arm.sub(faa), arm.add(faa), d));
+        const fan = q.x.mul(cos(fh.mul(6.283))).add(q.y.mul(sin(fh.mul(6.283)))), inShell = float(1).sub(smoothstep(float(Fd.shell).sub(faa), float(Fd.shell).add(faa), d)).mul(smoothstep(-0.04, 0.0, fan.add(Fd.shell * 0.35)));
+        const ribs = cos(ang.mul(11)).mul(0.18).add(0.86);
+        const starCol = mix(v3(Fd.starLo), v3(Fd.starHi), fh2).mul(float(1.25).sub(d.div(Fd.star).mul(0.5)));
+        find.assign(select(isStar, vec4(starCol, inStar), vec4(v3(Fd.shellCol).mul(ribs).mul(fh2.mul(0.4).add(0.8)), inShell)));
+      });
+      col = mix(col, find.xyz, find.w.mul(Fd.k));
     }
     const cell = tfloor(w.mul(D.specks)), rnd = noise(cell.mul(1.31));
     const fp = fract(w.mul(D.specks)).sub(0.5), dot2 = length(fp);
@@ -764,6 +952,22 @@ export function buildFloor(T, hx, hz, light, { style = 'grid', bounds: hasBounds
         lit = max(lit, float(1).sub(smoothstep(Tl.padR, Tl.reach * 0.6, d)));   // the pads light the floor round them
       }
       col = col.add(v3(Tl.glow).mul(lit.mul(lit).mul(Tl.halo)));
+      // v143: the deck is a MACHINE's. Some tiles are VENTS (a block of slots, the core's light faint under them),
+      // some carry a status LAMP that blinks on its own beat, and light RUNS along the grid's lines — packets, each
+      // lane at its own speed, most lanes quiet. One hash a tile and one a lane
+      let packet = float(0);
+      if (Tl.vary) {
+        const Vt = Tl.vary, tid = tfloor(q), th = hash(tid.add(4.3)), fq = fract(q).sub(0.5);
+        const slot = float(1).sub(smoothstep(0.2, 0.3, abs(fract(fq.y.mul(Vt.slots)).sub(0.5)))).mul(step(abs(fq.x), 0.3)).mul(step(abs(fq.y), 0.32)).mul(step(th, Vt.vents));
+        col = col.mul(float(1).sub(slot.mul(0.8))).add(v3(Tl.glow).mul(slot.mul(Vt.ventGlow)));
+        const lamp = float(1).sub(smoothstep(0.035, 0.06, length(fq.sub(vec2(0.3, -0.3))))).mul(step(1 - Vt.lamps, th));
+        const blink = step(0.5, fract(GEL_TIME.mul(fract(th.mul(31.7)).mul(0.6).add(0.3)).add(fract(th.mul(57.3)))));
+        col = col.add(v3(Vt.lamp).mul(lamp.mul(blink.mul(0.85).add(0.15))));
+        const horiz = f.y.greaterThan(f.x), run = select(horiz, q.x, q.y), lh = hash(vec2(select(horiz, round(q.y), round(q.x)), select(horiz, float(1.5), float(7.5))));
+        const Pk = Vt.packet, ph = fract(run.div(Pk.every).sub(GEL_TIME.mul(Pk.speed).mul(lh.mul(0.8).add(0.6))).add(lh.mul(7)));
+        packet = smoothstep(1 - Pk.len, 1, ph).mul(line).mul(step(1 - Pk.lanes, lh));
+        col = col.add(v3(Pk.color).mul(packet.mul(Pk.gain)));
+      }
       col = col.add(v3(Tl.line_).mul(line.mul(float(Tl.lineGlow).add(wash.mul(Tl.washGlow)).add(lit.mul(0.5))))).add(v3(Tl.glow).mul(wash.mul(Tl.washFloor)));
       col = mix(col, v3(Tl.glow).mul(Tl.padGlow), pad.min(1));
       return { col, mask: line.add(pad), lineCol: v3(Tl.line_) };
