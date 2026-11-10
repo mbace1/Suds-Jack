@@ -79,7 +79,8 @@ renderer.setPixelRatio(1); renderer.setSize(W, H, false);
 renderer.outputColorSpace = THREE.LinearSRGBColorSpace; renderer.toneMapping = THREE.NoToneMapping;
 renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 document.body.appendChild(renderer.domElement); renderer.domElement.style.width = '100%';
-const post = new Post(renderer, W, H);
+// two posts: MSAA for a single exposure; none when several jittered exposures are averaged (they antialias each other)
+const post = new Post(renderer, W, H, { samples: Number(Q.get('msaa') ?? 4) }), postMB = new Post(renderer, W, H, { samples: 0 });
 const out = document.createElement('canvas'); out.width = W; out.height = H; const g2d = out.getContext('2d');
 
 const canvasTex = (w, h, draw, data = false) => { const c = document.createElement('canvas'); c.width = w; c.height = h; draw(c.getContext('2d'), w, h);
@@ -333,6 +334,7 @@ function buildForest() {
   const bump = (t, t0) => smooth((t - (t0 - 0.8)) / 0.5) * (1 - smooth((t - (t0 + 0.35)) / 0.45));
   const a3 = new THREE.Vector3(), b3 = new THREE.Vector3();
   return { scene: S, cam, items: IT, update(t) {
+    IT.forEach((it) => { it.lamp.visible = cam.position.distanceTo(it.lampW) < it.lamp.distance + 25; });
     const fpv = t >= T.fpv; drone.userData.beam.visible = drone.userData.lamp.visible = !fpv; spin(drone, t); drone.userData.spot.intensity = fpv ? 85 : 150; drone.userData.spot.castShadow = !fpv;
     if (!fpv) {   // the fly-by: the camera waits low among the trunks, the drone comes out of the dark and over it
       const k = clamp(Math.pow(t / T.fpv, 1.15)) * 0.97 + 0.01; OPEN.getPointAt(k, drone.position); OPEN.getPointAt(Math.min(1, k + 0.02), a3); drone.lookAt(a3); drone.rotateX(-0.16); drone.rotateZ(Math.sin(t * 3) * 0.08); drone.visible = true;
@@ -740,9 +742,11 @@ function frame(t) {
   const K = SUBS || (t < T.fpv ? 11 : t < T.home ? 5 : t < T.down + 0.5 ? 3 : 1), SH = (t < T.fpv ? 0.4 : 0.5) / FPS; let info;
   const offs = Array.from({ length: K }, (_, j) => (K === 1 ? 0 : j / (K - 1) - 0.5)).sort((a, b) => Math.abs(b) - Math.abs(a));
   g2d.setTransform(1, 0, 0, 1, 0, 0);
+  const PP = K > 1 ? postMB : post;
   offs.forEach((o, j) => { const tj = clamp(t + o * SH, p0, p1 - 1e-4); info = X.update(tj); if (X.water) X.water.update(X.cam, tj); const R = info.rays;
-    post.render(X.scene, X.cam, { ...GRADE, ...(X.grade || {}), ...(info.grade || {}), rays: R ? R.k : 0, raysCenter: R ? R.c : [0.5, 0.5], raysCut: 3, raysRadius: R ? (R.r ?? 0.5) : 4, seed: Math.floor(t * 24) });
-    g2d.globalAlpha = 1 / (j + 1); g2d.drawImage(renderer.domElement, 0, 0); });
+    if (K > 1 && j < K - 1) { const hx = (((j + 1) * 0.5698) % 1) - 0.5, hy = (((j + 1) * 0.7548) % 1) - 0.5; X.cam.setViewOffset(W, H, hx, hy, W, H); }
+    PP.render(X.scene, X.cam, { ...GRADE, ...(X.grade || {}), ...(info.grade || {}), rays: R ? R.k : 0, raysCenter: R ? R.c : [0.5, 0.5], raysCut: 3, raysRadius: R ? (R.r ?? 0.5) : 4, seed: Math.floor(t * 24) });
+    if (X.cam.view) X.cam.clearViewOffset(); g2d.globalAlpha = 1 / (j + 1); g2d.drawImage(renderer.domElement, 0, 0); });
   g2d.globalAlpha = 1;
   if (part === 'forest' && t >= T.fpv) {
     const flags = LOCK.map((t0, i) => [i, t - t0 - 1.0]).filter(([, k]) => k > 0).map(([i, k]) => [i, k / 0.4]);

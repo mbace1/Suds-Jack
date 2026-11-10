@@ -170,12 +170,12 @@ void main() {
 }`;
 
 export class Post {
-  constructor(renderer, W, H) {
+  constructor(renderer, W, H, opt = {}) {   // opt.samples: MSAA on the beauty pass (default 4)
     this.r = renderer; this.W = W; this.H = H;
     const depthTex = new THREE.DepthTexture(W, H);
     depthTex.type = THREE.UnsignedIntType;
     // 4× MSAA on the beauty pass: the film renders at 1080×1920 native, not supersampled
-    this.rtScene = rt(W, H, { depth: true, extra: { depthTexture: depthTex, samples: 4 } });
+    this.rtScene = rt(W, H, { depth: true, extra: { depthTexture: depthTex, samples: opt.samples ?? 4 } });
     this.rtDof = rt(W, H);
     const q = 4, e = 16;
     this.rtB1 = rt(W / q | 0, H / q | 0); this.rtB2 = rt(W / q | 0, H / q | 0);
