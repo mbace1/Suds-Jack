@@ -1027,3 +1027,69 @@ All facts below come from search summaries; no article was opened.
     [Verkkouutiset](https://www.verkkouutiset.fi/a/fitburg-aluksen-kapteenille-ja-pursimiehelle-ehdottomat-vankeustuomiot/)
   - **Protective Fence 26:** unchanged (19–27 Nov, with Jännevirta on Highway 9 closed 18–25 Nov).
 - **Films now wrong:** none.
+
+## Daily check, Tue 10 Nov 17:16 (evening, run ~19:55; search summaries only, nothing opened)
+- **BIG: Anthropic set its IPO price range today.** Named outlets (CNBC, TechCrunch, Fortune, all 10 Nov) report an
+  amended S-1/A:
+  - **Range:** $70–$78 a share for 825 million shares, so up to about $64.4B raised. Underwriters get a 30-day option on
+    123.75 million more shares.
+  - **Timing (CNBC, citing sources):** pricing on 18 Nov and trading on 19 Nov, on Nasdaq as "ANT". The order book is
+    reported covered at the range.
+  - **A concurrent $26.0B private placement of Class N stock at the IPO price:** Google, Nvidia (about $10B), AMD,
+    Broadcom, Micron, Microsoft and TSMC. That list is from search summaries of the S-1/A itself (Amendment No. 2,
+    `anthropicpbc-sx1ax2.htm`); EDGAR is still blocked from this session, so it was not opened. **Amazon is not named
+    in the placement** in any summary seen.
+  - **Valuation reports differ:** up to about $1.4T fully diluted (TechCrunch) against about $0.92–1.02T on shares
+    outstanding. Fortune says it is well short of the $2T floated weeks ago, and comes amid an AI stock sell-off.
+  - **Ignored:** aggregator pages claiming a $185 pricing. They contradict every named outlet.
+  - [CNBC](https://www.cnbc.com/2026/11/10/anthropic-sets-price-range-of-70-to-78-in-upcoming-ipo.html),
+    [TechCrunch](https://techcrunch.com/2026/11/10/anthropic-sets-ipo-price-range-of-70-to-78-per-share-to-reach-an-implied-valuation-of-1-404-trillion/),
+    [Fortune](https://fortune.com/2026/11/10/anthropic-ipo-price-range-ai-stock-sell-off/),
+    [EDGAR S-1/A, not reachable](https://www.sec.gov/Archives/edgar/data/0002130357/000162828026072484/anthropicpbc-sx1ax2.htm)
+- **What it means for The Round Trip (on hold "until the price range"): the hold condition is met, so it can be pitched
+  again now, but not built from the old copy.**
+  - **Its Google number may be stale.** The film says "at least $114.5B" (the 26 Oct S-1). A secondary analysis says the
+    2 Nov S-1/A raised the Google floor to about $121.3B (Apr 2026–Jul 2033) and puts total compute commitments at about
+    $895B. That is one analysis site, not the filing, so it is unverified.
+    [FourWeekMBA (secondary)](https://fourweekmba.com/ai-anthropic-raises-its-google-spending-floor-to-121-3b/)
+  - **The device gets stronger.** The suppliers Anthropic must pay (Google, Microsoft, Nvidia through its renters, AMD,
+    Broadcom, Micron, TSMC) are also buying $26B of its stock at the IPO price. Microsoft can now be shown as an
+    investor too (the plan had left it out for that reason). Amazon, one of the two towers in the film, is not in the
+    placement, so the towers need re-checking.
+  - **Still required:** the filing read directly (EDGAR is blocked here), and the disclosure (MADE WITH ANTHROPIC'S
+    TOOLS) with wording the owner approves.
+  - **The window:** listing reported for 19 Nov.
+- **Context, not a film: the 5 Nov AI sell-off.** AP reports the S&P 500 fell 4.4% and the Nasdaq 5.5%, the worst day
+  since April 2025. Nvidia fell 9.3%. AP cites Democratic election wins raising the chance of pauses on data-center
+  construction, plus borrowing costs.
+  [AP via WBTV](https://www.wbtv.com/2026/11/05/brutal-sell-off-ai-stocks-sends-wall-street-reeling-sp-500-sees-worst-day-since-2025-liberation-day-tariffs/)
+- **Finnish candidate, updated: Tuusula (Jokela) data center, secrecy dispute.**
+  - Tuusula signed a preliminary agreement to sell about 16.7 ha in Jokela to funds managed by Blackstone (the town's
+    own release).
+  - A residents' initiative by Jyri Venninen asks the town to open the project's status and its secret documents. He
+    names a mining survey marked secret in full. He says he wants to "press the brakes", not stop the project.
+  - The town denies hiding anything; it says the preliminary agreement required broad confidentiality. Keski-Uusimaa
+    reports that councilors did not know about the preliminary agreement.
+  - Mayor Janne Mellin (MTV): the decisions were lawful, residents woke up too late, and the town will review how and
+    when it communicates.
+  - The dates in the results are inconsistent, so the timeline needs a check before any pitch. Rated MED. It is the
+    Finnish echo of the US NDA stories.
+  - [Tuusula](https://tuusula.fi/en/2025/12/03/data-centre-planned-for-jokela/),
+    [Keski-Uusimaa](https://www.keski-uusimaa.fi/paikalliset/9821801),
+    [MTV](https://www.mtvuutiset.fi/artikkeli/datakeskuspaatoksia-on-tehty-kuntalaisten-mielesta-hahmaisesti-nyt-sita-vastaan-taistellaan-verkostolla/9390670)
+- **The Helsinki protest (7 Nov), one detail added:** the march went to Parliament House, and the demand was to freeze
+  data-center projects until regulation catches up (Kaleva/STT). No minister's response was found.
+- **Waiting films (NOW rows), pre-posting check:**
+  - **Sleep Tight (ICEYE): CLEAR.** No November ICEYE news. A data aggregator (DefiLlama, 30 Oct) lists the June
+    Series F at a $11.81B valuation, which is consistent with "over €10 billion".
+  - **Found in Pasila EN and FI: CLEAR.** No Pasila, Yle, city or Tukes reaction found.
+  - **Needs a Designer: CLEAR.** It makes no factual claim.
+- **Doodle 9 Five Pins (posted ~12:44 today):** nothing contradicts it. Reaction counts are not visible through
+  search.
+- **Doodle 8 Cut First (posted):** no report on the water plan. The police plan to share first information in December,
+  and the investigation runs into 2027 (on file). No correction.
+- **Coxon 14 On the Label, Global 3 Short Supply, S. 1792, Pennsylvania v. Character.AI:** no new step. Short Supply has
+  no hearing date (re-check 12 Nov). S. 1792 has had no action since the HELP referral.
+- **Owner's Helsinki leads:** Fitburg: no appeal reported yet (watch around 12 Nov). Protective Fence 26: unchanged.
+- **Films now wrong:** none that are waiting to post. The Round Trip (on hold, not scheduled) needs its Google figure
+  and towers re-checked before any build.

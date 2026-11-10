@@ -1421,3 +1421,32 @@ Everything below comes from search summaries. No article was opened.
 - **Reactions:** counts are not visible through search. **Pattern note:** the Europe-wide protest days came up through a
   Finnish wire story (STT via Kaleva) before any English-language search found them. Run the Finnish sweep before
   deciding a global item is quiet.
+
+### Check Tue 10 Nov 17:16 (evening, run ~19:55; search summaries only; nothing opened)
+- **BIG: 12 The Round Trip: the hold condition is met.** Anthropic filed its price range today (CNBC, TechCrunch,
+  Fortune, 10 Nov):
+  - $70–$78 a share, 825M shares, up to about $64.4B raised; pricing 18 Nov and trading 19 Nov (CNBC, sources); Nasdaq
+    "ANT".
+  - A concurrent **$26.0B Class N private placement** at the IPO price: Google, Nvidia (~$10B), AMD, Broadcom, Micron,
+    Microsoft, TSMC (summaries of S-1/A Amendment No. 2; EDGAR not opened). **Amazon is not named.**
+  - Valuation: up to ~$1.4T fully diluted (TechCrunch) or ~$0.92–1.02T on shares outstanding.
+  - Ignore: aggregator claims of a $185 pricing.
+  - **Before any build:** the film's Google figure ($114.5B, 26 Oct S-1) may be superseded by ~$121.3B in the 2 Nov
+    S-1/A (one secondary analysis, which also gives ~$895B in total commitments). Microsoft is now an investor as well
+    as a supplier. Amazon is a supplier but is not in the placement. The filing must still be read directly, and the
+    disclosure wording approved by the owner.
+  - [CNBC](https://www.cnbc.com/2026/11/10/anthropic-sets-price-range-of-70-to-78-in-upcoming-ipo.html),
+    [TechCrunch](https://techcrunch.com/2026/11/10/anthropic-sets-ipo-price-range-of-70-to-78-per-share-to-reach-an-implied-valuation-of-1-404-trillion/),
+    [Fortune](https://fortune.com/2026/11/10/anthropic-ipo-price-range-ai-stock-sell-off/),
+    [FourWeekMBA (secondary)](https://fourweekmba.com/ai-anthropic-raises-its-google-spending-floor-to-121-3b/)
+- **AI money (context):** the 5 Nov sell-off took the S&P 500 down 4.4% and the Nasdaq 5.5%; Nvidia fell 9.3%. AP links
+  it partly to Democratic wins raising the chance of data-center construction pauses.
+  [AP via WBTV](https://www.wbtv.com/2026/11/05/brutal-sell-off-ai-stocks-sends-wall-street-reeling-sp-500-sees-worst-day-since-2025-liberation-day-tariffs/)
+- **5 Short Supply:** case 3:26-cv-06345 is still pending with no hearing date. Re-check 12 Nov.
+- **10/11 Whistleblowers:** S. 1792 has had no action beyond the HELP referral. No new named AI whistleblower testimony
+  dated November.
+- **Military AI / data-center NDAs:** nothing dated November. The Finnish NDA echo (Tuusula/Jokela) is in HS-SCOUT.
+- **Pennsylvania v. Character.AI (MED):** no ruling.
+- **Reactions:** counts are not visible through search. **Pattern note:** the price range landed through named outlets
+  (CNBC, TechCrunch, Fortune) on the same day, while the aggregators ran a contradictory $185 figure. For filings, take
+  the named outlets plus the EDGAR URL, and never an aggregator number.

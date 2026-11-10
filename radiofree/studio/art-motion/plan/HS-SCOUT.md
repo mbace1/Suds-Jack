@@ -1186,3 +1186,33 @@ Search summaries only; nothing opened. One device each, from STORY-DEVICES.md or
 - **Reactions:** counts are not visible through search.
 - **Pattern note:** the protest showed up only in Finnish-language queries (STT via Kaleva). For Finnish leads, search
   in Finnish first.
+
+### Check Tue 10 Nov 17:16 (evening, run ~19:55; search summaries only; nothing opened)
+- **Candidate, updated: Tuusula (Jokela) data center, secrecy dispute (MED).**
+  - Tuusula signed a preliminary agreement to sell about 16.7 ha in Jokela to funds managed by Blackstone (town
+    release).
+  - A residents' initiative (Jyri Venninen) asks the town to open the project's status and its secret documents,
+    including a mining survey marked secret in full. He wants to "press the brakes", not stop it.
+  - The town denies hiding anything and says the preliminary agreement required broad confidentiality. Keski-Uusimaa
+    reports councilors did not know about the preliminary agreement.
+  - Mayor Janne Mellin (MTV): the decisions were lawful, residents woke up too late, and the town will review its
+    communication.
+  - The dates in the results are inconsistent; check the timeline before a pitch.
+  - Verified how: search summaries of Keski-Uusimaa, Aamuposti, MTV and the town's own page. Nothing opened.
+  - [Tuusula](https://tuusula.fi/en/2025/12/03/data-centre-planned-for-jokela/),
+    [Keski-Uusimaa](https://www.keski-uusimaa.fi/paikalliset/9821801),
+    [Aamuposti](https://www.aamuposti.fi/paikalliset/9698846),
+    [MTV](https://www.mtvuutiset.fi/artikkeli/datakeskuspaatoksia-on-tehty-kuntalaisten-mielesta-hahmaisesti-nyt-sita-vastaan-taistellaan-verkostolla/9390670)
+- **Helsinki protest (7 Nov), reaction:** the march ended at Parliament House with a demand to freeze data-center
+  projects until regulation catches up (Kaleva/STT). No minister's response found.
+- **Helsinki (Five Pins, posted ~12:44 today):** no November item contradicts it.
+- **Found in Pasila:** no Pasila, Yle, city or Tukes reaction.
+- **Muhos (Cut First):** no water-plan report. Police first information is due in December, and the investigation runs
+  into 2027 (on file).
+- **Hamina (Right of Way):** nothing new on the flying squirrels or the eighth-building permit.
+- **Owner's leads:** ICEYE (Sleep Tight): CLEAR, no November item. Fitburg: no appeal reported (watch ~12 Nov).
+  Protective Fence 26: unchanged.
+- **HS sweep:** no new HS AI or data-center story. The JSN ruling on the HS/IS AI drone error is on file.
+- **Reactions:** counts are not visible through search.
+- **Pattern note:** the Tuusula follow-up came through local papers (Keski-Uusimaa, Aamuposti) and MTV, not HS or Yle.
+  For municipal secrecy stories, search the local paper by town name.
