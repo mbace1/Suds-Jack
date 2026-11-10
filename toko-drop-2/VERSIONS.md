@@ -19,6 +19,15 @@
     Never `--no-verify`.
 -->
 
+## v136 — 2026-11-10
+**HARDCADE's BERG lunges at you, and lunges again**
+- THE ASK (owner, 2026-11-10, asked what to do about HARDCADE's ice playing easier than its river: "New BERG attack (HARDCADE)"). The ice's waves cost about what the river's do; its boss did not kill — BERG's icicle walls are told and walked round (5 of HARDCADE world 7's deaths at its boss, against PIKE's 47 at the river's). In HARDCADE only, while BERG slides it now LUNGES: no frost and no lane, it turns on you at three times its slide for 0.6 s — then, 0.3 s after, turns on you and lunges again — every 2.2–3.4 s. Nothing tells the first; the beat before the second is the time a person has to read it. ARCADE's BERG and the campaign's (HARD PAIN too) are as they were.
+- How it was found (HARDCADE world 7 on its own, six skilled bots × 24 seeds, mean clears; the river 27.8, the deep 28.5): as it was 46.5; a lunge alone 41.8 (2.4×) → 32.8 (3×, more often) and no lower whatever its speed, length or pace (3.4×: 32.7, 0.85 s: 34.3, every 1.6–2.6 s: 34.2); aimed where you are going 38.3 (the bots stepped out of it); shards thrown as it turns 37.7 (they kept the bots away); a second lunge straight after the first 20.3–22.3 whatever its speed or pace (the re-aim is what the bots cannot read); a second one half the time 29.8; **a second one 0.3 s after the first 26.5** (BERG's own deaths 78, PIKE's 73) — the one kept, the beat being what a person needs.
+- Measured as shipped: the whole HARDCADE run (six skilled bots × 24 seeds, each world walked into with what the run carried) clears world 7 **27.3%** of the time where v127 measured 41.7 — the river before it 31.5, the deep after it 29.8, worlds 1–6 within a point of v127's. The bump is gone; world 7 sits 2.5 under the deep, inside what 24 seeds can tell apart. (Started bare it reads 34.2: a world on its own and a run that carries its lives in are different instruments, docs/CURVE.md.).
+- Cache tokens `?v=135` → `?v=136`; HUD label → `2.0 · v136`
+
+---
+
 ## v135 — 2026-11-10
 **The campaign's C lines where a beginner reaches them: 26 lowered, nothing raised**
 - THE ASK (owner, 2026-11-10, asked the C-line rule measured at v128 and shown before it shipped: "Yes, lower them"). C is a room's passing grade — under it the room is an F and the next stays shut — and v121's stand-in beginner stopped at THREE RINGS, through three times and each time just under its C line of 20,000. The rule: C at the beginner bot's lower quartile (it was its median), every room, both routes; S, A and B do not move, and a line never goes up. 26 C lines come down (each room's tiers `source` says so); the beginner bot now clears C about three times in four where it cleared it about half the time (THREE RINGS 54% → 75%, PULSE 41% → 76%, HARD PAIN NEEDLE 27% → 82%). HIGH GROUND, the other flag, was drawn again on 48 seeds and stays.

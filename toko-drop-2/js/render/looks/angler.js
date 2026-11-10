@@ -1,8 +1,8 @@
 // angler.js — how ANGLER looks: GLOWA's look (a dark gel nearly the colour
 // of THE DEEP, holding out a lure on a stalk where the sim says it is), at a
 // boss's size, with the boss ring under it.
-import glowa from './glowa.js?v=135';
-import { auraBuild, auraUpdate, auraReset } from './bossaura.js?v=135';
+import glowa from './glowa.js?v=136';
+import { auraBuild, auraUpdate, auraReset } from './bossaura.js?v=136';
 
 export default {
   build(ctx) { return { ...glowa.build(ctx), ...auraBuild(ctx) }; },

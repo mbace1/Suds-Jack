@@ -24,6 +24,9 @@ export default {
   knock: 1.2,              // u/s a shot adds along it
   max: 9,                  // u/s at most
   freeze: { every: [5.0, 6.0], tell: 0.8, hold: 0.35, lines: 4, n: 5, width: 2.6, speed: 0.75 },
+  // v136, HARDCADE only (sim/species/berg.js): the untold lunge — at you at `speed` × its slide for `time` s, and again
+  // `again` s after it, every `every` s (the first `first` s in)
+  snap: { first: [2.0, 3.0], every: [2.2, 3.4], time: 0.6, speed: 3.0, again: 0.3 },
   rage: { at: 0.5, label: 'THE BERG CALVES!', banner: 1.4, shake: 0.4, speed: 1.3, lines: 8, calf: { n: 2, kind: 'skata' } },
 
   look: { frost: 0xffffff },
