@@ -18,9 +18,9 @@
 // that follows each pixel's own view ray down into a cylinder and shows the wall or the bottom it meets
 // Reads the world, never writes it. Every number is TUNING.posts (sim) and the look's own below.
 import * as THREE from 'three/webgpu';
-import { Fn, float, vec2, vec3, smoothstep, mix, positionWorld, positionLocal, normalWorld, cameraPosition, normalize, dot, sqrt, max, select, fract, abs, atan, uniform } from 'three/tsl';
-import { TUNING } from '../tuning.js?v=137';
-import { noise } from './kit.js?v=137';
+import { Fn, float, vec2, vec3, smoothstep, mix, positionWorld, positionLocal, normalWorld, cameraPosition, normalize, dot, sqrt, max, select, fract, abs, atan, uniform, floor as tfloor } from 'three/tsl';
+import { TUNING } from '../tuning.js?v=138';
+import { noise } from './kit.js?v=138';
 
 const T = TUNING;
 const std = (color, rough = 0.6, metal = 0, extra = {}) => new THREE.MeshStandardNodeMaterial({ color, roughness: rough, metalness: metal, ...extra });
@@ -224,7 +224,9 @@ const ramYaw = (m) => (m.zWalls ? (m.side < 0 ? 0 : Math.PI) : (m.side < 0 ? Mat
 // how rough and how metal; `pit` the walls, the bottom and the rim of a hole cut in it (sim/posts.js: TUNING.posts)
 const SLAB = {
   // the driveway: its curb's own concrete (scenery.driveway.curb) round a lawn of its own grass
-  2: () => { const D = T.scenery.driveway; return { top: D.curb.map((v) => v * 0.9), side: D.curb.map((v) => v * 0.74), lip: D.curb.map((v) => v * 1.02), grit: 9, rough: 0.9, metal: 0, lawn: { lo: D.grassLo, hi: D.grassHi } }; },
+  // (v138: the curb's own worn STONES — a seam every `stones` m along the island, moss in the seams and at their foot)
+  2: () => { const D = T.scenery.driveway; return { top: D.curb.map((v) => v * 0.95), side: D.curb.map((v) => v * 0.76), lip: D.curb.map((v) => v * 1.08), grit: 9, rough: 0.9, metal: 0, lawn: { lo: D.grassLo, hi: D.grassHi },
+    stones: 1.25, mossCol: D.stone?.moss ?? [0.05, 0.085, 0.03] }; },
   // the sewer: a collar of its walls' brick (scenery.sewer), a concrete cap
   3: () => { const W = T.scenery.sewer; return { top: W.brickColor.map((v) => v * 0.62), side: W.brickColor.map((v) => v * 0.5), lip: W.brickColor.map((v) => v * 0.8), grit: 8, rough: 0.85, metal: 0, brick: { size: W.brick, mortar: W.mortar } }; },
   // the cistern: its own stone, dressed on top and coursed down the side; a well's walls coursed, its water dark
@@ -242,6 +244,10 @@ const SLAB = {
   // the core: a plinth of its dark alloy, a violet lip
   9: () => ({ top: [0.05, 0.035, 0.08], side: [0.025, 0.02, 0.04], lip: [0.2, 0.09, 0.24], grit: 2, rough: 0.35, metal: 0.7 }),
 };
+// v138: on NEON's floors (the title's other look for worlds 2 and 3) a blocker is a slab of dark glass with its edge lit
+// in the floor's own line colour — a lawn in a kerb of stone has no place on a grid of light
+const NEON_SLAB = { 2: 0xff5fd0, 3: 0x5fffe8 };
+const neonSlab = (world) => { const c = new THREE.Color(NEON_SLAB[world] ?? 0x5f8cff); return { top: [0.02, 0.008, 0.035], side: [0.008, 0.004, 0.018], lip: [c.r, c.g, c.b], grit: 2, rough: 0.3, metal: 0.5, neon: [c.r, c.g, c.b] }; };
 // (`local`: a foot that moves — the ice's pans drift, the core's plinths go round — wears its grain with it)
 function slabMat(M, local = false) {
   const m = new THREE.MeshStandardNodeMaterial({ roughness: M.rough, metalness: M.metal });
@@ -267,6 +273,11 @@ function slabMat(M, local = false) {
       const top = smoothstep(0.4, 0.5, abs(fract(a.mul(rr).div(0.24).add(half)).sub(0.5))).max(smoothstep(0.42, 0.5, abs(ring.sub(0.5))));
       col = mix(col, vec3(...B.mortar), mix(side, top, smoothstep(0.5, 0.9, up)));
     }
+    if (M.stones) {
+      const along = M.axisZ ? p.z : p.x, seam = smoothstep(0.4, 0.5, abs(fract(along.div(M.stones)).sub(0.5)));
+      const foot = float(1).sub(smoothstep(0.0, 0.2, p.y)).mul(smoothstep(0.38, 0.62, noise(p.xz.mul(1.3).add(p.y))));
+      col = mix(col.mul(float(1).sub(seam.mul(0.45))).mul(noise(vec2(tfloor(along.div(M.stones)).mul(7.3), 1.1)).mul(0.24).add(0.88)), vec3(...M.mossCol), max(seam.mul(0.5), foot.mul(0.75)));
+    }
     if (M.stripes) {
       // deck plates: seams every 1.2 m on the top; a hazard band round the side
       const seam = smoothstep(0.47, 0.5, abs(fract(p.x.div(1.2)).sub(0.5))).max(smoothstep(0.47, 0.5, abs(fract(p.z.div(1.2)).sub(0.5))));
@@ -278,6 +289,8 @@ function slabMat(M, local = false) {
     // where it stands in the floor, darker (no light gets under the bevel)
     return col.mul(mix(float(0.55), float(1), smoothstep(0, 0.18, p.y)));
   })();
+  // v138: NEON's slab — its bevel is a line of light (its own light, as the floor's lines are: no halo)
+  if (M.neon) m.emissiveNode = Fn(() => vec3(...M.neon).mul(smoothstep(0.25, 0.55, normalWorld.y).mul(float(1).sub(smoothstep(0.8, 0.95, normalWorld.y))).mul(1.3)))();
   return m;
 }
 // a lawn on top of an island, in the set's own grass, mown in stripes
@@ -338,7 +351,7 @@ function pitMat(P, x0, z0, r0, depth0) {
 }
 
 export class PostView {
-  constructor(scene) { this.scene = scene; this.views = []; this.extras = []; this.props = []; this.lanes = []; this.key = ''; this.cache = new Map(); }
+  constructor(scene) { this.scene = scene; this.views = []; this.extras = []; this.props = []; this.lanes = []; this.key = ''; this.cache = new Map(); this.look = 'street'; }
   _model(kind) {
     // one model a kind, cloned: the geometry and materials are shared
     if (!this.cache.has(kind)) this.cache.set(kind, build(kind));
@@ -421,11 +434,15 @@ export class PostView {
     }
   }
   sync(w, alpha, time) {
-    const P = w?.posts ?? [], key = `${w?.world}|` + P.map((p) => `${p.kind}:${p.r.toFixed(2)}`).join('|');
+    const neon = this.look === 'neon' && w?.world <= 3;
+    const P = w?.posts ?? [], key = `${w?.world}|${neon ? 'neon|' : ''}` + P.map((p) => `${p.kind}:${p.r.toFixed(2)}`).join('|');
     if (key !== this.key) {
       this.reset();
       this.key = key;
-      const M = SLAB[w.world]?.(), mat = M && slabMat(M), isles = new Map();
+      const M = neon ? neonSlab(w.world) : SLAB[w.world]?.(), isles = new Map();
+      // (which way the islands run: their stones' seams lie across it)
+      if (M) { const il = P.filter((p) => p.kind === 'island'); M.axisZ = il.length > 1 ? Math.abs(il[1].z - il[0].z) >= Math.abs(il[1].x - il[0].x) : true; }
+      const mat = M && slabMat(M);
       let local = null;   // a foot is drawn about its own middle: its grain (and the sewer's brick) is its own
       for (const p of P) {
         // v137: an island's circles and a pit are built once for the layout (below); each keeps a place in views
@@ -452,6 +469,7 @@ export class PostView {
       }
       for (const cs of isles.values()) this._island(cs, M, mat);
       for (const q of w.props ?? []) {
+        if (neon && q.kind === 'shrub') continue;   // nothing grows on a grid of light
         // (a clone sharing its kind's model: removed in reset(), never let go)
         const v = this._model(q.kind); v.scale.setScalar(q.s); v.position.set(q.x, q.y, q.z); v.rotation.y = (q.x * 1.7 + q.z * 0.9) % (Math.PI * 2);
         this.scene.add(v); this.props.push(v);

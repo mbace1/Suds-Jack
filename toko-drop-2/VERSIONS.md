@@ -19,6 +19,23 @@
     Never `--no-verify`.
 -->
 
+## v138 — 2026-11-10
+**World 2 to the owner's concept, and past it: an old slab, worn curb stones, a puddle with the sky in it, and fallen leaves that are really there**
+- THE ASK (owner, 2026-11-10, with a picture: "Here is a concept art for world 2 but we can go way beyond with geometry and art assets"). The picture is kept (art-ref/world-2-driveway-concept.jpg) and read as traits that can be checked (art-ref/briefs/world-2-driveway.md); the driveway was compared to it trait by trait, render by render.
+- THE SLAB is an old one: big pours (a joint every 8 m, where it was a tile grid every 4), warm ochre in the sun and cool in the shade, damp in broad patches and bleached in others, dirt along the joints and against the curb, and moss grown out of both; the storm drain stands in the damp that has run to it for years.
+- NO TWO POURS ALIKE (owner, the same day: "Can we make the concrete ground in world 1 look better (more detailed) and maybe with better slate visual variety" — read as the driveway's slabs, the one concrete floor there is). Each pour has a number of its own, and from it: its tone and warmth, which way the float was dragged over it (a third one way, a third the other, a third floated smooth), how far the whole pour leans damp or bleached, its frost pitting, and a mottling that stops at its joints. Some were SAW-CUT in two or in four, and the pieces have weathered apart. Here and there a square was dug out and poured again: a REPAIR, paler and smoother, with a cut edge. The pours have SETTLED: along a joint one stands a little proud of the next, its edge catching the light and the low one's lying in the step's shade. The joints themselves have opened here and held there.
+- PUDDLES, two, at the edges (a bright pool in the middle of the fight would hide shots): each shows the evening sky with cloud drifting over, the trees' crowns dark across it, the low sun's glitter, and rings going out from where the hero stands near it. The slab round them is dark and wet.
+- THE CURB is worn stones: each its own length and height, a little out of line, its ends rounded over, stained down its faces, lichen on top, moss in the seams and at its foot. The islands that block the floor (v137) are edged with the same stones.
+- FALLEN LEAVES (render/leaves.js), real ones: 150 on the slab, thicker toward its edges, heaps in the far corners, more on the lawn — a cupped, curled blade with a midrib, its own autumn colour, its own shadow. And they are there: a body going by scuffs them along, a dash blows them out of its road, a burst throws them up; they tumble, settle against the curb and stay where the fight left them. Looks only — the sim never knows them.
+- THE LAWN is rough and lived in: darker clumps, dry patches, daisies in clumps past the curb, more tufts of grass along it. The light is the golden hour's: the sun warmer and stronger, the sky's shade cooler.
+- On NEON's floors (the title's other look for worlds 2 and 3) a blocker is a slab of dark glass with its edge lit in the floor's line colour: a lawn in a kerb of stone had no place on a grid of light.
+- Cost: the slab's and the lawn's new marks are read off noise their shaders already made (the first cut added about a fifth to world 2's frame on the software GPU; measured against v137 on the software GPU, six runs a side, the driveway now costs about a tenth more a frame, inside that machine's run-to-run spread; the slab's per-pour numbers are spun off one hash a slab, where a sine each had cost a tenth more again). test/view.mjs holds the leaves: seeded, scuffed by a walk, blown by a dash and not by a walk at the same distance, thrown by a burst, at rest again, never inside a blocker, the lawn's never moved.
+- Still different from the picture, on purpose: no curb along the near side (the standing rule), the game's own camera, and the game's own blockers and beach ball.
+- Cache tokens `?v=137` → `?v=138`; HUD label → `2.0 · v138`
+- Cache tokens `?v=137` → `?v=138`; HUD label → `2.0 · v138`
+
+---
+
 ## v137 — 2026-11-10
 **The blockers block out the floor: rounded islands and footprints of each world's own material, and pits**
 - THE ASK (owner, 2026-11-08: "the circular level blockers look weird, they should block the levels out more around it somehow"; shown four pitches — footprints, islands, walls, pits — 2026-11-10: "Mix of A and B, so always rounded. But we need the pits somewhere as well"). No blocker is a small circle dropped on the floor any more (sim/posts.js, render/posts.js, TUNING.posts):

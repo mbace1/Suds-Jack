@@ -51,22 +51,23 @@
 // TUNING.scenery.
 import * as THREE from 'three/webgpu';
 import { Fn, float, vec2, vec3, fract, sin, cos, dot, texture, floor as tfloor, mix, smoothstep, abs, positionWorld, positionLocal, normalWorld, normalView, clamp, max, min, length, step, fwidth, uv, attribute } from 'three/tsl';
-import { GEL_TIME } from './gel.js?v=137';
-import { hash, noise, seeded, motes, phase } from './kit.js?v=137';
-import { SUN_AT } from './sun.js?v=137';
-import { treeAtlas } from './trees.js?v=137';
-import { boiler } from './sets/boiler.js?v=137';
-import { river } from './sets/river.js?v=137';
-import { ice } from './sets/ice.js?v=137';
-import { deep } from './sets/deep.js?v=137';
-import { core } from './sets/core.js?v=137';
+import { GEL_TIME } from './gel.js?v=138';
+import { hash, noise, seeded, motes, phase } from './kit.js?v=138';
+import { SUN_AT } from './sun.js?v=138';
+import { treeAtlas } from './trees.js?v=138';
+import { LeafLitter } from './leaves.js?v=138';
+import { boiler } from './sets/boiler.js?v=138';
+import { river } from './sets/river.js?v=138';
+import { ice } from './sets/ice.js?v=138';
+import { deep } from './sets/deep.js?v=138';
+import { core } from './sets/core.js?v=138';
 
 // worlds 5-9 (v72): a set of their own each, built to its brief (render/sets/)
 const SETS = { boiler, river, ice, deep, core };
 
 // the noise, the cracks and the seeded numbers are the kit's (v72: render/kit.js),
 // and the floor still takes them from here
-export { noise, cells } from './kit.js?v=137';
+export { noise, cells } from './kit.js?v=138';
 
 // the storm drain's grate (v65, the owner's world-2 sheet), in its own units
 // (q, its frame's radius 1): x the grate, y a slot, z the frame. Rows of
@@ -151,7 +152,11 @@ export class Scenery {
     for (const m of this.parts) { this.group.remove(m); m.geometry.dispose(); m.material.dispose(); }
     this.parts.length = 0;
     this.neon = null;
+    this.leaves = null;
   }
+  // v138: what in the set answers the fight (the driveway's leaves): the world is read, never written
+  sync(w, dt) { this.leaves?.sync(w, dt); }
+  onEvent(e) { this.leaves?.onEvent(e); }
 
   // v123: world 1's lines of neon (TUNING.scenery.surround.grid.neon). Every loop is a thin flat band round the
   // arena, and all of them are ONE mesh with ONE shader (v116: one compiled graph): each vertex carries where it is
@@ -233,7 +238,9 @@ export class Scenery {
       const blade = noise(p.mul(S.bladeScale)), tuft = noise(p.mul(S.tuftScale).add(7.3));
       const stripe = smoothstep(-0.15, 0.15, sin(p.x.mul(Math.PI / S.stripe)));
       const lo = vec3(...S.grassLo), hi = vec3(...S.grassHi);
-      const col = mix(lo, hi, blade.mul(0.55).add(tuft.mul(0.25)).add(stripe.mul(0.2)));
+      let col = mix(lo, hi, blade.mul(0.55).add(tuft.mul(0.25)).add(stripe.mul(0.2)));
+      // v138: rough and lived in — darker clumps, and a paler dry patch here and there
+      if (S.rough) col = col.mul(float(1).sub(smoothstep(0.45, 0.75, noise(p.mul(S.clump).add(3.7))).mul(S.rough))).mul(float(1).add(smoothstep(0.62, 0.85, tuft).mul(0.25)));
       // the curb's shadow on the grass along its outside, as far as its near ends — v93: thrown away from the
       // world's sun (sun.js), so only the sides that face away from it are shaded, cot θ × the curb's height out
       const sunH = max(length(SUN_AT.xz), 1e-3), cot = min(sunH.div(max(SUN_AT.y, 1e-3)), 2.2);
@@ -260,6 +267,9 @@ export class Scenery {
     lawn.position.y = -0.02; lawn.renderOrder = 1;
     this._curb(S, hx, hz);
     this._tufts(S, hx, hz);
+    if (S.daisies) this._daisies(S, hx, hz);
+    // v138: its fallen leaves (render/leaves.js)
+    if (S.leaves) { this.leaves = new LeafLitter(); this.leaves.build(hx, hz, (m) => this._add(m)); }
   }
 
   // the curb (v65, the owner's module sheet): straight pieces with the top
@@ -284,9 +294,13 @@ export class Scenery {
       const nose = (from, dir) => Array.from({ length: 6 }, (_, i) => { const f = (i / 5) * (Math.PI / 2); return { s: from + dir * S.curbNose * (1 - Math.cos(f)), k: Math.sin(f), e: 1 }; });
       const end = (at, dir, kind) => kind === 'nose' ? nose(at, dir)
         : kind === 'mitre' ? [{ s: (u) => at - dir * (u - gap * 0.71), k: 1, e: 0 }, { s: (u) => at - dir * (u - gap * 0.71 - E), k: 1, e: 1 }]
-          : [{ s: at + dir * (gap / 2), k: 1, e: 0 }, { s: at + dir * (gap / 2 + E), k: 1, e: 1 }];
+          : S.stone ? [{ s: at + dir * (gap / 2), k: 1 - S.stone.round, w: 1 - S.stone.round * 0.5, e: 0 }, { s: at + dir * (gap / 2 + S.stone.end * 0.4), k: 1 - S.stone.round * 0.25, w: 1 - S.stone.round * 0.1, e: 0.55 }, { s: at + dir * (gap / 2 + S.stone.end), k: 1, e: 1 }]
+            : [{ s: at + dir * (gap / 2), k: 1, e: 0 }, { s: at + dir * (gap / 2 + E), k: 1, e: 1 }];
       const rings = [...end(s0, 1, a), ...end(s1, -1, b).reverse()], tone = rnd() * 2 - 1;
-      const put = (g) => { for (const [u, v] of prof) { const s = typeof g.s === 'function' ? g.s(u) : g.s; pos.push(run.o[0] + run.n[0] * u + run.a[0] * s, v * g.k, run.o[1] + run.n[1] * u + run.a[1] * s); kerb.push(g.e, tone); } };
+      // v138 (the owner's concept: worn STONES, each its own): a piece stands a little taller or shorter than the
+      // next (`tall`), a little out of line (`out`), and a ring may be narrower than the stone (`w`: its rounded ends)
+      const St = S.stone, tall = St ? 1 + (rnd() * 2 - 1) * St.tall : 1, du = St ? (rnd() * 2 - 1) * St.out : 0, lean = St ? (rnd() * 2 - 1) * St.lean : 0;
+      const put = (g) => { for (const [u0, v] of prof) { const s = typeof g.s === 'function' ? g.s(u0) : g.s, gw = g.w ?? 1, u = W / 2 + (u0 - W / 2) * gw + du, t01 = (s - s0) / Math.max(1e-6, s1 - s0); pos.push(run.o[0] + run.n[0] * u + run.a[0] * s, v * g.k * tall * (1 + lean * (t01 - 0.5)), run.o[1] + run.n[1] * u + run.a[1] * s); kerb.push(g.e, tone); } };
       const at = pos.length / 3;
       rings.forEach(put);
       for (let j = 0; j < rings.length - 1; j++) for (let i = 0; i < np - 1; i++) { const p = at + j * np + i, q = p + np; idx.push(p, q + 1, p + 1, p, q, q + 1); }
@@ -301,7 +315,9 @@ export class Scenery {
     // the pieces between s0 and s1, about curbJoint m each
     const pieces = (run, s0, s1, a, b) => {
       const n = Math.max(1, Math.round((s1 - s0) / S.curbJoint)), l = (s1 - s0) / n;
-      for (let i = 0; i < n; i++) piece(run, s0 + i * l, s0 + (i + 1) * l, i ? 'joint' : a, i < n - 1 ? 'joint' : b);
+      // v138: no two stones the same length
+      const cut = Array.from({ length: n + 1 }, (_, i) => s0 + (i + (i && i < n && S.stone ? (rnd() * 2 - 1) * S.stone.vary : 0)) * l);
+      for (let i = 0; i < n; i++) piece(run, cut[i], cut[i + 1], i ? 'joint' : a, i < n - 1 ? 'joint' : b);
     };
     const arm = S.curbArm, far = { o: [-hx, -hz], n: [0, -1], a: [1, 0] }, right = { o: [hx, -hz], n: [1, 0], a: [0, 1] }, left = { o: [-hx, hz], n: [-1, 0], a: [0, -1] };
     piece(far, 0, arm, 'mitre', 'joint'); pieces(far, arm, 2 * hx - arm, 'joint', 'joint'); piece(far, 2 * hx - arm, 2 * hx, 'joint', 'mitre');
@@ -319,9 +335,51 @@ export class Scenery {
       const grit = noise(p.xy.mul(9)).mul(n.z).add(noise(p.zy.mul(9)).mul(n.x)).add(noise(p.xz.mul(9)).mul(n.y)).div(n.x.add(n.y).add(n.z)).mul(0.12);
       // each piece a shade of its own, dark toward its seams and where it stands in the grass
       const seam = mix(float(0.5), float(1), smoothstep(0.1, 1, k.x)), foot = mix(float(1 - S.curbShade), float(1), smoothstep(0, H * 0.3, p.y));
-      return vec3(...S.curb).mul(float(0.92).add(grit)).mul(k.y.mul(S.curbTone).add(1)).mul(seam).mul(foot);
+      const base = vec3(...S.curb).mul(float(0.92).add(grit)).mul(k.y.mul(S.curbTone).add(1)).mul(seam).mul(foot);
+      if (!S.stone) return base;
+      // v138: weathered — broad stains down its faces, lichen pale on its top, moss dark in its seams and where it
+      // stands in the ground
+      const St = S.stone, stain = noise(vec2(p.x.add(p.z).mul(0.7), p.y.mul(2.2))).mul(St.stain);
+      const top = smoothstep(0.75, 0.95, normalWorld.y), lichen = smoothstep(0.62, 0.8, noise(p.xz.mul(1.9).add(4.4))).mul(top).mul(St.lichen);
+      const mossy = max(float(1).sub(smoothstep(0.05, 0.7, k.x)).mul(0.8), float(1).sub(smoothstep(0.0, H * St.mossTo, p.y)).mul(smoothstep(0.35, 0.6, noise(p.xz.mul(1.3).add(p.y)))));
+      return mix(mix(base.mul(float(1).sub(stain)), vec3(...St.lichenCol), lichen), vec3(...St.moss), mossy.mul(St.mossK));
     })();
     this._add(new THREE.Mesh(geo, mat));
+  }
+
+  // v138: daisies in the lawn (the owner's concept): a ring of white petals round a yellow eye on a short stalk,
+  // in clumps past the curb on the far side and the long ones — one instanced draw
+  _daisies(S, hx, hz) {
+    const D = S.daisies, W = S.curbWidth, rnd = seeded(D.seed), pos = [], col = [], idx = [];
+    const tri = (a, b, c, k) => { const at = pos.length / 3; pos.push(...a, ...b, ...c); for (let i = 0; i < 3; i++) col.push(...k); idx.push(at, at + 1, at + 2); };
+    // a metre-wide flower a metre up: petals drooping a little from the eye, the eye a low cone, the stalk a sliver
+    for (let k = 0; k < D.petals; k++) {
+      const a0 = (k / D.petals) * Math.PI * 2, a1 = a0 + (Math.PI * 2 / D.petals) * 0.8, am = (a0 + a1) / 2;
+      tri([Math.cos(a0) * 0.16, 1, Math.sin(a0) * 0.16], [Math.cos(am) * 0.5, 0.93, Math.sin(am) * 0.5], [Math.cos(a1) * 0.16, 1, Math.sin(a1) * 0.16], D.white);
+    }
+    for (let k = 0; k < 6; k++) { const a0 = (k / 6) * Math.PI * 2, a1 = ((k + 1) / 6) * Math.PI * 2; tri([0, 1.06, 0], [Math.cos(a1) * 0.17, 1.005, Math.sin(a1) * 0.17], [Math.cos(a0) * 0.17, 1.005, Math.sin(a0) * 0.17], D.eye); }
+    tri([-0.03, 0, 0], [0.03, 0, 0], [0, 1, 0], [0.12, 0.3, 0.06]);
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+    geo.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
+    geo.setIndex(idx);
+    geo.computeVertexNormals();
+    const mat = new THREE.MeshStandardNodeMaterial({ vertexColors: true, side: THREE.DoubleSide, roughness: 0.8, metalness: 0 });
+    const spots = [];
+    for (let c = 0; c < D.n; c++) {
+      const out = W + 0.5 + rnd() * D.out, side = rnd();
+      const cx = side < 0.55 ? (rnd() * 2 - 1) * (hx + W) : (side < 0.775 ? -1 : 1) * (hx + out), cz = side < 0.55 ? -(hz + out) : -hz + rnd() * (2 * hz - 3);
+      const n = D.per[0] + Math.floor(rnd() * (D.per[1] - D.per[0] + 1));
+      for (let k = 0; k < n; k++) { const a = rnd() * Math.PI * 2, d = Math.sqrt(rnd()) * D.spread; spots.push([cx + Math.cos(a) * d, cz + Math.sin(a) * d]); }
+    }
+    const inst = this._add(new THREE.InstancedMesh(geo, mat, spots.length));
+    const m = new THREE.Matrix4(), q = new THREE.Quaternion(), e = new THREE.Euler(), sc = new THREE.Vector3(), t = new THREE.Vector3();
+    spots.forEach(([x, z], i) => {
+      const r = D.r[0] + rnd() * (D.r[1] - D.r[0]), h = D.h[0] + rnd() * (D.h[1] - D.h[0]);
+      e.set((rnd() - 0.5) * 0.5, rnd() * Math.PI * 2, (rnd() - 0.5) * 0.5); q.setFromEuler(e);
+      sc.set(r * 2, h, r * 2); t.set(x, 0, z);
+      inst.setMatrixAt(i, m.compose(t, q, sc));
+    });
   }
 
   // grass tufts against the curb's outside (v65): one clump of tapering

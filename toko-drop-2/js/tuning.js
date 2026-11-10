@@ -7,10 +7,10 @@
 // things that work"). The arena is 1.x's, so every 1.x number ports as it is
 // instead of through a rescale. Axes: x across the screen (right +), y up,
 // z toward the bottom of the screen. The arena is centred on the origin.
-import { SPECIES } from './tuning/species/index.js?v=137';
-import WAVES from './tuning/waves.js?v=137';
-import PICKUPS from './tuning/pickups.js?v=137';
-import MUSIC from './tuning/music.js?v=137';
+import { SPECIES } from './tuning/species/index.js?v=138';
+import WAVES from './tuning/waves.js?v=138';
+import PICKUPS from './tuning/pickups.js?v=138';
+import MUSIC from './tuning/music.js?v=138';
 
 export const TUNING = {
   render: {
@@ -146,7 +146,7 @@ export const TUNING = {
     lit: {
       // v128 (the owner's golden-hour concept): the driveway under DAYLIGHT (floor.js): a low warm sun and a cool sky,
       // the slab in the trees' dappled shade toward the far left (the sun stands there, past the far-left corner)
-      concrete: { daylight: { sky: [0.45, 0.47, 0.56], sun: [1.28, 0.92, 0.52], bodies: 0.95, contact: 0.18,
+      concrete: { daylight: { sky: [0.42, 0.43, 0.52], sun: [1.55, 0.98, 0.46], bodies: 0.95, contact: 0.18,
                               // v129: the trees past the slab, drawn as trees (render/trees.js, scenery.js treeShade): [fx, fz,
                               // out m, h m tall, w m across, atlas tile, flipped]; the leaves block `k` of the sun
                               trees: { n: 4, px: 512, seed: 11, k: 0.85, sway: 0.006, penumbra: 2.2,
@@ -228,8 +228,30 @@ export const TUNING = {
       // lawn (`sky`: the background and the void the floor runs out over)
       // v93: a stop darker and warmer (it read overexposed under the sun), and the curb's SUN shadow on the slab (sunShadow:
       // depth, the band's soft edge in m, cot θ held to cotMax): a slab in the sun is defined by its shadows
-      concrete: { lo: [0.145, 0.14, 0.128], hi: [0.265, 0.255, 0.238], sunShadow: { depth: 0.42, soft: 0.35, cotMax: 2.2 }, speck: [0.05, 0.05, 0.05], oil: [0.07, 0.068, 0.066], oilDepth: 0.4,
-                  lip: [0.42, 0.41, 0.39], joint: 4.0, jointW: 0.025, flood: 0.12, ambient: 1.0, floodTint: [1.0, 0.85, 0.6], pool: 0.06,
+      concrete: { lo: [0.1, 0.092, 0.08], hi: [0.215, 0.195, 0.165], sunShadow: { depth: 0.42, soft: 0.35, cotMax: 2.2 }, speck: [0.05, 0.05, 0.05], oil: [0.07, 0.068, 0.066], oilDepth: 0.4,
+                  // v138 (the owner's concept, art-ref/world-2-driveway-concept.jpg): big old pours (`joint` 4 → 8 m,
+                  // wider and dirtier), `weather` — broad damp patches (`dampTint` × the slab) and sun-bleached ones —
+                  // `moss` in the joints (out to `joint` m) and against the curb (`edge` m), `dirt` along both, and
+                  // PUDDLES ([fx, fz, r m, seed]; `warp` how far their edges wander, the slab `dark` and damp `damp`
+                  // radii past them; in them the sky `skyNear`→`skyFar`, the trees' crowns `trees`, a `rim` of light,
+                  // rings from the hero [per m, speed, falloff, depth] and a `shimmer`)
+                  lip: [0.42, 0.41, 0.39], joint: 8.0, jointW: 0.04, flood: 0.12, ambient: 1.0, floodTint: [1.0, 0.85, 0.6], pool: 0.06,
+                  weather: { dampAt: 0.5, dampTint: [0.52, 0.56, 0.64], bleachAt: 0.42, bleach: 0.3 },
+                  // v138 (owner, 2026-11-10: "the concrete ground ... more detailed ... better slate visual variety"): no two pours alike. Per
+                  // slab: `tone` how far its brightness strays, `cool`/`warm` the two tints it lies between, `grain`
+                  // the float's drag (cells/m along, across: a third are dragged one way, a third the other, a third
+                  // floated smooth), `weather` how far a whole pour leans damp or bleached, `pit` its frost pitting;
+                  // `cut`: the saw cuts (the share `at` left whole; of the rest some are cut across, some along,
+                  // some both: `w` m half-wide, `depth` dark, the pieces `tone` apart); `patch`: a repair in the
+                  // share past `at` (`size` of the slab, its `tint`, a cut edge `w` m, `depth` dark); `settle`: how
+                  // proud one pour stands of the next along a joint; `chip`: how far a joint's width wanders
+                  slabs: { tone: 0.24, cool: [0.95, 0.98, 1.05], warm: [1.06, 1.0, 0.9], grain: [34, 5], weather: 0.3, pit: 0.3,
+                           cut: { at: 0.4, w: 0.014, depth: 0.5, tone: 0.1 }, patch: { at: 0.82, size: [0.1, 0.2], tint: [1.2, 1.2, 1.22], w: 0.02, depth: 0.5 },
+                           settle: 0.9, chip: 0.9 },
+                  moss: { at: 0.44, joint: 0.32, edge: 2.2, color: [0.045, 0.07, 0.028], k: 0.8, dirt: 0.36 },
+                  puddles: { at: [[-0.72, -0.66, 2.6, 3.1], [0.76, 0.2, 1.5, 7.7]], warp: 0.8, edge: 0.82, damp: 0.5, dark: 0.5, k: 0.96,
+                             skyNear: [0.2, 0.31, 0.5], skyFar: [0.72, 0.78, 0.86], cloud: 0.45, sun: [1.2, 0.95, 0.6], glint: 0.9, trees: 0.88, treeAt: [1.5, -2.5],
+                             rim: 0.45, ring: [9, 6, 0.9, 0.22], shimmer: 0.1 },
                   curbAO: 0.9, curbAODepth: 0.18, sky: [0.55, 0.7, 0.85],
                   // v65 (the owner's world-2 sheet): hairline cracks, a few to a slab and faint
                   // (the ice's lesson, v48: a texture under the fight, never lines across it):
@@ -239,7 +261,8 @@ export const TUNING = {
                   crackScale: 0.6, crackJag: 0.07, crackBreak: 0.8, crackPatch: 0.2, crackW: 0.006, crackDepth: 0.3,
                   // and the storm drain set in the slab, `at` m in from the far right corner
                   // (x left, z toward you: clear of the HUD in the corner), `r` m across its frame
-                  grate: { at: [2.4, 5.5], r: 0.95, iron: [0.03, 0.031, 0.034], frame: [0.12, 0.12, 0.125], slot: [0.002, 0.002, 0.003] } },
+                  grate: { at: [2.4, 5.5], r: 0.95, iron: [0.03, 0.031, 0.034], frame: [0.12, 0.12, 0.125], slot: [0.002, 0.002, 0.003],
+                           stain: { r: 3.0, dark: 0.34, moss: 0.3 } } },
       // v101 (the module sheet: wet grey-blue flagstones, a stone-kerbed channel): the slabs a little lighter and
       // bluer, the water lighter teal, the puddles fewer and quieter (their bright rims were noise over everything),
       // and the channel's `kerbStone`: `w` m blocks `joint` m long, `lit` on their water edge, a `shadow` beyond
@@ -342,12 +365,37 @@ export const TUNING = {
     // hero (1 m across) so the arena reads as a toy on the lawn, the grass's
     // blades and tufts grown to match; and SUMMER DAYLIGHT, the lawn bright and
     // fading `fadeTo` of the way into the haze (`haze`) over `fade` m
-    driveway: { lawnOut: 40, bladeScale: 4.5, tuftScale: 0.45, stripe: 4.2, grassLo: [0.06, 0.2, 0.045], grassHi: [0.16, 0.42, 0.08], fade: 30,
+    driveway: { lawnOut: 40, bladeScale: 4.5, tuftScale: 0.45, stripe: 4.2, grassLo: [0.05, 0.13, 0.03], grassHi: [0.27, 0.4, 0.085], fade: 30,
                 haze: [0.42, 0.56, 0.5], fadeTo: 0.55,
-                curb: [0.62, 0.61, 0.58], curbWidth: 1.0, curbHeight: 1.2, curbRound: 0.3, curbJoint: 3.0, curbGap: 0.05, curbArm: 1.6, curbNose: 1.0,
-                curbTone: 0.08, curbShade: 0.3, curbShadow: 0.4,
-                tuft: { every: 3.6, skip: 0.3, out: [0.2, 2.0], h: [0.5, 1.0], blades: 30, r: 0.8, w: 0.15, bend: 0.35,
-                        lo: [0.04, 0.12, 0.03], hi: [0.2, 0.48, 0.1] } },
+                // v138 (the owner's concept): the curb is worn STONES — shorter (`curbJoint` 3 → 1.9 m, each `vary` of
+                // that longer or shorter), wider joints, every stone a little taller (`tall`), out of line (`out` m)
+                // and off level (`lean`), its ends rounded over (`round` of its height over `end` m); stained down
+                // its faces, `lichen` on its top, `moss` in its seams and up `mossTo` of its height from the ground
+                curb: [0.5, 0.47, 0.42], curbWidth: 1.0, curbHeight: 1.2, curbRound: 0.3, curbJoint: 1.9, curbGap: 0.1, curbArm: 1.6, curbNose: 1.0,
+                curbTone: 0.16, curbShade: 0.3, curbShadow: 0.4,
+                stone: { vary: 0.22, tall: 0.05, out: 0.05, lean: 0.05, round: 0.22, end: 0.2, stain: 0.3, lichen: 0.5, lichenCol: [0.6, 0.6, 0.5],
+                         moss: [0.05, 0.085, 0.03], mossTo: 0.3, mossK: 0.85 },
+                tuft: { every: 2.0, skip: 0.2, out: [0.15, 4.5], h: [0.5, 1.1], blades: 30, r: 0.8, w: 0.15, bend: 0.35,
+                        lo: [0.04, 0.12, 0.03], hi: [0.3, 0.5, 0.1] },
+                // v138: the lawn is rough and lived in (`rough`: clumps darker by this much, at `clump` to the m) and
+                // DAISIES grow in it: `n` clumps of `per` flowers within `spread` m, out to `out` m past the curb on
+                // the far side and the long ones, each `r` m across on a stalk `h` m tall
+                rough: 0.45, clump: 0.9,
+                daisies: { seed: 21, n: 44, per: [4, 9], spread: 1.3, out: 7, r: [0.13, 0.2], h: [0.25, 0.45], petals: 8, white: [0.95, 0.94, 0.88], eye: [0.95, 0.7, 0.1] },
+                // v138 FALLEN LEAVES (render/leaves.js; the owner's concept): `slab` of them on the slab — `open` of
+                // the chance out in the open, the rest gathering within `drift` m of its edges — `corner` heaped in
+                // each far corner (`cornerR` m), `lawn` on the grass out to `lawnOut` m. Each `size` m long, `wide` ×
+                // that across, cupped (`fold`) and curled (`curl`), lying `lie` m up, in one of `tones`, browner at
+                // its `tip`, darker along its `rib`, its `shadow` under it.
+                // A body within `scuff` m of its side moving faster than `minSpeed` pushes them out of its road
+                // (`push` × its speed) and along with it (`carry`); a dash is a gust (`gust` m, `gustK` × as hard);
+                // past `liftAt` they leave the floor (`lift` m/s up), a burst throws them (`burst` m/s, `burstR` ×
+                // its radius). They `drag` to a stop (`airDrag` in the air), fall at `fall`, spin and settle
+                leaves: { seed: 138, slab: 150, open: 0.2, drift: 3.0, corner: 12, cornerR: 3.2, lawn: 70, lawnOut: 3.5,
+                          size: [0.5, 0.85], wide: 0.56, curl: 0.16, fold: 0.22, lie: 0.03, rough: 0.7, tip: [0.45, 0.28, 0.14], tipK: 0.5, rib: 0.3, shadow: 0.3,
+                          tones: [[0.95, 0.38, 0.05], [0.7, 0.22, 0.04], [1.0, 0.64, 0.1], [0.4, 0.2, 0.07], [0.7, 0.46, 0.18], [0.85, 0.27, 0.05], [0.5, 0.52, 0.12]],
+                          scuff: 0.35, gust: 2.2, gustK: 1.6, minSpeed: 1.2, push: 0.5, carry: 0.35, liftAt: 6, lift: 2.6, max: 14,
+                          drag: 3.2, airDrag: 0.9, fall: 9, spin: 14, spinDrag: 2.2, rest: 0.12, burst: 7, burstR: 3.2 } },
     // v70 (owner, 2026-10-31: "continue with world 3", from the World 3 brief,
     // art-ref/briefs/world-3-sewer.md): the walls in pieces `segment` m long
     // with a `seam`, a stone capstone (`cap`: m tall, m over each face) up to

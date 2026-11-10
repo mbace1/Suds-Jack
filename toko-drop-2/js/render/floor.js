@@ -24,11 +24,11 @@
 // `swirlAt`, out to `swirlR`, and opens a hole of `hole` m in the middle).
 import * as THREE from 'three/webgpu';
 import { Fn, If, uv, uniform, float, abs, fract, min, max, sin, cos, length, smoothstep, step, mix, fwidth, texture, clamp, vec2, vec3, pow, floor as tfloor, round, select, mod, dFdx, dFdy, exp, normalize, dot, cameraPosition, positionWorld, vec4 } from 'three/tsl';
-import { pickStyle, grainAt } from './style.js?v=137';
-import { SUN_AT } from './sun.js?v=137';
-import { GEL_TIME } from './gel.js?v=137';
-import { noise, grate, cells, sewerSpots, treeShade } from './scenery.js?v=137';
-import { lilyPads, DRIFT, hash } from './kit.js?v=137';
+import { pickStyle, grainAt } from './style.js?v=138';
+import { SUN_AT } from './sun.js?v=138';
+import { GEL_TIME } from './gel.js?v=138';
+import { noise, grate, cells, sewerSpots, treeShade } from './scenery.js?v=138';
+import { lilyPads, DRIFT, hash } from './kit.js?v=138';
 
 const _white = new THREE.Color(0xffffff);
 
@@ -198,21 +198,85 @@ export function buildFloor(T, hx, hz, light, { style = 'grid', bounds: hasBounds
   };
 
   const concrete = (p, w) => {
-    const C = W.concrete;
-    // the slab: a mid grey, mottled in broad patches, with fine aggregate
-    const mott = noise(w.mul(0.35)).mul(0.6).add(noise(w.mul(1.3)).mul(0.4));
-    const grit = noise(w.mul(26)), speck = smoothstep(0.78, 0.86, noise(w.mul(61).add(3.1)));
+    const C = W.concrete, Sl = C.slabs, J = C.joint;
+    // v138: NO TWO POURS ALIKE (owner, 2026-11-10: "the concrete ground ... more detailed ... better slate visual variety"). Each slab — the
+    // pour between four joints — has a number of its own (`sid`), and everything below that says "this one" reads it:
+    // its tone and warmth, which way the float was dragged over it (the grain), how weathered it is, whether it was
+    // saw-cut in two or four, whether a square of it was dug out and poured again. All of it is arithmetic on the
+    // slab's number: not one new noise sample (v138's cost pass)
+    const sid = tfloor(w.div(J)), loc = fract(w.div(J)), px = max(length(fwidth(w)), 1e-4);
+    // (one hash a slab, and the rest of its numbers spun off that one: a sine each was a tenth of the floor's cost)
+    const sr = hash(sid.add(vec2(3.7, 1.3))), spin = (k) => fract(sr.mul(k)), sr2 = spin(37.17), sr3 = spin(113.3);
+    // the slab: a mid grey, mottled in broad patches (each pour's own: the pattern does not run on under a joint),
+    // with fine aggregate — dragged one way, the other, or floated smooth
+    const n13 = noise(w.mul(1.3)), mott = noise(w.mul(0.35).add(Sl ? sid.mul(1.7) : 0)).mul(0.6).add(n13.mul(0.4));
+    const gs = Sl ? select(sr.lessThan(0.36), vec2(...Sl.grain), select(sr.lessThan(0.72), vec2(Sl.grain[1], Sl.grain[0]), vec2(26, 26))) : vec2(26, 26);
+    const grit = noise(w.mul(gs)), sp = noise(w.mul(61).add(3.1)), speck = smoothstep(0.78, 0.86, sp);
     let col = mix(vec3(...C.lo), vec3(...C.hi), mott.mul(0.75).add(grit.mul(0.25))).add(vec3(...C.speck).mul(speck));
+    // the saw cuts: some pours were cut across, some along, some both ways (`cut.at`: how many were left whole)
+    let cutLine = float(0), inP = float(0), pEdge = float(0);
+    if (Sl) {
+      const K = Sl.cut, cutX = step(K.at, sr2).mul(float(1).sub(step(K.at + (1 - K.at) * 0.45, sr2)).add(step(K.at + (1 - K.at) * 0.75, sr2))), cutZ = step(K.at + (1 - K.at) * 0.45, sr2);
+      const line = (d) => float(1).sub(smoothstep(float(K.w).sub(px), float(K.w).add(px), d));
+      cutLine = max(cutX.mul(line(abs(loc.x.sub(0.5)).mul(J))), cutZ.mul(line(abs(loc.y.sub(0.5)).mul(J))));
+      // (each piece of a cut pour has weathered a little differently from the next)
+      const piece = fract(sr.add(step(0.5, loc.x).mul(cutX).mul(0.37)).add(step(0.5, loc.y).mul(cutZ).mul(0.61)).mul(197.3));
+      col = col.mul(float(1).add(sr.sub(0.5).mul(Sl.tone)).add(piece.sub(0.5).mul(K.tone))).mul(mix(vec3(...Sl.cool), vec3(...Sl.warm), sr3));
+      // pitting: the fine aggregate's dark end, in the pours the frost got into
+      col = col.mul(float(1).sub(float(1).sub(smoothstep(0.1, 0.2, sp)).mul(smoothstep(0.35, 0.8, sr3)).mul(Sl.pit)));
+    }
     // an oil stain or two, where cars stood
-    const oil = smoothstep(0.74, 0.86, noise(w.mul(0.13).add(vec2(17.3, 4.1)))).mul(smoothstep(0.3, 0.6, noise(w.mul(1.7))).mul(0.4).add(0.6));
+    const o13 = noise(w.mul(0.13).add(vec2(17.3, 4.1))), oil = smoothstep(0.74, 0.86, o13).mul(smoothstep(0.3, 0.6, noise(w.mul(1.7))).mul(0.4).add(0.6));
     col = mix(col, vec3(...C.oil), oil.mul(C.oilDepth));
+    // v138 (the owner's concept, art-ref/world-2-driveway-concept.jpg: an OLD slab): damp where the water sits,
+    // cooler and darker in broad patches, and bleached where the sun has had it
+    if (C.weather) {
+      // (read off the noise the oil stains are cut from, v138's cost pass: no new noise for it)
+      const Wt = C.weather, broad = float(1).sub(o13).mul(0.75).add(n13.mul(0.25)).add(Sl ? sr3.sub(0.5).mul(Sl.weather) : 0);   // (and a whole pour leans damp or bleached)
+      col = mix(col, col.mul(vec3(...Wt.dampTint)), smoothstep(Wt.dampAt, Wt.dampAt + 0.16, broad));
+      col = col.mul(float(1).add(float(1).sub(smoothstep(Wt.bleachAt - 0.18, Wt.bleachAt, broad)).mul(Wt.bleach)));
+    }
+    // v138: a REPAIR — in a pour here and there (`patch.at`) a square was dug out and poured again: newer, paler,
+    // smoother concrete with a saw-cut edge, over whatever the old slab had (its saw cut, its cracks)
+    if (Sl) {
+      const P = Sl.patch, pc = vec2(spin(53.7), spin(89.1)).mul(0.36).add(0.32), ph = vec2(spin(151.3), spin(67.9)).mul(P.size[1] - P.size[0]).add(P.size[0]);
+      const pd = max(abs(loc.x.sub(pc.x)).sub(ph.x), abs(loc.y.sub(pc.y)).sub(ph.y)).mul(J), has = step(P.at, spin(271.9));
+      inP = has.mul(float(1).sub(smoothstep(px.negate(), px, pd)));
+      pEdge = has.mul(float(1).sub(smoothstep(float(P.w).sub(px), float(P.w).add(px), abs(pd))));
+      col = mix(col, mix(vec3(...C.lo), vec3(...C.hi), n13.mul(0.2).add(grit.mul(0.15)).add(0.5)).mul(vec3(...P.tint)), inP).mul(float(1).sub(pEdge.mul(P.depth)));
+      cutLine = cutLine.mul(float(1).sub(inP));
+      col = col.mul(float(1).sub(cutLine.mul(Sl.cut.depth)));
+    }
     // expansion joints, cut every `joint` m both ways: a dark groove with a
     // worn light lip either side
     const jx = abs(fract(w.x.div(C.joint).add(0.5)).sub(0.5)).mul(C.joint), jz = abs(fract(w.y.div(C.joint).add(0.5)).sub(0.5)).mul(C.joint);
     const jd = min(jx, jz), aa = max(fwidth(jd), 1e-4);
-    const groove = float(1).sub(smoothstep(float(C.jointW).sub(aa), float(C.jointW).add(aa), jd));
-    const lip = max(float(1).sub(smoothstep(C.jointW, C.jointW * 3, jd)).sub(groove), 0);
+    // (v138: an old joint is not one width: it has opened here and held there, `chip`)
+    const jw = Sl ? n13.mul(Sl.chip).add(1 - Sl.chip / 2).mul(C.jointW) : float(C.jointW);
+    const groove = float(1).sub(smoothstep(jw.sub(aa), jw.add(aa), jd));
+    let lip = max(float(1).sub(smoothstep(jw, jw.mul(3), jd)).sub(groove), 0);
+    // v138: the pours have SETTLED, each its own way: along a joint one slab stands a little proud of the next, and
+    // its edge catches the light while the low one's lies in the step's shade (`settle`; which side, and by how
+    // much, is the joint's own number)
+    let step_ = float(0);
+    if (Sl) {
+      const kx = round(w.x.div(J)), kz = round(w.y.div(J));
+      const isX = jx.lessThan(jz), hJ = hash(select(isX, vec2(kx, tfloor(w.y.div(J))).add(13.7), vec2(tfloor(w.x.div(J)), kz).add(29.3))).sub(0.5);
+      const up = select(isX, w.x.div(J).sub(kx), w.y.div(J).sub(kz)).mul(hJ), amt = abs(hJ).mul(2);
+      step_ = select(up.greaterThan(0), float(1), float(-1)).mul(amt).mul(Sl.settle);
+      const shade = float(1).sub(smoothstep(jw, jw.mul(5), jd)).sub(groove).mul(max(step_.negate(), 0));
+      col = col.mul(float(1).sub(max(shade, 0).mul(0.45)));
+      lip = lip.mul(max(step_, 0).mul(2.2).add(0.55));
+    }
     col = col.mul(float(1).sub(groove.mul(0.62))).add(vec3(...C.lip).mul(lip.mul(0.25)));
+    // v138: dirt lies along the joints and against the curb, and moss has taken in it here and there
+    const toCurb = min(float(hx).sub(abs(w.x)), w.y.add(hz));
+    if (C.moss) {
+      const Ms = C.moss, took = smoothstep(Ms.at, Ms.at + 0.22, mott);   // (where the slab's own mottling is dark: no new noise)
+      const inJoint = float(1).sub(smoothstep(C.jointW, Ms.joint, jd)), atEdge = float(1).sub(smoothstep(Ms.edge * 0.1, Ms.edge, toCurb));
+      col = col.mul(float(1).sub(max(float(1).sub(smoothstep(C.jointW, Ms.joint * 2.2, jd)), atEdge).mul(Ms.dirt)));
+      col = mix(col, vec3(...Ms.color).mul(grit.mul(0.6).add(0.7)), max(inJoint, atEdge.mul(0.85)).mul(took).mul(Ms.k));
+    }
     // hairline cracks (v65): the edges of a cell network, jagged by a fine
     // wobble, broken off so they stop mid-slab, only in some of the slabs, and
     // faint — a texture under the fight (v48's lesson). The network is the
@@ -228,15 +292,50 @@ export function buildFloor(T, hx, hz, light, { style = 'grid', bounds: hasBounds
       const edge = cells(w.mul(C.crackScale).add(jag));
       crack.assign(float(1).sub(smoothstep(cwid, cwid.add(eaa), edge)).mul(smoothstep(0.42, 0.56, noise(w.mul(C.crackBreak).add(vec2(11.1, 2.3))))).mul(patch));
     });
-    col = col.mul(float(1).sub(crack.mul(C.crackDepth)));
+    col = col.mul(float(1).sub(crack.mul(float(1).sub(inP)).mul(C.crackDepth)));
     // the storm drain (v65), set in the slab toward the far right corner: an iron
     // frame round rows of slots (the slots below, past the flood: no light
     // reaches the bottom of a drain)
-    const G = C.grate, g = grate(w.sub(vec2(hx - G.at[0], -hz + G.at[1])).div(G.r));
+    const G = C.grate, gAt = w.sub(vec2(hx - G.at[0], -hz + G.at[1])).div(G.r), g = grate(gAt);
+    // v138: the damp round it, where the water has run to it for years, and the moss in that
+    if (G.stain) {
+      const st = float(1).sub(smoothstep(1.0, G.stain.r, length(gAt))).mul(n13.mul(0.6).add(0.4));
+      col = mix(col.mul(float(1).sub(st.mul(G.stain.dark))), vec3(...(C.moss?.color ?? [0.05, 0.07, 0.03])), st.mul(G.stain.moss));
+    }
     col = mix(col, mix(vec3(...G.iron), vec3(...G.frame), g.z), g.x);
+    // v138: PUDDLES — a few shallow ones (`at`: where, in fractions of the floor, how wide, a seed), their edges
+    // wandering: the slab dark and damp round each, and in it the evening sky, lighter toward the far side, the
+    // trees' crowns where they hang over it, a shimmer, and rings going out from where the hero stands near it
+    let puddle = null;
+    if (C.puddles) {
+      const Pd = C.puddles, m = float(0).toVar(), wet = float(0).toVar(), rim = float(0).toVar();
+      for (const [fx, fz, r, seed] of Pd.at) {
+        // (each a little longer one way than the other, turned by its seed; its edge wandering at two scales)
+        const ca = Math.cos(seed), sa = Math.sin(seed), q0 = w.sub(vec2(fx * hx, fz * hz)).div(r), q = vec2(q0.x.mul(ca).sub(q0.y.mul(sa)), q0.x.mul(sa).add(q0.y.mul(ca)).mul(1.35));
+        If(length(q0).lessThan(1.9), () => {
+          const d = length(q).add(noise(q.mul(1.3).add(seed)).sub(0.5).mul(Pd.warp)).add(noise(q.mul(4.1).add(seed * 2.3)).sub(0.5).mul(Pd.warp * 0.3));
+          m.assign(max(m, float(1).sub(smoothstep(Pd.edge - 0.035, Pd.edge, d))));
+          wet.assign(max(wet, float(1).sub(smoothstep(Pd.edge, Pd.edge + Pd.damp, d))));
+          rim.assign(max(rim, float(1).sub(smoothstep(0, 0.03, abs(d.sub(Pd.edge - 0.02))))));
+        });
+      }
+      col = col.mul(float(1).sub(wet.mul(Pd.dark)));
+      const sky = vec3(0).toVar();
+      If(m.greaterThan(0), () => {
+        const hw = toWorld(player), dp = length(w.sub(hw));
+        const ring = sin(dp.mul(Pd.ring[0]).sub(GEL_TIME.mul(Pd.ring[1]))).mul(exp(dp.mul(-Pd.ring[2]))).mul(Pd.ring[3]);
+        const shimmer = noise(w.mul(2.3).add(vec2(GEL_TIME.mul(0.15), GEL_TIME.mul(0.11)))).sub(0.5).mul(Pd.shimmer);
+        // the sky in it: blue overhead with pale cloud drifting over, the trees' crowns dark across it (the same
+        // crowns that shade the slab, seen from below), and the low sun's glitter on its ripples
+        const cloud = smoothstep(0.3, 0.75, noise(w.mul(Pd.cloud).add(vec2(GEL_TIME.mul(0.02), 3.3))));
+        const leafy = WL?.daylight ? canopy(w.add(vec2(Pd.treeAt[0], Pd.treeAt[1])).add(vec2(shimmer, shimmer).mul(4)), WL.daylight) : float(0);
+        const glint = smoothstep(0.86, 0.95, noise(w.mul(7).add(vec2(GEL_TIME.mul(0.5), GEL_TIME.mul(-0.35))))).mul(float(1).sub(leafy)).mul(Pd.glint);
+        sky.assign(mix(vec3(...Pd.skyNear), vec3(...Pd.skyFar), cloud).mul(float(1).sub(leafy.mul(Pd.trees))).mul(float(1).add(ring).add(shimmer)).add(vec3(...Pd.sun).mul(rim.mul(Pd.rim).add(glint))));
+      });
+      puddle = { m: m.mul(Pd.k), col: sky };
+    }
     // the curb's shade on the slab along it: the far side and the two long
     // ones, none at the open near side (v66)
-    const toCurb = min(float(hx).sub(abs(w.x)), w.y.add(hz));
     col = col.mul(float(1).sub(float(1).sub(smoothstep(0, C.curbAO, toCurb)).mul(C.curbAODepth)));
     // v93: the curb's shadow in the SUN (sun.js SUN_AT, the world's light rig): a curb `curbHeight` tall throws a
     // band cot θ × that long away from the sun — onto the slab from the far curb when the sun stands past the far
@@ -255,8 +354,8 @@ export function buildFloor(T, hx, hz, light, { style = 'grid', bounds: hasBounds
     const flood = smoothstep(float(hz * 2.2), float(-hz * 0.2), w.y.add(hz)).mul(C.flood);
     col = mix(col.mul(float(C.ambient).add(flood)).add(vec3(...C.floodTint).mul(flood.mul(0.06))), vec3(...G.slot), g.y);
     const pool = float(1).sub(smoothstep(0, F.poolRadius * 0.6, length(p.sub(player))));
-    return { col: col.add(col.mul(pool).mul(C.pool)), mask: groove.add(lip.mul(0.5)).add(crack.mul(float(1).sub(g.x)).mul(0.3)).add(g.z.mul(0.4)), lineCol: vec3(...C.lip),
-             sunVis: float(1).sub(sunShade).mul(float(1).sub(g.y)) };
+    return { col: col.add(col.mul(pool).mul(C.pool)), mask: groove.add(lip.mul(0.5)).add(crack.mul(float(1).sub(g.x)).mul(0.3)).add(g.z.mul(0.4)).add(max(cutLine, pEdge).mul(0.35)), lineCol: vec3(...C.lip),
+             sunVis: float(1).sub(sunShade).mul(float(1).sub(g.y)), puddle };
   };
 
   const sewer = (p, w) => {
@@ -764,6 +863,7 @@ export function buildFloor(T, hx, hz, light, { style = 'grid', bounds: hasBounds
     const w = swirlAt.add(d1), p = toUv(w);
     const S = surface(p, w);
     let [out, E, sunE] = worldLight(S.col, w0, S.rip, S);   // v93: the world's own light falls on the picture before anything stands on it
+    if (S.puddle) out = mix(out, S.puddle.col, S.puddle.m);   // v138: a puddle shows the sky, not the slab under it
     if (light) {
       // a shadow darkens what is under it; light lifts the floor a little and
       // its lines a lot, the way a lit surface shows its texture (wet stone
