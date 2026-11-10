@@ -2,8 +2,8 @@
   "source_head": "f8353e757e8114f4bcb6a343a739839efa19764d",
   "staging_head": "3f40cc410e9287379eb73c767f210653f49ed36a",
   "production_base": "24e428332",
-  "source_hyper_runtime": "Exact reviewed #638 main/worker; index keeps production shell232.",
-  "preview": "No file under hyperdagger-sdf differs from production base.",
+  "source_hyper_runtime": "Exact reviewed #638 main and worker; index preserves current production hub shell233.",
+  "preview": "The Hyper publication leaves preview build3/runtime untouched. Concurrent TokoDrop2v132 advances only its shared hub-shell reference232->233.",
   "sha256": {
     "hyperdagger/index.html": "a444a2765ddbfad69ebd47a5ae85868b9c5ab0eefafcabe9a933ee4bba30b233",
     "hyperdagger/js/main.js": "24cd23829b9b98bf5ae147f52fdd3e6243f89b219b8ce8adb234046644b22d48",
