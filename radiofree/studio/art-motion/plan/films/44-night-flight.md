@@ -92,3 +92,30 @@ track, and its pitch follows the speed:
 - **The landing:** a single held G sus chord plays, the rotor winds down, and there is a tick on the perch.
 - **ON AIR:** the relay closes and the neon catches. The station's call rings on the three rings, and the chord
   resolves to C. Sound checks: 5 pass, −13.8 LUFS, −2.7 dBTP.
+
+## v3 (10 Nov): detail, fog, a fuller ending
+
+**Owner, Tue 10 Nov, on the v2 stills:** "Add more details textures, fog. Looks great but the ending is a bit bare".
+
+- **Fog:**
+  - Every material now has height fog (a `ShaderChunk` override in `film.js`): thick at the ground, thinning with
+    height, plus a light distance haze. Each scene's `THREE.Fog` is read as a density at the ground and a falloff
+    height.
+  - The water uses the same fog.
+  - In practice this makes ground mist among the trunks, valley fog on the lakes and street haze in Helsinki, with
+    the tops of things standing clear of it.
+- **Texture:**
+  - The snow has drifts and wind ripples (a normal map) and scattered smooth grains that catch the moon as glints.
+    This applies to the forest floor, the lake country and the city's roofs.
+  - Every facade has frames round its windows and a string course at each floor.
+  - The floodlit stone (the Cathedral, Uspenski and the towers) is laid in coursed blocks.
+  - On the roof, Toko's footprints are pressed into the snow.
+- **The ending:**
+  - Two strings of warm festoon lights cross the roof on two poles.
+  - Toko has a crate with an old valve radio, its dial lit, and a mug steaming in the cold.
+  - A storm lantern stands on the snow by the perch.
+  - A red-and-white power-plant chimney's steam plume drifts across the left of the sky.
+  - On each ON AIR pulse a curtain of magenta light rolls out from the mast over the city. After the three rings,
+    softer pulses repeat until the end.
+  - Out-of-focus snowflakes drift right in front of the lens.
+  - The camera pushes in slowly through the hold.
