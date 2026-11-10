@@ -23,7 +23,7 @@ import { MODES, modeById, nextModeId, applyAbilities, abilitiesOf } from './mode
 import { TruckTrack } from './truck.js?v=113';
 import { GazeLock } from './gaze.js?v=85';
 import { PhysGibs } from './gibs.js?v=85';
-import { SEASONS, seasonById, nextSeasonId, GEL_MOUND_SAMPLE } from './seasons.js?v=110';
+import { SEASONS, seasonById, nextSeasonId, GEL_MOUND_SAMPLE } from './seasons.js?v=120';
 import { Platforms } from './platforms.js?v=85';
 import { shaleGeometry, shaleMaterial } from './shale.js?v=85';
 import { GooWave } from './goo.js?v=85';
@@ -899,8 +899,6 @@ function updateShadows() {
 // none and stays the control. opts.fx is the pause menu's switch.
 const look = new Look(scene, ARENA_R);
 look.bindFloor(floorMat.uniforms);   // the walls are a clone made earlier: no liquid on them
-// a cube that lands in the sea rings it (three a frame is plenty to read as rain)
-debris.onLand = (x, z, v, size) => look.drop(x, z, Math.min(2, size * 5));
 
 // Impact sparks (dagger hits) + shockwave rings (heavy kills). The spark is an
 // authored 8px software sprite rather than a clean translucent WebGL square.

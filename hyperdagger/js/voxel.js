@@ -1199,7 +1199,6 @@ export class DebrisPool {
   }
 
   update(dt) {
-    this._landLeft = 3;   // v61: landings reported this frame (onLand)
     const G = -28;
     for (let k = this.items.length - 1; k >= 0; k--) {
       const d = this.items[k];
@@ -1214,9 +1213,6 @@ export class DebrisPool {
       d.px += d.vx * dt; d.py += d.vy * dt; d.pz += d.vz * dt;
       const half = d.size / 2;
       if (d.py < half && d.vy < 0) {
-        // v61: the first hard landing is an event (the sea rings where a cube
-        // goes in). A few a frame, never all four thousand.
-        if (this.onLand && d.vy < -4 && this._landLeft > 0) { this._landLeft--; this.onLand(d.px, d.pz, -d.vy, d.size); }
         d.py = half;
         d.vy *= -0.38;
         d.vx *= 0.72; d.vz *= 0.72;

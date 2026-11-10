@@ -128,7 +128,7 @@ Three cheap systems, each a module, each declared per season in `seasons.js` (`f
 1. **Particles** (`js/fx-particles.js`). Stateless: a particle is its birth record, and the vertex shader flies it (gravity, drag, one floor bounce, curl). Nothing is simulated on the CPU, so thousands cost two draw calls. Hard pixels and an ordered-dither fade, because the image is a coarse software raster and a soft alpha puff is the wrong language. Kinds: spark, ember, smoke, droplet, flash, ring.
 2. **The floor is a fluid** (`js/fx-fluid.js`). A small ping-pong render target over the disc, read by the floor shader.
    - EMBER: kills spill a molten pool that spreads, crusts and cools, so a long run paints the arena.
-   - INCA: the sea ripples. Steps, landings, nails, falling cubes and the wave all ring it, the wave leaves a foam wake, and the sun's path bends through it.
+   - INCA: the sea ripples. Steps, landings, nails, kills and the wave all ring it, the wave leaves a foam wake, and the sun's path bends through it.
    - HAUL: none. The road moves under you, so its liquids are smoke and fire in the air.
 3. **Light from events.** A kill, a muzzle and an explosion light the floor around them for a few frames, in the season's colour.
 

@@ -1,3 +1,66 @@
+## v61 — in progress
+**The look: particles, a fluid floor and light, a different one per season (HD-022)**
+
+Mikael, 10 Nov 2026: *"Plan and execute the most visually impressive version
+of the game. Utilizing SDF and other systems that aren't that demanding but
+can be tweaked for impressive visuals. Including expert particle effects and
+fluids. Remember, seasons have slightly different styles and looks"*.
+
+Read off screenshots of v60: a kill was grey cubes on a black floor, a shot
+was invisible, and nothing in the frame was liquid or lit by what happened in
+it. Three cheap systems change that. Each is a module, each is declared per
+season (`fx` in `seasons.js`), and none of them touches a rule, a hitbox, a
+timer or the score.
+
+- **Particles** (`js/fx-particles.js`). A particle is its birth record: the
+  vertex shader flies it (gravity, drag, one floor bounce, drift), so nothing
+  is simulated on the CPU and thousands cost two draw calls. Hard pixels and an
+  ordered-dither fade, because the image is a coarse software raster. The air
+  (embers, pollen, road dust) is emitted once and wrapped round the camera in
+  the shader.
+- **The floor is a fluid** (`js/fx-fluid.js`). A 256² ping-pong field over the
+  disc, read by the floor shader.
+  - EMBER: a kill spills a molten pool that runs, stops with an edge, crusts
+    from the rim inward into cracked plates, and long after sinks away.
+  - INCA: the sea rings. Steps, landings, nails, kills and the wave all dent
+    it, and the sun's path and the caustics bend through the rings.
+  - HAUL has no floor to pool on, so it has none.
+- **Light from events.** A kill, a shot and a shockwave light the floor round
+  them for a few frames.
+- **RENDER · SDF only** (`js/sdf-ichor.js`): an SDF body also dies as a
+  raymarched liquid — a core and six lobes in a smooth union that loosens as
+  they fly. Six pooled, 0.7 s each. CLASSIC keeps its voxel deaths and gets
+  everything above.
+
+Per season (`js/fx.js` holds the recipes): **EMBER** is fire in the dark
+(sparks that bounce, embers off the pools, smoke lit from below); **INCA** is
+water and light (beads of the sea, gold dust, spray off the crest); **HAUL**
+is speed and smoke (a missile is a flame and its smoke, a kill a fireball,
+and everything thrown rides the convoy while the smoke is left behind).
+
+- **Scaled and switchable.** The perf tiers thin the bursts; the lowest tier
+  empties the air and draws a plain floor. The pause menu has EFFECTS ON / OFF.
+  MOTION REDUCED keeps the bursts and drops the flashes and floor lights.
+- **Its own dice.** The look never calls `Math.random` or the run's rng, so a
+  seeded run plays the same with it on or off (the gate reads the source).
+- **VOID has no look** and stays the control.
+
+New gate `test/fx-look.cjs`: each season has its own style, a real shot, hit
+and kill fire it, EMBER's floor takes a pool and INCA's a ring, the same
+frozen frame with the look off is a different picture, OFF is off, the lowest
+tier thins it, and kills do not grow the scene.
+
+Found on the way: my capture tool read the wrong options key, so its first
+frames were at the lowest quality tier. And the first magma was a white lake
+that hid everything standing in it; it is half the volume now and white-hot
+for under a second.
+
+Tokens: `main.js` 120, `seasons.js` 120, `sw.js` 120, worker cache
+`hyperdagger-v90`; new `fx.js`, `fx-particles.js`, `fx-fluid.js` and
+`sdf-ichor.js` at 1. 74 precache entries.
+
+Not measured: frame times on a real phone, tablet or GPU.
+
 ## v60 — 2026-11-09
 Integration follow-up (source merged 9 November; delivery blocked 10 November): the test-arena chip ignores the second
 release event from one touch gesture. A delayed-navigation regression fails
