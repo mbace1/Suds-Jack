@@ -1390,7 +1390,7 @@ function applySeason() {
  *  applySeason and again by resetRun, which is where the road replaces the disc. */
 function applyLook() {
   const sn = S();
-  look.setSeason(sn.fx ?? null, sn.fog, M().arena === 'track' ? truck.fallY() : 0, M().arena !== 'track');
+  look.setSeason(sn.fx ?? null, sn.fog, M().arena === 'track' ? truck.fallY() : 0, M().arena !== 'track', sn.sky.sunDir ?? null);
   // the old 80 motes are the same air drawn twice once a season has its own
   dust.visible = !(look.active && sn.fx?.ambient);
 }
@@ -2284,6 +2284,7 @@ function applyOpts() {
   // the floor tier) and the pause menu can switch it off whole
   look.setTier(perfTier);
   look.setOn(opts.fx !== false);
+  look.setCalm(!opts.motion);   // MOTION REDUCED: no flashes, no floor lights
   dust.visible = !(look.active && S().fx?.ambient);
   debris.softCap = tier.debrisCap;
   debris.gibTarget = tier.gibs;
@@ -2359,7 +2360,8 @@ function showPause() {
      ${optRow('VIEW', 'projection', [true, false], v => v ? 'SPHERE' : 'NORMAL')}
      ${optRow('SENS', 'sens', [0.7, 1, 1.3, 1.6], v => ({ 0.7: 'LOW', 1: 'MED', 1.3: 'HIGH', 1.6: 'MAX' })[v])}
      ${optRow('AIM', 'aim', [true, false], v => v ? 'ASSIST ON' : 'ASSIST OFF')}
-     ${optRow('FX', 'smear', [true, false], v => v ? 'SMEAR ON' : 'SMEAR OFF')}
+     ${optRow('FX', 'fx', [true, false], v => v ? 'EFFECTS ON' : 'EFFECTS OFF')}
+     ${optRow('', 'smear', [true, false], v => v ? 'SMEAR ON' : 'SMEAR OFF')}
      ${optRow('', 'shake', [true, false], v => v ? 'SHAKE ON' : 'SHAKE OFF')}
      ${optRow('', 'chroma', [true, false], v => v ? 'CHROMA ON' : 'CHROMA OFF')}
      ${optRow('', 'edge', [true, false], v => v ? 'EDGE ON' : 'EDGE OFF')}
@@ -3463,7 +3465,7 @@ function killEnemy(e, dir) {
     _hitDir.copy(dir).multiplyScalar(5), e.type === 'skull' ? 1 : 1.4);
   audio.gib(e.type !== 'skull');
   const heavyKill = e.type === 'brute' || e.type === 'dread' || e.type === 'leviathan' || !!e.isHead;
-  look.kill(_c, dir, e.radius, heavyKill);   // v61: the season's death
+  look.kill(_c, dir, e.radius, heavyKill, !!e.sdfRoot);   // v61: the season's death (an SDF body also dies as a liquid)
   // heavy kills stamp a shockwave ring into the floor, warp the frame, and
   // freeze time for a beat (~50ms at 12% speed) so the impact lands
   if (heavyKill) {

@@ -124,6 +124,8 @@ export const SEASONS = [
       // `a` is the hot end, `b` the crust. film/cool/sink/flow are per
       // simulation step (sixty a second): how thick a pool stands, how fast
       // it cools, how slowly a cold crust sinks away, how readily it runs.
+      // RENDER · SDF: an SDF body dies as a raymarched liquid (sdf-ichor.js)
+      ichor: { a: [1.7, 0.36, 0.06], b: [0.22, 0.012, 0.006], rim: [2.4, 0.9, 0.25], hot: [3.2, 1.9, 0.8] },
       fluid: { kind: 'magma', a: [2.3, 0.95, 0.38], b: [0.011, 0.007, 0.007], film: 0.22, cool: 0.0017, sink: 0.00012, flow: 0.9, spill: 0.5 },
       // the air: embers climbing off the floor, forever (one emit, wrapped
       // around the camera in the shader)
@@ -264,6 +266,7 @@ export const SEASONS = [
       // THE FLOOR IS A FLUID (fx-fluid.js): the sea rings. `a` is the light a
       // ring's crest catches, `b` the foam; c2 is how fast a ring travels,
       // damp how long it lives.
+      ichor: { a: [0.16, 0.75, 0.66], b: [0.02, 0.16, 0.17], rim: [1.6, 1.4, 0.6], hot: [0.6, 1.5, 1.3] },   // the goo: jade, with the sun on its edge
       fluid: { kind: 'water', a: [0.30, 0.95, 0.80], b: [0.62, 0.92, 0.85], c2: 1.0, damp: 0.987, foam: 0.955, strength: 1 },
       ambient: { n: 220, color: [1.9, 1.45, 0.5], color2: [0.6, 1.6, 1.3], mix: 0.25,
         size: 0.028, rise: 0.05, drift: 0.35, twinkle: 1.0, box: [50, 13, 50] },
@@ -436,8 +439,9 @@ export const SEASONS = [
       streak: [1.6, 1.1, 0.6],
       trail: { kind: 'missile', color: [4.0, 2.0, 0.7], every: 0.012 },
       carry: 1,                          // the convoy carries what is thrown on it
-      ambient: { n: 110, color: [0.30, 0.22, 0.14], color2: [0.9, 0.5, 0.2], mix: 0.1,
-        size: 0.018, rise: 0, drift: 0.15, twinkle: 0.3, stretch: 0.016, box: [40, 12, 70] },
+      ichor: { a: [0.10, 0.08, 0.07], b: [0.012, 0.010, 0.010], rim: [2.6, 1.2, 0.3], hot: [3.0, 1.4, 0.4] },   // burning oil
+      ambient: { n: 100, color: [0.20, 0.14, 0.085], color2: [0.6, 0.34, 0.14], mix: 0.1,
+        size: 0.008, rise: 0, drift: 0.1, twinkle: 0.2, stretch: 0.034, box: [40, 12, 70] },
     },
     ground: null,
     pillars: null,

@@ -321,7 +321,7 @@ export class Particles {
   /** One particle. Positional on purpose: a kill emits sixty of these.
    *  `delay` holds it back that many seconds (the second ring of a splash). */
   emit(kind, x, y, z, vx, vy, vz, life, size, r, g, b, p1 = 0, p2 = 0, seed = seedRnd(), delay = 0) {
-    if (!this.enabled) return;
+    if (!this.enabled || (this.noFlash && kind === KIND.FLASH)) return;
     const buf = SOLID_KINDS.has(kind) ? this.solid : this.add;
     const d = buf.data, o = buf.slot();
     d[o] = x; d[o + 1] = y; d[o + 2] = z; d[o + 3] = this.time + delay;

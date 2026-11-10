@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { Particles, KIND } from './fx-particles.js?v=1';
 import { FloorFluid } from './fx-fluid.js?v=1';
+import { Ichor } from './sdf-ichor.js?v=1';
 
 /**
  * v61 (HD-022) THE LOOK. What a fight looks like, declared by the season.
@@ -36,6 +37,7 @@ export class Look {
   constructor(scene, R = 26) {
     this.P = new Particles(scene);
     this.fluid = new FloorFluid(R);
+    this.ichor = new Ichor(scene);   // RENDER · SDF only: a body dies as a liquid
     this.R = R;
     this.floor = null;          // the floor shader's uniforms (bindFloor)
     this.lights = [0, 1, 2, 3].map(() => ({ x: 0, z: 0, r: 1, k: 0, life: 0, max: 1, rgb: [0, 0, 0] }));
@@ -62,7 +64,9 @@ export class Look {
   }
 
   /** A season's look. `fog` is the scene's, so smoke melts into the same distance. */
-  setSeason(def, fog, floorY = 0, disc = true) {
+  setSeason(def, fog, floorY = 0, disc = true, sunDir = null) {
+    this.ichor.setLook(this.on ? def?.ichor : null, sunDir);
+    this.ichor.floorY = floorY;
     this.def = def ?? null;
     this.style = def?.style ?? null;
     this.disc = disc;
@@ -94,7 +98,11 @@ export class Look {
     this._seedAmbient();
     const fl = this.disc && this.on ? this.def?.fluid : null;
     this.fluid.setMode(fl?.kind ?? null, fl ?? {});
+    this.ichor.setLook(this.on ? this.def?.ichor : null, null);
   }
+
+  /** MOTION REDUCED: the bursts stay, the flashes and the floor's lights go. */
+  setCalm(on) { this.calm = !!on; this.P.noFlash = !!on; }
 
   /** Perf tiers: 0 is everything, 4 is a third of the bursts and no ambient. */
   setTier(t) {
@@ -124,7 +132,7 @@ export class Look {
     });
   }
 
-  clear() { this.P.clear(); this.fluid.reset(); this.pools.length = 0; for (const l of this.lights) l.life = 0; }
+  clear() { this.P.clear(); this.fluid.reset(); this.ichor.clear(); this.pools.length = 0; for (const l of this.lights) l.life = 0; }
 
   /** Per frame: the clock, and how fast the camera is moving through the air. */
   update(dt, camera, renderer) {
@@ -140,6 +148,7 @@ export class Look {
       }
     }
     if (this.active) this._poolEmbers(dt);
+    if (camera) { this.camera = camera; this.ichor.update(dt, camera); }
     if (camera) {
       camera.getWorldPosition(_cam);
       if (this._hasCam && dt > 1e-4) {
@@ -162,9 +171,10 @@ export class Look {
   // ------------------------------------------------------------------ events
 
   /** A body died at `c`, struck along `dir`. `r` is its radius; heavy ones are louder. */
-  kill(c, dir, r = 0.8, heavy = false) {
+  kill(c, dir, r = 0.8, heavy = false, sdf = false) {
     if (!this.active) return;
     this.counts.kill++;
+    if (sdf && this.tier <= 2 && this.camera) this.ichor.burst(c, dir, r, this.camera);
     const P = this.P, d = this.def, s = Math.max(0.6, r), iv = this.inherit;
     const f = d.flash ?? d.spark, a = d.spark, b = d.spark2 ?? d.spark;
     const big = heavy ? 1.8 : 1;
@@ -258,7 +268,7 @@ export class Look {
     if (!this.active) return;
     this.counts.muzzle++;
     const P = this.P, d = this.def, f = d.flash ?? d.spark, a = d.spark;
-    P.emit(FLASH, p.x, p.y, p.z, dir.x * 2, dir.y * 2, dir.z * 2, launch ? 0.1 : 0.045, launch ? 0.5 : 0.13, f[0], f[1], f[2]);
+    P.emit(FLASH, p.x, p.y, p.z, dir.x * 2, dir.y * 2, dir.z * 2, launch ? 0.09 : 0.045, launch ? 0.2 : 0.13, f[0], f[1], f[2]);
     this.light(p.x + dir.x * 1.5, p.z + dir.z * 1.5, launch ? 5 : 3.2, f, launch ? 0.7 : 0.28, 0.07, 3);   // the shot lights the floor ahead of the hand
     if (launch) {
       const sm = d.smoke;
@@ -422,7 +432,7 @@ export class Look {
   /** Light the floor round (x, z) for `life` seconds. Four at once; a new one
    *  takes the dimmest slot. `from` reserves the last slot for the muzzle. */
   light(x, z, r, rgb, k = 1, life = 0.25, slot = -1) {
-    if (!this.active || !this.disc) return;
+    if (!this.active || !this.disc || this.calm) return;
     let l = slot >= 0 ? this.lights[slot] : null;
     if (!l) {
       let best = 1e9;
@@ -489,6 +499,7 @@ export class Look {
   getState() {
     return { on: this.on, active: this.active, style: this.style, tier: this.tier, counts: { ...this.counts },
       particles: this.P.stats(), fluid: this.fluid.getState(), pools: this.pools.length,
+      ichor: { bursts: this.ichor.bursts, live: this.ichor.live },
       lights: this.lights.filter(l => l.life > 0).length };
   }
 }
