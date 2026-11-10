@@ -19,6 +19,17 @@
     Never `--no-verify`.
 -->
 
+## v133 — 2026-11-10
+**The film builds its shaders before it starts, behind black, and plays without a hitch**
+- THE ASK (owner, 2026-11-09: "It lagged through the intro"). v131's fix was measured and was not enough (a phone-sized window, 390×844, on a software GPU, the film started on world 2): v130 built 43 shaders while the film played, its worst frame 3.8 s; v132 39, worst 2.1 s, 35 of them in the film's first 0.7 s (frames of 0.8, 2.1 and 1.1 s). Starting on a later world puts every lit thing under that world's light, which is a new shader for each, so what the title built does not carry over; and three's compileAsync, which v131 asked on the film's first frame, works through a scene an object a frame — the film drew on and built them itself, blocking.
+- THE FIX (main.js warmDraw): the film HOLDS on black for one frame in which the whole scene is drawn into a corner eight pixels square — everything shown and nothing culled, every empty pool given one of its kind — and then the film itself at the eight moments it switches things on (its cards, the gather, the land, the grid, the eyes, the HUD); the black drawn over it is all that shows, and the film is put back at its start. It rolls, with its sound, once the GPU reports that work done (WebGPU's queue, WebGL 2's fence), three seconds at most. A press during the hold still skips into the run; a capture (the clips, the shots) runs unheld.
+- Measured the same way: no shader is built during the film now (all 49 in the held frame), its frames run at a median 100 ms on the software GPU (v132 150, v130 267); the price is the black before the logo, all of it the GPU compiling — about six seconds on the software GPU; a phone's own GPU compiles far faster, which the PLAY RECORD's frame times will say.
+- Not covered: the TILT-SHIFT lens draws through its own pipeline; the hold builds for it all the same (its pass is the one drawn), but it was not measured.
+- Fixed on the way: v131's compile on the film's first frame is gone (the hold replaces it).
+- Cache tokens `?v=132` → `?v=133`; HUD label → `2.0 · v133`
+
+---
+
 ## v132 — 2026-11-09
 **Every shadow grows out of its body — as wide as the body where it leaves it, darkest at the foot — and the domes stand on the widest of themselves**
 - THE ASK (owner, 2026-11-09: "Shadows should not be as circular at the point where they connect with character, because now that makes them look like they are floating"). Read off crops of the driveway beside the owner's golden-hour concept: v128–v131's shadow was an ellipse whose round end met the body NARROWER than the body and was darkest two radii out, so each body hung over a separate blob; v131's round contact shade drew a ring round every foot; and on the gels there was hardly a shadow to see at all — the light through the jelly, laid as a long coloured patch down the shadow, washed it out (a glowing tail where the concept has dark).

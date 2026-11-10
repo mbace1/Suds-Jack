@@ -25,9 +25,9 @@
 // "drop" is made of the owner's own letters — Midori's d, r and o, and a p
 // that is the d turned over (a geometric face's p is its d, half a turn round).
 import * as THREE from 'three/webgpu';
-import { fillMaster, masterBounds } from './master.js?v=132';
-import { LOGO } from './wordmark.js?v=132';
-import { CUES } from './sfx.js?v=132';
+import { fillMaster, masterBounds } from './master.js?v=133';
+import { LOGO } from './wordmark.js?v=133';
+import { CUES } from './sfx.js?v=133';
 
 export { CUES };
 
@@ -163,7 +163,6 @@ export class Intro {
     // summer haze and no rail), and finish() used to put world 1's dark and rail on it for the rest of the world
     const floor = this.c.floor(), set = this.c.scenery?.();
     this._was = { void: floor.reveal.void.value.clone(), bg: this.c.scene.background.clone(), border: floor.border.visible, set: set ? set.group.visible : true };
-    this._compiled = false;   // v131: the world's set is compiled on the film's first frame
     this._void.copy(this._was.void);
   }
 
@@ -274,15 +273,9 @@ export class Intro {
     const set = this.c.scenery?.(), posts = this.c.actors.posts, shown = railK > 0.5;
     // v131 (owner, 2026-11-09: "It lagged through the intro and also it showed world 2 environment art when it
     // started"): a later world's things that stand on its floor — the driveway's bollards and its beach ball — wait
-    // with the set (they stood under the logo and beside the falling drop), and on the film's first frame everything
-    // the world will show — its floor, its set, its posts — is COMPILED off the frame loop while it is hidden
-    // (three's compileAsync), so no shader is built mid-film when the grid reaches it
-    if (!this._compiled && this.c.renderer) {
-      this._compiled = true;
-      const all = [...(posts?.views ?? []), ...(posts?.extras ?? [])];
-      if (set) set.group.visible = true; floor.group.visible = true; for (const v of all) v.visible = true;
-      this.c.renderer.compileAsync(this.c.scene, cam).catch(() => {});
-    }
+    // with the set (they stood under the logo and beside the falling drop). v133: what the world will show is compiled
+    // before the film starts, while it holds on black (main.js warmFilm) — v131 compiled it here, on the film's first
+    // frame, and the film's own next frames built most of it anyway
     if (set) set.group.visible = shown;
     for (const v of [...(posts?.views ?? []), ...(posts?.extras ?? [])]) v.visible = v.visible && shown;
     // and the floor is the void until the drop lands: it is not drawn till then (a phone paid for every pixel of it)

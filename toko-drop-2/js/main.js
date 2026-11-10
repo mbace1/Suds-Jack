@@ -7,37 +7,37 @@
 // The rules live in sim/ and run on a fixed step; this file feeds them input,
 // hands their events to the view and the sound, and draws in between steps.
 import * as THREE from 'three/webgpu';
-import { TUNING } from './tuning.js?v=132';
-import { buildFloor } from './render/floor.js?v=132';
-import { fitCamera, screenToWorld, screenDown } from './render/view.js?v=132';
-import * as worldsSim from './sim/worlds.js?v=132';
-import { shapeAt as shiftShape } from './sim/floorshift.js?v=132';
-import * as reshapeSim from './sim/reshape.js?v=132';
-import { Scenery } from './render/scenery.js?v=132';
-import { DRIFT } from './render/kit.js?v=132';
-import { Transit } from './render/transit.js?v=132';
-import { Splats } from './render/splats.js?v=132';
-import { Actors } from './render/actors.js?v=132';
-import { GEL_TIME, GEL_SUN, GEL_GLINT, GEL_CORE } from './render/gel.js?v=132';
-import { studioEnvironment, skyEnvironment } from './render/env.js?v=132';
-import { Specimen } from './render/specimen.js?v=132';
-import { createWorld, step, api as simApi, runPhase } from './sim/world.js?v=132';
-import { heroState } from './sim/hero.js?v=132';
-import { stage as stagePk } from './sim/pickups.js?v=132';
-import { Input } from './input.js?v=132';
-import { UI, t, timeText, LANGS, getLang, setLang, goalText, bossName } from './ui.js?v=132';
-import { Announcer } from './announcer.js?v=132';
-import { rooms as campaignRooms, isOpen as roomOpen, better as betterGrade } from './sim/director/campaign.js?v=132';
-import { levelShape, slots as regionSlots } from './sim/shape.js?v=132';
-import { Sound } from './audio.js?v=132';
-import { Music, worldWant, cueFor, renderMusicWav } from './music.js?v=132';
-import { Intro, CUES as INTRO } from './intro/intro.js?v=132';
-import { scheduleIntroSfx, renderIntroSfxWav } from './intro/sfx.js?v=132';
-import { Readout } from './readout.js?v=132';
-import { Meter, device, Quality } from './meter.js?v=132';
-import * as record from './record.js?v=132';
-import { dailySeed } from './sim/rng.js?v=132';
-import { machine } from './fsm.js?v=132';
+import { TUNING } from './tuning.js?v=133';
+import { buildFloor } from './render/floor.js?v=133';
+import { fitCamera, screenToWorld, screenDown } from './render/view.js?v=133';
+import * as worldsSim from './sim/worlds.js?v=133';
+import { shapeAt as shiftShape } from './sim/floorshift.js?v=133';
+import * as reshapeSim from './sim/reshape.js?v=133';
+import { Scenery } from './render/scenery.js?v=133';
+import { DRIFT } from './render/kit.js?v=133';
+import { Transit } from './render/transit.js?v=133';
+import { Splats } from './render/splats.js?v=133';
+import { Actors } from './render/actors.js?v=133';
+import { GEL_TIME, GEL_SUN, GEL_GLINT, GEL_CORE } from './render/gel.js?v=133';
+import { studioEnvironment, skyEnvironment } from './render/env.js?v=133';
+import { Specimen } from './render/specimen.js?v=133';
+import { createWorld, step, api as simApi, runPhase } from './sim/world.js?v=133';
+import { heroState } from './sim/hero.js?v=133';
+import { stage as stagePk } from './sim/pickups.js?v=133';
+import { Input } from './input.js?v=133';
+import { UI, t, timeText, LANGS, getLang, setLang, goalText, bossName } from './ui.js?v=133';
+import { Announcer } from './announcer.js?v=133';
+import { rooms as campaignRooms, isOpen as roomOpen, better as betterGrade } from './sim/director/campaign.js?v=133';
+import { levelShape, slots as regionSlots } from './sim/shape.js?v=133';
+import { Sound } from './audio.js?v=133';
+import { Music, worldWant, cueFor, renderMusicWav } from './music.js?v=133';
+import { Intro, CUES as INTRO } from './intro/intro.js?v=133';
+import { scheduleIntroSfx, renderIntroSfxWav } from './intro/sfx.js?v=133';
+import { Readout } from './readout.js?v=133';
+import { Meter, device, Quality } from './meter.js?v=133';
+import * as record from './record.js?v=133';
+import { dailySeed } from './sim/rng.js?v=133';
+import { machine } from './fsm.js?v=133';
 
 const T = TUNING;
 const params = new URLSearchParams(location.search);
@@ -171,7 +171,7 @@ const flow = machine('flow', {
     over: ['menu', 'intro', 'play'],          // MENU / ROOMS; AGAIN (a room's straight, a DAILY's straight)
   },
   exit: {
-    intro: () => { introSfx?.stop(); introSfx = null; intro.finish(); },
+    intro: () => { filmHold = 0; introSfx?.stop(); introSfx = null; intro.finish(); },
     play: () => { pendingDash = false; },
   },
   enter: {
@@ -589,9 +589,9 @@ const specimen = new Specimen(T, actors, scene.environment);
 // menu). It takes effect at run start; the menu also redraws the world left
 // behind the title in the new style. The HUD label says ' · sdf' while on.
 const GELS = ['classic', 'sdf'];
-import { STYLES } from './render/style.js?v=132';
-import { Lens } from './render/lens.js?v=132';
-import { setSceneSun } from './render/sun.js?v=132';
+import { STYLES } from './render/style.js?v=133';
+import { Lens } from './render/lens.js?v=133';
+import { setSceneSun } from './render/sun.js?v=133';
 let urlGels = GELS.includes(params.get('gels')) ? params.get('gels') : null;
 const gels = () => urlGels ?? (GELS.includes(store.str('toko2.gels')) ? store.str('toko2.gels') : 'classic');
 // The LENS switch (render/lens.js, v94): NONE or TILT-SHIFT, localStorage toko2.lens; ?lens=tilt|none for a link
@@ -661,6 +661,55 @@ const intro = new Intro({
   aspect: () => Math.max(1, stage.clientWidth) / Math.max(1, stage.clientHeight),
 });
 let introT0 = 0, introSfx = null, introSkip = false, introStamp = 0;
+// v133 (owner, 2026-11-09: "It lagged through the intro"): the film first HOLDS on black for a frame in which the whole
+// scene is drawn once, everything shown and nothing culled — the film's own cards, the world's floor, set and posts,
+// the hero and the rest — so every shader the film and the run's first seconds need is built there, for the start
+// world's light (a later world's light is a new shader for every lit thing, so the title's builds do not carry
+// over), and the black drawn over it in the same frame is all that shows. v131 asked three's compileAsync for them
+// on the film's first frame, but the film drew on regardless and built them there and then, blocking: measured
+// (390×844, a software GPU, started on world 2), 39 pipelines built mid-film, 35 in its first 0.7 s, frames of
+// 0.8, 2.1 and 1.1 s; and compileAsync works through a scene an object a frame, seconds of it, so it cannot be waited on
+let filmHold = 0, filmRoll = null;   // 2: the warm frame is next; 1: drawn, the film rolls when the GPU is through it; 0: not held
+const holdScene = new THREE.Scene(); holdScene.background = new THREE.Color(0x000000);
+// the film's moments that change what it draws — its cards, the gather, the land, the grid, the eyes, the HUD's run
+const WARM_AT = [0.7, 3.5, 5.0, 6.2, 7.0, 7.6, 9.2, 10.5];
+function warmDraw() {
+  const t0 = performance.now(), back = [], none = [];
+  scene.traverse((x) => {
+    back.push([x, x.visible, x.frustumCulled]); x.visible = true; x.frustumCulled = false;
+    // a pool with nothing in it is not drawn, and its shader is built the first time it is: one of each, for this frame
+    if (x.isInstancedMesh && x.count === 0) { none.push([x, 'count']); x.count = 1; }
+    const g = x.geometry; if (g?.isInstancedBufferGeometry && g.instanceCount === 0) { none.push([g, 'instanceCount']); g.instanceCount = 1; }
+  });
+  const cam = intro.cam, draw = () => { if (lensOf() === 'tilt') lens.render(cam, focusDepth(cam)); else renderer.render(scene, cam); };
+  // drawn into a corner a few pixels square: a shader is built the same, and the GPU has next to nothing to fill
+  const vp = renderer.getViewport(new THREE.Vector4());
+  renderer.setViewport(0, 0, 8, 8);
+  try {
+    draw();
+    // then the film itself at the moments it switches things on (its own pieces, the world's floor and set, the HUD)
+    for (const at of WARM_AT) { intro.frame(at, world); draw(); }
+  } finally {
+    renderer.setViewport(vp.x, vp.y, vp.z, vp.w);
+    for (let i = back.length - 1; i >= 0; i--) { const [x, v, f] = back[i]; x.visible = v; x.frustumCulled = f; }
+    for (const [o, k] of none) o[k] = 0;
+    intro.frame(0, world);   // and the film back at its start
+  }
+  debug.filmWarm = Math.round(performance.now() - t0);
+}
+// when the GPU has done all it was given: a shader is really compiled where it is first used, so the film rolls only
+// once the warm frame's work is through (WebGPU's queue; WebGL 2's fence), and FILM_WARM_MAX ms at most
+const FILM_WARM_MAX = 3000;
+function gpuDone() {
+  const b = renderer.backend, q = b?.device?.queue, gl = b?.gl;
+  if (q?.onSubmittedWorkDone) return q.onSubmittedWorkDone();
+  if (gl?.fenceSync) return new Promise((done) => {
+    const f = gl.fenceSync(gl.SYNC_GPU_COMMANDS_COMPLETE, 0); gl.flush();
+    const poll = () => { if (gl.getSyncParameter(f, gl.SYNC_STATUS) === gl.SIGNALED) { gl.deleteSync(f); done(); } else setTimeout(poll, 16); };
+    poll();
+  });
+  return Promise.resolve();
+}
 let introOff = params.has('nointro');
 const introWanted = (asked) => !introOff && (asked || params.has('intro'));
 // v125: a fresh press skips — a key's auto-repeat, or the start press still held (the pad's `padTap` below), did too
@@ -727,7 +776,10 @@ function start(m, { intro: asked = false, room = null, resume = null, daily: wan
     ui.bannerEl.hidden = true; ui._bannerT = 0;          // nothing left over from a run before it
     introSkip = false; introStamp = performance.now(); introT0 = performance.now() + 40;
     intro.begin();
-    introSfx = sound.ctx && !capture.on ? scheduleIntroSfx(sound.ctx, sound.master, sound.ctx.currentTime + 0.04) : null;
+    // v133: the film's clock and its sound start when its shaders are built (a capture runs its own clock, unheld)
+    const roll = () => { introT0 = performance.now() + 40; introSfx = sound.ctx && !capture.on ? scheduleIntroSfx(sound.ctx, sound.master, sound.ctx.currentTime + 0.04) : null; };
+    if (capture.on) roll(); else filmHold = 2;
+    filmRoll = roll;
     return;
   }
   go();
@@ -750,7 +802,7 @@ let lastRoom = null;   // AGAIN replays it
 const levels = new Map();
 async function loadLevel(id) {
   // v125: a load that failed is forgotten, so the room's START asks again (it was kept as a failure: START did nothing until a reload)
-  if (!levels.has(id)) levels.set(id, fetch(new URL(`../levels/${id}.json?v=132`, import.meta.url)).then((r) => { if (!r.ok) throw new Error(`levels/${id}.json ${r.status}`); return r.json(); }).catch((e) => { levels.delete(id); throw e; }));
+  if (!levels.has(id)) levels.set(id, fetch(new URL(`../levels/${id}.json?v=133`, import.meta.url)).then((r) => { if (!r.ok) throw new Error(`levels/${id}.json ${r.status}`); return r.json(); }).catch((e) => { levels.delete(id); throw e; }));
   return levels.get(id);
 }
 // the list the room screen draws: worlds, their rooms, open or not, best grades
@@ -1234,7 +1286,7 @@ function frame(now, dtFixed) {
   let introT = 0;
 
   if (state === 'intro') {
-    introT = (now - introT0) / 1000;
+    introT = filmHold ? 0 : (now - introT0) / 1000;   // v133: held on black while the film's shaders build
     if (introT >= INTRO.end || introSkip || (!capture.on && introT > 0.35 && padTap)) go(introT >= INTRO.end ? 'film' : 'skip');
   }
   if (state === 'intro') {
@@ -1299,7 +1351,17 @@ function frame(now, dtFixed) {
   ui.drawSticks(input, following && world && state === 'play' ? offscreen() : null);
   actors.light.render(renderer);   // the arena's light map, which the floor reads
   if (actors.goo) { actors.goo.render(renderer); floor.setFilm(actors.goo.film); }   // the goo's film steps (render/goo.js), and the floor reads where it now is
-  { const cam = state === 'intro' ? intro.cam : camera; if (lensOf() === 'tilt') lens.render(cam, focusDepth(cam)); else renderer.render(scene, cam); }   // v94: through the lens when it is on
+  { const cam = state === 'intro' ? intro.cam : camera; if (filmHold && state === 'intro') {
+    renderer.render(holdScene, camera);
+    if (filmHold === 2) {
+      warmDraw(); renderer.render(holdScene, camera); filmHold = 1;
+      const t1 = performance.now();
+      Promise.race([gpuDone(), new Promise((r) => setTimeout(r, FILM_WARM_MAX))]).then(() => {
+        debug.filmGpu = Math.round(performance.now() - t1);
+        if (filmHold === 1 && state === 'intro') { filmHold = 0; filmRoll?.(); }
+      });
+    }
+  } else if (lensOf() === 'tilt') lens.render(cam, focusDepth(cam)); else renderer.render(scene, cam); }   // v94: through the lens when it is on; v133: black while the film's shaders build
   if (state === 'paused' || state === 'over') specimen.render(renderer, time); else specimen.hide();   // the GOT YOU card's gel, over its box
   readout.frame(now, state, world);
   if (warming && (state === 'menu' || state === 'intro')) {

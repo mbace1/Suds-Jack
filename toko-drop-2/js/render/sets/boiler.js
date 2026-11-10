@@ -8,8 +8,8 @@
 // into the dark. Never along the near side. Every number TUNING.scenery.boiler
 import * as THREE from 'three/webgpu';
 import { Fn, float, vec2, vec3, fract, sin, abs, min, max, mix, smoothstep, length, atan, uv, clamp, fwidth, floor as tfloor, positionWorld, positionGeometry, normalWorld } from 'three/tsl';
-import { GEL_TIME } from '../gel.js?v=132';
-import { noise, seeded, phase, put, groundPlane, edgeLine, frameGeometry, risers, motes, ledgeBlocks, ledgeMesh } from '../kit.js?v=132';
+import { GEL_TIME } from '../gel.js?v=133';
+import { noise, seeded, phase, put, groundPlane, edgeLine, frameGeometry, risers, motes, ledgeBlocks, ledgeMesh } from '../kit.js?v=133';
 
 const v3 = (a) => vec3(...a);
 
