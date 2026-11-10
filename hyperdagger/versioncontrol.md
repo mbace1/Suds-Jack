@@ -497,3 +497,39 @@ and every final source/staging gate. Next: finish Pages delivery, verify all
 Exit: the actual guarded build passes those checks before any new conversion.
 Physical devices remain unavailable; 60 fps desktop/30 fps tablet targets
 are unverified. Completed runs still tie at 300.0 s; no scoring change.
+
+
+## 2026-11-10 00:40 UTC — publication blocked; actual public build recorded
+
+The final navigation guard is merged (#638, `f8353e757`) and all 21 final
+gates plus CI/review passed. It is published in commit `458ce6822`. The
+first Pages attempt (42724111873) timed out in `syncing_files`; its fresh
+full rebuild was cancelled by the independent Toko Drop 2 v132 publication
+`3f40cc410`, which contains the entire approved Hyper fix.
+
+The combined release's Pages run 42727139262 built successfully. Attempt 1
+timed out in `syncing_files`; fresh attempt 2 also reached its ten-minute
+timeout while returning empty deployment statuses. That fresh attempt was
+already running when checked; a duplicate rerun request was refused and
+created no additional attempt. No further retries or code changes follow.
+GitHub's public status reports Pages operational with no incident, so this
+is a failure of this delivery, not a claimed global outage.
+
+Final direct public hash checks match the old index/main/worker exactly:
+main/registration 118 and cache v88. The main hub's initial v60 SDF release
+is live and its six encounter loops plus offline passed earlier. The guard
+119/v89 is implemented, tested and merged, but NOT live. Only 7/14 selected
+files match the newest combined target, as the newer hub metadata is also
+undelivered. Normal/daily scores, Classic default, preview build 3 and the
+300.0-second completion tie are unchanged. Physical iPad/Android/desktop
+GPU measurements remain unavailable. No articulated enemy or 3D arena
+conversion has started, respecting the integration-first order.
+
+Goal: deliver and verify the already-reviewed 119/v89 guard. Done: source,
+review, CI, staging and all final acceptance checks. Next: recover Pages
+delivery of the unchanged combined commit, then run the prepared 14-file
+hash verifier, six real menu/combat loops, three delayed arena exits and
+stronger offline check (actual v119 worker, v89 cache, all 70 URLs, offline
+SDF START and first typed Toko reply). Exit: those actual live checks pass
+before beginning one articulated conversion. The delivery failure is the
+remaining integration block; no test or acceptance assertion was weakened.
