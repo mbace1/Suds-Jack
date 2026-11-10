@@ -287,7 +287,9 @@ class Buffer {
     this.lo = Infinity; this.hi = -1;
   }
   clear(from = 0) {
-    for (let i = from; i < this.cap; i++) this.data[i * STRIDE + 3] = -1e9;
+    // the kind goes too: a looping mote ignores its birth time, so a slot that
+    // kept its kind would still be drawn
+    for (let i = from; i < this.cap; i++) { this.data[i * STRIDE + 3] = -1e9; this.data[i * STRIDE + 12] = 0; }
     this.head = Math.max(this.reserved, from);
     this.lo = from; this.hi = this.cap - 1;
   }
@@ -370,5 +372,8 @@ export class Particles {
     this.add.flush(); this.solid.flush();
   }
 
-  stats() { return { time: +this.time.toFixed(2), emittedAdd: this.add.emitted, emittedSolid: this.solid.emitted, ambient: this.add.reserved, limitAdd: this.add.limit, limitSolid: this.solid.limit, budget: this.budget }; }
+  /** how many looping motes are really in the buffer the shader draws */
+  motes() { let n = 0; const d = this.add.data; for (let i = 0; i < this.add.limit; i++) if (d[i * STRIDE + 12] === KIND.MOTE) n++; return n; }
+
+  stats() { return { motes: this.motes(), time: +this.time.toFixed(2), emittedAdd: this.add.emitted, emittedSolid: this.solid.emitted, ambient: this.add.reserved, limitAdd: this.add.limit, limitSolid: this.solid.limit, budget: this.budget }; }
 }

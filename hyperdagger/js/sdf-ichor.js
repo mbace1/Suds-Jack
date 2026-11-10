@@ -35,6 +35,7 @@ const FRAG = /* glsl */`
   uniform vec3 uRim;       // the edge against the sky
   uniform vec3 uHot;       // what it is while it is new
   uniform float uFloorL;   // the floor, in the box's units (below it nothing is drawn)
+  uniform mat4 uLocalToClip;   // so the surface that was hit, not the box, is what is depth-tested
   float h1(float n) { return fract(sin(n * 12.9898) * 43758.5453); }
   vec3 h3(float n) { return vec3(h1(n), h1(n + 17.1), h1(n + 41.7)); }
   float smin(float a, float b, float k) { float h = clamp(0.5 + 0.5 * (b - a) / k, 0.0, 1.0); return mix(b, a, h) - k * h * (1.0 - h); }
@@ -81,12 +82,15 @@ const FRAG = /* glsl */`
     float lit = floor(clamp(dot(n, uKey) * 0.6 + 0.45, 0.0, 1.0) * 4.0 + 0.5) / 4.0;
     float fres = pow(1.0 - max(dot(n, -rd), 0.0), 2.5);
     float spec = step(0.93, dot(reflect(-uKey, n), -rd));
+    vec4 clip = uLocalToClip * vec4(p, 1.0);
+    gl_FragDepth = clamp(clip.z / clip.w * 0.5 + 0.5, 0.0, 1.0);
     vec3 col = mix(uColB, uColA, lit) + uRim * fres + uRim * spec * 1.4;
     col = mix(col, uHot, (1.0 - uT) * (1.0 - uT) * 0.45 * (0.35 + 0.65 * lit));
     gl_FragColor = vec4(col, 1.0);
   }`;
 
 const _eye = new THREE.Vector3();
+const _m = new THREE.Matrix4();
 
 export class Ichor {
   constructor(scene) {
@@ -98,7 +102,7 @@ export class Ichor {
           uEye: { value: new THREE.Vector3() }, uT: { value: 0 }, uSeed: { value: i * 0.37 },
           uDir: { value: new THREE.Vector3(0, 0, -1) }, uKey: { value: new THREE.Vector3(-0.4, 0.8, 0.45).normalize() },
           uColA: { value: new THREE.Color() }, uColB: { value: new THREE.Color() }, uRim: { value: new THREE.Color() }, uHot: { value: new THREE.Color() },
-          uFloorL: { value: -9 },
+          uFloorL: { value: -9 }, uLocalToClip: { value: new THREE.Matrix4() },
         },
         vertexShader: VERT, fragmentShader: FRAG, fog: false,
       });
@@ -157,6 +161,8 @@ export class Ichor {
       const u = it.mesh.material.uniforms;
       u.uT.value = it.t / LIFE;
       u.uEye.value.copy(_eye).sub(it.mesh.position).divideScalar(it.s);
+      _m.makeScale(it.s, it.s, it.s).setPosition(it.mesh.position);
+      u.uLocalToClip.value.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse).multiply(_m);
     }
   }
 

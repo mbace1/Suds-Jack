@@ -3456,6 +3456,9 @@ function killEnemy(e, dir) {
   addStyle(STYLE_GAIN[e.type] ?? 3);
   if (M().lethality === 'clock') lifeT = Math.min(HYPER_CAP, lifeT + e.score); // kills buy time
   e.center(_c);
+  // v61: `dir` is usually _hitDir itself, which the gib impulse below scales in
+  // place (×5, twice). The look wants the direction, not the impulse.
+  _lookFwd.copy(dir).normalize();
   let deathVox = e.deathVoxels?.() ?? e.sprite.worldVoxels();
   physGibs.on = gibsOn();
   if (physGibs.on) deathVox = physGibs.burst(deathVox, e.sprite.size, _hitDir.copy(dir).multiplyScalar(5));   // the chunks stack; the rest is spray
@@ -3463,7 +3466,7 @@ function killEnemy(e, dir) {
     _hitDir.copy(dir).multiplyScalar(5), e.type === 'skull' ? 1 : 1.4);
   audio.gib(e.type !== 'skull');
   const heavyKill = e.type === 'brute' || e.type === 'dread' || e.type === 'leviathan' || !!e.isHead;
-  look.kill(_c, dir, e.radius, heavyKill, !!e.sdfRoot);   // v61: the season's death (an SDF body also dies as a liquid)
+  look.kill(_c, _lookFwd, e.radius, heavyKill, !!e.sdfRoot);   // v61: the season's death (an SDF body also dies as a liquid)
   // heavy kills stamp a shockwave ring into the floor, warp the frame, and
   // freeze time for a beat (~50ms at 12% speed) so the impact lands
   if (heavyKill) {

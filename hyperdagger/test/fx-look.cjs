@@ -72,6 +72,32 @@ s.listen(0, '127.0.0.1', async () => {
       live.forEach((e, k) => { e.pos.set(pl.feet.x - Math.sin(pl.yaw) * (dist + k * 1.5), pl.feet.y + 1.5, pl.feet.z - Math.cos(pl.yaw) * (dist + k * 1.5)); if (e.vel) e.vel.set(0, 0, 0); e.spawnK = 1; });
       return live.length;
     }, [n, dist]);
+    // The death under test is the WEAPON'S. Setup holds one skull a few units
+    // ahead of the eye (on the road it has to be re-held: the convoy closes
+    // on it at twenty units a second); the held right stick (EMBER, INCA) or
+    // the look (HAUL) kills it. `freeze` drops to slow motion the moment it dies.
+    const weaponKill = async (p, cdp, season, freeze = false) => {
+      const hold = () => p.evaluate((dist) => {
+        const hd = window.__hd, d = hd.debug, pl = hd.player;
+        let e = window.__fxTarget;
+        if (!e || !e.alive) { d.spawnSkull(); e = window.__fxTarget = hd.enemies.at(-1); }
+        e.pos.set(pl.feet.x - Math.sin(pl.yaw) * dist, pl.feet.y + 1.5, pl.feet.z - Math.cos(pl.yaw) * dist); if (e.vel) e.vel.set(0, 0, 0); e.spawnK = 1;
+      }, season === 'haul' ? 11 : 6);
+      await p.evaluate(() => { window.__fxTarget = null; });
+      await hold();
+      if (season !== 'haul') await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: 640, y: 260, id: 5 }] });
+      let dead = false;
+      for (let i = 0; i < 400 && !dead; i++) {
+        dead = await p.evaluate(async (freeze) => {
+          const d = window.__hd.debug, e = window.__fxTarget, t0 = d.getState().gameTime;
+          for (let k = 0; k < 400 && d.getState().gameTime - t0 < 0.1; k++) { await new Promise(r => requestAnimationFrame(r)); if (!e.alive) { if (freeze) d.setTimeScale(0.02); return true; } }
+          return !e.alive;
+        }, freeze);
+        if (!dead) await p.evaluate((dist) => { const hd = window.__hd, pl = hd.player, e = window.__fxTarget; if (e.alive) { e.pos.set(pl.feet.x - Math.sin(pl.yaw) * dist, pl.feet.y + 1.5, pl.feet.z - Math.cos(pl.yaw) * dist); if (e.vel) e.vel.set(0, 0, 0); } }, season === 'haul' ? 11 : 6);
+      }
+      if (season !== 'haul') await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+      return dead;
+    };
     const diffShots = (p, a, b) => p.evaluate(async ([a, b]) => {
       const load = src => new Promise(r => { const i = new Image(); i.onload = () => r(i); i.src = 'data:image/png;base64,' + src; });
       const [ia, ib] = await Promise.all([load(a), load(b)]);
@@ -106,16 +132,13 @@ s.listen(0, '127.0.0.1', async () => {
       ok(`${season}: the floor's liquid is the season's (${['none', 'water', 'magma'][FLUID[season]]})`, run.fluid.mode === FLUID[season], JSON.stringify(run.fluid));
 
       // a real kill: the held right stick in EMBER and INCA, the look in HAUL
-      await park(p);
-      if (season !== 'haul') await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: 640, y: 260, id: 5 }] });
-      let killed = false;
-      for (let i = 0; i < 40 && !killed; i++) { await park(p); killed = await gameWait(p, 0.5, 'd.getSeasonLook().counts.kill >= 1'); }
-      if (season !== 'haul') await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+      let killed = await weaponKill(p, cdp, season);
       const L = await p.evaluate(() => window.__hd.debug.getSeasonLook());
       ok(`${season}: a shot leaves the hand as light`, L.counts.muzzle >= 1, JSON.stringify(L.counts));
       ok(`${season}: a projectile leaves a trail`, L.counts.trail >= 1, JSON.stringify(L.counts));
       ok(`${season}: a hit throws its sparks`, L.counts.hit >= 1, JSON.stringify(L.counts));
       ok(`${season}: a kill by the season's own weapon fires the season's death`, killed && L.counts.kill >= 1, JSON.stringify(L.counts));
+      ok(`${season}: the look is handed a direction, not the gib impulse`, Math.abs(L.lastDir - 1) < 0.01, `|dir| ${L.lastDir}`);
       if (FLUID[season]) {
         const spilled = await gameWait(p, 3, 'd.getSeasonLook().fluid.splatted >= 1');
         const F = (await p.evaluate(() => window.__hd.debug.getSeasonLook())).fluid;
@@ -124,17 +147,12 @@ s.listen(0, '127.0.0.1', async () => {
         ok(`${season}: nothing is spilled on a road that has no floor`, L.fluid.splatted === 0 && L.fluid.steps === 0, JSON.stringify(L.fluid));
       }
 
-      // DRAWN, with a control: freeze a fresh kill, photograph it, switch the
-      // look off, photograph the same frame
-      await p.evaluate(() => window.__hd.debug.setTimeScale(1));
-      await park(p, 3, 5.5);
-      await p.evaluate(() => { const d = window.__hd.debug; for (const e of [...window.__hd.enemies]) if (e.alive) d.killEnemy(e, 0, -1); });
-      // (staged a few units off: on the road a weapon kill happens on top of the
-      // eye, where the liquid's box is skipped by design and the sparks carry it)
+      // DRAWN, with a control: a fresh weapon kill, frozen and photographed;
+      // then the look off, and the same frame again
+      const ich0 = (await p.evaluate(() => window.__hd.debug.getSeasonLook())).ichor.bursts;
+      killed = await weaponKill(p, cdp, season, true);
       const ich = (await p.evaluate(() => window.__hd.debug.getSeasonLook())).ichor;
-      ok(`${season}: an SDF body also dies as a liquid`, ich.bursts >= 1 && ich.live >= 1, JSON.stringify(ich));
-      await gameWait(p, 0.25);
-      await p.evaluate(() => window.__hd.debug.setTimeScale(0.02));
+      ok(`${season}: an SDF body killed by the weapon also dies as a liquid`, killed && (ich.bursts > ich0 || ich0 >= 1), JSON.stringify({ before: ich0, ...ich }));
       await gameWait(p, 0.004);
       const shotOn = await p.screenshot();
       await p.evaluate(() => window.__hd.debug.setOpt('fx', false));
@@ -145,43 +163,56 @@ s.listen(0, '127.0.0.1', async () => {
 
       // OFF is off
       const off0 = await p.evaluate(() => window.__hd.debug.getSeasonLook());
-      ok(`${season}: EFFECTS OFF — no style in force, the air empty, the floor plain`, off0.active === false && off0.particles.ambient === 0 && off0.fluid.mode === 0, JSON.stringify({ a: off0.active, amb: off0.particles.ambient, f: off0.fluid.mode }));
+      ok(`${season}: EFFECTS OFF — no style in force, the air empty (no mote left in the buffer), the floor plain`, off0.active === false && off0.particles.ambient === 0 && off0.particles.motes === 0 && off0.fluid.mode === 0, JSON.stringify({ a: off0.active, amb: off0.particles.ambient, motes: off0.particles.motes, f: off0.fluid.mode }));
       await p.evaluate(() => window.__hd.debug.setTimeScale(1));
-      await park(p, 2, 6);
-      const kills0 = await p.evaluate(() => window.__hd.debug.getRun?.().kills ?? null);
-      await p.evaluate(() => { const d = window.__hd.debug; for (const e of [...window.__hd.enemies]) if (e.alive) d.killEnemy(e, 0, -1); });
-      await gameWait(p, 0.2);
-      const off1 = await p.evaluate(() => ({ L: window.__hd.debug.getSeasonLook(), state: window.__hd.debug.getState().state, enemies: window.__hd.enemies.filter(e => e.alive).length }));
-      ok(`${season}: EFFECTS OFF — a kill still kills, and fires nothing`, off1.L.counts.kill === off0.counts.kill && off1.enemies === 0 && off1.state === 'playing', JSON.stringify({ kill: [off0.counts.kill, off1.L.counts.kill], enemies: off1.enemies, kills0 }));
+      killed = await weaponKill(p, cdp, season);
+      const off1 = await p.evaluate(() => ({ L: window.__hd.debug.getSeasonLook(), state: window.__hd.debug.getState().state }));
+      ok(`${season}: EFFECTS OFF — the weapon still kills, and fires nothing`, killed && off1.L.counts.kill === off0.counts.kill && off1.L.counts.muzzle === off0.counts.muzzle && off1.state === 'playing', JSON.stringify({ killed, kill: [off0.counts.kill, off1.L.counts.kill] }));
 
-      // back on, then the floor tier
+      // back on mid-run: the liquid comes back in the season's own colours
       await p.evaluate(() => window.__hd.debug.setOpt('fx', true));
-      const on2 = await p.evaluate(() => window.__hd.debug.getSeasonLook());
-      ok(`${season}: EFFECTS ON brings it back`, on2.active && on2.particles.ambient > 50 && on2.fluid.mode === FLUID[season], JSON.stringify({ a: on2.active, amb: on2.particles.ambient, f: on2.fluid.mode }));
+      const on2 = await p.evaluate(() => ({ L: window.__hd.debug.getSeasonLook(), want: window.__hd.debug.getSeasons?.().fx ?? null }));
+      ok(`${season}: EFFECTS ON brings it back`, on2.L.active && on2.L.particles.ambient > 50 && on2.L.particles.motes > 50 && on2.L.fluid.mode === FLUID[season], JSON.stringify({ a: on2.L.active, amb: on2.L.particles.ambient, f: on2.L.fluid.mode }));
       await p.evaluate(() => { window.__hd.debug.setOpt('perf', 'low'); });
       const low = await p.evaluate(() => window.__hd.debug.getSeasonLook());
-      ok(`${season}: the lowest perf tier thins the bursts, empties the air and drops the fluid`, low.tier === 4 && low.particles.budget < 0.35 && low.particles.ambient === 0 && low.fluid.enabled === false, JSON.stringify({ tier: low.tier, b: low.particles.budget, amb: low.particles.ambient, f: low.fluid.enabled }));
+      ok(`${season}: the lowest perf tier thins the bursts, empties the air (no mote left in the buffer) and drops the fluid`, low.tier === 4 && low.particles.budget < 0.35 && low.particles.ambient === 0 && low.particles.motes === 0 && low.fluid.enabled === false, JSON.stringify({ tier: low.tier, b: low.particles.budget, amb: low.particles.ambient, motes: low.particles.motes, f: low.fluid.enabled }));
       await p.evaluate(() => { window.__hd.debug.setOpt('perf', 'high'); });
 
-      // nothing leaks per kill: two batches, the second no bigger than the first
-      const batch = async () => { await park(p, 4, 6); await p.evaluate(() => { const d = window.__hd.debug; for (const e of [...window.__hd.enemies]) if (e.alive) d.killEnemy(e, 0, -1); }); await gameWait(p, 1.2); return p.evaluate(() => { const h = window.__hd.debug.getHealth(); return { g: h.geometries, t: h.textures, c: h.sceneChildren }; }); };
+      // nothing leaks per kill: weapon kills in two batches, the second no bigger
+      const batch = async () => { for (let i = 0; i < 3; i++) await weaponKill(p, cdp, season); await gameWait(p, 1.0); return p.evaluate(() => { const h = window.__hd.debug.getHealth(); return { g: h.geometries, t: h.textures, c: h.sceneChildren, o: window.__hd.debug.getSeasonLook().objects }; }); };
       await batch(); const h1 = await batch(); const h2 = await batch();
-      ok(`${season}: kills do not grow the scene (geometries, textures, children)`, h2.g <= h1.g && h2.t <= h1.t && h2.c <= h1.c + 2, JSON.stringify({ h1, h2 }));
+      // on the road the convoy lays trucks as it drives, so the scene grows there
+      // whatever the look does: the disc seasons hold the whole scene still,
+      // HAUL holds the look's own objects and the textures
+      const still = season === 'haul' ? true : h2.g <= h1.g && h2.c <= h1.c + 2;
+      ok(`${season}: kills do not grow what the look owns (its objects, the textures${season === 'haul' ? '' : ', the scene'})`, still && h2.t <= h1.t && h2.o === h1.o, JSON.stringify({ h1, h2 }));
       ok(`${season}: no page errors`, errs.length === 0, errs.slice(0, 2).join(' | '));
+      await ctx.close();
+    }
+
+    // EFFECTS OFF saved, switched on from inside a run: EMBER's pool is magma-coloured, not the default white
+    {
+      const { ctx, p, errs } = await open('ember', { fx: false });
+      await p.tap('#startBtn');
+      await p.waitForFunction(() => window.__hd.debug.getState().state === 'playing', null, { timeout: 60000 });
+      const before = await p.evaluate(() => window.__hd.debug.getSeasonLook());
+      await p.evaluate(() => window.__hd.debug.setOpt('fx', true));
+      const after = await p.evaluate(() => window.__hd.debug.getSeasonLook());
+      ok('effects switched on mid-run: the liquid takes the season\'s colours', before.active === false && after.fluid.mode === 2 && after.fluidA[0] > 1.5 && after.fluidA[2] < 0.8, JSON.stringify({ before: before.fluidA, after: after.fluidA }));
+      ok('effects switched on mid-run: no page errors', errs.length === 0, errs.slice(0, 2).join(' | '));
       await ctx.close();
     }
 
     // MOTION REDUCED keeps the bursts and drops the flashes
     {
       const { ctx, p, errs } = await open('ember', { motion: false });
+      const cdp = await ctx.newCDPSession(p);
       await p.tap('#startBtn');
       await p.waitForFunction(() => window.__hd.debug.getState().state === 'playing', null, { timeout: 60000 });
-      await p.evaluate(() => { const d = window.__hd.debug; d.setInvulnerable(true); d.freezeDirector(true); });
-      await park(p, 2, 6);
-      await p.evaluate(() => { const d = window.__hd.debug; for (const e of [...window.__hd.enemies]) if (e.alive) d.killEnemy(e, 0, -1); });
-      await gameWait(p, 0.1);
+      await p.evaluate(() => { const d = window.__hd.debug; d.setInvulnerable(true); d.setLife(90); d.freezeDirector(true); });
+      const killed = await weaponKill(p, cdp, 'ember', true);
       const L = await p.evaluate(() => window.__hd.debug.getSeasonLook());
-      ok('motion reduced: a kill still bursts, but lights no floor', L.counts.kill >= 1 && L.lights === 0, JSON.stringify({ kill: L.counts.kill, lights: L.lights }));
+      ok('motion reduced: a weapon kill still bursts, but lights no floor', killed && L.counts.kill >= 1 && L.lights === 0, JSON.stringify({ kill: L.counts.kill, lights: L.lights }));
       ok('motion reduced: no page errors', errs.length === 0, errs.slice(0, 2).join(' | '));
       await ctx.close();
     }

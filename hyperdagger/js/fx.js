@@ -73,14 +73,8 @@ export class Look {
     this.pools.length = 0;
     for (const l of this.lights) l.life = 0;
     // the liquid, if this season has a floor to hold one
-    const fl = disc && this.on ? def?.fluid : null;
     this.fluid.setEnabled(this.tier < 4);
-    this.fluid.setMode(fl?.kind ?? null, fl ?? {});
-    if (this.floor && fl) {
-      this.floor.uFluidA.value.setRGB(...(fl.a ?? [1, 1, 1]));
-      this.floor.uFluidB.value.setRGB(...(fl.b ?? [0, 0, 0]));
-      this.fluid.floorK.y = fl.strength ?? 1;
-    }
+    this._applyFluid();
     const u = this.P.uniforms;
     u.uFloor.value = floorY;
     if (fog) { u.uFogCol.value.setRGB(...fog.color); u.uFogRange.value.set(fog.near, fog.far * 1.6); }
@@ -96,9 +90,20 @@ export class Look {
     this.on = !!on;
     this.P.setVisible(this.active);
     this._seedAmbient();
+    this._applyFluid();
+    this.ichor.setLook(this.on ? this.def?.ichor : null, null);
+  }
+
+  /** The season's liquid and its colours, together: switching EFFECTS on in
+   *  the middle of a run must not leave the last palette on a new pool. */
+  _applyFluid() {
     const fl = this.disc && this.on ? this.def?.fluid : null;
     this.fluid.setMode(fl?.kind ?? null, fl ?? {});
-    this.ichor.setLook(this.on ? this.def?.ichor : null, null);
+    if (this.floor && fl) {
+      this.floor.uFluidA.value.setRGB(...(fl.a ?? [1, 1, 1]));
+      this.floor.uFluidB.value.setRGB(...(fl.b ?? [0, 0, 0]));
+      this.fluid.floorK.y = fl.strength ?? 1;
+    }
   }
 
   /** MOTION REDUCED: the bursts stay, the flashes and the floor's lights go. */
@@ -174,6 +179,7 @@ export class Look {
   kill(c, dir, r = 0.8, heavy = false, sdf = false) {
     if (!this.active) return;
     this.counts.kill++;
+    this.lastDir = Math.hypot(dir.x, dir.y, dir.z);   // the gate holds this at 1: a direction, never an impulse
     if (sdf && this.tier <= 2 && this.camera) this.ichor.burst(c, dir, r, this.camera);
     const P = this.P, d = this.def, s = Math.max(0.6, r), iv = this.inherit;
     const f = d.flash ?? d.spark, a = d.spark, b = d.spark2 ?? d.spark;
@@ -500,6 +506,9 @@ export class Look {
     return { on: this.on, active: this.active, style: this.style, tier: this.tier, counts: { ...this.counts },
       particles: this.P.stats(), fluid: this.fluid.getState(), pools: this.pools.length,
       ichor: { bursts: this.ichor.bursts, live: this.ichor.live },
+      lastDir: +(this.lastDir ?? 0).toFixed(3),
+      objects: 2 + this.ichor.items.length,   // everything the look ever adds to the scene: fixed at boot
+      fluidA: this.floor ? this.floor.uFluidA.value.toArray().map(v => +v.toFixed(3)) : null,
       lights: this.lights.filter(l => l.life > 0).length };
   }
 }
