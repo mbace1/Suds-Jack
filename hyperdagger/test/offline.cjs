@@ -11,7 +11,7 @@
 // anyway. The correct offline page has no HOME button, not a dead one.
 const { chromium } = require('playwright');
 const http = require('http'); const fs = require('fs'); const path = require('path');
-const ROOT = path.resolve(__dirname, '..', '..');
+const ROOT = process.env.HD_SITE_ROOT || path.resolve(__dirname, '..', '..');
 const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.webmanifest': 'application/manifest+json', '.png': 'image/png' };
 const server = http.createServer((req, res) => {
   const u = req.url.split('?')[0];
@@ -82,7 +82,8 @@ const ok = (n, c, d) => { c ? (pass++, console.log('  ok   ' + n)) : (fail++, co
   ok('the game boots with the network gone', booted);
   if (booted) {
     await pg.evaluate(() => localStorage.setItem('hyperDaggerSeenTips', '1'));
-    await pg.mouse.click(550, 360);
+    // HD-019: START is the way in (a tap on the empty menu starts nothing)
+    { const bb = await pg.locator('#startBtn').boundingBox(); await pg.mouse.click(bb.x + bb.width / 2, bb.y + bb.height / 2); }
     const playing = await pg.waitForFunction(
       () => window.__hd.debug.getState().state === 'playing', null, { timeout: 10000 }).then(() => true, () => false);
     ok('a run starts offline', playing);

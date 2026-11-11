@@ -1,9 +1,134 @@
+## v62 — in progress
+**Three seasons that can be finished, and a finish that counts (HD-023)**
+
+Mikael, 11 Nov 2026: *"Plan and execute to ship 3 seasons feature complete.
+Act as Game design and art direction"*.
+
+Looked at first: the back half of each season on a contact sheet, and a bot
+that kills every body the instant it exists and is never touched — the ceiling
+of what a clock season allows. **It was dead at 31.0 s in EMBER with one kill,
+and at 30.0 s in INCA with none.** The menu says "survive to 5:00".
+
+The cause is one function. The season wave table (12 Oct) was written as the
+director: it returned before the tuned HYPER one ran, and spawned about one
+skull per breathing gap. The clock drains a second a second and a skull pays
+one. Its `kind` chose a toast and nothing else, so no watcher, husk, spider,
+blinker, serpent, dread, totem, thorn or leviathan ever appeared in a season.
+It rolled `Math.random` per frame, so pressure followed the frame rate and a
+daily seed seeded nothing. `waveIdx` was never reset, so a second run opened
+in the last act. HAUL's table was read by nothing at all.
+
+What changed, and each is a design decision:
+
+- **An act steers the tuned director; it does not replace it.** An act is
+  `{t, kind, name, density, gap}`. `density` multiplies the tuned budget (EMBER),
+  the skull cadence (INCA) or the convoy's skull rate (HAUL); 1 is as tuned.
+  `kind` leans an ordinary pulse (`skulls` → swarm, `heavies` → spike) and
+  leaves the rhythm's own heavy/spike/swarm alone. `gap` is a real valley when
+  the act opens. The act is named on screen: THE SWARM, THE PARADE, THE
+  HEAVIES, THE SQUEEZE, THE HOST; THE SEA, THE DROWNED, HIGH WATER, UNDERTOW,
+  SPRING TIDE; THE CONVOY, LOCK ON, OPEN ROAD, HEADWIND. The finale keeps its
+  own name.
+- **INCA: the sea pays.** A crest that passes under a body it did not touch
+  buys 2 s. The sea was only a cost. Its skull cadence is 1.0 s → 0.6 s (was
+  2.6 → 0.9, which no clock survives).
+- **A clear is ranked by kills.** The clock is still the score and a finished
+  run is still 300.0 s. Among clears, more kills is better: saved per season
+  and mode (`hyperDaggerClears`), sealed on the end screen (FIRST CLEAR / BEST
+  CLEAR / best clear N kills), shown on the menu, and starred on the season's
+  tab.
+- **The run ends on a beat**: LAST STAND at thirty seconds to go, and the last
+  ten are counted.
+- **INCA files its own best** (`…:inca`). It shared EMBER's, both being HYPER.
+  EMBER keeps the key it had, so no best is lost; INCA starts clean, because
+  what was in the shared key cannot be told apart.
+
+Measured, same bot, after: EMBER reaches 300.0 s (531 kills, the clock at its
+cap); INCA reaches 300.0 s (702 kills, the clock at its cap, no crest jumped).
+That is a ceiling, not a difficulty: the bot is never touched and never misses.
+
+Gates: `test/acts.mjs` (bare node, 24: the tables' shape, and that INCA's
+cadence alone can carry the clock) and `test/seasons.cjs` (browser, 48: acts open
+and are named, bodies arrive unasked, EMBER's roster is more than skulls, the
+crest is cleared with a real Space press and pays 2 s, a crest that hits pays
+nothing, LAST STAND, the count, the clear saved and shown, a second run opens
+in act one).
+
+Not done, and not claimed: nobody has played this at speed. The numbers say a
+season CAN be finished; whether it is the right difficulty is a playtest. The
+pause menu still has the v48 look. HAUL's skulls still roll `Math.random`.
+
+## v61 — in progress
+**The look: particles, a fluid floor and light, a different one per season (HD-022)**
+
+Mikael, 10 Nov 2026: *"Plan and execute the most visually impressive version
+of the game. Utilizing SDF and other systems that aren't that demanding but
+can be tweaked for impressive visuals. Including expert particle effects and
+fluids. Remember, seasons have slightly different styles and looks"*.
+
+Read off screenshots of v60: a kill was grey cubes on a black floor, a shot
+was invisible, and nothing in the frame was liquid or lit by what happened in
+it. Three cheap systems change that. Each is a module, each is declared per
+season (`fx` in `seasons.js`), and none of them touches a rule, a hitbox, a
+timer or the score.
+
+- **Particles** (`js/fx-particles.js`). A particle is its birth record: the
+  vertex shader flies it (gravity, drag, one floor bounce, drift), so nothing
+  is simulated on the CPU and thousands cost two draw calls. Hard pixels and an
+  ordered-dither fade, because the image is a coarse software raster. The air
+  (embers, pollen, road dust) is emitted once and wrapped round the camera in
+  the shader.
+- **The floor is a fluid** (`js/fx-fluid.js`). A 256² ping-pong field over the
+  disc, read by the floor shader.
+  - EMBER: a kill spills a molten pool that runs, stops with an edge, crusts
+    from the rim inward into cracked plates, and long after sinks away.
+  - INCA: the sea rings. Steps, landings, nails, kills and the wave all dent
+    it, and the sun's path and the caustics bend through the rings.
+  - HAUL has no floor to pool on, so it has none.
+- **Light from events.** A kill, a shot and a shockwave light the floor round
+  them for a few frames.
+- **RENDER · SDF only** (`js/sdf-ichor.js`): an SDF body also dies as a
+  raymarched liquid — a core and six lobes in a smooth union that loosens as
+  they fly. Six pooled, 0.7 s each. CLASSIC keeps its voxel deaths and gets
+  everything above.
+
+Per season (`js/fx.js` holds the recipes): **EMBER** is fire in the dark
+(sparks that bounce, embers off the pools, smoke lit from below); **INCA** is
+water and light (beads of the sea, gold dust, spray off the crest); **HAUL**
+is speed and smoke (a missile is a flame and its smoke, a kill a fireball,
+and everything thrown rides the convoy while the smoke is left behind).
+
+- **Scaled and switchable.** The perf tiers thin the bursts; the lowest tier
+  empties the air and draws a plain floor. The pause menu has EFFECTS ON / OFF.
+  MOTION REDUCED keeps the bursts and drops the flashes and floor lights.
+- **Its own dice.** The look never calls `Math.random` or the run's rng, so a
+  seeded run plays the same with it on or off (the gate reads the source).
+- **VOID has no look** and stays the control.
+
+New gate `test/fx-look.cjs`: each season has its own style, a real shot, hit
+and kill fire it, EMBER's floor takes a pool and INCA's a ring, the same
+frozen frame with the look off is a different picture, OFF is off, the lowest
+tier thins it, and kills do not grow the scene.
+
+Found on the way: my capture tool read the wrong options key, so its first
+frames were at the lowest quality tier. And the first magma was a white lake
+that hid everything standing in it; it is half the volume now and white-hot
+for under a second.
+
+Tokens: `main.js` 120, `seasons.js` 120, `sw.js` 120, worker cache
+`hyperdagger-v90`; new `fx.js`, `fx-particles.js`, `fx-fluid.js` and
+`sdf-ichor.js` at 1. 74 precache entries.
+
+Not measured: frame times on a real phone, tablet or GPU.
+
 ## v60 — 2026-11-09
-Integration follow-up (9 November): the test-arena chip ignores the second
+Integration follow-up (source merged 9 November; delivery blocked 10 November): the test-arena chip ignores the second
 release event from one touch gesture. A delayed-navigation regression fails
 on the old handler (two requests and ERR_ABORTED) and retains all three
 season exits and normal/daily record-isolation assertions. Main/worker
 registration advance to 119 and worker cache v89; gameplay is unchanged.
+The earlier v60 (118/v88) is live; this maintenance guard is merged but
+not live after Pages delivery timed out. See the final release receipt.
 **SDF on the live menu: RENDER · CLASSIC | SDF (HD-020)**
 
 Mikael, 22 Oct 2026: *"Can you make an SDF toggle in the main menu?"*, then

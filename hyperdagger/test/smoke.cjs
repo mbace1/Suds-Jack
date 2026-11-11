@@ -111,18 +111,25 @@ s.listen(0, '127.0.0.1', async () => {
   // navigates to its own pages.
   await p.evaluate(() => window.__hd.debug.setSeason('void'));
   await p.evaluate(() => localStorage.setItem('hyperDaggerSeenTips', '1'));
-  // low on the page, BELOW the menu panel: dead centre is a button now that
-  // v41 put SEASON beside MODE, and clicking a button is not "a click starts
-  // the run"
-  await p.mouse.click(410, 508);
+  // HD-019: START, under the season's rules, is the one way in — a tap on the
+  // empty menu starts nothing (menu-input.cjs holds both halves of that)
+  { const bb = await p.locator('#startBtn').boundingBox(); await p.mouse.click(bb.x + bb.width / 2, bb.y + bb.height / 2); }
   await p.waitForFunction(() => window.__hd.debug.getState().state === 'playing', null, { timeout: 10000 });
-  ok('a click starts the run', true);
+  ok('a click on START starts the run', true);
 
   // ---- v30 weapon-and-clock frame ---------------------------------------
   await p.waitForFunction(() =>
     document.querySelector('.arcade-home') && document.querySelector('.toko-signature'),
   null, { timeout: 5000 });
-  await p.waitForTimeout(700); // let shell/signature fades settle under SwiftShader
+  // Wait for the actual finite opacity transitions, rather than sampling a
+  // partly composited frame after a wall-clock sleep under SwiftShader.
+  // Removing the in-run fade still fails the unchanged opacity assertions.
+  await p.evaluate(async () => {
+    const fades = [...document.querySelectorAll('.arcade-home, .toko-signature, #pauseBtn')]
+      .flatMap(el => el.getAnimations()).filter(a => a.transitionProperty === 'opacity');
+    await Promise.allSettled(fades.map(a => a.finished));
+    await new Promise(r => requestAnimationFrame(r));
+  });
   const frame30 = await p.evaluate(() => {
     const css = id => getComputedStyle(document.getElementById(id));
     const weapon = window.__hd.debug.getWeaponView();
@@ -138,8 +145,10 @@ s.listen(0, '127.0.0.1', async () => {
       weapon,
     };
   });
-  ok('the active frame is clock-only',
-    frame30.active && frame30.kills === 'none' && frame30.gems === 'none' &&
+  // HD-008 (12 Oct playtest): the kill counter is the one readout that stays
+  // up beside the clock — gems and the style badge still wait for the break
+  ok('the active frame is the clock and the kill counter',
+    frame30.active && frame30.kills !== 'none' && frame30.gems === 'none' &&
     frame30.style === 'none' && frame30.timer === '27px', JSON.stringify(frame30));
   ok('shell controls retreat during the fight',
     frame30.pause <= 0.16 && frame30.home <= 0.08 && frame30.signature <= 0.08,
@@ -170,7 +179,7 @@ s.listen(0, '127.0.0.1', async () => {
     raster28.buffer.h <= Math.ceil(raster28.viewport.h * 0.73),
     JSON.stringify(raster28));
   ok('the coarse buffer is enlarged with hard pixels',
-    raster28.scaling === 'pixelated', JSON.stringify(raster28));
+    ['pixelated', 'crisp-edges'].includes(raster28.scaling), JSON.stringify(raster28));   // index.html lists both; the later one wins where supported, and both are hard pixels
   ok('the soot floor is a tiny unfiltered texture',
     raster28.floor.w === 128 && raster28.floor.h === 128 &&
     raster28.floor.nearest === true && raster28.floor.mipmaps === false,
@@ -340,7 +349,7 @@ s.listen(0, '127.0.0.1', async () => {
     impact29.w === 8 && impact29.h === 8 && impact29.nearest && !impact29.mipmaps,
     JSON.stringify(impact29));
 
-  // ---- v4.29 DD gunfeel: TAP = shotgun, HOLD = stream, no auto-fire ------
+  // ---- HD-001: short press jumps, hold streams, walking does not shoot ---
   const gun = await p.evaluate(async () => {
     const hd = window.__hd;
     const frames = n => new Promise(r => { let c = 0; const f = () => (++c >= n ? r() : requestAnimationFrame(f)); requestAnimationFrame(f); });
@@ -352,13 +361,16 @@ s.listen(0, '127.0.0.1', async () => {
     hd.daggers.fire = (...args) => { shots++; return realFire(...args); };
     hd.player.input.touchMode = false;
     hd.enemies.length = 0;
-    // moving alone must fire NOTHING now (the old auto-fire is gone)
+    // moving alone must fire NOTHING (keyboard, and the touch move stick)
     const d0 = shots;
     window.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyW' }));
     await frames(12);
     window.dispatchEvent(new KeyboardEvent('keyup', { code: 'KeyW' }));
     const moveFired = shots - d0;
-    // TAP: trigger down for 2 frames (≤0.1s of clamped dt — under streamDelay)
+    // short primary press: under streamDelay. Jump, and do not fire.
+    hd.player.reset();
+    const jumpsBefore = hd.player.jumpsLeft;
+    const daggersBefore = hd.player.daggerJumpCount;
     const d1 = shots;
     hd.player.input.mouseDown = true;
     await frames(2);
@@ -368,8 +380,8 @@ s.listen(0, '127.0.0.1', async () => {
     const cdAfterTap = hd.debug.getGun().shotCd;
     const viewAfterTap = hd.debug.getWeaponView();
     const tapSpeeds = hd.daggers.active.map(d => d.vel.length());
-    // wait out the shotgun lockout, then HOLD: stream after streamDelay
-    while (hd.debug.getGun().shotCd > 0) await frames(2);
+    const shortJump = { jumpsLeft: hd.player.jumpsLeft, before: jumpsBefore,
+      vy: hd.player.vy, daggerJumps: hd.player.daggerJumpCount - daggersBefore };
     hd.daggers.reset();
     const d2 = shots;
     hd.player.input.mouseDown = true;
@@ -381,21 +393,45 @@ s.listen(0, '127.0.0.1', async () => {
     const streamed = shots - d2;
     const streamSpeeds = hd.daggers.active.map(d => d.vel.length());
     const d3 = shots;
-    hd.player.input.mouseDown = false; // long hold released → must NOT shotgun
+    hd.player.input.mouseDown = false; // long hold released → must NOT shotgun or jump-burst
     await frames(3);
     const releaseFired = shots - d3;
+    // pad RT/RB shares the primary-fire hold. pollGamepad overwrites _pad
+    // each frame, so the trigger has to come from a gamepad the poll can see.
+    hd.player.reset();
+    hd.daggers.reset();
+    const padJumpsBefore = hd.player.jumpsLeft;
+    const d4 = shots;
+    const buttons = Array.from({ length: 17 }, () => ({ pressed: false }));
+    const fakePad = { connected: true, mapping: 'standard', axes: [0, 0, 0, 0], buttons, id: 'hd-001', vibrationActuator: null };
+    const prevPads = navigator.getGamepads ? navigator.getGamepads.bind(navigator) : null;
+    navigator.getGamepads = () => [fakePad];
+    buttons[7].pressed = true; // RT
+    await frames(2);
+    buttons[7].pressed = false;
+    await frames(2);
+    const pad = { fired: shots - d4, jumpsLeft: hd.player.jumpsLeft, before: padJumpsBefore, vy: hd.player.vy };
+    if (prevPads) navigator.getGamepads = prevPads;
+    hd.player.input.gamepad = false;
+    hd.player.input._pad.firing = false;
     hd.daggers.fire = realFire;
-    return { moveFired, tapFired, cdAfterTap, viewAfterTap, tapSpeeds,
-      early, responsive, streamed, streamSpeeds, releaseFired };
+    return { moveFired, tapFired, cdAfterTap, viewAfterTap, tapSpeeds, shortJump,
+      early, responsive, streamed, streamSpeeds, releaseFired, pad };
   });
   ok('moving alone no longer fires', gun.moveFired === 0, JSON.stringify(gun));
-  ok('a TAP fires the shotgun burst', gun.tapFired >= 10 && gun.cdAfterTap > 0, JSON.stringify(gun));
-  ok('the shotgun visibly kicks the claw', gun.viewAfterTap.recoil > 0.015 && gun.viewAfterTap.z > -1.46, JSON.stringify(gun.viewAfterTap));
-  ok('the stream keeps a short tap-detection window', gun.early === 0, JSON.stringify(gun));
+  ok('a short primary press jumps and does not fire',
+    gun.tapFired === 0 && gun.cdAfterTap === 0 && gun.tapSpeeds.length === 0 &&
+    gun.shortJump.daggerJumps === 0 && gun.shortJump.jumpsLeft < gun.shortJump.before && gun.shortJump.vy > 1,
+    JSON.stringify(gun));
+  ok('a short press does not kick a shotgun into the claw',
+    gun.viewAfterTap.recoil <= 0.015, JSON.stringify(gun.viewAfterTap));
+  ok('the stream keeps a short press window before it fires', gun.early === 0, JSON.stringify(gun));
   ok('a HOLD starts quickly and forms a dense stream', gun.responsive >= 2 && gun.streamed >= 6, JSON.stringify(gun));
-  ok('tap projectiles are faster than held projectiles',
-    Math.min(...gun.tapSpeeds) > Math.max(...gun.streamSpeeds), JSON.stringify({ tap: gun.tapSpeeds, stream: gun.streamSpeeds }));
-  ok('releasing a long hold is not a tap', gun.releaseFired <= 2, JSON.stringify(gun));
+  ok('a short press leaves no projectiles; the hold still streams',
+    gun.tapSpeeds.length === 0 && gun.streamSpeeds.length >= 1, JSON.stringify({ tap: gun.tapSpeeds, stream: gun.streamSpeeds }));
+  ok('releasing a long hold is not a burst', gun.releaseFired <= 2, JSON.stringify(gun));
+  ok('a short pad trigger jumps and does not fire',
+    gun.pad.fired === 0 && gun.pad.jumpsLeft < gun.pad.before && gun.pad.vy > 1, JSON.stringify(gun.pad));
 
   const touchBurst = await p.evaluate(async () => {
     const hd = window.__hd;
@@ -409,22 +445,43 @@ s.listen(0, '127.0.0.1', async () => {
     hd.player.pitch = -1.1;
     hd.player._sync();
     hd.player.input.touchMode = true;
+    hd.player.input.gamepad = false;
     hd.player.input._fireTap = true;
     const realFire = hd.daggers.fire.bind(hd.daggers);
     let shots = 0;
     hd.daggers.fire = (...args) => { shots++; return realFire(...args); };
     const before = hd.player.daggerJumpCount;
+    const vyBefore = hd.player.vy;
     await frames(2);
+    const tap = { shots, jumps: hd.player.daggerJumpCount - before, vy: hd.player.vy, vyBefore };
+    // walking on the move stick must not start the stream
+    hd.daggers.reset();
+    const dWalk = shots;
+    hd.player.input.right.active = false;
+    hd.player.input.left.active = true;
+    hd.player.input.left.dx = 40;
+    hd.player.input.left.dy = 0;
+    await frames(8);
+    const walkShots = shots - dWalk;
+    hd.player.input.left.active = false;
+    hd.player.input.left.dx = 0;
+    // holding the right stick is the stream
+    hd.daggers.reset();
+    const dHold = shots;
+    hd.player.input.right.active = true;
+    await frames(6);
+    const holdShots = shots - dHold;
+    hd.player.input.right.active = false;
     hd.daggers.fire = realFire;
-    const result = { shots,
-      jumps: hd.player.daggerJumpCount - before, vy: hd.player.vy };
     hd.player.input.touchMode = false;
     hd.player.reset();
-    return result;
+    return { tap, walkShots, holdShots };
   });
-  ok('touch right-tap fires the burst and can dagger-jump',
-    touchBurst.shots >= 10 && touchBurst.jumps === 1 && touchBurst.vy > 9,
+  ok('a touch tap does not shotgun and does not dagger-jump',
+    touchBurst.tap.shots === 0 && touchBurst.tap.jumps === 0 && touchBurst.tap.vy <= touchBurst.tap.vyBefore + 0.01,
     JSON.stringify(touchBurst));
+  ok('walking does not start the touch stream', touchBurst.walkShots === 0, JSON.stringify(touchBurst));
+  ok('holding the right stick fires', touchBurst.holdShots >= 2, JSON.stringify(touchBurst));
 
   const homing31 = await p.evaluate(async () => {
     const hd = window.__hd;
@@ -435,22 +492,34 @@ s.listen(0, '127.0.0.1', async () => {
     const lv3 = hd.debug.getGun();
     hd.debug.addGems(20);
     const banked = hd.debug.getGun();
+    hd.player.input.touchMode = false;
     hd.player.input.mouseAltDown = true;
     await frames(1);
     hd.player.input.mouseAltDown = false;
     await frames(2);
+    const short = hd.debug.getGun();
+    const shortHoming = hd.daggers.active.filter(d => d.homing && d.damage === 10).length;
+    hd.daggers.reset();
+    hd.player.input.mouseAltDown = true;
+    let guard = 0;
+    while (hd.debug.getGun().homing > 0 && guard < 80) { await frames(1); guard++; }
     const spent = hd.debug.getGun();
     const homing = hd.daggers.active.filter(d => d.homing && d.damage === 10).length;
+    hd.player.input.mouseAltDown = false;
+    await frames(2);
+    const afterRelease = hd.daggers.active.filter(d => d.homing && d.damage === 10).length;
     hd.debug.addGems(150);
     const lv4 = hd.debug.getGun();
     hd.daggers.reset();
-    return { lv3, banked, spent, homing, lv4 };
+    return { lv3, banked, short, shortHoming, spent, homing, afterRelease, lv4, guard };
   });
   ok('70 gems unlock LV3 and later gems become homing ammo',
     homing31.lv3.lv === 3 && homing31.lv3.homing === 0 && homing31.banked.homing === 20,
     JSON.stringify(homing31));
-  ok('RMB spends the bank as ten-damage homing daggers',
-    homing31.homing === 20 && homing31.spent.homing === 0,
+  ok('a short RMB does not dump the homing bank',
+    homing31.shortHoming === 0 && homing31.short.homing === 20, JSON.stringify(homing31));
+  ok('holding RMB streams the bank as ten-damage homing daggers',
+    homing31.homing >= 1 && homing31.spent.homing === 0 && homing31.afterRelease <= homing31.homing,
     JSON.stringify(homing31));
   ok('banking 150 homing daggers unlocks the final hand',
     homing31.lv4.lv === 4 && homing31.lv4.homing === 0,
@@ -817,7 +886,9 @@ s.listen(0, '127.0.0.1', async () => {
   for (const id of registry.ids) {
     // assets=0: this loop tests the mode registry, not the art, and fetching
     // 5 MB of GLB on each of four reloads is most of the suite's wall clock
-    await p.goto(base + '/hyperdagger/?assets=0&mode=' + id, { waitUntil: 'load' });
+    // on the control season by name: a VOID merely remembered is not offered
+    // back since HD-019, so the bare disc has to be asked for
+    await p.goto(base + '/hyperdagger/?assets=0&season=void&mode=' + id, { waitUntil: 'load' });
     await p.waitForFunction(() => window.__hd && window.__hd.debug, null, { timeout: 20000 });
     await p.evaluate(() => localStorage.setItem('hyperDaggerSeenTips', '1'));
     await p.evaluate(() => window.__hd.debug.startGame());
@@ -886,14 +957,17 @@ s.listen(0, '127.0.0.1', async () => {
       ok(`${id}: wall run is on for the course`, course.wallRun === true, JSON.stringify(course));
     } else if (decl.arena === 'court') {
       // v39: the first geometry this arena has had that is not a floor
-      const court = await p.evaluate(async () => {
-        const hd = window.__hd, pl = hd.player;
-        const frames = n => new Promise(r => { let c = 0; const f = () => (++c >= n ? r() : requestAnimationFrame(f)); requestAnimationFrame(f); });
-        const walls = hd.debug.getWalls();
-        pl.feet.set(0, 0, 0); pl.yaw = 0; pl._sync();
-        for (let i = 0; i < 40; i++) { pl.velocity.set(0, 0, -12); await frames(1); }
+      // Forty frames cover a different distance on a fast and slow renderer.
+      // Set up at the centre, then use real movement input and observe contact.
+      // The original position and normal assertions below remain unchanged.
+      await p.evaluate(() => { const pl = window.__hd.player; pl.feet.set(0, 0, 0); pl.velocity.set(0, 0, 0); pl.yaw = 0; pl._sync(); });
+      await p.keyboard.down('w');
+      await p.waitForFunction(() => !!window.__hd.player.wallContact, null, { timeout: 90000 }).catch(() => {});
+      const court = await p.evaluate(() => {
+        const hd = window.__hd, pl = hd.player, walls = hd.debug.getWalls();
         return { walls: walls.count, solid: walls.walls.every(w => !w.maxHp), z: +pl.feet.z.toFixed(2), contact: pl.wallContact ? [+pl.wallContact.nx.toFixed(2), +pl.wallContact.nz.toFixed(2)] : null };
       });
+      await p.keyboard.up('w');
       ok(`${id}: the court has its four walls`, court.walls === 4, JSON.stringify(court));
       ok(`${id}: the court's walls are not destructible — v53's hit points are the shale piles' only`, court.solid === true, JSON.stringify(court));
       ok(`${id}: a wall stops the body and reports its normal`,
@@ -970,8 +1044,14 @@ s.listen(0, '127.0.0.1', async () => {
       sn.tech = d.getTechArt();
       sn.hand = d.getHand();   // v52: the season's own weapon
       // v45: one body, built under this season, for the roster palette check
-      d.spawnSplitter(); await frames(2);
+      // The palette probe must not grind a shale pile before COVER THAT DIES
+      // snapshots its initial HP. Keep it in the clear centre and remove it
+      // without a death/debris side effect once its palette has been sampled.
+      d.spawnSplitter(); const paletteProbe = hd.enemies.at(-1); paletteProbe.pos.set(0, 2, 0);
+      await frames(2);
       const roster = d.rosterSample();
+      paletteProbe.remove(paletteProbe.group.parent);
+      hd.enemies.splice(hd.enemies.indexOf(paletteProbe), 1);
       // v48: the menus — the intro's buttons are still in the message box
       // (startGame hides it, it does not empty it), and the pause menu is a
       // press of the pause button away
@@ -986,8 +1066,21 @@ s.listen(0, '127.0.0.1', async () => {
       let director = null;
       if (sn.spawns && sn.spawns.only === 'skulls') {
         for (const e of hd.enemies) e.alive = false; hd.enemies.length = 0;
-        d.setTime(50); d.freezeDirector(false);
-        for (let i = 0; i < 70; i++) await frames(1);
+        // What this checks is the v48 rule: a skulls-only season's OWN
+        // spawner makes nothing but skulls. Since v56 season 2's skulls come
+        // through its wave table, whose gaps are random (an 8% roll a frame
+        // opens 8-14 s of rest), so a short window can hold no bodies at all.
+        // The table is switched off for this window only — the season's own
+        // module, imported at the URL the game loaded it from, so it is the
+        // same object — and put back after. 20 s in: clear of the first ebb
+        // at 45 s, which would leave the sea drained when later checks wind
+        // the clock back.
+        const url = performance.getEntriesByType('resource').map(r => r.name).find(n => /\/js\/seasons\.js\?v=\d+/.test(n));
+        const sm = await import(url), inca = sm.seasonById('inca'), waves = inca.waves;
+        inca.waves = null;
+        d.setLife?.(60); d.setTime(20); d.freezeDirector(false);   // a full HYPER clock, so the wait cannot end in TIME OUT
+        for (let i = 0; i < 2000 && d.getState().gameTime < 23.5; i++) await frames(1);   // 3.5 s of GAME time
+        inca.waves = waves;
         d.freezeDirector(true);
         const types = {}; for (const e of hd.enemies) if (e.alive) types[e.type] = (types[e.type] || 0) + 1;
         director = { types, total: hd.enemies.filter(e => e.alive).length };
@@ -1274,8 +1367,9 @@ s.listen(0, '127.0.0.1', async () => {
     inca.sn.visible.length === 3 && inca.sn.visible.map(v => v.menu).join('|') === 'SEASON 1|SEASON 2|SEASON 3' && !inca.sn.visible.some(v => v.id === 'void')
     && inca.menu.seasons.map(m => m.label).join('|') === 'SEASON 1|SEASON 2|SEASON 3' && inca.menu.modeOnIntro === false && inca.menu.oldSeasonBtn === false,
     JSON.stringify({ visible: inca.sn.visible, menu: inca.menu }));
-  ok('the menus: the pause menu carries the seasons and the regular options — the MODE is the season\'s now (v50)',
-    inca.pause.seasons.length === 3 && !inca.pause.modeBtn && inca.pause.rows.slice(0, 2).join('|') === 'SEASON|SPEED' && inca.pause.rows.includes('STYLE') && inca.pause.endBtn,
+  // HD-019: RUN (FREE / DAILY) moved off the intro to sit under SEASON
+  ok('the menus: the pause menu carries the seasons, RUN and the regular options — the MODE is the season\'s now (v50)',
+    inca.pause.seasons.length === 3 && !inca.pause.modeBtn && inca.pause.rows.slice(0, 3).join('|') === 'SEASON|RUN|SPEED' && inca.pause.rows.includes('STYLE') && inca.pause.endBtn,
     JSON.stringify(inca.pause));
 
   // v50 THE WAVE IS A HURDLE — proven by jumping a body over it in the real
@@ -1362,7 +1456,6 @@ s.listen(0, '127.0.0.1', async () => {
       d.startGame(); d.setInvulnerable?.(true); d.freezeDirector?.(true);
       await frames(3);
       const tr = d.truckObj(), gz = d.gazeObj(), inp = d.inputObj();
-      gz.cfg.trucks = false;   // v53: the cabs lock too — these checks are about bodies; haul2 turns it back on
       const out = { mode: d.getState().mode, jumps: pl.maxJumps, dash: !!pl.dashEnabled, moving: !!tr.cfg.moving, gazeOn: !!gz.cfg,
         hand: d.getHand().model, shape: d.getGun().shape };
       // THE TRUCKS DRIVE: half a second of the convoy, one truck watched
@@ -1442,24 +1535,40 @@ s.listen(0, '127.0.0.1', async () => {
         for (let i = 0; i < 30; i++) { await frames(1); loose = Math.max(loose, cv.cargo.crates.filter(c => c.truck === t && !c.welded).length); }
         out.brake = { loose };
       }
-      // three missiles in a cab: the truck folds
-      const t2 = cv.trucks.find(x => x !== cv.standing && x !== t && x.proxy.alive);
-      const hits = [cv.hit(t2), cv.hit(t2), cv.hit(t2)]; await frames(60);
-      out.jack = { hits, jacked: t2.jacked, yaw: +t2.jackYaw.toFixed(2), spd: +t2.spd.toFixed(1) };
-      // the gaze locks a cab in range and the missiles land in it
-      gz.cfg.trucks = true;
+      // THE FOLD — the crash the pile-up uses (and HD-016's will): driven
+      // through the convoy's own fold, since v58 no missile reaches a cab.
+      // a truck AHEAD of the body: a crawling one drifts back ~20 u/s and the
+      // convoy drops a truck 40 u behind you, which stops its clock mid-check
+      const free = x => x !== cv.standing && x !== t && x.proxy.alive;
+      const t2 = cv.trucks.filter(x => free(x) && x.z < pl.feet.z - 8).sort((a, b) => b.z - a.z)[0]
+        ?? cv.trucks.find(free);
+      const hits = [cv.hit(t2), cv.hit(t2), cv.hit(t2)];
+      // 1.8 s of GAME time on the truck's own clock (t.age, stepped by the
+      // convoy's dt), not 60 frames: a faster renderer covers less game time
+      // per frame, and the brake to a crawl is a game-time question
+      const age0 = t2.age;
+      for (let i = 0; i < 2000 && t2.age - age0 < 1.8 && cv.trucks.includes(t2); i++) await frames(1);
+      out.jack = { hits, jacked: t2.jacked, yaw: +t2.jackYaw.toFixed(2), spd: +t2.spd.toFixed(1), game: +(t2.age - age0).toFixed(2), kept: cv.trucks.includes(t2) };
+      // v58 (HD-018, Mikael: *you don't shoot trucks*): the look held on a cab
+      // in range never locks it, and the cab takes nothing. Until v58 the
+      // season's own `gaze.trucks` made the cabs targets: run on v57, this
+      // same look held the cab locked in 39 of its 40 frames.
       // (the body is kept twelve units behind the cab each frame: a standing
       // body would be left behind by a truck doing twenty inside a second)
       const cands = cv.trucks.filter(x => x.proxy.alive && x.z < pl.feet.z - 3).sort((a, b) => b.z - a.z);
       const t3 = cands[0], hp0 = t3?.hp, cab = pl.camera.position.clone();
-      for (let i = 0; i < 90 && t3 && t3.hp === hp0; i++) {
+      let cabLocked = 0, looked = 0;
+      const g0 = d.getState().gameTime;
+      for (let i = 0; i < 600 && t3 && d.getState().gameTime - g0 < 2.0; i++) {
         pl.feet.set(t3.x, t3.group.position.y + 0.5, t3.z + 12); pl.vy = 0;
         t3.proxy.center(cab);
         const dx = cab.x - pl.camera.position.x, dy = cab.y - pl.camera.position.y, dz = cab.z - pl.camera.position.z;
         pl.yaw = Math.atan2(-dx, -dz); pl.pitch = Math.atan2(dy, Math.hypot(dx, dz)); pl._sync();
         await frames(1);
+        looked++;
+        if (gz.target?.isTruck) cabLocked++;
       }
-      out.gaze = { cab: !!t3, hpBefore: hp0, hpAfter: t3?.hp, launched: gz.launched };
+      out.gaze = { cab: !!t3, hpBefore: hp0, hpAfter: t3?.hp, cabLocked, looked, game: +(d.getState().gameTime - g0).toFixed(2) };
       // THE PILE-UP at 180 s
       d.setTime(179.5); for (let i = 0; i < 200 && d.getState().gameTime < 180.3; i++) await frames(1);
       const f = d.getFinale();
@@ -1471,38 +1580,147 @@ s.listen(0, '127.0.0.1', async () => {
       out.after = { done: d.getFinale().done, speed0, speed: cv.cfg.speed, skullMul: cv.cfg.skullMul };
       return out;
     });
-    // v54 CARGO IS THE SCORE: land on a loose crate still on its trailer and it
-    // sets back (+1 s); a crate the road takes costs one
+    // v58 (HD-018, Mikael: *you don't .. save crates*): THE LOAD IS NOT THE
+    // SCORE. Stand in a loose crate on its trailer and spill two to the road:
+    // the clock is the run's time and nothing else, its label is the mode's,
+    // and the recap says nothing about crates. Until v58 the same frames paid
+    // +1 s for the crate stood in and charged -1 s for each spill, the label
+    // read "TIME + CARGO · N CRATES ON BOARD · ±Ns", and the recap counted the
+    // load — so every one of these fails on v57.
     haul3 = await q.evaluate(async () => {
       const hd = window.__hd, d = hd.debug, pl = hd.player, cv = d.truckObj();
       const frames = n => new Promise(r => { let c = 0; const f = () => (++c >= n ? r() : requestAnimationFrame(f)); requestAnimationFrame(f); });
-      const out = { before: d.getRun().runBonus };
-      const cr = cv.cargo.crates.find(c => c.welded && c.truck && c.truck !== cv.standing);
+      const out = {};
+      // by now haul2's fold and pile-up have spilled much of the load:
+      // if no welded crate is left off your truck, load one (main's load())
+      const pick = () => cv.cargo.crates.find(c => c.welded && c.truck && c.truck !== cv.standing);
+      for (const t of cv.trucks) { if (pick()) break; if (t !== cv.standing) cv.cargo.load(t); }
+      const cr = pick();
       if (cr) {
-        cv.cargo.jolt(cr.truck, 0);
+        cv.cargo.jolt(cr.truck, 0);   // loose, still on its trailer: what v54's stomp set back
         const p = cr.b.positionLin;
         pl.feet.set(p[0], p[2] + cr.s / 2 - 0.1, -p[1]); pl.vy = -1; pl._sync();
-        const saved = cv.cargo.stomp(pl.feet);
-        out.saved = saved; out.welded = cr.welded;
+        out.loose = !cr.welded;
       }
-      // the game's own loop pays for it: a stomp the gate made directly is
-      // counted by stats, so drive the spill path through the frame instead
-      const s0 = d.getRun();
-      cv.cargo.stats.spilled += 2;
+      cv.cargo.stats.spilled += 2;   // two crates the road took, as the frame sees them
+      // the save itself must be gone, not only its pay: v54's frame set the
+      // crate back through Cargo.stomp(), which counts every save it makes
+      // (v57's own check read the same counter), and nothing calls it now
+      const stomped0 = cv.cargo.stats.stomped || 0;
       await frames(3);
-      out.afterSpill = d.getRun().runBonus - s0.runBonus;
-      out.hud = document.getElementById('kills').textContent;
-      out.timer = document.getElementById('timer').textContent;
+      out.stomped = (cv.cargo.stats.stomped || 0) - stomped0;
+      const st = d.getState(), run = d.getRun();
+      out.timer = parseFloat(document.getElementById('timer').textContent);
+      out.gameTime = +st.gameTime.toFixed(2);
+      out.hud = document.getElementById('clockLabel').textContent;
+      out.recap = run.recap;
+      out.keys = Object.keys(run);
       return out;
     });
     await q.close();
   }
+  // ---- a chosen season's mode beats the saved one ---------------------------
+  // 12 Oct (dbed4dd83): the saved / default mode was put ahead of the season's
+  // own, so ?season=haul with HYPER (or nothing, i.e. 'pure') saved booted the
+  // convoy season on foot. A link that names a season plays that season's
+  // scheme; the PURE/HYPER/TRUCK/ALL menu still picks the mode you play.
+  // v58 (HD-018, #622 review): v54–v57 filed season 3's time PLUS its load
+  // under the TRUCK best, so a record could pass 300, and v58's runs end at
+  // exactly 300 — that record would stand forever as a best of a different
+  // metric. The TRUCK best has a new key. Probed on v57 first: this page's
+  // menu read "best 305.0s"; on v58 it offers no best at all.
+  let truckBest = {};
+  {
+    const q = await b.newPage({ viewport: VIEW });
+    q.on('pageerror', e => errs.push('pageerror: ' + e.message));
+    await q.addInitScript(() => { localStorage.setItem('hyperDaggerHiTruck', '305.0'); localStorage.setItem('hyperDaggerSeenTips', '1'); });
+    await q.goto(base + '/hyperdagger/?assets=0&season=haul', { waitUntil: 'load' });
+    await q.waitForFunction(() => window.__hd && window.__hd.debug, null, { timeout: 20000 });
+    truckBest = await q.evaluate(() => ({ mode: window.__hd.debug.getState().mode,
+      best: (document.getElementById('msg').textContent.match(/best [\d.]+s/) || [null])[0] }));
+    await q.close();
+  }
+  ok('haul: a v57 TRUCK best (time plus load, 305 s) is not offered as the best to beat (v58)',
+    truckBest.mode === 'truck' && truckBest.best === null, JSON.stringify(truckBest));
+  let pinned = {};
+  {
+    const q = await b.newPage({ viewport: VIEW });
+    q.on('pageerror', e => errs.push('pageerror: ' + e.message));
+    await q.addInitScript(() => { localStorage.setItem('hyperDaggerModeV31', 'hyper'); });
+    await q.goto(base + '/hyperdagger/?assets=0&season=haul', { waitUntil: 'load' });
+    await q.waitForFunction(() => window.__hd && window.__hd.debug, null, { timeout: 20000 });
+    pinned = await q.evaluate(async () => {
+      const d = window.__hd.debug;
+      const menuMode = d.getState().mode;
+      d.startGame();
+      await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+      const st = d.getState();
+      const tr = d.truckObj();
+      return { menuMode, mode: st.mode, trucks: tr?.platforms?.length ?? 0 };
+    });
+    await q.close();
+  }
+  ok('season choice: ?season=haul with HYPER saved still runs the TRUCK scheme on the convoy',
+    pinned.menuMode === 'truck' && pinned.mode === 'truck' && pinned.trucks > 3, JSON.stringify(pinned));
+  // ---- season 3 spawn: a crate at your feet is not a hole in the deck ------
+  // 12 Oct playtest: season 3 and a free run that rolled the convoy died at
+  // 0.7–2 s, "felled by something". A crate loaded where you spawn stood more
+  // than a step above your feet, so the floor probe skipped the WHOLE truck
+  // and the road became the floor on frame one. Planted deterministically
+  // here, stepped at the loop's slowest frame (dt 0.05), with no input.
+  let haulSpawn = {};
+  {
+    const q = await b.newPage({ viewport: VIEW });
+    q.on('pageerror', e => errs.push('pageerror: ' + e.message));
+    // the convoy the way the mode menu / a free roll reaches it
+    await q.addInitScript(() => { localStorage.setItem('hyperDaggerModeV31', 'truck'); localStorage.setItem('hyperDaggerRunKind', 'free'); });
+    await q.goto(base + '/hyperdagger/?assets=0&season=haul', { waitUntil: 'load' });
+    await q.waitForFunction(() => window.__hd && window.__hd.debug, null, { timeout: 20000 });
+    haulSpawn = await q.evaluate(async () => {
+      const hd = window.__hd, d = hd.debug, pl = hd.player;
+      const frames = n => new Promise(r => { let c = 0; const f = () => (++c >= n ? r() : requestAnimationFrame(f)); requestAnimationFrame(f); });
+      d.startGame(); d.freezeDirector?.(true); d.setInvulnerable(true);
+      await frames(2);
+      const cv = d.truckObj();
+      if (!cv?.cargo) return { convoy: false, mode: d.getState().mode };
+      // a tall crate on the spawn spot of the first truck
+      const real = cv.cargo.topAt.bind(cv.cargo);
+      // (the deck's own bob is the convoy's; the crate rides 1.4 above the deck)
+      cv.cargo.topAt = (x, z) => { const f = cv.trucks[0]?.group.position;
+        return f && Math.abs(x - f.x) < 1.2 && Math.abs(z - f.z) < 1.2 ? f.y + 1.4 : real(x, z); };
+      cv.reset(pl);
+      const fallY = -2.9;   // seasons.js haul truck.fallY
+      let minY = Infinity, t = 0, roadFrames = 0;
+      for (let i = 0; i < 100; i++) {   // 5 s at the 0.05 clamp
+        cv.preUpdate(0.05, pl);
+        if (pl.floorY < -3) roadFrames++;
+        pl.update(0.05);
+        cv.update(0.05, pl, t += 0.05, [], null);
+        minY = Math.min(minY, pl.feet.y);
+      }
+      cv.cargo.topAt = real;
+      const out = { convoy: true, minY: +minY.toFixed(2), roadFrames, survived: minY > fallY };
+      // and when the road DOES take you, the recap names it
+      d.setInvulnerable(false);
+      pl.feet.y = -10; pl.vy = 0;
+      await frames(4);
+      out.state = d.getState().state;
+      out.cause = (document.body.innerText.match(/felled by ([^·\n]*)/i)?.[1] ?? '').trim();
+      return out;
+    });
+    await q.close();
+  }
+  ok('haul: a crate at the spawn point is not a hole — a no-input run stays on the deck for 5 s of slow frames (season 3 / free roll)',
+    haulSpawn.convoy && haulSpawn.survived && haulSpawn.roadFrames === 0, JSON.stringify(haulSpawn));
+  ok('haul: a fall to the road is named on the death screen, never "something"',
+    haulSpawn.state === 'dead' && /road/i.test(haulSpawn.cause) && !/something/i.test(haulSpawn.cause), JSON.stringify(haulSpawn));
   ok('haul: CARGO — trailers carry crates, welded to the deck, and a welded crate rides its truck',
     haul2.cargo.n > 0 && haul2.cargo.welded > 0 && haul2.rides && Math.abs(haul2.rides.truck - haul2.rides.crate) < 0.3, JSON.stringify({ cargo: haul2.cargo, rides: haul2.rides }));
   ok('haul: a hard brake slides the load', haul2.brake && haul2.brake.loose >= 1, JSON.stringify(haul2.brake));
-  ok('haul: three missiles in a cab jackknife the truck — it folds, swings its trailer out and crawls',
+  ok('haul: THE FOLD — a folded truck swings its trailer out and crawls (the pile-up\'s crash)',
     haul2.jack.hits[2] === true && haul2.jack.jacked && Math.abs(haul2.jack.yaw) > 0.3 && haul2.jack.spd < 6, JSON.stringify(haul2.jack));
-  ok('haul: the gaze locks a cab and the missiles land in it', haul2.gaze.cab && haul2.gaze.hpAfter < haul2.gaze.hpBefore, JSON.stringify(haul2.gaze));
+  ok('haul: the look never locks a cab, and the cab takes nothing — missiles are for skulls (v58)',
+    haul2.gaze.cab && haul2.gaze.looked > 0 && haul2.gaze.game >= 1.9 && haul2.gaze.cabLocked === 0 && haul2.gaze.hpAfter === haul2.gaze.hpBefore, JSON.stringify(haul2.gaze));
   ok('haul: THE FINALE — at 180 s the pile-up: every truck ahead folds and stops dead',
     haul2.finale.fired && haul2.finale.kind === 'pileup' && haul2.finale.wrecked >= 2 && haul2.finale.stopped >= 1, JSON.stringify(haul2.finale));
   ok('haul: past the pile-up the convoy runs faster and the skulls come thicker',
@@ -1526,9 +1744,12 @@ s.listen(0, '127.0.0.1', async () => {
     && haul.shots[haul.shots.length - 1].turn > haul.shots[0].turn
     && haul.profile[1].speed > haul.profile[0].speed && haul.profile[1].turn > haul.profile[0].turn,
     JSON.stringify({ shots: haul.shots, profile: haul.profile }));
-  ok('haul: CARGO IS THE SCORE — a loose crate you land on sets back, a spilled one costs a second, and the HUD carries the load',
-    haul3.saved === 1 && haul3.welded && haul3.afterSpill === -2 && /load \d+/.test(haul3.hud),
-    JSON.stringify(haul3));
+  ok('haul: the load is not the score — standing in a loose crate and two spills leave the clock at the run time (v58)',
+    haul3.loose && Math.abs(haul3.timer - haul3.gameTime) < 0.25 && !haul3.keys.includes('runBonus'), JSON.stringify(haul3));
+  ok('haul: standing in a loose crate does not set it back — no save happens at all (v58)',
+    haul3.loose && haul3.stomped === 0, JSON.stringify({ loose: haul3.loose, stomped: haul3.stomped }));
+  ok('haul: the clock says TIME SURVIVED and the recap says nothing about crates (v58)',
+    haul3.hud === 'TIME SURVIVED' && !haul3.recap.some(r => /crate|saved|spilled|jackknif/i.test(r)), JSON.stringify({ hud: haul3.hud, recap: haul3.recap }));
 
   // v43 THE GOO WAVE. Every check drives the wave's own clock rather than
   // waiting frames: heightAt is a pure function of (x, z, t), so the tests
@@ -1773,7 +1994,20 @@ s.listen(0, '127.0.0.1', async () => {
     for (const e of hd.enemies) e.alive = false; hd.enemies.length = 0;
     G.reset();
     const sk = d.spawnSkull(); const u = sk.update.bind(sk); sk.update = (...a) => { u(...a); sk.group.position.set(0, 1.2, 0); };
-    await frames(90); d.killEnemy(sk, 0, -1); await frames(90);
+    // the heap is a question of the SOLVER settling, so the wait counts the
+    // solver's own steps. Not frames (a cheaper frame under HD-011's quality
+    // ladder steps it less), and not game time either: the solver takes at most
+    // `maxSteps` (2) 60 Hz steps a frame, so under 20 fps it runs slower than
+    // the game clock, and v57's 6 s game-time cap left it 4 s of settling on a
+    // 4 fps renderer (one v58 run: 15 of 18 asleep). The season clock is HELD
+    // instead, which is what that cap was for: season 2's first ebb (45 s)
+    // must not arrive and raise its steps under the heap. (The solver only
+    // steps while something is awake, so the 90-frame floor stays in frames.)
+    let solverSteps = 0; const realStep = G.sv.step.bind(G.sv); G.sv.step = () => { solverSteps++; return realStep(); };
+    await frames(90); d.killEnemy(sk, 0, -1);
+    const kill0 = d.getState().gameTime, steps0 = solverSteps;
+    for (let i = 0; i < 1500 && (G.awake > 0 || i < 90) && solverSteps - steps0 < 600; i++) { await frames(1); d.setTime(kill0); }
+    G.sv.step = realStep;
     const before = G.gibs.map(x => [x.b.positionLin[0], x.b.positionLin[1]]);
     const asleep = G.gibs.filter(x => x.b.mass <= 0).length;
     g.t = (g.arenaR + g.cfg.width - 6) / g.speed; await frames(120);
@@ -1794,6 +2028,11 @@ s.listen(0, '127.0.0.1', async () => {
   const ebb = await p.evaluate(async () => {
     const hd = window.__hd, d = hd.debug, g = d.gooObj();
     const frames = n => new Promise(r => { let c = 0; const f = () => (++c >= n ? r() : requestAnimationFrame(f)); requestAnimationFrame(f); });
+    // A fresh run first. The checks before this one wind season 2's clock
+    // back and forth and spend 30-40 s of it between them, so on a slow box
+    // the run may already have passed its first ebb — which raises the steps
+    // once per run — and this check would find nothing left to raise.
+    d.startGame(); d.setInvulnerable(true); d.freezeDirector(true); await frames(4);
     d.setLife(60); d.setTime(44.9);
     let maxDrain = 0;
     for (let i = 0; i < 300 && !d.getRun().ebbSteps; i++) { await frames(1); maxDrain = Math.max(maxDrain, g.drain); }
@@ -2042,7 +2281,7 @@ s.listen(0, '127.0.0.1', async () => {
   }));
   ok('the run is paused underneath him', table35.paused);
   ok('he is standing in this game', table35.from === 'hyperdagger', String(table35.from));
-  ok('and opens knowing the clock', /^\d+\.\dS IN\. SAY WHAT YOU THINK$/.test(table35.cue), table35.cue);
+  ok('and opens knowing the clock', /^.+ · .+ · wave \d+ · \d+\.\ds in · .+ · peak .+ · \d+ kills · say what you think$/.test(table35.cue), table35.cue);
   ok('a note here has the same transport as one on the floor', table35.hubShim);
   // his rule: one Esc steps out of the field, the next leaves him and the table
   for (let i = 0; i < 3 && await p.evaluate(() => !!document.querySelector('.toko-table')); i++) {
@@ -2060,7 +2299,7 @@ s.listen(0, '127.0.0.1', async () => {
     btn: !!document.getElementById('tokoBtn'), cue: window.__hd.toko.cue(),
   }));
   ok('the death screen carries ASK TOKO', dead35.btn);
-  ok('and he would open on the death line', /(GOT YOU|CLOCK RAN OUT) AT \d+\.\dS$/.test(dead35.cue), dead35.cue);
+  ok('and he would open on the death line', /^.+ · .+ · wave \d+ · \d+\.\ds · .+ · peak .+ · .+ · \d+ kills$/.test(dead35.cue), dead35.cue);
 
   // ---- zero errors across the whole run ----------------------------------
   ok('still zero page errors at the end', errs.length === 0, errs.slice(0, 4).join(' | '));

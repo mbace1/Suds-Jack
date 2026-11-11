@@ -99,20 +99,6 @@ Plan sketch:
 ## In progress
 
 
-### HD-021 — One arena navigation per touch gesture
-
-- status: Landed (#638, f8353e757)
-- size: S
-- blocked-by: —
-- design: v60 live acceptance; preserve the existing test-arena route and record isolation
-
-A real touch on the test-arena chip delivers both pointerup and touchend.
-On the deployed site both handlers assign location.href and abort the first
-navigation. Guard the shared handler once per menu render; retain native
-keyboard activation and the original exit/record assertions. Add a delayed
-navigation regression and prove the old implementation fails it.
-
-
 ### HD-014 — Season 3 trucks become floating landspeeders
 
 - status: In progress (#598, #599, #600, #602, #603, #607, #613)
@@ -127,8 +113,81 @@ Plan sketch: change the truck mesh/visuals only — remove wheels, add a hover h
 
 Note, 18 Oct (HD-018, v58): there is no haul scoring any more, and the missiles no longer jackknife a truck. The fold itself stays, for the pile-up and HD-016. Read "do not change haul scoring" as "do not bring a cargo score back", and "jackknife" as the fold.
 
+### HD-023 — Three seasons, feature complete: a run can be finished, and finishing counts
+
+- status: In progress
+- size: L
+- blocked-by: HD-022 (#640) — built on its branch
+- design: Mikael, 11 Nov 2026 — *"Plan and execute to ship 3 seasons feature complete. Act as Game design and art direction"*; ROADMAP "Feature Complete Ship"
+
+Looked at first (the back half of every season, and a bot that kills every body the instant it exists and is never touched):
+
+- **Seasons 1 and 2 cannot be finished.** The season wave table (12 Oct) returns before the tuned HYPER director runs, and spawns about one skull per breathing gap. The clock drains 1 s/s and a skull pays 1 s. The perfect bot is dead at 31 s in EMBER with one kill, and INCA spawned nothing in its first 22 s. "Survive to 5:00" is on the menu and nobody can.
+- The table's `kind` is a toast and nothing else: the roster (watchers, husks, brutes, spiders, blinkers, serpents, dreads, totems, thorns, the leviathan) never appears in a season. It draws from `Math.random` per frame, so pressure depends on frame rate and a daily seed is not a seed.
+- `waveIdx` is never reset: a second run starts in the last act.
+- HAUL's table is dead data (TRUCK has no director, so not even the toast).
+- EMBER and INCA share one best (the key is the mode's).
+- Every finished run is 300.0 s, tier S, and ties with every other; the menu does not know a season was cleared.
+
+Design decisions (mine, as asked):
+
+1. **The table steers the tuned director instead of replacing it.** An act is `{t, kind, name, density, gap}`. `density` multiplies the tuned budget or cadence (1 = as tuned), `kind` leans the picks (`skulls` → swarm, `heavies` → spike), `gap` is a real valley when the act opens, and the act is named on screen. EMBER gets the whole HYPER roster back; INCA keeps skulls only, on its own cadence; HAUL's acts drive the convoy's skull rate.
+2. **INCA: the sea pays.** A crest you clear in the air buys 2 s. The sea was only a cost; in the wave-led acts there are few skulls to buy time from, and jumping it is the season's verb.
+3. **The clock stays the score; a clear is ranked by kills.** A finished run is 300.0 s as before. Among clears, more kills is better: stored per season and mode, shown on the end screen and on the menu, with a seal on the season's tab.
+4. **The run ends on a beat:** LAST STAND at 30 s to go, a count for the last ten.
+5. INCA gets its own best; EMBER keeps the old key.
+
+Out of scope: the pause menu's restyle, HD-014 landspeeders, HD-016, new sculpts.
+
+Gate: `test/seasons.cjs` (acts open and are named, the roster arrives, a second run starts in act one, the crest pays through a real jump, a clear is saved and shown) and a bare-node check of the tables; the perfect bot must reach 300 s in seasons 1 and 2.
+
+### HD-022 — The look: particles, fluids and light, a different one per season
+
+- status: In progress
+- size: L
+- blocked-by: —
+- design: Mikael, 10 Nov 2026 — *"Plan and execute the most visually impressive version of the game. Utilizing SDF and other systems that aren't that demanding but can be tweaked for impressive visuals. Including expert particle effects and fluids. Remember, seasons have slightly different styles and looks"*; `SEASONS.md` (a season is the arena's art); `ROADMAP.md` (the SDF track stays opt-in)
+- gate: plan before code; one PR; Mikael's yes to merge; no rule, hitbox, timing or score changes
+
+Read off screenshots of v60 in all three seasons: a kill is grey cubes on a black floor, a shot is invisible, and nothing in the frame is liquid or lit by what happens in it. The seasons differ in palette and arena, not in how a fight LOOKS.
+
+Three cheap systems, each a module, each declared per season in `seasons.js` (`fx`), each scaled by the existing perf tiers and switchable from the pause menu:
+
+1. **Particles** (`js/fx-particles.js`). Stateless: a particle is its birth record, and the vertex shader flies it (gravity, drag, one floor bounce, curl). Nothing is simulated on the CPU, so thousands cost two draw calls. Hard pixels and an ordered-dither fade, because the image is a coarse software raster and a soft alpha puff is the wrong language. Kinds: spark, ember, smoke, droplet, flash, ring.
+2. **The floor is a fluid** (`js/fx-fluid.js`). A small ping-pong render target over the disc, read by the floor shader.
+   - EMBER: kills spill a molten pool that spreads, crusts and cools, so a long run paints the arena.
+   - INCA: the sea ripples. Steps, landings, nails, kills and the wave all ring it, the wave leaves a foam wake, and the sun's path bends through it.
+   - HAUL: none. The road moves under you, so its liquids are smoke and fire in the air.
+3. **Light from events.** A kill, a muzzle and an explosion light the floor around them for a few frames, in the season's colour.
+
+Under RENDER · SDF only: an SDF body dies as **raymarched liquid** (a few smooth-unioned lobes in a bounded proxy, pooled) instead of only cubes. CLASSIC keeps its voxel deaths and gains the three systems above.
+
+Per season:
+- **EMBER** — fire in the dark: white-hot sparks that bounce, embers rising off the pools, low smoke, hot nail streaks.
+- **INCA** — water and light: droplets and rings, spray off the crest, foam, glitter on the sun path, gold motes.
+- **HAUL** — speed and smoke: missile flame and smoke swept back by the wind, fireballs, sparks under the convoy, dust streaks at road speed.
+
+Not in this item: SDF as the default, new enemies or arenas (ROADMAP builds 4–5), the 300.0 scoring tie, any change to hit, damage, spawn or timing.
+
+Exit: before/after screenshots of each season, a new gate (`test/fx-look.cjs`) that proves the effects fire, differ by season and switch off, `perf.cjs` and the whole existing suite green, and Mikael's look at it. Frame times on real hardware stay unmeasured here and are named as such.
+
 
 ## Landed
+
+### HD-021 — One arena navigation per touch gesture
+
+- status: Landed (#638, f8353e757)
+- size: S
+- blocked-by: —
+- design: v60 live acceptance; preserve the existing test-arena route and record isolation
+
+A real touch on the test-arena chip delivers both pointerup and touchend.
+On the deployed site both handlers assign location.href and abort the first
+navigation. Guard the shared handler once per menu render; retain native
+keyboard activation and the original exit/record assertions. Add a delayed
+navigation regression and prove the old implementation fails it.
+
+
 
 ### HD-020 — SDF on the live menu: RENDER · CLASSIC | SDF
 
