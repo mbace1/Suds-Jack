@@ -396,6 +396,9 @@ jobs:
       - name: the day, drawn (v3.23) — what kind of day a shift is, from the run's own levers
         run: node toko-move/test/days.mjs
 
+      - name: the long shift (v3.26) — the endless run, its save, its ramp and its band
+        run: node toko-move/test/long.mjs
+
       - name: the sealed parcel — which offer, the notebook, its store, the Finnish
         run: node toko-move/test/sealed.mjs
 

@@ -25,9 +25,9 @@
 // nothing happens while you read. Every animation is skippable by a tap and
 // none of them is a timer the game waits on to be fair: the state has already
 // moved when it starts.
-import { tr } from './lang.js?v=21';
-import * as J from './journey.js?v=13';
-import * as Runs from './runs.js?v=6';
+import { tr } from './lang.js?v=22';
+import * as J from './journey.js?v=14';
+import * as Runs from './runs.js?v=7';
 import { HopBoard } from './hopboard.js?v=4';
 import * as PL from './playlog.js?v=2';
 import { loadGround } from './ground.js?v=12';
@@ -44,10 +44,10 @@ import { loadStanding, saveStanding } from './regulars.js?v=4';
 import { addNote } from './sealed.js?v=2';
 import { MISSIONS, PERKS, STRIKES, loadMissions, missionOpen, recordMission, perkPool, doneCount } from './missions.js?v=5';
 import { MOMENTS, faceIn, keepIn, pickupMoment, deliveryMoment, boardMoment, walkMoment, cardMoment, choiceMoment, haltMoment } from './moments.js?v=4';
-import { resolveMode, dailyShare, errandShare, errandStore, errandOf, W } from './modes.js?v=7';
+import { resolveMode, dailyShare, errandShare, errandStore, errandOf, W } from './modes.js?v=8';
 import { recordDaily, todayRecord, streak, dateKey } from './daily.js?v=2';
 
-export const BUILD_VERSION = '3.25';
+export const BUILD_VERSION = '3.26';
 const $ = id => document.getElementById(id);
 const params = new URLSearchParams(location.search);
 // a run of the ladder, today's daily, or a day of the week (modes.js, ACT1.md §12)
@@ -153,6 +153,7 @@ const CSS = `
 .v3pill .clk{font-size:18px;font-weight:800;font-variant-numeric:tabular-nums;line-height:1}
 .v3pill .wxg{font-size:14px;line-height:1;opacity:.75}
 .v3pill .dots{font-size:14px;letter-spacing:2px;color:#233d4d;line-height:1}
+.v3pill .dots .dotN{font-size:12px;letter-spacing:0;margin-right:4px;font-weight:800}
 .v3pill .dots i{font-style:normal;color:#e2683c}
 .v3pill .dots .pop{display:inline-block;animation:v3pop .5s ease-out}
 @keyframes v3pop{0%{transform:scale(1)}35%{transform:scale(1.8)}100%{transform:scale(1)}}
@@ -402,18 +403,21 @@ const hhmm = m => `${String(Math.floor(m / 60) % 24).padStart(2, '0')}:${String(
 function paintTitle() {
   // Toko on the title, as on every card (v3.18)
   const h1 = document.querySelector('#title .card h1'); if (h1 && !h1.querySelector('.face')) h1.insertAdjacentHTML('afterbegin', face('info'));
-  const start = (RUN.startHour ?? 7) * 60, end = start + J.SHIFT_SECONDS / 60;
+  const start = (RUN.startHour ?? 7) * 60, end = start + (RUN.shiftMin || J.SHIFT_SECONDS / 60);
   const set = (id, t) => { const e = $(id); if (e) e.textContent = t; };
   set('titleWhen', `Act 1 · Helsinki · ${hhmm(start)} · ${RUN.title}`);
   const body = document.querySelector('#title .cardBody p'); if (body) body.textContent = 'A courier in Helsinki. At every stop, one card: which tram, which way, who to help, and what to risk. The clock only moves when you choose.';
   // v3.16: the run's roguelike rules, said once (strikes, the perk draft)
   const rules = J.strikesOf(RUN) ? ` ${COUNT[J.strikesOf(RUN)]} late drops and the shift is lost; between jobs, pick a perk.` : RUN.perks ? ' Between jobs, pick a perk.' : '';
-  set('titleGoal', `${COUNT[RUN.target] || RUN.target} deliveries before ${hhmm(end)}.${rules}`);
+  set('titleGoal', RUN.endless ? `Jobs keep coming until ${hhmm(end)}, each clock a little shorter than the last. ${COUNT[J.strikesOf(RUN)]} late drops and it is over; between jobs, pick a perk. Stars at ${RUN.stars.join(', ')} jobs.`
+    : `${COUNT[RUN.target] || RUN.target} deliveries before ${hhmm(end)}.${rules}`);
   const n = $('shiftNo'); if (n) n.hidden = true;
   const all = Runs.loadRuns(), star = k => '★'.repeat(k) + '☆'.repeat(3 - k), row = $('mutRow');
-  if (row) row.innerHTML = `<p class="mutHead">RUNS</p><div class="runList">${Runs.RUNS.map((r, i) => {
-    const open = Runs.unlocked(r.id, all), rec = all[r.id], prev = Runs.RUNS[i - 1];
-    return open ? `<a class="run${r.id === RUN.id ? ' on' : ''}" href="${Runs.runHref(r.id, location.search)}" data-run="${r.id}"${r.id === RUN.id ? ' aria-current="true"' : ''}><span class="runG" aria-hidden="true">${r.glyph}</span><span class="runT"><b>${esc(r.name)}</b><small>${esc(r.title)} · ${r.target} jobs</small></span><span class="runS" title="${rec.stars} stars">${rec.done ? star(rec.stars) : ''}</span></a>`
+  // (v3.26) the long shift sits after the ladder, opened by EASY; its line is its best, in jobs
+  if (row) row.innerHTML = `<p class="mutHead">RUNS</p><div class="runList">${[...Runs.RUNS, Runs.LONG].map((r, i) => {
+    const open = Runs.unlocked(r.id, all), rec = all[r.id], prev = Runs.BY_ID[r.opens] || Runs.RUNS[i - 1];
+    const what = r.endless ? `${r.title} · ${rec.best ? `best ${rec.best} jobs` : 'no end'}` : `${r.title} · ${r.target} jobs`;
+    return open ? `<a class="run${r.id === RUN.id ? ' on' : ''}" href="${Runs.runHref(r.id, location.search)}" data-run="${r.id}"${r.id === RUN.id ? ' aria-current="true"' : ''}><span class="runG" aria-hidden="true">${r.glyph}</span><span class="runT"><b>${esc(r.name)}</b><small>${esc(what)}</small></span><span class="runS" title="${rec.stars} stars">${rec.done ? star(rec.stars) : ''}</span></a>`
       : `<span class="run locked" data-run="${r.id}" aria-disabled="true"><span class="runG" aria-hidden="true">🔒</span><span class="runT"><b>${esc(r.name)}</b><small>finish ${esc(prev.name)} to open</small></span></span>`;
   }).join('')}</div>${missionList(all)}<p class="hint mutBlurb">${esc(RUN.blurb)}</p>`;
   // the daily, the week and LIVE are still the real-time game, and still the
@@ -533,7 +537,9 @@ function paintHud() {
   else { const up = s.score > shownEur; roll(shownEur, s.score, 700, v => { eur.textContent = `€${v}`; }, id => { eurTimer = id; }); if (up) { eur.classList.remove('up'); void eur.offsetWidth; eur.classList.add('up'); } }
   shownEur = s.score;
   const fresh = s.results.length > shownDone; shownDone = s.results.length;
-  $('v3dots').innerHTML = Array.from({ length: s.target }, (_, i) => { const d = i < s.results.length ? (s.results[i] === 'late' ? '<i>●</i>' : '●') : '○'; return fresh && i === s.results.length - 1 ? `<span class="pop">${d}</span>` : d; }).join('');
+  // (v3.26) the long shift has no last dot: the jobs so far (the last nine, with the count before them) and the one under way
+  const dots = s.run.endless ? s.results.length + 1 : s.target, from = s.run.endless ? Math.max(0, dots - 10) : 0;
+  $('v3dots').innerHTML = (from ? `<b class="dotN">${s.results.length}</b>` : '') + Array.from({ length: dots - from }, (_, k) => { const i = from + k, d = i < s.results.length ? (s.results[i] === 'late' ? '<i>●</i>' : '●') : '○'; return fresh && i === s.results.length - 1 ? `<span class="pop">${d}</span>` : d; }).join('');
   const ring = $('v3ring'), job = s.job, left = J.timeLeft(s);
   if (job) { const p = Math.max(0, Math.min(1, left / job.limit)); ring.style.setProperty('--p', String(Math.round(p * 100))); ring.style.setProperty('--ring', p < 0.3 ? '#e2683c' : (NIGHT ? '#7ad3b0' : '#233d4d')); ring.innerHTML = parcelHtml(job.cargo, { max: 17 }); }
   else { ring.style.setProperty('--p', '0'); ring.innerHTML = ''; }
@@ -901,18 +907,19 @@ function finish() {
   Runs.remember(S.keep);                                  // what the city remembers (ACT1.md §10)
   if (S.keep.regulars) saveStanding({ ...loadStanding(), ...S.keep.regulars });   // the regulars' standing (§11)
   const r = Runs.record(RUN.id, { delivered: S.done, target: S.target, late: S.late, score: S.score, failed: !!S.failed });
-  const i = Runs.ORDER.indexOf(RUN.id), next = Runs.RUNS[i + 1], star = n => '★'.repeat(n) + '☆'.repeat(3 - n);
+  const i = Runs.ORDER.indexOf(RUN.id), next = i < 0 ? null : Runs.RUNS[i + 1], star = n => '★'.repeat(n) + '☆'.repeat(3 - n);
   const struck = J.strikesOf(RUN) && S.strikes >= J.strikesOf(RUN);
-  const why = r.done ? (r.stars === 1 ? 'every job delivered · some late' : r.stars === 2 ? `every job on time · €${RUN.par} for the third star` : 'every job on time, at par') : struck ? `${COUNT[S.strikes].toLowerCase()} late drops: the shift is lost` : `deliver all ${S.target} to complete ${RUN.name}`;
+  const why = RUN.endless ? `${S.done} jobs · ${struck ? `${COUNT[S.strikes].toLowerCase()} late drops ended it` : 'the clock ended it'}${r.stars < 3 ? ` · ${RUN.stars[r.stars]} for the next star` : ''}`
+    : r.done ? (r.stars === 1 ? 'every job delivered · some late' : r.stars === 2 ? `every job on time · €${RUN.par} for the third star` : 'every job on time, at par') : struck ? `${COUNT[S.strikes].toLowerCase()} late drops: the shift is lost` : `deliver all ${S.target} to complete ${RUN.name}`;
   const build = S.perks.length ? `<p class="hint">your build: ${S.perks.map(p => esc(PERKS[p].name)).join(' · ')}</p>` : '';
   const opened = r.opened.map(id => `<p class="runOpened">${esc(Runs.BY_ID[id].name)} IS OPEN</p>`).join('') + (r.extrasOpened ? '<p class="runOpened">THE DAILY AND THE WEEK ARE OPEN</p>' : '') + (RUN.id === 'night' && r.first ? '<p class="runOpened">ACT 1 COMPLETE</p>' : '');
   const go = r.done && next && Runs.unlocked(next.id, r.all) ? `<a class="btn prime wide" id="nextRun" href="${Runs.runHref(next.id, location.search)}">NEXT · ${esc(next.name)}</a>` : '';
-  $('endTitle').textContent = r.done ? `${RUN.name} COMPLETE` : 'NOT YET';
+  $('endTitle').textContent = RUN.endless ? `${S.done} JOBS` : r.done ? `${RUN.name} COMPLETE` : 'NOT YET';
   const carried = S.seen.length ? `<div class="carried"><h3>WHAT YOU CARRIED</h3><ul>${S.seen.map(x => `<li>${esc(x.contents)} <small>· ${x.how}</small></li>`).join('')}</ul></div>` : '';
   $('endStats').innerHTML = `<div class="dailyBox runBox"><p class="dailyHead">${esc(RUN.name)} · ${esc(RUN.title)}</p><p class="runStars" aria-label="${r.stars} of 3 stars">${star(r.stars)}</p><p class="hint">${esc(why)}${r.newBest && r.all[RUN.id].plays > 1 ? ' · a new best' : ''}</p>${build}${opened}${go}</div>`
-    + `<p>earned <b>€${S.score}</b></p><p>deliveries <b>${S.done}/${S.target}</b></p><p>on time <b>${S.done - S.late}</b></p>${J.strikesOf(RUN) ? `<p>strikes <b>${S.strikes}/${J.strikesOf(RUN)}</b></p>` : ''}${S.sold ? `<p>sold <b>${S.sold}</b></p>` : ''}<p>best streak <b>${S.bestStreak}</b></p>${carried}`;
-  $('endNote').textContent = r.done ? 'Every job delivered.' : struck ? 'Too many late drops.' : 'The shift ended.';
-  const again = $('again'); if (again) { again.textContent = r.done ? `${RUN.name} AGAIN · A NEW SHIFT` : `TRY ${RUN.name} AGAIN`; again.classList.toggle('prime', !go); again.classList.toggle('ghost', !!go); again.onclick = () => { location.href = Runs.runHref(RUN.id, location.search); }; }
+    + `<p>earned <b>€${S.score}</b></p><p>deliveries <b>${RUN.endless ? `${S.done} · best ${r.all[RUN.id].best}` : `${S.done}/${S.target}`}</b></p><p>on time <b>${S.done - S.late}</b></p>${J.strikesOf(RUN) ? `<p>strikes <b>${S.strikes}/${J.strikesOf(RUN)}</b></p>` : ''}${S.sold ? `<p>sold <b>${S.sold}</b></p>` : ''}<p>best streak <b>${S.bestStreak}</b></p>${carried}`;
+  $('endNote').textContent = RUN.endless ? (struck ? 'Too many late drops.' : 'Ten o\'clock. The shift is over.') : r.done ? 'Every job delivered.' : struck ? 'Too many late drops.' : 'The shift ended.';
+  const again = $('again'); if (again) { again.textContent = RUN.endless ? `${RUN.name} AGAIN` : r.done ? `${RUN.name} AGAIN · A NEW SHIFT` : `TRY ${RUN.name} AGAIN`; again.classList.toggle('prime', !go); again.classList.toggle('ghost', !!go); again.onclick = () => { location.href = Runs.runHref(RUN.id, location.search); }; }
   $('end').hidden = false;
   sfx(RUN.id === 'night' && r.first && r.done ? 'act' : r.done ? 'end' : 'miss');
   game.result = r;

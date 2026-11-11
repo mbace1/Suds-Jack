@@ -12,5 +12,5 @@ const p = new URLSearchParams(location.search);
 // them carry it, so a classic week stays a classic week.
 const CLASSIC = ['classic', 'shift', 'day', 'weather', 'rush', 'kit', 'live', 'skin', 'mutator'].some(k => p.has(k));
 if (CLASSIC) for (const id of ['dailyLink', 'weekLink']) { const a = document.getElementById(id); if (a) a.setAttribute('href', `${a.getAttribute('href')}&classic`); }
-if (CLASSIC) import('./main-v212.js?v=101');
-else import('./play.js?v=25');
+if (CLASSIC) import('./main-v212.js?v=102');
+else import('./play.js?v=26');

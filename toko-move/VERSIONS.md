@@ -1,5 +1,40 @@
 # Toko Move — versions
 
+## v3.26 — 2026-11-11
+
+**THE LONG SHIFT** — the owner's *"the game actually becomes like a roguelike,
+and no strict missions are needed"*, as a run: one that does not end until
+you do.
+
+- **An endless run** (`runs.js` `LONG`), beside the ladder rather than on it:
+  it opens once EASY is done (finishing EASY now says *MEDIUM IS OPEN* and
+  *THE LONG SHIFT IS OPEN*), and the ladder is the four runs it was.
+  - Jobs keep coming until three late drops or ten o'clock end it (a
+    three-hour shift, 07:00–10:00, `shiftMin`).
+  - Every job's clock is 6% shorter than the last (`ramp`): about 1.5× the
+    best route on the first jobs, 0.9× from the ninth.
+  - The day, the area, the drawn perks, the forks and the made cards come as
+    on any run; the deck never runs out (made cards fill what the written
+    ones lack, 24 a shift).
+  - **Stars for how far it went**: one at 5 jobs, two at 10, three at 15,
+    struck out or not. Its best is jobs, not euros, and the run list shows it
+    (*Until you drop · best 12 jobs*).
+- **The screen**: the title says how it ends; the job dots grow with the
+  jobs (the last nine, with the count before them) instead of counting down
+  to a last one; the end card leads with the jobs, says what ended it and
+  how many the next star needs.
+- **Measured** (`test/long.mjs`, 60 shifts): the board-reading bot does 12
+  jobs on the median (best 16), the tapper 8 (best 13); most shifts end on
+  the strikes. So three stars ask for a top-fifth shift.
+- In Finnish too (*PITKÄ VUORO*, *Kunnes uuvut*).
+- **Gates.**
+  - `test/long.mjs` (new, also in CI): not a rung, opened by EASY, the save
+    (stars by jobs, best by jobs), it ends both ways, the deck holds, the
+    ramp, the measured band.
+  - `test/runs.mjs`: finishing EASY opens MEDIUM and the long shift.
+  - `test/play.cjs`: the long shift listed and open after EASY, its title in
+    English and Finnish, its dots growing with the jobs.
+
 ## v3.25 — 2026-11-11
 
 **MORE PARTS** — the owner's *"100x content so it never feels stale"*, taken

@@ -118,7 +118,7 @@ server.listen(0, '127.0.0.1', async () => {
         runs: [...document.querySelectorAll('#mutRow .run[data-run]')].map(r => ({ id: r.dataset.run, open: !r.classList.contains('locked'), lit: r.classList.contains('on') })),
         goal: document.getElementById('titleGoal').textContent, play: document.getElementById('play').textContent,
         links: ['dailyLink', 'weekLink', 'liveLink'].filter(id => { const e = document.getElementById(id); return e && !e.hidden && getComputedStyle(e).display !== 'none'; }) }));
-      ok(`the bare address is the card journey, not the real-time game (v${t.v})`, !t.classic && t.v === '3.25' && /v3\.25/.test(t.hero));
+      ok(`the bare address is the card journey, not the real-time game (v${t.v})`, !t.classic && t.v === '3.26' && /v3\.26/.test(t.hero));
       ok(`it is Act 1, in Helsinki (${await page.evaluate(() => document.getElementById('titleWhen').textContent)})`, await page.evaluate(() => /^Act 1 · Helsinki · 07:00/.test(document.getElementById('titleWhen').textContent)));
       ok(`the ladder: EASY open and lit, three locked (${t.runs.map(r => r.id + (r.open ? '' : '🔒')).join(' ')})`, t.runs.map(r => r.id).join() === 'easy,medium,hard,night' && t.runs[0].open && t.runs[0].lit && t.runs.slice(1).every(r => !r.open) && t.run === 'easy');
       ok(`the goal and the button (${t.goal} · ${t.play})`, /^Three deliveries before 08:15/.test(t.goal) && t.play === 'START SHIFT');
@@ -535,6 +535,27 @@ server.listen(0, '127.0.0.1', async () => {
       const hitW = sw.filter(w => w[1]).length / Math.max(1, sw.length), hitL = sl.filter(w => !w[1]).length / Math.max(1, sl.length);
       ok(`where the sea is, the board paints water (${sw.length} sea points, ${(100 * hitW).toFixed(0)}% blue; ${sl.length} land points, ${(100 * hitL).toFixed(0)}% not) · base drawn in ${ms?.toFixed(0)} ms`, sw.length >= 8 && sl.length >= 30 && hitW >= 0.85 && hitL >= 0.9);
       ok('no page or network errors (the board)', !errs.length, errs.slice(0, 3).join(' | '));
+      await ctx.close();
+    }
+    // ── the long shift (v3.26): open beside MEDIUM once EASY is done, its rules on the title,
+    // and its dots grow with the jobs instead of counting down to a last one
+    for (const lang of ['en', 'fi']) {
+      const ctx = await browser.newContext(PHONE); await seedRuns(ctx, { easy: { done: true, stars: 1, best: 40, plays: 1 } });
+      const page = await ctx.newPage(), errs = watch(page);
+      await page.goto(`${base}/toko-move/?lang=${lang}`, { waitUntil: 'load' }); await ready(page);
+      const row = await page.evaluate(() => { const a = document.querySelector('#mutRow [data-run="long"]'); return a ? { open: a.tagName === 'A', text: a.textContent } : null; });
+      ok(`${lang}: the long shift is listed and open once EASY is done (${row?.text})`, row?.open && (lang === 'en' ? /THE LONG SHIFT.*no end/.test(row.text) : /PITKÄ VUORO.*ei loppua/.test(row.text)));
+      await page.goto(`${base}/toko-move/?run=long&seed=7&lang=${lang}`, { waitUntil: 'load' }); await ready(page);
+      const goal = await page.evaluate(() => document.getElementById('titleGoal')?.textContent || '');
+      ok(`${lang}: its title says how it ends (${goal.slice(0, 70)}…)`, lang === 'en' ? /^Jobs keep coming until 10:00, .*Three late drops and it is over.*Stars at 5, 10, 15 jobs\.$/.test(goal) : /^Keikkoja tulee kello 10\.00 asti, .*Kolme myöhästymistä.*Tähdet 5, 10, 15 keikasta\.$/.test(goal));
+      if (lang === 'en') {
+        await page.tap('#play'); await page.waitForSelector('#v3panel .eventOpt', { timeout: 15000 });
+        let done = 0; for (let i = 0; i < 160 && done < 2; i++) { const t = await look(page); if (t.end) break;
+          done = await page.evaluate(() => window.__tm3.state().done); if (t.buttons.length && !t.busy) await page.tap('#v3panel .eventOpt[data-i="0"]').catch(() => {}); await page.waitForTimeout(250); }
+        const dots = await page.evaluate(() => document.getElementById('v3dots').textContent);
+        ok(`the dots are the jobs so far and the one under way, with no last one (${done} done: "${dots}")`, done >= 2 && dots.replace(/[^●○]/g, '').length === done + 1);
+      }
+      ok(`no page or network errors (the long shift, ${lang})`, !errs.length, errs.slice(0, 3).join(' | '));
       await ctx.close();
     }
     // ── the day (v3.23) and the area (v3.24): EASY 7 is the Helsinki Festival with its drops east
