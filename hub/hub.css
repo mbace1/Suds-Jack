@@ -148,12 +148,29 @@ h1 .amp { color: var(--accent); }
   .rack { gap: 26px 24px; }
 }
 
-@media (min-width: 1100px) {
+/* Four across from a laptop up (owner, 2026-11-11: "the icons here could be
+   smaller, 4 across") — three only on a tablet-width window. */
+@media (min-width: 860px) {
   .rack { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
 
-@media (min-width: 1480px) {
+@media (min-width: 1100px) {
   .rack { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 28px 22px; }
+}
+
+/* A cabinet's words are CLAMPED on the rack at every width, not only on a
+   phone: the note is a release line, and Toko Drop 2.0 put six versions of
+   changelog into it — a dozen lines that made its card three times as tall as
+   its neighbours. The full text stays in the DOM (and in `wide`). */
+@media (min-width: 660px) {   /* a phone has its own, tighter clamp below */
+  html[data-layout="rack"] .tagline,
+  html[data-layout="rack"] .note {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  html[data-layout="rack"] .tagline { -webkit-line-clamp: 4; }
+  html[data-layout="rack"] .note { -webkit-line-clamp: 2; }
 }
 
 /* ── the other two shapes ──
