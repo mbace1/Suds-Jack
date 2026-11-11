@@ -7,10 +7,10 @@
 // things that work"). The arena is 1.x's, so every 1.x number ports as it is
 // instead of through a rescale. Axes: x across the screen (right +), y up,
 // z toward the bottom of the screen. The arena is centred on the origin.
-import { SPECIES } from './tuning/species/index.js?v=147';
-import WAVES from './tuning/waves.js?v=147';
-import PICKUPS from './tuning/pickups.js?v=147';
-import MUSIC from './tuning/music.js?v=147';
+import { SPECIES } from './tuning/species/index.js?v=148';
+import WAVES from './tuning/waves.js?v=148';
+import PICKUPS from './tuning/pickups.js?v=148';
+import MUSIC from './tuning/music.js?v=148';
 
 export const TUNING = {
   render: {
@@ -282,14 +282,18 @@ export const TUNING = {
       sewer: { stone: [0.042, 0.05, 0.058], groutCol: [0.008, 0.009, 0.011], water: [0.007, 0.032, 0.036], waterHi: [0.09, 0.27, 0.25],
                kerbStone: { w: 0.34, joint: 1.15, color: [0.1, 0.1, 0.098], lit: [0.07, 0.08, 0.08], shadow: 0.45 },
                kerb: [0.06, 0.06, 0.062], channel: 3.4, slab: [1.7, 0.85], grout: 0.035, flow: 1.2, wetLight: 0.9,
-               // v145 (owner: "Stream should look a bit like a concave slide"): the channel as a CHUTE (floor.js sewer) —
-               // `deep` m at its middle, the water `fill` of the way up it, running `speed` × the old flow and drawn
-               // out `stretch` × as far; the wall's `stone`, lit `diffuse` from the tunnel's light leaning
-               // `lightAcross`, `ambient` in its shade, `ao` darker at the bottom, a wet `gleam` (`shine` tight);
-               // `courses` a side along it, `crowd`ing toward the lips, a ring every `ring` m; the water's edge
-               // `surge`s m and is `clear` over its first m; the fast `thread` down its middle is that wide
-               chute: { deep: 0.85, fill: 0.3, speed: 2.6, stretch: 2.6, stone: [0.12, 0.125, 0.125], diffuse: 1.3, ambient: 0.2, ao: 0.6, lightAcross: 1.3,
-                        gleam: [0.12, 0.2, 0.2], shine: 22, courses: 2.5, crowd: 0.7, ring: 1.4, surge: 0.12, clear: 0.28, thread: 0.3 },
+               // v145 (owner: "Stream should look a bit like a concave slide"): the channel as a CHUTE (floor.js sewer).
+               // v148 ("Better, still too flat"): a HALF-PIPE — an arc of a circle `deep` m at its middle (no deeper
+               // than its half width); the wall's `stone`, lit `diffuse` from the tunnel's light leaning
+               // `lightAcross`, `ambient` in its shade, `ao` darker at the bottom, the near `lipShade` cast down it
+               // (`k` dark, `soft` m), a wet `gleam` (`shine` tight, × `gloss` on the water); `courses` of brick
+               // round it, a joint every `ring` m. The `stream`: a sheet `width` of the wall wide, its middle
+               // swinging `swing` of the way to each lip every `every` m (drifting on `drift` m/s, its beat pulled
+               // about `wobble` cycles), running `speed` × the old flow drawn out `stretch` ×, `clear` over its first
+               // m, a `thread` m wide; the track it `wet`s is `dark`er and mirrors `gloss` × more
+               chute: { deep: 1.5, speed: 2.6, stretch: 2.6, stone: [0.15, 0.15, 0.145], diffuse: 1.25, ambient: 0.2, ao: 0.4, lightAcross: 1.3,
+                        lipShade: { k: 0.6, soft: 0.3 }, gleam: [0.12, 0.19, 0.19], shine: 30, gloss: 1.6, courses: 9, ring: 1.3,
+                        stream: { width: 0.33, swing: 0.36, every: 11, drift: 0.3, wobble: 1.3 }, wet: { dark: 0.3, gloss: 0.5 }, clear: 0.2, thread: 0.2 },
                // v140: no two flagstones alike (floor.js sewer). `long`/`short`: the share of pairs along a course that
                // are one long stone / cut in halves; `tone` how far a stone's brightness strays, between the tints
                // `cool` and `warm` (and `greens` of them toward `green`); `tilt` how far out of level; the edges worn
@@ -573,6 +577,19 @@ export const TUNING = {
                // from `cut`, `edge` thin at its sides, in out of the dark over `fadeIn` of its height. `skirt`: the
                // thrown water round the landing. `spray` hangs over it. `source`: what it does to the simulated water
                // — `rate` splashes a second within `r` m, each `size` m round and to `amp` m deep
+               // v148 (owner on v147: "Looks good. Needs some leaf like debris things"): FLOTSAM (render/leaves.js
+               // 'flotsam') — the driveway's leaves, washed down the drain and through the sewer, sodden and afloat
+               // here: `n` of them, flat on the water (`curl`, `fold`), in dark wet `tones`. The water CARRIES them:
+               // `flow.speed` m/s toward the nearest well (`swirl` of it sideways, so they come round to it), and
+               // one within `sink` × a well's radius of its middle goes over the lip and down; it comes back in
+               // under the fall (`spawn` m round its foot, pushed off at `spawnPush` m/s, grown in over `grow` s).
+               // They rock (`bob` rad at `bobHz`) and turn slowly (`turn` rad/s). The rest as the driveway's leaves
+               flotsam: { seed: 148, n: 58, size: [0.5, 1.0], wide: 0.56, curl: 0.04, fold: 0.08, lie: 0.02, rough: 0.35, tip: [0.3, 0.2, 0.1], tipK: 0.5, rib: 0.35, shadow: 0.22,
+                          lit: [0.05, 0.035, 0.018], tilt: 0.1,
+                          tones: [[0.8, 0.3, 0.05], [0.58, 0.19, 0.04], [0.85, 0.52, 0.09], [0.34, 0.18, 0.06], [0.55, 0.38, 0.13], [0.36, 0.4, 0.1], [0.7, 0.64, 0.46]],
+                          flow: { speed: 0.42, swirl: 0.55, lone: 0.16 }, sink: 0.82, spawn: 1.6, spawnPush: 1.1, grow: 0.9, bob: 0.09, bobHz: 0.5, turn: 0.25,
+                          scuff: 0.4, gust: 2.2, gustK: 1.5, minSpeed: 0.9, push: 0.42, carry: 0.4, liftAt: 7, lift: 2.2, max: 9,
+                          drag: 2.2, airDrag: 0.9, fall: 9, spin: 8, spinDrag: 1.6, rest: 0, burst: 5, burstR: 3.0, bounce: 0.3 },
                fall: { h: 15, r: 0.5, top: 0.5, minArea: 260, off: [0, 0], dark: [0.2, 0.34, 0.42], light: [0.8, 0.93, 1.0],
                        stream: { strands: 9, stretch: 2.6, speed: 5.2, head: 1.5, tear: 0.3, cut: 0.24, edge: 0.5, fadeIn: 0.3, alpha: 0.95 },
                        skirt: { top: 1.1, foot: 3.1, h: 0.75, strands: 14, speed: 2.4, alpha: 0.5 },
@@ -619,7 +636,9 @@ export const TUNING = {
     // v95: the banks in daylight, to the approved picture (sand, pebbles, green reeds and grass); dandelion fluff where the fireflies were
     river: { ground: { out: 18, fade: 11, grassLo: [0.06, 0.15, 0.03], grassHi: [0.15, 0.34, 0.06], mud: [0.3, 0.25, 0.16], mudW: 1.2 },
              edge: { color: 0x44ddbb, glow: 1.3, width: 0.1, height: 0.04 },
-             pads: { cell: 3.2, keep: 0.4, lo: [0.06, 0.2, 0.04], hi: [0.18, 0.42, 0.08], flower: [0.95, 0.75, 0.85] },
+             // (v148: tethered — `lean` m the way the current rule pushes, eased over `ease` s; `sway` m of its own; `ride` m per
+             // unit of the simulated water's slope; `clear` m kept between a pad's rim and the bank)
+             pads: { cell: 3.2, keep: 0.4, lo: [0.06, 0.2, 0.04], hi: [0.18, 0.42, 0.08], flower: [0.95, 0.75, 0.85], lean: 0.26, ease: 1.4, sway: 0.07, ride: 0.08, clear: 0.1 },
              stone: { every: 2.6, past: 4, skip: 0.25, out: [0.15, 2.4], r: [0.45, 1.25], inWater: 5, waterPast: 7, wetR: [0.35, 0.8],
                       lo: [0.22, 0.21, 0.18], hi: [0.48, 0.45, 0.4], moss: [0.15, 0.3, 0.06] },
              reed: { every: 1.5, past: 6, skip: 0.35, out: [0.25, 1.8], h: [1.1, 2.0], blades: 16, r: 0.3, w: 0.07, bend: 0.1, tails: 3,

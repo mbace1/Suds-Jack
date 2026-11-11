@@ -17,11 +17,15 @@
 //   'chips'    the ice's (TUNING.scenery.ice.chips): chips of broken ice. Ice on ice: they SKITTER — a kick sends
 //              one a long way, spinning, off the banks and off the blocks — and one that slides into a hole in the
 //              ice is gone down it
+// v148 (owner on v147's cistern: "Needs some leaf like debris things"):
+//   'flotsam'  the cistern's (TUNING.scenery.cistern.flotsam): the driveway's leaves, washed down here and AFLOAT.
+//              The water carries them — from under the fall, across the floor, round to the nearest well and over
+//              its lip — and one that goes down a well comes back in under the fall. They never lie still
 import * as THREE from 'three/webgpu';
 import { uv, vec3, float, abs, smoothstep, mix } from 'three/tsl';
-import { TUNING } from '../tuning.js?v=147';
-import { seeded } from './kit.js?v=147';
-import { SUN_AT } from './sun.js?v=147';
+import { TUNING } from '../tuning.js?v=148';
+import { seeded } from './kit.js?v=148';
+import { SUN_AT } from './sun.js?v=148';
 
 const T = TUNING;
 
@@ -76,8 +80,9 @@ function openSpots(L, hx, hz, rnd) {
 // what lies on a floor: its numbers, its shape, where it lies, what stops it (`walls`: 'curb' the driveway's — three
 // sides, the near one open onto the lawn; 'rail' all four, and it comes back off them)
 const KINDS = {
-  leaves: { L: () => T.scenery.driveway.leaves, geo: (L) => leafGeometry(L), spots: null, walls: 'curb' },
+  leaves: { L: () => T.scenery.driveway.leaves, geo: (L) => leafGeometry(L), spots: null, walls: 'curb', leaf: true },
   chips: { L: () => T.scenery.ice.chips, geo: (L) => chipGeometry(L), spots: openSpots, walls: 'rail' },
+  flotsam: { L: () => T.scenery.cistern.flotsam, geo: (L) => leafGeometry(L), spots: openSpots, walls: 'rail', leaf: true, afloat: true },
 };
 
 export class LeafLitter {
@@ -90,7 +95,9 @@ export class LeafLitter {
   // its own dice (a kick's spin): never the run's
   _rnd() { this._seed = (this._seed * 1664525 + 1013904223) >>> 0; return this._seed / 4294967296; }
 
-  build(hx, hz, add) {
+  // (`sources`: where what is afloat comes back in — the cistern's fall, [{ x, z }])
+  build(hx, hz, add, sources = []) {
+    this.sources = sources; this.time = 0;
     const L = this.L, rnd = seeded(L.seed), spots = this.K.spots ? this.K.spots(L, hx, hz, rnd) : [];
     if (!this.K.spots) this._leafSpots(L, hx, hz, rnd, spots);
     this._lay(L, hx, hz, add, rnd, spots);
@@ -119,10 +126,10 @@ export class LeafLitter {
     this.x = new Float32Array(n); this.z = new Float32Array(n); this.y = new Float32Array(n);
     this.vx = new Float32Array(n); this.vz = new Float32Array(n); this.vy = new Float32Array(n);
     this.yaw = new Float32Array(n); this.spin = new Float32Array(n); this.roll = new Float32Array(n); this.flip = new Float32Array(n);
-    this.size = new Float32Array(n); this.free = new Uint8Array(n); this.awake = new Uint8Array(n);
+    this.size = new Float32Array(n); this.free = new Uint8Array(n); this.awake = new Uint8Array(n); this.age = new Float32Array(n).fill(1e3);
     const geo = this.K.geo(L), mat = new THREE.MeshStandardNodeMaterial({ side: THREE.DoubleSide, roughness: L.rough, metalness: 0 });
     // its own colour (per leaf), darker along the midrib and browner toward the tip
-    if (this.kindName === 'leaves') mat.colorNode = mix(vec3(1), vec3(...L.tip), smoothstep(0.55, 1.0, uv().y).mul(L.tipK)).mul(float(1).sub(float(1).sub(smoothstep(0.0, 0.16, abs(uv().x.sub(0.5)))).mul(L.rib)));
+    if (this.K.leaf) mat.colorNode = mix(vec3(1), vec3(...L.tip), smoothstep(0.55, 1.0, uv().y).mul(L.tipK)).mul(float(1).sub(float(1).sub(smoothstep(0.0, 0.16, abs(uv().x.sub(0.5)))).mul(L.rib)));
     // (ice lets light through: a chip never goes as dark as a stone in shade would)
     if (L.lit) mat.emissive = new THREE.Color().setRGB(...L.lit);
     this.sunk = new Uint8Array(n);
@@ -146,9 +153,10 @@ export class LeafLitter {
 
   // where leaf i is drawn, and its shadow
   _put(i) {
-    const L = this.L, s = this.size[i] * (this.sunk[i] === 2 ? 0 : 1), y = this.y[i];
-    // in the air it tumbles (flip); lying, it keeps the tilt it settled with
-    this._e.set(this.flip[i], this.yaw[i], this.roll[i], 'YXZ'); this._q.setFromEuler(this._e);
+    const L = this.L, fl = this.K.afloat, s = this.size[i] * (this.sunk[i] === 2 ? 0 : 1) * (fl ? Math.min(1, this.age[i] / L.grow) : 1), y = this.y[i];
+    // in the air it tumbles (flip); lying, it keeps the tilt it settled with (afloat, it rocks on the water)
+    const ph = fl && y === 0 ? this.time * L.bobHz * 6.2832 + i * 2.4 : 0, bx = fl && y === 0 ? Math.sin(ph) * L.bob : 0, bz = fl && y === 0 ? Math.cos(ph * 0.77) * L.bob : 0;
+    this._e.set(this.flip[i] + bx, this.yaw[i], this.roll[i] + bz, 'YXZ'); this._q.setFromEuler(this._e);
     this._s.set(s, s, s); this._p.set(this.x[i], L.lie + y, this.z[i]);
     this.mesh.setMatrixAt(i, this._m.compose(this._p, this._q, this._s));
     // the shadow: flat, the further from it the higher it flies, and fainter (smaller) up there
@@ -170,6 +178,14 @@ export class LeafLitter {
     this.awake[i] = 1;
   }
 
+  // what is afloat comes back in: under the fall if the room has one (pushed off from it), else anywhere on the water
+  _float(i) {
+    const L = this.L, S = this.sources[Math.floor(this._rnd() * this.sources.length)], a = this._rnd() * Math.PI * 2;
+    if (S) { const d = L.spawn * (0.4 + 0.6 * this._rnd()); this.x[i] = S.x + Math.cos(a) * d; this.z[i] = S.z + Math.sin(a) * d; this.vx[i] = Math.cos(a) * L.spawnPush; this.vz[i] = Math.sin(a) * L.spawnPush; }
+    else { this.x[i] = (this._rnd() * 2 - 1) * (this.hx - 0.6); this.z[i] = (this._rnd() * 2 - 1) * (this.hz - 0.6); this.vx[i] = this.vz[i] = 0; }
+    this.y[i] = 0; this.vy[i] = 0; this.flip[i] = 0; this.sunk[i] = 0; this.spin[i] = 0; this.age[i] = 0; this.awake[i] = 1;
+  }
+
   sync(w, dt) {
     if (!this.n || !w || dt <= 0) return;
     const L = this.L, h = w.hero, hr = T.hero.radius, rail = this.K.walls === 'rail';
@@ -179,8 +195,14 @@ export class LeafLitter {
     if (h.alive && !(h.fall > 0) && !(h.sink > 0)) { const d = h.dash > 0; M.push(h.x, h.z, h.velX || 0, h.velZ || 0, hr + (d ? L.gust : L.scuff), d ? L.gustK : 1); }
     for (const g of w.gels) if (g.alive) M.push(g.x, g.z, g.velX || 0, g.velZ || 0, g.r + L.scuff, 1);
     let moved = false;
+    const fl = this.K.afloat;
+    this.time += dt;
+    // afloat: the wells the water runs to
+    let wells = null;
+    if (fl) { wells = this._wells ?? (this._wells = []); wells.length = 0; if (w.posts) for (const p of w.posts) if (p.pit) wells.push(p.x, p.z); }
     for (let i = 0; i < this.n; i++) {
       if (!this.free[i]) continue;
+      if (fl) { this.awake[i] = 1; this.age[i] += dt; }
       const x = this.x[i], z = this.z[i];
       if (this.y[i] < 0.4 && !this.sunk[i]) for (let k = 0; k < M.length; k += 6) {
         const dx = x - M[k], dz = z - M[k + 1], R = M[k + 4];
@@ -197,12 +219,27 @@ export class LeafLitter {
       moved = true;
       // on the floor it drags to a stop; in the air it is carried, flutters and comes down
       const air = this.y[i] > 0, drag = Math.exp(-(air ? L.airDrag : L.drag) * dt);
-      this.vx[i] *= drag; this.vz[i] *= drag;
+      // (afloat, it drags against the WATER, which is going somewhere: toward the nearest well and a little round
+      // it, or, on a floor with no well, slowly round the room)
+      let cx = 0, cz = 0;
+      if (fl && !air && !this.sunk[i]) {
+        let bx = 0, bz = 0, bd = 1e9;
+        for (let k = 0; k < wells.length; k += 2) { const dx = wells[k] - x, dz = wells[k + 1] - z, d = dx * dx + dz * dz; if (d < bd) { bd = d; bx = dx; bz = dz; } }
+        if (bd < 1e9) { const d = Math.sqrt(bd) || 1e-3; cx = (bx / d - (bz / d) * L.flow.swirl) * L.flow.speed; cz = (bz / d + (bx / d) * L.flow.swirl) * L.flow.speed; }
+        else { const d = Math.hypot(x, z) || 1e-3; cx = (-z / d) * L.flow.lone; cz = (x / d) * L.flow.lone; }
+        if (Math.abs(this.spin[i]) < L.turn) this.spin[i] += (i % 2 ? 1 : -1) * L.turn * dt;
+      }
+      this.vx[i] = cx + (this.vx[i] - cx) * drag; this.vz[i] = cz + (this.vz[i] - cz) * drag;
       this.x[i] += this.vx[i] * dt; this.z[i] += this.vz[i] * dt;
       if (air || this.vy[i] > 0 || this.sunk[i]) {
         this.vy[i] -= L.fall * dt; this.y[i] += this.vy[i] * dt;
         this.flip[i] += this.spin[i] * 0.7 * dt;
-        if (this.sunk[i]) { if (this.y[i] < -1.2) { this.sunk[i] = 2; this.free[i] = 0; this.awake[i] = 0; this._put(i); continue; } }   // down the hole, and gone
+        if (this.sunk[i]) {
+          if (this.y[i] < -1.2) {
+            if (fl) this._float(i);   // down the well — and in again under the fall
+            else { this.sunk[i] = 2; this.free[i] = 0; this.awake[i] = 0; this._put(i); continue; }   // down the hole, and gone
+          }
+        }
         else if (this.y[i] <= 0) { this.y[i] = 0; this.vy[i] = 0; this.flip[i] = 0; this.roll[i] = (this._rnd() - 0.5) * (L.tilt ?? 0.5); }
       }
       this.yaw[i] += this.spin[i] * dt; this.spin[i] *= Math.exp(-L.spinDrag * dt);
@@ -223,7 +260,7 @@ export class LeafLitter {
           if (vn < 0) { this.vx[i] -= (1 - bk) * vn * nx; this.vz[i] -= (1 - bk) * vn * nz; }
         }
       }
-      if (!this.sunk[i] && this.y[i] === 0 && Math.hypot(this.vx[i], this.vz[i]) < L.rest && Math.abs(this.spin[i]) < 0.3) { this.awake[i] = 0; this.vx[i] = this.vz[i] = this.spin[i] = 0; }
+      if (!fl && !this.sunk[i] && this.y[i] === 0 && Math.hypot(this.vx[i], this.vz[i]) < L.rest && Math.abs(this.spin[i]) < 0.3) { this.awake[i] = 0; this.vx[i] = this.vz[i] = this.spin[i] = 0; }
       this._put(i);
     }
     if (moved) { this.mesh.instanceMatrix.needsUpdate = true; this.shade.instanceMatrix.needsUpdate = true; }

@@ -19,6 +19,18 @@
     Never `--no-verify`.
 -->
 
+## v148 — 2026-11-11
+**The river's lily pads stay where they grow; the sewer's chute is a half-pipe with the stream swinging in it; leaves afloat in the cistern**
+- From the owner's read of the LOOK 2 film (v147), asked one world at a time. Three of the seven answers are built here.
+- **River — "the lily pads move and then dissapear"** (a fault, v72's): the pads added the current rule's push up without end, so they slid at the current's own 2.6 m/s out of the band they are drawn in and were masked away. A pad is TETHERED now: it keeps its cell, leans up to 26 cm the way the current pushes (eased, and back when it stops), swings a little of its own and rides the simulated waves. Whether a pad is there is asked at its own centre, so none is ever cut by the band's edge or by the bank. The same pads past the floor's ends (`sets/river.js`).
+- **Sewer — "Better, still too flat"**: the chute was a shallow dish more than half full of level water. It is a HALF-PIPE: an arc of a circle 1.5 m deep in 3.4 m, each pixel's view ray met with it exactly (one quadratic, where three steps down a parabola only held while it was shallow). Its wall is lit as a cylinder is — the far wall to the light, the near side in its own lip's shadow, a wet gleam standing along it — and bricked in courses even round the curve. The water is a thin fast sheet that SWINGS up one wall, down through the bottom and up the other, foam on the edge it climbs with, a darker wet track where it has been. A level surface was the thing that said flat.
+- **Cistern — "Looks good. Needs some leaf like debris things"**: FLOTSAM (`render/leaves.js` 'flotsam'). The driveway's leaves, washed down the drain and through the sewer, sodden and afloat here. The water carries them: from under the fall, across the floor, round to the nearest well and over its lip; one that goes down a well comes back in under the fall. A body going by pushes them aside and a burst throws them, as on the driveway. Looks only: the sim never knows a leaf.
+- HARDCADE re-read at v147 with 48 seeds after v145's squarer boiler decks: the boiler 45.0 (44.3 before), everything inside one standard error, nothing retuned (`docs/CURVE.md`). What the seven reworked worlds cost to draw is in `docs/ENVIRONMENTS.md` (+7 to +16% a frame on the software GPU).
+- Tests: `test/view.mjs` 141 checks (the chute's ray on its arc from every angle, the stream inside its lips; a pad inside its cell; flotsam carried to a well and back in at the fall, never asleep, pushed by a body). `test/smoke.mjs`: the river's pads lean no further than their tether; the cistern has flotsam afloat.
+- Cache tokens `?v=147` → `?v=148`; HUD label → `2.0 · v148`
+
+---
+
 ## v147 — 2026-11-11
 **The core's deck is glass, and the machine is under it: a great rotor turning over a heart that beats**
 - WHY (owner, 2026-11-11, of the deep and the core): "Both need more". The deep was v146. The core was a grid of lit lines over dark tiles, with lamps: a floor with nothing behind it, in the last world of the game.

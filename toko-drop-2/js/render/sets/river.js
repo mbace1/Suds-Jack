@@ -7,9 +7,9 @@
 // (kit.js DRIFT), so the push is something you can see. Never along the near
 // side. Every number TUNING.scenery.river; the water's own TUNING.worlds.floor.river
 import * as THREE from 'three/webgpu';
-import { Fn, float, vec2, vec3, fract, sin, abs, max, mix, smoothstep, length, atan, uv, clamp, positionWorld, positionGeometry, normalGeometry, normalWorld } from 'three/tsl';
-import { GEL_TIME } from '../gel.js?v=147';
-import { noise, hash, seeded, put, groundPlane, edgeLine, stoneGeometry, bladeClump, lilyPads, DRIFT, motes } from '../kit.js?v=147';
+import { Fn, float, vec2, vec3, fract, sin, abs, max, mix, smoothstep, step, length, atan, uv, clamp, positionWorld, positionGeometry, normalGeometry, normalWorld } from 'three/tsl';
+import { GEL_TIME } from '../gel.js?v=148';
+import { noise, hash, seeded, put, groundPlane, edgeLine, stoneGeometry, bladeClump, lilyPads, DRIFT, motes } from '../kit.js?v=148';
 
 const v3 = (a) => vec3(...a);
 
@@ -28,8 +28,12 @@ export function river(sc, hx, hz) {
     const flow = a.sub(GEL_TIME.mul(F.flow));
     const streak = smoothstep(0.88, 1.0, sin(flow.mul(1.1).add(noise(vec2(flow.mul(0.25), c.mul(0.7))).mul(7)).add(noise(p.mul(0.9)).mul(2))).mul(0.5).add(0.5));
     let water = mix(v3(F.water), v3(F.waterHi), streak.mul(0.14).add(noise(vec2(flow.mul(0.6), c.mul(1.4))).mul(0.07)));
-    const lp = lilyPads(p.sub(DRIFT), Pd.cell, Pd.keep);
-    water = mix(water, mix(v3(Pd.lo), v3(Pd.hi), lp.y), lp.x).add(v3(Pd.flower).mul(lp.z));
+    // (v148: tethered pads, each whole or not there, in the same band as the floor's — floor.js river)
+    const lp = lilyPads(p, Pd.cell, Pd.keep, DRIFT, Pd.sway ?? 0, GEL_TIME);
+    const pa = alongX ? lp.centre.x : lp.centre.y, pc = abs(alongX ? lp.centre.y : lp.centre.x);
+    const pWet = (F.shore ? noise(vec2(pa.mul(F.shore.scale), 3.7)).sub(0.5).mul(2 * F.shore.amp) : float(0)).add(F.bank).mul(Wd);
+    const padOn = step(Wd * 0.44, pc).mul(step(pc, pWet.sub(lp.r).sub(Pd.clear ?? 0.1)));
+    water = mix(water, mix(v3(Pd.lo), v3(Pd.hi), lp.rim), lp.pad.mul(padOn)).add(v3(Pd.flower).mul(lp.flower.mul(padOn)));
     const peb = v3(F.pebble).mul(noise(p.mul(2.8)).mul(0.5).add(noise(p.mul(7.1)).mul(0.3)).add(0.45));
     // v99: the shore wanders as the floor's does (floor.js river), so the two meet at the floor's ends
     const wob = F.shore ? noise(vec2(a.mul(F.shore.scale), 3.7)).sub(0.5).mul(2 * F.shore.amp) : float(0), wetAt = wob.add(F.bank).mul(Wd);

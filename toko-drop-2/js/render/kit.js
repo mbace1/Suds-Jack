@@ -4,7 +4,7 @@
 // round a floor props stand on, and the few shapes more than one set makes
 import * as THREE from 'three/webgpu';
 import { Fn, float, vec2, vec3, fract, sin, cos, dot, floor as tfloor, mix, length, min, max, abs, atan, fwidth, smoothstep, step, uniform, instanceIndex, normalView, positionLocal, positionGeometry } from 'three/tsl';
-import { GEL_TIME } from './gel.js?v=147';
+import { GEL_TIME } from './gel.js?v=148';
 
 // a hash and value noise on the world plane, cheap enough for a picture
 export const hash = (p) => fract(sin(dot(p, vec2(127.1, 311.7))).mul(43758.5453));
@@ -26,23 +26,29 @@ export const cells = Fn(([p]) => {
   return d2.sub(d1);
 });
 
-// how far the current rule has carried what floats (v72, the river's lily
-// pads): main.js adds up its push, so a pad goes the way the gels are pushed
+// how far the current rule LEANS what is afloat on a stem (the river's lily pads), in metres. v72 added the push up
+// without end, so the pads slid at the current's own speed out of the band they are drawn in and were gone
+// (owner, 2026-11-11: "the lily pads move and then dissapear"). A pad is tethered: main.js eases this toward the
+// push's direction times `pads.lean`, and back to nothing when the current stops
 export const DRIFT = uniform(new THREE.Vector2());
 
-// lily pads afloat (v72, world 6): in every `cell` m a pad, or none (`keep`
-// of the cells have one), round with a notch cut to its middle, its rim a
-// little lighter, and a flower on a few. Returns (pad, rim, flower)
-export const lilyPads = Fn(([w, cell, keep]) => {
+// lily pads afloat (v72, world 6): in every `cell` m a pad, or none (`keep` of the cells have one), round with a
+// notch cut to its middle, its rim a little lighter, and a flower on a few. v148: each pad KEEPS ITS CELL — `lean`
+// (m, the same for all) and a slow swing of its own (`sway` m, at time `t`) move it on its stem, never out of the
+// cell — and the pad's own `centre` comes back with it, so what decides whether a pad is there at all (the band it
+// lives in) is asked once a pad, not once a pixel: a pad is whole or it is not there
+export const lilyPads = (w, cell, keep, lean = vec2(0), sway = 0, t = float(0)) => {
   const u = w.div(cell), i = tfloor(u), f = fract(u).sub(0.5);
   const h1 = hash(i), h2 = hash(i.add(vec2(31.7, 11.3))), h3 = hash(i.add(vec2(7.1, 59.9))), h4 = hash(i.add(vec2(19.3, 3.7)));
-  const q = f.sub(vec2(h1, h2).sub(0.5).mul(0.36)), r = h3.mul(0.1).add(0.17), d = length(q), aa = max(fwidth(d), 1e-4);
+  const home = vec2(h1, h2).sub(0.5).mul(0.2);   // (home ± 0.1, its radius ≤ 0.27, lean and swing ≤ 0.12 of a cell: inside the cell always)
+  const swing = vec2(sin(t.mul(0.61).add(h3.mul(40))), cos(t.mul(0.47).add(h1.mul(40)))).mul(sway);
+  const q = f.sub(home).sub(lean.add(swing).div(cell)), r = h3.mul(0.1).add(0.17), d = length(q), aa = max(fwidth(d), 1e-4);
   const da = abs(fract(atan(q.y, q.x).div(6.2832).sub(h4).add(0.5)).sub(0.5)).mul(6.2832);
-  const pad = smoothstep(r.add(aa), r.sub(aa), d).mul(smoothstep(0.16, 0.26, da)).mul(smoothstep(keep.add(0.02), keep.sub(0.02), h4));
+  const pad = smoothstep(r.add(aa), r.sub(aa), d).mul(smoothstep(0.16, 0.26, da)).mul(smoothstep(keep + 0.02, keep - 0.02, h4));
   const rim = smoothstep(r.sub(0.05), r, d).mul(pad);
   const flower = smoothstep(r.mul(0.3).add(aa), r.mul(0.3).sub(aa), d).mul(step(0.82, h3)).mul(step(0.5, pad));
-  return vec3(pad, rim, flower);
-});
+  return { pad, rim, flower, centre: i.add(0.5).add(home).mul(cell), r: r.mul(cell) };
+};
 
 // a seeded stream of numbers in [0, 1), so a world stands the same every time
 export const seeded = (seed) => () => {
