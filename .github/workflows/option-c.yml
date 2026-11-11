@@ -6,7 +6,7 @@ on:
     paths: ['option-c/**', '.github/workflows/option-c.yml']
 jobs:
   playable:
-    runs-on: ubuntu-24.04   # pinned: ubuntu-latest became 26.04, which the pinned Playwright cannot install chromium on
+    runs-on: ubuntu-latest
     timeout-minutes: 12
     steps:
       - uses: actions/checkout@v4
