@@ -508,6 +508,12 @@ server.listen(0, '127.0.0.1', async () => {
       await page.goto(`${base}/toko-move/?run=easy&seed=1111`, { waitUntil: 'load' }); await ready(page);
       const st = await page.evaluate(() => { const r = document.getElementById('play').getBoundingClientRect(); return r.bottom <= innerHeight && r.top >= 0; });
       ok('a phone held sideways shows START without scrolling', st);
+      // (v3.27) and so does a returning player's title: the long shift open beside the four, the missions' map
+      { const c2 = await browser.newContext(SIDEWAYS); await seedRuns(c2, { easy: { done: true, stars: 1, best: 40, plays: 1 } }); const p2 = await c2.newPage();
+        await p2.goto(`${base}/toko-move/?run=medium&seed=1111`, { waitUntil: 'load' }); await ready(p2);
+        const s2 = await p2.evaluate(() => { const r = document.getElementById('play').getBoundingClientRect(), rows = new Set([...document.querySelectorAll('#mutRow .runList:not(.missionList) .run')].map(x => Math.round(x.getBoundingClientRect().top))); return { fits: r.bottom <= innerHeight && r.top >= 0, rows: rows.size, short: document.querySelector('[data-run="long"] .runNs')?.offsetParent !== null }; });
+        ok(`and so does a returning player's, with the long shift open (${JSON.stringify(s2)})`, s2.fits && s2.rows === 1 && s2.short);
+        await c2.close(); }
       await page.tap('#play'); await page.waitForSelector('#v3panel .eventOpt', { timeout: 15000 });
       const seen = await playOut(page, { maxSteps: 60 });
       ok(`sideways, every card fits beside the scene ${seen.bad.slice(0, 2).join(' | ')}`, !seen.bad.length && seen.cards.length >= 4);

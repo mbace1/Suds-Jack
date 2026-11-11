@@ -76,7 +76,7 @@ export const RUNS = [
 // than the last (`ramp`). The day, the area, the perks and the deck are drawn
 // as on any run. Its stars are for how far it went (`stars`: jobs), and its
 // best is the most jobs in one shift.
-export const LONG = { id: 'long', name: 'THE LONG SHIFT', title: 'Until you drop', glyph: '∞', endless: true,
+export const LONG = { id: 'long', name: 'THE LONG SHIFT', short: '∞ LONG', title: 'Until you drop', glyph: '∞', endless: true,
   blurb: 'Jobs keep coming. Every clock a little shorter than the last. Three late drops and it is over.',
   target: 99, deadline: 1.1, ramp: 0.94, shiftMin: 180, cargo: null, encounters: 3, moods: null,
   rush: null, weather: null, cityDay: true, rival: true, sealed: false, reach: 16, race: { pace: 1.2 },

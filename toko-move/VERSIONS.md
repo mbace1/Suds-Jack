@@ -27,8 +27,13 @@
   START SHIFT, ✕ ○ □ on the cards, a whole shift answered, the map closed
   from the pad, cross on the end card going to NEXT. A real iPad and
   DualSense were not available here.
+- **A phone held sideways** keeps START on screen with five runs in the
+  list: the short layout's run row is five names wide, and the long shift
+  shows as *∞ LONG* there (*THE LONG SHIFT* wrapped to three lines and
+  pushed START 6 px under the edge for a returning player).
 - `test/play.cjs`: the ladder check knows the long shift sits locked beside
-  the four runs on a first visit (v3.26).
+  the four runs on a first visit (v3.26), and the sideways check now covers
+  a returning player's title too.
 
 ## v3.26 — 2026-11-11
 

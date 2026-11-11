@@ -419,7 +419,7 @@ function paintTitle() {
   if (row) row.innerHTML = `<p class="mutHead">RUNS</p><div class="runList">${[...Runs.RUNS, Runs.LONG].map((r, i) => {
     const open = Runs.unlocked(r.id, all), rec = all[r.id], prev = Runs.BY_ID[r.opens] || Runs.RUNS[i - 1];
     const what = r.endless ? `${r.title} · ${rec.best ? `best ${rec.best} jobs` : 'no end'}` : `${r.title} · ${r.target} jobs`;
-    return open ? `<a class="run${r.id === RUN.id ? ' on' : ''}" href="${Runs.runHref(r.id, location.search)}" data-run="${r.id}"${r.id === RUN.id ? ' aria-current="true"' : ''}><span class="runG" aria-hidden="true">${r.glyph}</span><span class="runT"><b>${esc(r.name)}</b><small>${esc(what)}</small></span><span class="runS" title="${rec.stars} stars">${rec.done ? star(rec.stars) : ''}</span></a>`
+    return open ? `<a class="run${r.id === RUN.id ? ' on' : ''}" href="${Runs.runHref(r.id, location.search)}" data-run="${r.id}"${r.id === RUN.id ? ' aria-current="true"' : ''}><span class="runG" aria-hidden="true">${r.glyph}</span><span class="runT"><b${r.short ? ' class="runN"' : ''}>${esc(r.name)}</b>${r.short ? `<b class="runNs">${esc(r.short)}</b>` : ''}<small>${esc(what)}</small></span><span class="runS" title="${rec.stars} stars">${rec.done ? star(rec.stars) : ''}</span></a>`
       : `<span class="run locked" data-run="${r.id}" aria-disabled="true"><span class="runG" aria-hidden="true">🔒</span><span class="runT"><b>${esc(r.name)}</b><small>finish ${esc(prev.name)} to open</small></span></span>`;
   }).join('')}</div>${missionList(all)}<p class="hint mutBlurb">${esc(RUN.blurb)}</p>`;
   // the daily, the week and LIVE are still the real-time game, and still the

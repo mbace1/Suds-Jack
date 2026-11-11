@@ -57,7 +57,7 @@ export const FI = new Map(Object.entries({
   // v2.73: the ladder (runs.js)
   'RUNS': 'TASOT', 'EASY': 'HELPPO', 'MEDIUM': 'KESKITASO', 'HARD': 'VAIKEA',
   // the long shift (v3.26)
-  'THE LONG SHIFT': 'PITKÄ VUORO', 'Until you drop': 'Kunnes uuvut', 'no end': 'ei loppua', 'THE LONG SHIFT AGAIN': 'PITKÄ VUORO UUDELLEEN',
+  'THE LONG SHIFT': 'PITKÄ VUORO', '∞ LONG': '∞ PITKÄ', 'Until you drop': 'Kunnes uuvut', 'no end': 'ei loppua', 'THE LONG SHIFT AGAIN': 'PITKÄ VUORO UUDELLEEN',
   'Jobs keep coming. Every clock a little shorter than the last. Three late drops and it is over.': 'Keikkoja tulee koko ajan. Jokainen kello hieman edellistä lyhyempi. Kolme myöhästymistä ja se on ohi.',
   'the clock ended it': 'kello päätti sen', 'three late drops ended it': 'kolme myöhästymistä päätti sen', "Ten o'clock. The shift is over.": 'Kello on kymmenen. Vuoro on ohi.',
   'First shift': 'Ensimmäinen vuoro', 'A morning': 'Aamu', 'Rush hour, one line down': 'Ruuhka-aika, yksi linja poikki', 'Last service': 'Viimeinen vuoro',
