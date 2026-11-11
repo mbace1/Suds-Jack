@@ -24,11 +24,11 @@
 // `swirlAt`, out to `swirlR`, and opens a hole of `hole` m in the middle).
 import * as THREE from 'three/webgpu';
 import { Fn, If, uv, uniform, float, abs, fract, min, max, sin, cos, atan, length, smoothstep, step, mix, fwidth, texture, clamp, vec2, vec3, pow, floor as tfloor, round, select, mod, dFdx, dFdy, exp, normalize, dot, cameraPosition, positionWorld, vec4 } from 'three/tsl';
-import { pickStyle, grainAt } from './style.js?v=144';
-import { SUN_AT } from './sun.js?v=144';
-import { GEL_TIME } from './gel.js?v=144';
-import { noise, grate, cells, sewerSpots, treeShade } from './scenery.js?v=144';
-import { lilyPads, DRIFT, hash } from './kit.js?v=144';
+import { pickStyle, grainAt } from './style.js?v=145';
+import { SUN_AT } from './sun.js?v=145';
+import { GEL_TIME } from './gel.js?v=145';
+import { noise, grate, cells, sewerSpots, treeShade } from './scenery.js?v=145';
+import { lilyPads, DRIFT, hash } from './kit.js?v=145';
 
 const _white = new THREE.Color(0xffffff);
 // the floors whose set has a ground of its own under them: a room that is not a rectangle is CUT to its shape there
@@ -429,13 +429,61 @@ export function buildFloor(T, hx, hz, light, { style = 'grid', bounds: hasBounds
     stone = mix(stone, mix(vec3(...S.groutCol), vec3(...(Vy?.slime ?? S.groutCol)), slime), grout.mul(float(1).sub(wet.mul(0.7))));
     // v78: the channel's water is murky and RUNS (it wore the cistern's net): streaks
     // stretched along the flow, foam along the kerbs, flecks going by
-    const flow = a.sub(GEL_TIME.mul(S.flow)), M = S.murk;
-    const st = streaks(a, c, S.flow, M.stretch, M.scale);
-    const foamLine = smoothstep(S.channel / 2 - M.foamW, S.channel / 2 - 0.02, abs(c)).mul(smoothstep(0.45, 0.75, noise(vec2(flow.mul(0.8), c.mul(6)))));
-    const flecks = smoothstep(0.82, 0.9, noise(vec2(flow.mul(1.6), c.mul(2.2)).add(7.7)));
-    const rip = smoothstep(0.55, 0.85, st).mul(0.7).add(foamLine).add(flecks.mul(0.6));
-    const water = mix(vec3(...S.water), vec3(...S.waterHi), st.mul(M.lift)).add(vec3(...M.foam).mul(foamLine.mul(0.5).add(flecks.mul(0.35))));
-    let col = mix(stone, water, inCh);
+    // v145 (owner, 2026-11-11: "Stream should look a bit like a concave slide. Currently very flat"): the channel is a
+    // CHUTE — a trough of worn stone `deep` m deep, a parabola in section, the water running down the bottom of it.
+    // It is seen the way a sunk thing is seen: each pixel's own view ray is followed DOWN past the floor's plane to
+    // the water or to the trough's wall (three steps of it: the wall is nowhere steep enough to lose them), so the
+    // near wall draws short behind its lip and the far wall stands open, and what is drawn in the trough lies
+    // where a thing that deep would. The wall is LIT as a curve is — bright where it turns to the light, in its own
+    // shade where it turns away, a wet gleam along it — and COURSED along its length, the courses crowding toward
+    // the lips as lines on a curve seen from above do; a ring crosses it every `ring` m and bows with its depth.
+    // The water fills it `fill` of the way and RUNS as water down a slide does: fast, drawn out along the flow, a
+    // brighter thread wandering down its middle, foam where it meets the walls, thin and clear at its edges
+    const Ch = S.chute, M = S.murk;
+    let col, rip;
+    if (Ch) {
+      const R = S.channel / 2, V = normalize(cameraPosition.sub(positionWorld)), down = float(1).div(max(V.y, 0.25));
+      const vc = (alongX ? V.z : V.x).mul(down).negate(), va = (alongX ? V.x : V.z).mul(down).negate();   // the ray's run across and along, a metre of fall
+      const hAt = (cc) => float(Ch.deep).mul(max(float(1).sub(cc.mul(cc).div(R * R)), 0));
+      let cw = c;
+      for (let k = 0; k < 3; k++) cw = c.add(vc.mul(hAt(cw)));
+      const hw = hAt(cw), aw = a.add(va.mul(hw)), xw = cw.div(R);
+      // the wall: its slope across, lit from where the tunnel's light stands (vary.sun), darker toward the bottom
+      const slope = cw.mul(2 * Ch.deep / (R * R)), nrm = normalize(vec3(slope, 1, 0)), Lc = normalize(vec3((Vy?.sun?.[1] ?? -0.8) * Ch.lightAcross, 1, 0));
+      const diff = clamp(dot(nrm, Lc), 0, 1), gleam = pow(clamp(dot(nrm, normalize(Lc.add(vec3(vc.negate(), 1, 0)))), 0, 1), float(Ch.shine));
+      // courses along it, even along the curve (so crowding toward the lips), and rings across it
+      const arc = xw.mul(float(1).add(xw.mul(xw).mul(Ch.crowd))).div(1 + Ch.crowd), cq = abs(fract(arc.mul(Ch.courses).add(0.5)).sub(0.5)), caa = max(fwidth(arc.mul(Ch.courses)), 1e-4);
+      const course = float(1).sub(smoothstep(float(0.03).sub(caa), float(0.03).add(caa), cq));
+      const rq = abs(fract(aw.div(Ch.ring).add(tfloor(arc.mul(Ch.courses).add(0.5)).mul(0.5))).sub(0.5)).mul(Ch.ring), raa2 = max(fwidth(aw), 1e-4);
+      const ringL = float(1).sub(smoothstep(float(0.02).sub(raa2), float(0.02).add(raa2), rq));
+      const wtone = noise(vec2(aw.mul(1.7), cw.mul(4.1))).mul(0.3).add(0.85);
+      let wall = vec3(...Ch.stone).mul(wtone).mul(diff.mul(Ch.diffuse).add(Ch.ambient)).mul(float(1).sub(hw.div(Ch.deep).mul(Ch.ao))).mul(float(1).sub(max(course, ringL).mul(0.5)));
+      wall = wall.add(vec3(...Ch.gleam).mul(gleam));
+      // the water: the ray meets its surface `1 − fill` of the depth down, if it is over water there
+      const dws = Ch.deep * (1 - Ch.fill), cs = c.add(vc.mul(dws)), as = a.add(va.mul(dws)), half = R * Math.sqrt(Ch.fill);
+      const edge = float(half).add(noise(vec2(as.mul(0.9).sub(GEL_TIME.mul(S.flow * 0.5)), 3.3)).sub(0.5).mul(Ch.surge)).sub(abs(cs)), eaa = max(fwidth(cs), 1e-4);
+      const inW = smoothstep(eaa.negate(), eaa, edge);
+      const st = streaks(as, cs, S.flow * Ch.speed, M.stretch * Ch.stretch, M.scale);
+      // the fast line down its middle, where the sheet of water is thinnest and quickest: a brighter thread that wanders
+      const thread = float(1).sub(smoothstep(0, Ch.thread, abs(cs.sub(noise(vec2(as.mul(0.35).sub(GEL_TIME.mul(S.flow * 0.3)), 9.1)).sub(0.5).mul(half * 0.9))))).mul(smoothstep(0.35, 0.8, st));
+      const crest = thread.mul(0.6);
+      const flowq = as.sub(GEL_TIME.mul(S.flow * Ch.speed));
+      const foamLine = float(1).sub(smoothstep(0, M.foamW, edge)).mul(smoothstep(0.35, 0.7, noise(vec2(flowq.mul(0.9), cs.mul(5)))));
+      const flecks = smoothstep(0.84, 0.92, noise(vec2(flowq.mul(1.5), cs.mul(2.4)).add(7.7)));
+      rip = smoothstep(0.55, 0.85, st).mul(0.6).add(foamLine).add(flecks.mul(0.5)).add(crest);
+      const deepW = smoothstep(0, Ch.clear, edge);   // thin and clear at its edges: the wall shows through
+      const water = mix(vec3(...S.water), vec3(...S.waterHi), st.mul(M.lift).add(crest.mul(0.6))).add(vec3(...M.foam).mul(foamLine.mul(0.6).add(flecks.mul(0.3)).add(crest.mul(0.25))));
+      const trough = mix(wall, mix(wall.mul(0.6), water, deepW.mul(0.75).add(0.25)), inW);
+      col = mix(stone, trough, inCh);
+    } else {
+      const flow = a.sub(GEL_TIME.mul(S.flow));
+      const st = streaks(a, c, S.flow, M.stretch, M.scale);
+      const foamLine = smoothstep(S.channel / 2 - M.foamW, S.channel / 2 - 0.02, abs(c)).mul(smoothstep(0.45, 0.75, noise(vec2(flow.mul(0.8), c.mul(6)))));
+      const flecks = smoothstep(0.82, 0.9, noise(vec2(flow.mul(1.6), c.mul(2.2)).add(7.7)));
+      rip = smoothstep(0.55, 0.85, st).mul(0.7).add(foamLine).add(flecks.mul(0.6));
+      const water = mix(vec3(...S.water), vec3(...S.waterHi), st.mul(M.lift)).add(vec3(...M.foam).mul(foamLine.mul(0.5).add(flecks.mul(0.35))));
+      col = mix(stone, water, inCh);
+    }
     // v101: the channel's KERB (the module sheet's: a raised strip of pale stone either side of the water) — it was
     // a faint lighter line. Blocks `w` m wide in lengths of `joint` m, their water edge catching the light and
     // their outer edge in a line of shadow on the floor
@@ -935,9 +983,16 @@ export function buildFloor(T, hx, hz, light, { style = 'grid', bounds: hasBounds
     if (Sn) {
       // (its edge scalloped by the same ridges that ripple it: a fine noise there showed its grid as steps)
       const wd = w.x.mul(Sn.wind[0]).add(w.y.mul(Sn.wind[1])), ridge = sin(wd.mul(Sn.ripple).add(depth.mul(20)));
-      const lay = depth.mul(0.75).add(noise(w.mul(Sn.scale).add(8.8)).mul(0.25)).add(ridge.mul(Sn.scallop));
+      // v145 (owner, 2026-11-11: "Want more snow"): more of it, and DEEP along the rail, where the wind has banked it
+      // (`bank`: within `reach` m of the edge it lies whatever the sheet is like under it, `deep` thicker there, with a
+      // soft shade along its inner edge where the bank stands up off the ice)
+      // (in a small room the bank is as much narrower as the room is: it lines the rail, it does not fill the floor)
+      const room = Math.max(0.4, Math.min(1, Math.min(hx, hz) / 14)), Bk = Sn.bank, banked = Bk ? exp(e.max(0).div(Bk.reach * room).negate()).mul(room * room) : float(0);
+      const lay = depth.mul(0.75).add(noise(w.mul(Sn.scale).add(8.8)).mul(0.25)).add(ridge.mul(Sn.scallop)).add(banked.mul(Bk?.lift ?? 0));
       drift = smoothstep(Sn.at, Sn.at + Sn.soft, lay);
-      col = mix(col, v3(Sn.color).mul(ridge.mul(Sn.ridge).add(1)), drift.mul(Sn.k));
+      const thick = Bk ? drift.mul(float(Sn.k).add(banked.mul(Bk.deep))) : drift.mul(Sn.k);
+      col = mix(col, v3(Sn.color).mul(ridge.mul(Sn.ridge).add(1)), min(thick, Bk?.max ?? 1));
+      if (Bk) col = col.mul(float(1).sub(smoothstep(Sn.at - Bk.shadeW, Sn.at, lay).mul(float(1).sub(drift)).mul(banked.add(0.35)).mul(Bk.shade)));
     }
     const Bb = I.bubble, bc = tfloor(w.div(Bb.cell)), bh = noise(bc.mul(1.7).add(0.5));
     const bq = fract(w.div(Bb.cell)).sub(0.5).sub(vec2(noise(bc.add(3.1)), noise(bc.add(7.7))).sub(0.5).mul(0.5)).mul(Bb.cell);
@@ -1113,6 +1168,13 @@ export function buildFloor(T, hx, hz, light, { style = 'grid', bounds: hasBounds
       // the boiler: the fire under the NEAREST grate (they stand on a lattice), breathing with it
       const G = WL.grates, g = W.boiler.grate, c = round(wp.div(g)).mul(g);
       point(c.x, c.y, G, float(1).add(sin(GEL_TIME.mul(G.flicker[0]).add(noise(c.mul(0.37)).mul(6))).mul(G.flicker[1])));
+    }
+    if (WL.fans) for (const Fa of WL.fans) {
+      // v145: the light down a ventilation shaft, through the fan turning in it: wedges of light and of shadow going round
+      const d = wp.sub(vec2(Fa.frac[0] * hx, Fa.frac[1] * hz)), r = length(d), q = fract(atan(d.y, d.x).div(6.2832).add(GEL_TIME.div(Fa.period)).mul(Fa.blades));
+      const open = smoothstep(Fa.duty - Fa.soft, Fa.duty + Fa.soft, abs(q.sub(0.5)).mul(2)).mul(smoothstep(Fa.hub * 0.6, Fa.hub * 1.4, r));
+      const fall = float(1).div(float(1).add(r.mul(r).div(Fa.r * Fa.r))).mul(float(1).sub(smoothstep(Fa.r * 1.3, Fa.r * 2.1, r)));
+      E = E.add(v3(Fa.color).mul(open.mul(fall).mul(Fa.k)));
     }
     if (WL.rim) {
       // a band along the edge: all four sides, or the far side and the long ones (never the near side)

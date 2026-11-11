@@ -7,10 +7,10 @@
 // things that work"). The arena is 1.x's, so every 1.x number ports as it is
 // instead of through a rescale. Axes: x across the screen (right +), y up,
 // z toward the bottom of the screen. The arena is centred on the origin.
-import { SPECIES } from './tuning/species/index.js?v=144';
-import WAVES from './tuning/waves.js?v=144';
-import PICKUPS from './tuning/pickups.js?v=144';
-import MUSIC from './tuning/music.js?v=144';
+import { SPECIES } from './tuning/species/index.js?v=145';
+import WAVES from './tuning/waves.js?v=145';
+import PICKUPS from './tuning/pickups.js?v=145';
+import MUSIC from './tuning/music.js?v=145';
 
 export const TUNING = {
   render: {
@@ -168,7 +168,15 @@ export const TUNING = {
       cistern: { ambient: 0.15, lights: [{ frac: [-0.56, -0.66], h: 14, r: 9.5, k: 0.5, color: [0.5, 0.74, 1], shine: 700, sheenK: 3 },
                                         { frac: [-0.56, -0.66], h: 5.5, r: 5.5, k: 1.0, color: [0.78, 0.93, 1], sheen: false, caustics: true, shafts: true }],
                  rim: { w: 2.6, k: 1.7, color: [1, 0.6, 0.28], sides: 'back', every: 8.8, depth: 0.86, sheen: { y: 0.9, off: 2.3, shine: 90, k: 2.4, r: 9 } }, sheen: { k: 0.35, shine: 40 } },
-      boiler:  { ambient: 0.58, grates: { h: 1.4, r: 2.8, k: 1.05, color: [1, 0.42, 0.1], flicker: [1.6, 0.3] },
+      // v145 (owner, 2026-11-11: "It's an industrial machinery dungeon so it's meant to have that atmospheric feel"):
+      // the boiler room is a DUNGEON OF MACHINES, and dark. What lights the deck is the fire under its grates (each a
+      // pool of orange, breathing) and what comes down the ventilation shafts: a pale light through a great FAN
+      // turning in each (`fans`: where on the floor it stands over, `blades` of it, a turn every `period` s — one
+      // each way — its light `k` out to `r` m, `duty` of each sector blade, `soft` at a blade's edge, a dark `hub`),
+      // so wedges of light and shadow go round the room, slowly
+      boiler:  { ambient: 0.26, grates: { h: 1.4, r: 3.0, k: 1.5, color: [1, 0.42, 0.1], flicker: [1.6, 0.3] },
+                 fans: [{ frac: [-0.42, -0.4], blades: 5, period: 16, r: 10, k: 0.75, duty: 0.52, soft: 0.1, hub: 1.3, color: [0.72, 0.82, 0.95] },
+                        { frac: [0.42, 0.42], blades: 5, period: -21, r: 10, k: 0.75, duty: 0.52, soft: 0.1, hub: 1.3, color: [0.72, 0.82, 0.95] }],
                  rim: { w: 1.5, k: 0.75, glow: 0.03, color: [1, 0.42, 0.1], sides: 'all' }, sheen: { k: 0.3, shine: 20 } },
       // the sun on water and ice is a glint, not a haze: broad and white it read as fog (shine 14 / 30)
       // v99: and the GLITTER the approved picture is covered in — the sun off the ripples (floor.js river hands
@@ -273,7 +281,15 @@ export const TUNING = {
       // and the channel's `kerbStone`: `w` m blocks `joint` m long, `lit` on their water edge, a `shadow` beyond
       sewer: { stone: [0.042, 0.05, 0.058], groutCol: [0.008, 0.009, 0.011], water: [0.007, 0.032, 0.036], waterHi: [0.09, 0.27, 0.25],
                kerbStone: { w: 0.34, joint: 1.15, color: [0.1, 0.1, 0.098], lit: [0.07, 0.08, 0.08], shadow: 0.45 },
-               kerb: [0.06, 0.06, 0.062], channel: 2.4, slab: [1.7, 0.85], grout: 0.035, flow: 1.2, wetLight: 0.9,
+               kerb: [0.06, 0.06, 0.062], channel: 3.4, slab: [1.7, 0.85], grout: 0.035, flow: 1.2, wetLight: 0.9,
+               // v145 (owner: "Stream should look a bit like a concave slide"): the channel as a CHUTE (floor.js sewer) —
+               // `deep` m at its middle, the water `fill` of the way up it, running `speed` × the old flow and drawn
+               // out `stretch` × as far; the wall's `stone`, lit `diffuse` from the tunnel's light leaning
+               // `lightAcross`, `ambient` in its shade, `ao` darker at the bottom, a wet `gleam` (`shine` tight);
+               // `courses` a side along it, `crowd`ing toward the lips, a ring every `ring` m; the water's edge
+               // `surge`s m and is `clear` over its first m; the fast `thread` down its middle is that wide
+               chute: { deep: 0.85, fill: 0.3, speed: 2.6, stretch: 2.6, stone: [0.12, 0.125, 0.125], diffuse: 1.3, ambient: 0.2, ao: 0.6, lightAcross: 1.3,
+                        gleam: [0.12, 0.2, 0.2], shine: 22, courses: 2.5, crowd: 0.7, ring: 1.4, surge: 0.12, clear: 0.28, thread: 0.3 },
                // v140: no two flagstones alike (floor.js sewer). `long`/`short`: the share of pairs along a course that
                // are one long stone / cut in halves; `tone` how far a stone's brightness strays, between the tints
                // `cool` and `warm` (and `greens` of them toward `green`); `tilt` how far out of level; the edges worn
@@ -383,7 +399,10 @@ export const TUNING = {
       ice: { base: [0.26, 0.46, 0.66], deep: [0.11, 0.26, 0.48], crack: [0.92, 0.97, 1.0], lines: 0.45, scale: 0.35, frost: [0.85, 0.92, 1.0],
              // v140: SNOW drifted over the pale ice (floor.js ice `snow`): it lies where the sheet's broad field passes
              // `at` (`soft` to full), broken at `scale`, `k` thick in `color`, ridged `ridge` across the `wind` every 1/`ripple` m
-             snow: { at: 0.56, soft: 0.05, scale: 0.4, k: 0.55, color: [0.74, 0.82, 0.92], wind: [0.8, 0.6], ripple: 5, ridge: 0.07, scallop: 0.012 },
+             // v145 (owner: "Want more snow"): more of the sheet under it (`at` 0.56 → 0.5), and BANKED along the rail — within
+             // `reach` m of the edge it lies `lift` more readily and `deep` thicker (never past `max`), shaded `shade` at its foot
+             snow: { at: 0.5, soft: 0.05, scale: 0.4, k: 0.58, color: [0.74, 0.82, 0.92], wind: [0.8, 0.6], ripple: 5, ridge: 0.08, scallop: 0.012,
+                     bank: { reach: 3.2, lift: 0.34, deep: 0.3, max: 0.86, shade: 0.22, shadeW: 0.06 } },
              ledgeShadow: { depth: 0.35, soft: 0.25, cotMax: 2.2 },   // v100: the ledge's sun shadow on the ice (scenery.ice.ledge)
              // v100: the FRACTURES — plates `cell[0]` m across with cracks `width[0]` m wide between them (half widths),
              // finer cracks across the plates (`cell[1]`, `width[1]`, `minor` as bright), the field warped `warp` m over
@@ -1394,9 +1413,12 @@ export const TUNING = {
       4: { kind: 'pillar', r: 1.05, foot: { r: 2.1, h: 0.5 }, at: [[-0.36, -0.42], [0.36, 0.42]],
            pits: { depth: 2.6, at: [[5.04, -10.92, 2.1], [-5.04, 10.92, 2.1]] } },
       // v137: two raised decks of riveted plate, rounded at the ends, two drums on each
+      // v145 (owner: "some rectangular but rounded edge"): the decks are RECTANGLES with rounded corners (render/posts.js
+      // rectShape draws the box round the circles); a small circle in each corner fills what the three big ones leave,
+      // so what blocks is what is drawn
       5: { kind: 'drum', r: 1.2,
-           islands: [{ h: 0.5, at: [[-7, 0.8, 1.9], [-7, 3, 1.9], [-7, 5.2, 1.9]], props: [[-7, 1.2, 1.15], [-7, 4.8, 1.15]] },
-                     { h: 0.5, at: [[7, -0.8, 1.9], [7, -3, 1.9], [7, -5.2, 1.9]], props: [[7, -1.2, 1.15], [7, -4.8, 1.15]] }] },
+           islands: [{ h: 0.5, at: [[-7, 0.8, 1.9], [-7, 3, 1.9], [-7, 5.2, 1.9], [-8.15, -0.35, 0.75], [-5.85, -0.35, 0.75], [-8.15, 6.35, 0.75], [-5.85, 6.35, 0.75]], props: [[-7, 1.2, 1.15], [-7, 4.8, 1.15]] },
+                     { h: 0.5, at: [[7, -0.8, 1.9], [7, -3, 1.9], [7, -5.2, 1.9], [8.15, 0.35, 0.75], [5.85, 0.35, 0.75], [8.15, -6.35, 0.75], [5.85, -6.35, 0.75]], props: [[7, -1.2, 1.15], [7, -4.8, 1.15]] }] },
       // v137: two rock islands in the stream, its boulders on them
       6: { kind: 'boulder', r: 1.0,
            islands: [{ h: 0.45, at: [[-5, 6.8, 1.8], [-5.3, 9.3, 2.3], [-5, 11.9, 2.1], [-4.6, 14.5, 1.6]], props: [[-5.3, 9.8, 1.0], [-4.7, 13.2, 0.75]] },

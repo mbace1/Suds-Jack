@@ -19,6 +19,20 @@
     Never `--no-verify`.
 -->
 
+## v145 — 2026-11-11
+**The sewer's stream runs in a chute, the boiler room is a dark machine hall with square decks, and the ice is broken unevenly under more snow**
+- WHY: three more of the owner's answers to the look film (2026-11-11). The sewer: "Stream should look a bit like a concave slide. Currently very flat". The boiler: "Boiler room islands have to have some rectangular but rounded edge. It's an industrial machinery dungeon so it's meant to have that atmospheric feel also". The ice: "Holes still too regular", and "Want more snow".
+- THE SEWER'S CHUTE: the channel is a trough now, most of a metre deep and wider than it was (3.4 m, from 2.4), with the water running down the bottom of it. It is drawn the way a sunk thing is seen: each pixel's view is followed down past the floor to the trough's wall or the water, so the near wall draws short behind its lip and the far wall stands open. The wall is lit as a curve is (bright toward the tunnel's light, in its own shade away from it, a wet gleam along it), coursed along its length with the courses crowding toward the lips, and ringed across. The water runs faster and is drawn out longer, a brighter thread wandering down its middle, thin and clear at its edges. A first cut with chevrons in the water read as a conveyor belt and was dropped.
+- THE BOILER'S DECKS: the two raised decks are rectangles with rounded corners, where they were three circles run together. A small circle in each corner fills what the three big ones leave, so what blocks is what is drawn (within a step).
+- THE BOILER ROOM: dark. What lights the deck is the fire under its grates, a pool of orange at each, and the pale light down two ventilation shafts through the great fans turning in them, one each way, a turn every sixteen and twenty-one seconds: wedges of light and shadow going slowly round the room. The air's own light went from 0.58 to 0.26.
+- THE ICE'S HOLES: nothing about a hole is even now. Its sides are of very different lengths, it is long one way and narrow the other, and the ice round it has broken back unevenly, a few corners thrown far out, so the whole break is a jagged star and not a ring. The cracks run twice as far. The frost follows the break's own edge (round a circle it drew the circle back).
+- THE SNOW: more of the sheet lies under it, and it is banked along the rail, deeper there, with a soft shade at its foot. In a campaign room the bank is scaled to the room, so a small rink keeps its ice.
+- Looks only, except the boiler's eight corner circles (0.75 m, inside the decks' old outline's reach): the decks block a little more squarely. HARDCADE's curve is not re-measured for it.
+- Checked by render in both orientations, and five campaign rooms on the three looks. test/view.mjs holds the new numbers (5 checks, 121 in all); test/posts.mjs's "an island is one piece" now asks that every circle overlap one laid before it, not only the one just before.
+- Cache tokens `?v=144` → `?v=145`; HUD label → `2.0 · v145`
+
+---
+
 ## v144 — 2026-11-11
 **The cistern's water is water: a wave simulation the fight stands in. And the cistern is dark, with the sewer's water falling into it**
 - WHY (owner, 2026-11-11, shown v143): "This is the worst looking level. There is very little variation or identity and the water vfx are too simple and subtle. Could entertain actual water physics. Also a mood and light flip. Many of these levels are about dropping down a level to go lower in the sewers or get pushed further out of the sewers. It looks like a regular day puddle".

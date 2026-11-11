@@ -19,9 +19,9 @@
 // Reads the world, never writes it. Every number is TUNING.posts (sim) and the look's own below.
 import * as THREE from 'three/webgpu';
 import { Fn, float, vec2, vec3, smoothstep, mix, positionWorld, positionLocal, normalWorld, cameraPosition, normalize, dot, sqrt, max, select, fract, abs, atan, uniform, floor as tfloor, attribute, sin, cos, clamp, step } from 'three/tsl';
-import { TUNING } from '../tuning.js?v=144';
-import { noise, merge, hash } from './kit.js?v=144';
-import { GEL_TIME } from './gel.js?v=144';
+import { TUNING } from '../tuning.js?v=145';
+import { noise, merge, hash } from './kit.js?v=145';
+import { GEL_TIME } from './gel.js?v=145';
 
 const T = TUNING;
 const std = (color, rough = 0.6, metal = 0, extra = {}) => new THREE.MeshStandardNodeMaterial({ color, roughness: rough, metalness: metal, ...extra });
@@ -243,7 +243,8 @@ const SLAB = {
                      pour: { strands: 2.2, speed: 3.4, k: 0.75, reach: 0.85, color: [0.62, 0.8, 0.9] } } }),
   // the boiler: its deck plate, seams on top and a hazard band round the side
   // (v139: riveted round its edge, a pipe run between its two drums, soot on the floor round it)
-  5: () => ({ top: [0.2, 0.19, 0.18], side: [0.085, 0.08, 0.075], lip: [0.5, 0.36, 0.2], grit: 1.6, rough: 0.42, metal: 0.65, stripes: true,
+  // (v145: cut SQUARE, its corners rounded `rect.corner` m — the owner: "some rectangular but rounded edge")
+  5: () => ({ top: [0.2, 0.19, 0.18], side: [0.085, 0.08, 0.075], lip: [0.5, 0.36, 0.2], grit: 1.6, rough: 0.42, metal: 0.65, stripes: true, rect: { corner: 0.75 },
               rivets: { every: 0.5, r: 0.075, inset: 0.24, color: 0x9a8f80 }, pipe: { r: 0.15, at: 0.52, brass: 0xe2bb52, iron: 0x3f342c },
               band: { kind: 'damp', inn: 0.1, out: 0.7, color: [0.006, 0.005, 0.004], k: 0.55 } }),
   // the river: wet rock, paler where it is dry on top
@@ -263,9 +264,10 @@ const SLAB = {
               // share of cells that hold one); `cracks` run on from the collar's corners (× the radius long, `w` m
               // wide where they start, forking `fork` of the time), rime `rime` × as wide either side of each
               pit: { wall: [0.2, 0.46, 0.74], deep: [0.008, 0.045, 0.085], rim: [0.86, 0.93, 1.0], ring: 0, ice: true,
-                     shatter: { corners: [8, 11], hole: [0.56, 0.9], bite: 0.3, collar: [0.98, 1.1], gap: 0.05, lift: [0.03, 0.14], awash: 0.3, split: 0.35,
+                     // (v145: `uneven` sides, `oval` — long one way —, the collar broken back to between `collar` of the radius, `far` of its corners far out)
+                     shatter: { corners: [6, 10], hole: [0.34, 0.92], bite: 0.3, uneven: true, oval: 0.5, collar: [1.0, 1.45], far: 0.3, gap: 0.055, lift: [0.03, 0.14], awash: 0.3, split: 0.4,
                                 thick: 0.75, brash: [1.6, 0.42], floe: [0.78, 0.87, 0.97], wet: [0.42, 0.62, 0.86], under: [0.02, 0.07, 0.13],
-                                cracks: { len: [0.35, 1.15], w: 0.055, fork: 0.5, rime: 2.8, dark: [0.1, 0.24, 0.42], white: [0.93, 0.97, 1.0] } },
+                                cracks: { len: [0.6, 2.3], w: 0.065, fork: 0.6, rime: 2.8, dark: [0.1, 0.24, 0.42], white: [0.93, 0.97, 1.0] } },
                      band: { kind: 'frost', inn: 0, out: 1.0, color: [0.92, 0.97, 1.0], cracks: 0, crackW: 0.03, k: 0.5 } } }),
   // the deep: dark reef rock with silt settled on its top
   // (v139: a reef MOUND, a crust of coralline on what faces up, silt banked against it, anemones on it)
@@ -337,6 +339,19 @@ function lawnMat(L) {
     return mix(vec3(...L.lo), vec3(...L.hi), blade).mul(stripe);
   })();
   return m;
+}
+// v145 (owner, 2026-11-11: "Boiler room islands have to have some rectangular but rounded edge"): a deck of plate is
+// cut SQUARE. The outline is the box round the island's circles (TUNING.posts lays them to fill it, a small one in
+// each corner), its corners rounded `corner` m. A Shape in (x, −z), as islandShape's
+function rectShape(cs, inset = 0, corner = 0.6) {
+  const x0 = Math.min(...cs.map((c) => c.x - c.r)) + inset, x1 = Math.max(...cs.map((c) => c.x + c.r)) - inset;
+  const y0 = -(Math.max(...cs.map((c) => c.z + c.r)) - inset), y1 = -(Math.min(...cs.map((c) => c.z - c.r)) + inset);
+  const r = Math.max(0.05, Math.min(corner - inset * 0.6, (x1 - x0) / 2, (y1 - y0) / 2)), s = new THREE.Shape();
+  s.moveTo(x0 + r, y0); s.lineTo(x1 - r, y0); s.absarc(x1 - r, y0 + r, r, -Math.PI / 2, 0, false);
+  s.lineTo(x1, y1 - r); s.absarc(x1 - r, y1 - r, r, 0, Math.PI / 2, false);
+  s.lineTo(x0 + r, y1); s.absarc(x0 + r, y1 - r, r, Math.PI / 2, Math.PI, false);
+  s.lineTo(x0, y0 + r); s.absarc(x0 + r, y0 + r, r, Math.PI, Math.PI * 1.5, false);
+  return s;
 }
 // the outline of a union of circles: every circle's rim point that no other circle covers, in order round the
 // middle (an island is compact enough to be star-shaped about its middle), thinned and drawn as one smooth closed
@@ -424,6 +439,8 @@ function isleOutline(cs, n = 120) {
   return out;
 }
 const circleOutline = (x, z, r, n = 72) => Array.from({ length: n }, (_, i) => { const a = (i / n) * Math.PI * 2; return [x + Math.cos(a) * r, z + Math.sin(a) * r, Math.cos(a), Math.sin(a)]; });
+// the same round a many-sided break (star-shaped about its middle): `per` points a side, each facing out from the middle
+const polyOutline = (cx, cz, pts, per = 4) => pts.flatMap(([x, z], i) => { const [x1, z1] = pts[(i + 1) % pts.length]; return Array.from({ length: per }, (_, k) => { const px = x + ((x1 - x) * k) / per, pz = z + ((z1 - z) * k) / per, l = Math.hypot(px - cx, pz - cz) || 1; return [px, pz, (px - cx) / l, (pz - cz) / l]; }); });
 // a flat band round an outline, from `inn` m inside it to `out` m outside, lying at `y`: its `band` attribute is
 // (0 at its inner rim … 1 at its outer, the way round in m) — for what gathers where a thing meets its floor
 function bandGeo(pts, inn, out, y = 0.014) {
@@ -523,13 +540,21 @@ function moundMat(M) {
 // circle a body stops at; round it a collar of broken floes out to that circle; and cracks running on from the
 // collar's corners, each a few straight runs that turn, thin out and sometimes fork. All from the pit's own dice.
 export function shatter(p, K, rnd) {
+  // v145 (owner, 2026-11-11: "Holes still too regular"): nothing about it is even now. Its sides are of very
+  // different lengths (`uneven`: one long straight break beside two short ones); it is LONG one way and narrow the
+  // other (`oval`, on an axis of its own), so it is not a circle with a rough edge; and the ice round it has broken
+  // back unevenly too — a few of the collar's corners thrown far out past the rest (`far`), so the whole break is
+  // a jagged star and not a ring
   const n = K.corners[0] + Math.floor(rnd() * (K.corners[1] - K.corners[0] + 1));
-  const steps = Array.from({ length: n }, () => 0.55 + rnd() * 0.9), sum = steps.reduce((a, b) => a + b, 0);
+  const steps = Array.from({ length: n }, () => (K.uneven ? 0.3 + rnd() * rnd() * 2.6 : 0.55 + rnd() * 0.9)), sum = steps.reduce((a, b) => a + b, 0);
   let a = rnd() * Math.PI * 2;
-  const hole = [], out = [];
+  const hole = [], out = [], a0 = rnd() * Math.PI, oval = K.oval ?? 0;
   for (let i = 0; i < n; i++) {
-    a += (steps[i] / sum) * Math.PI * 2;
-    const rr = K.hole[0] + (K.hole[1] - K.hole[0]) * (rnd() < K.bite ? rnd() * 0.35 : 0.55 + rnd() * 0.45), ao = a + (rnd() - 0.5) * 0.22, ro = K.collar[0] + rnd() * (K.collar[1] - K.collar[0]);
+    const da = (steps[i] / sum) * Math.PI * 2;
+    a += da;
+    const lobe = 1 - oval * (0.5 + 0.5 * Math.cos(2 * (a - a0)));
+    const rr = K.hole[0] + (K.hole[1] - K.hole[0]) * (rnd() < K.bite ? rnd() * 0.35 : 0.55 + rnd() * 0.45) * lobe, ao = a + (rnd() - 0.5) * Math.min(0.22, da * 0.5);
+    const ro = K.collar[0] + (rnd() < (K.far ?? 0) ? 0.7 + rnd() * 0.3 : rnd() * (K.far != null ? 0.45 : 1)) * (K.collar[1] - K.collar[0]);
     hole.push([p.x + Math.cos(a) * p.r * rr, p.z + Math.sin(a) * p.r * rr]);
     out.push([p.x + Math.cos(ao) * p.r * ro, p.z + Math.sin(ao) * p.r * ro, ao]);
   }
@@ -714,6 +739,7 @@ export class PostView {
   // v137: an island — one slab whose outline is the union of its circles, smoothed; the driveway's a curb round a lawn
   _island(cs, M, mat) {
     const h = cs[0].h, extra = (o) => { this.scene.add(o); this.extras.push(o); return o; };
+    const outline = (inset = 0) => (M.rect ? rectShape(cs, inset, M.rect.corner) : islandShape(cs, inset));   // v145: a deck is cut square
     if (M.lawn) {
       const ring = islandShape(cs), hole = islandShape(cs, 0.42);
       ring.holes.push(new THREE.Path(hole.getPoints(140).reverse()));
@@ -738,10 +764,10 @@ export class PostView {
         byCol.forEach((pts, i) => { if (pts.length) extra(new THREE.Mesh(dotsGeo(pts), std(D.colors[i], 0.5, 0, { emissive: D.colors[i], emissiveIntensity: D.glow }))); });
       }
     } else {
-      extra(new THREE.Mesh(slabGeo(islandShape(cs), h, 0.14), mat));
+      extra(new THREE.Mesh(slabGeo(outline(), h, 0.14), mat));
       if (M.rivets) {
         // v139: riveted round its edge, a rivet every `every` m
-        const Rv = M.rivets, pts = islandShape(cs, Rv.inset).getPoints(160), out = [];
+        const Rv = M.rivets, pts = outline(Rv.inset).getPoints(M.rect ? 24 : 160), out = [];
         let acc = 0;
         for (let i = 1; i < pts.length; i++) { acc += pts[i].distanceTo(pts[i - 1]); if (acc >= Rv.every) { acc = 0; out.push([pts[i].x, h + Rv.r * 0.2, -pts[i].y, Rv.r, 0.7]); } }
         if (out.length) extra(new THREE.Mesh(dotsGeo(out, 6), std(Rv.color, 0.35, 0.8)));
@@ -763,7 +789,7 @@ export class PostView {
       }
     }
     // v139: what gathers round it where it meets the floor
-    if (M.band) { const b = extra(new THREE.Mesh(bandGeo(M.mound ? isleOutline(cs) : islandShape(cs).getPoints(140).map((v, i, a) => { const q = a[(i + 1) % a.length], tx = q.x - v.x, tz = -(q.y - v.y), tl = Math.hypot(tx, tz) || 1; return [v.x, -v.y, tz / tl, -tx / tl]; }), M.band.inn, M.band.out), this.bandM ??= bandMat(M.band))); b.renderOrder = 2; }
+    if (M.band) { const b = extra(new THREE.Mesh(bandGeo(M.mound ? isleOutline(cs) : outline().getPoints(M.rect ? 24 : 140).map((v, i, a) => { const q = a[(i + 1) % a.length], tx = q.x - v.x, tz = -(q.y - v.y), tl = Math.hypot(tx, tz) || 1; return [v.x, -v.y, tz / tl, -tx / tl]; }), M.band.inn, M.band.out), this.bandM ??= bandMat(M.band))); b.renderOrder = 2; }
   }
   // v137: a pit — the hole (a disc showing the inside of the cylinder under it) and its rim: a ring of the floor's
   // stone standing round a well, or a low lip of slush round a hole in the ice
@@ -781,7 +807,8 @@ export class PostView {
       const under = extra(new THREE.Mesh(flat(ring, 0.008), this.underM ??= new THREE.MeshBasicNodeMaterial({ color: new THREE.Color().setRGB(...K.under) }))); under.renderOrder = 2;
       extra(new THREE.Mesh(floeGeo(S.floes, K, P.wall), this.floeM ??= std(0xffffff, 0.3, 0, { vertexColors: true })));
       const cr = extra(new THREE.Mesh(crackGeo(S.runs, K.cracks), this.crackM ??= new THREE.MeshBasicNodeMaterial({ vertexColors: true }))); cr.renderOrder = 3;
-      if (P.band) { const b = extra(new THREE.Mesh(bandGeo(circleOutline(p.x, p.z, p.r * K.collar[1]), P.band.inn, P.band.out), this.pitBandM ??= bandMat(P.band))); b.renderOrder = 2; }
+      // (v145: the frost follows the break's own jagged edge — round a circle it drew the circle back)
+      if (P.band) { const b = extra(new THREE.Mesh(bandGeo(polyOutline(p.x, p.z, S.out), P.band.inn, P.band.out), this.pitBandM ??= bandMat(P.band))); b.renderOrder = 2; }
       return;
     }
     const disc = extra(new THREE.Mesh(new THREE.CircleGeometry(r, 72).rotateX(-Math.PI / 2), pitMat(P, p.x, p.z, r, p.depth)));
