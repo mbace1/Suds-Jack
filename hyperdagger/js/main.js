@@ -3033,7 +3033,8 @@ function currentWave() {
       if (w.gap) { nextPulseAt = Math.max(nextPulseAt, gameTime + w.gap); nextSkullAt = Math.max(nextSkullAt, gameTime + w.gap); }
     }
     // the finale announces itself (startFinale), under its own name
-    if (w.name && w.kind !== 'finale') toast(w.name, waveIdx > 0 ? 1500 : 1200);
+    // act one opens under the goal card (HD-010), which already says what the season is
+    if (w.name && w.kind !== 'finale' && waveIdx > 0) toast(w.name, 1500);
   }
   return waves[waveIdx];
 }
