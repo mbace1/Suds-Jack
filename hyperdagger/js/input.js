@@ -374,10 +374,6 @@ export class InputManager {
     return this.mouseDown || this._pad.firing;
   }
 
-  /** v64: is the stream coming from a pad's trigger? A pad has its own jump
-   *  button, so its trigger fires at once (no short-press-is-a-jump). */
-  get padFiring() { return !!this._pad.firing; }
-
   get altFiring() {
     if (this.touchMode) return !!this._pad.altFiring;
     return this.mouseAltDown || this._pad.altFiring;

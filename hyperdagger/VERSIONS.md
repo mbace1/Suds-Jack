@@ -9,9 +9,9 @@ Lack of communication of clear objectives. In general hard to read."*
   the first tap anywhere sets touch mode for good, and in touch mode the fire
   check asked the on-screen stick alone. Measured, the same three seconds of
   R2 held: **0 daggers before, 25 after.** The same line hid L2.
-- **A pad's trigger fires at once.** Short-press-is-a-jump is a grammar for one
-  button doing two jobs. A pad has a jump button, and with the delay a tapped
-  trigger jumped and a held one answered late.
+- The press grammar is HD-001's, unchanged: on a pad too a short press of the
+  trigger jumps and a hold streams. (A first cut made the trigger fire at once;
+  that is a rule change and is the owner's to make, so it is not in this.)
 - **The pad is told its own buttons.** A touch screen was always shown the
   touch hints, so a connected pad's line never appeared. A pad in hand wins
   now, in its own shapes (a DualSense prints ✕ ○ □ △ R2 OPTIONS), on the menu
@@ -29,7 +29,7 @@ Lack of communication of clear objectives. In general hard to read."*
   titles are a size up. Phone-sized frames are untouched.
 - With a pad in hand the on-screen sticks' resting ghosts are not drawn.
 
-Gate: `test/pad-tablet.cjs` (20) — a stubbed DualSense on a touch context at
+Gate: `test/pad-tablet.cjs` (19) — a stubbed DualSense on a touch context at
 1180 × 820; every asserted action is a pad button or a real tap. `goal-card.cjs`
 now reads the card's duration from the game instead of assuming 1.6 s.
 

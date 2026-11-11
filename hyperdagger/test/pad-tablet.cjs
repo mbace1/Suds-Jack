@@ -85,10 +85,7 @@ s.listen(0, '127.0.0.1', async () => {
     const before = await q.evaluate(() => ({ gun: window.__hd.debug.getGun?.(), n: window.__hd.daggers.active.length, fired: window.__hd.debug.getSeasonLook?.().counts?.muzzle ?? null }));
     const fired = await q.evaluate(async () => { window.__hold(7, true); let max = 0; for (let i = 0; i < 400; i++) { await window.__frames(1); max = Math.max(max, window.__hd.daggers.active.length); if (max >= 2) break; } const st = window.__hd.debug.getState(); window.__hold(7, false); await window.__frames(2); return { max, t: st.gameTime }; });
     ok('run: this is a touch-mode session (the tap that makes an iPad one)', touchMode === true, String(touchMode));
-    ok('run: R2 held fires — in touch mode (it fired nothing)', fired.max >= 2 && before.n === 0, JSON.stringify({ before: before.n, fired }));
-    // a tapped trigger is a shot, not a jump
-    const tap = await q.evaluate(async () => { const pl = window.__hd.player; await window.__game(0.6); const y0 = pl.feet.y; window.__hold(7, true); await window.__frames(1); window.__hold(7, false); let top = y0; for (let i = 0; i < 12; i++) { await window.__frames(1); top = Math.max(top, pl.feet.y); } return { y0, top }; });
-    ok('run: a tapped trigger does not jump (✕ is the jump)', tap.top - tap.y0 < 0.05, JSON.stringify(tap));
+    ok('run: R2 HELD fires — in touch mode (it fired nothing); the press grammar is HD-001\'s, unchanged', fired.max >= 2 && before.n === 0, JSON.stringify({ before: before.n, fired }));
     const jump = await q.evaluate(async () => { const pl = window.__hd.player; const y0 = pl.feet.y; window.__hold(0, true); await window.__frames(1); window.__hold(0, false); let top = y0; for (let i = 0; i < 40; i++) { await window.__frames(1); top = Math.max(top, pl.feet.y); } return { y0, top }; });
     ok('run: ✕ jumps', jump.top - jump.y0 > 0.3, JSON.stringify(jump));
 

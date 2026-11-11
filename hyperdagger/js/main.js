@@ -1770,7 +1770,7 @@ function controlsLine() {
   const jumps = (ab.jumps ?? 1) > 1 ? ` &times;${ab.jumps}` : '';
   if (input.gamepad) {
     const g = padGlyphs();
-    return [gun ? `<b>${g.fire}</b> fire` : 'look at a skull to fire', `<b>${g.a}</b> jump${jumps}`, ab.dash ? `<b>${g.b}</b> dash` : '',
+    return [gun ? `<b>hold ${g.fire}</b> fire` : 'look at a skull to fire', `<b>${g.a}</b> jump${jumps}`, ab.dash ? `<b>${g.b}</b> dash` : '',
       ab.reap ? `<b>${g.x}</b> reap` : ''].filter(Boolean).join(' &middot; ');
   }
   const touch = input.touchMode || (typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches);
@@ -3657,10 +3657,6 @@ function killEnemy(e, dir) {
  *  the hold has reached the stream. Shared by the hand and by the gaze
  *  season, which has no gun but keeps the short press = jump (#619 review). */
 function firePress(dt) {
-  // v64: a pad's trigger fires AT ONCE. Short-press-is-a-jump is a grammar for
-  // one button doing two jobs; a pad has a jump button, and with the delay a
-  // tapped trigger jumped and a held one answered late — "it does not shoot".
-  if (input.padFiring) { fireHeldT = T.weapon.streamDelay; fireWasHeld = true; return true; }
   const held = input.firing;
   if (held) {
     fireHeldT += dt;

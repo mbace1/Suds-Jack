@@ -430,10 +430,8 @@ s.listen(0, '127.0.0.1', async () => {
   ok('a short press leaves no projectiles; the hold still streams',
     gun.tapSpeeds.length === 0 && gun.streamSpeeds.length >= 1, JSON.stringify({ tap: gun.tapSpeeds, stream: gun.streamSpeeds }));
   ok('releasing a long hold is not a burst', gun.releaseFired <= 2, JSON.stringify(gun));
-  // v64: a pad has a jump button, so its trigger fires at once (it used to be
-  // held to the one-button grammar: a tap jumped and a hold answered late)
-  ok('a short pad trigger fires at once and does not jump',
-    gun.pad.fired >= 1 && gun.pad.jumpsLeft === gun.pad.before, JSON.stringify(gun.pad));
+  ok('a short pad trigger jumps and does not fire',
+    gun.pad.fired === 0 && gun.pad.jumpsLeft < gun.pad.before && gun.pad.vy > 1, JSON.stringify(gun.pad));
 
   const touchBurst = await p.evaluate(async () => {
     const hd = window.__hd;
