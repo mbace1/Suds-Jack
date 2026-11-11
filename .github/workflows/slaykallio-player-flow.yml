@@ -6,7 +6,7 @@ on:
       - '.github/workflows/slaykallio-player-flow.yml'
 jobs:
   slaykallio:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04   # pinned: ubuntu-latest became 26.04, which the pinned Playwright cannot install chromium on
     # 10 minutes was enough while the player flow walked ONE fight. It now
     # walks a whole act on desktop and on touch — the map, an event, a rest,
     # the card picker and the fights between them — and the first CI run after

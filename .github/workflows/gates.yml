@@ -49,7 +49,7 @@ jobs:
   # every lane runs, so the worst case is exactly the behaviour this replaces.
   changes:
     name: what changed
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04   # pinned: ubuntu-latest became 26.04, which the pinned Playwright cannot install chromium on
     outputs:
       piritori: ${{ steps.lanes.outputs.piritori }}
       toko_move: ${{ steps.lanes.outputs.toko_move }}
@@ -114,7 +114,7 @@ jobs:
     name: flow-core · piritori
     needs: changes
     if: needs.changes.outputs.piritori == 'true'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04   # pinned: ubuntu-latest became 26.04, which the pinned Playwright cannot install chromium on
     steps:
       - uses: actions/checkout@v4
 
@@ -176,7 +176,7 @@ jobs:
     name: piritori · the Godot port
     needs: changes
     if: needs.changes.outputs.piritori == 'true'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04   # pinned: ubuntu-latest became 26.04, which the pinned Playwright cannot install chromium on
     steps:
       - uses: actions/checkout@v4
 
@@ -269,7 +269,7 @@ jobs:
     name: toko-move
     needs: changes
     if: needs.changes.outputs.toko_move == 'true'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04   # pinned: ubuntu-latest became 26.04, which the pinned Playwright cannot install chromium on
     steps:
       - uses: actions/checkout@v4
 
@@ -548,7 +548,7 @@ jobs:
     name: the arcade floor
     needs: changes
     if: needs.changes.outputs.hub == 'true'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04   # pinned: ubuntu-latest became 26.04, which the pinned Playwright cannot install chromium on
     steps:
       - uses: actions/checkout@v4
 
@@ -575,7 +575,7 @@ jobs:
     name: concrete skating slice
     needs: changes
     if: needs.changes.outputs.concrete == 'true'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04   # pinned: ubuntu-latest became 26.04, which the pinned Playwright cannot install chromium on
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -596,7 +596,7 @@ jobs:
     name: turf
     needs: changes
     if: needs.changes.outputs.turf == 'true'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04   # pinned: ubuntu-latest became 26.04, which the pinned Playwright cannot install chromium on
     steps:
       - uses: actions/checkout@v4
 
