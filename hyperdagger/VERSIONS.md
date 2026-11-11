@@ -43,7 +43,8 @@ What changed, and each is a design decision:
   EMBER keeps the key it had, so no best is lost; INCA starts clean, because
   what was in the shared key cannot be told apart.
 
-Measured, same bot, after: see the PR for the numbers reached.
+Measured, same bot, after: EMBER reaches 300.0 s (531 kills, the clock at its
+cap); INCA is still running as this is written and is past 228 s at the cap.
 
 Gates: `test/acts.mjs` (bare node, 24: the tables' shape, and that INCA's
 cadence alone can carry the clock) and `test/seasons.cjs` (browser: acts open

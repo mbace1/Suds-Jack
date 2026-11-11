@@ -23,7 +23,7 @@ import { MODES, modeById, nextModeId, applyAbilities, abilitiesOf } from './mode
 import { TruckTrack } from './truck.js?v=113';
 import { GazeLock } from './gaze.js?v=85';
 import { PhysGibs } from './gibs.js?v=85';
-import { SEASONS, seasonById, nextSeasonId, GEL_MOUND_SAMPLE } from './seasons.js?v=120';
+import { SEASONS, seasonById, nextSeasonId, GEL_MOUND_SAMPLE } from './seasons.js?v=121';
 import { Platforms } from './platforms.js?v=85';
 import { shaleGeometry, shaleMaterial } from './shale.js?v=85';
 import { GooWave } from './goo.js?v=85';
@@ -1922,6 +1922,7 @@ function showDeath(timedOut, complete = false) {
      ${pulseLine}
      ${recapParts().length ? `<p class="breakdown">${recapParts().join(' &middot; ')}</p>` : ''}
      ${runKindLive === 'daily' ? dailyLines
+    : clear ? ''   // v62: every clear is 300.0 s — the seal above carries what was new about this one
     : `<p>${best ? 'NEW BEST' : `best ${hiScore.toFixed(1)}s`}</p>`}
      ${historyLine ? `<p class="history">recent: ${historyLine}</p>` : ''}
      <button id="shareBtn" class="opt">COPY RUN</button>

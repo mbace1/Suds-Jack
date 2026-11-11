@@ -215,7 +215,7 @@ export const SEASONS = [
     blurb: 'jump the waves — skulls are support',
     card: { title: 'INCA', accent: '#2fbfa3',
       tag: 'A drowned temple at golden hour. The sea is the threat.',
-      rules: ['Jump the waves — a crest that hits you costs 10 seconds',
+      rules: ['Jump the waves — a clean jump buys 2 seconds, a hit costs 10',
         'Your clock drains — every kill buys time back',
         'The sea drains at 3:00 · survive to 5:00'] },
     // v48 (owner, 2026-09-21): "make season 2 just the wave that you need to
