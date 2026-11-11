@@ -1,5 +1,29 @@
 # Toko Move — versions
 
+## v3.28 — 2026-11-11
+
+**NOTHING STANDS STILL** — the owner: *"Animations?"* (and, on v3.17: *"a longer
+loop of travel, animations and choices"*). A pass with the art the repo holds;
+no picture was drawn or changed.
+
+- **What already moved**: the layered scenes (the tram's window scrolling,
+  the car and its riders swaying, the tram driving in and out of the stop,
+  the weather), the map's hops, the card's stamp, the euros rolling.
+- **What stood still, and moves now** (`play.js`):
+  - **The moments** (the owner's illustrations, one flat picture each) pushed
+    in for 2.4 s and then froze for as long as the card was read. They now
+    keep drifting in on the courier's face, slowly, and back.
+  - **A card's buttons** come in one after another instead of all at once.
+  - **The day's line** (v3.23) is drawn in under a yellow rule.
+  - **The end card's stars** land one at a time.
+  - **The title's picture** drifts behind the card.
+- All of it stops when the device asks for reduced motion.
+- **What needs art** (asked for in PR #633 §7): the courier walking, sitting
+  down and turning; the tram's doors; riders stepping on and off; the gull.
+  Code can move a picture; it cannot make a figure take a step.
+- `test/play.cjs`: each of the five runs its animation on a phone, the stars
+  still read as stars, and none of it runs with reduced motion asked for.
+
 ## v3.27 — 2026-11-11
 
 **THE PAD ON EVERY SCREEN** — the owner: *"Dualsense with ipad doesn't work."*

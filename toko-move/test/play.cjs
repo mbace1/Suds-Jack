@@ -118,7 +118,7 @@ server.listen(0, '127.0.0.1', async () => {
         runs: [...document.querySelectorAll('#mutRow .run[data-run]')].map(r => ({ id: r.dataset.run, open: !r.classList.contains('locked'), lit: r.classList.contains('on') })),
         goal: document.getElementById('titleGoal').textContent, play: document.getElementById('play').textContent,
         links: ['dailyLink', 'weekLink', 'liveLink'].filter(id => { const e = document.getElementById(id); return e && !e.hidden && getComputedStyle(e).display !== 'none'; }) }));
-      ok(`the bare address is the card journey, not the real-time game (v${t.v})`, !t.classic && t.v === '3.27' && /v3\.27/.test(t.hero));
+      ok(`the bare address is the card journey, not the real-time game (v${t.v})`, !t.classic && t.v === '3.28' && /v3\.28/.test(t.hero));
       ok(`it is Act 1, in Helsinki (${await page.evaluate(() => document.getElementById('titleWhen').textContent)})`, await page.evaluate(() => /^Act 1 · Helsinki · 07:00/.test(document.getElementById('titleWhen').textContent)));
       ok(`the ladder: EASY open and lit, three locked, and the long shift locked beside them (${t.runs.map(r => r.id + (r.open ? '' : '🔒')).join(' ')})`, t.runs.map(r => r.id).join() === 'easy,medium,hard,night,long' && t.runs[0].open && t.runs[0].lit && t.runs.slice(1).every(r => !r.open) && t.run === 'easy');
       ok(`the goal and the button (${t.goal} · ${t.play})`, /^Three deliveries before 08:15/.test(t.goal) && t.play === 'START SHIFT');
@@ -576,6 +576,27 @@ server.listen(0, '127.0.0.1', async () => {
       let later = ''; for (let i = 0; i < 12 && !later; i++) { const t = await look(page); if (t.end) break; later = await page.evaluate(() => /FESTIVAL|JUHLAVIIKOT/.test(document.querySelector('#v3panel .evAt')?.textContent || '') ? 'again' : ''); if (t.buttons.length && !t.busy) await page.tap('#v3panel .eventOpt[data-i="0"]').catch(() => {}); await page.waitForTimeout(300); }
       ok(`${lang}: and only the first`, !later);
       ok(`no page or network errors (the day, ${lang})`, !errs.length, errs.slice(0, 3).join(' | '));
+      await ctx.close();
+    }
+    // ── nothing stands still (v3.28): a moment keeps drifting after its push, a card's buttons come in
+    // one after another, the day's line is drawn in, the end card's stars land one at a time; and with
+    // reduced motion asked for, none of it runs
+    for (const calm of [false, true]) {
+      const ctx = await browser.newContext({ ...PHONE, reducedMotion: calm ? 'reduce' : 'no-preference' }), page = await ctx.newPage(), errs = watch(page);
+      await page.goto(`${base}/toko-move/?run=easy&seed=7`, { waitUntil: 'load' }); await ready(page);
+      const title = await page.evaluate(() => getComputedStyle(document.getElementById('title')).animationName);
+      await page.tap('#play'); await page.waitForSelector('#v3panel .eventOpt', { timeout: 15000 });
+      const first = await page.evaluate(() => ({ opts: [...document.querySelectorAll('#v3panel .eventOpt')].map(b => { const c = getComputedStyle(b); return [c.animationName, parseFloat(c.animationDelay)]; }), day: getComputedStyle(document.querySelector('#v3panel .evAt')).animationName }));
+      let moment = null;
+      const seen = await playOut(page, { maxSteps: 400, onCard: async () => { if (!moment) moment = await page.evaluate(() => document.getElementById('v3').classList.contains('moment') ? getComputedStyle(document.getElementById('v3frame')).animationName : null); } });
+      const stars = await page.evaluate(() => { const e = document.querySelector('.runStars'); return e ? { n: e.querySelectorAll('.st').length, text: e.textContent, anim: getComputedStyle(e.querySelector('.st')).animationName } : null; });
+      if (!calm) {
+        ok(`a moment keeps drifting in on the courier after its push (${moment})`, /v3push/.test(moment || '') && /v3breathe/.test(moment || ''));
+        ok(`a card's buttons come in one after another (${first.opts.map(o => o.join(' ')).join(' · ')})`, first.opts.length === 3 && first.opts.every(o => o[0] === 'v3opt') && first.opts[0][1] < first.opts[1][1] && first.opts[1][1] < first.opts[2][1]);
+        ok(`the day's line is drawn in (${first.day}), and the title's picture drifts (${title})`, first.day === 'v3day' && title === 'v3title');
+        ok(`the end card's stars land one at a time, and still read as stars (${stars?.text})`, seen.end && stars?.n === 3 && /^[★☆]{3}$/.test(stars.text) && stars.anim === 'v3star');
+      } else ok(`with reduced motion asked for, none of it runs (${[moment, first.opts[0]?.[0], first.day, title, stars?.anim].join(' ')})`, [moment, first.opts[0]?.[0], first.day, title, stars?.anim].every(a => a === 'none') && seen.end);
+      ok(`no page or network errors (motion${calm ? ', calm' : ''})`, !errs.length, errs.slice(0, 3).join(' | '));
       await ctx.close();
     }
     // ── cards made from modules (v3.22): the same seed without &written deals made
