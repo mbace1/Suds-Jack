@@ -115,7 +115,7 @@ Note, 18 Oct (HD-018, v58): there is no haul scoring any more, and the missiles 
 
 ### HD-023 — Three seasons, feature complete: a run can be finished, and finishing counts
 
-- status: In progress
+- status: Landed (#641, b765a555; live as gh-pages ca06ec17)
 - size: L
 - blocked-by: HD-022 (#640) — built on its branch
 - design: Mikael, 11 Nov 2026 — *"Plan and execute to ship 3 seasons feature complete. Act as Game design and art direction"*; ROADMAP "Feature Complete Ship"
@@ -143,7 +143,7 @@ Gate: `test/seasons.cjs` (acts open and are named, the roster arrives, a second 
 
 ### HD-022 — The look: particles, fluids and light, a different one per season
 
-- status: In progress
+- status: Landed (#640, 9e63e2c4; live as gh-pages ca06ec17)
 - size: L
 - blocked-by: —
 - design: Mikael, 10 Nov 2026 — *"Plan and execute the most visually impressive version of the game. Utilizing SDF and other systems that aren't that demanding but can be tweaked for impressive visuals. Including expert particle effects and fluids. Remember, seasons have slightly different styles and looks"*; `SEASONS.md` (a season is the arena's art); `ROADMAP.md` (the SDF track stays opt-in)
