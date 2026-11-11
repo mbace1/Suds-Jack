@@ -1,4 +1,4 @@
-# Toko Move — art request, after v3.18 (2026-11-08; the stop, the modules and the logo added 2026-11-09)
+# Toko Move — art request, after v3.18 (2026-11-08; the stop, the modules and the logo added 2026-11-09; the logo done, more modules 2026-11-11)
 
 The owner's direction on v3.17:
 
@@ -152,36 +152,32 @@ they want, a twist, three options. For those cards to show who they are about,
 the stop needs **people and things as cutouts**, in the stop's camera, standing
 where an actor stands today:
 
-- **People (20–30):** a man in a Marimekko scarf, a woman with a dog, a
+- **People (30 or more):** a man in a Marimekko scarf, a woman with a dog, a
   student in overalls, a pensioner with a trolley, a tourist with a backpack,
   a cyclist, a busker with a guitar, a child in a snowsuit, a kiosk worker,
   a hockey fan in a jersey, a commuter with coffee, a jogger, a mother with a
   pram, a delivery robot, a man carrying a ladder, a woman with a cello case,
   twins in matching coats, a chef on a break, a priest, a grandfather with a
-  grandson.
-- **Things (15–20), carried or set down:** a sofa, a spruce, a cello case, a
+  grandson. From v3.25 also: a sailor on shore leave, a woman in a moose
+  costume, a retired opera singer, a man walking three dachshunds, a climber
+  with a crash pad, a bride, a pizza courier, a teenager on a kick scooter, a
+  street sweeper, a postman, a nurse home from the night shift.
+- **Things (20 or so), carried or set down:** a sofa, a spruce, a cello case, a
   birthday cake, a mattress, a fishing rod, a bag of cinnamon buns, a cat
   carrier, a bike with a flat tyre, a wedding dress bag, a lost glove, a
-  shopping trolley, a stack of pizza boxes, a stroller, a rug.
+  shopping trolley, a stack of pizza boxes, a stroller, a rug; from v3.25 a
+  paper map, a drone, a crossword, an ice cream cooler.
 - One figure or thing per file, full frame, transparent, standing at the
   actor's mark; snow variants where clothes would change.
 
-## 6 · THE LOGO — priority 1
+## 6 · THE LOGO — done (2026-11-09)
 
-The owner, 2026-11-09: *"The toko Midori Games logo face part is good but the
-text is bad, use the original I have given you."*
-- The original lockup is not in the repository. Every branch was searched:
-  only the face masters (`toko/master/`) and banners set in a stock font
-  (`branding/toko-midori/`).
-- The game's lettering (`toko/js/wordmark.js`) was drawn by eye after the
-  face.
-
-**Asked for:** the original *Toko Midori Games* logotype, as the owner gave it.
-- The vector (SVG/PDF/AI) if it exists, else the largest PNG, on white and on
-  transparent.
-- It goes to `toko/master/`. Its outlines then replace the drawn ones in
-  `wordmark.js`, which every lockup, the sting, the trailer's title card and
-  the end card already draw from.
+The owner pointed to the original on their Drive (`logo_tokomidari.png`,
+2048 × 1024). It is in `toko/master/logo-original.png`, and its lettering is
+traced into `toko/js/wordmark.js` (99.2% overlap with the file): every lockup,
+the sting, the arcade header and the trailer's title card draw it. Nothing
+more is asked here; a vector of the same lockup would still be welcome, to
+replace the trace.
 
 ## Not asked for
 
