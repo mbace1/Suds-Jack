@@ -19,6 +19,20 @@
     Never `--no-verify`.
 -->
 
+## v147 — 2026-11-11
+**The core's deck is glass, and the machine is under it: a great rotor turning over a heart that beats**
+- WHY (owner, 2026-11-11, of the deep and the core): "Both need more". The deep was v146. The core was a grid of lit lines over dark tiles, with lamps: a floor with nothing behind it, in the last world of the game.
+- THE DECK IS GLASS. Each pixel's view is followed down through the pane to two depths (as into the sewer's chute, v145), so what is below slides against the grid as the camera moves, the way things at a depth do.
+- THE ROTOR, three metres down: rings of dark plate filling the shaft, each cut into segments and turning its own way round the middle of the floor, alternate rings against each other, the outer ones slower. Light comes up through the seams between them.
+- THE HEART, nine metres down, under the middle of the floor: a body of light with arcs standing off it. It beats, twice and a rest, every second and a quarter. The rotor is seen against it, its edges lit from below; through the eye at the rotor's middle you look straight down at it.
+- EACH BEAT GOES OUT THROUGH THE DECK: a ring of light running out along the grid's lines from the middle, across the floor in about two beats.
+- The vents, the lamps and the running packets of v140 are still on the deck, over the glass.
+- Looks only. Checked by render with the hero alone and in a fight, both orientations: the plates are dark under the fight and the seams are thin, so shots and gels read as before. test/view.mjs holds the machine's numbers (4 checks, 134 in all).
+- THE GATE: the full run passed 24 of its 25 browser scenarios and failed one, `world6` (new in v146), on "the goo check could not kill its gel": the river's current had carried the hero behind an island, where no shot reaches. That is the check's fault, not the game's (nothing in v147 touches the river): after a second with no kill the check now puts the hero down beside the gel in the open. Run three times more on the same game files, `world6` passed three times.
+- Cache tokens `?v=146` → `?v=147`; HUD label → `2.0 · v147`
+
+---
+
 ## v146 — 2026-11-11
 **The river's water is simulated too, and flows; its fish are of three kinds. The deep is under water: light from the surface, a ray's shadow going over, plankton lit where the water is stirred**
 - WHY (owner, 2026-11-11): of the river, "River looks ok, still should be much more realistic water and effects. Fish maybe too one note. I've seen crazy three.js demos online and we don't compare"; of the deep and the core, "Both need more". (The core is next.)

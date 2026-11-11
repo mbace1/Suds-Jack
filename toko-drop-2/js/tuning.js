@@ -7,10 +7,10 @@
 // things that work"). The arena is 1.x's, so every 1.x number ports as it is
 // instead of through a rescale. Axes: x across the screen (right +), y up,
 // z toward the bottom of the screen. The arena is centred on the origin.
-import { SPECIES } from './tuning/species/index.js?v=146';
-import WAVES from './tuning/waves.js?v=146';
-import PICKUPS from './tuning/pickups.js?v=146';
-import MUSIC from './tuning/music.js?v=146';
+import { SPECIES } from './tuning/species/index.js?v=147';
+import WAVES from './tuning/waves.js?v=147';
+import PICKUPS from './tuning/pickups.js?v=147';
+import MUSIC from './tuning/music.js?v=147';
 
 export const TUNING = {
   render: {
@@ -456,7 +456,19 @@ export const TUNING = {
               // the core's light `ventGlow` under them), `lamps` of them carry a status `lamp`; and `packet`s of light
               // run along the grid's lines — one every `every` tiles, `len` of that long, `speed` tiles a second, on
               // `lanes` of the lines
-              tiles: { vary: { vents: 0.16, slots: 7, ventGlow: 0.035, lamps: 0.14, lamp: [0.25, 0.85, 1.0],
+              tiles: { // v147 (owner: "Both need more"): the deck is GLASS over the machine (floor.js core `under`): a ROTOR `rotor` m down —
+                       // rings `ringW` m wide with `gap` between, cut into segments ~`seg` m long with `cut` between, turning
+                       // `turn` (alternate rings opposite ways; nothing within `hub` m), dark `metal`, its edges lit `edgeK`
+                       // from below; the HEART `heart` m down, `heartR` m round in `hot`, its halo `haloR` × that (`haloK`),
+                       // `arcs` standing off it (`arcK`, `arcSpeed`); it BEATS every `period` s — twice (`second` of the
+                       // period apart, `sharp`), `beatK` of its light on the beat — and each beat goes out along the grid's
+                       // lines at `waveSpeed` m/s (`waveLen` of a period long, `waveK` bright, gone by `waveReach` m). The
+                       // pane tints what is under it `glass` and keeps `pane` of its own sheen
+                       under: { rotor: 3.2, heart: 9, ringW: 3.1, gap: 0.05, seg: 5.5, cut: 0.035, turn: 0.5, hub: 1.5, metal: [0.012, 0.006, 0.02], edgeK: 0.9,
+                                heartR: 3.4, haloR: 5, haloK: 1.15, hot: [1.3, 0.75, 1.2], arcs: 7, arcK: 0.6, arcSpeed: 0.8,
+                                period: 1.25, second: 0.27, sharp: 90, beatK: 0.6, waveSpeed: 11, waveLen: 0.12, waveK: 1.6, waveReach: 22,
+                                glass: [0.9, 0.8, 1.0], pane: 0.3 },
+                       vary: { vents: 0.16, slots: 7, ventGlow: 0.035, lamps: 0.14, lamp: [0.25, 0.85, 1.0],
                                packet: { every: 5, len: 0.12, speed: 0.5, lanes: 0.45, color: [0.5, 0.95, 1.0], gain: 0.9 } },
                        cell: 2.2, line: 0.045, tile: [0.016, 0.012, 0.022], line_: [1.0, 0.18, 0.72], lineGlow: 0.55, glow: [1.0, 0.25, 0.7],
                        pads: [[-0.32, 0.18], [0.3, -0.22]], padR: 1.5, padGlow: 0.85, ringEvery: 2.2, ringSpeed: 0.45, reach: 9, washGlow: 1.2, washFloor: 0.035, halo: 0.06 } },

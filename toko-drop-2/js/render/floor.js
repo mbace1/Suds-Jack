@@ -24,11 +24,11 @@
 // `swirlAt`, out to `swirlR`, and opens a hole of `hole` m in the middle).
 import * as THREE from 'three/webgpu';
 import { Fn, If, uv, uniform, float, abs, fract, min, max, sin, cos, atan, length, smoothstep, step, mix, fwidth, texture, clamp, vec2, vec3, pow, floor as tfloor, round, select, mod, dFdx, dFdy, exp, normalize, dot, cameraPosition, positionWorld, vec4 } from 'three/tsl';
-import { pickStyle, grainAt } from './style.js?v=146';
-import { SUN_AT } from './sun.js?v=146';
-import { GEL_TIME } from './gel.js?v=146';
-import { noise, grate, cells, sewerSpots, treeShade } from './scenery.js?v=146';
-import { lilyPads, DRIFT, hash } from './kit.js?v=146';
+import { pickStyle, grainAt } from './style.js?v=147';
+import { SUN_AT } from './sun.js?v=147';
+import { GEL_TIME } from './gel.js?v=147';
+import { noise, grate, cells, sewerSpots, treeShade } from './scenery.js?v=147';
+import { lilyPads, DRIFT, hash } from './kit.js?v=147';
 
 const _white = new THREE.Color(0xffffff);
 // the floors whose set has a ground of its own under them: a room that is not a rectangle is CUT to its shape there
@@ -1162,6 +1162,40 @@ export function buildFloor(T, hx, hz, light, { style = 'grid', bounds: hasBounds
       const line = smoothstep(float(1 - Tl.line).sub(aa), float(1 - Tl.line).add(aa), ed);
       const sheen = float(1).sub(ed).mul(0.25).add(noise(tfloor(q).mul(1.7)).mul(0.25)).add(0.75);   // each tile a shade of its own, lighter in its middle
       let col = v3(Tl.tile).mul(sheen), wash = float(0), pad = float(0), lit = float(0);
+      // v147 (owner, 2026-11-11, of the deep and the core: "Both need more"): the deck is GLASS, and the machine is UNDER
+      // it. Each pixel's view is followed down through the pane (as into the sewer's chute, v145) to two depths, so
+      // what is below slides against the grid as the camera moves, the way things at a depth do. `rotor` m down, a
+      // great ROTOR fills the shaft: rings of plate, each cut into segments and turning its own way round the middle
+      // of the floor, dark against what is under them. `heart` m down, the HEART of the core: a body of light that
+      // BEATS — twice, and a rest — with arcs standing off it; it is what the rings are seen against, and what
+      // lights their edges. And each beat goes out through the deck: a ring of light along the grid's lines
+      const Un = Tl.under;
+      let beat = float(0), ringB = float(0);
+      if (Un) {
+        const V = normalize(cameraPosition.sub(positionWorld)), run = V.xz.div(max(V.y, 0.3)).negate();   // the ray's run for a metre of fall
+        const tb = fract(GEL_TIME.div(Un.period));
+        beat = exp(tb.mul(tb).mul(-Un.sharp)).add(exp(tb.sub(Un.second).mul(tb.sub(Un.second)).mul(-Un.sharp)).mul(0.7));
+        // the heart
+        const wh = w.add(run.mul(Un.heart)), rh = length(wh), ah = atan(wh.y, wh.x);
+        const arcs = smoothstep(0.55, 0.95, noise(vec2(ah.mul(Un.arcs), GEL_TIME.mul(Un.arcSpeed).add(rh.mul(0.25))))).mul(exp(rh.div(Un.heartR * 2.2).negate()));
+        const body = exp(rh.mul(rh).div(Un.heartR * Un.heartR).negate()), halo = exp(rh.div(Un.heartR * Un.haloR).negate());
+        const heart = v3(Un.hot).mul(body.mul(beat.mul(Un.beatK).add(1 - Un.beatK))).add(v3(Tl.glow).mul(halo.mul(Un.haloK).mul(beat.mul(0.5).add(0.5)).add(arcs.mul(Un.arcK))));
+        // the rotor, over it
+        const wr = w.add(run.mul(Un.rotor)), rr = length(wr), ar = atan(wr.y, wr.x), ri = tfloor(rr.div(Un.ringW)), rf = fract(rr.div(Un.ringW));
+        const rh1 = hash(vec2(ri, 3.7)), dir = select(fract(ri.mul(0.5)).greaterThan(0.25), float(1), float(-1));
+        const segs = tfloor(ri.add(0.5).mul(Un.ringW * 6.2832 / Un.seg)).max(3), sq = fract(ar.div(6.2832).add(GEL_TIME.mul(dir).mul(rh1.mul(0.6).add(0.5)).mul(Un.turn).div(ri.add(1))).mul(segs));
+        const raa = max(fwidth(rr.div(Un.ringW)), 1e-4), saa = max(fwidth(ar.div(6.2832).mul(segs)), 1e-4);
+        const plate = smoothstep(float(Un.gap).sub(raa), float(Un.gap).add(raa), min(rf, float(1).sub(rf))).mul(smoothstep(float(Un.cut).sub(saa), float(Un.cut).add(saa), min(sq, float(1).sub(sq))));
+        const rib = smoothstep(0.42, 0.5, abs(fract(sq.mul(3)).sub(0.5))).mul(0.35), edgeL = float(1).sub(smoothstep(0, 0.12, min(min(rf, float(1).sub(rf)).sub(Un.gap), min(sq, float(1).sub(sq)).sub(Un.cut).mul(4)))).mul(plate);
+        const lightUp = exp(rr.div(Un.heartR * Un.haloR * 1.3).negate()).mul(beat.mul(0.6).add(0.4));
+        const metal = v3(Un.metal).mul(float(1).sub(rib)).add(v3(Tl.glow).mul(edgeL.mul(lightUp).mul(Un.edgeK)));
+        const under = mix(heart, metal, plate.mul(step(Un.hub, rr)));
+        // through the glass: the pane takes its tint and keeps a little of its own sheen
+        col = under.mul(v3(Un.glass)).add(col.mul(Un.pane));
+        // the beat going out along the lines
+        const rw = length(w), ph = fract(GEL_TIME.div(Un.period).sub(rw.div(Un.waveSpeed * Un.period)));
+        ringB = smoothstep(1 - Un.waveLen, 1, ph).mul(exp(rw.div(Un.waveReach).negate()));
+      }
       for (const P of Tl.pads) {
         const d = length(w.sub(vec2(P[0] * hx, P[1] * hz))), daa = max(fwidth(d), 1e-4);
         const disc = float(1).sub(smoothstep(float(Tl.padR).sub(daa), float(Tl.padR).add(daa), d));
@@ -1188,7 +1222,7 @@ export function buildFloor(T, hx, hz, light, { style = 'grid', bounds: hasBounds
         packet = smoothstep(1 - Pk.len, 1, ph).mul(line).mul(step(1 - Pk.lanes, lh));
         col = col.add(v3(Pk.color).mul(packet.mul(Pk.gain)));
       }
-      col = col.add(v3(Tl.line_).mul(line.mul(float(Tl.lineGlow).add(wash.mul(Tl.washGlow)).add(lit.mul(0.5))))).add(v3(Tl.glow).mul(wash.mul(Tl.washFloor)));
+      col = col.add(v3(Tl.line_).mul(line.mul(float(Tl.lineGlow).add(wash.mul(Tl.washGlow)).add(lit.mul(0.5)).add(ringB.mul(Un?.waveK ?? 0))))).add(v3(Tl.glow).mul(wash.mul(Tl.washFloor)));
       col = mix(col, v3(Tl.glow).mul(Tl.padGlow), pad.min(1));
       return { col, mask: line.add(pad), lineCol: v3(Tl.line_) };
     }
