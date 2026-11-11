@@ -91,7 +91,10 @@ export const SEASONS = [
       rules: ['Your clock drains — every kill buys time back',
         'A touch costs 10 seconds, not the run',
         'The rockfall comes at 3:00 · survive to 5:00'] },
-    sky: { void: [0.0015, 0.0015, 0.0015], horizon: [0.30, 0.02, 0.02], band: 4.8, stars: 0.22 },
+    sky: { void: [0.0015, 0.0015, 0.0015], horizon: [0.30, 0.02, 0.02], band: 4.8, stars: 0.22,
+      air: { kind: 'smoke', amt: 1, a: [0.55, 0.09, 0.025], b: [0.016, 0.006, 0.006] } },   // v63: smoke lit from below
+    // v63: how the world lights a body — the key's direction, and the rim it leaves on faces turned from the eye
+    light: { key: [-0.35, 0.3, 0.6], rim: [0.42, 0.05, 0.015], k: 1 },
     floor: { tint: [1, 1, 1], glow: 0.9 },
     // The owner's Meshy monuments were made for THIS season. The asset rig's
     // white light never reaches a piece at z −40, so they rendered as black
@@ -249,7 +252,9 @@ export const SEASONS = [
     sky: { void: [0.01, 0.06, 0.07], horizon: [0.30, 0.16, 0.04], band: 3.0, stars: 0,
       haze: 0, sun: 1.0, sunDir: [0.0, 0.1, -1],
       zenith: [0.006, 0.055, 0.068], glow: [0.95, 0.52, 0.13],
-      sunCol: [1.7, 1.0, 0.38], sunSize: 0.085, rings: 0.8 },
+      sunCol: [1.7, 1.0, 0.38], sunSize: 0.085, rings: 0.8,
+      air: { kind: 'rays', amt: 1, a: [1.0, 0.74, 0.34], b: [0.07, 0.13, 0.13] } },   // v63: the sun's shafts, cloud bars gilded on its side
+    light: { key: [0.0, 0.22, -1], rim: [0.85, 0.52, 0.16], k: 1 },   // v63: backlit by the sun, gold on the edges
     // the grid on dark water: the texture's grain pressed down to a quarter,
     // the lines kept; caustics under it; and the sun's path on top
     floor: { tint: [0.22, 0.85, 0.72], glow: 3.0, caustic: 0.4, grain: 0.45, glint: 1.0 },
@@ -430,7 +435,9 @@ export const SEASONS = [
         'No gun: hold your look on a skull and missiles fly',
         'The pile-up comes at 3:00 · survive to 5:00'] },
     sky: { void: [0.0015, 0.0015, 0.0022], horizon: [0.36, 0.13, 0.03], band: 4.2, stars: 0.3,
-      sun: 0.55, haze: 0.05, sunDir: [0.0, 0.05, -1] },   // a low sun dead ahead: you are driving into it
+      sun: 0.55, haze: 0.05, sunDir: [0.0, 0.05, -1],   // a low sun dead ahead: you are driving into it
+      air: { kind: 'dusk', amt: 1, a: [1.0, 0.40, 0.09], b: [0.045, 0.028, 0.065] } },   // v63: stratus across the sun, heat off the road
+    light: { key: [0.0, 0.16, -1], rim: [0.9, 0.36, 0.08], k: 1 },   // v63: the low sun ahead, orange on the edges
     floor: { tint: [1, 1, 1], glow: 0.9 },   // the disc is hidden on the track
     backdrop: { visible: false, emissive: 0 },
     fog: { color: [0.022, 0.011, 0.006], near: 18, far: 72 },

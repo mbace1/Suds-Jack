@@ -595,6 +595,68 @@ export function shadedBox(size) {
   g.setAttribute('faceShade', new THREE.BufferAttribute(a, 1));
   return g;
 }
+/**
+ * v63 (HD-024) THE WORLD LIGHTS THE BODIES. Every cube was shaded by one
+ * fixed light in its OWN space, so a skull between you and INCA's sun was lit
+ * exactly like one behind you, and a kill that lit the floor left the swarm
+ * beside it untouched. Three terms, all stepped, all in the shared shader:
+ * the season's key (a modulation, so the palette holds), a rim on the faces
+ * turned from the eye toward that key, and the look's four event lights —
+ * the SAME uniforms the floor reads (main.js points uWLit/uWLitCol at them).
+ * The normal comes from the surface itself (screen-space derivatives), so the
+ * smooth hull, which carries no normals, is lit by the same code. uWK 0 is
+ * the body exactly as it was.
+ */
+export const WORLD_LIGHT = {
+  uWK: { value: 0 },
+  uWKey: { value: new THREE.Vector3(-0.4, 0.8, 0.45).normalize() },
+  uWRim: { value: new THREE.Color(0, 0, 0) },
+  uWLit: { value: [new THREE.Vector4(), new THREE.Vector4(), new THREE.Vector4(), new THREE.Vector4()] },
+  uWLitCol: { value: [new THREE.Color(), new THREE.Color(), new THREE.Color(), new THREE.Color()] },
+};
+const WL_VERT_DECL = 'varying vec3 vWLP;\nvarying vec3 vWLC;\n';
+const WL_VERT_BODY = /* glsl */`
+  { vec4 wlp = vec4(transformed, 1.0);
+    #ifdef USE_INSTANCING
+      wlp = instanceMatrix * wlp;
+    #endif
+    vWLP = (modelMatrix * wlp).xyz; vWLC = modelMatrix[3].xyz; }
+`;
+const WL_FRAG_DECL = 'uniform float uWK;\nuniform vec3 uWKey;\nuniform vec3 uWRim;\nuniform vec4 uWLit[4];\nuniform vec3 uWLitCol[4];\nvarying vec3 vWLP;\nvarying vec3 vWLC;\n';
+const WL_FRAG_BODY = /* glsl */`
+  if (uWK > 0.0) {
+    vec3 wn = normalize(cross(dFdx(vWLP), dFdy(vWLP)));
+    vec3 wv = normalize(cameraPosition - vWLP);
+    if (dot(wn, wv) < 0.0) wn = -wn;
+    float wkey = floor(clamp(dot(wn, uWKey) * 0.5 + 0.5, 0.0, 1.0) * 3.0 + 0.5) / 3.0;
+    diffuseColor.rgb *= mix(1.0, 0.68 + 0.6 * wkey, uWK);
+    // the rim follows the BODY's roundness (out from its centre), not each
+    // cube's face: per face it speckled every body like a rash. It fades
+    // out near the eye, so the hand you hold is not edged.
+    vec3 wb = normalize(vWLP - vWLC + wn * 0.001);
+    float wrim = step(0.58, 1.0 - max(dot(wb, wv), 0.0)) * step(-0.25, dot(wb, uWKey));
+    diffuseColor.rgb += uWRim * wrim * uWK * smoothstep(1.6, 4.0, distance(cameraPosition, vWLP));
+    for (int i = 0; i < 4; i++) {
+      vec3 wl = vec3(uWLit[i].x, 1.2, uWLit[i].y) - vWLP;
+      float wa = max(0.0, 1.0 - length(wl) / max(uWLit[i].z * 1.3, 0.01));
+      diffuseColor.rgb += uWLitCol[i] * (wa * wa * uWLit[i].w * (0.35 + 0.65 * max(dot(wn, normalize(wl)), 0.0)) * 0.6 * uWK);
+    }
+  }
+`;
+/** The same light for a material that has no face tone (the smooth hull). */
+export function applyWorldLight(material) {
+  material.onBeforeCompile = shader => {
+    Object.assign(shader.uniforms, WORLD_LIGHT);
+    shader.vertexShader = shader.vertexShader
+      .replace('#include <common>', '#include <common>\n' + WL_VERT_DECL)
+      .replace('#include <begin_vertex>', '#include <begin_vertex>\n' + WL_VERT_BODY);
+    shader.fragmentShader = shader.fragmentShader
+      .replace('#include <common>', '#include <common>\n' + WL_FRAG_DECL)
+      .replace('#include <color_fragment>', '#include <color_fragment>\n' + WL_FRAG_BODY);
+  };
+  material.customProgramCacheKey = () => 'world-lit';
+  return material;
+}
 const _faceMats = new Set();
 /** Teach a MeshBasicMaterial the face tone. Callers with their own vertex
  *  work pass extra declarations, an extra body (after begin_vertex) and the
@@ -603,14 +665,14 @@ export function applyFaceShade(material, decls = '', body = '', uniforms = null)
   const u = { uFaceK: { value: STYLE.faceShade ? 1 : 0 } };
   material.userData.faceK = u.uFaceK;
   material.onBeforeCompile = shader => {
-    Object.assign(shader.uniforms, u, uniforms || {});
+    Object.assign(shader.uniforms, u, uniforms || {}, WORLD_LIGHT);
     shader.vertexShader = shader.vertexShader
       .replace('#include <common>',
-        '#include <common>\nattribute float faceShade;\nvarying float vFaceShade;\n' + decls)
-      .replace('#include <begin_vertex>', '#include <begin_vertex>\nvFaceShade = faceShade;\n' + body);
+        '#include <common>\nattribute float faceShade;\nvarying float vFaceShade;\n' + WL_VERT_DECL + decls)
+      .replace('#include <begin_vertex>', '#include <begin_vertex>\nvFaceShade = faceShade;\n' + body + WL_VERT_BODY);
     shader.fragmentShader = shader.fragmentShader
-      .replace('#include <common>', '#include <common>\nuniform float uFaceK;\nvarying float vFaceShade;')
-      .replace('#include <color_fragment>', '#include <color_fragment>\ndiffuseColor.rgb *= mix(1.0, vFaceShade, uFaceK);');
+      .replace('#include <common>', '#include <common>\nuniform float uFaceK;\nvarying float vFaceShade;\n' + WL_FRAG_DECL)
+      .replace('#include <color_fragment>', '#include <color_fragment>\ndiffuseColor.rgb *= mix(1.0, vFaceShade, uFaceK);\n' + WL_FRAG_BODY);
   };
   _faceMats.add(material);
   return u;
@@ -805,7 +867,7 @@ export class VoxelSprite {
     const want = !!on && !this.def.noHull;
     if (want === !!this.hull) return;
     if (want) {
-      this.hullMat = new THREE.MeshBasicMaterial({ vertexColors: true });
+      this.hullMat = applyWorldLight(new THREE.MeshBasicMaterial({ vertexColors: true }));
       this.hull = new THREE.Mesh(new THREE.BufferGeometry(), this.hullMat);
       this.hull.frustumCulled = false;
       this.mesh.add(this.hull);

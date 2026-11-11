@@ -10,7 +10,7 @@ import { InputManager } from './input.js?v=111';
 import { Player } from './player.js?v=85';
 import { DaggerPool } from './daggers.js?v=85';
 import { GemPool } from './gems.js?v=85';
-import { DebrisPool, LitterField, VoxelSprite, MODELS, setVoxelDetail, getVoxelDetail, setStyleHue, styleTint, setHullMode, getHullMode, voxelOverrides, modelFor, getVoxelStyle, setVoxelStyle, setRosterPalette } from './voxel.js?v=85';
+import { DebrisPool, LitterField, VoxelSprite, MODELS, setVoxelDetail, getVoxelDetail, setStyleHue, styleTint, setHullMode, getHullMode, voxelOverrides, modelFor, getVoxelStyle, setVoxelStyle, setRosterPalette, WORLD_LIGHT } from './voxel.js?v=85';
 import { Skull, Wraith, Splitter, MiniSkull, DreadSkull, Husk, Revenant, Brute, Totem, Serpent, Spider, Leviathan, Watcher, Blinker, Egg } from './enemy.js?v=113';
 import { OrbPool } from './bullets.js?v=85';
 import { AudioKit } from './audio.js?v=85';
@@ -674,6 +674,14 @@ const skyMat = new THREE.ShaderMaterial({
     uSunCol: { value: new THREE.Color(1.0, 0.98, 0.9) },
     uSunSize: { value: 0 },
     uSunRings: { value: 0 },
+    // v63 (HD-024) THE AIR: the sky is the largest thing in every frame and
+    // was the least drawn. A season declares what hangs in it — smoke lit
+    // from below (1), the sun's rays and gilded cloud bars (2), dusk stratus
+    // crossing a low sun, with heat shimmer (3). uAir 0 is the sky as it was.
+    uAir: { value: 0 },
+    uAirKind: { value: 0 },
+    uAirA: { value: new THREE.Color(1, 1, 1) },
+    uAirB: { value: new THREE.Color(0, 0, 0) },
   },
   vertexShader: /* glsl */`
     varying vec3 vPos;
@@ -698,7 +706,17 @@ const skyMat = new THREE.ShaderMaterial({
     uniform vec3 uSunCol;
     uniform float uSunSize;
     uniform float uSunRings;
+    uniform float uAir;
+    uniform float uAirKind;
+    uniform vec3 uAirA;
+    uniform vec3 uAirB;
     float hash3(vec3 p) { p = fract(p * 0.3183099 + vec3(0.1, 0.2, 0.3)); p *= 17.0; return fract(p.x * p.y * p.z * (p.x + p.y + p.z)); }
+    float vn(vec3 p) {
+      vec3 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f);
+      return mix(mix(mix(hash3(i), hash3(i + vec3(1, 0, 0)), f.x), mix(hash3(i + vec3(0, 1, 0)), hash3(i + vec3(1, 1, 0)), f.x), f.y),
+                 mix(mix(hash3(i + vec3(0, 0, 1)), hash3(i + vec3(1, 0, 1)), f.x), mix(hash3(i + vec3(0, 1, 1)), hash3(i + vec3(1, 1, 1)), f.x), f.y), f.z);
+    }
+    float fbm(vec3 p) { return vn(p) * 0.55 + vn(p * 2.1 + 3.1) * 0.3 + vn(p * 4.3 + 7.7) * 0.15; }
     void main() {
       vec3 d = normalize(vPos);
       float h = d.y;
@@ -745,6 +763,40 @@ const skyMat = new THREE.ShaderMaterial({
         // handful, so the threshold is a quarter of the cells it was
         float star = step(0.99915, s) * (0.45 + 0.55 * hash3(g + 1.7));
         col += vec3(star * uStars * smoothstep(0.02, 0.25, h));
+      }
+      if (uAir > 0.0) {
+        float sd = max(dot(d, uSunDir), 0.0);
+        if (uAirKind < 1.5) {
+          // SMOKE: masses stretched along the horizon, climbing; what reads
+          // is the underside, lit by the fire below. Whole steps, no blur.
+          float k = 1.0 / (abs(h) + 0.22);
+          float n = fbm(vec3(d.x * k * 1.3 + uTime * 0.012, h * 5.0 - uTime * 0.02, d.z * k * 1.3));
+          float band = smoothstep(0.0, 0.06, h) * (1.0 - smoothstep(0.3, 0.8, h));
+          float s = floor(smoothstep(0.4, 0.74, n) * band * 4.0 + 0.5) / 4.0;
+          col = mix(col, uAirB, s * 0.9 * uAir);
+          col += uAirA * s * (1.0 - smoothstep(0.0, 0.34, h)) * (0.5 + uEmber * 0.7) * uAir;
+        } else if (uAirKind < 2.5) {
+          // RAYS: shafts round the sun (seamless: the angle goes in as a
+          // circle), and low cloud bars gilded on the sun's side
+          vec3 up = normalize(cross(uSunDir, vec3(0.0, 1.0, 0.001))), rt = cross(uSunDir, up);
+          vec2 c = normalize(vec2(dot(d, rt), dot(d, up)) + 1e-5);
+          float ang = acos(clamp(dot(d, uSunDir), -1.0, 1.0));
+          float ray = vn(vec3(c * 3.2, uTime * 0.03)) * 0.6 + vn(vec3(c * 8.5 + 4.0, uTime * 0.05)) * 0.4;
+          ray = floor(smoothstep(0.46, 0.78, ray) * 3.0 + 0.5) / 3.0;
+          col += uAirA * ray * smoothstep(1.25, 0.12, ang) * smoothstep(-0.04, 0.08, h) * 0.34 * uAir;
+          float k = 1.0 / (h + 0.3);
+          float cb = fbm(vec3(d.x * k * 2.0 + uTime * 0.006, h * 15.0, d.z * k * 2.0));
+          float bars = step(0.6, cb) * smoothstep(0.02, 0.08, h) * (1.0 - smoothstep(0.16, 0.42, h));
+          col = mix(col, mix(uAirB, uAirA, pow(sd, 3.0)), bars * 0.72 * uAir);
+        } else {
+          // DUSK: stratus in bars across a low sun, and the road's heat
+          // bending the bottom of the sky
+          float hh = h + sin(d.x * 46.0 + uTime * 3.0) * 0.004 * smoothstep(0.14, 0.0, abs(h));
+          float n = fbm(vec3(d.x * 1.1 + uTime * 0.005, hh * 24.0, d.z * 1.1));
+          float b = step(0.55, n) * smoothstep(0.0, 0.04, hh) * (1.0 - smoothstep(0.2, 0.5, hh));
+          col = mix(col, mix(uAirB, uAirA, pow(sd, 4.0)), b * 0.8 * uAir);
+          col += uAirA * pow(sd, 6.0) * smoothstep(0.3, 0.0, abs(h)) * 0.22 * uAir;
+        }
       }
       gl_FragColor = vec4(col, 1.0);
     }`,
@@ -897,6 +949,8 @@ function updateShadows() {
 // v61 (HD-022): THE LOOK — particles (and, from fx-fluid.js, the floor) fed
 // by the events below. The season declares it (`fx` in seasons.js); VOID has
 // none and stays the control. opts.fx is the pause menu's switch.
+// v63: the bodies read the same four event lights the floor does
+WORLD_LIGHT.uWLit.value = floorMat.uniforms.uLit.value; WORLD_LIGHT.uWLitCol.value = floorMat.uniforms.uLitCol.value;
 const look = new Look(scene, ARENA_R);
 look.bindFloor(floorMat.uniforms);   // the walls are a clone made earlier: no liquid on them
 
@@ -1331,6 +1385,17 @@ function S() { return seasonById(season); }
  *  and the hand. Called at boot, when the menu cycles it, and by
  *  debug.setSeason. The ROCK and the SLABS are built per run by
  *  buildSeasonArena, off the run's own rng. */
+/** v63: the air is drawn when the season has one, EFFECTS are on and the
+ *  machine is not on its lowest tier — the same switches as the rest of the look. */
+function applyAir() {
+  const a = S().sky.air;
+  const on = opts.fx !== false && perfTier < PERF_TIERS.length - 1;
+  skyMat.uniforms.uAir.value = a && on ? (a.amt ?? 1) : 0;
+  // and the same switches for the world's light on the bodies
+  const wl = S().light;
+  WORLD_LIGHT.uWK.value = wl && on ? (wl.k ?? 1) : 0;
+  if (wl) { WORLD_LIGHT.uWKey.value.set(...wl.key).normalize(); WORLD_LIGHT.uWRim.value.setRGB(...wl.rim); }
+}
 function applySeason() {
   const sn = S();
   setSdfLighting(sn.sky.sunDir || [-.5,.8,1], sn.sky.horizon || [.8,.08,.02]);
@@ -1359,6 +1424,11 @@ function applySeason() {
   skyMat.uniforms.uSunCol.value.setRGB(...(sk.sunCol ?? [1.0, 0.98, 0.9]));
   skyMat.uniforms.uSunSize.value = sk.sunSize ?? 0;
   skyMat.uniforms.uSunRings.value = sk.rings ?? 0;
+  // v63: what hangs in the season's sky
+  skyMat.uniforms.uAirKind.value = ({ smoke: 1, rays: 2, dusk: 3 })[sk.air?.kind] ?? 0;
+  skyMat.uniforms.uAirA.value.setRGB(...(sk.air?.a ?? [1, 1, 1]));
+  skyMat.uniforms.uAirB.value.setRGB(...(sk.air?.b ?? [0, 0, 0]));
+  applyAir();
   floorMat.uniforms.uGlint.value = sn.floor.glint ?? 0;
   floorMat.uniforms.uGlintCol.value.setRGB(...(sk.sunCol ?? [1, 0.8, 0.4]));
   if (sk.sunDir) floorMat.uniforms.uSunDirF.value.set(...sk.sunDir).normalize();
@@ -2312,6 +2382,7 @@ function applyOpts() {
   // the floor tier) and the pause menu can switch it off whole
   look.setTier(perfTier);
   look.setOn(opts.fx !== false);
+  applyAir();   // v63
   look.setCalm(!opts.motion);   // MOTION REDUCED: no flashes, no floor lights
   dust.visible = !(look.active && S().fx?.ambient);
   debris.softCap = tier.debrisCap;
@@ -4451,6 +4522,7 @@ window.__hd = {
     truckObj() { return truck.active ?? truck; },   // v51: the convoy (or the classic road), for the gate
     triggerFinale() { startFinale(); return !!finale; },   // v53
     getGoal() { return { goal: goalLine(), clock: clockLine(), shown: elGoal.classList.contains('show'), ms: GOAL_MS }; },   // HD-010
+    getSky() { const u = skyMat.uniforms; return { bodyLight: WORLD_LIGHT.uWK.value, bodyRim: WORLD_LIGHT.uWRim.value.toArray(), air: u.uAir.value, kind: u.uAirKind.value, a: u.uAirA.value.toArray(), b: u.uAirB.value.toArray(), declared: S().sky.air ?? null }; },   // v63
     getActs() { const w = currentWave(); return { idx: waveIdx, name: w?.name ?? null, kind: w?.kind ?? null, density: actDensity(), opened: actsOpened, crests: crestsCleared, armed: crestArmed, clears: readClears(), hiKey: hiKey(), lastStand: lastStandSaid, mixed: runMixed, struck: crestStruck, crest: goo.cfg ? { h: +goo.heightAt(player.feet.x, player.feet.z).toFixed(3), s: +goo._s(player.feet.x, player.feet.z).toFixed(2), speed: goo.speed, width: goo.cfg.width, hurtFrom: goo.cfg.hurtFrom ?? 0.35 } : null, skullMul: truck.active?.cfg?.skullMul ?? null, nextPulseAt, nextSkullAt }; },   // v62
     getRun() { return { ebbN, ebbSteps, rubbleStands: +rubbleStands.toFixed(2), complete: runComplete, end: S().end ?? null, state, recap: recapParts() }; },   // v54
     completeRun() { completeRun(); return runComplete; },
