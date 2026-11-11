@@ -284,7 +284,9 @@ export class InputManager {
     if (rightNow && !this._padPrev.right) this._ui.right = true;
     // v64: a held direction repeats (a long list one press at a time is a
     // chore): after 380 ms, every 110 ms
-    const dirNow = upNow ? 'up' : downNow ? 'down' : leftNow ? 'left' : rightNow ? 'right' : null;
+    // the D-PAD only: a stick still leaning from the run must not walk a menu
+    // that opened under it (menu-focus.cjs holds exactly that)
+    const dirNow = btn(12) ? 'up' : btn(13) ? 'down' : btn(14) ? 'left' : btn(15) ? 'right' : null;
     const nowMs = performance.now();
     // (and at least 12 polls: on a machine drawing four frames a second, 380 ms
     // is two frames, and one press must not become three)
