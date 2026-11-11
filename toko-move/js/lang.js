@@ -56,6 +56,10 @@ export const FI = new Map(Object.entries({
   'Three deliveries before 00:15. Drops on the way are extra.': 'Kolme toimitusta ennen kello 0.15. Matkan varrelta saa lisää.',
   // v2.73: the ladder (runs.js)
   'RUNS': 'TASOT', 'EASY': 'HELPPO', 'MEDIUM': 'KESKITASO', 'HARD': 'VAIKEA',
+  // the long shift (v3.26)
+  'THE LONG SHIFT': 'PITKÄ VUORO', '∞ LONG': '∞ PITKÄ', 'Until you drop': 'Kunnes uuvut', 'no end': 'ei loppua', 'THE LONG SHIFT AGAIN': 'PITKÄ VUORO UUDELLEEN',
+  'Jobs keep coming. Every clock a little shorter than the last. Three late drops and it is over.': 'Keikkoja tulee koko ajan. Jokainen kello hieman edellistä lyhyempi. Kolme myöhästymistä ja se on ohi.',
+  'the clock ended it': 'kello päätti sen', 'three late drops ended it': 'kolme myöhästymistä päätti sen', "Ten o'clock. The shift is over.": 'Kello on kymmenen. Vuoro on ohi.',
   'First shift': 'Ensimmäinen vuoro', 'A morning': 'Aamu', 'Rush hour, one line down': 'Ruuhka-aika, yksi linja poikki', 'Last service': 'Viimeinen vuoro',
   'Three plain parcels, a generous clock, a quiet city.': 'Kolme tavallista pakettia, väljä aikataulu, hiljainen kaupunki.',
   'Four jobs, every kind of parcel, the morning rush, and the city happening to you.': 'Neljä keikkaa, kaikenlaisia paketteja, aamuruuhka ja kaupunki, joka tapahtuu sinulle.',
@@ -834,7 +838,11 @@ const PATTERNS = [
   [/^your build: (.+)$/, (m, a) => `kokoonpanosi: ${a.split(' · ').map(x => FI.get(x) || x).join(' · ')}`],
   [/^Mission · (.+) · (\d\d:\d\d)$/, (m, a, t) => `Tehtävä · ${FI.get(a) || a} · ${t}`],
   [/^(EASY|MEDIUM|HARD|NIGHT) COMPLETE$/, (m, a) => `${FI.get(a)} SUORITETTU`],
-  [/^(EASY|MEDIUM|HARD|NIGHT) IS OPEN$/, (m, a) => `${FI.get(a)} ON AUKI`],
+  [/^(EASY|MEDIUM|HARD|NIGHT|THE LONG SHIFT) IS OPEN$/, (m, a) => `${FI.get(a)} ON AUKI`],
+  [/^Job (\d+) done\. Pick one for the rest of the shift\.$/, 'Keikka $1 tehty. Valitse yksi loppuvuoron ajaksi.'],
+  [/^Jobs keep coming until (\d\d):(\d\d), each clock a little shorter than the last\. (Two|Three) late drops and it is over; between jobs, pick a perk\. Stars at ([\d, ]+) jobs\.$/,
+    (m, h, mm, k, st) => `Keikkoja tulee kello ${+h}.${mm} asti, jokainen kello hieman edellistä lyhyempi. ${({ Two: 'Kaksi', Three: 'Kolme' })[k]} myöhästymistä ja se on ohi; keikkojen välissä valitse etu. Tähdet ${st} keikasta.`],
+  [/^(\d+) jobs$/, '$1 keikkaa'], [/^(\d+) JOBS$/, '$1 KEIKKAA'], [/^best (\d+) jobs$/, 'ennätys $1 keikkaa'], [/^best (\d+)$/, 'ennätys $1'], [/^(\d+) for the next star$/, '$1 seuraavaan tähteen'],
   [/^(AINO'S MORNING|LOST AND FOUND|EAST OF THE BRIDGE|THE HARBOUR ROUND|THE STICKER|THE LAST TRAM) IS OPEN$/, (m, a) => `${FI.get(a)} ON AUKI`],
   [/^NEXT · (AINO'S MORNING|LOST AND FOUND|EAST OF THE BRIDGE|THE HARBOUR ROUND|THE STICKER|THE LAST TRAM)$/, (m, a) => `SEURAAVA · ${FI.get(a)}`],
   [/^A NEW PERK: (.+)$/, (m, a) => `UUSI ETU: ${a}`],

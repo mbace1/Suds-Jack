@@ -1,5 +1,77 @@
 # Toko Move — versions
 
+## v3.27 — 2026-11-11
+
+**THE PAD ON EVERY SCREEN** — the owner: *"Dualsense with ipad doesn't work."*
+
+- **What was wrong.** The pad reached Toko Move only through its cards: the
+  arcade's bridge (`hub/padkeys.js`) turns a pad's buttons into keys, and
+  only a card listened to them (v3.20). START SHIFT, the run list, the end
+  card and the map answered a tap or a click and nothing else, so with only
+  a controller the game could not even be started. On an iPad, a controller
+  is often the only thing in your hands.
+- **Now** (`play.js`):
+  - **The title and the end card**: the d-pad (the bridge's arrow keys,
+    `hub/games.js`) walks the screen's buttons and links, lit in yellow;
+    cross presses the lit one, or the screen's main button when nothing is
+    lit (START SHIFT; NEXT, else AGAIN). A touch puts the light out.
+  - **A card**: cross, circle, square are its three buttons as before, and
+    each button now wears its pad button while a pad is connected (✕ ○ □ on
+    a DualSense, A B X on another pad).
+  - **The map**: any face button closes it.
+  - Triangle still hurries what is playing; holding Options (Start) still
+    goes back to the arcade.
+- **Tested without the hardware**: `test/pad.cjs` (new) gives the page a
+  DualSense through the browser's own Gamepad API and plays from the title
+  to the end card with nothing else: the d-pad lighting the title, cross as
+  START SHIFT, ✕ ○ □ on the cards, a whole shift answered, the map closed
+  from the pad, cross on the end card going to NEXT. A real iPad and
+  DualSense were not available here.
+- **A phone held sideways** keeps START on screen. The title card scrolls
+  inside on a short screen, and a returning player's card (the missions' map,
+  the day's errand, the missions) had START 6 px under the edge, before the
+  long shift as well as after it. On a short screen START now comes straight
+  under the title, with the runs and the missions below it; the run row is
+  five names wide, and the long shift shows there as *∞ LONG*.
+- `test/play.cjs`: the ladder check knows the long shift sits locked beside
+  the four runs on a first visit (v3.26), and the sideways check now covers
+  a returning player's title too.
+
+## v3.26 — 2026-11-11
+
+**THE LONG SHIFT** — the owner's *"the game actually becomes like a roguelike,
+and no strict missions are needed"*, as a run: one that does not end until
+you do.
+
+- **An endless run** (`runs.js` `LONG`), beside the ladder rather than on it:
+  it opens once EASY is done (finishing EASY now says *MEDIUM IS OPEN* and
+  *THE LONG SHIFT IS OPEN*), and the ladder is the four runs it was.
+  - Jobs keep coming until three late drops or ten o'clock end it (a
+    three-hour shift, 07:00–10:00, `shiftMin`).
+  - Every job's clock is 6% shorter than the last (`ramp`): about 1.5× the
+    best route on the first jobs, 0.9× from the ninth.
+  - The day, the area, the drawn perks, the forks and the made cards come as
+    on any run; the deck never runs out (made cards fill what the written
+    ones lack, 24 a shift).
+  - **Stars for how far it went**: one at 5 jobs, two at 10, three at 15,
+    struck out or not. Its best is jobs, not euros, and the run list shows it
+    (*Until you drop · best 12 jobs*).
+- **The screen**: the title says how it ends; the job dots grow with the
+  jobs (the last nine, with the count before them) instead of counting down
+  to a last one; the end card leads with the jobs, says what ended it and
+  how many the next star needs.
+- **Measured** (`test/long.mjs`, 60 shifts): the board-reading bot does 12
+  jobs on the median (best 16), the tapper 8 (best 13); most shifts end on
+  the strikes. So three stars ask for a top-fifth shift.
+- In Finnish too (*PITKÄ VUORO*, *Kunnes uuvut*).
+- **Gates.**
+  - `test/long.mjs` (new, also in CI): not a rung, opened by EASY, the save
+    (stars by jobs, best by jobs), it ends both ways, the deck holds, the
+    ramp, the measured band.
+  - `test/runs.mjs`: finishing EASY opens MEDIUM and the long shift.
+  - `test/play.cjs`: the long shift listed and open after EASY, its title in
+    English and Finnish, its dots growing with the jobs.
+
 ## v3.25 — 2026-11-11
 
 **MORE PARTS** — the owner's *"100x content so it never feels stale"*, taken

@@ -40,6 +40,8 @@ import { CARGO } from './deliveries.js?v=28';
 import { MISSION_CARDS, MISSION_CALLBACKS, PERKS, STRIKES, perkPool } from './missions.js?v=5';
 
 export const SHIFT_SECONDS = 75 * 60;            // 07:00–08:15, or 23:00–00:15
+// a run may name its own length (the long shift, v3.26: three hours)
+export const shiftSecondsOf = s => (s?.run?.shiftMin ? s.run.shiftMin * 60 : SHIFT_SECONDS);
 export const SPEED_KMH = { tram: 14, metro: 34, walk: 4.8 };
 export const HEADWAY_MIN = { tram: 7.5, metro: 4 };
 export const ROUTE_FACTOR = 1.25;                // track is longer than the crow flies
@@ -136,7 +138,10 @@ export function dealDeck(s, run, weather) {
   const share = run.modules ?? MODULE_SHARE;
   if (share > 0) { const ctx = { places, weather, night: run.skin === 'night', tones, boost: DAYS[s.day]?.boost }, wants = [];
     for (const d of out) if (hashOf(`mix:${s.seed}:${d.job}`) % 100 < share * 100) {
-      const m = makeCard(`${s.seed}:${d.job}`, ctx, wants); if (m) { d.card = m; wants.push(m.module.want); } } }
+      const m = makeCard(`${s.seed}:${d.job}`, ctx, wants); if (m) { d.card = m; wants.push(m.module.want); } }
+    // (v3.26) a run with more jobs than written cards to fit (the long shift)
+    // fills the rest from modules; no run before it ever runs out
+    for (let i = out.length; i < (run.cards ?? 3); i++) { const m = makeCard(`${s.seed}:${i}`, ctx, wants.length >= 20 ? [] : wants); if (!m) break; out.push({ card: m, job: i }); wants.push(m.module.want); } }
   return out;
 }
 // the share of a deck made from modules (owner: "100x content so it never feels stale")
@@ -432,7 +437,7 @@ export function stateOf(s) {
 export function check(net, s) {
   const st = stateOf(s), bad = [];
   if (!STATES[st].holds(s)) bad.push(`${st}: its conditions do not hold`);
-  if (!(s.clock >= 0 && s.clock <= SHIFT_SECONDS)) bad.push(`the clock is off the shift (${s.clock})`);
+  if (!(s.clock >= 0 && s.clock <= shiftSecondsOf(s))) bad.push(`the clock is off the shift (${s.clock})`);
   if (s.done + s.sold > s.target + 1 || s.late > s.done || s.strikes > s.late) bad.push('the counts disagree');
   if ((s.phase === 'end') !== (st === 'end')) bad.push('end is not the end');
   const c = st === 'end' ? null : card(net, s);
@@ -461,7 +466,7 @@ function perkThird(s) {
 }
 function cardFor(net, s, st) {
   if (st === 'end') return null;
-  if (st === 'perk') return { kind: 'perk', mood: 'opportunity', text: `Job ${s.done} of ${s.target} done. Pick one for the rest of the ${s.run.mission ? 'errand' : 'shift'}.`,
+  if (st === 'perk') return { kind: 'perk', mood: 'opportunity', text: s.run.endless ? `Job ${s.done} done. Pick one for the rest of the shift.` : `Job ${s.done} of ${s.target} done. Pick one for the rest of the ${s.run.mission ? 'errand' : 'shift'}.`,
     options: [...s.perkOffer.map(id => ({ label: PERKS[id].name, price: 0, perk: id, stakes: { sure: [PERKS[id].line] } })), perkThird(s)] };
   if (st === 'fork') return { kind: 'dispatch', mood: MOODS_FOR.dispatch, text: s.run.mission ? 'Two errands for the next job. Pick one.' : 'Two jobs come in at once. Pick one.', mission: !!s.run.mission, fork: true,
     options: [...s.fork.map(o => ({ label: `${cargoWord(o.cargo)} → ${net.name(o.to)}`, price: 0, stakes: { sure: [`€${o.fee}`] } })), { label: 'Toss a coin', price: 0, tier: 'special', stakes: { sure: [`+€${COIN_CASH}`] } }] };
@@ -535,7 +540,7 @@ export function choose(net, s, i) {
     if (i === 1) { fee = SLOW.fee; clock = SLOW.clock; out.slow = true; }   // a mission's errand, taken slow
     if (i === 2 && s.offer.rival) { advance(s, opt.price); s.score = Math.max(0, s.score - COFFEE); s.offer = { ...s.offer, rival: null }; out.coffee = true; if (s.phase === 'end') return out; }
     else if (i === 2) { fee = EXPRESS.fee; clock = EXPRESS.clock; out.express = true; }
-    s.job = { ...s.offer, fee: Math.round(s.offer.fee * fee), startedAt: s.clock, limit: Math.round(s.offer.best * GRACE * (s.run.deadline || 1) * (s.mods?.deadline || 1) * clock), mult: 1, known: false, toName: net.name(s.offer.to) }; s.offer = null;
+    s.job = { ...s.offer, fee: Math.round(s.offer.fee * fee), startedAt: s.clock, limit: Math.round(s.offer.best * GRACE * (s.run.deadline || 1) * (s.mods?.deadline || 1) * clock * (s.run.ramp || 1) ** s.done), mult: 1, known: false, toName: net.name(s.offer.to) }; s.offer = null;
     if (!s.job.rival) delete s.job.rival;
     if (s.job.rival) s.job.rival.until = s.clock + s.job.rival.eta;
     return nextMoment(net, s, out, 'stop');
@@ -631,7 +636,7 @@ function dueCard(s, place) {
     && (!d.card.cargo || d.card.cargo.includes(s.job.cargo))) || null;
 }
 
-function advance(s, sec) { s.clock += sec; if (s.clock >= SHIFT_SECONDS) { s.clock = SHIFT_SECONDS; s.phase = 'end'; } }
+function advance(s, sec) { const end = shiftSecondsOf(s); s.clock += sec; if (s.clock >= end) { s.clock = end; s.phase = 'end'; } }
 
 // ── reading the run ────────────────────────────────────────────────────────
 // struck out is not complete, even when the strike was the last drop

@@ -43,7 +43,7 @@ ok(BY_ID.night.skin === 'night' && BY_ID.night.startHour === 23 && BY_ID.night.h
   let r = record('easy', { delivered: 2, target: 3, late: 0, score: 500 }, s);
   ok(r.stars === 0 && !r.done && r.opened.length === 0 && !unlocked('medium', loadRuns(s)), 'two of three is NOT YET: nothing opens');
   r = record('easy', { delivered: 3, target: 3, late: 2, score: 400 }, s);
-  ok(r.done && r.first && r.stars === 1 && r.opened.join() === 'medium', 'every job delivered, some late: complete, one star, MEDIUM opens');
+  ok(r.done && r.first && r.stars === 1 && r.opened.join() === 'medium,long', 'every job delivered, some late: complete, one star, MEDIUM opens, and the long shift beside it (v3.26)');
   r = record('easy', { delivered: 3, target: 3, late: 0, score: 1200 }, s);
   ok(r.stars === 3 && !r.first && r.opened.length === 0 && loadRuns(s).easy.stars === 3, 'on time at par: three stars, kept; nothing new opens twice');
   r = record('easy', { delivered: 3, target: 3, late: 3, score: 100 }, s);

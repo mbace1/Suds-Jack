@@ -69,8 +69,22 @@ export const RUNS = [
     rival: true, sealed: true, reach: 16, par: 155,
     tones: { scary: 3, risky: 1 }, skies: ['fog', 'rain', 'snow'], cards: 5, perks: true, forks: [3], strikes: 2 },
 ];
-export const BY_ID = Object.fromEntries(RUNS.map(r => [r.id, r]));
+// THE LONG SHIFT (v3.26; owner: "the game actually becomes like a roguelike,
+// and no strict missions are needed"). Not a rung: a run beside the ladder,
+// open once EASY is done. Jobs keep coming until the strikes or the clock end
+// it (three hours, 07:00–10:00), and every job's clock is a little shorter
+// than the last (`ramp`). The day, the area, the perks and the deck are drawn
+// as on any run. Its stars are for how far it went (`stars`: jobs), and its
+// best is the most jobs in one shift.
+export const LONG = { id: 'long', name: 'THE LONG SHIFT', short: '∞ LONG', title: 'Until you drop', glyph: '∞', endless: true,
+  blurb: 'Jobs keep coming. Every clock a little shorter than the last. Three late drops and it is over.',
+  target: 99, deadline: 1.1, ramp: 0.94, shiftMin: 180, cargo: null, encounters: 3, moods: null,
+  rush: null, weather: null, cityDay: true, rival: true, sealed: false, reach: 16, race: { pace: 1.2 },
+  perks: true, forks: [2, 5, 8, 11, 14, 17], strikes: 3, stars: [5, 10, 15], par: 0,
+  tones: { fun: 2, risky: 2, scary: 1 }, skies: ['clear', 'clear', 'snow', 'rain'], cards: 24, opens: 'easy' };
+export const BY_ID = Object.fromEntries([...RUNS, LONG].map(r => [r.id, r]));
 export const ORDER = RUNS.map(r => r.id);
+const SAVED = [...ORDER, LONG.id];
 
 // ── the save ───────────────────────────────────────────────────────────────
 // { easy: { done, stars, best, plays }, ... } — kept on this device. A save in
@@ -81,7 +95,7 @@ const clean = r => (r && typeof r === 'object') ? { done: r.done === true, stars
 export function loadRuns(s = store()) {
   let raw = {}; try { raw = JSON.parse(s?.getItem(KEY) || '{}'); } catch { raw = {}; }
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) raw = {};
-  return Object.fromEntries(ORDER.map(id => [id, clean(raw[id])]));
+  return Object.fromEntries(SAVED.map(id => [id, clean(raw[id])]));
 }
 function saveRuns(all, s = store()) { try { s?.setItem(KEY, JSON.stringify(all)); } catch {} }
 
@@ -105,6 +119,7 @@ export function memoryFor(s = store()) { const all = loadRuns(s); return { ...lo
 
 // Which runs are open: Easy always, each other once the one before is done.
 export function unlocked(id, all = loadRuns()) {
+  if (BY_ID[id]?.opens) return all[BY_ID[id].opens]?.done === true;
   const i = ORDER.indexOf(id); if (i < 0) return false; if (i === 0) return true;
   return all[ORDER[i - 1]]?.done === true;
 }
@@ -116,6 +131,7 @@ export function nextRun(all = loadRuns()) { return ORDER.find(id => unlocked(id,
 
 // Stars for a finished attempt. Never a gate.
 export function starsFor(run, { delivered, target, late, score, failed = false }) {
+  if (run?.endless) return run.stars.filter(n => delivered >= n).length;   // how far it went, struck out or not
   if (!(delivered >= target) || failed) return 0;   // struck out (v3.16) is not done
   if (late > 0) return 1;
   return score >= (run?.par ?? Infinity) ? 3 : 2;
@@ -125,11 +141,14 @@ export function starsFor(run, { delivered, target, late, score, failed = false }
 export function record(id, result, s = store()) {
   const run = BY_ID[id]; if (!run) return null;
   const all = loadRuns(s), was = all[id], stars = starsFor(run, result), done = stars > 0;
-  const openedBefore = ORDER.filter(x => unlocked(x, all)), extrasBefore = extrasOpen(all);
-  all[id] = { done: was.done || done, stars: Math.max(was.stars, stars), best: Math.max(was.best, done ? result.score : 0), plays: was.plays + 1 };
+  const openedBefore = SAVED.filter(x => unlocked(x, all)), extrasBefore = extrasOpen(all);
+  // the long shift's best is jobs, not euros
+  const best = run.endless ? Math.max(was.best, result.delivered | 0) : Math.max(was.best, done ? result.score : 0);
+  all[id] = { done: was.done || done, stars: Math.max(was.stars, stars), best, plays: was.plays + 1 };
   saveRuns(all, s);
-  const opened = ORDER.filter(x => unlocked(x, all) && !openedBefore.includes(x));
-  return { stars, done, first: done && !was.done, newBest: done && result.score > was.best, opened, extrasOpened: !extrasBefore && extrasOpen(all), all };
+  const opened = SAVED.filter(x => unlocked(x, all) && !openedBefore.includes(x));
+  const newBest = run.endless ? (result.delivered | 0) > was.best : done && result.score > was.best;
+  return { stars, done, first: done && !was.done, newBest, opened, extrasOpened: !extrasBefore && extrasOpen(all), all };
 }
 
 // Which run this visit is. `?run=` names one, if it is open; with no run and

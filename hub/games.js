@@ -108,19 +108,20 @@ export const GAMES = [
       tagline: 'Lähetin vuoro Helsingissä kortti kerrallaan: mikä ratikka, mihin suuntaan, ketä autat. Kello liikkuu vain, kun valitset.',
       lineage: '80 Days × Mini Metro × oikea Helsinki',
       controls: 'napauta korttia · valitse ratikka tai kävely · avaa kartta kulmasta',
-      note: 'UUTTA v3.25: 32 800 koottavaa korttia: 15 uutta ihmistä, 12 uutta tilannetta (kosinta, taskuvaras, ristikko, viimeinen ratikka…) ja 11 päivän käännettä. v3.24: vuoro arpoo alueensa ja päivän erikoisedun.',
+      note: 'UUTTA v3.27: koko peli ohjaimella (myös DualSense iPadilla): ristiohjain liikkuu valikoissa, ✕ valitsee, korteissa näkyvät ✕ ○ □. v3.26: PITKÄ VUORO, loputon ajo, aukeaa kun HELPPO on suoritettu.',
     },
     ja: {
       tagline: 'ヘルシンキの配達シフトを一枚ずつ。どのトラム、どの道、誰を助けるか。時計は選んだときだけ進む。',
       lineage: '80 Days × Mini Metro × 実在のヘルシンキ',
       controls: 'カードをタップ · トラムか徒歩を選ぶ · 角の地図を開く',
-      note: 'v3.25の新着：組み立てカードが32,800通りに。新しい人物15、状況12（プロポーズ、スリ、クロスワード、最終トラム…）、その日のひねり11。v3.24：シフトごとに配達エリアと今日の特別パーク。',
+      note: 'v3.27の新着：ゲーム全体をコントローラーで（iPadのDualSenseも）：十字キーでメニュー移動、✕で決定、カードに✕○□を表示。v3.26：「ロングシフト」、EASYクリアで解放。',
     },
-    // v3.20: a pad answers the card — A, B, X are its three buttons, Y hurries what is playing
-    pad: { keys: { b0: 'Digit1', b1: 'Digit2', b2: 'Digit3', b3: 'Space' } },
+    // v3.20: a pad answers the card — A, B, X are its three buttons, Y hurries what is playing;
+    // v3.27: the d-pad walks the title's and the end card's buttons, and A presses the lit one
+    pad: { keys: { b0: 'Digit1', b1: 'Digit2', b2: 'Digit3', b3: 'Space', up: 'ArrowUp', down: 'ArrowDown', left: 'ArrowLeft', right: 'ArrowRight' } },
     status: 'active',
     live: true,
-    note: 'NEW in v3.25: 32,800 cards made from parts: fifteen new people, twelve new situations (a proposal, a pickpocket, the crossword, the last tram…) and eleven new twists. v3.24: every shift draws where its drops lean and a special perk.',
+    note: 'NEW in v3.27: the whole game on a pad (a DualSense on an iPad too): the d-pad walks the menus, cross presses, and the cards show ✕ ○ □. v3.26: THE LONG SHIFT, the endless run, opens once EASY is done.',
     title: 'Toko Move',
     tagline: 'A courier\'s shift in Helsinki, one card at a time: which tram, which way, who to help. The clock only moves when you choose.',
     lineage: '80 Days × Mini Metro × real Helsinki',
