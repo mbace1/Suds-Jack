@@ -113,6 +113,34 @@ Plan sketch: change the truck mesh/visuals only — remove wheels, add a hover h
 
 Note, 18 Oct (HD-018, v58): there is no haul scoring any more, and the missiles no longer jackknife a truck. The fold itself stays, for the pile-up and HD-016. Read "do not change haul scoring" as "do not bring a cargo score back", and "jackknife" as the fold.
 
+### HD-023 — Three seasons, feature complete: a run can be finished, and finishing counts
+
+- status: In progress
+- size: L
+- blocked-by: HD-022 (#640) — built on its branch
+- design: Mikael, 11 Nov 2026 — *"Plan and execute to ship 3 seasons feature complete. Act as Game design and art direction"*; ROADMAP "Feature Complete Ship"
+
+Looked at first (the back half of every season, and a bot that kills every body the instant it exists and is never touched):
+
+- **Seasons 1 and 2 cannot be finished.** The season wave table (12 Oct) returns before the tuned HYPER director runs, and spawns about one skull per breathing gap. The clock drains 1 s/s and a skull pays 1 s. The perfect bot is dead at 31 s in EMBER with one kill, and INCA spawned nothing in its first 22 s. "Survive to 5:00" is on the menu and nobody can.
+- The table's `kind` is a toast and nothing else: the roster (watchers, husks, brutes, spiders, blinkers, serpents, dreads, totems, thorns, the leviathan) never appears in a season. It draws from `Math.random` per frame, so pressure depends on frame rate and a daily seed is not a seed.
+- `waveIdx` is never reset: a second run starts in the last act.
+- HAUL's table is dead data (TRUCK has no director, so not even the toast).
+- EMBER and INCA share one best (the key is the mode's).
+- Every finished run is 300.0 s, tier S, and ties with every other; the menu does not know a season was cleared.
+
+Design decisions (mine, as asked):
+
+1. **The table steers the tuned director instead of replacing it.** An act is `{t, kind, name, density, gap}`. `density` multiplies the tuned budget or cadence (1 = as tuned), `kind` leans the picks (`skulls` → swarm, `heavies` → spike), `gap` is a real valley when the act opens, and the act is named on screen. EMBER gets the whole HYPER roster back; INCA keeps skulls only, on its own cadence; HAUL's acts drive the convoy's skull rate.
+2. **INCA: the sea pays.** A crest you clear in the air buys 2 s. The sea was only a cost; in the wave-led acts there are few skulls to buy time from, and jumping it is the season's verb.
+3. **The clock stays the score; a clear is ranked by kills.** A finished run is 300.0 s as before. Among clears, more kills is better: stored per season and mode, shown on the end screen and on the menu, with a seal on the season's tab.
+4. **The run ends on a beat:** LAST STAND at 30 s to go, a count for the last ten.
+5. INCA gets its own best; EMBER keeps the old key.
+
+Out of scope: the pause menu's restyle, HD-014 landspeeders, HD-016, new sculpts.
+
+Gate: `test/seasons.cjs` (acts open and are named, the roster arrives, a second run starts in act one, the crest pays through a real jump, a clear is saved and shown) and a bare-node check of the tables; the perfect bot must reach 300 s in seasons 1 and 2.
+
 ### HD-022 — The look: particles, fluids and light, a different one per season
 
 - status: In progress

@@ -23,7 +23,7 @@ import { MODES, modeById, nextModeId, applyAbilities, abilitiesOf } from './mode
 import { TruckTrack } from './truck.js?v=113';
 import { GazeLock } from './gaze.js?v=85';
 import { PhysGibs } from './gibs.js?v=85';
-import { SEASONS, seasonById, nextSeasonId, GEL_MOUND_SAMPLE } from './seasons.js?v=120';
+import { SEASONS, seasonById, nextSeasonId, GEL_MOUND_SAMPLE } from './seasons.js?v=121';
 import { Platforms } from './platforms.js?v=85';
 import { shaleGeometry, shaleMaterial } from './shale.js?v=85';
 import { GooWave } from './goo.js?v=85';
@@ -1265,6 +1265,8 @@ let stylePeakIdx = 0;  // best tier reached this run (for the death recap)
 let comboCount = 0;
 let comboTimer = 0;
 let nextTotemAt = 0;
+let runMixed = false;   // v62: the season was changed under a live run — it clears nothing
+let crestsCleared = 0, crestArmed = false, crestStruck = false, lastStandSaid = 0;   // v62 (HD-023)
 let waveStrikes = 0;   // v48: how many times the sea has hit the body this run
 let nextLevAt = 0;
 let nextThornAt = 0;
@@ -1661,6 +1663,8 @@ function bestLine() {
     const dayBest = parseFloat(localStorage.getItem(dailyKey(todayStr(), M().id)) || '0');
     return `DAILY ${todayStr()} &middot; ${dayBest > 0 ? `today's best ${dayBest.toFixed(1)}s` : 'no time today yet'}`;
   }
+  const c = clearOf(S().id, M().id);
+  if (c) return `${m} &middot; CLEARED${c.n > 1 ? ` &times;${c.n}` : ''} &middot; best clear ${c.kills} kills`;
   return hiScore > 0 ? `${m} &middot; best ${hiScore.toFixed(1)}s` : `${m} &middot; no best yet`;
 }
 
@@ -1686,7 +1690,7 @@ function showMenu() {
        <section class="mn-foot">
          <div class="mn-seasons" role="tablist" aria-label="season">
            ${menuSeasons().map((s, i) =>
-             `<button class="mn-season${s.id === season ? ' on' : ''}" data-season="${s.id}" role="tab" aria-selected="${s.id === season}" style="--sacc:${s.card.accent}"><span class="mn-n">SEASON ${i + 1}</span><span class="mn-t">${s.card.title}</span></button>`).join('')}
+             `<button class="mn-season${s.id === season ? ' on' : ''}" data-season="${s.id}" role="tab" aria-selected="${s.id === season}" style="--sacc:${s.card.accent}"><span class="mn-n">SEASON ${i + 1}</span><span class="mn-t">${s.card.title}${seasonCleared(s.id) ? '<i class="mn-star" title="cleared" aria-label="cleared"> &#9733;</i>' : ''}</span></button>`).join('')}
          </div>
          <div class="mn-card" role="tabpanel">
            <p class="mn-tag">${card.tag}</p>
@@ -1767,7 +1771,28 @@ function showTips() {
      <p class="go">click / tap / press &#10005; to descend</p>`;
 }
 
-function hiKey() { return isSdfTestArena() ? `hyperDaggerSdfTest:${M().id}` : (M().hiKey ?? 'hyperDaggerHiNone'); }
+// v62: EMBER and INCA are both HYPER and shared one best. A season past the
+// first files its own; EMBER (and the classic modes) keep the key they had.
+function hiKey() {
+  if (isSdfTestArena()) return `hyperDaggerSdfTest:${M().id}`;
+  const k = M().hiKey ?? 'hyperDaggerHiNone';
+  return S().id === 'inca' ? `${k}:inca` : k;
+}
+
+// v62 A CLEAR IS RANKED BY KILLS. Every finished run is `end` seconds, so the
+// clock cannot rank them; among clears, more kills is the better run.
+const CLEARS_KEY = 'hyperDaggerClears';
+function readClears() { try { return JSON.parse(localStorage.getItem(CLEARS_KEY) || '{}') || {}; } catch { return {}; } }
+function clearOf(seasonId, modeId) { return readClears()[`${seasonId}:${modeId}`] ?? null; }
+function seasonCleared(seasonId) { const c = readClears(); return Object.keys(c).some(k => k.startsWith(seasonId + ':')); }
+function recordClear() {
+  const all = readClears(), key = `${S().id}:${M().id}`;
+  const prev = all[key] ?? null;
+  const best = !prev || kills > prev.kills;
+  all[key] = { n: (prev?.n ?? 0) + 1, kills: best ? kills : prev.kills };
+  try { localStorage.setItem(CLEARS_KEY, JSON.stringify(all)); } catch {}
+  return { prev, best, n: all[key].n };
+}
 
 /** Time tiers. Below A is a fail for ranking. S is the aspirational ceiling. */
 function timeTier(t) {
@@ -1866,6 +1891,7 @@ function showDeath(timedOut, complete = false) {
     localStorage.setItem(hiKey(), String(hiScore));
   }
 
+  const clear = complete && !isSdfTestArena() && !runMixed ? recordClear() : null;
   const causeLine = complete ? `the season is over — ${S().menu ?? S().name} survived`
     : timedOut
     ? 'the clock ran out'
@@ -1891,11 +1917,13 @@ function showDeath(timedOut, complete = false) {
     `<h1 class="dead">${complete ? 'RUN COMPLETE' : timedOut ? 'TIME OUT' : 'DEVOURED'}</h1>
      <p class="big">${t}s &middot; <span class="tier">${timeTier(runT)}</span> &middot; ${S().menu ?? S().name} &middot; ${M().name}${runKindLive === 'daily' ? ' · DAILY' : ''}</p>
      <p>${kills} kills &middot; ${gemCount} gems</p>
+     ${clear ? `<p class="seal">${S().menu ?? S().name} CLEARED &middot; ${kills} kills &middot; ${clear.best ? (clear.prev ? 'BEST CLEAR' : 'FIRST CLEAR') : `best clear ${clear.prev.kills} kills`}</p>` : ''}
      <p class="cause">${causeLine} &middot; daggers LV${weaponLv}${peakRank}</p>
      ${breakdown ? `<p class="breakdown">${breakdown}</p>` : ''}
      ${pulseLine}
      ${recapParts().length ? `<p class="breakdown">${recapParts().join(' &middot; ')}</p>` : ''}
      ${runKindLive === 'daily' ? dailyLines
+    : clear ? ''   // v62: every clear is 300.0 s — the seal above carries what was new about this one
     : `<p>${best ? 'NEW BEST' : `best ${hiScore.toFixed(1)}s`}</p>`}
      ${historyLine ? `<p class="history">recent: ${historyLine}</p>` : ''}
      <button id="shareBtn" class="opt">COPY RUN</button>
@@ -1949,6 +1977,8 @@ function resetRun() {
   wallsFelled = 0;
   ebbN = 0; ebbSteps = false; rubbleStands = 0; runComplete = false;
   finale = null; finaleDone = false; finalePressure = 1;
+  waveIdx = 0; lastAnnouncedWave = -1; actsOpened = 0;   // v62: a second run used to open in the last act
+  crestsCleared = 0; crestArmed = false; crestStruck = false; lastStandSaid = 0; runMixed = false;
   litter.reset();
   gems.reset();
   orbs.reset();
@@ -2390,6 +2420,7 @@ function showPause() {
       // _seasonChosen is set, so read after, "before" is already the
       // destination and a HAUL <-> EMBER switch never restarted (#619 review)
       const before = M().id;
+      if (state === 'playing' && seasonById(b.dataset.season).id !== season) runMixed = true;   // v62: a run across two seasons is neither's clear (reset by a restart)
       season = seasonById(b.dataset.season).id;
       _seasonChosen = true;
       localStorage.setItem(SEASON_KEY, season);
@@ -2868,11 +2899,15 @@ function pressureCeiling() {
 }
 
 function runPulse(n) {
-  const kind = pulseKind(n);
+  // v62: the act leans an ordinary pulse — a `skulls` act is bodies, a
+  // `heavies` act is the big ones. The rhythm's own heavy/spike/swarm stand.
+  const act = currentWave();
+  const rhythm = pulseKind(n);
+  const kind = rhythm !== 'normal' ? rhythm : act?.kind === 'skulls' ? 'swarm' : act?.kind === 'heavies' ? 'spike' : 'normal';
   // daily runs seed a FRESH stream per pulse index, so pulse N's pick
   // sequence is comparable across players regardless of when it fires
   const draw = runKindLive === 'daily' ? mulberry32(mixSeed(runSeed, n)) : Math.random;
-  let budget = pulseBudget(n, kind);
+  let budget = pulseBudget(n, rhythm) * (act?.density ?? 1);
   let stagger = 0;
   const picks = [];
   // DEBUT GUARANTEE: the earliest-unlocked type the player hasn't met yet
@@ -2974,67 +3009,39 @@ let nextSkullAt = 0;   // v48: season 2's own clock
 // random — the crowned, the splitter and the dread join as the run goes on —
 // on a cadence that tightens from `base` to `floor`, under `cap`.
 
-// Season wave pacing — peaks and valleys so later stages still have breathing room
+// v62 (HD-023) THE ACTS. A season's `waves` table used to BE the director: it
+// returned before the tuned one ran and spawned about one skull per breathing
+// gap, off Math.random per frame. Under a clock that drains a second a second
+// that could not be survived past half a minute (a bot that kills every body
+// the instant it exists was dead at 31 s), and none of the roster ever came.
+// The table STEERS now: `density` multiplies the tuned budget or cadence,
+// `kind` leans the picks, `gap` is a real valley when the act opens, and the
+// act is named on screen. Everything it touches draws from the run's own dice.
 let waveIdx = 0;
-let waveGapUntil = 0;
 let lastAnnouncedWave = -1;
+let actsOpened = 0;
 function currentWave() {
   const waves = S().waves;
   if (!waves || !waves.length) return null;
   while (waveIdx + 1 < waves.length && gameTime >= waves[waveIdx + 1].t) waveIdx++;
   if (waveIdx !== lastAnnouncedWave && state === 'playing') {
     lastAnnouncedWave = waveIdx;
+    actsOpened++;
     const w = waves[waveIdx];
-    slowmo = Math.max(slowmo, 0.35);
-    trauma = Math.max(trauma, 0.12);
-    if (w.kind === 'finale') toast('FINALE', 1600);
-    else if (waveIdx > 0) toast(w.kind.toUpperCase(), 900);
+    if (waveIdx > 0) {
+      slowmo = Math.max(slowmo, 0.35);
+      trauma = Math.max(trauma, 0.12);
+      // the valley: nothing new arrives for `gap` seconds
+      if (w.gap) { nextPulseAt = Math.max(nextPulseAt, gameTime + w.gap); nextSkullAt = Math.max(nextSkullAt, gameTime + w.gap); }
+    }
+    // the finale announces itself (startFinale), under its own name
+    // act one opens under the goal card (HD-010), which already says what the season is
+    if (w.name && w.kind !== 'finale' && waveIdx > 0) toast(w.name, 1500);
   }
   return waves[waveIdx];
 }
-function waveDirector() {
-  const w = currentWave();
-  if (!w) return false;
-  if (gameTime < waveGapUntil) return true; // breathing
-  const density = w.density || 1;
-  const season = S();
-
-  // S3: no enemies from behind — only spawn in the forward half
-  const aheadOnly = !!season.noRear;
-
-  if (season.id === 'inca') {
-    // S2: prefer spawning in the trough (away from the crest)
-    const crestPhase = goo._dist ? (goo._dist % (goo.period || 10)) : 0;
-    const inTrough = crestPhase > 3 && crestPhase < (goo.period || 10) - 2;
-    if (inTrough && Math.random() < density * 0.12) skullDirector();
-  } else if (aheadOnly) {
-    // S3: strict forward cone relative to camera
-    if (Math.random() < density * 0.06) {
-      const fwd = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
-      let at = ringSpot(16).clone();
-      let toSpot = at.clone().sub(player.feet).normalize();
-      let tries = 0;
-      while (toSpot.dot(fwd) < 0.35 && tries < 6) {
-        at = ringSpot(16).clone();
-        toSpot = at.clone().sub(player.feet).normalize();
-        tries++;
-      }
-      if (toSpot.dot(fwd) < 0.2) at.add(fwd.clone().multiplyScalar(18));
-      at.y = 1.2;
-      telegraph(at, [1.8, 0.9, 0.3], 0.6, () => enemies.push(new Skull(scene, at, 0.35)));
-    }
-  } else {
-    // S1 and others: classic mix
-    if (Math.random() < density * 0.12) {
-      const at = ringSpot(10).clone(); at.y = 1.2;
-      const r = rng.next();
-      const mk = r < 0.2 ? () => new Brute(scene, at) : () => new Skull(scene, at, Math.min(1.5, gameTime * 0.01));
-      telegraph(at, [1.6, 0.3, 0.2], 0.6, () => enemies.push(mk()));
-    }
-  }
-  if (Math.random() < 0.08) waveGapUntil = gameTime + (w.gap || 6);
-  return true;
-}
+/** How hard the act leans on the tuned director: 1 is as tuned. */
+function actDensity() { return currentWave()?.density ?? 1; }
 function skullDirector() {
   const sp = S().spawns;
   if (gameTime < nextSkullAt || enemyCount('skull') >= (sp.cap ?? 28)) return;
@@ -3047,7 +3054,7 @@ function skullDirector() {
   else                         mk = () => new Skull(scene, at, Math.min(2.0, t * 0.012));
   audio.spawn();
   telegraph(at, [1.6, 1.4, 0.3], 0.55, () => enemies.push(mk()));
-  nextSkullAt = gameTime + Math.max(sp.floor, sp.base - gameTime * sp.slope) / finalePressure;   // v53: tighter after the finale
+  nextSkullAt = gameTime + Math.max(sp.floor, sp.base - gameTime * sp.slope) / finalePressure / actDensity();   // v62: the act leans on it   // v53: tighter after the finale
 }
 function director(dt) {
   if (directorFrozen) { updatePending(dt); return; } // telegraphs still resolve
@@ -3055,7 +3062,7 @@ function director(dt) {
   if (dir === 'none') { updatePending(dt); return; } // the track/bench is the pressure
   if (dir === 'ddSpawnset') { ddDirector(); return; }
   updatePending(dt);
-  if (waveDirector()) return;
+  currentWave();   // v62: the act opens (and is named) here; it no longer spawns
   if (S().spawns?.only === 'skulls') { skullDirector(); return; }
   if (gameTime >= nextTotemAt && totemCount() < TOTEM_CAP) {
     const interval = Math.max(1.7, 3.4 - gameTime * 0.02);
@@ -3332,6 +3339,7 @@ const _col = new THREE.Color();
 // kind is a small clock. `finalePressure` tightens the season's own director
 // after; `finaleDone` keeps it to once a run.
 let finale = null, finaleDone = false, finalePressure = 1;
+function haulSkullMul() { return actDensity() * (finaleDone ? (S().finale?.after?.skulls ?? 1) : 1); }
 function startFinale() {
   const f = S().finale;
   if (!f || finale || finaleDone) return;
@@ -3348,8 +3356,16 @@ function endFinale() {
   const f = finale.cfg;
   finale = null; finaleDone = true;
   finalePressure = f.after?.pressure ?? 1;
-  if (f.kind === 'pileup' && truck.active) { truck.active.cfg.speed *= f.resume ?? 1; truck.active.cfg.skullMul = f.after?.skulls ?? 1; }
+  if (f.kind === 'pileup' && truck.active) { truck.active.cfg.speed *= f.resume ?? 1; truck.active.cfg.skullMul = haulSkullMul(); }   // v62: the act's lean times the finale's
   if (f.kind === 'drain') { goo.drain = 0; applySeasonFloorTerms(1); }
+}
+function crestCleared() {
+  crestsCleared++;
+  const pay = S().crestPays ?? 0;
+  if (!pay || M().lethality !== 'clock') return;
+  lifeT = Math.min(HYPER_CAP, lifeT + pay);
+  toast(`CREST CLEARED &middot; +${pay}s`, 800);
+  audio.gem?.();
 }
 function applySeasonFloorTerms(k) {
   const sn = S();
@@ -3914,6 +3930,18 @@ function step(dt) {
   if (goo.cfg?.hurts && state === 'playing' && goo.strikes(player)) {
     // playerStruck says whether it LANDED (mercy frames swallow the rest)
     if (playerStruck(player.feet.x - goo.dirX * 2, player.feet.z - goo.dirZ * 2, 'wave') || mercyT >= 1.19) waveStrikes++;
+    crestStruck = true;
+  }
+  // v62 THE SEA PAYS: a crest that passed under a body it did not touch buys
+  // time. The sea was only ever a cost, and in the sea-led acts there are few
+  // skulls to buy seconds from — clearing it is the season's verb.
+  if (goo.cfg?.hurts && state === 'playing') {
+    const over = goo.heightAt(player.feet.x, player.feet.z) >= (goo.cfg.hurtFrom ?? 0.35);
+    if (over) crestArmed = true;
+    else if (crestArmed) {
+      if (!crestStruck) crestCleared();
+      crestArmed = false; crestStruck = false;
+    }
   }
   // v46: the body landing on the sea (or the flat water) splashes it — a
   // ring spreading from the feet, harder from higher
@@ -3957,6 +3985,8 @@ function step(dt) {
   const reapPressed = input.consumeReap();
   if (player.abilities?.reap && reapPressed) tryReap();
   if (M().arena === 'track') {
+    // v62: TRUCK has no director, so the season's acts lean on the convoy's own skull rate
+    if (S().mode === 'truck' && truck.active?.cfg) truck.active.cfg.skullMul = haulSkullMul();
     truck.update(dt, player, gameTime, enemies, walls); // the course lays walls beside its wide gaps
     // the floor leaving is the whole game — falling off it is the death
     if (player.feet.y < truck.fallY() && state === 'playing' && !invulnerable) {
@@ -4079,6 +4109,13 @@ function step(dt) {
   updateEbb();
   // v54 A RUN THAT ENDS: the season is over at `end` seconds
   if (S().end && state === 'playing' && gameTime >= S().end) { completeRun(); return; }
+  // v62: the run ends on a beat, not on a cut
+  if (S().end && state === 'playing') {
+    const left = S().end - gameTime;
+    if (left <= 30 && lastStandSaid === 0) { lastStandSaid = 31; toast('LAST STAND', 1800); audio.stinger?.(); }
+    const n = Math.ceil(left);
+    if (n <= 10 && n >= 1 && lastStandSaid !== n) { lastStandSaid = n; toast(String(n), 650); }
+  }
   // style meter bleeds when you stop scoring — faster at higher ranks so the
   // top tiers stay fleeting and demand a continuous chain
   // provisional v4.1 soften (was 6 + 0.05v): S-rank was bleeding out between
@@ -4414,6 +4451,7 @@ window.__hd = {
     truckObj() { return truck.active ?? truck; },   // v51: the convoy (or the classic road), for the gate
     triggerFinale() { startFinale(); return !!finale; },   // v53
     getGoal() { return { goal: goalLine(), clock: clockLine(), shown: elGoal.classList.contains('show'), ms: GOAL_MS }; },   // HD-010
+    getActs() { const w = currentWave(); return { idx: waveIdx, name: w?.name ?? null, kind: w?.kind ?? null, density: actDensity(), opened: actsOpened, crests: crestsCleared, armed: crestArmed, clears: readClears(), hiKey: hiKey(), lastStand: lastStandSaid, mixed: runMixed, struck: crestStruck, crest: goo.cfg ? { h: +goo.heightAt(player.feet.x, player.feet.z).toFixed(3), s: +goo._s(player.feet.x, player.feet.z).toFixed(2), speed: goo.speed, width: goo.cfg.width, hurtFrom: goo.cfg.hurtFrom ?? 0.35 } : null, skullMul: truck.active?.cfg?.skullMul ?? null, nextPulseAt, nextSkullAt }; },   // v62
     getRun() { return { ebbN, ebbSteps, rubbleStands: +rubbleStands.toFixed(2), complete: runComplete, end: S().end ?? null, state, recap: recapParts() }; },   // v54
     completeRun() { completeRun(); return runComplete; },
     getFinale() { return { active: !!finale, kind: finale?.kind ?? null, t: +(finale?.t ?? 0).toFixed(2), phase: finale?.phase ?? 0, rocks: finale?.rocks ?? 0, wrecked: finale?.wrecked ?? 0, done: finaleDone, pressure: finalePressure, drain: +goo.drain.toFixed(2), declared: S().finale ?? null }; },

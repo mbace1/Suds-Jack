@@ -28,6 +28,8 @@
     #msg button.mode.all { border-style: dashed; }
     #msg .row-label { font-size: 0.75rem; letter-spacing: 0.12em; opacity: 0.55; margin: 0.6rem 0 0.2rem; text-transform: uppercase; }
     #msg h1 { text-shadow: 0 2px 8px #000; }
+    #msg .seal { display: inline-block; margin: 0.35rem 0 0.2rem; padding: 0.28rem 0.8rem; border: 1px solid currentColor; letter-spacing: 0.14em; font-size: 0.8rem; color: #ffd27a; }
+    .mn-star { font-style: normal; color: var(--sacc, #ffd27a); }
     /* HD-019 THE MENU. The season's own arena is the background, live: the
        overlay is a veil on the right, not a dark sheet over everything, and
        the whole panel stands in the season's colour (--acc). One column on
@@ -184,10 +186,10 @@
     }
   }
   </script>
-  <script type="module" src="js/main.js?v=120"></script>
+  <script type="module" src="js/main.js?v=121"></script>
   <script>
     if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
-      navigator.serviceWorker.register('sw.js?v=120').catch(() => {});
+      navigator.serviceWorker.register('sw.js?v=121').catch(() => {});
     }
   </script>
   <script type="module" src="../hub/shell.js?v=43"></script>
