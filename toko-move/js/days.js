@@ -32,12 +32,12 @@ export const DAYS = {
   ordinary: { name: null, fx: [], weight: 40 },
   festival: { name: 'Helsinki Festival', fx: ['tips +€2', 'fuller trams'], tip: 2, wait: 1.15, boost: { music: 4, hockey: 2 }, weight: 8 },
   payday: { name: 'Payday', fx: ['fees ×1.15', 'everyone wants it now'], fee: 1.15, deadline: 0.92, weight: 8 },
-  sunday: { name: 'A quiet Sunday', fx: ['fees ×0.9', 'clocks ×1.1'], fee: 0.9, deadline: 1.1, boost: { sun: 3, seat: 2 }, weight: 8 },
-  heatwave: { name: 'A heatwave', fx: ['walking slower', 'tips +€1'], walk: 1.12, tip: 1, skies: ['clear'], boost: { sun: 4 }, weight: 7 },
-  firstsnow: { name: 'The first snow', fx: ['luck +5%', 'tips +€1'], luck: 0.05, tip: 1, skies: ['snow'], boost: { cold: 4 }, weight: 7 },
-  cruise: { name: 'Two cruise ships in', fx: ['fees ×1.05', 'tourists everywhere'], fee: 1.05, boost: { directions: 4, ticket: 3 }, weight: 8 },
+  sunday: { name: 'A quiet Sunday', fx: ['fees ×0.9', 'clocks ×1.1'], fee: 0.9, deadline: 1.1, boost: { sun: 3, seat: 2, crossword: 3, icecream: 2 }, weight: 8 },
+  heatwave: { name: 'A heatwave', fx: ['walking slower', 'tips +€1'], walk: 1.12, tip: 1, skies: ['clear'], boost: { sun: 4, icecream: 4 }, weight: 7 },
+  firstsnow: { name: 'The first snow', fx: ['luck +5%', 'tips +€1'], luck: 0.05, tip: 1, skies: ['snow'], boost: { cold: 4, sauna: 3 }, weight: 7 },
+  cruise: { name: 'Two cruise ships in', fx: ['fees ×1.05', 'tourists everywhere'], fee: 1.05, boost: { directions: 4, ticket: 3, map: 4, sauna: 2 }, weight: 8 },
   derby: { name: 'Derby day', fx: ['fuller trams', 'luck +5%'], wait: 1.1, luck: 0.05, boost: { hockey: 5 }, weight: 7 },
-  fullmoon: { name: 'A full moon', fx: ['fees ×1.1', 'luck −5%'], fee: 1.1, luck: -0.05, night: true, boost: { night: 2, year: 2, hum: 2, shadow: 2 }, weight: 10 },
+  fullmoon: { name: 'A full moon', fx: ['fees ×1.1', 'luck −5%'], fee: 1.1, luck: -0.05, night: true, boost: { night: 2, year: 2, hum: 2, shadow: 2, whistle: 2, lasttram: 2 }, weight: 10 },
 };
 
 const hash = s => { let h = 2166136261; for (const c of String(s)) h = Math.imul(h ^ c.charCodeAt(0), 16777619);

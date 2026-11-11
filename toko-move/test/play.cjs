@@ -118,7 +118,7 @@ server.listen(0, '127.0.0.1', async () => {
         runs: [...document.querySelectorAll('#mutRow .run[data-run]')].map(r => ({ id: r.dataset.run, open: !r.classList.contains('locked'), lit: r.classList.contains('on') })),
         goal: document.getElementById('titleGoal').textContent, play: document.getElementById('play').textContent,
         links: ['dailyLink', 'weekLink', 'liveLink'].filter(id => { const e = document.getElementById(id); return e && !e.hidden && getComputedStyle(e).display !== 'none'; }) }));
-      ok(`the bare address is the card journey, not the real-time game (v${t.v})`, !t.classic && t.v === '3.24' && /v3\.24/.test(t.hero));
+      ok(`the bare address is the card journey, not the real-time game (v${t.v})`, !t.classic && t.v === '3.25' && /v3\.25/.test(t.hero));
       ok(`it is Act 1, in Helsinki (${await page.evaluate(() => document.getElementById('titleWhen').textContent)})`, await page.evaluate(() => /^Act 1 · Helsinki · 07:00/.test(document.getElementById('titleWhen').textContent)));
       ok(`the ladder: EASY open and lit, three locked (${t.runs.map(r => r.id + (r.open ? '' : '🔒')).join(' ')})`, t.runs.map(r => r.id).join() === 'easy,medium,hard,night' && t.runs[0].open && t.runs[0].lit && t.runs.slice(1).every(r => !r.open) && t.run === 'easy');
       ok(`the goal and the button (${t.goal} · ${t.play})`, /^Three deliveries before 08:15/.test(t.goal) && t.play === 'START SHIFT');
@@ -234,9 +234,10 @@ server.listen(0, '127.0.0.1', async () => {
       await ctx.close();
     }
     // ── the old trams from inside (v3.3): seed 1197's EASY rides the museum tram, then an Nr II
+    // (&written: the shift as v3.21 dealt it, so the trams it rides are the ones named)
     {
       const ctx = await browser.newContext(PHONE), page = await ctx.newPage(), errs = watch(page);
-      await page.goto(`${base}/toko-move/?run=easy&seed=1197`, { waitUntil: 'load' }); await ready(page);
+      await page.goto(`${base}/toko-move/?run=easy&seed=1197&written`, { waitUntil: 'load' }); await ready(page);
       await page.tap('#play'); await page.waitForSelector('#v3panel .eventOpt', { timeout: 15000 });
       const seen = await playOut(page, { maxSteps: 260 });
       // the in-car sign names the model too, but a hurried tap skips it in a frame; the tram at the stop stays
@@ -559,7 +560,7 @@ server.listen(0, '127.0.0.1', async () => {
       const seen = await playOut(page, { maxSteps: 400 }), made = seen.cards.filter(c => c.cardId.startsWith('m:'));
       ok(`${lang}: a shift deals cards made from modules (${made.map(c => c.cardId).join(', ') || 'none'})`, made.length >= 1 && seen.end);
       ok(`${lang}: each with three buttons on the screen`, made.every(c => c.buttons.length === 3 && c.buttons.every(b => b.inside)));
-      if (lang === 'fi') ok(`and its line is Finnish (${made[0]?.line.slice(0, 60)})`, made.every(c => !/\b(the|is|with|has|your)\b/.test(c.line) && /[äö]/.test(c.line)));
+      if (lang === 'fi') ok(`and its line is Finnish (${made[0]?.line.slice(0, 60)})`, made.every(c => c.line.length > 20 && !/\b(the|is|with|has|your|and|of|to)\b/i.test(c.line)));
       ok(`no page or network errors (made cards, ${lang})`, !errs.length, errs.slice(0, 3).join(' | '));
       await ctx.close();
     }

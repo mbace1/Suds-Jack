@@ -1,5 +1,46 @@
 # Toko Move — versions
 
+## v3.25 — 2026-11-11
+
+**MORE PARTS** — the owner's *"100x content so it never feels stale"*, taken
+further: every part added multiplies the cards the modules make.
+
+- **The modules grow** (`js/modules.js`): 41 people (+15), 32 wants (+12) and
+  25 twists (+11), which is **32,800 cards** before the third is drawn,
+  against 7,500 in v3.22.
+  - **New people:** a sailor on shore leave, a woman in a moose costume, a
+    retired opera singer, a man walking three dachshunds, a climber with a
+    crash pad, a bride on her way to the church, a nurse home from the
+    night shift…
+  - **New wants:** on foot, a map held upside down, a flat tyre, eight
+    pizza boxes, the way to the public sauna; aboard, the tram doors, the
+    crossword's last word, a pickpocket; at the stop, a proposal and a
+    dropped ring, a drone over the wires, free ice cream (sun only). For
+    NIGHT, two more strange ones: a whistler who keeps pace with the
+    streetlights (on foot), and someone at the stop waiting for the tram
+    that left an hour ago.
+  - **New twists:** a trumpet in an open window, a gull eating a whole
+    croissant, a ferry horn, a name day, the ice groaning on the bay (snow),
+    a very large moon (night)…
+- **The days bring the new ones out**: ice cream on a heatwave, the sauna on
+  the first snow, the crossword on a quiet Sunday, the map for the cruise
+  ships, the whistler and the last tram under a full moon.
+- Every new line is in Finnish. A sample of 3,000 made cards in every
+  weather and hour translates whole.
+- **Measured** (`test/journey.mjs`, 60 seeds, reader · tapper): EASY 60 · 57,
+  MEDIUM 58 · 52, HARD 53 · 34, NIGHT 46 · 28. The ladder holds; NIGHT's two
+  new waits cost the reader four shifts in sixty.
+- **Gates.**
+  - `test/modules.mjs`: at least 40 people, 32 wants and 25 twists, over
+    30,000 cards, and every place with its share of wants.
+  - `test/journey.mjs`: the regulars check asks that a standing rose, not
+    that it is exactly 4 (it reads the shift's end, and a seed may visit the
+    same regular twice).
+  - `test/play.cjs`: the museum-tram test that names EASY 1197's rides plays
+    it `&written`; the Finnish check on a made card's line looks for English
+    words left in it, rather than for an ä or ö (*"Tikkaita kantava mies
+    katsoo istumapaikkaasi hyvin toiveikkaasti"* has neither).
+
 ## v3.24 — 2026-11-09
 
 **THE SHIFT, DRAWN** — the rest of v3.23's step toward the owner's *"like a

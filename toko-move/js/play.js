@@ -25,8 +25,8 @@
 // nothing happens while you read. Every animation is skippable by a tap and
 // none of them is a timer the game waits on to be fair: the state has already
 // moved when it starts.
-import { tr } from './lang.js?v=20';
-import * as J from './journey.js?v=12';
+import { tr } from './lang.js?v=21';
+import * as J from './journey.js?v=13';
 import * as Runs from './runs.js?v=6';
 import { HopBoard } from './hopboard.js?v=4';
 import * as PL from './playlog.js?v=2';
@@ -47,7 +47,7 @@ import { MOMENTS, faceIn, keepIn, pickupMoment, deliveryMoment, boardMoment, wal
 import { resolveMode, dailyShare, errandShare, errandStore, errandOf, W } from './modes.js?v=7';
 import { recordDaily, todayRecord, streak, dateKey } from './daily.js?v=2';
 
-export const BUILD_VERSION = '3.24';
+export const BUILD_VERSION = '3.25';
 const $ = id => document.getElementById(id);
 const params = new URLSearchParams(location.search);
 // a run of the ladder, today's daily, or a day of the week (modes.js, ACT1.md §12)

@@ -33,8 +33,8 @@ import { CARDS, CONTENTS, TRAMS, ODDS, SLIPS, SOAKS, CALLBACKS, ARCS, SEALED_CAR
 import { regularAt, standingOf, tipFor, MAX_STANDING } from './regulars.js?v=4';
 import { haltFamily, haltMinutes } from './mutators.js?v=2';
 import { payFor } from './parcels.js?v=1';
-import { makeCard } from './modules.js?v=2';
-import { DAYS, dayFor, dayLine, AREAS, areaFor, pullOf, perksFor } from './days.js?v=2';
+import { makeCard } from './modules.js?v=3';
+import { DAYS, dayFor, dayLine, AREAS, areaFor, pullOf, perksFor } from './days.js?v=3';
 import { lineFamily } from './board.js?v=8';
 import { CARGO } from './deliveries.js?v=28';
 import { MISSION_CARDS, MISSION_CALLBACKS, PERKS, STRIKES, perkPool } from './missions.js?v=5';
