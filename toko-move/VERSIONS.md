@@ -1,5 +1,26 @@
 # Toko Move — versions
 
+## v3.29 — 2026-11-11
+
+**THE MAP FROM THE PAD, AND THE TRAILER CAUGHT UP**
+
+- **The map from a pad.** v3.27 could close the map from a controller but
+  not open it: that still took a tap. A shoulder button (L1 or R1; M on a
+  keyboard) now opens it from any card and closes it again, and the corner
+  map says so while a pad is connected (*L1 · MAP*). `test/pad.cjs` opens
+  and closes it from the stubbed DualSense.
+- **The trailer** (`tools/film3.cjs`) had been filmed at v3.21, and since
+  v3.22 a seed no longer deals what it dealt then.
+  - Its thirteen run takes are pinned with `&written` (the shift as v3.21
+    dealt it), so each still shows what its caption names.
+  - Three new takes, of what a shift draws now: a card made from parts
+    (*Thirty thousand strangers to meet.*), the day on the first card (*No
+    two days the same.*), and the long shift's draft with its special third
+    (*The Long Shift. Until you drop.*).
+- **The store page** (`store/ITCH.md`): the long shift, the drawn day, area
+  and perk, the made cards, and the keys (M for the map, the arrows on the
+  title and the end card).
+
 ## v3.28 — 2026-11-11
 
 **NOTHING STANDS STILL** — the owner: *"Animations?"* (and, on v3.17: *"a longer
