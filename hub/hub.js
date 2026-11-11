@@ -478,10 +478,10 @@ async function showVersions() {
     updated = {};
     for (const [id, v] of Object.entries(versions)) if (v && v.d) updated[id] = v.d;
     if (Object.keys(updated).length) {
-      // the host (hub/toko-cabinet-dom.js) is not in the catalogue: carry him over, still first
+      // the host (hub/toko-cabinet-dom.js) is not in the catalogue: carry him over
       const host = document.getElementById('cab-tokolive');
       render();
-      if (host) document.getElementById('cabinets').prepend(host);
+      if (host) document.getElementById('cabinets').appendChild(host);
       // a deep link landed on its cabinet before the floor moved under it
       const id = decodeURIComponent(location.hash.slice(1)).split('/')[0];
       if (id) goTo(id, { jump: true });
@@ -1018,6 +1018,19 @@ function render() {
 }
 
 document.querySelector('header').prepend(langRow());
+
+// THE HOST GOES LAST (owner, 2026-11-11: Toko Live "can be taken lower, as there
+// is also a widget for it at the top"). hub/toko-cabinet-dom.js prepends him,
+// and on the site it loads after hub.js on its own clock, so the rack is
+// watched rather than ordered once: whenever he is not last, he moves to the end.
+{
+  const rack = document.getElementById('cabinets');
+  const hostLast = () => {
+    const host = document.getElementById('cab-tokolive');
+    if (host && host.parentNode === rack && rack.lastElementChild !== host) rack.appendChild(host);
+  };
+  if (rack) { new MutationObserver(hostLast).observe(rack, { childList: true }); hostLast(); }
+}
 setLang(preferred());
 document.documentElement.lang = getLang();
 render();

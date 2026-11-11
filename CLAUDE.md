@@ -50,7 +50,7 @@ frame), Hyper Dagger is **HYPERDEMON × Bone Dust**. Three things were learned b
 those two and hold generally: a hero cannot be a black silhouette against a dark scene
 (light it, or rim it in two colours); **cropping** a foreground figure at the frame is
 what makes it read as foreground; and a framing device has to be **lighter** than the
-sky behind it or it is just an outline floating in the void. The rack **grows with the screen — 2 / 2 / 3 / 4** at 1100 / 1480px, inside a 1520px
+sky behind it or it is just an outline floating in the void. The rack **grows with the screen — 2 / 3 / 4** at 860 / 1100px (owner, 2026-11-11), inside a 1520px
 wrap; a phone gets two because one cabinet to a screen turns the floor into a scroll and
 you cannot compare what you cannot see at once. At that width the card is cut to a
 **poster** — cover, name, three clamped lines, two of state, the buttons — because the
@@ -64,7 +64,7 @@ Play marks a cabinet **tried** (`sudsJackHubPlayed`). Neither reorders the floor
 most recently updated at the top of hub"*). Each `versions.json` entry carries `d`, the
 later of its log's newest heading date and its folder's last narrow commit (no merges,
 ≤3 top-level folders, not docs-only); both floors re-sort once the file lands, ties
-keep catalogue order, and the Toko Live host stays first. `versions.mjs --dates` refreshes
+keep catalogue order, and the Toko Live host goes LAST (he has the counter at the top). `versions.mjs --dates` refreshes
 only `d` and is safe on the deployed tree; `.github/workflows/hub-dates.yml` runs it on
 `gh-pages` every six hours, so a deploy from any lane rises on its own.
 `/#hyperdagger` deep-links a cabinet and `/#hyperdagger/feedback` opens its note panel —

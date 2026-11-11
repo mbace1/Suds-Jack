@@ -751,14 +751,15 @@ function check(name, cond) {
     getComputedStyle(document.getElementById('cabinets')).gridTemplateColumns.split(' ').length);
   const marqueeWidth = () => page.evaluate(() =>
     document.querySelector('.cab .art').getBoundingClientRect().width);
-  // 2 / 2 / 3 / 4. A phone gets two rather than one because one cabinet to a
+  // 2 / 3 / 4 (owner, 2026-11-11: "smaller, 4 across"). A phone gets two rather than one because one cabinet to a
   // screen turns the floor into a scroll, and comparing two games you cannot
   // see at once is not comparing. The floor a marquee must clear is therefore
   // per step, not one number: a phone's 157px is small and legible, and a
   // desktop shrinking to that would mean the ladder had gone wrong.
   const ladder = [
     [390, 2, 150, 'a phone'], [800, 2, 300, 'a tablet upright'],
-    [1180, 3, 300, 'a wide iPad'], [1600, 4, 300, 'a large desktop'],
+    [960, 3, 260, 'a small laptop'], [1180, 4, 230, 'a wide iPad'],
+    [1600, 4, 300, 'a large desktop'],
   ];
   const wrong = [], thumbs = [];
   for (const [w, want, floor, what] of ladder) {
@@ -769,7 +770,7 @@ function check(name, cond) {
     const mw = await marqueeWidth();
     if (mw < floor) thumbs.push(`${what} ${Math.round(mw)}px < ${floor}`);
   }
-  check(`the row grows 2-2-3-4 with the screen${wrong.length ? ` — ${wrong}` : ''}`, wrong.length === 0);
+  check(`the row grows 2-3-4 with the screen${wrong.length ? ` — ${wrong}` : ''}`, wrong.length === 0);
   check(`and no step shrinks the marquee past what it can carry${thumbs.length ? ` — ${thumbs}` : ''}`,
     thumbs.length === 0);
   await page.setViewportSize({ width: 1100, height: 900 });
