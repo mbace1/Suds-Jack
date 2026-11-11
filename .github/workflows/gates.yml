@@ -526,6 +526,9 @@ jobs:
       - name: the card journey (v3) — EASY tapped through on a phone to NEXT · MEDIUM; the scenes, the board, HARD, NIGHT, Finnish, sideways
         run: NODE_PATH=$(npm root -g) node toko-move/test/play.cjs
 
+      - name: a pad and nothing else (v3.27) — a stubbed DualSense plays a whole shift through the hub's bridge
+        run: NODE_PATH=$(npm root -g) node toko-move/test/pad.cjs
+
       - name: the ladder in the real-time game (?classic) — EASY played out by tapping opens MEDIUM; HARD, NIGHT and what clearing NIGHT opens
         run: NODE_PATH=$(npm root -g) node toko-move/test/runs.cjs
 

@@ -47,7 +47,7 @@ import { MOMENTS, faceIn, keepIn, pickupMoment, deliveryMoment, boardMoment, wal
 import { resolveMode, dailyShare, errandShare, errandStore, errandOf, W } from './modes.js?v=8';
 import { recordDaily, todayRecord, streak, dateKey } from './daily.js?v=2';
 
-export const BUILD_VERSION = '3.26';
+export const BUILD_VERSION = '3.27';
 const $ = id => document.getElementById(id);
 const params = new URLSearchParams(location.search);
 // a run of the ladder, today's daily, or a day of the week (modes.js, ACT1.md §12)
@@ -154,6 +154,8 @@ const CSS = `
 .v3pill .wxg{font-size:14px;line-height:1;opacity:.75}
 .v3pill .dots{font-size:14px;letter-spacing:2px;color:#233d4d;line-height:1}
 .v3pill .dots .dotN{font-size:12px;letter-spacing:0;margin-right:4px;font-weight:800}
+.evPad{display:inline-grid;place-items:center;min-width:22px;height:22px;margin-right:8px;border-radius:50%;border:2px solid currentColor;color:inherit;font:800 12px/1 system-ui,sans-serif;flex:none;box-sizing:border-box}
+.padLit{outline:3px solid #ffcc00!important;outline-offset:3px}
 .v3pill .dots i{font-style:normal;color:#e2683c}
 .v3pill .dots .pop{display:inline-block;animation:v3pop .5s ease-out}
 @keyframes v3pop{0%{transform:scale(1)}35%{transform:scale(1.8)}100%{transform:scale(1)}}
@@ -592,6 +594,7 @@ function paintCard(c) {
   panel.innerHTML = `<section class="eventCard mood-${esc(c.mood)}" data-kind="${c.kind}"${c.id ? ` data-card="${c.id}"` : ''}><div class="evHead">${face(c.mood)}<b class="evLine">${c.at ? `<span class="evAt">${esc(c.at.toUpperCase())}</span>` : ''}${esc(c.text)}</b></div><div class="evOpts${stack ? ' evStack' : ''}${c.options.length > 2 ? ' ev3' : ''}">${c.options.map((o, i) => `<button class="evBtn ${cls(o, i)} eventOpt" type="button" data-i="${i}"${o.tier ? ` data-tier="${o.tier}"` : ''}><span class="evLb">${tag(o)}<span>${esc(o.label)}</span>${stakesHtml(o.stakes)}</span><span class="evCost">${price(o.price)}</span></button>`).join('')}</div></section>`;
   const armed = performance.now() + 300;
   panel.querySelectorAll('.eventOpt').forEach(b => b.addEventListener('click', () => { if (performance.now() >= armed) pick(Number(b.dataset.i)); }));
+  padGlyphs();
 }
 
 // Where the drop is — unless the parcel is sealed and its label has not made
@@ -749,6 +752,48 @@ function markUi() { const b = document.body, u = uiState(); b.dataset.ui = u; b.
 addEventListener('keydown', e => { const n = /^[1-3]$/.test(e.key) ? Number(e.key) : /^Digit[1-3]$/.test(e.code || '') ? Number(e.code.slice(5)) : 0;
   if (!n || uiState() !== 'card') return;
   const b = panel.querySelector(`.eventOpt[data-i="${n - 1}"]:not([disabled])`); if (b) { e.preventDefault(); b.click(); } });
+
+// (v3.27) THE PAD ON EVERY SCREEN (owner: "Dualsense with ipad doesn't work"). A pad
+// reached the game only through the cards: the hub's bridge (hub/padkeys.js) turns
+// its buttons into keys, and only a card listened, so START SHIFT, the run list,
+// the end card and the map were out of reach for anyone holding only a pad. Now:
+//   · on a card, cross / circle / square (A, B, X) are its three buttons as before,
+//     and each button wears its pad button while a pad is connected
+//   · on the title and the end card, the d-pad (the arrow keys) walks the screen's
+//     buttons and links, lit; cross (1) presses the lit one, or the screen's main
+//     button when none is lit (START SHIFT; NEXT, else AGAIN)
+//   · with the map open, any of them closes it
+const PAD_GLYPHS = { ps: ['✕', '○', '□'], xb: ['A', 'B', 'X'] };
+function padKind() {
+  const p = [...(navigator.getGamepads?.() || [])].find(x => x && x.connected);
+  return p ? (/054c|dualsense|dualshock|wireless controller|playstation/i.test(p.id) ? 'ps' : 'xb') : null;
+}
+function padGlyphs() {
+  const k = padKind(), g = k && PAD_GLYPHS[k];
+  panel.querySelectorAll('.eventOpt').forEach((b, i) => { let t = b.querySelector('.evPad');
+    if (!g || !g[i]) { t?.remove(); return; }
+    if (!t) { t = document.createElement('span'); t.className = 'evPad'; t.setAttribute('aria-hidden', 'true'); b.prepend(t); }
+    t.textContent = g[i]; });
+}
+addEventListener('gamepadconnected', padGlyphs); addEventListener('gamepaddisconnected', padGlyphs);
+const PRIMARY = { title: '#play', end: '#nextRun, #again' };
+const padTargets = () => { const v = [...document.querySelectorAll('.veil:not([hidden])')].pop();
+  return v ? [...v.querySelectorAll('button:not([disabled]), a[href]')].filter(el => el.getClientRects().length && getComputedStyle(el).visibility !== 'hidden') : []; };
+function padLight(el) { document.querySelectorAll('.padLit').forEach(x => x !== el && x.classList.remove('padLit')); el.classList.add('padLit'); el.focus({ preventScroll: true }); el.scrollIntoView?.({ block: 'nearest' }); }
+addEventListener('pointerdown', () => document.querySelectorAll('.padLit').forEach(x => x.classList.remove('padLit')));
+addEventListener('keydown', e => {
+  const ui = uiState(), arrow = /^Arrow(Up|Down|Left|Right)$/.exec(e.key || ''), n = /^[1-3]$/.test(e.key) ? Number(e.key) : /^Digit[1-3]$/.test(e.code || '') ? Number(e.code.slice(5)) : 0;
+  if (ui === 'card') { if (n) padGlyphs(); return; }                       // the card's own handler answers it
+  if (ui === 'board') { if (arrow || n) { e.preventDefault(); $('v3board').click(); } return; }
+  if (ui !== 'title' && ui !== 'end') return;
+  if (!arrow && n !== 1) return;
+  const t = padTargets(); if (!t.length) return;
+  e.preventDefault();
+  const at = t.findIndex(el => el.classList.contains('padLit'));
+  if (n === 1) { (at >= 0 ? t[at] : document.querySelector(PRIMARY[ui]) || t[0])?.click(); return; }
+  const step = arrow[1] === 'Down' || arrow[1] === 'Right' ? 1 : -1;
+  padLight(t[at < 0 ? (step > 0 ? 0 : t.length - 1) : (at + step + t.length) % t.length]);
+});
 
 // The in-car display: the line, where it is going, the next stop — and, on a
 // tram, which tram (look only).
