@@ -191,12 +191,15 @@ export const SEASONS = [
     end: 300,
     // Wave pacing: DD-like pressure with breathing gaps after heavies
     waves: [
-      { t: 0,   kind: 'skulls', density: 0.6, gap: 8 },
-      { t: 25,  kind: 'mix', density: 0.8, gap: 6 },
-      { t: 50,  kind: 'heavies', density: 0.5, gap: 12 },
-      { t: 80,  kind: 'skulls', density: 1.0, gap: 5 },
-      { t: 120, kind: 'mix', density: 1.1, gap: 7 },
-      { t: 180, kind: 'finale', density: 1.3, gap: 4 },
+      // v62 (HD-023): an act STEERS the tuned HYPER director (tuning.js), it
+      // does not replace it. `density` multiplies the tuned budget (1 = as
+      // tuned), `kind` leans the picks, `gap` is the valley the act opens on.
+      { t: 0,   kind: 'skulls',  name: 'THE SWARM',   density: 1.0,  gap: 0 },
+      { t: 25,  kind: 'mix',     name: 'THE PARADE',  density: 1.0,  gap: 3 },
+      { t: 50,  kind: 'heavies', name: 'THE HEAVIES', density: 1.1,  gap: 4 },
+      { t: 80,  kind: 'skulls',  name: 'THE SQUEEZE', density: 1.1,  gap: 3 },
+      { t: 120, kind: 'mix',     name: 'THE HOST',    density: 1.15, gap: 4 },
+      { t: 180, kind: 'finale',  density: 1.25, gap: 0 },
     ],
     built: true,
   },
@@ -219,14 +222,20 @@ export const SEASONS = [
     // jump over. Only random skulls as enemies otherwise." So: no slabs, no
     // rock, no roster but the skull family, and the wave is a HAZARD sized
     // to a single jump, not a floor that carries you.
-    spawns: { only: 'skulls', base: 2.6, floor: 0.9, slope: 0.012, cap: 28, first: 1.2 },
+    // v62: was base 2.6 / floor 0.9 — under a clock that drains a second a
+    // second and a skull that pays one, that cadence could not be survived.
+    spawns: { only: 'skulls', base: 1.0, floor: 0.6, slope: 0.004, cap: 28, first: 1.2 },
+    // v62 THE SEA PAYS: a crest cleared in the air buys this many seconds
+    crestPays: 2,
     waves: [
-      { t: 0,   kind: 'wave', density: 0.4, gap: 12 },      // early: learn the jump
-      { t: 30,  kind: 'skulls', density: 0.6, gap: 10 },
-      { t: 55,  kind: 'wave', density: 0.7, gap: 9 },       // tighter waves
-      { t: 90,  kind: 'mix', density: 0.5, gap: 11 },       // light other pressure
-      { t: 140, kind: 'wave', density: 0.9, gap: 8 },
-      { t: 180, kind: 'finale', density: 1.1, gap: 6 },
+      // v62 (HD-023): here `density` multiplies the skull cadence (`spawns`).
+      // The sea-led acts run thinner, because a cleared crest pays too.
+      { t: 0,   kind: 'wave',   name: 'THE SEA',      density: 0.8,  gap: 0 },   // learn the jump
+      { t: 30,  kind: 'skulls', name: 'THE DROWNED',  density: 1.1,  gap: 3 },
+      { t: 55,  kind: 'wave',   name: 'HIGH WATER',   density: 0.9,  gap: 4 },
+      { t: 90,  kind: 'skulls', name: 'UNDERTOW',     density: 1.2,  gap: 3 },
+      { t: 140, kind: 'wave',   name: 'SPRING TIDE',  density: 1.0,  gap: 4 },
+      { t: 180, kind: 'finale', density: 1.3, gap: 0 },
     ],
     // v52 THE VISUAL LEAP (owner: "visual leap to season 2"). Looked at first:
     // a flat overcast grey sky nothing could stand against, a floor whose
@@ -387,6 +396,7 @@ export const SEASONS = [
         grow: 1.2, sink: 1.1, lifeMin: 99999, lifeMax: 99999, drift: 0, driftW: 0, avoidPlayer: 4 } },
     end: 300,
     built: true,
+    // wanted, not owed: neither blocks the season being complete
     todo: [
       'the new season 2 sculpts (aquamarine / green / yellow, Aztec) — the recolour holds the slot until they arrive',
       'the Inca backdrop from real art, if any arrives — the skullscape is the game\'s own skull for now',
@@ -402,11 +412,13 @@ export const SEASONS = [
     name: 'SEASON 3 — HAUL',
     menu: 'SEASON 3',
     waves: [
-      { t: 0,   kind: 'trucks', density: 0.3, gap: 14 },    // learn the platforms
-      { t: 35,  kind: 'gaze', density: 0.5, gap: 12 },      // lock ahead
-      { t: 80,  kind: 'skulls', density: 0.4, gap: 15 },    // a lighter beat (v58: was 'cargo', the stomp/save beat, gone with HD-018)
-      { t: 130, kind: 'ahead', density: 0.7, gap: 10 },     // enemies only forward
-      { t: 180, kind: 'finale', density: 1.0, gap: 8 },
+      // v62 (HD-023): TRUCK has no director, so here `density` multiplies the
+      // convoy's own skull rate. Until v62 this table was read by nothing.
+      { t: 0,   kind: 'trucks', name: 'THE CONVOY', density: 0.5, gap: 0 },   // learn the platforms
+      { t: 35,  kind: 'gaze',   name: 'LOCK ON',    density: 1.0, gap: 0 },   // the look has work
+      { t: 80,  kind: 'skulls', name: 'OPEN ROAD',  density: 0.7, gap: 0 },   // a lighter beat
+      { t: 130, kind: 'ahead',  name: 'HEADWIND',   density: 1.25, gap: 0 },
+      { t: 180, kind: 'finale', density: 1.0, gap: 0 },
     ],
     noRear: true,   // enemies spawn only in the forward hemisphere
     mode: 'truck',                       // the Clustertruck rules: the road is the arena, falling is death
@@ -485,9 +497,9 @@ export const SEASONS = [
     // the season's own, so the mode's words show).
     end: 300,
     built: true,
+    // wanted, not owed. The missiles have their own trail since v61 (fx.trail).
     todo: [
-      'trucks that read as trucks — a cab, a trailer, wheels (they are slabs)',
-      'the missile look: they fly as daggers today',
+      'the platforms as landspeeders (HD-014) — they are slabs with a cab',
     ],
   },
 ];

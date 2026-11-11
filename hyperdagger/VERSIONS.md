@@ -1,3 +1,61 @@
+## v62 — in progress
+**Three seasons that can be finished, and a finish that counts (HD-023)**
+
+Mikael, 11 Nov 2026: *"Plan and execute to ship 3 seasons feature complete.
+Act as Game design and art direction"*.
+
+Looked at first: the back half of each season on a contact sheet, and a bot
+that kills every body the instant it exists and is never touched — the ceiling
+of what a clock season allows. **It was dead at 31.0 s in EMBER with one kill,
+and at 30.0 s in INCA with none.** The menu says "survive to 5:00".
+
+The cause is one function. The season wave table (12 Oct) was written as the
+director: it returned before the tuned HYPER one ran, and spawned about one
+skull per breathing gap. The clock drains a second a second and a skull pays
+one. Its `kind` chose a toast and nothing else, so no watcher, husk, spider,
+blinker, serpent, dread, totem, thorn or leviathan ever appeared in a season.
+It rolled `Math.random` per frame, so pressure followed the frame rate and a
+daily seed seeded nothing. `waveIdx` was never reset, so a second run opened
+in the last act. HAUL's table was read by nothing at all.
+
+What changed, and each is a design decision:
+
+- **An act steers the tuned director; it does not replace it.** An act is
+  `{t, kind, name, density, gap}`. `density` multiplies the tuned budget (EMBER),
+  the skull cadence (INCA) or the convoy's skull rate (HAUL); 1 is as tuned.
+  `kind` leans an ordinary pulse (`skulls` → swarm, `heavies` → spike) and
+  leaves the rhythm's own heavy/spike/swarm alone. `gap` is a real valley when
+  the act opens. The act is named on screen: THE SWARM, THE PARADE, THE
+  HEAVIES, THE SQUEEZE, THE HOST; THE SEA, THE DROWNED, HIGH WATER, UNDERTOW,
+  SPRING TIDE; THE CONVOY, LOCK ON, OPEN ROAD, HEADWIND. The finale keeps its
+  own name.
+- **INCA: the sea pays.** A crest that passes under a body it did not touch
+  buys 2 s. The sea was only a cost. Its skull cadence is 1.0 s → 0.6 s (was
+  2.6 → 0.9, which no clock survives).
+- **A clear is ranked by kills.** The clock is still the score and a finished
+  run is still 300.0 s. Among clears, more kills is better: saved per season
+  and mode (`hyperDaggerClears`), sealed on the end screen (FIRST CLEAR / BEST
+  CLEAR / best clear N kills), shown on the menu, and starred on the season's
+  tab.
+- **The run ends on a beat**: LAST STAND at thirty seconds to go, and the last
+  ten are counted.
+- **INCA files its own best** (`…:inca`). It shared EMBER's, both being HYPER.
+  EMBER keeps the key it had, so no best is lost; INCA starts clean, because
+  what was in the shared key cannot be told apart.
+
+Measured, same bot, after: see the PR for the numbers reached.
+
+Gates: `test/acts.mjs` (bare node, 24: the tables' shape, and that INCA's
+cadence alone can carry the clock) and `test/seasons.cjs` (browser: acts open
+and are named, bodies arrive unasked, EMBER's roster is more than skulls, the
+crest is cleared with a real Space press and pays 2 s, a crest that hits pays
+nothing, LAST STAND, the count, the clear saved and shown, a second run opens
+in act one).
+
+Not done, and not claimed: nobody has played this at speed. The numbers say a
+season CAN be finished; whether it is the right difficulty is a playtest. The
+pause menu still has the v48 look. HAUL's skulls still roll `Math.random`.
+
 ## v61 — in progress
 **The look: particles, a fluid floor and light, a different one per season (HD-022)**
 
