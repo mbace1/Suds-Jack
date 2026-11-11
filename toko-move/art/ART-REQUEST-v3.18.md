@@ -1,4 +1,4 @@
-# Toko Move — art request, after v3.18 (2026-11-08; the stop, the modules and the logo added 2026-11-09; the logo done, more modules 2026-11-11)
+# Toko Move — art request, after v3.18 (2026-11-08; the stop, the modules and the logo added 2026-11-09; the logo done, more modules and frames for animation 2026-11-11)
 
 The owner's direction on v3.17:
 
@@ -178,6 +178,29 @@ traced into `toko/js/wordmark.js` (99.2% overlap with the file): every lockup,
 the sting, the arcade header and the trailer's title card draw it. Nothing
 more is asked here; a vector of the same lockup would still be welcome, to
 replace the trace.
+
+## 7 · FRAMES FOR ANIMATION — priority 2
+
+The owner, 2026-11-11: *"Animations?"* The game moves every picture it has
+(v3.28: the scenes sway and scroll, the tram drives in, the illustrations
+drift, the cards and stars come in). What it cannot do is make a figure take
+a step: that needs frames. Each set below is a short run of full-frame
+transparent PNGs, same size and registration as the layer it replaces, named
+`<layer>-f1`, `-f2`…; the game plays them in order and holds the last.
+
+| what | frames | where it plays |
+|---|---|---|
+| the courier walking in and out of the stop | 6, a loop | arriving at a stop, leaving for a walk |
+| the courier stepping onto the tram | 4 | boarding, as the tram stands |
+| the courier sitting down, and standing up | 3 each | the start and the end of a ride |
+| the courier looking up from the phone, and waving | 3 each | a card answered kindly; the end card |
+| the tram's doors opening and closing | 3 | each model, at the stop |
+| a rider stepping on, a rider stepping off | 4 each | the ride, stop by stop |
+| the waiting people: a head turned, a foot shifted | 2 each | the stop, now and then |
+| the gull: landing, a wing stretch | 4 | the stop and the quay |
+
+Loops should close on their first frame. The courier's face stays on its own
+registered layer in every frame, as in the stills.
 
 ## Not asked for
 
