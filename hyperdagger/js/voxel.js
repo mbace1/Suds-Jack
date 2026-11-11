@@ -643,6 +643,37 @@ const WL_FRAG_BODY = /* glsl */`
     }
   }
 `;
+// For a material the scene's lights already shade (the sculpted bodies are
+// Lambert): no key of its own — main.js aims the rig's key light at the
+// season's — only the rim and the event lights, added to what is lit.
+const WL_FRAG_LIT = /* glsl */`
+  if (uWK > 0.0) {
+    vec3 wn = normalize(cross(dFdx(vWLP), dFdy(vWLP)));
+    vec3 wv = normalize(cameraPosition - vWLP);
+    if (dot(wn, wv) < 0.0) wn = -wn;
+    vec3 wb = normalize(vWLP - vWLC + wn * 0.001);
+    float wrim = step(0.56, 1.0 - max(dot(mix(wb, wn, 0.5), wv), 0.0)) * step(-0.25, dot(wb, uWKey));
+    outgoingLight += uWRim * wrim * uWK * smoothstep(1.6, 4.0, distance(cameraPosition, vWLP));
+    for (int i = 0; i < 4; i++) {
+      vec3 wl = vec3(uWLit[i].x, 1.2, uWLit[i].y) - vWLP;
+      float wa = max(0.0, 1.0 - length(wl) / max(uWLit[i].z * 1.3, 0.01));
+      outgoingLight += uWLitCol[i] * (0.35 + 0.65 * diffuseColor.rgb) * (wa * wa * uWLit[i].w * (0.35 + 0.65 * max(dot(wn, normalize(wl)), 0.0)) * 0.7 * uWK);
+    }
+  }
+`;
+export function applyWorldLightLit(material) {
+  material.onBeforeCompile = shader => {
+    Object.assign(shader.uniforms, WORLD_LIGHT);
+    shader.vertexShader = shader.vertexShader
+      .replace('#include <common>', '#include <common>\n' + WL_VERT_DECL)
+      .replace('#include <begin_vertex>', '#include <begin_vertex>\n' + WL_VERT_BODY);
+    shader.fragmentShader = shader.fragmentShader
+      .replace('#include <common>', '#include <common>\n' + WL_FRAG_DECL)
+      .replace('#include <opaque_fragment>', WL_FRAG_LIT + '\n#include <opaque_fragment>');
+  };
+  material.customProgramCacheKey = () => 'world-lit-lambert';
+  return material;
+}
 /** The same light for a material that has no face tone (the smooth hull). */
 export function applyWorldLight(material) {
   material.onBeforeCompile = shader => {

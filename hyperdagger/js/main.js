@@ -1395,6 +1395,20 @@ function applyAir() {
   const wl = S().light;
   WORLD_LIGHT.uWK.value = wl && on ? (wl.k ?? 1) : 0;
   if (wl) { WORLD_LIGHT.uWKey.value.set(...wl.key).normalize(); WORLD_LIGHT.uWRim.value.setRGB(...wl.rim); }
+  // the sculpted bodies are lit by the rig: aim its key where the season's
+  // light comes from and colour it, and let the three low lights take the
+  // horizon's colour (they were ember red in every season)
+  if (wl && on) {
+    _rim.position.copy(WORLD_LIGHT.uWKey.value).multiplyScalar(10);
+    const m = Math.max(...wl.rim, 1e-3);
+    _rim.color.setRGB(wl.rim[0] / m, wl.rim[1] / m, wl.rim[2] / m);
+    _rim.intensity = wl.sun ?? 1.5;
+    const h = S().sky.horizon, hm = Math.max(...h, 1e-3);
+    for (const l of emberLights) styleTint(l.color.setRGB(h[0] / hm, h[1] / hm, h[2] / hm));
+  } else {
+    _rim.position.set(-3, 9, -2); _rim.color.setHex(0xdfe4ff); _rim.intensity = 0.35;
+    for (const l of emberLights) styleTint(l.color.setHex(0xff1e1e));
+  }
 }
 function applySeason() {
   const sn = S();
