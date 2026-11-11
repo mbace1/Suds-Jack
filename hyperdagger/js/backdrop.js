@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { toLambert, reliableTextures } from './meshassets.js?v=107';
+import { toLambert, reliableTextures } from './meshassets.js?v=108';
 
 /**
  * THE BACKDROP — the owner's Meshy environment pieces, placed OUTSIDE the

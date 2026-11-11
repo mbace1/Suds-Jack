@@ -1,3 +1,38 @@
+## v63 — in progress
+**The top visual, steps 1 and 2: the air in the sky, and the world's light on the bodies (HD-024)**
+
+Mikael, 11 Nov 2026, asked what the top visual to aim for is, was given five
+gaps in order of payoff, and answered *"All in order"*. These are the first two.
+
+- **The sky** (`sky.air` per season, in the sky shader). It is the largest
+  thing in every frame and was the least drawn. EMBER: smoke stretched along
+  the horizon and lit red from below. INCA: the sun's shafts (the angle goes in
+  as a circle, so there is no seam) and low cloud bars gilded on the sun's
+  side. HAUL: stratus in bars across the low sun, and the road's heat bending
+  the bottom of the sky. Everything is in whole steps, like the rest of the raster.
+- **The bodies** (`light` per season). Looked at first, and the first cut lit
+  the wrong thing: the shipped enemies are SCULPTED meshes on a Lambert rig,
+  not voxel cubes, and the rig did not know which season it was in (three ember
+  red lights in every season, a cold key from overhead). Now the rig's key is
+  aimed along the season's light and takes its colour, the low lights take the
+  horizon's colour, and both kinds of body (sculpted and cube) get a rim that
+  follows the body's roundness and the SAME four event lights the floor reads,
+  so a kill lights the swarm beside it. The first rim was per cube face and
+  speckled every body like a rash; it also edged the hand you hold, so it fades
+  out near the eye.
+
+EFFECTS OFF and the lowest perf tier draw the sky and light the bodies exactly
+as they were. VOID declares neither and stays the control.
+
+Gate: `test/sky.cjs` (20) — the air and the light per season, VOID without,
+the switches, the rig restored, and the sky DRAWN against a same-frame control.
+
+Tokens: `voxel.js` changed, which nine modules load, so every importer moved
+with it (the cascade is scripted; one token per module).
+
+Not done: steps 3 to 5 (the sea, HAUL's platforms, SDF). Not verified: any real
+GPU or phone; the rim in motion; the SDF bodies are not touched by this.
+
 ## v62 — in progress
 **Three seasons that can be finished, and a finish that counts (HD-023)**
 

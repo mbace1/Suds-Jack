@@ -254,7 +254,7 @@ export const SEASONS = [
       zenith: [0.006, 0.055, 0.068], glow: [0.95, 0.52, 0.13],
       sunCol: [1.7, 1.0, 0.38], sunSize: 0.085, rings: 0.8,
       air: { kind: 'rays', amt: 1, a: [1.0, 0.74, 0.34], b: [0.07, 0.13, 0.13] } },   // v63: the sun's shafts, cloud bars gilded on its side
-    light: { key: [0.0, 0.22, -1], rim: [0.85, 0.52, 0.16], k: 1 },   // v63: backlit by the sun, gold on the edges
+    light: { key: [0.0, 0.22, -1], rim: [0.85, 0.52, 0.16], k: 1, sun: 1.0 },   // v63: backlit by the sun, gold on the edges
     // the grid on dark water: the texture's grain pressed down to a quarter,
     // the lines kept; caustics under it; and the sun's path on top
     floor: { tint: [0.22, 0.85, 0.72], glow: 3.0, caustic: 0.4, grain: 0.45, glint: 1.0 },

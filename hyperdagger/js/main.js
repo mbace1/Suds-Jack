@@ -10,28 +10,28 @@ import { InputManager } from './input.js?v=111';
 import { Player } from './player.js?v=85';
 import { DaggerPool } from './daggers.js?v=85';
 import { GemPool } from './gems.js?v=85';
-import { DebrisPool, LitterField, VoxelSprite, MODELS, setVoxelDetail, getVoxelDetail, setStyleHue, styleTint, setHullMode, getHullMode, voxelOverrides, modelFor, getVoxelStyle, setVoxelStyle, setRosterPalette, WORLD_LIGHT } from './voxel.js?v=85';
-import { Skull, Wraith, Splitter, MiniSkull, DreadSkull, Husk, Revenant, Brute, Totem, Serpent, Spider, Leviathan, Watcher, Blinker, Egg } from './enemy.js?v=113';
+import { DebrisPool, LitterField, VoxelSprite, MODELS, setVoxelDetail, getVoxelDetail, setStyleHue, styleTint, setHullMode, getHullMode, voxelOverrides, modelFor, getVoxelStyle, setVoxelStyle, setRosterPalette, WORLD_LIGHT } from './voxel.js?v=86';
+import { Skull, Wraith, Splitter, MiniSkull, DreadSkull, Husk, Revenant, Brute, Totem, Serpent, Spider, Leviathan, Watcher, Blinker, Egg } from './enemy.js?v=114';
 import { OrbPool } from './bullets.js?v=85';
 import { AudioKit } from './audio.js?v=85';
 import { mulberry32, fnv1a, utcDateStr, mixSeed } from './rng.js?v=85';
 import { TUNING as T } from './tuning.js?v=85';
 import { HyperEnvironment } from './environment.js?v=85';
-import { Backdrop } from './backdrop.js?v=107';
-import { Walls } from './walls.js?v=85';
+import { Backdrop } from './backdrop.js?v=108';
+import { Walls } from './walls.js?v=86';
 import { MODES, modeById, nextModeId, applyAbilities, abilitiesOf } from './modes.js?v=109';
-import { TruckTrack } from './truck.js?v=113';
+import { TruckTrack } from './truck.js?v=114';
 import { GazeLock } from './gaze.js?v=85';
-import { PhysGibs } from './gibs.js?v=85';
-import { SEASONS, seasonById, nextSeasonId, GEL_MOUND_SAMPLE } from './seasons.js?v=121';
+import { PhysGibs } from './gibs.js?v=86';
+import { SEASONS, seasonById, nextSeasonId, GEL_MOUND_SAMPLE } from './seasons.js?v=122';
 import { Platforms } from './platforms.js?v=85';
 import { shaleGeometry, shaleMaterial } from './shale.js?v=85';
 import { GooWave } from './goo.js?v=85';
 import { gelMaterial } from './gel.js?v=85';
 import { mosaicPalette, mosaicSkin } from './roster.js?v=85';
-import { Skullscape } from './inca.js?v=85';
-import { ARENA_ASSETS, buildFloorPanels } from './meshassets.js?v=107';
-import { preloadMeshEnemies, meshSkinState, setMeshSkins, meshSkinsOn, setRosterSkin } from './mesh-enemies.js?v=107';
+import { Skullscape } from './inca.js?v=86';
+import { ARENA_ASSETS, buildFloorPanels } from './meshassets.js?v=108';
+import { preloadMeshEnemies, meshSkinState, setMeshSkins, meshSkinsOn, setRosterSkin } from './mesh-enemies.js?v=108';
 import { Look } from './fx.js?v=1';   // v61 (HD-022): what a fight looks like, per season
 import { FLUID_GLSL_PARS, FLUID_GLSL_MAIN } from './fx-fluid.js?v=1';   // …and the floor's half of the liquid
 import { openTable } from '../../toko/js/table.js?v=6';   // v48 (theirs): Toko opens over the paused run
@@ -4536,7 +4536,7 @@ window.__hd = {
     truckObj() { return truck.active ?? truck; },   // v51: the convoy (or the classic road), for the gate
     triggerFinale() { startFinale(); return !!finale; },   // v53
     getGoal() { return { goal: goalLine(), clock: clockLine(), shown: elGoal.classList.contains('show'), ms: GOAL_MS }; },   // HD-010
-    getSky() { const u = skyMat.uniforms; return { bodyLight: WORLD_LIGHT.uWK.value, bodyRim: WORLD_LIGHT.uWRim.value.toArray(), air: u.uAir.value, kind: u.uAirKind.value, a: u.uAirA.value.toArray(), b: u.uAirB.value.toArray(), declared: S().sky.air ?? null }; },   // v63
+    getSky() { const u = skyMat.uniforms; return { rig: { key: _rim.position.toArray().map(v => +v.toFixed(2)), keyK: _rim.intensity, keyCol: _rim.color.getHex(), low: emberLights[0].color.getHex() }, bodyLight: WORLD_LIGHT.uWK.value, bodyRim: WORLD_LIGHT.uWRim.value.toArray(), air: u.uAir.value, kind: u.uAirKind.value, a: u.uAirA.value.toArray(), b: u.uAirB.value.toArray(), declared: S().sky.air ?? null }; },   // v63
     getActs() { const w = currentWave(); return { idx: waveIdx, name: w?.name ?? null, kind: w?.kind ?? null, density: actDensity(), opened: actsOpened, crests: crestsCleared, armed: crestArmed, clears: readClears(), hiKey: hiKey(), lastStand: lastStandSaid, mixed: runMixed, struck: crestStruck, crest: goo.cfg ? { h: +goo.heightAt(player.feet.x, player.feet.z).toFixed(3), s: +goo._s(player.feet.x, player.feet.z).toFixed(2), speed: goo.speed, width: goo.cfg.width, hurtFrom: goo.cfg.hurtFrom ?? 0.35 } : null, skullMul: truck.active?.cfg?.skullMul ?? null, nextPulseAt, nextSkullAt }; },   // v62
     getRun() { return { ebbN, ebbSteps, rubbleStands: +rubbleStands.toFixed(2), complete: runComplete, end: S().end ?? null, state, recap: recapParts() }; },   // v54
     completeRun() { completeRun(); return runComplete; },

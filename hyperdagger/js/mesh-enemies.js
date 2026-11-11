@@ -1,6 +1,6 @@
 import * as THREE from 'three';
-import { toLambert, voxelizeMesh, reliableTextures } from './meshassets.js?v=107';
-import { MODELS, registerVoxelModel, modelFor } from './voxel.js?v=85';
+import { toLambert, voxelizeMesh, reliableTextures } from './meshassets.js?v=108';
+import { MODELS, registerVoxelModel, modelFor } from './voxel.js?v=86';
 
 // v45: a season's recolour of the alive-skin (roster.js `mosaicSkin`), set
 // beside the lattice palette so the skin and the cubes under it agree
