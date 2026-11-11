@@ -7,8 +7,8 @@
 // side. Every number TUNING.scenery.deep
 import * as THREE from 'three/webgpu';
 import { Fn, float, vec2, vec3, sin, cos, abs, max, mix, smoothstep, length, clamp, fract, uv, positionWorld, positionLocal, positionGeometry, normalWorld } from 'three/tsl';
-import { GEL_TIME } from '../gel.js?v=141';
-import { noise, seeded, phase, put, stations, groundPlane, edgeLine, stoneGeometry, risers, merge, motes, ledgeBlocks, ledgeMesh } from '../kit.js?v=141';
+import { GEL_TIME } from '../gel.js?v=142';
+import { noise, seeded, phase, put, stations, groundPlane, edgeLine, stoneGeometry, risers, merge, motes, ledgeBlocks, ledgeMesh } from '../kit.js?v=142';
 
 const v3 = (a) => vec3(...a);
 

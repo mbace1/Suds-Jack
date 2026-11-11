@@ -19,9 +19,9 @@
 //              ice is gone down it
 import * as THREE from 'three/webgpu';
 import { uv, vec3, float, abs, smoothstep, mix } from 'three/tsl';
-import { TUNING } from '../tuning.js?v=141';
-import { seeded } from './kit.js?v=141';
-import { SUN_AT } from './sun.js?v=141';
+import { TUNING } from '../tuning.js?v=142';
+import { seeded } from './kit.js?v=142';
+import { SUN_AT } from './sun.js?v=142';
 
 const T = TUNING;
 
@@ -64,10 +64,13 @@ function chipGeometry(L) {
   for (let i = 1; i < 4; i++) tris.push([top[0], top[i], top[i + 1]]);
   return facets(tris, [0, h / 2, 0]);
 }
+// v142: the counts are the ARCADE floor's (16 × 27.5 m half sizes). A campaign room wears the same look on a floor a
+// quarter the size, and the same count lay four times as thick there: a smaller floor takes its share
+const FULL = 16 * 27.5, share = (hx, hz) => Math.min(1, (hx * hz) / FULL);
 // spread over the whole floor (the ice's chips): [x, z, free]
 function openSpots(L, hx, hz, rnd) {
-  const spots = [];
-  for (let k = 0; k < L.n; k++) spots.push([(rnd() * 2 - 1) * (hx - 0.6), (rnd() * 2 - 1) * (hz - 0.6), true]);
+  const spots = [], n = Math.round(L.n * share(hx, hz));
+  for (let k = 0; k < n; k++) spots.push([(rnd() * 2 - 1) * (hx - 0.6), (rnd() * 2 - 1) * (hz - 0.6), true]);
   return spots;
 }
 // what lies on a floor: its numbers, its shape, where it lies, what stops it (`walls`: 'curb' the driveway's — three
@@ -95,16 +98,16 @@ export class LeafLitter {
   // the driveway's: where its leaves lie
   _leafSpots(L, hx, hz, rnd, spots) {
     // on the slab: thin in the open, thicker toward its edges, where the wind leaves them
-    const edge = (x, z) => Math.min(hx - Math.abs(x), z + hz);
-    for (let tries = 0; spots.length < L.slab && tries < L.slab * 40; tries++) {
+    const edge = (x, z) => Math.min(hx - Math.abs(x), z + hz), k = share(hx, hz), slab = Math.round(L.slab * k), corner = Math.round(L.corner * k), lawn = Math.round(L.lawn * Math.sqrt(k));
+    for (let tries = 0; spots.length < slab && tries < slab * 40; tries++) {
       const x = (rnd() * 2 - 1) * (hx - 0.4), z = (rnd() * 2 - 1) * (hz - 0.4);
       if (rnd() < L.open + (1 - L.open) * Math.exp(-edge(x, z) / L.drift)) spots.push([x, z, true]);
     }
     // heaped in the two far corners
-    for (const sx of [-1, 1]) for (let k = 0; k < L.corner; k++) { const a = rnd() * Math.PI * 0.5, d = Math.sqrt(rnd()) * L.cornerR; spots.push([sx * (hx - 0.35 - Math.cos(a) * d), -hz + 0.35 + Math.sin(a) * d, true]); }
+    for (const sx of [-1, 1]) for (let k = 0; k < corner; k++) { const a = rnd() * Math.PI * 0.5, d = Math.sqrt(rnd()) * L.cornerR; spots.push([sx * (hx - 0.35 - Math.cos(a) * d), -hz + 0.35 + Math.sin(a) * d, true]); }
     // and on the lawn past the curb: the far side and the two long ones, never the near side
     const W = T.scenery.driveway.curbWidth;
-    for (let k = 0; k < L.lawn; k++) {
+    for (let k = 0; k < lawn; k++) {
       const out = W + 0.3 + rnd() * L.lawnOut, side = rnd();
       if (side < 0.5) spots.push([(rnd() * 2 - 1) * (hx + W), -(hz + out), false]);
       else spots.push([(side < 0.75 ? -1 : 1) * (hx + out), -hz + rnd() * (2 * hz - 1.5), false]);

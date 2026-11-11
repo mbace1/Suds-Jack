@@ -19,6 +19,18 @@
     Never `--no-verify`.
 -->
 
+## v142 — 2026-11-11
+**The campaign's rooms wear the new floors properly: leaves, chips and puddles to the room's own size, and a shaped room's floor cut to its shape**
+- WHY: v138 to v141 changed the floor of every world, and the campaign's 36 rooms wear those worlds' looks. All 36 were rendered on a phone-shaped screen at v141 and read. Two faults, both from rooms being smaller than the arcade's floors and not always rectangles.
+- TOO MANY LEAVES. The driveway's 150 leaves were counted for the arcade's floor; a room of THE SURFACE is about a quarter of that, so the same 150 lay four times as thick and a small room was carpeted. A floor now takes its SHARE: the count scales with the floor's area (the lawn's with its edge), so the arcade's driveway is exactly as it was and FIRST LIGHT has 44 leaves on its slab where it had 174. The ice's chips do the same (18 on THE FOAM's rink, 64 on the arcade's sheet), and the driveway's two puddles are drawn to the room's scale.
+- ONE FLAT COLOUR PAST THE EDGE. In a room that is not a rectangle the floor painted everything past its shape one colour, so a disc of river sat in an olive square, and a cistern's cross in navy blocks. Each of those sets lays its own ground under the whole floor, so the floor is now CUT to its shape there (as the driveway's has been since v73) and what shows past the edge is what is there: the stream running on and its pebble bank, the cistern's dark water, the snowfield. The boiler and the deep keep their dark — under a deck and past a reef the dark is what is there.
+- Checked by render: the rooms of every campaign world before and after, a room whose floor moves (PULSE), and the arcade's river and ice. test/view.mjs holds the share (3 checks): a quarter-size room has a quarter of the leaves, on its own slab, and the chips likewise; the arcade's counts are untouched (the leaves' and chips' own checks stand).
+- Not changed: the arcade. Its floors are the full size and rectangles, so every count and picture there is as v141 left it.
+- Cache tokens `?v=141` → `?v=142`; HUD label → `2.0 · v142`
+- Cache tokens `?v=141` → `?v=142`; HUD label → `2.0 · v142`
+
+---
+
 ## v141 — 2026-11-10
 **Chips of broken ice lie on the sheet, and they skitter: a kick sends one a long way, off the banks and the blocks — and into a hole, and gone**
 - THE ASK (owner, 2026-11-10): "we can go way beyond with geometry and art assets", and of the worlds after the driveway "we can do a lot better than the concept art". The driveway has leaves that answer the fight (v138); the ice has holes broken through it (v139). This is what broke off.

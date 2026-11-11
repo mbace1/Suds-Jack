@@ -24,13 +24,15 @@
 // `swirlAt`, out to `swirlR`, and opens a hole of `hole` m in the middle).
 import * as THREE from 'three/webgpu';
 import { Fn, If, uv, uniform, float, abs, fract, min, max, sin, cos, atan, length, smoothstep, step, mix, fwidth, texture, clamp, vec2, vec3, pow, floor as tfloor, round, select, mod, dFdx, dFdy, exp, normalize, dot, cameraPosition, positionWorld, vec4 } from 'three/tsl';
-import { pickStyle, grainAt } from './style.js?v=141';
-import { SUN_AT } from './sun.js?v=141';
-import { GEL_TIME } from './gel.js?v=141';
-import { noise, grate, cells, sewerSpots, treeShade } from './scenery.js?v=141';
-import { lilyPads, DRIFT, hash } from './kit.js?v=141';
+import { pickStyle, grainAt } from './style.js?v=142';
+import { SUN_AT } from './sun.js?v=142';
+import { GEL_TIME } from './gel.js?v=142';
+import { noise, grate, cells, sewerSpots, treeShade } from './scenery.js?v=142';
+import { lilyPads, DRIFT, hash } from './kit.js?v=142';
 
 const _white = new THREE.Color(0xffffff);
+// the floors whose set has a ground of its own under them: a room that is not a rectangle is CUT to its shape there
+const CUT_TO_GROUND = new Set(['concrete', 'river', 'cistern', 'ice']);
 
 // `light` (optional) is the arena's light map (render/light.js): its rgb is
 // light thrown on the floor, its alpha the shadow of what stands on it.
@@ -309,7 +311,10 @@ export function buildFloor(T, hx, hz, light, { style = 'grid', bounds: hasBounds
     let puddle = null;
     if (C.puddles) {
       const Pd = C.puddles, m = float(0).toVar(), wet = float(0).toVar(), rim = float(0).toVar();
-      for (const [fx, fz, r, seed] of Pd.at) {
+      // (v142: `r` is the arcade floor's; a campaign room a quarter the size takes a puddle to its own scale)
+      const pr = Math.max(0.6, Math.min(1, Math.sqrt((hx * hz) / (16 * 27.5))));
+      for (const [fx, fz, r0, seed] of Pd.at) {
+        const r = r0 * pr;
         // (each a little longer one way than the other, turned by its seed; its edge wandering at two scales)
         const ca = Math.cos(seed), sa = Math.sin(seed), q0 = w.sub(vec2(fx * hx, fz * hz)).div(r), q = vec2(q0.x.mul(ca).sub(q0.y.mul(sa)), q0.x.mul(sa).add(q0.y.mul(ca)).mul(1.35));
         If(length(q0).lessThan(1.9), () => {
@@ -1117,7 +1122,11 @@ export function buildFloor(T, hx, hz, light, { style = 'grid', bounds: hasBounds
 
   // v73: on the driveway the grass is the limit — a shaped room's floor stops at its rail and
   // the lawn (scenery.js, drawn after the floor) shows past it, where the others show the dark
-  if (regionSdf && style === 'concrete') { mat.opacityNode = Fn(() => step(regionSdf(toWorld(uv())), 0.09))(); mat.alphaTest = 0.5; }
+  // v142: and so do the river, the cistern and the ice — each set lays its ground under the whole floor (kit.js
+  // groundPlane), so past a shaped room's edge there is the river's bank and stream, the cistern's dark water, the
+  // snowfield, where the floor painted one flat colour (a river's disc sat in an olive square). The boiler and the
+  // deep keep their dark: under a deck and past a reef the dark is what is there
+  if (regionSdf && CUT_TO_GROUND.has(style)) { mat.opacityNode = Fn(() => step(regionSdf(toWorld(uv())), 0.09))(); mat.alphaTest = 0.5; }
   const plane = new THREE.Mesh(new THREE.PlaneGeometry(hx * 2, hz * 2).rotateX(-Math.PI / 2), mat);
   group.add(plane);
 
