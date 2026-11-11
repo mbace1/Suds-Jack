@@ -3337,6 +3337,7 @@ const _col = new THREE.Color();
 // kind is a small clock. `finalePressure` tightens the season's own director
 // after; `finaleDone` keeps it to once a run.
 let finale = null, finaleDone = false, finalePressure = 1;
+function haulSkullMul() { return actDensity() * (finaleDone ? (S().finale?.after?.skulls ?? 1) : 1); }
 function startFinale() {
   const f = S().finale;
   if (!f || finale || finaleDone) return;
@@ -3353,7 +3354,7 @@ function endFinale() {
   const f = finale.cfg;
   finale = null; finaleDone = true;
   finalePressure = f.after?.pressure ?? 1;
-  if (f.kind === 'pileup' && truck.active) truck.active.cfg.speed *= f.resume ?? 1;   // v62: the skull rate after it is set with the act's, each frame
+  if (f.kind === 'pileup' && truck.active) { truck.active.cfg.speed *= f.resume ?? 1; truck.active.cfg.skullMul = haulSkullMul(); }   // v62: the act's lean times the finale's
   if (f.kind === 'drain') { goo.drain = 0; applySeasonFloorTerms(1); }
 }
 function crestCleared() {
@@ -3983,7 +3984,7 @@ function step(dt) {
   if (player.abilities?.reap && reapPressed) tryReap();
   if (M().arena === 'track') {
     // v62: TRUCK has no director, so the season's acts lean on the convoy's own skull rate
-    if (S().mode === 'truck' && truck.active?.cfg) truck.active.cfg.skullMul = actDensity() * (finaleDone ? (S().finale?.after?.skulls ?? 1) : 1);
+    if (S().mode === 'truck' && truck.active?.cfg) truck.active.cfg.skullMul = haulSkullMul();
     truck.update(dt, player, gameTime, enemies, walls); // the course lays walls beside its wide gaps
     // the floor leaving is the whole game — falling off it is the death
     if (player.feet.y < truck.fallY() && state === 'playing' && !invulnerable) {
