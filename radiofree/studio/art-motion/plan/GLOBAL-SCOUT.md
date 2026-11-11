@@ -1496,3 +1496,33 @@ Everything below comes from search summaries. No article was opened.
 - **Pattern note:** the Google figure firmed up through a mainstream investor outlet (Motley Fool) a day after the
   analysis site. For filing numbers, check Motley Fool and Yahoo Finance as the second source while EDGAR stays
   blocked.
+
+### Check Wed 11 Nov 17:16 (evening; search summaries only; nothing opened)
+- **Big development:** none. The Anthropic IPO is on track; no new price or share count beyond the $70–$78 range
+  (pricing 18 Nov, trading 19 Nov). The $1.5T+ valuation talk is still reporting, not a filing number.
+- **The Round Trip: the Google figure ROSE across three filings (a correction to this morning's "firmer").**
+  - Reuters, 29 Sep (the confidential prospectus): at least **$111.1B** to Google, $110B to Amazon, $31.4B to
+    Microsoft, ~$518B in all, ~80% payable regardless of use.
+  - The public S-1, 26 Oct: at least **$114.5B** to Google (Apr 2026–Jul 2033).
+  - Amendment No. 1, 2 Nov: about **$121.3B** to Google (ppc.land, Motley Fool, FourWeekMBA).
+  - These are successive filings, not conflicting reports. The rise itself is a possible beat ("the bill grew with
+    each draft"), but only once the filing is read. EDGAR is still blocked from here, and FourWeekMBA says it could
+    not find the filing either. Microsoft varies by source ($31.4B Reuters vs $44.9B in the amendment summaries).
+  - [BusinessDay/Reuters](https://www.businessday.co.za/world/international-companies/2026-09-29-anthropic-plans-518bn-ai-infrastructure-spend-80-non-cancellable/),
+    [ppc.land](https://ppc.land/anthropic-swings-to-567m-q3-operating-loss-on-5bn-of-short-term-compute/),
+    [InvestmentNews](https://investmentnews.com/equities/anthropics-landmark-ipo-filing-shows-12-fold-revenue-jump-518b-compute-bill/268391)
+- **10/11 OpenAI, the House letter:** no OpenAI answer reported yet. The deadline is **13 Nov**; check on the 13th
+  and 14th. The letter names three researchers (Korbak, Balesni, Wang). OpenAI says the firings were for breaking its
+  rules on sensitive information; the researchers say they shared nothing confidential. Name them only if each went
+  public. [TNW](https://thenextweb.com/news/openai-whistleblowers-house-democrats-casar-letter)
+- **Military AI:** nothing dated November. On file: the eight classified-network deals (May), Anthropic's exclusion
+  as a "supply chain risk" and its lawsuit.
+- **5 Short Supply (DRAM):** still no ruling on the motion to dismiss (opposed in September), no hearing date and no
+  government probe. Samsung calls the claims "unfounded". Re-check the docket 12 Nov as planned.
+  [MLex](https://www.mlex.com/mlex/antitrust/articles/2521308)
+- **Whistleblowers:** S. 1792 has no reported Senate action since the Senate returned on 9 Nov. Meta: nothing new
+  since the Béjar trial testimony (Aug).
+- **Data-center NDAs (US):** nothing dated November. Tuusula stays the live echo (HS-SCOUT).
+- **Reactions:** counts are not visible through search.
+- **Pattern note:** when two outlets give different filing numbers, check the filing dates first. Here three figures
+  were three drafts of the same document.

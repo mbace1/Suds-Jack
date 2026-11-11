@@ -1128,3 +1128,19 @@ All facts below come from search summaries; no article was opened.
   - **Five Pins:** nothing contradicts it.
   - **Short Supply:** still no hearing date. Re-check the docket and Fitburg 12 Nov as planned.
 - **Films now wrong:** none.
+
+## Daily check, Wed 11 Nov 17:16 (evening; search summaries only, nothing opened)
+- **Big development:** none. The Anthropic IPO is on track (pricing 18 Nov, trading 19 Nov).
+- **The Round Trip: the Google figure is three figures, one per draft.** $111.1B (Reuters, confidential prospectus,
+  29 Sep), $114.5B (public S-1, 26 Oct) and ~$121.3B (Amendment No. 1, 2 Nov). Not a conflict but a rise, and possibly
+  a beat. Still read the filing before any build; EDGAR is blocked from here. The disclosure wording is the owner's.
+- **OpenAI, the House letter:** no answer reported; due **13 Nov**. Check 13–14 Nov.
+- **Tuusula (Jokela):** no coverage of the 10 Nov residents' meeting yet. New public detail: 96 MW, 76 diesel backup
+  generators, and an MTV piece on residents organizing against "murky" decisions. Still MED-HIGH and the best Finnish
+  candidate.
+- **Films:**
+  - Night Flight (the channel promo) was posted 11 Nov ~11:19–11:21 on RFH IG, X and YouTube (Grok Bot). It makes no
+    factual claim.
+  - Needs a Designer and Found in Pasila EN/FI are posted, with their links recorded by Grok Bot.
+  - **No RFH film is waiting, and none is now wrong.** The only HOLD row is Toko Drop 2.0 (Toko Midori Games).
+- **12 Nov:** re-check the Short Supply docket and the Fitburg appeal, as planned.

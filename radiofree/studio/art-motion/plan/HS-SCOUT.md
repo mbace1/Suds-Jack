@@ -1264,3 +1264,29 @@ Search summaries only; nothing opened. One device each, from STORY-DEVICES.md or
 - **Pattern note:** the strongest Tuusula record (the Kreab emails) came from the local paper's public-records work
   weeks before HS or Yle touched the story. When a local secrecy story surfaces, search the local paper's archive for
   "sähköpostit" and "asiakirjat" before rating it.
+
+### Check Wed 11 Nov 17:16 (evening; search summaries only; nothing opened)
+- **Tuusula (Jokela):** no coverage yet of the 10 Nov residents' meeting. The morning's records stand (the Kreab emails
+  in Aamuposti, the town's denial, the Chancellor of Justice complaint). New background found today, all public:
+  - The plan is a **96 MW** data center with **76 diesel backup generators** of 6.3 MW each, plus 110 kV lines to
+    Nurmijärvi (the YVA documents). The YVA's reasoned conclusion has been published (STT info).
+  - The municipal executive board's statement on the YVA report (Aug, unanimous) says the report did not examine an
+    underground cable, though many residents asked for one.
+  - MTV: residents in Jokela and Lapinlahti say the decisions were made "hämärästi" (murkily) and are organizing a
+    network against them. MEP Pekka Toveri criticized the preparation (Verkkouutiset). Dates not confirmed from the
+    summaries.
+  - Rating stays **MED-HIGH**: the paper trail is public, the denial is on record, and the next step (the Chancellor of
+    Justice) is pending.
+  - [MTV](https://www.mtvuutiset.fi/artikkeli/datakeskuspaatoksia-on-tehty-kuntalaisten-mielesta-hahmaisesti-nyt-sita-vastaan-taistellaan-verkostolla/9390670),
+    [STT info, YVA conclusion](https://www.sttinfo.fi/tiedote/72444463/jokelan-datakeskushankkeen-yva-selostuksesta-perusteltu-paatelma?lang=fi),
+    [Verkkouutiset](https://www.verkkouutiset.fi/a/miksi-datakeskus-rakennetaan-asutuksen-viereen/),
+    [Tuusula, Dec 2025](https://tuusula.fi/en/2025/12/03/data-centre-planned-for-jokela/)
+- **Helsinki protest (7 Nov):** no government response and no new date for a follow-up march. Figures on file: police
+  ~1,300, organizers ~1,500 (Kaleva/STT, Yle).
+- **Fitburg:** no appeal filing reported yet. Re-check 12 Nov as planned.
+- **Muhos (Cut First):** nothing new. One English source repeats the 6 Oct stop-work order and Google's 130 ha
+  replanting pledge (on file).
+- **Hamina (Right of Way):** no decision.
+- **ICEYE (Sleep Tight, posted):** no November news; it exhibits at Space Tech Expo Europe 17–19 Nov.
+- **HS sweep:** no new HS data-center or AI story surfaced.
+- **Reactions:** counts are not visible through search.
