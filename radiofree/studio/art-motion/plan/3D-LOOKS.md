@@ -26,6 +26,7 @@ itself.
 | **map** | a 3D relief map as a tabletop, with pins, rivers and towns rising out of it | a follow-up to Five Pins; any "where" story | idea |
 | **creature** | animals and the robot (`looks/robot`) as characters in a habitat | Right of Way's squirrel already; the robot's first story is to be found | partly |
 | **court** | a toy courtroom with bench, gavel and docket boxes | Short Supply's 13 Nov hearing follow-up | idea |
+| **night** (`clay/kit/night.js`) | the cinematic night look: height fog, a sky dome (moon, aurora, stars), a water mirror, snow with ripples and glints, moon and lamp shadows, light shafts, a lens streak, and frames made of jittered exposures (antialiasing and real motion blur) | Night Flight (the channel promo); the 11 Nov pitch stills (seabed, runway, Jokela) | in use |
 
 ## Upgrades waiting on the owner's OK (from `looks/README.md`)
 
