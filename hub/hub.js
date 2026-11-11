@@ -26,7 +26,7 @@ function relink() {
 import { GAMES, SKETCHES } from './games.js?v=104';
 import { drawMarquee } from './art.js?v=21';
 import * as feedback from './feedback.js?v=13';
-import * as topics from './topics.js?v=12';
+import * as topics from './topics.js?v=13';
 import { LANGS, t, gameText, setLang, getLang, preferred, remember } from './i18n.js?v=11';
 import { watchPad, padPresent } from './pad.js?v=10';
 import * as room from './arcade.js?v=5';

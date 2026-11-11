@@ -37,7 +37,7 @@ const SHELL = [
   './hub/playlog-auto.js',
   './hub/playlog.js',
   './hub/toko-cabinet-dom.js?v=1',
-  './hub/topics.js?v=12',
+  './hub/topics.js?v=13',
   './toko/js/chat.js?v=26',
   './toko/js/dialogue.fi.js?v=26',
   './toko/js/dialogue.ja.js?v=26',
