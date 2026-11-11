@@ -48,7 +48,7 @@ cap); INCA reaches 300.0 s (702 kills, the clock at its cap, no crest jumped).
 That is a ceiling, not a difficulty: the bot is never touched and never misses.
 
 Gates: `test/acts.mjs` (bare node, 24: the tables' shape, and that INCA's
-cadence alone can carry the clock) and `test/seasons.cjs` (browser: acts open
+cadence alone can carry the clock) and `test/seasons.cjs` (browser, 48: acts open
 and are named, bodies arrive unasked, EMBER's roster is more than skulls, the
 crest is cleared with a real Space press and pays 2 s, a crest that hits pays
 nothing, LAST STAND, the count, the clear saved and shown, a second run opens

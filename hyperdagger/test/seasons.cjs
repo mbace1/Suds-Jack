@@ -49,7 +49,7 @@ s.listen(0, '127.0.0.1', async () => {
   const SECOND_AT = { ember: 25, inca: 30, haul: 35 };
   const KEY = { ember: 'hyperDaggerHiHyper', inca: 'hyperDaggerHiHyper:inca', haul: 'hyperDaggerHiTruckV58' };
 
-  for (const season of ['ember', 'inca', 'haul']) {
+  for (const season of (process.env.ONLY === "mixed" ? [] : ["ember", "inca", "haul"])) {
     try {
       const q = await open(season);
       const menu0 = await q.evaluate(() => ({ best: document.querySelector('.mn-best')?.textContent ?? '', stars: document.querySelectorAll('.mn-star').length }));
@@ -148,6 +148,38 @@ s.listen(0, '127.0.0.1', async () => {
       await q.context().close();
     } catch (e) { ok(`${season}: the checks ran`, false, e.stack || String(e)); }
   }
+  // a run across two seasons is neither's clear; a crest hit does not follow you into the next run
+  try {
+    const q = await open('ember');
+    await q.evaluate(() => { const d = window.__hd.debug; d.startGame(); d.setInvulnerable(true); d.setLife(60); d.setTime(297); });
+    await pass_(q, 0.3);
+    await q.locator('#pauseBtn').dispatchEvent('pointerdown');   // the on-screen pause control
+    await q.waitForSelector('button.season[data-season="inca"]', { timeout: 10000 });
+    await q.locator('button.season[data-season="inca"]').dispatchEvent('pointerdown');
+    await q.waitForTimeout(300);
+    const mid = await q.evaluate(() => ({ a: window.__hd.debug.getActs(), paused: document.getElementById('msg').style.display }));
+    if (mid.paused === 'block') await q.locator('#msg p.go').dispatchEvent('pointerdown', { bubbles: true });   // "tap anywhere else to resume"
+    await q.waitForTimeout(200);
+    const resumed = await q.evaluate(() => document.getElementById('msg').style.display);
+    ok('mixed: the run resumes from the pause menu', resumed !== 'block', resumed);
+    await q.evaluate(() => { const d = window.__hd.debug; d.setLife(60); d.setTimeScale(3); });
+    await pass_(q, 9);
+    const end = await q.evaluate(() => ({ run: window.__hd.debug.getRun(), seal: !!document.querySelector('p.seal'), a: window.__hd.debug.getActs() }));
+    ok('mixed: the season was changed under a live run (pause menu)', mid.a.mixed === true && mid.a.hiKey.endsWith(':inca'), JSON.stringify([mid.a.mixed, mid.a.hiKey]));
+    ok('mixed: the run still completes', end.run.complete === true && end.run.state === 'dead', JSON.stringify(end.run));
+    ok('mixed: and clears neither season — no record, no seal', Object.keys(end.a.clears).length === 0 && !end.seal, JSON.stringify([end.a.clears, end.seal]));
+    // INCA now: stand in a crest so it hits, end the run inside it, start again
+    await q.evaluate(() => { const d = window.__hd.debug; d.startGame(); d.setInvulnerable(true); d.setLife(60); d.freezeDirector(true); d.setTimeScale(1); });
+    let hit = false;
+    for (let i = 0; i < 4000 && !hit; i++) { hit = (await acts(q)).struck; if (!hit) await q.waitForTimeout(25); }
+    await q.evaluate(() => window.__hd.debug.die());
+    const dead = await acts(q);
+    await q.evaluate(() => { const d = window.__hd.debug; d.startGame(); d.setInvulnerable(true); });
+    await pass_(q, 0.2);
+    const fresh = await acts(q);
+    ok('inca: a crest hit at the end of one run does not follow you into the next', hit && dead.struck === true && fresh.struck === false && fresh.mixed === false, JSON.stringify([hit, dead.struck, fresh.struck, fresh.mixed]));
+    await q.context().close();
+  } catch (e) { ok('mixed: the checks ran', false, e.stack || String(e)); }
   ok('zero page errors', errs.length === 0, errs.slice(0, 3).join(' | '));
   console.log(`\n${pass} passed, ${fail} failed`);
   await b.close(); s.close();

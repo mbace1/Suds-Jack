@@ -1265,6 +1265,7 @@ let stylePeakIdx = 0;  // best tier reached this run (for the death recap)
 let comboCount = 0;
 let comboTimer = 0;
 let nextTotemAt = 0;
+let runMixed = false;   // v62: the season was changed under a live run — it clears nothing
 let crestsCleared = 0, crestArmed = false, crestStruck = false, lastStandSaid = 0;   // v62 (HD-023)
 let waveStrikes = 0;   // v48: how many times the sea has hit the body this run
 let nextLevAt = 0;
@@ -1890,7 +1891,7 @@ function showDeath(timedOut, complete = false) {
     localStorage.setItem(hiKey(), String(hiScore));
   }
 
-  const clear = complete && !isSdfTestArena() ? recordClear() : null;
+  const clear = complete && !isSdfTestArena() && !runMixed ? recordClear() : null;
   const causeLine = complete ? `the season is over — ${S().menu ?? S().name} survived`
     : timedOut
     ? 'the clock ran out'
@@ -1977,7 +1978,7 @@ function resetRun() {
   ebbN = 0; ebbSteps = false; rubbleStands = 0; runComplete = false;
   finale = null; finaleDone = false; finalePressure = 1;
   waveIdx = 0; lastAnnouncedWave = -1; actsOpened = 0;   // v62: a second run used to open in the last act
-  crestsCleared = 0; crestArmed = false; lastStandSaid = 0;
+  crestsCleared = 0; crestArmed = false; crestStruck = false; lastStandSaid = 0; runMixed = false;
   litter.reset();
   gems.reset();
   orbs.reset();
@@ -2419,6 +2420,7 @@ function showPause() {
       // _seasonChosen is set, so read after, "before" is already the
       // destination and a HAUL <-> EMBER switch never restarted (#619 review)
       const before = M().id;
+      if (state === 'playing' && seasonById(b.dataset.season).id !== season) runMixed = true;   // v62: a run across two seasons is neither's clear (reset by a restart)
       season = seasonById(b.dataset.season).id;
       _seasonChosen = true;
       localStorage.setItem(SEASON_KEY, season);
@@ -4449,7 +4451,7 @@ window.__hd = {
     truckObj() { return truck.active ?? truck; },   // v51: the convoy (or the classic road), for the gate
     triggerFinale() { startFinale(); return !!finale; },   // v53
     getGoal() { return { goal: goalLine(), clock: clockLine(), shown: elGoal.classList.contains('show'), ms: GOAL_MS }; },   // HD-010
-    getActs() { const w = currentWave(); return { idx: waveIdx, name: w?.name ?? null, kind: w?.kind ?? null, density: actDensity(), opened: actsOpened, crests: crestsCleared, armed: crestArmed, clears: readClears(), hiKey: hiKey(), lastStand: lastStandSaid, crest: goo.cfg ? { h: +goo.heightAt(player.feet.x, player.feet.z).toFixed(3), s: +goo._s(player.feet.x, player.feet.z).toFixed(2), speed: goo.speed, width: goo.cfg.width, hurtFrom: goo.cfg.hurtFrom ?? 0.35 } : null, skullMul: truck.active?.cfg?.skullMul ?? null, nextPulseAt, nextSkullAt }; },   // v62
+    getActs() { const w = currentWave(); return { idx: waveIdx, name: w?.name ?? null, kind: w?.kind ?? null, density: actDensity(), opened: actsOpened, crests: crestsCleared, armed: crestArmed, clears: readClears(), hiKey: hiKey(), lastStand: lastStandSaid, mixed: runMixed, struck: crestStruck, crest: goo.cfg ? { h: +goo.heightAt(player.feet.x, player.feet.z).toFixed(3), s: +goo._s(player.feet.x, player.feet.z).toFixed(2), speed: goo.speed, width: goo.cfg.width, hurtFrom: goo.cfg.hurtFrom ?? 0.35 } : null, skullMul: truck.active?.cfg?.skullMul ?? null, nextPulseAt, nextSkullAt }; },   // v62
     getRun() { return { ebbN, ebbSteps, rubbleStands: +rubbleStands.toFixed(2), complete: runComplete, end: S().end ?? null, state, recap: recapParts() }; },   // v54
     completeRun() { completeRun(); return runComplete; },
     getFinale() { return { active: !!finale, kind: finale?.kind ?? null, t: +(finale?.t ?? 0).toFixed(2), phase: finale?.phase ?? 0, rocks: finale?.rocks ?? 0, wrecked: finale?.wrecked ?? 0, done: finaleDone, pressure: finalePressure, drain: +goo.drain.toFixed(2), declared: S().finale ?? null }; },
