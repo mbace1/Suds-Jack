@@ -1450,3 +1450,49 @@ Everything below comes from search summaries. No article was opened.
 - **Reactions:** counts are not visible through search. **Pattern note:** the price range landed through named outlets
   (CNBC, TechCrunch, Fortune) on the same day, while the aggregators ran a contradictory $185 figure. For filings, take
   the named outlets plus the EDGAR URL, and never an aggregator number.
+
+### Check Wed 11 Nov 07:16 (morning; search summaries only; nothing opened)
+- **Big development:** none since last night. The Anthropic IPO is unchanged: $70–$78, 825M shares, pricing 18 Nov,
+  trading 19 Nov, Nasdaq "ANT", with the $26B placement. Bloomberg (citing the FT) says bankers are weighing a
+  valuation of $1.5T or more; that is not a filing. NBC puts it at up to ~$1.02T on the filing.
+  [Bloomberg](https://www.bloomberg.com/news/articles/2026-11-10/anthropic-targets-64-4-billion-ipo-nearing-spacex-s-record),
+  [NBC](https://www.nbcnews.com/business/corporations/anthropic-sets-modest-1-trillion-ipo-valuation-target-rcna608514)
+- **12 The Round Trip, Google figure: now better supported, still not read in the filing.**
+  - About $121.3B (Apr 2026–Jul 2033) now appears in a mainstream investor outlet, Motley Fool (3 Nov: "Anthropic
+    Raised Its Google Commitment to $121 Billion"), and in trade summaries (Unite.ai, mlq.ai), as well as FourWeekMBA.
+    DCD headlines the total at $895.4B. Treat $121.3B as the working figure; it replaces $114.5B before any build.
+  - Also in summaries: Microsoft at least $44.9B (Nov 2026–Jun 2033); some outlets say $47.2–49.2B. Google and Amazon
+    terms are non-cancelable apart from the counterparty's breach. Q3 revenue was about $17.0B, with a $567M operating
+    loss.
+  - One less-established site (mlq.ai) claims a 10 Nov amendment with a $900.9B total and a cancelable Lambda deal;
+    another search could not confirm it. Not used.
+  - Amazon is still not named in the placement. The disclosure wording is still for the owner to approve.
+  - [Motley Fool](https://www.fool.com/investing/2026/11/03/should-you-buy-alphabet-stock-after-anthropic-raised-its-google-commitment-to-usd121-billion/),
+    [DCD](https://www.datacenterdynamics.com/en/news/anthropic-s-1-update-reveals-8954bn-in-cloud-and-data-center-commitments/),
+    [Unite.ai](https://www.unite.ai/anthropic-details-long-term-compute-commitments-in-amended-ipo-filing/)
+- **NEW on file, 10/11 Whistleblowers: OpenAI, the House letter (MED, a deadline on 13 Nov).**
+  - 20 House Democrats led by Rep. Greg Casar wrote to Sam Altman on 29 Oct about three safety researchers OpenAI
+    fired. They ask OpenAI to commit not to fire whistleblowers and to keep its current pause on its most capable
+    models until there is independent oversight. They want answers to 11 sets of questions by 13 Nov.
+  - OpenAI says the firings were for breaking its rules on sensitive information, not for raising safety concerns.
+    The researchers dispute that, per the reporting.
+  - The reporting names the researchers. Check that each went public before naming anyone. The letter itself is a
+    public record.
+  - Earlier on the same thread: 29 and 22 Democrats wrote to OpenAI and Anthropic over AI agents that breached
+    outside systems (incidents both companies disclosed in July; Aug deadline). A 28 Oct "report within 48 hours" ask
+    comes from a less-established site only and is unverified.
+  - [Nextgov](https://www.nextgov.com/artificial-intelligence/2026/10/democrats-press-openai-over-safety-researcher-firings-security-incidents/416954/),
+    [TNW](https://thenextweb.com/news/openai-whistleblowers-house-democrats-casar-letter),
+    [The Hill](https://thehill.com/policy/technology/6022646-openai-anthropic-cybersecurity-incidents/)
+- **1 The Panel (Project Meridian):** nothing dated November. Findings are due about 120 days from late September.
+- **Data-center NDAs (US):** nothing dated November; the Wisconsin, Minnesota, Oklahoma and Alabama records are on
+  file. The live NDA echo is Tuusula (HS-SCOUT).
+- **5 Short Supply:** the DRAM case still has no hearing date in any result. Jefferies forecast another 30–40% rise
+  in Q4 contract prices (June). Re-check the docket 12 Nov as planned.
+- **Nvidia–OpenAI financing:** nothing new since the $105B Ohio guarantee (Aug). Nvidia reports earnings on 17 Nov
+  (watch).
+- **Chip smuggling, Pennsylvania v. Character.AI, S. 1792:** nothing dated November.
+- **Reactions:** counts are not visible through search.
+- **Pattern note:** the Google figure firmed up through a mainstream investor outlet (Motley Fool) a day after the
+  analysis site. For filing numbers, check Motley Fool and Yahoo Finance as the second source while EDGAR stays
+  blocked.

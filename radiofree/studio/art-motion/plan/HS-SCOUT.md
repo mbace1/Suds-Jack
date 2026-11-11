@@ -1216,3 +1216,51 @@ Search summaries only; nothing opened. One device each, from STORY-DEVICES.md or
 - **Reactions:** counts are not visible through search.
 - **Pattern note:** the Tuusula follow-up came through local papers (Keski-Uusimaa, Aamuposti) and MTV, not HS or Yle.
   For municipal secrecy stories, search the local paper by town name.
+
+### Check Wed 11 Nov 07:16 (morning; search summaries only; nothing opened)
+- **Candidate, upgraded: Tuusula (Jokela) data center: the emails (MED-HIGH, a Trade Secret-type story).**
+  - **The record:** Keski-Uusimaa (and its sister paper Aamuposti) got the town's emails with the PR agency Kreab.
+    The agency wrote that "the project is not yet public, so the zoning change and the project must be handled
+    separately". Headline: "Sähköpostit paljastavat: Kunta pyysi viestintätoimistolta apua Jokelan
+    datakeskushankkeen salailussa" (the emails reveal the town asked a PR agency for help keeping the project
+    quiet). It was late September; the town issued a release after the story.
+  - **The town's answer:** it denies hiding anything; the preliminary agreement "required broad confidentiality".
+    The paper's own reading is that it comes down to whether deliberately not telling counts as secrecy.
+  - **Since then:**
+    - Councilors did not know about the preliminary agreement (Keski-Uusimaa).
+    - Residents filed a complaint to the Chancellor of Justice that an official exceeded their powers in signing it.
+      It does not stop the project.
+    - QTS (Blackstone) held an event on 19 Oct; there was a protest outside.
+    - The sale price is €19.2M for about 16.7 ha.
+    - LVV has started the YVA (environmental assessment).
+    - The town held a residents' meeting last night (10 Nov, 17:30, Jokela school center); no coverage found yet.
+  - **Why it fits:** a town paying a PR agency to keep a data center quiet, a public-records trail, and an official
+    answer on file. It is the Finnish twin of the US NDA stories.
+  - **Before a pitch:** read the Aamuposti article (subscription) for the email dates. Confirm the date of the
+    complaint. Check the 10 Nov meeting coverage.
+  - **Verified how:** search summaries of Aamuposti, Keski-Uusimaa, the town's pages and LVV. Nothing opened.
+  - [Aamuposti, the emails](https://www.aamuposti.fi/paikalliset/9814716),
+    [Keski-Uusimaa, denial](https://www.keski-uusimaa.fi/paikalliset/9821801),
+    [complaint](https://www.keski-uusimaa.fi/paikalliset/9862037),
+    [Aamuposti, the 19 Oct event](https://www.aamuposti.fi/paikalliset/9888486),
+    [Tuusula, the 10 Nov meeting](https://tuusula.fi/en/2026/10/27/tuusula-municipality-is-organising-a-residents-meeting-on-the-data-centre-project/),
+    [LVV, YVA](https://lvv.fi/-/jokelan-datakeskuksen-yva-menettely-kaynnistyy)
+- **Helsinki protest (7 Nov):** no minister's or government response found. Yle and MTV carried it nationally. The
+  demands are on file: freeze projects until regulation catches up, national licensing, a cap.
+  [Yle](https://yle.fi/a/74-20255647), [MTV](https://www.mtvuutiset.fi/artikkeli/datakeskuksia-vastaan-osoitetaan-mielta-ympari-suomea-mtv-paikalla-helsingissa/9417652)
+- **Fitburg: both convicted say they will appeal (MTV, Yle).** The boatswain's counsel calls an appeal the natural
+  next step; the captain's lawyer says the Court of Appeal "will have work to do". No filing is reported yet. Re-check
+  12 Nov as planned.
+  [MTV](https://www.mtvuutiset.fi/artikkeli/pursimies-jarkyttyi-syvasti-fitburg-tuomiosta-vietiin-heti-vankilaan/9416904),
+  [Yle](https://yle.fi/a/74-20255202)
+- **Muhos (Cut First):** there is still no report that the water plan due on 5 Nov was delivered. The police
+  investigation (five requests in one case) runs into 2027.
+- **Hamina (Right of Way):** nothing beyond the LVV halt request (23 Oct) and the inquiry into the nature law, both on
+  file. No permit decision.
+- **Found in Pasila:** no new Pasila, Yle, city or Tukes item; only older Yle glyphosate pieces surface.
+- **ICEYE (Sleep Tight, posted):** no November item.
+- **HS sweep:** no new HS AI or data-center story found (hs.fi is still hard to search directly).
+- **Reactions:** counts are not visible through search.
+- **Pattern note:** the strongest Tuusula record (the Kreab emails) came from the local paper's public-records work
+  weeks before HS or Yle touched the story. When a local secrecy story surfaces, search the local paper's archive for
+  "sähköpostit" and "asiakirjat" before rating it.

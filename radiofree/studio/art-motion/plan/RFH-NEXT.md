@@ -1093,3 +1093,38 @@ All facts below come from search summaries; no article was opened.
 - **Owner's Helsinki leads:** Fitburg: no appeal reported yet (watch around 12 Nov). Protective Fence 26: unchanged.
 - **Films now wrong:** none that are waiting to post. The Round Trip (on hold, not scheduled) needs its Google figure
   and towers re-checked before any build.
+
+## Daily check, Wed 11 Nov 07:16 (morning; search summaries only, nothing opened)
+- **Big development:** none overnight. The Anthropic IPO is on track: $70–$78 range, pricing 18 Nov, trading 19 Nov.
+  Bloomberg/FT report bankers weighing $1.5T+; that is not in a filing.
+- **The Round Trip (pitchable again since the range):** the Google figure is now firmer. About **$121.3B**
+  (Apr 2026–Jul 2033) appears in Motley Fool (3 Nov) and trade summaries, not only the analysis site. Use it in place of
+  $114.5B. Microsoft: at least $44.9B in summaries (some say $47–49B). Still to do before a build: read the filing;
+  re-check the towers (Amazon is not in the $26B placement); owner-approved disclosure wording.
+  [Motley Fool](https://www.fool.com/investing/2026/11/03/should-you-buy-alphabet-stock-after-anthropic-raised-its-google-commitment-to-usd121-billion/)
+- **New global lead: OpenAI and its fired safety researchers (MED).**
+  - 20 House Democrats (Casar) asked OpenAI on 29 Oct to commit not to fire whistleblowers, with answers due
+    **13 Nov**.
+  - OpenAI says the firings were rule breaches, not safety complaints; the researchers dispute that.
+  - A film would quote the letter and OpenAI's own answer. Name no researcher unless they went public themselves.
+  - [Nextgov](https://www.nextgov.com/artificial-intelligence/2026/10/democrats-press-openai-over-safety-researcher-firings-security-incidents/416954/)
+- **Top Finnish candidate, upgraded: Tuusula (Jokela) data center: the PR-agency emails (MED-HIGH).**
+  - Local papers got the town's emails with Kreab: the project was "not yet public", so the zoning change was to be
+    handled separately. The town denies secrecy, saying the preliminary agreement required confidentiality.
+  - Councilors did not know about the agreement. A Chancellor of Justice complaint is filed. The land sells to
+    Blackstone funds for €19.2M.
+  - A residents' meeting was held last night; no coverage yet. It is a Trade Secret-type story with the paper trail
+    already public.
+  - [Aamuposti](https://www.aamuposti.fi/paikalliset/9814716)
+- **Fitburg:** both convicted say they will appeal; no filing yet. **Helsinki protest:** no government response.
+- **Waiting films, pre-posting check:**
+  - **Found in Pasila EN and FI: CLEAR.** No Pasila, Yle, city or Tukes reaction.
+  - **Needs a Designer: CLEAR.** It makes no factual claim.
+  - **Night Flight (awaiting the owner's yes): CLEAR.** It makes no factual claim, and nothing found affects it.
+- **Posted films:**
+  - **Cut First (Muhos):** no report that the 5 Nov water plan was delivered.
+  - **Right of Way (Hamina):** no LVV decision.
+  - **Sleep Tight (ICEYE):** no November ICEYE news.
+  - **Five Pins:** nothing contradicts it.
+  - **Short Supply:** still no hearing date. Re-check the docket and Fitburg 12 Nov as planned.
+- **Films now wrong:** none.
