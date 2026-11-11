@@ -194,3 +194,21 @@
 - Shared local news inbox API for Toko and later Helsinki Free Radio use.
 - First hidden DOS layer: `DIR`, `WHOAMI`, `MEMORY`, `TYPE MANIFESTO.TXT`, `NATURE.EXE`, and `MIRROR.EXE`.
 - `MIRROR.EXE` is the first rare full-screen fourth-wall event.
+
+## 2026-11-09 — reviewed rollout and delivery status
+
+- Shared-counter prerequisite #635 merged at `f421a84b5` after passing CI
+  and clean final-head review. Old-code and disconnected-observer controls
+  both fail the new regression; typing, delayed host replies and subsequent
+  silence pass with the fix. No assertions were relaxed.
+- Hyper v60 #628 merged at `fe9a50b73`. Its scoped publication `14c298e81`
+  preserves the independent Toko Move/Piritori releases and the live Toko
+  layers; it uses chat 26, table 6, signature 10 and Toko Live main 22.
+- The older Radio Free note to leave a brand-kit URL alone is documented
+  as a narrow shared-dependency exception in its AGENTS.md. Native Radio
+  Free VERSION/V/leaf modules stay 73; no art, wire or language data changes.
+- Pages build succeeded but file syncing timed out. A same-job retry was
+  superseded by downstream Toko Drop 2 v131 (`6b8d06f48`), which contains
+  the approved publication. Delivery was pending at 23:10 UTC; this is not a claim
+  that the public hub has v60 yet. Full source/staging and first-offline
+  counter-use checks pass; physical-device performance is unmeasured.

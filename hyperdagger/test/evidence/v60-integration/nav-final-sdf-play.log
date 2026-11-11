@@ -1,0 +1,37 @@
+  ok   ember: a finger on RENDER · SDF picks it, saves it, and starts nothing
+  ok   ember: the skulls the season's own director spawns are SDF skulls, none skinned (3 in 17.8s)
+  ok   ember: skull, splitter and dread come up as their own SDF profiles with their own health
+  ok   ember: an SDF skull in front of the eye is drawn — bone where the frame without it has none
+  ok   ember: a finger held on the right stick kills an SDF skull
+  ok   ember: that death throws the skull's voxels (gibs, spray) and releases its shader
+  ok   ember: a finger held on the right stick kills an SDF splitter, and it splits into SDF minis
+  ok   ember: END RUN, RENDER · CLASSIC, START — the skulls are voxels again
+  ok   ember: zero page or console errors
+  ok   inca: a finger on RENDER · SDF picks it, saves it, and starts nothing
+  ok   inca: skull, splitter and dread come up as their own SDF profiles with their own health
+  ok   inca: an SDF skull in front of the eye is drawn — bone where the frame without it has none
+  ok   inca: a finger held on the right stick kills an SDF skull
+  ok   inca: that death throws the skull's voxels (gibs, spray) and releases its shader
+  ok   inca: a finger held on the right stick kills an SDF splitter, and it splits into SDF minis
+  ok   inca: END RUN, RENDER · CLASSIC, START — the skulls are voxels again
+  ok   inca: zero page or console errors
+  ok   haul: a finger on RENDER · SDF picks it, saves it, and starts nothing
+  ok   haul: the skulls the season's own director spawns are SDF skulls, none skinned (3 in 13.4s)
+  ok   haul: skull, splitter and dread come up as their own SDF profiles with their own health
+  ok   haul: an SDF skull in front of the eye is drawn — bone where the frame without it has none
+  ok   haul: the look and its missiles kills an SDF skull
+  ok   haul: that death throws the skull's voxels (gibs, spray) and releases its shader
+  ok   haul: the look and its missiles kills an SDF splitter, and it splits into SDF minis
+  ok   haul: END RUN, RENDER · CLASSIC, START — the skulls are voxels again
+  ok   haul: zero page or console errors
+  ok   test arena: the chip is on the SDF menu, 44 px tall, and START is still whole on the screen
+  ok   test arena: the chip opens the SDF test arena on its menu
+  ok   test arena: the run opens with an SDF Watcher and an SDF Totem
+  ok   test arena: the SDF Watcher still fires its aimed volley
+  ok   test arena: held fire carves a wound into the Totem and leaves it standing
+  ok   test arena: held fire kills the Totem and the Watcher, and both release their shaders
+  ok   test arena: its menu offers LEAVE THE TEST ARENA back to the plain page
+  ok   test arena: picking HAUL there leaves it — the plain page, season 3, TRUCK rules
+  ok   test arena: zero page or console errors
+
+35 passed, 0 failed

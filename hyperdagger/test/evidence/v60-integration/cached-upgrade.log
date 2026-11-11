@@ -1,0 +1,4 @@
+PASS v59 installed and controlled by its original v80 worker
+Upgrade lifecycle { state: 'activated', keys: [ 'hyperdagger-v88' ] }
+PASS same-origin v59 upgrades to v60, worker v88, all 70 URLs cached
+PASS offline SDF START, pause, first ASK TOKO opening and real typed reply; no page exceptions

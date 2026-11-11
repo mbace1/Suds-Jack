@@ -1,0 +1,26 @@
+{
+  "browser": "Chromium 156.0.8078.79",
+  "renderer": "ANGLE SwiftShader / cloud CPU",
+  "physical_hardware": false,
+  "case": "Full game, Ember SDF, standard projection, auto quality, six staged skulls + two spiders + Watcher and live director",
+  "max_enemies_observed": 10,
+  "sample_window_target_real_seconds": 10,
+  "unshimmed_as_shipped": {
+    "frames": 37,
+    "p50_frame_ms": 283.3,
+    "p95_frame_ms": 583.3,
+    "max_frame_ms": 600,
+    "game_time_real_time_ratio": 0.168,
+    "quality_tier_start": 0,
+    "quality_tier_end": 2,
+    "page_errors": 0
+  },
+  "monitor_correctness_gate": "7 passed, 0 failed; auto-quality drops under throttling while high-quality control never drops",
+  "limitations": [
+    "Not a physical iPad, Android or desktop GPU measurement.",
+    "Limited software diagnostic: not the requested all-season/projection/12-body/late-wave hardware matrix.",
+    "The original script prints an obsolete generic no-shim warning; this sample recorded zero player.pos errors.",
+    "No hardware performance target certified and no new distance/step budget inferred."
+  ],
+  "storage": "Throwaway context/loopback origin; no public normal or daily records touched."
+}

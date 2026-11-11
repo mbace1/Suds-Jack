@@ -343,3 +343,19 @@ Leave `../toko/js/signature.js?v=2` alone.
 ## Tone for the human
 
 Direct, no roleplay, practical. Prefer plan-then-code. Helsinki details matter. Prefer shipping visible cuts over speculative refactors.
+
+## 2026-11-09 — shared-counter maintenance exception
+
+The owner approved the Hyper Dagger merge/project continuation, including
+its separate reviewed Toko prerequisite #635. That shared counter fix needs
+fresh URLs throughout the signed cabinets: signature 10 and table 6 replace
+the previous shared 9/5 references here. This is the narrow exception to the
+older “leave the brand-kit URL alone” guidance; it does not choose a new
+Radio Free module cadence. Native `VERSION`/`V` and every Radio Free leaf
+import remain 73. Only the worker cache identity gains `-toko26` so the new
+shared dependency graph can install without reusing its old cache.
+
+No art, footage, wire, translations or Radio Free game module was copied or
+changed. The publication is part of the scoped Hyper v60/shared-counter
+rollout, with the live branch's independent work preserved. Toko's patch
+notes own the behavior change and its positive/negative regression controls.

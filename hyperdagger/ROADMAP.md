@@ -1,11 +1,11 @@
 # Hyper Dagger — v60 integration and SDF track
 
-## Current state — 9 November 2026
+## Current state — 10 November 2026
 
-- Live hub: v59. Separate SDF preview: build 3; retain it until retirement is explicitly agreed.
-- v60 candidate: PR #628 preserves all of #626 (`baa953c5`) and the combined renderer/menu work. Main `6944c929` and the separate Toko prerequisite #635 are integrated locally; current runtime tokens are main 118, input 111 and worker cache v88.
-- Mikael approved merge and project continuation on 9 November. Required final-head CI/review and gameplay/offline checks still gate merge/publication. The known Toko idle-aside CI blocker is addressed in its own prerequisite PR #635, not as an SDF rendering change.
-- Full prior gameplay smoke passed 220/0; SDF play passed 35/0 after approved natural-observation fixture repair. Recheck the final shared-counter/cache integration, then publish and verify the actual hub build.
+- Source v60 is merged at `fe9a50b73` (#628), preserving #626 ancestry; separate prerequisites #634 and #635 are merged and reviewed.
+- Public hub: v60 at production `6b8d06f48`, verified by all 14 selected hashes, all six real encounter loops and offline 6/0. Pages run 42717115868 attempt 2 succeeded. Live arena navigation exposed a duplicate touch-release event; HD-021 closes that final integration finding before a new conversion starts.
+- All 21 final local gates and required CI passed, including smoke 220/0, SDF play 35/0, all six season/renderer encounter loops, input/focus, pause/retry, records and offline. The latest-main prospective tree and production staging also passed.
+- Runtime: main/registration 118, input 111, cache v88, 70 generated entries. Separate preview remains build 3; retain it until retirement is explicitly agreed. Navigation follow-up #638 is merged at `f8353e757`: main/registration 119, cache v89. All 21 final gates and CI pass, including the unchanged Inca bone-carry assertion. Publication `458ce6822` is included in production head `3f40cc410` (Toko Drop 2 v132 preserved). Pages delivery is blocked: run 42727139262 built successfully but both deployment attempts timed out. Public index/main/worker hashes still match the earlier v60 (118/v88), not the guard. New conversion work stays on hold until the fix is verified live.
 - Classic remains the default. Physical-device performance is unmeasured.
 - Completed runs tie at 300.0 seconds. This is an open scoring design decision, not authorization to change the score.
 
