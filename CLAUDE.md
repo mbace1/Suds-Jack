@@ -20,6 +20,19 @@ Toko Drop → `TOKO_DROP_ROADMAP.md`; Toko's colours and video behaviour →
 carrier colour and "other colours for a context or a mood"). Each is a direction,
 not a spec: the lanes turn it into a design their owner signs off before building.
 
+### Producer design docs
+
+Before design-affecting work on these games, read the producer design doc and [`docs/ACTIVEPRODUCER.md`](docs/ACTIVEPRODUCER.md). Game folders also have their own `CLAUDE.md` / `AGENTS.md` pointers.
+
+| Game | Producer design doc |
+|---|---|
+| Toko Move | [`toko-move/DESIGN.md`](toko-move/DESIGN.md) (extends [`toko-move/ACT1.md`](toko-move/ACT1.md); do not delete ACT1) |
+| Hyper Dagger | [`hyperdagger/DESIGN.md`](hyperdagger/DESIGN.md) |
+| Toko Drop 2.0 | [`toko-drop-2/DESIGN.md`](toko-drop-2/DESIGN.md) — docs on `main`; the playable tree is on the `gh-pages` branch |
+
+Items are tagged **SHIPPED** / **LOCKED-NOT-BUILT** / **PROPOSAL**. Do not decide open design questions silently — list them in the PR description or ask the producer (D-sign) / Mikael. Do not implement LOCKED-NOT-BUILT systems without a producer brief.
+
+
 
 ### The arcade — `index.html` + `hub/`
 The landing page: **every playable thing in the repo on one page**, each cabinet with a
