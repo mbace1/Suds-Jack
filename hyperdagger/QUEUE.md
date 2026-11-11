@@ -113,6 +113,36 @@ Plan sketch: change the truck mesh/visuals only — remove wheels, add a hover h
 
 Note, 18 Oct (HD-018, v58): there is no haul scoring any more, and the missiles no longer jackknife a truck. The fold itself stays, for the pile-up and HD-016. Read "do not change haul scoring" as "do not bring a cargo score back", and "jackknife" as the fold.
 
+### HD-022 — The look: particles, fluids and light, a different one per season
+
+- status: In progress
+- size: L
+- blocked-by: —
+- design: Mikael, 10 Nov 2026 — *"Plan and execute the most visually impressive version of the game. Utilizing SDF and other systems that aren't that demanding but can be tweaked for impressive visuals. Including expert particle effects and fluids. Remember, seasons have slightly different styles and looks"*; `SEASONS.md` (a season is the arena's art); `ROADMAP.md` (the SDF track stays opt-in)
+- gate: plan before code; one PR; Mikael's yes to merge; no rule, hitbox, timing or score changes
+
+Read off screenshots of v60 in all three seasons: a kill is grey cubes on a black floor, a shot is invisible, and nothing in the frame is liquid or lit by what happens in it. The seasons differ in palette and arena, not in how a fight LOOKS.
+
+Three cheap systems, each a module, each declared per season in `seasons.js` (`fx`), each scaled by the existing perf tiers and switchable from the pause menu:
+
+1. **Particles** (`js/fx-particles.js`). Stateless: a particle is its birth record, and the vertex shader flies it (gravity, drag, one floor bounce, curl). Nothing is simulated on the CPU, so thousands cost two draw calls. Hard pixels and an ordered-dither fade, because the image is a coarse software raster and a soft alpha puff is the wrong language. Kinds: spark, ember, smoke, droplet, flash, ring.
+2. **The floor is a fluid** (`js/fx-fluid.js`). A small ping-pong render target over the disc, read by the floor shader.
+   - EMBER: kills spill a molten pool that spreads, crusts and cools, so a long run paints the arena.
+   - INCA: the sea ripples. Steps, landings, nails, kills and the wave all ring it, the wave leaves a foam wake, and the sun's path bends through it.
+   - HAUL: none. The road moves under you, so its liquids are smoke and fire in the air.
+3. **Light from events.** A kill, a muzzle and an explosion light the floor around them for a few frames, in the season's colour.
+
+Under RENDER · SDF only: an SDF body dies as **raymarched liquid** (a few smooth-unioned lobes in a bounded proxy, pooled) instead of only cubes. CLASSIC keeps its voxel deaths and gains the three systems above.
+
+Per season:
+- **EMBER** — fire in the dark: white-hot sparks that bounce, embers rising off the pools, low smoke, hot nail streaks.
+- **INCA** — water and light: droplets and rings, spray off the crest, foam, glitter on the sun path, gold motes.
+- **HAUL** — speed and smoke: missile flame and smoke swept back by the wind, fireballs, sparks under the convoy, dust streaks at road speed.
+
+Not in this item: SDF as the default, new enemies or arenas (ROADMAP builds 4–5), the 300.0 scoring tie, any change to hit, damage, spawn or timing.
+
+Exit: before/after screenshots of each season, a new gate (`test/fx-look.cjs`) that proves the effects fire, differ by season and switch off, `perf.cjs` and the whole existing suite green, and Mikael's look at it. Frame times on real hardware stay unmeasured here and are named as such.
+
 
 ## Landed
 

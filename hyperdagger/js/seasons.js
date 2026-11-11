@@ -44,6 +44,7 @@ import { TUNING as T } from './tuning.js?v=85';
  *  @property {Object|null} goo       the breaking wave of voxels (goo.js)
  *  @property {Object|null} inca      the skullscape: giant skulls and terraces on the horizon (inca.js)
  *  @property {Object|null} roster    a recolour of every enemy body (roster.js) — null keeps the house bone
+ *  @property {Object} [fx]           v61: what a kill, a hit and a shot LOOK like here (fx.js) — a style ('fire' | 'water' | 'road') and its colours; none is VOID
  *  sky.haze / sky.sun / sky.sunDir and floor.caustic are the tech-art terms (v44); zero is off
  *  @property {'dagger'|'needler'} weapon  the profile in T.weapons
  *  @property {boolean} built
@@ -103,6 +104,34 @@ export const SEASONS = [
     // matte ground stands under the monuments so nothing floats.
     fog: { color: [0.030, 0.005, 0.005], near: 16, far: 64 },
     dust: { color: [0.85, 0.38, 0.20], size: 0.075, opacity: 0.24 },
+    // v61 (HD-022) THE LOOK: FIRE IN THE DARK. What a kill, a hit and a shot
+    // look like here (js/fx.js reads this). White-hot sparks that fall and
+    // bounce once, embers that hang and die red, low smoke lit from below.
+    // Every colour is linear HDR: over 0.78 it blooms.
+    fx: {
+      style: 'fire',
+      spark: [3.6, 1.25, 0.30],          // the nail's own brass, hotter
+      spark2: [2.8, 0.26, 0.07],         // the horizon's red
+      flash: [2.6, 1.15, 0.42],
+      smoke: [0.024, 0.014, 0.013],      // soot: near the void, so it reads as shape not grey
+      dust: [0.05, 0.035, 0.03],
+      glow: [1.5, 0.32, 0.08],           // what the smoke catches from below
+      gem: [3.0, 0.22, 0.16],
+      streak: [2.2, 0.5, 0.2],
+      trail: { color: [2.6, 0.7, 0.16], chance: 0.55, size: 0.024 },
+      // THE FLOOR IS A FLUID (fx-fluid.js): what a skull was full of pools
+      // where it died — molten, then crusting from the rim in, then gone.
+      // `a` is the hot end, `b` the crust. film/cool/sink/flow are per
+      // simulation step (sixty a second): how thick a pool stands, how fast
+      // it cools, how slowly a cold crust sinks away, how readily it runs.
+      // RENDER · SDF: an SDF body dies as a raymarched liquid (sdf-ichor.js)
+      ichor: { a: [1.7, 0.36, 0.06], b: [0.22, 0.012, 0.006], rim: [2.4, 0.9, 0.25], hot: [3.2, 1.9, 0.8] },
+      fluid: { kind: 'magma', a: [2.3, 0.95, 0.38], b: [0.011, 0.007, 0.007], film: 0.22, cool: 0.0017, sink: 0.00012, flow: 0.9, spill: 0.5 },
+      // the air: embers climbing off the floor, forever (one emit, wrapped
+      // around the camera in the shader)
+      ambient: { n: 300, color: [1.7, 0.42, 0.09], color2: [0.9, 0.08, 0.04], mix: 0.4,
+        size: 0.03, rise: 0.42, drift: 0.25, twinkle: 0.9, box: [46, 11, 46] },
+    },
     ground: [0.006, 0.0025, 0.0025],
     pillars: {
       count: 5,                 // fewer objects in general (owner)
@@ -219,6 +248,29 @@ export const SEASONS = [
     // gold air: the distance melts into the horizon's colour, not into grey
     fog: { color: [0.30, 0.19, 0.08], near: 24, far: 115 },
     dust: { color: [1.2, 0.85, 0.35], size: 0.07, opacity: 0.32 },   // pollen in the low sun
+    // v61 (HD-022) THE LOOK: WATER AND LIGHT. A kill is a fountain — beads of
+    // the sea thrown up and falling back — with gold dust in it and rings on
+    // the surface; the crest throws spray. Nothing here is fire.
+    fx: {
+      style: 'water',
+      spark: [2.6, 1.9, 0.55],           // gold dust: the sun in the air
+      spark2: [0.5, 2.1, 1.7],
+      flash: [1.9, 1.7, 1.0],
+      drop: [0.10, 0.62, 0.55],          // a bead of the sea (opaque: it must read against a gold sky)
+      drop2: [0.85, 0.72, 0.30],         // …and one in three catches the sun
+      smoke: [0.30, 0.46, 0.42],         // spray mist
+      glow: [0.35, 0.28, 0.10],
+      gem: [2.4, 1.9, 0.5],
+      streak: [0.9, 2.2, 1.8],
+      trail: { color: [0.4, 2.2, 1.8], chance: 0.5, size: 0.024 },
+      // THE FLOOR IS A FLUID (fx-fluid.js): the sea rings. `a` is the light a
+      // ring's crest catches, `b` the foam; c2 is how fast a ring travels,
+      // damp how long it lives.
+      ichor: { a: [0.16, 0.75, 0.66], b: [0.02, 0.16, 0.17], rim: [1.6, 1.4, 0.6], hot: [0.6, 1.5, 1.3] },   // the goo: jade, with the sun on its edge
+      fluid: { kind: 'water', a: [0.30, 0.95, 0.80], b: [0.62, 0.92, 0.85], c2: 1.0, damp: 0.987, foam: 0.955, strength: 1 },
+      ambient: { n: 220, color: [1.9, 1.45, 0.5], color2: [0.6, 1.6, 1.3], mix: 0.25,
+        size: 0.028, rise: 0.05, drift: 0.35, twinkle: 1.0, box: [50, 13, 50] },
+    },
     ground: [0.012, 0.04, 0.045],                                     // the sea past the disc
     // v53 THE FINALE: the sea DRAINS — over `drainFor` seconds the water goes,
     // the caustics with it; the temple floor shows for `dryFor` seconds and
@@ -371,6 +423,26 @@ export const SEASONS = [
     backdrop: { visible: false, emissive: 0 },
     fog: { color: [0.022, 0.011, 0.006], near: 18, far: 72 },
     dust: { color: [0.85, 0.55, 0.30], size: 0.05, opacity: 0.16 },
+    // v61 (HD-022) THE LOOK: SPEED AND SMOKE. The road has no floor to pool
+    // on, so its liquid is in the air: a missile is a flame and the smoke
+    // behind it, a kill is a fireball, and the dust standing over the road
+    // is drawn as streaks by the speed you pass it at.
+    fx: {
+      style: 'road',
+      spark: [3.8, 1.7, 0.45],           // sodium
+      spark2: [3.0, 0.5, 0.10],
+      flash: [2.9, 1.5, 0.5],
+      smoke: [0.05, 0.042, 0.04],        // grey, a step off the road's black
+      dust: [0.09, 0.07, 0.05],
+      glow: [0.9, 0.34, 0.08],
+      gem: [3.0, 0.9, 0.2],
+      streak: [1.6, 1.1, 0.6],
+      trail: { kind: 'missile', color: [4.0, 2.0, 0.7], every: 0.012 },
+      carry: 1,                          // the convoy carries what is thrown on it
+      ichor: { a: [0.10, 0.08, 0.07], b: [0.012, 0.010, 0.010], rim: [2.6, 1.2, 0.3], hot: [3.0, 1.4, 0.4] },   // burning oil
+      ambient: { n: 100, color: [0.20, 0.14, 0.085], color2: [0.6, 0.34, 0.14], mix: 0.1,
+        size: 0.008, rise: 0, drift: 0.1, twinkle: 0.2, stretch: 0.034, box: [40, 12, 70] },
+    },
     ground: null,
     pillars: null,
     platforms: null,
