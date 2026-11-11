@@ -6,7 +6,7 @@ import { AfterimagePass } from 'three/addons/postprocessing/AfterimagePass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
-import { InputManager } from './input.js?v=111';
+import { InputManager } from './input.js?v=112';
 import { Player } from './player.js?v=85';
 import { DaggerPool } from './daggers.js?v=85';
 import { GemPool } from './gems.js?v=85';
@@ -1122,7 +1122,7 @@ const elKills = document.getElementById('kills');
 // only when the run is actually playing that season's mode.
 const elClockLabel = document.getElementById('clockLabel');
 const elGoal = document.getElementById('goalCard');
-const GOAL_MS = 1600;   // + the 0.3 s fade: gone by ~1.9 s
+const GOAL_MS = 4200;   // v64: was 1600 — gone before it was read (playtest: "lack of clear objectives")
 let goalTimer = 0;
 function seasonRules() { return !!S().mode && M().id === S().mode && !_urlMode; }
 function goalLine() { return (seasonRules() && S().goal) || M().goal || ''; }
@@ -1131,9 +1131,44 @@ function showGoalCard() {
   clearTimeout(goalTimer);
   elGoal.textContent = goalLine();
   elGoal.classList.toggle('show', !!elGoal.textContent);
+  showKeysCard();
   goalTimer = setTimeout(() => elGoal.classList.remove('show'), GOAL_MS);
 }
-function hideGoalCard() { clearTimeout(goalTimer); elGoal.classList.remove('show'); }
+function hideGoalCard() { clearTimeout(goalTimer); elGoal.classList.remove('show'); clearTimeout(keysTimer); elKeys.classList.remove('show'); }
+// v64 (playtest, iPad + DualSense: "lack of communication of clear
+// objectives", "hard to read"). Two things the run never said out loud:
+// WHAT THE HANDS DO on the device in hand (a card at the foot of the frame for
+// the first seconds), and HOW FAR THROUGH you are (a strip along the top edge
+// with a tick per act, and one line at the foot: the objective, the time, the act).
+const elKeys = document.getElementById('keysCard');
+const elObjective = document.getElementById('objective');
+const elRunBar = document.getElementById('runBar');
+const KEYS_MS = 7000;
+let keysTimer = 0, runBarFor = '';
+function showKeysCard() {
+  clearTimeout(keysTimer);
+  elKeys.innerHTML = controlsLine();
+  elKeys.classList.add('show');
+  keysTimer = setTimeout(() => elKeys.classList.remove('show'), KEYS_MS);
+}
+const mmss = t => `${Math.floor(t / 60)}:${String(Math.floor(t % 60)).padStart(2, '0')}`;
+function updateObjective() {
+  const end = S().end, on = state === 'playing' && !!end && M().lethality !== 'none';
+  elRunBar.style.display = elObjective.style.display = on ? '' : 'none';
+  if (!on) return;
+  const key = S().id + ':' + end;
+  if (runBarFor !== key) {   // the ticks: one per act, the finale's a little taller
+    runBarFor = key;
+    elRunBar.style.setProperty('--acc', S().card?.accent ?? '#e8dcc8');
+    elRunBar.innerHTML = '<i></i>' + (S().waves ?? []).filter(w => w.t > 0).map(w =>
+      `<b class="${w.kind === 'finale' ? 'fin' : ''}" style="left:${(w.t / end * 100).toFixed(2)}%"></b>`).join('');
+  }
+  elRunBar.firstChild.style.width = Math.min(100, gameTime / end * 100).toFixed(2) + '%';
+  const w = currentWave();
+  const act = finale ? (S().finale?.name ?? '') : (w?.name ?? '');
+  const txt = `SURVIVE TO ${mmss(end)} &middot; <b>${mmss(gameTime)}</b>${act ? ` &middot; ${act}` : ''}`;
+  if (elObjective._t !== txt) { elObjective._t = txt; elObjective.innerHTML = txt; }
+}
 const elGems = document.getElementById('gems');
 const elStyle = document.getElementById('style');
 const elStyleRank = document.getElementById('styleRank');
@@ -1721,21 +1756,39 @@ function menuCamera(dt) {
  *  from the body this season gives you, so a season without a gun or a dash
  *  never advertises one. (TRUCK mode's own line still says "run the walls",
  *  which the convoy has none of.) */
-function menuKeysLine() {
+/** v64: the names on the pad in hand. A DualSense prints its shapes. */
+function padGlyphs() {
+  return input.padKind === 'ps'
+    ? { a: '&#10005;', b: '&#9675;', x: '&#9633;', y: '&#9651;', fire: 'R2', alt: 'L2', start: 'OPTIONS' }
+    : { a: 'A', b: 'B', x: 'X', y: 'Y', fire: 'RT', alt: 'LT', start: 'START' };
+}
+/** What the hands do in this season, on the device in hand. A connected pad
+ *  wins: on an iPad the screen is always "touch", and the pad's line never
+ *  showed, so nobody was told the trigger fires. */
+function controlsLine() {
   const gun = !S().gaze, ab = player.abilities ?? {};
   const jumps = (ab.jumps ?? 1) > 1 ? ` &times;${ab.jumps}` : '';
+  if (input.gamepad) {
+    const g = padGlyphs();
+    return [gun ? `<b>hold ${g.fire}</b> fire` : 'look at a skull to fire', `<b>${g.a}</b> jump${jumps}`, ab.dash ? `<b>${g.b}</b> dash` : '',
+      ab.reap ? `<b>${g.x}</b> reap` : ''].filter(Boolean).join(' &middot; ');
+  }
   const touch = input.touchMode || (typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches);
   if (touch) {
     return [gun ? 'right stick <b>hold</b> = fire' : 'look at a skull to fire',
       `<b>tap</b> = jump${jumps}`, ab.dash ? '<b>flick</b> = dash' : ''].filter(Boolean).join(' &middot; ');
   }
-  if (input.gamepad) {
-    return [`<b>A</b> jump${jumps}`, gun ? '<b>hold RT</b> fire' : 'look at a skull to fire', ab.dash ? '<b>B</b> dash' : '',
-      ab.reap ? '<b>X</b> reap' : ''].filter(Boolean).join(' &middot; ') + '<br><b>&#9664; &#9654;</b> season &middot; <b>&#9650; &#9660;</b> render &middot; <b>A</b> start';
-  }
   return ['WASD move', gun ? '<b>hold click</b> fire' : 'look at a skull to fire', `<b>Space</b> jump${jumps}`,
-    ab.dash ? '<b>Shift</b> dash' : '', ab.reap ? '<b>R</b> reap' : ''].filter(Boolean).join(' &middot; ')
-    + '<br><b>&larr; &rarr;</b> season &middot; <b>R</b> render &middot; <b>ENTER</b> start &middot; <b>ESC</b> options';
+    ab.dash ? '<b>Shift</b> dash' : '', ab.reap ? '<b>R</b> reap' : ''].filter(Boolean).join(' &middot; ');
+}
+function menuKeysLine() {
+  if (input.gamepad) {
+    const g = padGlyphs();
+    return controlsLine() + `<br><b>&#9664; &#9654;</b> season &middot; <b>${g.y}</b> render &middot; <b>${g.a}</b> start`;
+  }
+  const touch = input.touchMode || (typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches);
+  if (touch) return controlsLine();
+  return controlsLine() + '<br><b>&larr; &rarr;</b> season &middot; <b>R</b> render &middot; <b>ENTER</b> start &middot; <b>ESC</b> options';
 }
 
 /** The best to beat, labelled with the MODE it is filed under: seasons 1
@@ -2450,6 +2503,7 @@ function optRow(label, key, values, fmt) {
   return `<div class="optrow"><span>${label}</span>${btns}</div>`;
 }
 
+let pauseMore = false;   // v64: the long tail of switches is one press away, not fifty rows in the way
 function showPause() {
   paused = true;
   setRunFrame(false);
@@ -2462,34 +2516,38 @@ function showPause() {
   elMsg.innerHTML =
     `<h1>PAUSED</h1>
      <p class="sub">${S().menu ?? S().name} · ${M().name} · ~${Math.min(999, Math.round(1000 / Math.max(1, frameEMA)))} fps</p>
+     <button id="resumeBtn" class="opt">RESUME</button>
      <button id="tokoBtn">ASK TOKO</button>
      <div class="optrow"><span>SEASON</span>${SEASONS.filter(sn => !sn.hidden).map(sn =>
        `<button class="opt season${sn.id === season ? ' on' : ''}" data-season="${sn.id}">${sn.menu ?? sn.name}</button>`).join('')}</div>
      <div class="optrow"><span>RUN</span>${['free', 'daily'].map(k =>
        `<button class="opt runkind${k === runKind ? ' on' : ''}" data-run="${k}">${k === 'daily' ? 'DAILY SEED' : 'FREE'}</button>`).join('')}${
        runKind !== runKindLive ? ' <span class="optnote">from the next run</span>' : ''}</div>
-     ${optRow('SPEED', 'speed', [1, 1.25, 1.5], v => v + '\u00d7')}
-     ${optRow('FOV', 'fov', [70, 80, 90], v => v)}
-     ${optRow('VIEW', 'projection', [true, false], v => v ? 'SPHERE' : 'NORMAL')}
      ${optRow('SENS', 'sens', [0.7, 1, 1.3, 1.6], v => ({ 0.7: 'LOW', 1: 'MED', 1.3: 'HIGH', 1.6: 'MAX' })[v])}
      ${optRow('AIM', 'aim', [true, false], v => v ? 'ASSIST ON' : 'ASSIST OFF')}
      ${optRow('FX', 'fx', [true, false], v => v ? 'EFFECTS ON' : 'EFFECTS OFF')}
+     ${optRow('', 'music', [true, false], v => v ? 'MUSIC ON' : 'MUSIC OFF')}
+     ${optRow('PERF', 'perf', ['auto', 'high', 'low'], v => v.toUpperCase())}
+     ${pauseMore ? `     ${optRow('SPEED', 'speed', [1, 1.25, 1.5], v => v + '\u00d7')}
+     ${optRow('FOV', 'fov', [70, 80, 90], v => v)}
+     ${optRow('VIEW', 'projection', [true, false], v => v ? 'SPHERE' : 'NORMAL')}
      ${optRow('', 'smear', [true, false], v => v ? 'SMEAR ON' : 'SMEAR OFF')}
      ${optRow('', 'shake', [true, false], v => v ? 'SHAKE ON' : 'SHAKE OFF')}
      ${optRow('', 'chroma', [true, false], v => v ? 'CHROMA ON' : 'CHROMA OFF')}
      ${optRow('', 'edge', [true, false], v => v ? 'EDGE ON' : 'EDGE OFF')}
      ${optRow('', 'gibs', [true, false], v => v ? 'GIBS STACK' : 'GIBS CLASSIC')}
-     ${optRow('', 'music', [true, false], v => v ? 'MUSIC ON' : 'MUSIC OFF')}
      ${optRow('A11Y', 'motion', [true, false], v => v ? 'MOTION FULL' : 'MOTION REDUCED')}
      ${optRow('', 'contrast', [false, true], v => v ? 'CONTRAST HIGH' : 'CONTRAST NORMAL')}
-     ${optRow('PERF', 'perf', ['auto', 'high', 'low'], v => v.toUpperCase())}
      ${optRow('', 'haptics', [true, false], v => v ? 'HAPTICS ON' : 'HAPTICS OFF')}
      ${optRow('VOXEL', 'detail', ['auto', 1, 2, 3, 4], v => v === 'auto' ? 'AUTO' : ({ 1: '1X', 2: '8X', 3: '27X', 4: '64X' })[v])}
      ${optRow('LOOK', 'look', ['smooth', 'cubes'], v => v.toUpperCase())}
-     ${optRow('STYLE', 'style', ['crimson', 'cyan', 'gold', 'violet'], v => v.toUpperCase())}
+     ${optRow('STYLE', 'style', ['crimson', 'cyan', 'gold', 'violet'], v => v.toUpperCase())}` : ''}
+     <button id="moreBtn" class="opt">${pauseMore ? 'FEWER OPTIONS' : 'MORE OPTIONS'}</button>
      <button id="endBtn" class="opt">END RUN &mdash; back to the season menu</button>
-     <p class="go">click / tap anywhere else to resume</p>`;
+     <p class="go">click / tap anywhere else to resume</p>
+     ${input.gamepad ? `<p class="padbar"><b>${padGlyphs().a}</b> select &middot; <b>${padGlyphs().b}</b> / <b>${padGlyphs().start}</b> resume &middot; d-pad or stick to move</p>` : ''}`;
   wireToko();
+  document.getElementById('moreBtn').addEventListener('pointerdown', e => { e.stopPropagation(); pauseMore = !pauseMore; showPause(); });
   document.getElementById('endBtn').addEventListener('pointerdown', e => {
     e.stopPropagation();
     endRun();
@@ -4228,11 +4286,13 @@ function step(dt) {
     elTimer.textContent = lifeT.toFixed(1);
     elTimer.style.color = lifeT < 10 ? '#c81e1e' : '';
     elKills.textContent = `${kills} kills · run ${gameTime.toFixed(1)}s`;
+    updateObjective();
     elClockLabel.textContent = clockLine();
   } else {
     elTimer.textContent = gameTime.toFixed(1);
     elTimer.style.color = '';
     elKills.textContent = `${kills} kills`;
+    updateObjective();
     elClockLabel.textContent = clockLine();
   }
   elGems.textContent = `◆ ${gemCount} · LV ${weaponLv}${weaponLv >= 3 ? ` · HOMING ${homingAmmo}` : ''}`;
@@ -4337,7 +4397,7 @@ function gamepadMenu() {
     // HD-019: the main menu is one choice and one button — left/right is the
     // season, A or START plays it; up, down and B have nothing to move
     gfocus = -1;
-    if (ui.up || ui.down) { setSdfSkullsEnabled(!sdfSkullsEnabled); showMenu(); }
+    if (ui.up || ui.down || ui.y) { setSdfSkullsEnabled(!sdfSkullsEnabled); showMenu(); }
     if (ui.left) stepSeason(-1);
     else if (ui.right) stepSeason(1);
     if (ui.a || ui.start) menuStart(null);
@@ -4345,9 +4405,12 @@ function gamepadMenu() {
   }
   const btns = menuButtons();
   if (gfocus >= btns.length) gfocus = btns.length - 1;
-  if (ui.down && btns.length) gfocus = (gfocus + 1) % btns.length;
-  if (ui.up && btns.length) gfocus = gfocus <= 0 ? btns.length - 1 : gfocus - 1;
+  const was = gfocus;
+  if ((ui.down || ui.right) && btns.length) gfocus = (gfocus + 1) % btns.length;
+  if ((ui.up || ui.left) && btns.length) gfocus = gfocus <= 0 ? btns.length - 1 : gfocus - 1;
   btns.forEach((b, i) => b.classList.toggle('gfocus', i === gfocus));
+  // v64: the list is taller than the screen — bring the focus with you
+  if (gfocus !== was && btns[gfocus]) btns[gfocus].scrollIntoView?.({ block: 'nearest', inline: 'nearest' });
   const resume = state === 'playing' && paused && (ui.b || ui.start);
   if (ui.a && gfocus >= 0 && btns[gfocus]) {
     btns[gfocus].dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }));
@@ -4385,6 +4448,7 @@ function updateSphereProjection() {
   }
 }
 
+let _padWas = false;
 function animate() {
   requestAnimationFrame(animate);
   const rawDt = clock.getDelta(); // unclamped — the governor needs real frame cost
@@ -4392,6 +4456,11 @@ function animate() {
   perfGovern(performance.now(), rawDt * 1000);
   timeMonitor(performance.now(), rawDt);
   input.pollGamepad();
+  if (input.gamepad !== _padWas) {   // v64: a pad arrived or left — say so in the hints
+    _padWas = input.gamepad;
+    document.body.classList.toggle('has-pad', input.gamepad);
+    if (state === 'menu' && elMsg.classList.contains('menu')) showMenu();
+  }
   if (state !== 'playing' || paused) {
     gamepadMenu();
   } else if (input.consumeUi().start) {
@@ -4436,7 +4505,8 @@ function animate() {
   skyMesh.position.copy(camera.position);   // v51: a sky you can drive out of is not a sky
   composer.render();
   uiCtx.clearRect(0, 0, ui.width, ui.height);
-  if (state === 'playing' && !paused) input.drawTouchUI(uiCtx);
+  // v64: with a pad in hand the on-screen sticks' resting ghosts are clutter (a finger that goes down still draws its own)
+  if (state === 'playing' && !paused && !(input.gamepad && !input.left.active && !input.right.active)) input.drawTouchUI(uiCtx);
   if (state === 'playing' && !paused && S().gaze) drawGaze(uiCtx);   // v51
 }
 
@@ -4535,7 +4605,7 @@ window.__hd = {
     },
     truckObj() { return truck.active ?? truck; },   // v51: the convoy (or the classic road), for the gate
     triggerFinale() { startFinale(); return !!finale; },   // v53
-    getGoal() { return { goal: goalLine(), clock: clockLine(), shown: elGoal.classList.contains('show'), ms: GOAL_MS }; },   // HD-010
+    getGoal() { return { goal: goalLine(), clock: clockLine(), shown: elGoal.classList.contains('show'), ms: GOAL_MS, keys: elKeys.textContent, keysShown: elKeys.classList.contains('show'), objective: elObjective.textContent, objectiveShown: elObjective.style.display !== 'none', bar: elRunBar.firstChild?.style?.width ?? null, ticks: elRunBar.querySelectorAll('b').length, padKind: input.padKind, pad: input.gamepad, touchMode: input.touchMode }; },   // HD-010
     getSky() { const u = skyMat.uniforms; return { rig: { key: _rim.position.toArray().map(v => +v.toFixed(2)), keyK: _rim.intensity, keyCol: _rim.color.getHex(), low: emberLights[0].color.getHex() }, bodyLight: WORLD_LIGHT.uWK.value, bodyRim: WORLD_LIGHT.uWRim.value.toArray(), air: u.uAir.value, kind: u.uAirKind.value, a: u.uAirA.value.toArray(), b: u.uAirB.value.toArray(), declared: S().sky.air ?? null }; },   // v63
     getActs() { const w = currentWave(); return { idx: waveIdx, name: w?.name ?? null, kind: w?.kind ?? null, density: actDensity(), opened: actsOpened, crests: crestsCleared, armed: crestArmed, clears: readClears(), hiKey: hiKey(), lastStand: lastStandSaid, mixed: runMixed, struck: crestStruck, crest: goo.cfg ? { h: +goo.heightAt(player.feet.x, player.feet.z).toFixed(3), s: +goo._s(player.feet.x, player.feet.z).toFixed(2), speed: goo.speed, width: goo.cfg.width, hurtFrom: goo.cfg.hurtFrom ?? 0.35 } : null, skullMul: truck.active?.cfg?.skullMul ?? null, nextPulseAt, nextSkullAt }; },   // v62
     getRun() { return { ebbN, ebbSteps, rubbleStands: +rubbleStands.toFixed(2), complete: runComplete, end: S().end ?? null, state, recap: recapParts() }; },   // v54

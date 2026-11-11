@@ -1059,7 +1059,8 @@ s.listen(0, '127.0.0.1', async () => {
       document.getElementById('pauseBtn').dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }));
       await frames(2);
       const pause = { seasons: d.menuSeasons(), modeBtn: d.menuHas('#modeBtn'), endBtn: d.menuHas('#endBtn'),
-        rows: [...document.querySelectorAll('#msg .optrow span:first-child')].map(e => e.textContent.trim()).filter(Boolean) };
+        rows: [...document.querySelectorAll('#msg .optrow span:first-child')].map(e => e.textContent.trim()).filter(Boolean),
+        first: document.querySelector('#msg button')?.id ?? null, more: !!document.getElementById('moreBtn') };
       document.getElementById('msg').dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }));   // resume
       await frames(2);
       // v48: the director — in a skulls-only season, seconds of it spawn skulls and nothing else
@@ -1369,7 +1370,7 @@ s.listen(0, '127.0.0.1', async () => {
     JSON.stringify({ visible: inca.sn.visible, menu: inca.menu }));
   // HD-019: RUN (FREE / DAILY) moved off the intro to sit under SEASON
   ok('the menus: the pause menu carries the seasons, RUN and the regular options — the MODE is the season\'s now (v50)',
-    inca.pause.seasons.length === 3 && !inca.pause.modeBtn && inca.pause.rows.slice(0, 3).join('|') === 'SEASON|RUN|SPEED' && inca.pause.rows.includes('STYLE') && inca.pause.endBtn,
+    inca.pause.seasons.length === 3 && !inca.pause.modeBtn && inca.pause.rows.slice(0, 3).join('|') === 'SEASON|RUN|SENS' && inca.pause.first === 'resumeBtn' && inca.pause.more && inca.pause.endBtn,   // v64: RESUME first, the long tail behind MORE OPTIONS
     JSON.stringify(inca.pause));
 
   // v50 THE WAVE IS A HURDLE — proven by jumping a body over it in the real

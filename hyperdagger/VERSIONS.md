@@ -1,3 +1,43 @@
+## v64 — in progress
+**A pad on a touch screen: it shoots, the menus can be walked, and the run says what it wants (HD-025)**
+
+Mikael, 11 Nov 2026, playing on an iPad with a DualSense: *"Dualsense with ipad
+doesn't work well. The menus are hard to navigate. Controller doesn't shoot.
+Lack of communication of clear objectives. In general hard to read."*
+
+- **The controller did not shoot, and that was one line.** On a touch screen
+  the first tap anywhere sets touch mode for good, and in touch mode the fire
+  check asked the on-screen stick alone. Measured, the same three seconds of
+  R2 held: **0 daggers before, 25 after.** The same line hid L2.
+- The press grammar is HD-001's, unchanged: on a pad too a short press of the
+  trigger jumps and a hold streams. (A first cut made the trigger fire at once;
+  that is a rule change and is the owner's to make, so it is not in this.)
+- **The pad is told its own buttons.** A touch screen was always shown the
+  touch hints, so a connected pad's line never appeared. A pad in hand wins
+  now, in its own shapes (a DualSense prints ✕ ○ □ △ R2 OPTIONS), on the menu
+  at every size, and the menu re-says it when a pad connects.
+- **Menus.** START wears a ring when a pad is in hand; △ changes the renderer
+  as well as up/down. The pause list was 57 buttons in one column: RESUME is
+  first now, five rows of switches stay, the rest is behind MORE OPTIONS. A
+  held direction repeats, left/right step as well, the focus is outlined and
+  scrolled into view, and a bar says ✕ select, ○ / OPTIONS resume.
+- **What the run wants.** A strip along the top edge fills toward 5:00 with a
+  tick per act; one line at the foot says `SURVIVE TO 5:00 · 1:36 · THE
+  SQUEEZE`; a card above it says what the hands do, for the first seven
+  seconds; the goal card stays 4.2 s (it was 1.6 and gone before it was read).
+- **Size.** On a tablet or a desktop the clock, its two lines and the act
+  titles are a size up. Phone-sized frames are untouched.
+- With a pad in hand the on-screen sticks' resting ghosts are not drawn.
+
+Gate: `test/pad-tablet.cjs` (19) — a stubbed DualSense on a touch context at
+1180 × 820; every asserted action is a pad button or a real tap. `goal-card.cjs`
+now reads the card's duration from the game instead of assuming 1.6 s.
+
+Not verified: a real iPad or a real DualSense. The stub reports the standard
+mapping; if Safari reports the pad differently, the buttons could still be
+wrong, and only a playtest shows that. Audio after a pad-only start is still
+silent until the first tap (a browser rule).
+
 ## v63 — in progress
 **The top visual, steps 1 and 2: the air in the sky, and the world's light on the bodies (HD-024)**
 
