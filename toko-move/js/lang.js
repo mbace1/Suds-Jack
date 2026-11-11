@@ -31,7 +31,7 @@
 // the same caveat toko/'s packs carry. test/lang.cjs plays real shifts in
 // Finnish and fails on any English left on screen, which is what keeps a new
 // English line from shipping silently untranslated.
-import { WHO, WANT, TWIST } from './modules.js?v=2';
+import { WHO, WANT, TWIST } from './modules.js?v=3';
 const KEY = 'tokoMoveLang';
 export const LANGS = ['en', 'fi'];
 

@@ -4,11 +4,11 @@
 // becomes like a roguelike").
 //
 // A story card is put together from three parts and a draw:
-//   WHO    somebody at the stop, aboard or on the street (26)
+//   WHO    somebody at the stop, aboard or on the street (41)
 //   WANT   what they are doing or need, with its two ordinary options and three
-//          possible thirds — ordinary, special, very special (21)
-//   TWIST  one line of the day around it (14)
-// 26 × 21 × 14 is over 7,500 cards before the third is drawn, against the 46
+//          possible thirds — ordinary, special, very special (32)
+//   TWIST  one line of the day around it (25)
+// 41 × 32 × 25 is 32,800 cards before the third is drawn, against the 46
 // written ones; the written ones stay in the deck, and a run deals both.
 //
 // Every part is a whole phrase in English and in Finnish, joined at the same
@@ -51,6 +51,22 @@ export const WHO = {
   cake: W('A woman holding a cake', 'Kakkua kantava nainen'),
   tuxedo: W('A man in a tuxedo', 'Smokkipukuinen mies', ['night']),
   dj: W('A sleepy DJ', 'Uninen DJ', ['night']),
+  // (v3.25) fifteen more
+  sailor: W('A sailor on shore leave', 'Maissa lomaileva merimies'),
+  rod: W('A man with a fishing rod', 'Mies onkivavan kanssa'),
+  rug: W('A woman carrying a rug', 'Mattoa kantava nainen'),
+  cat: W('A man with a cat carrier', 'Mies kissankuljetuslaatikon kanssa'),
+  bride: W('A bride on her way to the church', 'Kirkkoon matkalla oleva morsian', ['day']),
+  pizzaguy: W('A pizza courier', 'Pizzalähetti'),
+  scooter: W('A teenager on a kick scooter', 'Potkulautaileva teini'),
+  sweeper: W('A street sweeper', 'Kadunlakaisija', ['day']),
+  postie: W('A postman', 'Postinkantaja', ['day']),
+  soprano: W('A retired opera singer', 'Eläkkeellä oleva oopperalaulaja'),
+  moose: W('A woman in a moose costume', 'Hirviasuun pukeutunut nainen'),
+  climber: W('A climber with a huge crash pad', 'Kiipeilijä valtavan patjan kanssa'),
+  exchange: W('An exchange student from Osaka', 'Osakalainen vaihto-oppilas'),
+  dachshunds: W('A man walking three dachshunds', 'Mies kolmen mäyräkoiran kanssa'),
+  nightnurse: W('A nurse going home from the night shift', 'Yövuorosta kotiin menevä hoitaja', ['day']),
 };
 
 // one option: label, effects and what it says (each with its Finnish)
@@ -178,6 +194,79 @@ export const WANT = {
     thirds: [O('Request a song', 'Pyydä kappaletta', { time: 60, cash: -3, pay: 1.2 }, 'They play it, badly and beautifully.', 'He soittavat sen, huonosti ja kauniisti.'),
       O('Dance the tango with a stranger', 'Tanssi tangoa tuntemattoman kanssa', { time: 60, pay: 1.3, tier: 'special' }, 'A pensioner leads. You follow. A small crowd claps.', 'Eläkeläinen vie. Sinä seuraat. Pieni väkijoukko taputtaa.'),
       O('Sing along in Finnish', 'Laula mukana suomeksi', { time: 60, pay: 1.5, cash: 12, tier: 'very' }, 'You know every word. The accordionist cries. The hat fills, and they share it.', 'Osaat jokaisen sanan. Haitaristi itkee. Hattu täyttyy, ja hän jakaa sen.')] },
+  // (v3.25) twelve more: five on foot, three aboard, four at the stop
+  map: { where: 'walking', mood: 'info', tone: 'fun', en: 'is holding a paper map upside down.', fi: 'pitää paperikarttaa ylösalaisin.',
+    opts: [O('Turn it round for them', 'Käännä se heille oikein päin', { time: 10, pay: 1.05 }, 'They thank you, then turn it back.', 'He kiittävät ja kääntävät sen takaisin.'),
+      O('Ask where they are going', 'Kysy, minne he ovat menossa', { time: 30, pay: 1.1 }, 'Same way as you. You walk together.', 'Samaan suuntaan kuin sinä. Kävelette yhdessä.')],
+    thirds: [O('Show them on your phone', 'Näytä puhelimestasi', { time: 20, pay: 1.05 }, 'A blue dot. They are amazed by the blue dot.', 'Sininen piste. He ihastuvat siniseen pisteeseen.'),
+      O('Point out every landmark on the way', 'Esittele jokainen nähtävyys matkalla', { time: 40, cash: 6, tier: 'special' }, 'The cathedral, the market, a very good kiosk. They tip like a tourist board.', 'Tuomiokirkko, tori, hyvin hyvä kioski. He antavat tippiä kuin matkailutoimisto.'),
+      O('Lead them by the sea road', 'Vie heidät merenrantaa pitkin', { time: 90, pay: 1.5, cash: 10, tier: 'very' }, 'The long way, along the water. Nobody minds. They pay you for the view.', 'Pitkä tie veden vierellä. Kukaan ei välitä. He maksavat sinulle maisemasta.')] },
+  flatbike: { where: 'walking', mood: 'opportunity', tone: 'fun', en: 'is pushing a bike with a flat tyre.', fi: 'työntää pyörää, jonka rengas on puhjennut.',
+    opts: [O('Help push', 'Auta työntämään', { time: 60, pay: 1.1 }, 'Two people, one bike. Somehow it goes faster.', 'Kaksi ihmistä, yksi pyörä. Jotenkin se kulkee nopeammin.'),
+      O('Point to the bike shop', 'Osoita pyöräkorjaamoa', { time: 0 }, 'Two blocks. They sigh, and push on.', 'Kaksi korttelia. He huokaisevat ja jatkavat työntämistä.')],
+    thirds: [O('Patch it with chewing gum', 'Paikkaa se purukumilla', { time: 30, risk: R('maybe', { e: { pay: 1.2 }, s: 'It holds. Science.' }, 'Se pitää. Tiedettä.', { e: { time: 30 }, s: 'It does not hold. Also science.' }, 'Se ei pidä. Sekin on tiedettä.') }, '', ''),
+      O('Let the parcel ride in their basket', 'Anna paketin matkustaa heidän korissaan', { time: 0, pay: 1.25, tier: 'special' }, 'The parcel has never been so comfortable. Neither have your arms.', 'Paketilla ei ole koskaan ollut näin mukavaa. Eikä käsilläsi.'),
+      O('Ride it downhill together on the pegs', 'Laskekaa mäki yhdessä tappien päällä', { time: 0, pay: 1.5, tier: 'very' }, 'Downhill, a flat tyre, two people. The best thirty seconds of the year.', 'Alamäki, puhjennut rengas, kaksi ihmistä. Vuoden parhaat kolmekymmentä sekuntia.')] },
+  pizza: { where: 'walking', mood: 'opportunity', tone: 'fun', en: 'is carrying eight pizza boxes and cannot see.', fi: 'kantaa kahdeksaa pizzalaatikkoa eikä näe eteensä.',
+    opts: [O('Guide them', 'Opasta heitä', { time: 40, pay: 1.1 }, 'Left, left, door. Eight pizzas arrive.', 'Vasemmalle, vasemmalle, ovi. Kahdeksan pizzaa perillä.'),
+      O('Take the top two', 'Ota kaksi päällimmäistä', { time: 30, cash: 4 }, 'They give you a slice as a fee.', 'He antavat sinulle palan palkkioksi.')],
+    thirds: [O('Open the doors ahead of them', 'Avaa ovet heidän edeltään', { time: 20, pay: 1.05 }, 'Five doors. Five small victories.', 'Viisi ovea. Viisi pientä voittoa.'),
+      O('Deliver two of them yourself', 'Toimita kaksi itse', { time: 60, cash: 12, tier: 'special' }, 'Two pizzas, one stairwell, a twelve-euro tip.', 'Kaksi pizzaa, yksi rappu, kahdentoista euron tippi.'),
+      O('Notice they are for your dispatch office', 'Huomaa, että ne ovat lähettämöösi', { time: 0, pay: 1.4, cash: 10, tier: 'very' }, 'Dispatch eats well tonight. Dispatch will remember who carried them.', 'Lähettämössä syödään hyvin tänään. Lähettämö muistaa, kuka ne kantoi.')] },
+  sauna: { where: 'walking', mood: 'info', tone: 'fun', en: 'asks where the public sauna is.', fi: 'kysyy, missä yleinen sauna on.',
+    opts: [O('Point to the one by the sea', 'Osoita meren rannalla olevaa', { time: 10 }, 'Down by the sea. They nod seriously.', 'Alas meren rantaan. He nyökkäävät vakavina.'),
+      O('Draw the way on their hand', 'Piirrä reitti heidän kämmeneensä', { time: 20, pay: 1.05 }, 'They will not wash that hand until after the sauna.', 'He eivät pese sitä kättä ennen saunaa.')],
+    thirds: [O('Recommend the old one in Kallio', 'Suosittele vanhaa Kalliossa', { time: 10, pay: 1.1 }, 'A real one, wood-fired. They write it down.', 'Oikea, puulämmitteinen. He kirjoittavat sen muistiin.'),
+      O('Lend them your towel', 'Lainaa heille pyyhkeesi', { time: 0, pay: 1.2, tier: 'special' }, 'A courier\'s towel. They are honoured, slightly.', 'Lähetin pyyhe. He ovat otettuja, vähän.'),
+      O('Explain löyly properly', 'Selitä löyly kunnolla', { time: 120, pay: 1.5, cash: 10, tier: 'very' }, 'Two minutes of löyly theory. They understand Finland now, and tip.', 'Kaksi minuuttia löylyteoriaa. He ymmärtävät nyt Suomea ja antavat tippiä.')] },
+  stuck: { where: 'aboard', mood: 'warning', tone: 'fun', en: 'is stuck in the tram doors.', fi: 'on jäänyt jumiin ratikan oviin.',
+    opts: [O('Press the door button', 'Paina oven nappia', { time: 10, pay: 1.1 }, 'The doors sigh open. Everyone sighs with them.', 'Ovet huokaisevat auki. Kaikki huokaisevat niiden kanssa.'),
+      O('Pull them in', 'Vedä heidät sisään', { time: 0, risk: R('maybe', { e: { pay: 1.2 }, s: 'In they come, with a bow.' }, 'Sisään he tulevat, kumarrellen.', { e: { time: 40 }, s: 'The doors win. You both get off and take the next one.' }, 'Ovet voittavat. Jäätte molemmat pois ja otatte seuraavan.') }, '', '')],
+    thirds: [O('Wave to the driver', 'Vilkuta kuljettajalle', { time: 20 }, 'The driver sees. The driver has seen worse.', 'Kuljettaja näkee. Kuljettaja on nähnyt pahempaa.'),
+      O('Wedge the door with your parcel', 'Kiilaa ovi paketillasi', { time: 0, pay: 1.2, tier: 'special' }, 'The parcel takes it bravely. They are free.', 'Paketti kestää sen urheasti. He ovat vapaita.'),
+      O('Get the whole car to push', 'Saa koko vaunu työntämään', { time: 20, pay: 1.5, cash: 8, tier: 'very' }, 'Twenty hands. The doors give up. A cheer, and a tip.', 'Kaksikymmentä kättä. Ovet luovuttavat. Hurraa, ja tippi.')] },
+  crossword: { where: 'aboard', mood: 'info', tone: 'fun', en: 'is stuck on the last word of the crossword.', fi: 'on jumissa ristikon viimeisessä sanassa.',
+    opts: [O('Have a guess', 'Arvaa', { time: 10, risk: R('maybe', { e: { cash: 5 }, s: 'Five letters, "sauna". It fits. They give you their pulla money.' }, 'Viisi kirjainta, "sauna". Se sopii. He antavat sinulle pullarahansa.', { e: {}, s: 'It does not fit. They look at you differently now.' }, 'Se ei sovi. He katsovat sinua nyt eri tavalla.') }, '', ''),
+      O('Pretend not to look', 'Esitä, ettet katso', { time: 0 }, 'You know it. You say nothing. It is torture.', 'Tiedät sen. Et sano mitään. Se on kidutusta.')],
+    thirds: [O('Ask the whole car', 'Kysy koko vaunulta', { time: 20, pay: 1.05 }, 'Six answers. One right. Everyone is pleased with themselves.', 'Kuusi vastausta. Yksi oikein. Kaikki ovat tyytyväisiä itseensä.'),
+      O('Fill it in, in pen', 'Täytä se, kuulakärkikynällä', { time: 10, pay: 1.2, tier: 'special' }, 'Confident. Correct. Applause from one pensioner.', 'Varmana. Oikein. Yksi eläkeläinen taputtaa.'),
+      O('Know it before they finish asking', 'Tiedä se ennen kuin he ehtivät kysyä', { time: 0, pay: 1.5, cash: 10, tier: 'very' }, 'They frame the crossword. Your name is on it. They insist on a tip.', 'He kehystävät ristikon. Sinun nimesi on siinä. He vaativat antaa tippiä.')] },
+  pickpocket: { where: 'aboard', mood: 'warning', tone: 'risky', en: 'is standing very close to your bag.', fi: 'seisoo hyvin lähellä laukkuasi.',
+    opts: [O('Move your bag to the front', 'Siirrä laukku eteen', { time: 0 }, 'They move away. Probably nothing. Probably.', 'He siirtyvät pois. Luultavasti ei mitään. Luultavasti.'),
+      O('Ignore it', 'Älä välitä', { time: 0, risk: R('usually', { e: {}, s: 'They get off at the next stop. Your wallet stays.' }, 'He jäävät pois seuraavalla. Lompakko pysyy.', { e: { cash: -15 }, s: 'Your coffee money is gone. So are they.' }, 'Kahvirahasi on poissa. Niin ovat hekin.') }, '', '')],
+    thirds: [O('Stare at them, kindly', 'Tuijota heitä, ystävällisesti', { time: 0, pay: 1.05 }, 'They become very interested in the window.', 'Ikkuna alkaa yhtäkkiä kiinnostaa heitä kovasti.'),
+      O('Tell the driver, quietly', 'Kerro kuljettajalle, hiljaa', { time: 30, cash: 10, tier: 'special' }, 'The driver waits at the next stop with two officers. A small reward.', 'Kuljettaja odottaa seuraavalla pysäkillä kahden poliisin kanssa. Pieni palkkio.'),
+      O('Notice they are lifting someone else\'s wallet, and stop them', 'Huomaa heidän vievän jonkun muun lompakon, ja estä se', { time: 20, pay: 1.4, cash: 20, tier: 'very' }, 'The wallet goes back to its owner, who insists on a reward. The car approves.', 'Lompakko palaa omistajalleen, joka vaatii antaa löytöpalkkion. Vaunu hyväksyy.')] },
+  proposal: { where: 'stop', mood: 'opportunity', tone: 'fun', tags: ['day'], en: 'is about to propose, and has dropped the ring.', fi: 'on kosimassa ja pudottanut sormuksen.',
+    opts: [O('Search the pavement', 'Etsi jalkakäytävältä', { time: 60, risk: R('usually', { e: { pay: 1.3 }, s: 'Found, between two cobblestones. The answer is yes.' }, 'Löytyi kahden mukulakiven välistä. Vastaus on kyllä.', { e: { time: 30 }, s: 'Not found. The answer is yes anyway.' }, 'Ei löytynyt. Vastaus on silti kyllä.') }, '', ''),
+      O('Hold their coffee', 'Pidä heidän kahviaan', { time: 10, pay: 1.05 }, 'Moral support. Coffee support.', 'Moraalista tukea. Kahvitukea.')],
+    thirds: [O('Get the whole stop looking', 'Pane koko pysäkki etsimään', { time: 40, pay: 1.15 }, 'Twelve people bent double. The ring turns up in a boot.', 'Kaksitoista ihmistä kumarassa. Sormus löytyy saappaasta.'),
+      O('Lend them your key ring', 'Lainaa heille avaimenperäsi', { time: 10, pay: 1.25, tier: 'special' }, 'A Moomin key ring. She likes it better than a ring.', 'Muumiavaimenperä. Hän pitää siitä enemmän kuin sormuksesta.'),
+      O('Be the witness, there and then', 'Ole todistaja, siinä ja heti', { time: 90, pay: 1.6, cash: 15, tier: 'very' }, 'Two strangers, a tram stop, a kiss. They buy your coffee for a week.', 'Kaksi tuntematonta, ratikkapysäkki, suudelma. He tarjoavat kahvisi viikon ajan.')] },
+  drone: { where: 'stop', mood: 'warning', tone: 'risky', en: 'is flying a drone right over the tram wires.', fi: 'lennättää droonia aivan ratikan ajojohtimien yllä.',
+    opts: [O('Warn them', 'Varoita heitä', { time: 10, pay: 1.05 }, 'They bring it down, just. Gratitude.', 'He laskevat sen alas, nipin napin. Kiitollisuutta.'),
+      O('Step back from the wires', 'Astu kauemmas johtimista', { time: 0 }, 'Wise. The drone lands in a tree.', 'Viisasta. Drooni laskeutuu puuhun.')],
+    thirds: [O('Catch it as it falls', 'Ota se kiinni, kun se putoaa', { time: 0, risk: R('maybe', { e: { cash: 15 }, s: 'Caught! A finder\'s fee.' }, 'Kiinni! Löytöpalkkio.', { e: { time: 60 }, s: 'It lands in the harbour. You both watch it go.' }, 'Se laskeutuu satamaan. Katsotte molemmat, kun se menee.') }, '', ''),
+      O('Ask it to film the tram coming in', 'Pyydä sitä kuvaamaan saapuva ratikka', { time: 20, cash: 8, tier: 'special' }, 'The shot is beautiful. They buy your coffee.', 'Kuva on kaunis. He ostavat kahvisi.'),
+      O('Show them the open sky over the bay', 'Näytä heille avoin taivas lahden yllä', { time: 30, pay: 1.5, tier: 'very' }, 'Away from the wires, the drone climbs. The whole city on one screen, and you on it.', 'Pois johtimilta drooni nousee. Koko kaupunki yhdellä näytöllä, ja sinä siinä.')] },
+  icecream: { where: 'stop', mood: 'opportunity', tone: 'fun', weather: ['clear'], en: 'is giving out free ice cream to celebrate the sun.', fi: 'jakaa ilmaista jäätelöä auringon kunniaksi.',
+    opts: [O('Take one', 'Ota yksi', { time: 20, pay: 1.1 }, 'Liquorice flavour. Very Finnish. Very good.', 'Salmiakinmakuinen. Hyvin suomalainen. Hyvin hyvä.'),
+      O('Say no thank you', 'Sano ei kiitos', { time: 0 }, 'Your loss. Everyone else is smiling.', 'Sinun häviösi. Kaikki muut hymyilevät.')],
+    thirds: [O('Take one for the tram driver', 'Ota yksi ratikkakuskille', { time: 20, pay: 1.15 }, 'The driver eats it at the next red light. A bell, twice, for you.', 'Kuski syö sen seuraavissa punaisissa. Kello kilahtaa kahdesti, sinulle.'),
+      O('Help hand them out', 'Auta jakamaan', { time: 40, cash: 8, tier: 'special' }, 'A crowd, a cooler, ten minutes of joy. They slip you eight euros.', 'Väkijoukko, kylmälaukku, kymmenen minuuttia iloa. He antavat sinulle kahdeksan euroa.'),
+      O('Start a queue that goes round the block', 'Aloita jono, joka kiertää korttelin', { time: 60, pay: 1.5, cash: 10, tier: 'very' }, 'Sun, ice cream and a queue: three Finnish loves at once. They tip.', 'Aurinko, jäätelö ja jono: kolme suomalaista rakkautta kerralla. He antavat tippiä.')] },
+  whistle: { where: 'walking', mood: 'notice', tone: 'scary', night: true, en: 'whistles the same three notes every time you pass a streetlight.', fi: 'viheltää samat kolme säveltä aina, kun ohitat katulampun.',
+    opts: [O('Walk faster', 'Kävele nopeammin', { time: 0, risk: R('usually', { e: { pay: 1.1 }, s: 'The whistling falls behind. You arrive early, and breathless.' }, 'Vihellys jää taakse. Saavut ajoissa, hengästyneenä.', { e: { time: 60 }, s: 'The whistling keeps up. You take a long way round.' }, 'Vihellys pysyy perässä. Kierrät pitkän tien.') }, '', ''),
+      O('Whistle back', 'Viheltä takaisin', { time: 10 }, 'Silence. Then four notes. You do not answer the fourth.', 'Hiljaisuus. Sitten neljä säveltä. Et vastaa neljänteen.')],
+    thirds: [O('Stop under the next light', 'Pysähdy seuraavan lampun alle', { time: 30, pay: 1.05 }, 'Nothing. A cat on a wall. Probably the cat.', 'Ei mitään. Kissa muurilla. Luultavasti kissa.'),
+      O('Finish the tune', 'Viheltää sävelmä loppuun', { time: 10, pay: 1.2, tier: 'special' }, 'A window opens above you and someone claps, once.', 'Ikkuna aukeaa yläpuolellasi, ja joku taputtaa, kerran.'),
+      O('Turn round and ask the way', 'Käänny ja kysy tietä', { time: 20, pay: 1.6, tier: 'very' }, 'An old lamplighter, still on his round after fifty years. He knows a short cut, and shows you.', 'Vanha lampunsytyttäjä, yhä kierroksellaan viidenkymmenen vuoden jälkeen. Hän tietää oikotien ja näyttää sen.')] },
+  lasttram: { where: 'stop', mood: 'notice', tone: 'scary', night: true, en: 'says the last tram left an hour ago, and is waiting anyway.', fi: 'sanoo, että viimeinen ratikka lähti tunti sitten, ja odottaa silti.',
+    opts: [O('Wait with them', 'Odota heidän kanssaan', { time: 60, risk: R('maybe', { e: { pay: 1.3 }, s: 'A tram comes anyway. Lit, empty, exactly on time.' }, 'Ratikka tulee silti. Valaistu, tyhjä, täsmälleen ajallaan.', { e: { time: 60 }, s: 'Nothing comes. You walk, and they keep waiting.' }, 'Mitään ei tule. Kävelet, ja he jäävät odottamaan.') }, '', ''),
+      O('Check the timetable', 'Tarkista aikataulu', { time: 10 }, 'The timetable says nothing about tonight at all.', 'Aikataulu ei kerro tästä yöstä mitään.')],
+    thirds: [O('Walk to the next stop', 'Kävele seuraavalle pysäkille', { time: 90 }, 'When you look back, the stop is empty.', 'Kun katsot taaksesi, pysäkki on tyhjä.'),
+      O('Ask which tram they mean', 'Kysy, mitä ratikkaa he tarkoittavat', { time: 20, pay: 1.2, tier: 'special' }, 'A line number that has not run since 1953. They smile. So do you, nervously.', 'Linjanumero, jota ei ole ajettu vuoden 1953 jälkeen. He hymyilevät. Niin sinäkin, hermostuneesti.'),
+      O('Wait until it comes, and get on', 'Odota, kunnes se tulee, ja nouse kyytiin', { time: 30, pay: 1.6, tier: 'very' }, 'An old wooden tram, warm inside. It stops right at your drop. You never see it again.', 'Vanha puinen ratikka, sisältä lämmin. Se pysähtyy aivan kohteesi kohdalle. Et näe sitä enää koskaan.')] },
 };
 
 export const TWIST = {
@@ -195,6 +284,18 @@ export const TWIST = {
   hockey: W('Last night, Finland won at hockey.', 'Eilen illalla Suomi voitti jääkiekossa.'),
   neon: W('The street lights hum.', 'Katuvalot hurisevat.', ['night']),
   stars: W('You can see stars over the harbour.', 'Sataman yllä näkyy tähtiä.', ['night', 'clear']),
+  // (v3.25) eleven more
+  trumpet: W('Somebody is learning the trumpet in an open window.', 'Joku opettelee trumpetinsoittoa avoimen ikkunan ääressä.'),
+  bell: W('A tram bell rings twice, for no one.', 'Ratikan kello kilahtaa kahdesti, ei kenellekään.'),
+  buns: W('The air smells of cinnamon buns.', 'Ilma tuoksuu korvapuusteilta.'),
+  croissant: W('A gull is eating a whole croissant.', 'Lokki syö kokonaista croissanttia.'),
+  shades: W('Everyone is wearing sunglasses.', 'Kaikilla on aurinkolasit.', ['clear', 'day']),
+  ferry: W('A ferry horn sounds from the harbour.', 'Lautan torvi soi satamasta.'),
+  nameday: W('It is somebody\'s name day, and they want you to know.', 'Jollakulla on nimipäivä, ja hän haluaa sinun tietävän sen.'),
+  ice: W('The ice on the bay is groaning.', 'Lahden jää natisee.', ['snow']),
+  moon: W('The moon is very large tonight.', 'Kuu on tänä yönä hyvin suuri.', ['night']),
+  organ: W('A street organ is playing a waltz.', 'Posetiivi soittaa valssia.', ['day']),
+  snowman: W('Somebody has built a tiny snowman on the bench.', 'Joku on rakentanut penkille pienen lumiukon.', ['snow']),
 };
 
 // a small hash (FNV-1a with a final mix) and a generator from it

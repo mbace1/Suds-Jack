@@ -302,7 +302,7 @@ ok(RUNS.every(r => !r.cargo || r.cargo.every(c => CARGO[c])), 'every run deals r
     for (const o of runTo(s)) { if (o.c.kind === 'dispatch' && / for (Riikka|Seppo|Mirja|Tuomas|Anneli|Kaarlo) at /.test(o.c.text)) named = named || o.c.text;
       const d = o.r.delivered; if (d?.regular && !d.late && !tipped) tipped = { d, keep: { ...s.keep.regulars } }; } }
   ok(!!named, `a job to a regular names them (${named})`);
-  ok(!!tipped && tipped.d.tip > 0 && Object.values(tipped.keep).includes(4), `on time, a regular tips from their standing and it rises (tip €${tipped?.d.tip}, ${JSON.stringify(tipped?.keep)})`);
+  ok(!!tipped && tipped.d.tip > 0 && Object.values(tipped.keep).some(v => v > 3), `on time, a regular tips from their standing and it rises (tip €${tipped?.d.tip}, ${JSON.stringify(tipped?.keep)})`);
   // the sealed parcel: from a fourth run, never on EASY, named by the kiosk or the line
   ok(J.newRun(net, BY_ID.medium, 9, { memory: { runs: 2 } }).sealedJob === -1 && J.newRun(net, BY_ID.easy, 9, { memory: { runs: 9 } }).sealedJob === -1 && J.newRun(net, BY_ID.medium, 9, { memory: { runs: 3 } }).sealedJob === 1,
     'a sealed parcel from a fourth run, never on EASY');

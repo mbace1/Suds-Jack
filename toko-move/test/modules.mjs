@@ -22,8 +22,10 @@ import { moduleLine, FI } from '../js/lang.js';
 let n = 0; const ok = (c, m) => { assert.ok(c, m); n++; };
 
 // how many
-ok(M.variety() > 6000, `the modules make ${M.variety()} cards before the third is drawn`);
-ok(Object.keys(M.WHO).length >= 20 && Object.keys(M.WANT).length >= 15 && Object.keys(M.TWIST).length >= 12, 'twenty people, fifteen wants, twelve days at least');
+ok(M.variety() > 30000, `the modules make ${M.variety()} cards before the third is drawn`);
+ok(Object.keys(M.WHO).length >= 40 && Object.keys(M.WANT).length >= 32 && Object.keys(M.TWIST).length >= 25, 'forty people, thirty-two wants, twenty-five days at least (v3.25)');
+const places = w => Object.values(M.WANT).filter(x => x.where === w).length;
+ok(places('stop') >= 12 && places('aboard') >= 8 && places('walking') >= 8, `every place has its share: ${places('stop')} at the stop, ${places('aboard')} aboard, ${places('walking')} on foot`);
 
 // every part in both languages
 const fiOf = x => typeof x === 'string' && x.trim().length > 0;
