@@ -19,9 +19,9 @@
 //              ice is gone down it
 import * as THREE from 'three/webgpu';
 import { uv, vec3, float, abs, smoothstep, mix } from 'three/tsl';
-import { TUNING } from '../tuning.js?v=143';
-import { seeded } from './kit.js?v=143';
-import { SUN_AT } from './sun.js?v=143';
+import { TUNING } from '../tuning.js?v=144';
+import { seeded } from './kit.js?v=144';
+import { SUN_AT } from './sun.js?v=144';
 
 const T = TUNING;
 

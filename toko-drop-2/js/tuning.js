@@ -7,10 +7,10 @@
 // things that work"). The arena is 1.x's, so every 1.x number ports as it is
 // instead of through a rescale. Axes: x across the screen (right +), y up,
 // z toward the bottom of the screen. The arena is centred on the origin.
-import { SPECIES } from './tuning/species/index.js?v=143';
-import WAVES from './tuning/waves.js?v=143';
-import PICKUPS from './tuning/pickups.js?v=143';
-import MUSIC from './tuning/music.js?v=143';
+import { SPECIES } from './tuning/species/index.js?v=144';
+import WAVES from './tuning/waves.js?v=144';
+import PICKUPS from './tuning/pickups.js?v=144';
+import MUSIC from './tuning/music.js?v=144';
 
 export const TUNING = {
   render: {
@@ -160,9 +160,14 @@ export const TUNING = {
       // v98: and where the shafts land (scenery.cistern.rays), a warm patch of daylight — the approved picture's
       // light is pale warm white on a teal room (its pool reads +72/+65/+46 over the floor round it) — that the
       // caustic web gathers in; no sheen from it, as low and near as it is (a glint there is the fog blob again)
-      cistern: { ambient: 0.6, lights: [{ frac: [-0.4, -0.45], h: 16, r: 14, k: 0.5, color: [0.62, 0.9, 1] },
-                                        { frac: [-0.4, -0.45], h: 5, r: 5, k: 0.6, color: [1, 0.9, 0.64], sheen: false, caustics: true, shafts: true }],
-                 rim: { w: 3.4, k: 0.7, color: [1, 0.68, 0.38], sides: 'back', every: 8.8, depth: 0.55 }, sheen: { k: 0.35, shine: 40 } },
+      // v144 (owner, 2026-11-11: "Also a mood and light flip ... It looks like a regular day puddle"): the level UNDER
+      // the sewer, and DARK — `ambient` barely shows the stone. What light there is comes down the breach the water
+      // falls through (far left): a broad cold key, its glint sharp on the waves' faces (`shine`, `sheenK`), and the
+      // pale patch where it lands; and the lamps at the columns' feet, warm, along the back and the sides, glinting
+      // off the water too (`rim.sheen`: a row `y` m up, `off` m out from the edge)
+      cistern: { ambient: 0.15, lights: [{ frac: [-0.56, -0.66], h: 14, r: 9.5, k: 0.5, color: [0.5, 0.74, 1], shine: 700, sheenK: 3 },
+                                        { frac: [-0.56, -0.66], h: 5.5, r: 5.5, k: 1.0, color: [0.78, 0.93, 1], sheen: false, caustics: true, shafts: true }],
+                 rim: { w: 2.6, k: 1.7, color: [1, 0.6, 0.28], sides: 'back', every: 8.8, depth: 0.86, sheen: { y: 0.9, off: 2.3, shine: 90, k: 2.4, r: 9 } }, sheen: { k: 0.35, shine: 40 } },
       boiler:  { ambient: 0.58, grates: { h: 1.4, r: 2.8, k: 1.05, color: [1, 0.42, 0.1], flicker: [1.6, 0.3] },
                  rim: { w: 1.5, k: 0.75, glow: 0.03, color: [1, 0.42, 0.1], sides: 'all' }, sheen: { k: 0.3, shine: 20 } },
       // the sun on water and ice is a glint, not a haze: broad and white it read as fog (shine 14 / 30)
@@ -295,8 +300,23 @@ export const TUNING = {
       // v97: to the approved arena picture — clear shallow water over pale slabs, a NETWORK of caustic light on them
       // (`net`: scale, iterations' strength, sharpness, gain; brightest in the roof shaft's pool, `inPool` of it
       // elsewhere), and no column stumps in the pool (the picture's columns stand at the back): `plinthK` 0
-      cistern: { slab: 2.4, grout: 0.04, stone: [0.075, 0.11, 0.115], water: [0.012, 0.085, 0.1], depth: 0.42, caustic: [0.55, 0.95, 1.0],
-                 net: { scale: 0.27, sharp: 13, gain: 0.2, inPool: 0.3, speed: 0.22 }, plinthK: 0,
+      cistern: { slab: 2.4, grout: 0.04, stone: [0.2, 0.3, 0.31], water: [0.004, 0.03, 0.048], depth: 0.45, caustic: [0.5, 0.92, 1.0],
+                 net: { scale: 0.27, sharp: 13, gain: 0.24, inPool: 0.22, speed: 0.22 }, plinthK: 0,
+                 // v144: the simulated water's optics (floor.js cistern; the simulation itself is TUNING.water.cistern).
+                 // `gain` × the simulation's slope; the bed moved `refract` m a unit of slope; the caustic net pulled
+                 // `netWarp` m; a crest's light `focus` (to `focusMax`, `inDark` of it away from the breach's light), a
+                 // trough's `thin`; `fine`: the cross-ripple too small for the simulation, [kx, kz rad/m, rad/s, m];
+                 // `foam`: a veil mottled `scale` a metre, `fill` × the foam the simulation holds, `soft` at its edge, `k` thick;
+                 // `wet`: how much of the bullets' light the surface takes; `swell`: a slow unevenness the lights glint off
+                 // (cells a metre, its drift, its slope); `relief`: a wave's face turned to the breach is lit `k` × its
+                 // slope (to `max`, in `color`) and the face turned away darkened (to `dark`), `far` of it far from the breach
+                 wave: { gain: 2, refract: 0.5, netWarp: 0.8, focus: 0.1, focusMax: 1.4, inDark: 0.55, thin: 0.08, wet: 0.35, glintAt: [0.03, 0.14],
+                         swell: [0.55, 0.12, 0.014], relief: { k: 3.2, max: 0.5, dark: 0.45, r: 16, far: 0.35, color: [0.36, 0.6, 0.8] },
+                         fine: [[7.1, 3.3, 2.3, 0.0022], [-4.2, 8.8, -1.9, 0.0018], [11.5, -6.4, 3.4, 0.0011]],
+                         foam: { scale: 2.4, fill: 0.95, soft: 0.4, drag: 0.6, k: 0.7, color: [0.62, 0.7, 0.74] } },
+                 // v144: the pool's DEEPS (floor.js cistern): where a slow field (`scale` a metre) passes `at`, `k` more
+                 // water over the bed, and the light on it `dim`med
+                 deeps: { scale: 0.085, at: [0.5, 0.76], k: 0.36, dim: 0.6 },
                  // v140: the pool's floor is laid, not ruled (floor.js cistern). `long`: the share of pairs along a
                  // row that are one long slab; `small`: the share of slabs that are four small ones; a slab's `tone`,
                  // between `cool` and `warm` (`greens` of them toward `green`), `tilt` out of level, its edges worn
@@ -487,9 +507,21 @@ export const TUNING = {
                // brightest (each a little different, `vary`), `lift`× brighter where narrow, in from the floor
                // over `foot` of the way and out over the last `roof`, breathing `breathe` as the sky over the
                // roof moves; dust turning in them (`dust`)
-               rays: { n: 6, len: 17, dir: [0.42, -1, 0.5], spread: 5.5, mouth: 0.22, r: 0.85, top: 0.4, alpha: 0.075, vary: 0.45, lift: 1.6,
-                       foot: 0.12, roof: 0.25, breathe: 0.35, color: [1.0, 0.92, 0.68],
-                       dust: { n: 4, h: 1.2, vy: -0.1, sway: 0.18, wobble: 0.45, r: 0.03, gain: 1.6, color: [1.0, 0.95, 0.8], box: 1.4, seed: 98 } } },
+               rays: { n: 6, len: 17, dir: [0.3, -1, 0.42], spread: 5.5, mouth: 0.22, r: 0.85, top: 0.4, alpha: 0.07, vary: 0.45, lift: 1.6,
+                       foot: 0.12, roof: 0.25, breathe: 0.35, color: [0.74, 0.9, 1.0],
+                       dust: { n: 4, h: 1.2, vy: -0.1, sway: 0.18, wobble: 0.45, r: 0.03, gain: 1.6, color: [0.8, 0.92, 1.0], box: 1.4, seed: 98 } },
+               // v144: THE FALL (scenery.js _fall) — the water coming down the breach, onto the light's pool (`off` m from
+               // its middle): `h` m of it, `r` m round at the foot and `top`× that at the head, not in a room under
+               // `minArea` m² (half sizes multiplied). `stream`: `strands` round it, the pattern laid along √depth
+               // × `stretch` and run at `speed`, `head` m fallen before it is seen, torn `tear` more toward the foot
+               // from `cut`, `edge` thin at its sides, in out of the dark over `fadeIn` of its height. `skirt`: the
+               // thrown water round the landing. `spray` hangs over it. `source`: what it does to the simulated water
+               // — `rate` splashes a second within `r` m, each `size` m round and to `amp` m deep
+               fall: { h: 15, r: 0.5, top: 0.5, minArea: 260, off: [0, 0], dark: [0.2, 0.34, 0.42], light: [0.8, 0.93, 1.0],
+                       stream: { strands: 9, stretch: 2.6, speed: 5.2, head: 1.5, tear: 0.3, cut: 0.24, edge: 0.5, fadeIn: 0.3, alpha: 0.95 },
+                       skirt: { top: 1.1, foot: 3.1, h: 0.75, strands: 14, speed: 2.4, alpha: 0.5 },
+                       spray: { n: 26, h: 1.3, vy: 0.9, sway: 0.25, wobble: 1.4, r: 0.035, gain: 0.55, color: [0.8, 0.92, 1.0], add: false, seed: 44 },
+                       source: { r: 0.5, rate: 46, amp: 0.05, size: 0.36 } } },
     // v72 (owner, 2026-10-31: "you can build all levels/worlds now"; from the
     // World 5 brief, art-ref/briefs/world-5-boiler.md): THE BOILER ROOM. Boilers
     // along the far side, `every` m apart and `side` m past its corners, `out` m
@@ -1467,6 +1499,26 @@ export const TUNING = {
   // stain. It replaces 1.x's droplets and puddles (death.droplets*,
   // splats); the chunks and the jelly halves stay. `?goo=off` turns it off,
   // for comparison, and brings 1.x's back.
+  // v144 (owner, 2026-11-11, of the cistern: "the water vfx are too simple and subtle. Could entertain actual water
+  // physics"): THE WATER AS WATER — a wave simulation a world's floor stands in (render/water.js), by the floor's
+  // style. `perMetre` texels a metre (never more than `maxTexels` a side), stepped `hz` a second and at most
+  // `maxSteps` a frame; a wave runs `c` m/s and has lost half its height after `half` s; the level comes back to
+  // rest over `settle` s; a pit takes `sink` of what crosses it a step. `solid`: how much of a post's circle the
+  // water sees. `body`: what a body moving through pushes aside goes in as `dip` m a metre of its radius (to
+  // `rMax`), over `foot` of its radius (the hero's is `hero` m), and it bobs `bob` of its radius at `bobHz`.
+  // `drip`: `rate` drops a second over 100 m² from the vault, each a dent `amp` m deep, `r` m round. `foam`:
+  // thrown-about water whitens between `at` m/s of the surface's own speed and is half gone in `half` s.
+  // `events`: the sim's events that splash — a dent `amp` m deep a metre of the body's radius (to `rMax`),
+  // `size` × its radius round (`r`: the radius of an event that has none)
+  water: {
+    cistern: { perMetre: 8, maxTexels: 448, hz: 60, maxSteps: 3, c: 2.1, half: 1.9, settle: 3, sink: 0.25, solid: 0.92,
+               body: { dip: 0.12, foot: 1.0, hero: 0.6, rMax: 1.6, bob: 0.03, bobHz: 0.7 },
+               drip: { rate: 0.6, r: 0.3, amp: 0.05 },
+               foam: { at: [1.1, 2.6], half: 0.8 },
+               events: { kill: { amp: 0.2, size: 1.3, rMax: 2.2 }, hopLand: { amp: 0.1, size: 1.1 }, land: { amp: 0.1, size: 1.1 }, slam: { amp: 0.09, size: 0.5, rMax: 6 },
+                         dash: { amp: 0.12, size: 1.6, r: 0.55 }, lobLand: { amp: 0.12, size: 1.2, r: 0.5 }, hit: { amp: 0.03, size: 0.7, r: 0.4 },
+                         worldLand: { amp: 0.3, size: 2.2, r: 0.8 } } },
+  },
   goo: {
     cap: 2400,              // drops alive at once (all of them step in ~0.6 ms in bare node: test/goo.mjs)
     budget: 320,            // drops one frame may throw: a boss's death cannot stall a frame

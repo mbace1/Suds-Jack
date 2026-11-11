@@ -11,8 +11,8 @@
 //   VENT   the jets and the steam
 //   STALL  (every second vent) still and red-hot
 // Numbers: js/tuning/species/kettle.js. Seeded: w.rng only.
-import { rage, toHero } from './bosskit.js?v=143';
-import { TUNING } from '../../tuning.js?v=143';
+import { rage, toHero } from './bosskit.js?v=144';
+import { TUNING } from '../../tuning.js?v=144';
 
 export default {
   init(w, g, api) {

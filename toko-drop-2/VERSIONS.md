@@ -19,6 +19,22 @@
     Never `--no-verify`.
 -->
 
+## v144 — 2026-11-11
+**The cistern's water is water: a wave simulation the fight stands in. And the cistern is dark, with the sewer's water falling into it**
+- WHY (owner, 2026-11-11, shown v143): "This is the worst looking level. There is very little variation or identity and the water vfx are too simple and subtle. Could entertain actual water physics. Also a mood and light flip. Many of these levels are about dropping down a level to go lower in the sewers or get pushed further out of the sewers. It looks like a regular day puddle".
+- THE WATER (new, `js/render/water.js`): the surface's height over the floor, a number every hand's width, stepped sixty times a second by the wave equation. None of what it does is drawn by hand. A ring from a splash spreads, meets the kerb and comes back; two rings pass through each other; a body running through leaves a wake, and a dash a bigger one; a column throws the waves back and leaves a calm behind it; a well swallows them.
+- WHAT MOVES IT: every body in the pool (the water it pushed aside: standing still makes nothing), every kill, landing, hop and slam (a dent and the rim that holds its water), the hero's dash, drips from the vault, and the fall.
+- HOW IT IS SEEN: the slabs swim under a wave and lie still under still water; light gathers in a line under each crest (v143's rings and v71's drips, which were drawn, are gone: the simulation makes them); a wave's face turned to the light is lit and the face turned away is dark, which is what carries a ring across a dark pool on a phone; the lamps glint off the faces turned to them; where the water is thrown hardest it froths white for a moment.
+- THE MOOD: the level under the sewer, and dark. The air barely shows the stone, which is teal under the water. The light is what comes down a breach in the vault at the far left (cold, a pale pool where it lands) and the lamps at the columns' feet along the back and sides (warm). The pool has deeps now, where the slabs go down into black water.
+- THE FALL: the sewer's water comes down through the same breach the light does, fifteen metres of it, strands running faster the further they have fallen, a skirt of thrown water and spray where it lands. It lands in the simulated water, so its rings are real and go out across the pool. It stands in the far left, never the near side, and not in a campaign room too small for it.
+- THE WELLS: the two holes in the floor are where the water goes on down. It pours over their lips and down their walls, and the waves that reach them are lost in them.
+- FIXED, in every world (found filming the fall): the ground round a floor lies three centimetres under it, as two triangles tens of metres across. With the hero in a far corner their depth came out wrong by more than that, and for a frame at a time the ground showed THROUGH half the floor. It is laid in small pieces now, a little further back (`kit.js groundGeo`); 29 bad frames in 108 of that shot became none.
+- Looks only: nothing in the sim reads the water. On the software GPU the cistern's frame is about a seventh slower, nearly all of it the simulation's own passes (a fifth of a megapixel twice a frame, which a phone's GPU does not notice); the floor's own shading costs what v143's did. Checked on WebGPU and on the WebGL 2 fallback.
+- Tests: test/view.mjs holds the simulation's numbers and what goes into it (12 checks, 116 in all); the smoke throws a splash into the cistern in a browser and reads the surface back, on both backends (a new scenario, `world4-gl`), and checks no other world has water it should not.
+- Cache tokens `?v=143` → `?v=144`; HUD label → `2.0 · v144`
+
+---
+
 ## v143 — 2026-11-11
 **The water answers the hero: rings go out from it in the cistern, and the river breaks round it and trails a wake**
 - WHY (owner, 2026-11-10: "we can go way beyond with geometry and art assets"): the driveway's leaves and puddles answer the fight (v138), the ice's chips do (v141). The two floors that are water did nothing when you stood in them.

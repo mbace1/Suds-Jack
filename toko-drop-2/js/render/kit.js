@@ -4,7 +4,7 @@
 // round a floor props stand on, and the few shapes more than one set makes
 import * as THREE from 'three/webgpu';
 import { Fn, float, vec2, vec3, fract, sin, cos, dot, floor as tfloor, mix, length, min, max, abs, atan, fwidth, smoothstep, step, uniform, instanceIndex, normalView, positionLocal, positionGeometry } from 'three/tsl';
-import { GEL_TIME } from './gel.js?v=143';
+import { GEL_TIME } from './gel.js?v=144';
 
 // a hash and value noise on the world plane, cheap enough for a picture
 export const hash = (p) => fract(sin(dot(p, vec2(127.1, 311.7))).mul(43758.5453));
@@ -119,12 +119,20 @@ export function bladeClump(rnd, { blades, r, w, bend, rows = 3 }) {
   return g;
 }
 
+// v144: a ground lying a hair under a floor is laid in SMALL pieces, and a little further back in depth. As two
+// triangles each was tens of metres across and crossed the eye's own plane, and its depth, worked out across all
+// that, came out wrong by more than the hair: with the hero in a far corner the ground showed THROUGH the floor
+// for a frame, half the floor at a time (found filming the cistern's fall; it had been there since v68, under
+// every floor). Pieces that lie wholly in front of the eye have a depth that is right
+export const groundGeo = (w, d, seg = 24) => new THREE.PlaneGeometry(w, d, seg, seg).rotateX(-Math.PI / 2);
+export const sunk = (mat) => { mat.polygonOffset = true; mat.polygonOffsetFactor = 1; mat.polygonOffsetUnits = 4; return mat; };
+
 // a picture of the ground past the floor (unlit, as the floor is), drawn
 // after the floor so the depth test throws away what lies under it (v68)
 export function groundPlane(sc, hx, hz, out, colorNode, y = -0.03) {
-  const mat = new THREE.MeshBasicNodeMaterial();
+  const mat = sunk(new THREE.MeshBasicNodeMaterial());
   mat.colorNode = colorNode;
-  const m = sc._add(new THREE.Mesh(new THREE.PlaneGeometry(2 * (hx + out), 2 * (hz + out)).rotateX(-Math.PI / 2), mat));
+  const m = sc._add(new THREE.Mesh(groundGeo(2 * (hx + out), 2 * (hz + out)), mat));
   m.position.y = y; m.renderOrder = 1;
   return m;
 }

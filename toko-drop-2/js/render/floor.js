@@ -24,11 +24,11 @@
 // `swirlAt`, out to `swirlR`, and opens a hole of `hole` m in the middle).
 import * as THREE from 'three/webgpu';
 import { Fn, If, uv, uniform, float, abs, fract, min, max, sin, cos, atan, length, smoothstep, step, mix, fwidth, texture, clamp, vec2, vec3, pow, floor as tfloor, round, select, mod, dFdx, dFdy, exp, normalize, dot, cameraPosition, positionWorld, vec4 } from 'three/tsl';
-import { pickStyle, grainAt } from './style.js?v=143';
-import { SUN_AT } from './sun.js?v=143';
-import { GEL_TIME } from './gel.js?v=143';
-import { noise, grate, cells, sewerSpots, treeShade } from './scenery.js?v=143';
-import { lilyPads, DRIFT, hash } from './kit.js?v=143';
+import { pickStyle, grainAt } from './style.js?v=144';
+import { SUN_AT } from './sun.js?v=144';
+import { GEL_TIME } from './gel.js?v=144';
+import { noise, grate, cells, sewerSpots, treeShade } from './scenery.js?v=144';
+import { lilyPads, DRIFT, hash } from './kit.js?v=144';
 
 const _white = new THREE.Color(0xffffff);
 // the floors whose set has a ground of its own under them: a room that is not a rectangle is CUT to its shape there
@@ -48,7 +48,7 @@ const CUT_TO_GROUND = new Set(['concrete', 'river', 'cistern', 'ice']);
 // is the void, and its edge is drawn as 1.x's rail (`regionRail`), the box's
 // rail hidden.
 // `colors` ({ base, gridHi } sRGB 0..1): a campaign world's own floor (1.x's depth looks).
-export function buildFloor(T, hx, hz, light, { style = 'grid', bounds: hasBounds = false, film = null, region = null, regionRail = null, colors = null } = {}) {
+export function buildFloor(T, hx, hz, light, { style = 'grid', bounds: hasBounds = false, film = null, water: waterKit = null, region = null, regionRail = null, colors = null } = {}) {
   const F = T.floor, LF = T.light.arena.floor;
   const group = new THREE.Group();
 
@@ -89,6 +89,8 @@ export function buildFloor(T, hx, hz, light, { style = 'grid', bounds: hasBounds
   const railCol = uniform(new THREE.Color(regionRail ?? F.rail));
 
   const wetTex = film ? texture(film.wetTexture) : null, dryTex = film ? texture(film.dryTexture) : null;
+  // v144: the water this floor stands in (render/water.js), where its world has any: the surface's slope, curvature and foam
+  const water = waterKit?.on && T.water?.[style] ? waterKit : null, slopeTex = water ? texture(water.slopeTexture) : null;
 
   // The goo on the floor (goo.js). Depths are millimetres.
   //   the contact line  a film shows wherever it is deeper than `edge` mm,
@@ -569,8 +571,31 @@ export function buildFloor(T, hx, hz, light, { style = 'grid', bounds: hasBounds
   };
   // THE CISTERN: a flooded vault — stone slabs under shallow water, the
   // light off the surface wandering over them, the bases of the columns
-  const cistern = (p, w) => {
-    const C = W.cistern, Vy = C.vary;
+  const cistern = (p, w0) => {
+    const C = W.cistern, Vy = C.vary, Wv = water ? C.wave : null, t = GEL_TIME;
+    // v144 (owner, 2026-11-11: "the water vfx are too simple and subtle. Could entertain actual water physics ...
+    // It looks like a regular day puddle"): the water is SIMULATED (render/water.js) and this is its optics. The
+    // surface's slope bends the eye's way down to the bed, so the slabs are drawn where the slope moves them
+    // (`refract` m a unit of slope: they swim under a wave and lie still under still water); a crest is a lens
+    // and gathers the light under it into a bright line, a trough thins it (`focus`, `thin` — the caustics are
+    // the waves' own, not a net that wanders by itself, though the net stays, pulled about by them, for the water
+    // the fight has not reached); the lamps and the shaft glint off whichever faces turn to them (worldLight
+    // reads the slope); and where the water was thrown about it is white for a moment (`foam`), in broken
+    // patches. A fine cross-ripple (`fine`) keeps still water from being glass: the simulation's texels are a
+    // hand wide, and the surface has smaller things on it than that
+    let w = w0, slope = null, glintSlope = null, glintGate = null, lapK = float(0), foam = float(0);
+    if (Wv) {
+      const sv = slopeTex.sample(vec2(p.x, float(1).sub(p.y))), Fi = Wv.fine;
+      let fine = vec2(0);
+      for (const [kx, kz, om, a] of Fi) fine = fine.add(vec2(kx, kz).mul(cos(w0.x.mul(kx).add(w0.y.mul(kz)).add(t.mul(om))).mul(a)));
+      slope = sv.xy.mul(Wv.gain).add(fine); lapK = sv.z.mul(Wv.gain); foam = sv.w;
+      w = w0.add(slope.mul(Wv.refract));
+      // what the lights glint off: the simulation's waves and a slow unevenness (never the fine ripple: three
+      // sines mirror a lamp as a quilt)
+      // (and only off a WAVE: still water mirrors the breach as one soft patch, which reads as fog on the floor)
+      glintGate = smoothstep(Wv.glintAt[0], Wv.glintAt[1], length(sv.xy.mul(Wv.gain)));
+      glintSlope = sv.xy.mul(Wv.gain).add(vec2(noise(w0.mul(Wv.swell[0]).add(vec2(t.mul(Wv.swell[1]), 0))).sub(0.5), noise(w0.mul(Wv.swell[0]).add(vec2(11.7, t.mul(Wv.swell[1])))).sub(0.5)).mul(Wv.swell[2]));
+    }
     // v140 (owner, 2026-11-10: "look at all other worlds ... we can do a lot better than the concept art"): the pool's
     // floor is LAID, not ruled — as the sewer's (v140). Of each pair of slabs along a row some are ONE long slab
     // (`long`), and some slabs are four small ones (`small`); every slab has its own tone and tint and lies a little
@@ -623,17 +648,37 @@ export function buildFloor(T, hx, hz, light, { style = 'grid', bounds: hasBounds
       stone = mix(stone, mix(tile, tile.mul(0.4), tgr), inB.mul(float(1).sub(gone)));
       stone = mix(stone, v3(B.dark).mul(0.6), line.mul(0.7));
     }
-    const t = GEL_TIME;
     // v97: the caustic NETWORK the approved picture shows — light focused by the moving surface into thin bright
     // cells over the slabs — from a domain-warped field (four warps of sines, the classic water caustic), brightest
     // in the roof shaft's pool and fainter elsewhere; v71's contour squiggles read as noise over everything
-    const N = C.net, caustic = causticNet(w, N, t);
+    const N = C.net;
+    let caustic = causticNet(Wv ? w.add(slope.mul(Wv.netWarp)) : w, N, t);
     const lt = T.worlds.lit?.cistern?.lights ?? [], key = lt.find((l) => l.caustics) ?? lt[0], pool = key ? float(1).div(float(1).add(dot(w.sub(vec2(key.frac[0] * hx, key.frac[1] * hz)), w.sub(vec2(key.frac[0] * hx, key.frac[1] * hz))).div(key.r * key.r))) : float(1);
     // the column bases: a square plinth every `column` m, its edge catching the light
     const q = fract(w.div(C.column).add(0.5)).sub(0.5).mul(C.column), dq = max(abs(q.x), abs(q.y));
     const plinth = float(1).sub(smoothstep(C.plinth - 0.03, C.plinth + 0.03, dq));
     const rim = float(1).sub(smoothstep(0, 0.07, abs(dq.sub(C.plinth))));
-    let col = mix(stone, v3(C.water), sink.mul(Vy?.sunkDepth ?? 0).add(C.depth)).add(v3(C.caustic).mul(caustic.mul(N.gain).mul(mix(float(N.inPool), float(1), pool))));
+    // v144: the pool is not one depth. Over a slow field the floor falls away into DEEPS (`deeps`: where the field
+    // passes `at`, `k` more water over the bed) — the slabs go down into the dark there and the light on them
+    // spreads and dims — so a look across the pool has shallows that show their stone and black water between
+    let depth = sink.mul(Vy?.sunkDepth ?? 0).add(C.depth), shallow = float(1);
+    if (C.deeps) { const Dp = C.deeps, dn = smoothstep(Dp.at[0], Dp.at[1], noise(w.mul(Dp.scale).add(vec2(7.3, 1.9)))); depth = depth.add(dn.mul(Dp.k)); shallow = float(1).sub(dn.mul(Dp.dim)); }
+    let light = caustic.mul(N.gain).mul(mix(float(N.inPool), float(1), pool));
+    let focus = float(0);
+    if (Wv) {
+      // the waves' own light: gathered under a crest (curvature < 0), thinned under a trough
+      focus = clamp(lapK.negate().mul(Wv.focus), 0, Wv.focusMax);
+      light = light.mul(clamp(float(1).sub(lapK.mul(Wv.thin)), 0.25, 1.6)).add(focus.mul(mix(float(Wv.inDark), float(1), pool)));
+    }
+    let col = mix(stone, v3(C.water), min(depth, 0.96)).add(v3(C.caustic).mul(light.mul(shallow)));
+    let relief = float(0);
+    if (Wv && key) {
+      // and the waves' RELIEF: the vault is dark and the breach is bright, so the face of a wave turned to the
+      // breach mirrors it and the face turned away mirrors the dark — what makes a ring a ring from across the pool
+      const kp = vec2(key.frac[0] * hx, key.frac[1] * hz), toKey = kp.sub(w0), dk = length(toKey), turn = dot(glintSlope, toKey.div(max(dk, 0.5))).negate();
+      relief = clamp(turn.mul(Wv.relief.k), -Wv.relief.dark, Wv.relief.max).mul(float(1).div(float(1).add(dk.mul(dk).div(Wv.relief.r * Wv.relief.r))).mul(1 - Wv.relief.far).add(Wv.relief.far));
+      col = col.mul(float(1).add(min(relief, 0))).add(v3(Wv.relief.color).mul(max(relief, 0)));
+    }
     col = mix(col, v3(C.stone).mul(0.35), plinth.mul(C.plinthK ?? 1)).add(v3(C.rim).mul(rim.mul(0.5 * (C.plinthK ?? 1))));
     // v71: in each plinth the cut top of a fallen column, a round stone disc
     // with a groove round it, under the same water
@@ -641,24 +686,35 @@ export function buildFloor(T, hx, hz, light, { style = 'grid', bounds: hasBounds
     const stump = float(1).sub(smoothstep(float(sr).sub(saa), float(sr).add(saa), dr));
     const sgroove = float(1).sub(smoothstep(0, 0.045, abs(dr.sub(sr * 0.7))));
     col = mix(col, v3(C.stumpTone).mul(noise(w.mul(4.3)).mul(0.35).add(0.75)).mul(float(1).sub(sgroove.mul(0.45))), stump.mul(0.85 * (C.plinthK ?? 1)));
-    // v71: drip rings: in every `drip.cell` m a drip from the vault every
-    // `period` s, somewhere of its own, its rings spreading as they fade
-    const D = C.drip, cell = tfloor(w.div(D.cell));
-    const dph = noise(cell), dpos = cell.add(vec2(noise(cell.add(vec2(17, 3))), noise(cell.add(vec2(5, 29)))).mul(0.6).add(0.2)).mul(D.cell);
-    const dk = fract(t.div(D.period).add(dph)), dd = length(w.sub(dpos)), daa = max(fwidth(dd), 1e-4);
-    const drip = float(1).sub(smoothstep(float(D.width).sub(daa), float(D.width).add(daa), abs(dd.sub(dk.mul(D.reach)))))
-      .add(float(1).sub(smoothstep(float(D.width).sub(daa), float(D.width).add(daa), abs(dd.sub(dk.mul(D.reach * 0.55))))).mul(0.6))
-      .mul(float(1).sub(dk).pow(2));
-    col = col.add(v3(C.caustic).mul(drip.mul(D.gain)));
-    // v143: the water ANSWERS THE HERO, as the driveway's puddles do (v138): it stands in a hand's depth of water, and
-    // rings go out from where it stands — thin and bright as a drip's, `gap` m apart, `speed` m/s, gone by `reach` m
-    let wake = float(0);
-    const Wk = C.wake;
-    if (Wk) {
-      const dp = length(w.sub(toWorld(player))), waa = max(fwidth(dp), 1e-4);
-      const off = abs(fract(dp.div(Wk.gap).sub(t.mul(Wk.speed / Wk.gap))).sub(0.5)).mul(Wk.gap);
-      wake = float(1).sub(smoothstep(float(Wk.width).sub(waa), float(Wk.width).add(waa), off)).mul(float(1).sub(smoothstep(Wk.reach * 0.35, Wk.reach, dp))).mul(smoothstep(0.4, 0.7, dp));
-      col = col.add(v3(C.caustic).mul(wake.mul(Wk.gain)));
+    // (v144: with the water simulated, the drips' rings and the hero's are the simulation's own — water.js)
+    let drip = float(0), wake = float(0);
+    if (!Wv) {
+      // v71: drip rings: in every `drip.cell` m a drip from the vault every
+      // `period` s, somewhere of its own, its rings spreading as they fade
+      const D = C.drip, cell = tfloor(w.div(D.cell));
+      const dph = noise(cell), dpos = cell.add(vec2(noise(cell.add(vec2(17, 3))), noise(cell.add(vec2(5, 29)))).mul(0.6).add(0.2)).mul(D.cell);
+      const dk = fract(t.div(D.period).add(dph)), dd = length(w.sub(dpos)), daa = max(fwidth(dd), 1e-4);
+      drip = float(1).sub(smoothstep(float(D.width).sub(daa), float(D.width).add(daa), abs(dd.sub(dk.mul(D.reach)))))
+        .add(float(1).sub(smoothstep(float(D.width).sub(daa), float(D.width).add(daa), abs(dd.sub(dk.mul(D.reach * 0.55))))).mul(0.6))
+        .mul(float(1).sub(dk).pow(2));
+      col = col.add(v3(C.caustic).mul(drip.mul(D.gain)));
+      // v143: the water ANSWERS THE HERO, as the driveway's puddles do (v138): it stands in a hand's depth of water, and
+      // rings go out from where it stands — thin and bright as a drip's, `gap` m apart, `speed` m/s, gone by `reach` m
+      const Wk = C.wake;
+      if (Wk) {
+        const dp = length(w.sub(toWorld(player))), waa = max(fwidth(dp), 1e-4);
+        const off = abs(fract(dp.div(Wk.gap).sub(t.mul(Wk.speed / Wk.gap))).sub(0.5)).mul(Wk.gap);
+        wake = float(1).sub(smoothstep(float(Wk.width).sub(waa), float(Wk.width).add(waa), off)).mul(float(1).sub(smoothstep(Wk.reach * 0.35, Wk.reach, dp))).mul(smoothstep(0.4, 0.7, dp));
+        col = col.add(v3(C.caustic).mul(wake.mul(Wk.gain)));
+      }
+    }
+    if (Wv) {
+      // foam: white where the water was thrown about, broken into patches the way froth is, going as it calms
+      // (froth, not paint: a veil of fine bubbles, mottled at two scales, thick only where the water is thrown hardest)
+      const Fm = Wv.foam, fq = w0.add(slope.mul(Fm.drag)), n1 = noise(fq.mul(Fm.scale)), n2 = noise(fq.mul(Fm.scale * 3.1).add(vec2(3.7, t.mul(0.15))));
+      const fk = smoothstep(float(1).sub(foam.mul(Fm.fill)), float(1).sub(foam.mul(Fm.fill)).add(Fm.soft), n1.mul(0.55).add(n2.mul(0.45))).mul(smoothstep(0.03, 0.3, foam));
+      col = mix(col, v3(Fm.color), fk.mul(Fm.k));
+      return { col, mask: min(caustic, 1).mul(0.5).add(grout.mul(0.25)).add(focus.mul(0.5)).add(fk.mul(0.6)).add(max(relief, 0)), lineCol: v3(C.caustic), wet: float(Wv.wet), rip: glintSlope, ripSpec: true, glintGate };
     }
     return { col, mask: min(caustic, 1).mul(0.6).add(grout.mul(0.3)).add(rim.mul(C.plinthK ?? 1)).add(drip).add(wake.mul(0.5)), lineCol: v3(C.caustic), wet: float(0.8) };
   };
@@ -1041,13 +1097,15 @@ export function buildFloor(T, hx, hz, light, { style = 'grid', bounds: hasBounds
       return [col.mul(v3(D.sky).add(sunE)), v3(D.sky).add(sunE), sunE];
     }
     const V = normalize(cameraPosition.sub(positionWorld)), sh = WL.sheen;
+    // v144: on simulated water a light's glint lies on whichever faces of the waves turn it to the eye
+    const Nw = S?.ripSpec && rip ? normalize(vec3(rip.x.negate(), 1, rip.y.negate())) : null, nh = (Hv) => (Nw ? dot(Nw, Hv) : Hv.y);
     let E = vec3(WL.ambient ?? 1), spec = vec3(0), glow = vec3(0);
     const point = (x, z, L, fl) => {
       const d = vec3(x, L.h, z).sub(vec3(wp.x, 0, wp.y)), dist = length(d), Ld = d.div(dist);
       const fall = float(1).div(float(1).add(dot(d, d).div(L.r * L.r))).mul(float(1).sub(smoothstep(L.r * 1.6, L.r * 2.8, dist)));
       E = E.add(v3(L.color).mul(Ld.y.mul(fall).mul(L.k).mul(fl)));
       if (L.glow) glow = glow.add(v3(L.color).mul(fall.mul(L.k * L.glow).mul(fl)));
-      if (sh && L.sheen !== false) spec = spec.add(v3(L.color).mul(pow(max(normalize(Ld.add(V)).y, 0), float(sh.shine)).mul(fall).mul(L.k * sh.k).mul(fl)));
+      if (sh && L.sheen !== false) spec = spec.add(v3(L.color).mul(pow(max(nh(normalize(Ld.add(V))), 0), float(L.shine ?? sh.shine)).mul(fall).mul(L.k * (L.sheenK ?? sh.k)).mul(fl)));
     };
     const flick = (L, seed) => (L.flicker ? float(1).add(sin(GEL_TIME.mul(L.flicker[0]).add(seed ?? 0)).mul(L.flicker[1])) : float(1));
     worldSources().forEach((L, i) => point(L.x, L.z, L, flick(L, L.seed ?? i * 2.3)));
@@ -1067,6 +1125,17 @@ export function buildFloor(T, hx, hz, light, { style = 'grid', bounds: hasBounds
       }
       E = E.add(v3(Rm.color).mul(band.mul(Rm.k)));
       if (Rm.glow) glow = glow.add(v3(Rm.color).mul(band.mul(Rm.k * Rm.glow)));
+      if (Rm.sheen && Nw) {
+        // v144: and the lamps' own glint on the waves — each side's row of them as the nearest point of a line of
+        // light, `off` m out from the edge and `y` m up
+        const Sh = Rm.sheen, Pw = vec3(wp.x, 0, wp.y);
+        const lines = [vec3(wp.x, Sh.y, -(hz + Sh.off)), vec3(-(hx + Sh.off), Sh.y, wp.y), vec3(hx + Sh.off, Sh.y, wp.y)];
+        if (Rm.sides !== 'back') lines.push(vec3(wp.x, Sh.y, hz + Sh.off));
+        for (const at of lines) {
+          const d = at.sub(Pw), dist = length(d), lamps = Rm.every ? float(1 - Rm.depth).add(cos(select(abs(d.x).lessThan(1e-3), wp.x, wp.y).div(Rm.every).mul(Math.PI * 2)).mul(0.5).add(0.5).mul(Rm.depth)) : float(1);
+          spec = spec.add(v3(Rm.color).mul(pow(max(dot(Nw, normalize(d.div(dist).add(V))), 0), float(Sh.shine)).mul(Sh.k).mul(lamps).div(float(1).add(dist.mul(dist).div(Sh.r * Sh.r)))));
+        }
+      }
     }
     if (WL.sun) {
       // the sun's sheen on water and ice, broad
@@ -1079,6 +1148,7 @@ export function buildFloor(T, hx, hz, light, { style = 'grid', bounds: hasBounds
         spec = spec.add(v3(Sn.color).mul(min(pow(max(dot(Nr, normalize(Ls.add(V))), 0), float(G.shine)).mul(G.k), G.max)));
       }
     }
+    if (S?.glintGate) spec = spec.mul(S.glintGate);
     return [col.mul(E).add(spec).add(glow), E];
   };
 
@@ -1176,6 +1246,8 @@ export function buildFloor(T, hx, hz, light, { style = 'grid', bounds: hasBounds
     setPlayer(x, z) { player.value.set((x + hx) / (2 * hx), (hz - z) / (2 * hz)); },
     // the film's current textures (they swap every film step) and its size in texels
     setFilm(f) { if (!film) return; wetTex.value = f.wetTexture; dryTex.value = f.dryTexture; filmSize.value.set(1 / f.texel.value.x, 1 / f.texel.value.y); },
+    // the water's current surface (its textures swap every step)
+    setWater(wk) { if (slopeTex) slopeTex.value = wk.slopeTexture; },
     dispose() {
       plane.geometry.dispose(); mat.dispose();
       border.geometry.dispose(); border.material.dispose();

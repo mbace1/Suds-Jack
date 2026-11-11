@@ -20,7 +20,7 @@
 // TUNING.light.arena.
 import * as THREE from 'three/webgpu';
 import { uv, vec2, vec3, float, length, clamp, pow, uniform, mix, smoothstep, abs, max, step, instanceColor } from 'three/tsl';
-import { TUNING } from '../tuning.js?v=143';
+import { TUNING } from '../tuning.js?v=144';
 
 const T = TUNING, A = T.light.arena, _Y = new THREE.Vector3(0, 1, 0);
 // v131: how tall a thing stands, in its radii, for the length of its shadow in a low sun: a dome its cut sphere ×

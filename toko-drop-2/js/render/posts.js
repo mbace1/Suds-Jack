@@ -19,9 +19,9 @@
 // Reads the world, never writes it. Every number is TUNING.posts (sim) and the look's own below.
 import * as THREE from 'three/webgpu';
 import { Fn, float, vec2, vec3, smoothstep, mix, positionWorld, positionLocal, normalWorld, cameraPosition, normalize, dot, sqrt, max, select, fract, abs, atan, uniform, floor as tfloor, attribute, sin, cos, clamp, step } from 'three/tsl';
-import { TUNING } from '../tuning.js?v=143';
-import { noise, merge, hash } from './kit.js?v=143';
-import { GEL_TIME } from './gel.js?v=143';
+import { TUNING } from '../tuning.js?v=144';
+import { noise, merge, hash } from './kit.js?v=144';
+import { GEL_TIME } from './gel.js?v=144';
 
 const T = TUNING;
 const std = (color, rough = 0.6, metal = 0, extra = {}) => new THREE.MeshStandardNodeMaterial({ color, roughness: rough, metalness: metal, ...extra });
@@ -236,7 +236,11 @@ const SLAB = {
   // (v139: the floor dark and wet round every plinth and well)
   4: () => ({ top: [0.105, 0.2, 0.225], side: [0.05, 0.09, 0.1], lip: [0.2, 0.32, 0.34], grit: 5, rough: 0.85, metal: 0, joints: 1.4, courses: 0.42,
               band: { kind: 'damp', inn: 0.1, out: 0.7, color: [0.004, 0.012, 0.014], k: 0.5 },
-              pit: { wall: T.scenery.cistern.stone.map((v) => v * 1.6), deep: [0.004, 0.03, 0.036], rim: [0.16, 0.26, 0.28], ring: 0.38 } }),
+              // v144: the cistern's wells are where its water GOES — down to the level under this one. It pours over the
+              // lip and down the wall in `strands` (round the well), running `speed` m/s, `k` white, thinning with depth
+              // (`reach` of the well's depth); the simulated water loses its waves into them (render/water.js)
+              pit: { wall: T.scenery.cistern.stone.map((v) => v * 1.25), deep: [0.003, 0.02, 0.03], rim: [0.16, 0.26, 0.28], ring: 0.38,
+                     pour: { strands: 2.2, speed: 3.4, k: 0.75, reach: 0.85, color: [0.62, 0.8, 0.9] } } }),
   // the boiler: its deck plate, seams on top and a hazard band round the side
   // (v139: riveted round its edge, a pipe run between its two drums, soot on the floor round it)
   5: () => ({ top: [0.2, 0.19, 0.18], side: [0.085, 0.08, 0.075], lip: [0.5, 0.36, 0.2], grit: 1.6, rough: 0.42, metal: 0.65, stripes: true,
@@ -373,6 +377,13 @@ function pitMat(P, x0, z0, r0, depth0) {
     } else {
       const course = smoothstep(0.42, 0.5, abs(fract(deep.mul(2.4)).sub(0.5))).max(smoothstep(0.46, 0.5, abs(fract(ang.mul(r.mul(1.3))).sub(0.5))).mul(0.6));
       wall = vec3(...P.wall).mul(lit.mul(lit).mul(1.1).add(0.08)).mul(float(1).sub(course.mul(0.45)));
+      if (P.pour) {
+        // water coming over the lip and down the wall: strands that run, break and thin as they fall
+        const Po = P.pour, run = deep.sqrt().mul(2.2).sub(GEL_TIME.mul(Po.speed * 0.5));
+        const st = noise(vec2(ang.mul(r).mul(Po.strands), run)).mul(0.6).add(noise(vec2(ang.mul(r).mul(Po.strands * 2.6).add(4.1), run.mul(1.8))).mul(0.4));
+        const fallK = smoothstep(deep.div(depth).mul(0.3).add(0.36), deep.div(depth).mul(0.3).add(0.62), st).mul(float(1).sub(smoothstep(0, depth.mul(Po.reach), deep)));
+        wall = mix(wall, vec3(...Po.color).mul(lit.mul(0.8).add(0.2)), fallK.mul(Po.k));
+      }
     }
     // the bottom: dark water, a faint moving sheen where the sky would show in it
     const sheen = noise(W.xz.mul(2.2)).mul(0.5).add(0.6);

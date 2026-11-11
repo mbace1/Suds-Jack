@@ -7,37 +7,37 @@
 // The rules live in sim/ and run on a fixed step; this file feeds them input,
 // hands their events to the view and the sound, and draws in between steps.
 import * as THREE from 'three/webgpu';
-import { TUNING } from './tuning.js?v=143';
-import { buildFloor } from './render/floor.js?v=143';
-import { fitCamera, screenToWorld, screenDown } from './render/view.js?v=143';
-import * as worldsSim from './sim/worlds.js?v=143';
-import { shapeAt as shiftShape } from './sim/floorshift.js?v=143';
-import * as reshapeSim from './sim/reshape.js?v=143';
-import { Scenery } from './render/scenery.js?v=143';
-import { DRIFT } from './render/kit.js?v=143';
-import { Transit } from './render/transit.js?v=143';
-import { Splats } from './render/splats.js?v=143';
-import { Actors } from './render/actors.js?v=143';
-import { GEL_TIME, GEL_SUN, GEL_GLINT, GEL_CORE } from './render/gel.js?v=143';
-import { studioEnvironment, skyEnvironment } from './render/env.js?v=143';
-import { Specimen } from './render/specimen.js?v=143';
-import { createWorld, step, api as simApi, runPhase } from './sim/world.js?v=143';
-import { heroState } from './sim/hero.js?v=143';
-import { stage as stagePk } from './sim/pickups.js?v=143';
-import { Input } from './input.js?v=143';
-import { UI, t, timeText, LANGS, getLang, setLang, goalText, bossName } from './ui.js?v=143';
-import { Announcer } from './announcer.js?v=143';
-import { rooms as campaignRooms, isOpen as roomOpen, better as betterGrade } from './sim/director/campaign.js?v=143';
-import { levelShape, slots as regionSlots } from './sim/shape.js?v=143';
-import { Sound } from './audio.js?v=143';
-import { Music, worldWant, cueFor, renderMusicWav } from './music.js?v=143';
-import { Intro, CUES as INTRO } from './intro/intro.js?v=143';
-import { scheduleIntroSfx, renderIntroSfxWav } from './intro/sfx.js?v=143';
-import { Readout } from './readout.js?v=143';
-import { Meter, device, Quality } from './meter.js?v=143';
-import * as record from './record.js?v=143';
-import { dailySeed } from './sim/rng.js?v=143';
-import { machine } from './fsm.js?v=143';
+import { TUNING } from './tuning.js?v=144';
+import { buildFloor } from './render/floor.js?v=144';
+import { fitCamera, screenToWorld, screenDown } from './render/view.js?v=144';
+import * as worldsSim from './sim/worlds.js?v=144';
+import { shapeAt as shiftShape } from './sim/floorshift.js?v=144';
+import * as reshapeSim from './sim/reshape.js?v=144';
+import { Scenery } from './render/scenery.js?v=144';
+import { DRIFT } from './render/kit.js?v=144';
+import { Transit } from './render/transit.js?v=144';
+import { Splats } from './render/splats.js?v=144';
+import { Actors } from './render/actors.js?v=144';
+import { GEL_TIME, GEL_SUN, GEL_GLINT, GEL_CORE } from './render/gel.js?v=144';
+import { studioEnvironment, skyEnvironment } from './render/env.js?v=144';
+import { Specimen } from './render/specimen.js?v=144';
+import { createWorld, step, api as simApi, runPhase } from './sim/world.js?v=144';
+import { heroState } from './sim/hero.js?v=144';
+import { stage as stagePk } from './sim/pickups.js?v=144';
+import { Input } from './input.js?v=144';
+import { UI, t, timeText, LANGS, getLang, setLang, goalText, bossName } from './ui.js?v=144';
+import { Announcer } from './announcer.js?v=144';
+import { rooms as campaignRooms, isOpen as roomOpen, better as betterGrade } from './sim/director/campaign.js?v=144';
+import { levelShape, slots as regionSlots } from './sim/shape.js?v=144';
+import { Sound } from './audio.js?v=144';
+import { Music, worldWant, cueFor, renderMusicWav } from './music.js?v=144';
+import { Intro, CUES as INTRO } from './intro/intro.js?v=144';
+import { scheduleIntroSfx, renderIntroSfxWav } from './intro/sfx.js?v=144';
+import { Readout } from './readout.js?v=144';
+import { Meter, device, Quality } from './meter.js?v=144';
+import * as record from './record.js?v=144';
+import { dailySeed } from './sim/rng.js?v=144';
+import { machine } from './fsm.js?v=144';
 
 const T = TUNING;
 const params = new URLSearchParams(location.search);
@@ -223,6 +223,7 @@ const worldsLook = () => urlWorlds ?? (WORLD_LOOKS.includes(store.str('toko2.wor
 function useWorld(n, hx, hz) {
   viewWorld = n; boundsFloor = false; roomFloor = false;
   if (floor) { scene.remove(floor.group); floor.dispose(); }
+  actors.water.use(T.water[FLOOR_STYLE[worldsLook()][n - 1]]);   // v144: this world's water, if it stands in any (render/water.js)
   actors.setArena(hx, hz);
   const WD = T.worlds.list[n - 1];
   // a world whose walls close in for its challenge (v37, `squeeze`) is built with bounds, at its full size
@@ -230,7 +231,7 @@ function useWorld(n, hx, hz) {
   // the shift's shape — the shader fixes each part's kind — and opened out to the whole
   // floor until the shift is on (shiftOpen), so the floor never rebuilds mid-wave
   shiftOpen = WD?.shift ? { slots: [0, 1, 2, 3].map((i) => { const p = WD.shift.parts[i]; return !p ? [0, 0, 0, 0] : p.kind === 'rect' ? [1, hx, hz, 0] : [2, 0, 0, 1e4]; }), combine: WD.shift.combine === 'intersect' ? 1 : 0 } : null;
-  floor = buildFloor(T, hx, hz, actors.light.texture, { style: FLOOR_STYLE[worldsLook()][n - 1] ?? 'grid', film: actors.gooKit.film, bounds: !!WD?.squeeze,
+  floor = buildFloor(T, hx, hz, actors.light.texture, { style: FLOOR_STYLE[worldsLook()][n - 1] ?? 'grid', film: actors.gooKit.film, water: actors.water, bounds: !!WD?.squeeze,
     region: WD?.shift ? regionSlots(shiftShape({ hx, hz }, WD.shift, 0)) : null, regionRail: WD?.rail });
   if (shiftOpen) floor.setRegion(shiftOpen);
   floorFull = { hx, hz };
@@ -239,6 +240,7 @@ function useWorld(n, hx, hz) {
   scene.background.copy(floor.reveal.void.value);   // the void past the floor: the night, or world 2's summer haze (v66)
   // STREET's driveway and sewer stand their lawn and walls; every other floor, NEON's too, a surround (v43)
   scenery.build(n, hx, hz, { look: worldsLook() });
+  actors.water.sources = scenery.waterSources ?? [];   // v144: what never stops falling into this world's water (the cistern's fall)
   actors.posts.look = worldsLook();   // v138: what stands on the floor wears the look too (render/posts.js)
   applyLight(worldsLook() === 'street' || n > 3 ? WD?.id ?? 'grid' : 'grid');   // v75: NEON's abstract floors keep 1.x's light
   // (v74: the set's shaders are compiled on its first draw, which transit.js puts under the
@@ -257,6 +259,7 @@ function useSurvival() {
   viewWorld = 1; boundsFloor = true; roomFloor = false; shiftOpen = null;
   applyLight('grid');
   if (floor) { scene.remove(floor.group); floor.dispose(); }
+  actors.water.use(null);
   actors.setArena(hx, hz);
   floor = buildFloor(T, hx, hz, actors.light.texture, { style: 'grid', bounds: true, film: actors.gooKit.film });
   scene.add(floor.group);
@@ -590,9 +593,9 @@ const specimen = new Specimen(T, actors, scene.environment);
 // menu). It takes effect at run start; the menu also redraws the world left
 // behind the title in the new style. The HUD label says ' · sdf' while on.
 const GELS = ['classic', 'sdf'];
-import { STYLES } from './render/style.js?v=143';
-import { Lens } from './render/lens.js?v=143';
-import { setSceneSun } from './render/sun.js?v=143';
+import { STYLES } from './render/style.js?v=144';
+import { Lens } from './render/lens.js?v=144';
+import { setSceneSun } from './render/sun.js?v=144';
 let urlGels = GELS.includes(params.get('gels')) ? params.get('gels') : null;
 const gels = () => urlGels ?? (GELS.includes(store.str('toko2.gels')) ? store.str('toko2.gels') : 'classic');
 // The LENS switch (render/lens.js, v94): NONE or TILT-SHIFT, localStorage toko2.lens; ?lens=tilt|none for a link
@@ -803,7 +806,7 @@ let lastRoom = null;   // AGAIN replays it
 const levels = new Map();
 async function loadLevel(id) {
   // v125: a load that failed is forgotten, so the room's START asks again (it was kept as a failure: START did nothing until a reload)
-  if (!levels.has(id)) levels.set(id, fetch(new URL(`../levels/${id}.json?v=143`, import.meta.url)).then((r) => { if (!r.ok) throw new Error(`levels/${id}.json ${r.status}`); return r.json(); }).catch((e) => { levels.delete(id); throw e; }));
+  if (!levels.has(id)) levels.set(id, fetch(new URL(`../levels/${id}.json?v=144`, import.meta.url)).then((r) => { if (!r.ok) throw new Error(`levels/${id}.json ${r.status}`); return r.json(); }).catch((e) => { levels.delete(id); throw e; }));
   return levels.get(id);
 }
 // the list the room screen draws: worlds, their rooms, open or not, best grades
@@ -872,14 +875,16 @@ function useRoom(w) {
   viewWorld = 1; boundsFloor = false; roomFloor = true;
   const hx = w.hx, hz = w.hz, sh = w.region?.shape;
   if (floor) { scene.remove(floor.group); floor.dispose(); }
-  actors.setArena(hx, hz);
   const WD = T.campaign.worlds[w.room.world], L = roomLook(WD), rail = L.rail;
-  floor = buildFloor(T, hx, hz, actors.light.texture, { style: L.style, film: actors.gooKit.film, region: sh ? regionSlots(sh) : null, regionRail: rail,
+  actors.water.use(T.water[L.style]);
+  actors.setArena(hx, hz);
+  floor = buildFloor(T, hx, hz, actors.light.texture, { style: L.style, film: actors.gooKit.film, water: actors.water, region: sh ? regionSlots(sh) : null, regionRail: rail,
     colors: L.style === 'grid' && WD?.base ? { base: WD.base, gridHi: WD.gridHi } : null });
   if (rail != null) floor.setRail(rail);
   scene.add(floor.group);
   scene.background.copy(floor.reveal.void.value);
   scenery.build(L.n, hx, hz, { look: 'street' });
+  actors.water.sources = scenery.waterSources ?? [];
   applyLight(WD?.look ?? 'grid');   // v75: the light of the world its look comes from
   DRIFT.value.set(0, 0);
   camAt.set(0, 0, 0);
@@ -1215,7 +1220,8 @@ const debug = {
       step(world, { mx: 0, mz: 0, ax: Math.cos(a), az: Math.sin(a), aim: !!aimAt, fire: !!aimAt, dash: false });
       for (const e of world.events) onEvent(e);
       actors.goo?.setBodies(world, 1);   // v84: the goo's bodies follow the step (a frame's sync is not run here)
-      actors.stepFx(T.sim.dt, i * T.sim.dt); splats.step(T.sim.dt); actors.goo?.render(renderer);
+      actors.water.setBodies(world, 1, T.sim.dt);
+      actors.stepFx(T.sim.dt, i * T.sim.dt); splats.step(T.sim.dt); actors.goo?.render(renderer); actors.water.render(renderer);
     }
   },
   // step the run under one fixed input (a look check of a dash, say): `inp`
@@ -1226,9 +1232,13 @@ const debug = {
       step(world, { mx: 0, mz: 0, ax: 1, az: 0, aim: false, fire: false, ...inp, dash: i === 0 ? (typeof inp.dash === 'object' ? inp.dash : !!inp.dash) : false });
       for (const e of world.events) onEvent(e);
       actors.goo?.setBodies(world, 1);   // v84: as in idle()
-      actors.stepFx(T.sim.dt, i * T.sim.dt); splats.step(T.sim.dt); actors.goo?.render(renderer);
+      actors.water.setBodies(world, 1, T.sim.dt);
+      actors.stepFx(T.sim.dt, i * T.sim.dt); splats.step(T.sim.dt); actors.goo?.render(renderer); actors.water.render(renderer);
     }
   },
+  // v144: the water (render/water.js), for the smoke and the look checks: whether this world stands in any, and its
+  // surface round (x, z) read back — its mean and biggest height, the texels that are not numbers, the steps taken
+  async waterAt(x = 0, z = 0) { const wk = actors.water; return wk.on ? { on: true, ...(await wk.probe(renderer, x, z)) } : { on: false }; },
   // the goo (render/goo.js), for the smoke and the look checks: drops alive,
   // 1.x's puddles on the floor, the film round (x, z) read back, and (v81)
   // the whole of the wall's film
@@ -1270,6 +1280,8 @@ const debug = {
       // the goo's film catches up in half-second steps: a step a frame here
       // would queue hundreds of GPU passes ahead of the next real frame
       if (i % 30 === 29) actors.goo?.render(renderer, 0.5);
+      // v144: the water is only worth stepping for the last seconds: what was thrown about before has died away
+      if (i % 4 === 0 && i > n - 300) { actors.water.setBodies(world, 1, T.sim.dt); actors.water.render(renderer); }
     }
   },
 };
@@ -1354,6 +1366,7 @@ function frame(now, dtFixed) {
   ui.drawSticks(input, following && world && state === 'play' ? offscreen() : null);
   actors.light.render(renderer);   // the arena's light map, which the floor reads
   if (actors.goo) { actors.goo.render(renderer); floor.setFilm(actors.goo.film); }   // the goo's film steps (render/goo.js), and the floor reads where it now is
+  actors.water.render(renderer); floor.setWater(actors.water);   // v144: the water steps (render/water.js), and the floor reads its surface
   { const cam = state === 'intro' ? intro.cam : camera; if (filmHold && state === 'intro') {
     renderer.render(holdScene, camera);
     if (filmHold === 2) {

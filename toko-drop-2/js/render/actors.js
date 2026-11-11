@@ -15,23 +15,24 @@
 // that springs in and fades (splats.js). Views are pooled per species, so a
 // gel's material is built once and reused, never compiled mid-fight.
 import * as THREE from 'three/webgpu';
-import { TUNING } from '../tuning.js?v=143';
+import { TUNING } from '../tuning.js?v=144';
 import * as TSL from 'three/tsl';
-import { gelMaterial, domeGeometry, cubeGeometry, heroGeometry, GEL_TIME, GEL_SUN, GEL_GLINT, GEL_CORE } from './gel.js?v=143';
-import { LOOKS } from './looks/index.js?v=143';
-import { styleName, setStyle as setStyleMode, styledBody } from './style.js?v=143';
-import { JellyBody } from './jelly.js?v=143';
-import { Juice } from './juice.js?v=143';
-import { ArenaLight } from './light.js?v=143';
-import { toSdf } from './sdf.js?v=143';
-import { PickupView } from './pickups.js?v=143';
-import { ChallengeView } from './challenge.js?v=143';
-import { PostView } from './posts.js?v=143';
-import { SlamView } from './slam.js?v=143';
-import { HintView } from './hints.js?v=143';
-import { Goo } from './goo.js?v=143';
-import { mult as heatMult } from '../sim/heat.js?v=143';
-import { strands as liveStrands } from '../sim/formation.js?v=143';
+import { gelMaterial, domeGeometry, cubeGeometry, heroGeometry, GEL_TIME, GEL_SUN, GEL_GLINT, GEL_CORE } from './gel.js?v=144';
+import { LOOKS } from './looks/index.js?v=144';
+import { styleName, setStyle as setStyleMode, styledBody } from './style.js?v=144';
+import { JellyBody } from './jelly.js?v=144';
+import { Juice } from './juice.js?v=144';
+import { ArenaLight } from './light.js?v=144';
+import { toSdf } from './sdf.js?v=144';
+import { PickupView } from './pickups.js?v=144';
+import { ChallengeView } from './challenge.js?v=144';
+import { PostView } from './posts.js?v=144';
+import { SlamView } from './slam.js?v=144';
+import { HintView } from './hints.js?v=144';
+import { Goo } from './goo.js?v=144';
+import { Water } from './water.js?v=144';
+import { mult as heatMult } from '../sim/heat.js?v=144';
+import { strands as liveStrands } from '../sim/formation.js?v=144';
 
 const T = TUNING;
 const B = T.blob, D = T.death;
@@ -84,6 +85,7 @@ export class Actors {
     // the title's SPLATTER switch is on, and null while 1.x's puddles stand in
     this.gooKit = new Goo(scene);
     this.goo = goo ? this.gooKit : null;
+    this.water = new Water();                     // v144: the water a world stands in, as a wave simulation (render/water.js); main.js steps it
 
     const sphere = new THREE.SphereGeometry(1, 10, 8);
     // v104 (owner: "No cheap effects like glow"): a bullet reads by its OWN shading — a white-hot core, its
@@ -184,7 +186,7 @@ export class Actors {
   }
 
   // The arena this run plays on.
-  setArena(hx, hz) { this.hx = hx; this.hz = hz; this.light.setArena(hx, hz); this.gooKit.setArena(hx, hz); }
+  setArena(hx, hz) { this.hx = hx; this.hz = hz; this.light.setArena(hx, hz); this.gooKit.setArena(hx, hz); this.water.setArena(hx, hz); }
   // the SPLATTER switch: off clears what is thrown and laid, and 1.x's puddles take over
   setGoo(on) { if (!on) this.gooKit.clear(); this.gooKit.setOn(on); this.goo = on ? this.gooKit : null; }
 
@@ -502,6 +504,7 @@ export class Actors {
     this.light.onEvent(e);
     this.pickups.onEvent(e);
     if (this.goo) this._gooEvent(e, w);
+    this.water.onEvent(e);
     if (e.type === 'ghost') {
       const G = T.heroLook.ghost, slot = this.hero.ghosts.reduce((a, b) => (a.life <= b.life ? a : b));
       slot.life = G.life; slot.mesh.position.set(e.x, 0, e.z); slot.mesh.visible = true;
@@ -786,6 +789,7 @@ export class Actors {
     this.slams.sync(w, alpha, time);
     this.hints.sync(w, alpha, time);
     this.goo?.setBodies(w, alpha);
+    this.water.setBodies(w, alpha, T.sim.dt);
 
     // lobs in flight, hazards on the floor (a slow pulse, fading out at the end)
     let k = 0;
@@ -872,6 +876,7 @@ export class Actors {
     this.light.step(dt);
     this.pickups.stepFx(dt);
     if (this.goo) { this.goo.step(dt); this.goo.sync(); }   // the goo's drops fly, and what they lay down goes to the film
+    this.water.step(dt);                                    // v144: and what moved in the water moves the water
     // jelly halves: step, redraw, and in their last part slump into the puddle
     const J = D.jelly;
     for (let i = this.jellies.length - 1; i >= 0; i--) {

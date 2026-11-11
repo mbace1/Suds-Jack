@@ -51,23 +51,23 @@
 // TUNING.scenery.
 import * as THREE from 'three/webgpu';
 import { Fn, float, vec2, vec3, fract, sin, cos, dot, texture, floor as tfloor, mix, smoothstep, abs, positionWorld, positionLocal, normalWorld, normalView, clamp, max, min, length, step, fwidth, uv, attribute } from 'three/tsl';
-import { GEL_TIME } from './gel.js?v=143';
-import { hash, noise, seeded, motes, phase } from './kit.js?v=143';
-import { SUN_AT } from './sun.js?v=143';
-import { treeAtlas } from './trees.js?v=143';
-import { LeafLitter } from './leaves.js?v=143';
-import { boiler } from './sets/boiler.js?v=143';
-import { river } from './sets/river.js?v=143';
-import { ice } from './sets/ice.js?v=143';
-import { deep } from './sets/deep.js?v=143';
-import { core } from './sets/core.js?v=143';
+import { GEL_TIME } from './gel.js?v=144';
+import { hash, noise, seeded, motes, phase, groundGeo, sunk } from './kit.js?v=144';
+import { SUN_AT } from './sun.js?v=144';
+import { treeAtlas } from './trees.js?v=144';
+import { LeafLitter } from './leaves.js?v=144';
+import { boiler } from './sets/boiler.js?v=144';
+import { river } from './sets/river.js?v=144';
+import { ice } from './sets/ice.js?v=144';
+import { deep } from './sets/deep.js?v=144';
+import { core } from './sets/core.js?v=144';
 
 // worlds 5-9 (v72): a set of their own each, built to its brief (render/sets/)
 const SETS = { boiler, river, ice, deep, core };
 
 // the noise, the cracks and the seeded numbers are the kit's (v72: render/kit.js),
 // and the floor still takes them from here
-export { noise, cells } from './kit.js?v=143';
+export { noise, cells } from './kit.js?v=144';
 
 // the storm drain's grate (v65, the owner's world-2 sheet), in its own units
 // (q, its frame's radius 1): x the grate, y a slot, z the frame. Rows of
@@ -138,6 +138,7 @@ export class Scenery {
   // NEON's floors, SURVIVAL and the campaign's rooms)
   build(n, hx, hz, { look = 'street', id = null } = {}) {
     this.clear();
+    this.waterSources = [];   // v144: what a set pours into its world's simulated water (render/water.js)
     // what was built, for the smoke: 'driveway', 'sewer', or 'surround:<the spec it used>'
     if (look === 'street' && n === 2) { this._driveway(hx, hz); this.kind = 'driveway'; }
     else if (look === 'street' && n === 3) { this._sewer(hx, hz); this.kind = 'sewer'; }
@@ -261,7 +262,7 @@ export class Scenery {
       }
       return mix(col.mul(float(1).sub(shade.mul(S.curbShadow))), vec3(...S.haze), far.mul(S.fadeTo));
     })();
-    const lawn = this._add(new THREE.Mesh(new THREE.PlaneGeometry(2 * (hx + out), 2 * (hz + out)).rotateX(-Math.PI / 2), lawnMat));
+    const lawn = this._add(new THREE.Mesh(groundGeo(2 * (hx + out), 2 * (hz + out)), sunk(lawnMat)));   // (v144: in small pieces, kit.js)
     // drawn after the floor (v68; it was drawn first), so the depth test throws
     // away the grass under the slab before it is shaded
     lawn.position.y = -0.02; lawn.renderOrder = 1;
@@ -553,7 +554,7 @@ export class Scenery {
       const far = clamp(length(vec2(dx, dz)).div(G.fade), 0, 1);
       return col.mul(float(1).sub(far.mul(far).mul(0.97)));
     })();
-    const ground = this._add(new THREE.Mesh(new THREE.PlaneGeometry(2 * (hx + out), 2 * (hz + out)).rotateX(-Math.PI / 2), groundMat));
+    const ground = this._add(new THREE.Mesh(groundGeo(2 * (hx + out), 2 * (hz + out)), sunk(groundMat)));   // (v144: in small pieces, kit.js)
     ground.position.y = -0.03; ground.renderOrder = 1;   // after the floor, as the lawn (v68)
   }
 
@@ -630,7 +631,7 @@ export class Scenery {
       const far = clamp(length(vec2(dx, dz)).div(W.fade), 0, 1);
       return mix(vec3(...W.lo), vec3(...W.hi), n1.mul(0.6).add(sheen.mul(0.4))).mul(float(1).sub(far.mul(far).mul(0.92)));
     })();
-    const water = this._add(new THREE.Mesh(new THREE.PlaneGeometry(2 * (hx + W.out), 2 * (hz + W.out)).rotateX(-Math.PI / 2), waterMat));
+    const water = this._add(new THREE.Mesh(groundGeo(2 * (hx + W.out), 2 * (hz + W.out)), sunk(waterMat)));   // (v144: in small pieces, kit.js)
     water.position.y = -0.03; water.renderOrder = 1;   // after the floor, as every ground (v68)
     // the platform's glowing edge, and a stone kerb round it
     const E = C.edge, K = C.kerb, edgeMat = new THREE.MeshBasicNodeMaterial({ color: new THREE.Color(E.color).multiplyScalar(E.glow) });
@@ -711,6 +712,44 @@ export class Scenery {
     // v98: the light through the roof, falling onto the floor's key pool
     const lt = this.T.worlds.lit?.cistern?.lights ?? [];
     if (C.rays) this._rays(C.rays, lt.find((l) => l.shafts) ?? lt[0], hx, hz);
+    // v144: THE FALL — where the water comes in. This is the level under the sewer, and what the sewer's channel
+    // carries comes down through the same breach in the vault the light does (owner, 2026-11-11: "many of these
+    // levels are about dropping down a level to go lower in the sewers"). Not in a room too small to give it room
+    this.waterSources = [];
+    if (C.fall && hx * hz >= C.fall.minArea) this._fall(C.fall, lt.find((l) => l.shafts) ?? lt[0], hx, hz);
+  }
+
+  // v144: a stream of water falling `h` m onto the floor at the light's pool: `r` m round where it lands and `top`×
+  // that where it comes out of the dark (it has spread and torn by the time it lands). Drawn as falling water is
+  // seen: strands running down it, stretched the further they have fallen (it falls FASTER the further it has
+  // fallen, so the pattern is laid along √depth), thick and white through its middle and thin at its edges,
+  // breaking into separate strands toward the foot; a skirt of thrown water round where it lands, and spray
+  // hanging over that. What it does to the water it lands in is the simulation's (`waterSources`, render/water.js)
+  _fall(F, key, hx, hz) {
+    const x = (key?.frac?.[0] ?? -0.6) * hx + (F.off?.[0] ?? 0), z = (key?.frac?.[1] ?? -0.7) * hz + (F.off?.[1] ?? 0);
+    const stream = (rTop, rFoot, h, y0, P) => {
+      const mat = new THREE.MeshBasicNodeMaterial({ transparent: true, depthWrite: false, side: THREE.DoubleSide });
+      const fell = float(1).sub(uv().y).mul(h).add(P.head), run = fell.sqrt().mul(P.stretch).sub(GEL_TIME.mul(P.speed));
+      const a = noise(vec2(uv().x.mul(P.strands), run)), b = noise(vec2(uv().x.mul(P.strands * 2.3).add(3.1), run.mul(1.7).add(5.3)));
+      const body = a.mul(0.65).add(b.mul(0.35)), torn = uv().y.oneMinus().mul(P.tear);
+      const thick = abs(normalView.z).pow(P.edge);
+      mat.colorNode = mix(vec3(...F.dark), vec3(...F.light), smoothstep(0.35, 0.8, body));
+      mat.opacityNode = smoothstep(torn.add(P.cut), torn.add(P.cut + 0.25), body).mul(thick).mul(smoothstep(0, P.fadeIn, uv().y.oneMinus())).mul(P.alpha);
+      const g = new THREE.CylinderGeometry(rTop, rFoot, h, 28, 1, true); g.translate(0, h / 2, 0);
+      const m = this._add(new THREE.Mesh(g, mat)); m.position.set(x, y0, z); m.renderOrder = 6;
+      return m;
+    };
+    stream(F.r * F.top, F.r, F.h, 0, F.stream);
+    stream(F.r * 0.55, F.r * 0.8, F.h, 0, { ...F.stream, alpha: F.stream.alpha * 0.9, strands: F.stream.strands * 0.6, speed: F.stream.speed * 1.2 });   // its core
+    // the skirt: what the landing throws up and out
+    const S = F.skirt, sm = new THREE.MeshBasicNodeMaterial({ transparent: true, depthWrite: false, side: THREE.DoubleSide });
+    const up = uv().y, n1 = noise(vec2(uv().x.mul(S.strands), up.mul(2.2).sub(GEL_TIME.mul(S.speed))));
+    sm.colorNode = vec3(...F.light);
+    sm.opacityNode = smoothstep(up.mul(0.75).add(0.2), up.mul(0.75).add(0.5), n1).mul(up.oneMinus().pow(0.7)).mul(S.alpha);
+    const sg = new THREE.CylinderGeometry(F.r * S.top, F.r * S.foot, S.h, 28, 1, true); sg.translate(0, S.h / 2, 0);
+    const skirt = this._add(new THREE.Mesh(sg, sm)); skirt.position.set(x, 0, z); skirt.renderOrder = 6;
+    if (F.spray) motes(this, [[x, z, F.r * 5, F.r * 5, 0.1]], F.spray);
+    this.waterSources.push({ x, z, ...F.source });
   }
 
   // v98: shafts of light through an opening in the roof, falling along `dir`
