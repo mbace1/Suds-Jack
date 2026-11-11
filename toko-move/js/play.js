@@ -47,7 +47,7 @@ import { MOMENTS, faceIn, keepIn, pickupMoment, deliveryMoment, boardMoment, wal
 import { resolveMode, dailyShare, errandShare, errandStore, errandOf, W } from './modes.js?v=8';
 import { recordDaily, todayRecord, streak, dateKey } from './daily.js?v=2';
 
-export const BUILD_VERSION = '3.27';
+export const BUILD_VERSION = '3.28';
 const $ = id => document.getElementById(id);
 const params = new URLSearchParams(location.search);
 // a run of the ladder, today's daily, or a day of the week (modes.js, ACT1.md §12)
@@ -95,6 +95,10 @@ const CSS = `
 #v3 .frame.fade{opacity:0}
 #v3 .frame.push{animation:v3push 2.4s ease-out both}
 @keyframes v3push{from{transform:scale(1)}to{transform:scale(1.035)}}
+/* (v3.28) a moment is one flat picture, and after its push it stood still: it now keeps drifting in on the
+   courier's face (the frame's transform-origin), slowly, and back — the picture never freezes */
+#v3.moment .frame.push{animation:v3push 2.4s ease-out both,v3breathe 17s ease-in-out 2.4s infinite alternate}
+@keyframes v3breathe{from{transform:scale(1.035)}to{transform:scale(1.075)}}
 #v3 .L{position:absolute;inset:0;background-size:100% 100%;background-repeat:no-repeat}
 #v3 .L.tile{background-size:auto 100%;background-repeat:repeat-x;animation:v3scroll 11s linear infinite}
 @keyframes v3scroll{from{background-position:0 0}to{background-position:calc(var(--tw,1000px) * -1) 0}}
@@ -187,6 +191,21 @@ const CSS = `
 #v3panel .eventCard{margin:0;animation:v3stamp .26s cubic-bezier(.2,.8,.3,1.2) both}
 #v3panel .leaving{animation:v3leave .18s ease-in both}
 @keyframes v3stamp{from{opacity:0;transform:translateY(28px) scale(.98)}to{opacity:1;transform:none}}
+/* (v3.28) a card's buttons come in one after another, from above (never past the screen's edge), and the
+   day's line (v3.23) is drawn in under its own rule */
+#v3panel .eventOpt{animation:v3opt .3s cubic-bezier(.2,.8,.3,1.15) both}
+#v3panel .eventOpt:nth-child(1){animation-delay:.1s}#v3panel .eventOpt:nth-child(2){animation-delay:.17s}#v3panel .eventOpt:nth-child(3){animation-delay:.24s}
+@keyframes v3opt{from{opacity:0;transform:translateY(-7px)}to{opacity:1;transform:none}}
+.evAt.evDay{width:fit-content;max-width:100%;padding-bottom:3px;background:linear-gradient(#ffcc00,#ffcc00) left bottom/100% 2px no-repeat;animation:v3day .7s ease-out .3s both}
+@keyframes v3day{from{opacity:0;background-size:0 2px}to{opacity:1;background-size:100% 2px}}
+/* the end card's stars land one at a time */
+.runStars .st{display:inline-block;animation:v3star .42s cubic-bezier(.2,.9,.3,1.5) both}
+.runStars .st:nth-child(1){animation-delay:.35s}.runStars .st:nth-child(2){animation-delay:.65s}.runStars .st:nth-child(3){animation-delay:.95s}
+@keyframes v3star{from{opacity:0;transform:scale(.2) rotate(-40deg)}to{opacity:1;transform:none}}
+/* the title's picture drifts behind the card */
+#title.veil{animation:v3title 30s ease-in-out infinite alternate}
+@keyframes v3title{from{background-position:0 0,47% 26%,0 0}to{background-position:0 0,53% 33%,0 0}}
+@media (prefers-reduced-motion:reduce){#v3panel .eventOpt,.evAt.evDay,.runStars .st,#title.veil{animation:none!important}}
 @keyframes v3leave{to{opacity:0;transform:translateY(16px)}}
 .evAt{display:block;font-size:11px;font-weight:800;letter-spacing:1.6px;color:#69777a;margin-bottom:3px}
 .evBtn .evLb{display:flex;flex-direction:column;gap:2px;min-width:0}
@@ -591,7 +610,7 @@ function paintCard(c) {
   const stack = c.options.length > 2 || c.options.some(o => String(tr(o.label)).length > 18 || o.stakes);
   const cls = (o, i) => o.tier === 'very' ? 'evVery' : o.tier === 'special' ? 'evSpecial' : i === 0 ? 'evPrimary' : 'evGhost';
   const tag = o => o.tier === 'very' ? '<span class="evTier">✦ VERY SPECIAL</span>' : o.tier === 'special' ? '<span class="evTier">★ SPECIAL</span>' : '';
-  panel.innerHTML = `<section class="eventCard mood-${esc(c.mood)}" data-kind="${c.kind}"${c.id ? ` data-card="${c.id}"` : ''}><div class="evHead">${face(c.mood)}<b class="evLine">${c.at ? `<span class="evAt">${esc(c.at.toUpperCase())}</span>` : ''}${esc(c.text)}</b></div><div class="evOpts${stack ? ' evStack' : ''}${c.options.length > 2 ? ' ev3' : ''}">${c.options.map((o, i) => `<button class="evBtn ${cls(o, i)} eventOpt" type="button" data-i="${i}"${o.tier ? ` data-tier="${o.tier}"` : ''}><span class="evLb">${tag(o)}<span>${esc(o.label)}</span>${stakesHtml(o.stakes)}</span><span class="evCost">${price(o.price)}</span></button>`).join('')}</div></section>`;
+  panel.innerHTML = `<section class="eventCard mood-${esc(c.mood)}" data-kind="${c.kind}"${c.id ? ` data-card="${c.id}"` : ''}><div class="evHead">${face(c.mood)}<b class="evLine">${c.at ? `<span class="evAt${c.day || c.area ? ' evDay' : ''}">${esc(c.at.toUpperCase())}</span>` : ''}${esc(c.text)}</b></div><div class="evOpts${stack ? ' evStack' : ''}${c.options.length > 2 ? ' ev3' : ''}">${c.options.map((o, i) => `<button class="evBtn ${cls(o, i)} eventOpt" type="button" data-i="${i}"${o.tier ? ` data-tier="${o.tier}"` : ''}><span class="evLb">${tag(o)}<span>${esc(o.label)}</span>${stakesHtml(o.stakes)}</span><span class="evCost">${price(o.price)}</span></button>`).join('')}</div></section>`;
   const armed = performance.now() + 300;
   panel.querySelectorAll('.eventOpt').forEach(b => b.addEventListener('click', () => { if (performance.now() >= armed) pick(Number(b.dataset.i)); }));
   padGlyphs();
@@ -961,7 +980,7 @@ function finish() {
   const go = r.done && next && Runs.unlocked(next.id, r.all) ? `<a class="btn prime wide" id="nextRun" href="${Runs.runHref(next.id, location.search)}">NEXT · ${esc(next.name)}</a>` : '';
   $('endTitle').textContent = RUN.endless ? `${S.done} JOBS` : r.done ? `${RUN.name} COMPLETE` : 'NOT YET';
   const carried = S.seen.length ? `<div class="carried"><h3>WHAT YOU CARRIED</h3><ul>${S.seen.map(x => `<li>${esc(x.contents)} <small>· ${x.how}</small></li>`).join('')}</ul></div>` : '';
-  $('endStats').innerHTML = `<div class="dailyBox runBox"><p class="dailyHead">${esc(RUN.name)} · ${esc(RUN.title)}</p><p class="runStars" aria-label="${r.stars} of 3 stars">${star(r.stars)}</p><p class="hint">${esc(why)}${r.newBest && r.all[RUN.id].plays > 1 ? ' · a new best' : ''}</p>${build}${opened}${go}</div>`
+  $('endStats').innerHTML = `<div class="dailyBox runBox"><p class="dailyHead">${esc(RUN.name)} · ${esc(RUN.title)}</p><p class="runStars" aria-label="${r.stars} of 3 stars">${[...star(r.stars)].map(ch => `<span class="st">${ch}</span>`).join('')}</p><p class="hint">${esc(why)}${r.newBest && r.all[RUN.id].plays > 1 ? ' · a new best' : ''}</p>${build}${opened}${go}</div>`
     + `<p>earned <b>€${S.score}</b></p><p>deliveries <b>${RUN.endless ? `${S.done} · best ${r.all[RUN.id].best}` : `${S.done}/${S.target}`}</b></p><p>on time <b>${S.done - S.late}</b></p>${J.strikesOf(RUN) ? `<p>strikes <b>${S.strikes}/${J.strikesOf(RUN)}</b></p>` : ''}${S.sold ? `<p>sold <b>${S.sold}</b></p>` : ''}<p>best streak <b>${S.bestStreak}</b></p>${carried}`;
   $('endNote').textContent = RUN.endless ? (struck ? 'Too many late drops.' : 'Ten o\'clock. The shift is over.') : r.done ? 'Every job delivered.' : struck ? 'Too many late drops.' : 'The shift ended.';
   const again = $('again'); if (again) { again.textContent = RUN.endless ? `${RUN.name} AGAIN` : r.done ? `${RUN.name} AGAIN · A NEW SHIFT` : `TRY ${RUN.name} AGAIN`; again.classList.toggle('prime', !go); again.classList.toggle('ghost', !!go); again.onclick = () => { location.href = Runs.runHref(RUN.id, location.search); }; }

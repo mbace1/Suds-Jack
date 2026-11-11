@@ -108,20 +108,20 @@ export const GAMES = [
       tagline: 'Lähetin vuoro Helsingissä kortti kerrallaan: mikä ratikka, mihin suuntaan, ketä autat. Kello liikkuu vain, kun valitset.',
       lineage: '80 Days × Mini Metro × oikea Helsinki',
       controls: 'napauta korttia · valitse ratikka tai kävely · avaa kartta kulmasta',
-      note: 'UUTTA v3.27: koko peli ohjaimella (myös DualSense iPadilla): ristiohjain liikkuu valikoissa, ✕ valitsee, korteissa näkyvät ✕ ○ □. v3.26: PITKÄ VUORO, loputon ajo, aukeaa kun HELPPO on suoritettu.',
+      note: 'UUTTA v3.28: enemmän liikettä: kuvat elävät, kortin napit saapuvat yksi kerrallaan, tähdet putoavat paikoilleen. v3.27: koko peli ohjaimella (myös DualSense iPadilla). v3.26: PITKÄ VUORO.',
     },
     ja: {
       tagline: 'ヘルシンキの配達シフトを一枚ずつ。どのトラム、どの道、誰を助けるか。時計は選んだときだけ進む。',
       lineage: '80 Days × Mini Metro × 実在のヘルシンキ',
       controls: 'カードをタップ · トラムか徒歩を選ぶ · 角の地図を開く',
-      note: 'v3.27の新着：ゲーム全体をコントローラーで（iPadのDualSenseも）：十字キーでメニュー移動、✕で決定、カードに✕○□を表示。v3.26：「ロングシフト」、EASYクリアで解放。',
+      note: 'v3.28の新着：もっと動きを：絵がゆっくり動き続け、カードのボタンが順に現れ、星がひとつずつ決まる。v3.27：ゲーム全体をコントローラーで（iPadのDualSenseも）。v3.26：「ロングシフト」。',
     },
     // v3.20: a pad answers the card — A, B, X are its three buttons, Y hurries what is playing;
     // v3.27: the d-pad walks the title's and the end card's buttons, and A presses the lit one
     pad: { keys: { b0: 'Digit1', b1: 'Digit2', b2: 'Digit3', b3: 'Space', up: 'ArrowUp', down: 'ArrowDown', left: 'ArrowLeft', right: 'ArrowRight' } },
     status: 'active',
     live: true,
-    note: 'NEW in v3.27: the whole game on a pad (a DualSense on an iPad too): the d-pad walks the menus, cross presses, and the cards show ✕ ○ □. v3.26: THE LONG SHIFT, the endless run, opens once EASY is done.',
+    note: 'NEW in v3.28: more motion: the pictures keep moving, a card\'s buttons come in one by one, the stars land one at a time. v3.27: the whole game on a pad (a DualSense on an iPad too). v3.26: THE LONG SHIFT.',
     title: 'Toko Move',
     tagline: 'A courier\'s shift in Helsinki, one card at a time: which tram, which way, who to help. The clock only moves when you choose.',
     lineage: '80 Days × Mini Metro × real Helsinki',
