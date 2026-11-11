@@ -1,0 +1,62 @@
+# THE NEWEST FIRST (owner, 2026-11-11: "always keep most recently updated at
+# the top of hub"). The arcade sorts its floor on each cabinet's `d` in
+# hub/versions.json. Deploys land on gh-pages from many lanes, so this job
+# refreshes ONLY those dates on the live tree a few times a day.
+# `--dates` never touches a version number: regenerating v/n on the deployed
+# tree is forbidden (CLAUDE.md), and this mode cannot do it.
+name: hub dates
+
+on:
+  schedule:
+    - cron: '17 */6 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: hub-dates
+  cancel-in-progress: false
+
+jobs:
+  dates:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out main (the script)
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          path: main
+
+      - name: Check out gh-pages (the site), with history for the dates
+        uses: actions/checkout@v4
+        with:
+          ref: gh-pages
+          path: site
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Refresh dates and publish
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd site
+          git config user.name 'suds-jack-hub-bot'
+          git config user.email 'hub@users.noreply.github.com'
+          for attempt in 1 2 3; do
+            node ../main/scripts/versions.mjs . --dates
+            git add hub/versions.json
+            if git diff --cached --quiet; then
+              echo "dates already current"
+              exit 0
+            fi
+            git commit -m "hub: refresh last-updated dates"
+            if git push origin HEAD:gh-pages; then exit 0; fi
+            echo "gh-pages moved; retrying ($attempt/3)"
+            git fetch origin gh-pages
+            git reset --hard origin/gh-pages
+          done
+          exit 1

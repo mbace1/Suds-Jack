@@ -472,6 +472,22 @@ async function showVersions() {
   // offline, or not generated yet: no numbers. Cleared rather than kept, so a
   // later render can try again instead of being stuck with the failure.
   if (!versions) { versionsOnce = null; return; }
+  // the first time the dates arrive the floor is re-laid newest first, once;
+  // the re-render comes back through here with `updated` set and fills in
+  if (!updated) {
+    updated = {};
+    for (const [id, v] of Object.entries(versions)) if (v && v.d) updated[id] = v.d;
+    if (Object.keys(updated).length) {
+      // the host (hub/toko-cabinet-dom.js) is not in the catalogue: carry him over, still first
+      const host = document.getElementById('cab-tokolive');
+      render();
+      if (host) document.getElementById('cabinets').prepend(host);
+      // a deep link landed on its cabinet before the floor moved under it
+      const id = decodeURIComponent(location.hash.slice(1)).split('/')[0];
+      if (id) goTo(id, { jump: true });
+      return;
+    }
+  }
   for (const slot of document.querySelectorAll('.ver')) {
     const v = versions[slot.dataset.game];
     if (!v) continue;
@@ -929,11 +945,22 @@ try {
     if (ok) { vrHere = true; render(); }
   }).catch(() => {});
 } catch (e) { /* no WebXR — the floor stays as authored */ }
+// THE NEWEST FIRST (owner, 2026-11-11: "always keep most recently updated at
+// the top of hub"). Each row of versions.json carries `d`, the day that
+// cabinet last moved (scripts/versions.mjs: its log's newest dated heading or
+// its last narrow commit, whichever is later; a daily job keeps it current on
+// the site). Until that file lands, or offline, the floor stays in catalogue
+// order; a tie keeps catalogue order too, so equal days never shuffle.
+let updated = null;
+const newestFirst = list => !updated ? list : list
+  .map((g, i) => ({ g, i, d: updated[g.id] || '' }))
+  .sort((a, b) => (a.d === b.d ? a.i - b.i : a.d < b.d ? 1 : -1))
+  .map(x => x.g);
 const active = () => {
-  const a = onFloor().filter(g => g.status !== 'archived');
+  const a = newestFirst(onFloor().filter(g => g.status !== 'archived'));
   return vrHere ? [...a.filter(g => g.vr), ...a.filter(g => !g.vr)] : a;
 };
-const archived = () => onFloor().filter(g => g.status === 'archived');
+const archived = () => newestFirst(onFloor().filter(g => g.status === 'archived'));
 
 const setText = (sel, key) => {
   const n = document.querySelector(sel);

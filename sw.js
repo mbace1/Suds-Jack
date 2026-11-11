@@ -31,7 +31,7 @@ const SHELL = [
   './hub/games.js?v=104',
   './hub/hub-entry.js?v=32',
   './hub/hub.css?v=23',
-  './hub/hub.js?v=109',
+  './hub/hub.js?v=110',
   './hub/i18n.js?v=11',
   './hub/pad.js?v=10',
   './hub/playlog-auto.js',

@@ -20,6 +20,7 @@
 // reporting its release number instead of its token, with no other change.
 
 import { readFileSync, writeFileSync, existsSync, readdirSync, statSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
@@ -118,8 +119,68 @@ const EXTRA = [
   { id: 'tokolive', path: 'toko-live/' },
 ];
 
+// ── WHEN a cabinet last moved (owner, 2026-11-11: "always keep most recently
+// updated at the top of hub") ──────────────────────────────────────────────
+// A number says WHAT shipped, not WHEN, and the floor is sorted by when. Two
+// witnesses, and the later one wins:
+//
+//   the log    the date on its newest heading (`## v62 — 2026-11-11`), the
+//              day somebody said a release happened
+//   git        the newest commit that touched the cabinet's folder, which
+//              catches a deploy whose log line never moved
+//
+// A commit that touches more than WIDE top-level folders is not evidence
+// about any one of them: the whole-site deploys stamp every folder on the
+// same day, and counting them would sort the floor by the last time somebody
+// copied the site. On the deployed tree git is the deploy history, which is
+// exactly "updated on the site".
+const WIDE = 3;   // a commit touching more top-level folders than this is a site-wide copy
+const ISO = /\b(20\d\d-\d\d-\d\d)\b/;
+function logDate(file) {
+  if (!existsSync(file)) return null;
+  const head = readFileSync(file, 'utf8').split('\n')
+    .find(l => /^##\s*v\d/.test(l) || /^#{1,2}\s*[A-Z]\.\d/.test(l));
+  const m = head && head.match(ISO);
+  return m ? m[1] : null;
+}
+const git = (...a) => execFileSync('git', a, { cwd: ROOT, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
+let inGit = true;
+try { git('rev-parse', '--git-dir'); } catch { inGit = false; }
+function gitDate(dir) {
+  if (!inGit) return null;
+  const rel = path.relative(ROOT, dir) || '.';
+  let lines = [];
+  try { lines = git('log', '--no-merges', '-n', '300', '--format=%H %cs', '--', rel).trim().split('\n').filter(Boolean); }
+  catch { return null; }
+  for (const line of lines) {
+    const [sha, day] = line.split(' ');
+    let files = [];
+    try { files = git('diff-tree', '--no-commit-id', '--name-only', '-r', '--root', sha).trim().split('\n'); }
+    catch { continue; }
+    files = files.filter(Boolean);
+    if (!files.length) continue;
+    const tops = new Set(files.map(f => f.split('/')[0]));
+    if (tops.size > WIDE) continue;
+    // a commit that only touched this cabinet's docs (a plan, a handoff) is
+    // not an update anybody playing it would notice
+    const mine = files.filter(f => rel === '.' || f === rel || f.startsWith(rel + '/'));
+    if (mine.length && mine.every(f => f.endsWith('.md'))) continue;
+    return day;
+  }
+  return null;
+}
+function dateOf(dir, logFile) {
+  const top = path.join(ROOT, path.relative(ROOT, dir).split(path.sep)[0]);
+  const fromLog = logFile ? logDate(logFile)
+    : (logDate(path.join(dir, 'VERSIONS.md')) ?? logDate(path.join(top, 'VERSIONS.md')));
+  const fromGit = gitDate(top);
+  const all = [fromLog, fromGit].filter(Boolean).sort();
+  return all.length ? all.at(-1) : null;
+}
+
 const rootLog = rootLogOwner();
 const out = {};
+const dirs = {};
 const missing = [];
 for (const g of [...GAMES, ...EXTRA]) {
   // A catalogue `path` is a URL, not a directory: Flash Prince's is
@@ -134,10 +195,28 @@ for (const g of [...GAMES, ...EXTRA]) {
     ? { v: rootLog.v.v, n: rootLog.v.n, from: 'VERSIONS.md' } : null;
   const found = owned ?? fromLog(dir) ?? fromToken(dir);
   if (!found) { missing.push(`${g.id} (no log, no token)`); continue; }
-  out[g.id] = found;
+  const d = dateOf(dir, owned ? path.join(ROOT, 'VERSIONS.md') : null);
+  out[g.id] = d ? { ...found, d } : found;
+  dirs[g.id] = { dir, root: !!owned };
 }
 
 const dest = path.join(ROOT, 'hub', 'versions.json');
+
+// --dates refreshes ONLY the `d` of each entry and leaves every number alone,
+// so it is the one write that is safe on the deployed tree (see --check
+// below for why a plain regeneration there is not). The daily job runs it.
+if (process.argv.includes('--dates')) {
+  const was = existsSync(dest) ? JSON.parse(readFileSync(dest, 'utf8')) : {};
+  const moved = [];
+  for (const [id, w] of Object.entries(was)) {
+    const d = out[id] && out[id].d;
+    if (d && d !== w.d) { moved.push(`${id}: ${w.d ?? '-'} -> ${d}`); w.d = d; }
+  }
+  if (moved.length) writeFileSync(dest, JSON.stringify(was, null, 2) + '\n');
+  console.log(`${path.relative(process.cwd(), dest)}: ${moved.length} date(s) changed`);
+  for (const m of moved) console.log('  ' + m);
+  process.exit(0);
+}
 
 // --check reports instead of writing, and this is not a nicety. On the DEPLOYED
 // tree a regeneration is destructive: gh-pages does not carry every project's

@@ -60,6 +60,13 @@ records which one was in force**, so "the covers are too small" and "too loud" c
 told apart. The page also has a memory: it diffs `versions.json` against the numbers you
 last saw (`sudsJackHubSeen`, written on `pagehide`) and tags what **moved**; pressing
 Play marks a cabinet **tried** (`sudsJackHubPlayed`). Neither reorders the floor.
+**The floor IS ordered by last update, newest first** (owner, 2026-11-11: *"always keep
+most recently updated at the top of hub"*). Each `versions.json` entry carries `d`, the
+later of its log's newest heading date and its folder's last narrow commit (no merges,
+≤3 top-level folders, not docs-only); both floors re-sort once the file lands, ties
+keep catalogue order, and the Toko Live host stays first. `versions.mjs --dates` refreshes
+only `d` and is safe on the deployed tree; `.github/workflows/hub-dates.yml` runs it on
+`gh-pages` every six hours, so a deploy from any lane rises on its own.
 `/#hyperdagger` deep-links a cabinet and `/#hyperdagger/feedback` opens its note panel —
 the cabinet title is the anchor, so there is no third button on the card.
 **`live: false`** marks a cabinet with nothing behind it: the marquee goes unlit and

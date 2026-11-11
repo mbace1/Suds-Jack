@@ -937,6 +937,17 @@ function check(name, cond) {
   check('a project with a VERSIONS.md reports its release number, not its token',
     versions.gameoflife.from === 'VERSIONS.md');
 
+  // THE NEWEST FIRST (owner, 2026-11-11). Each entry carries `d`, its last
+  // update; once versions.json lands, both floors re-sort on it, ties keeping
+  // catalogue order. Read the DOM, not __hub, because the order is what you see.
+  await page.waitForFunction(() => window.__hub && document.querySelector('#cabinets .cab'));
+  for (const rack of ['#cabinets', '#archived']) {
+    const ids = await page.$$eval(`${rack} ${CAB}`, ns => ns.map(n => n.id.replace(/^cab-/, '')));
+    const ds = ids.map(id => (versions[id] && versions[id].d) || '');
+    check(`${rack} is newest first (${ds.filter(Boolean).length} dated)`,
+      ds.every((d, i) => i === 0 || ds[i - 1] >= d));
+  }
+
   // ── what moved since you were last here ──
   // A first visit has nothing to compare against, and marking all twelve as new
   // would say nothing while looking like it said something.

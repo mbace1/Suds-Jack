@@ -7,37 +7,44 @@
   "concrete": {
     "v": "5",
     "n": 5000,
-    "from": "VERSIONS.md"
+    "from": "VERSIONS.md",
+    "d": "2026-09-20"
   },
   "sudsjack": {
     "v": "6",
     "n": 6000,
-    "from": "VERSIONS.md"
+    "from": "VERSIONS.md",
+    "d": "2026-09-24"
   },
   "tokomove": {
     "v": "3.24",
     "n": 3024,
-    "from": "VERSIONS.md"
+    "from": "VERSIONS.md",
+    "d": "2026-11-09"
   },
   "tokodrop": {
     "v": "221",
     "n": 221000,
-    "from": "VERSIONS.md"
+    "from": "VERSIONS.md",
+    "d": "2026-08-01"
   },
   "hyperdagger": {
     "v": "62",
     "n": 62000,
-    "from": "VERSIONS.md"
+    "from": "VERSIONS.md",
+    "d": "2026-11-11"
   },
   "dropcabal": {
     "v": "5",
     "n": 5000,
-    "from": "VERSIONS.md"
+    "from": "VERSIONS.md",
+    "d": "2026-09-26"
   },
   "powder": {
     "v": "11",
     "n": 11000,
-    "from": "VERSIONS.md"
+    "from": "VERSIONS.md",
+    "d": "2026-09-27"
   },
   "paperboy": {
     "v": "6",
@@ -52,42 +59,50 @@
   "neonronin": {
     "v": "1",
     "n": 1000,
-    "from": "VERSIONS.md"
+    "from": "VERSIONS.md",
+    "d": "2026-09-10"
   },
   "flashprince": {
     "v": "9",
     "n": 9000,
-    "from": "VERSIONS.md"
+    "from": "VERSIONS.md",
+    "d": "2026-10-04"
   },
   "eeri": {
     "v": "15.51",
     "n": 15051,
-    "from": "VERSIONS.md"
+    "from": "VERSIONS.md",
+    "d": "2026-09-26"
   },
   "slaykallio": {
     "v": "41",
     "n": 41000,
-    "from": "VERSIONS.md"
+    "from": "VERSIONS.md",
+    "d": "2026-09-26"
   },
   "turf": {
     "v": "43",
     "n": 43000,
-    "from": "VERSIONS.md"
+    "from": "VERSIONS.md",
+    "d": "2026-09-23"
   },
   "gameoflife": {
     "v": "40",
     "n": 40000,
-    "from": "VERSIONS.md"
+    "from": "VERSIONS.md",
+    "d": "2026-07-27"
   },
   "kindling": {
     "v": "11",
     "n": 11000,
-    "from": "VERSIONS.md"
+    "from": "VERSIONS.md",
+    "d": "2026-09-01"
   },
   "radiofree": {
     "v": "38",
     "n": 38000,
-    "from": "cache token"
+    "from": "cache token",
+    "d": "2026-10-14"
   },
   "tinyhawk": {
     "v": "6",
@@ -97,36 +112,43 @@
   "tiny2d": {
     "v": "3",
     "n": 3000,
-    "from": "VERSIONS.md"
+    "from": "VERSIONS.md",
+    "d": "2026-07-28"
   },
   "eyetest": {
     "v": "1",
     "n": 1000,
-    "from": "VERSIONS.md"
+    "from": "VERSIONS.md",
+    "d": "2026-09-10"
   },
   "brand": {
     "v": "5",
     "n": 5000,
-    "from": "VERSIONS.md"
+    "from": "VERSIONS.md",
+    "d": "2026-11-09"
   },
   "tokotrip": {
     "v": "11",
     "n": 11000,
-    "from": "VERSIONS.md"
+    "from": "VERSIONS.md",
+    "d": "2026-09-06"
   },
   "flowsnow": {
     "v": "4",
     "n": 4000,
-    "from": "VERSIONS.md"
+    "from": "VERSIONS.md",
+    "d": "2026-09-26"
   },
   "toko": {
     "v": "5",
     "n": 5000,
-    "from": "VERSIONS.md"
+    "from": "VERSIONS.md",
+    "d": "2026-11-09"
   },
   "tokolive": {
     "v": "48",
     "n": 48000,
-    "from": "VERSIONS.md"
+    "from": "VERSIONS.md",
+    "d": "2026-11-09"
   }
 }
