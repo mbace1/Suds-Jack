@@ -78,10 +78,11 @@ const look = page => page.evaluate(() => {
 });
 // Play by tapping: the first button of every card; tap the scene to hurry a
 // hop or a stamp along. Returns everything it saw.
-async function playOut(page, { maxSteps = 600, pick = () => 0, onCard = null } = {}) {
+async function playOut(page, { maxSteps = 600, pick = () => 0, onCard = null, onStep = null } = {}) {
   const seen = { scenes: new Set(), kinds: new Set(), boards: 0, signs: [], stamps: [], cards: [], bad: [], clocks: [], strips: [], end: false, reveals: new Set(), trams: [], lands: new Set(), plates: new Set(), wx: new Set(), stakes: [], cars: new Set(), layers: new Set() };
   for (let i = 0; i < maxSteps; i++) {
     const s = await look(page);
+    if (onStep) await onStep(s);
     seen.scenes.add(s.scene); if (s.board) seen.boards++; if (s.sign) seen.signs.push(s.sign); if (s.stamp) seen.stamps.push(s.stamp);
     if (s.rev) seen.reveals.add(s.rev); if (s.tram) seen.trams.push(s.tram); if (s.car) seen.cars.add(s.car); for (const l of s.layers) seen.layers.add(l); if (s.land) seen.lands.add(s.land); if (s.plate) seen.plates.add(s.plate); seen.wx.add(s.wx); seen.stakes.push(...s.stakes);
     if (s.overflow) seen.bad.push('the page scrolled or overflowed');
@@ -588,7 +589,7 @@ server.listen(0, '127.0.0.1', async () => {
       await page.tap('#play'); await page.waitForSelector('#v3panel .eventOpt', { timeout: 15000 });
       const first = await page.evaluate(() => ({ opts: [...document.querySelectorAll('#v3panel .eventOpt')].map(b => { const c = getComputedStyle(b); return [c.animationName, parseFloat(c.animationDelay)]; }), day: getComputedStyle(document.querySelector('#v3panel .evAt')).animationName }));
       let moment = null;
-      const seen = await playOut(page, { maxSteps: 400, onCard: async () => { if (!moment) moment = await page.evaluate(() => document.getElementById('v3').classList.contains('moment') ? getComputedStyle(document.getElementById('v3frame')).animationName : null); } });
+      const seen = await playOut(page, { maxSteps: 400, onStep: async () => { if (!moment) moment = await page.evaluate(() => document.getElementById('v3').classList.contains('moment') ? getComputedStyle(document.getElementById('v3frame')).animationName : null); } });
       const stars = await page.evaluate(() => { const e = document.querySelector('.runStars'); return e ? { n: e.querySelectorAll('.st').length, text: e.textContent, anim: getComputedStyle(e.querySelector('.st')).animationName } : null; });
       if (!calm) {
         ok(`a moment keeps drifting in on the courier after its push (${moment})`, /v3push/.test(moment || '') && /v3breathe/.test(moment || ''));
