@@ -27,10 +27,12 @@
   START SHIFT, ✕ ○ □ on the cards, a whole shift answered, the map closed
   from the pad, cross on the end card going to NEXT. A real iPad and
   DualSense were not available here.
-- **A phone held sideways** keeps START on screen with five runs in the
-  list: the short layout's run row is five names wide, and the long shift
-  shows as *∞ LONG* there (*THE LONG SHIFT* wrapped to three lines and
-  pushed START 6 px under the edge for a returning player).
+- **A phone held sideways** keeps START on screen. The title card scrolls
+  inside on a short screen, and a returning player's card (the missions' map,
+  the day's errand, the missions) had START 6 px under the edge, before the
+  long shift as well as after it. On a short screen START now comes straight
+  under the title, with the runs and the missions below it; the run row is
+  five names wide, and the long shift shows there as *∞ LONG*.
 - `test/play.cjs`: the ladder check knows the long shift sits locked beside
   the four runs on a first visit (v3.26), and the sideways check now covers
   a returning player's title too.
