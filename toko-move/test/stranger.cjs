@@ -35,7 +35,14 @@ const ok = (name, cond, extra = '') => { if (cond) { pass++; console.log(`  ok  
 // The real-time ladder (EASY on a fresh shift — since v3.0 behind ?classic;
 // the bare address is the card journey, which test/play.cjs plays) and two
 // fixed classic shifts.
-const RUNS = ['?classic', '?shift=1', '?shift=2'];
+// (v3.28) The ladder's shift is PINNED. It was a fresh random shift each run, and
+// EASY deals one event card a shift: on about one shift in four a stranger who
+// only taps finishes before it comes up (pinned EASY shifts 1, 3, 4 meet it,
+// shift 2 does not), so the check below failed a full gate run one time in
+// three with nothing wrong. A pinned EASY shift still catches what the check is
+// for (v2.72: a card waiting to be walked to blocked every card behind it).
+const LADDER = '?classic&run=easy&shift=1';
+const RUNS = [LADDER, '?shift=1', '?shift=2'];
 const FIRST_DELIVERY_MAX_MIN = 20; // game minutes from START SHIFT
 
 server.listen(0, '127.0.0.1', async () => {
@@ -49,7 +56,7 @@ server.listen(0, '127.0.0.1', async () => {
       await page.goto(`${base}/toko-move/${q}`, { waitUntil: 'load' });
       await page.waitForFunction(() => window.__tm?.flow && !document.getElementById('play').disabled, null, { timeout: 30000 });
       await page.evaluate(() => window.__tm.flow.clock.setPaused(true));
-      const label = q === '?classic' ? '(the ladder)' : q;
+      const label = q === LADDER ? '(the ladder)' : q;
       let start = null, firstDelivery = null, taps = 0, lies = [], selfExits = [], phases = new Set(), end = null;
       let held = 0;  // see below: waiting for the panel to show what the game says is there
       for (let i = 0; i < 6000; i++) {

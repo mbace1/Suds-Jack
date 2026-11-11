@@ -23,6 +23,11 @@ no picture was drawn or changed.
   Code can move a picture; it cannot make a figure take a step.
 - `test/play.cjs`: each of the five runs its animation on a phone, the stars
   still read as stars, and none of it runs with reduced motion asked for.
+- `test/stranger.cjs` (the real-time game behind `?classic`, untouched here):
+  its ladder case played a fresh random shift each run, and on about one
+  EASY shift in four a stranger who only taps finishes before the shift's one
+  event card comes up, so the gate failed one full run in three with nothing
+  wrong. The case is pinned to an EASY shift now (`?classic&run=easy&shift=1`).
 
 ## v3.27 — 2026-11-11
 
