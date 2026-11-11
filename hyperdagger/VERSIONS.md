@@ -44,7 +44,8 @@ What changed, and each is a design decision:
   what was in the shared key cannot be told apart.
 
 Measured, same bot, after: EMBER reaches 300.0 s (531 kills, the clock at its
-cap); INCA is still running as this is written and is past 228 s at the cap.
+cap); INCA reaches 300.0 s (702 kills, the clock at its cap, no crest jumped).
+That is a ceiling, not a difficulty: the bot is never touched and never misses.
 
 Gates: `test/acts.mjs` (bare node, 24: the tables' shape, and that INCA's
 cadence alone can carry the clock) and `test/seasons.cjs` (browser: acts open
