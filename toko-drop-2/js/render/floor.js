@@ -24,11 +24,11 @@
 // `swirlAt`, out to `swirlR`, and opens a hole of `hole` m in the middle).
 import * as THREE from 'three/webgpu';
 import { Fn, If, uv, uniform, float, abs, fract, min, max, sin, cos, atan, length, smoothstep, step, mix, fwidth, texture, clamp, vec2, vec3, pow, floor as tfloor, round, select, mod, dFdx, dFdy, exp, normalize, dot, cameraPosition, positionWorld, vec4 } from 'three/tsl';
-import { pickStyle, grainAt } from './style.js?v=145';
-import { SUN_AT } from './sun.js?v=145';
-import { GEL_TIME } from './gel.js?v=145';
-import { noise, grate, cells, sewerSpots, treeShade } from './scenery.js?v=145';
-import { lilyPads, DRIFT, hash } from './kit.js?v=145';
+import { pickStyle, grainAt } from './style.js?v=146';
+import { SUN_AT } from './sun.js?v=146';
+import { GEL_TIME } from './gel.js?v=146';
+import { noise, grate, cells, sewerSpots, treeShade } from './scenery.js?v=146';
+import { lilyPads, DRIFT, hash } from './kit.js?v=146';
 
 const _white = new THREE.Color(0xffffff);
 // the floors whose set has a ground of its own under them: a room that is not a rectangle is CUT to its shape there
@@ -862,8 +862,22 @@ export function buildFloor(T, hx, hz, light, { style = 'grid', bounds: hasBounds
   };
   // THE RIVER: water running the long way, its streaks moving with it,
   // pebbled banks at both edges (v95: in daylight, the approved picture's)
-  const river = (p, w) => {
-    const R = W.river, a = along(w), c = across(w), half = hx >= hz ? hz : hx, U = R.run, t = GEL_TIME;
+  const river = (p, w0) => {
+    const R = W.river, half = hx >= hz ? hz : hx, U = R.run, t = GEL_TIME, Wv = water ? R.wave : null;
+    // v146 (owner, 2026-11-11: "River looks ok, still should be much more realistic water and effects ... I've seen
+    // crazy three.js demos online and we don't compare"): the river's water is SIMULATED too (render/water.js), in
+    // the stream's own frame — the texture is carried along with the current, so a body standing in the river is
+    // moving through the water and trails a real wake, a rock parts the stream and throws a bow wave, and rings from
+    // a splash go off downstream as they spread. Its optics are the cistern's (v144) in daylight: the pebbles swim
+    // under the waves, the sun stands on the faces turned to it and glitters off them, the caustic web is pulled
+    // about and gathered under the crests, and where the water is thrown hardest it is white
+    let w = w0, slope = null, lapK = float(0), foamS = float(0);
+    if (Wv) {
+      const sv = slopeTex.sample(vec2(p.x, float(1).sub(p.y)).sub(water.driftUV));
+      slope = sv.xy.mul(Wv.gain); lapK = sv.z.mul(Wv.gain); foamS = sv.w;
+      w = w0.add(slope.mul(Wv.refract));
+    }
+    const a = along(w0), c = across(w0);
     const flow = a.sub(t.mul(R.flow)), ac = abs(c);
     // v99: the shore WANDERS, as the approved picture's does — the bank's edge, and the shallows with it, in
     // and out `shore.amp` of the half width along the river (river.js draws the same line past the ends)
@@ -883,8 +897,11 @@ export function buildFloor(T, hx, hz, light, { style = 'grid', bounds: hasBounds
       const stoneCol = mix(mix(v3(B.tones[0]), v3(B.tones[1]), tone), v3(B.tones[2]), smoothstep(0.72, 1, odd));
       const crown = smoothstep(B.gap, B.gap + B.crown, pb.round);   // dark at its rim, lit on its top
       rock = mix(v3(B.joint), stoneCol.mul(crown.mul(0.5).add(0.6)), smoothstep(B.gap - 0.03, B.gap + 0.02, pb.round));
-      const cn = causticNet(vec2(a.sub(t.mul(R.flow * B.drift)), c), B.net, t);
-      bed = rock.add(v3(B.caustic).mul(cn.mul(B.net.gain)));
+      const cq = Wv ? vec2(a.sub(t.mul(R.flow * B.drift)), c).add(slope.mul(Wv.netWarp)) : vec2(a.sub(t.mul(R.flow * B.drift)), c);
+      let cn = causticNet(cq, B.net, t).mul(B.net.gain);
+      // (the waves' own light: gathered under a crest, thinned under a trough)
+      if (Wv) cn = cn.mul(clamp(float(1).sub(lapK.mul(Wv.thin)), 0.3, 1.7)).add(clamp(lapK.negate().mul(Wv.focus), 0, Wv.focusMax));
+      bed = rock.add(v3(B.caustic).mul(cn));
     } else {
       const peb = noise(w.mul(2.8)).mul(0.6).add(noise(w.mul(7.1)).mul(0.4));
       rock = v3(R.pebble).mul(peb.mul(0.8).add(0.45)); bed = rock;
@@ -893,31 +910,44 @@ export function buildFloor(T, hx, hz, light, { style = 'grid', bounds: hasBounds
     col = mix(col, v3(U.deep), depth.mul(U.deepK));
     col = mix(mix(bed, col, U.shallowTint), col, depth);
     // v140 (owner, 2026-11-10: "look at all other worlds ... we can do a lot better than the concept art"): FISH. Dark
-    // shapes holding against the current in the deep middle of the river, a loose school here and there, each
-    // working its tail; they make upstream slowly, and scatter from where the hero stands. Under the water: they
-    // darken it, they are not drawn on it. One hash a fish
+    // shapes holding against the current, each working its tail; they make upstream slowly, and scatter from where
+    // the hero stands. Under the water: they darken it, they are not drawn on it. One hash a fish
+    // v146 (owner, 2026-11-11: "Fish maybe too one note"): several KINDS of them (`fish.kinds`), each its own size,
+    // water and way — the trout holding in the deep middle as before; a SHOAL of fry in the shallows, small and
+    // quick, many to a patch, darting together and flashing silver as they turn; and a PIKE or two, long and slow,
+    // lying across the current. `zone` is where a kind lives (the depth it keeps between), `flash` how it glints
     const Fi = R.fish;
     if (Fi) {
-      const fa = a.add(t.mul(Fi.swim)), fc = vec2(fa.div(Fi.cell[0]), c.div(Fi.cell[1])), fid = tfloor(fc), fh = hash(fid.add(3.1)), fh2 = fract(fh.mul(37.7));
-      const fish = float(0).toVar(), faa = max(length(fwidth(w)), 1e-4);   // (a pixel's width in the world: a derivative may not sit in a branch, v68)
-      If(fh.greaterThan(1 - Fi.keep), () => {
-        const sway = sin(t.mul(0.45).add(fh.mul(40))).mul(0.07);
-        const q = fract(fc).sub(vec2(fh2.mul(0.5).add(0.25), fract(fh.mul(91.3)).mul(0.5).add(0.25).add(sway))).mul(vec2(...Fi.cell));
-        const len = fh2.mul(Fi.len[1] - Fi.len[0]).add(Fi.len[0]), s01 = q.x.div(len).add(0.5);   // 0 at its nose (upstream), 1 at its tail
-        // the wave that runs down it: nothing at the head, widest at the tail
-        const bend = sin(t.mul(Fi.beat).add(fh.mul(30)).sub(s01.mul(4))).mul(s01.mul(s01)).mul(len.mul(0.13));
-        const y = abs(q.y.sub(bend));
-        // its outline: a body widest a third of the way back, pinched before the tail, then the tail's fork
-        const body = sin(clamp(s01.div(0.86), 0, 1).pow(0.7).mul(3.1416)).mul(len.mul(0.13));
-        const tail = clamp(s01.sub(0.8).div(0.22), 0, 1).mul(len.mul(0.16));
-        const wide = max(body, tail).mul(step(0, s01)).mul(step(s01, 1.02));
-        fish.assign(float(1).sub(smoothstep(wide.sub(faa), wide.add(faa), y)).mul(step(0.001, wide)));
-      });
-      const hw = toWorld(player), away = smoothstep(Fi.shy[0], Fi.shy[1], length(w.sub(hw)));
-      col = mix(col, col.mul(v3(Fi.dark)), fish.mul(smoothstep(0.55, 0.85, depth)).mul(away).mul(Fi.k));
+      const faa = max(length(fwidth(w0)), 1e-4), hw = toWorld(player), dHero = length(w0.sub(hw));   // (a pixel's width in the world: a derivative may not sit in a branch, v68)
+      for (const [ki, K] of (Fi.kinds ?? [Fi]).entries()) {
+        // a shoal darts: its cells' field jumps on a beat of its own and eases to rest
+        const dart = K.dart ? vec2(sin(tfloor(t.mul(K.dart[0])).mul(12.9898 + ki)).mul(K.dart[1]), sin(tfloor(t.mul(K.dart[0])).mul(78.233 + ki)).mul(K.dart[1] * 0.5)).mul(float(1).sub(fract(t.mul(K.dart[0])).pow(0.35))) : vec2(0);
+        const fa = a.add(t.mul(K.swim)).add(dart.x), fcx = c.add(dart.y), fc = vec2(fa.div(K.cell[0]), fcx.div(K.cell[1])), fid = tfloor(fc), fh = hash(fid.add(3.1 + ki * 17.3)), fh2 = fract(fh.mul(37.7));
+        const fish = float(0).toVar(), turn = float(0).toVar();
+        If(fh.greaterThan(1 - K.keep), () => {
+          const sway = sin(t.mul(0.45).add(fh.mul(40))).mul(0.07);
+          // (a pike lies ACROSS the stream: its own angle; the others head into it)
+          const q0 = fract(fc).sub(vec2(fh2.mul(0.5).add(0.25), fract(fh.mul(91.3)).mul(0.5).add(0.25).add(sway))).mul(vec2(...K.cell));
+          const ang = K.slant ? fh2.sub(0.5).mul(K.slant) : float(0), q = K.slant ? vec2(q0.x.mul(cos(ang)).add(q0.y.mul(sin(ang))), q0.y.mul(cos(ang)).sub(q0.x.mul(sin(ang)))) : q0;
+          const len = fh2.mul(K.len[1] - K.len[0]).add(K.len[0]), s01 = q.x.div(len).add(0.5);   // 0 at its nose (upstream), 1 at its tail
+          // the wave that runs down it: nothing at the head, widest at the tail
+          const ph = t.mul(K.beat).add(fh.mul(30)).sub(s01.mul(4)), bend = sin(ph).mul(s01.mul(s01)).mul(len.mul(0.13));
+          const y = abs(q.y.sub(bend));
+          // its outline: a body widest a third of the way back, pinched before the tail, then the tail's fork
+          const body = sin(clamp(s01.div(0.86), 0, 1).pow(0.7).mul(3.1416)).mul(len.mul(K.girth ?? 0.13));
+          const tail = clamp(s01.sub(0.8).div(0.22), 0, 1).mul(len.mul(0.16));
+          const wide = max(body, tail).mul(step(0, s01)).mul(step(s01, 1.02));
+          fish.assign(float(1).sub(smoothstep(wide.sub(faa), wide.add(faa), y)).mul(step(0.001, wide)));
+          turn.assign(smoothstep(0.75, 1, sin(ph.add(1.2))));   // its flank to the light at the top of each beat
+        });
+        const away = smoothstep(K.shy[0], K.shy[1], dHero), zone = smoothstep(K.zone[0], K.zone[0] + 0.15, depth).mul(float(1).sub(smoothstep(K.zone[1], K.zone[1] + 0.15, depth)));
+        const seen = fish.mul(zone).mul(away);
+        col = mix(col, col.mul(v3(K.dark)), seen.mul(K.k));
+        if (K.flash) col = col.add(v3(K.flash).mul(seen.mul(turn)));
+      }
     }
     // v72: lily pads near the banks, drifting the way the current rule pushes (kit.js DRIFT)
-    const Pd = T.scenery.river.pads, lp = lilyPads(w.sub(DRIFT), Pd.cell, Pd.keep);
+    const Pd = T.scenery.river.pads, lp = lilyPads(w0.sub(DRIFT), Pd.cell, Pd.keep);
     const near = smoothstep(half * 0.42, half * 0.52, ac).mul(smoothstep(bankAt, bankAt.sub(half * 0.06), ac));
     col = mix(col, mix(v3(Pd.lo), v3(Pd.hi), lp.y), lp.x.mul(near)).add(v3(Pd.flower).mul(lp.z.mul(near)));
     const bank = smoothstep(bankAt, bankAt.add(half * 0.08), ac);
@@ -927,7 +957,7 @@ export function buildFloor(T, hx, hz, light, { style = 'grid', bounds: hasBounds
     // v143: the stream BREAKS ROUND THE HERO: a crescent of foam on its upstream side, and behind it a wake — two
     // arms opening downstream at `open` (across per m along), torn by the current's own streaks, gone by `reach` m.
     // On the water only (none on the dry bank)
-    const Wr = R.wake;
+    const Wr = Wv ? null : R.wake;   // (v146: on simulated water the wake is the simulation's own)
     if (Wr) {
       const hw = toWorld(player), ar = a.sub(along(hw)), cr = c.sub(across(hw)), dr = length(vec2(ar, cr));
       const spread = abs(cr).sub(ar.mul(Wr.open).add(Wr.r)), wd = ar.mul(Wr.widen).add(Wr.w);
@@ -935,6 +965,17 @@ export function buildFloor(T, hx, hz, light, { style = 'grid', bounds: hasBounds
       const arm = exp(spread.mul(spread).div(wd.mul(wd)).negate()).mul(step(0, ar)).mul(exp(ar.div(-Wr.reach))).mul(smoothstep(0.28, 0.62, fnz).mul(0.85).add(0.15));
       const bow = exp(dr.sub(Wr.r * 1.25).mul(dr.sub(Wr.r * 1.25)).div(Wr.w * Wr.w * 2).negate()).mul(smoothstep(0.15, 0.75, ar.negate().div(max(dr, 1e-3))));
       col = mix(col, v3(R.foam), clamp(arm.add(bow.mul(0.8)), 0, 1).mul(Wr.k).mul(float(1).sub(bank)));
+    }
+    let relief = float(0), froth = float(0);
+    if (Wv) {
+      // the waves' RELIEF in daylight: the face turned to the sun bright, the face turned from it darker
+      const Ls = normalize(SUN_AT), sxz = normalize(vec2(Ls.x, Ls.z)), turnS = dot(slope, sxz).negate(), onW = float(1).sub(bank);
+      relief = clamp(turnS.mul(Wv.relief.k), -Wv.relief.dark, Wv.relief.max).mul(onW);
+      col = col.mul(float(1).add(min(relief, 0))).add(v3(Wv.relief.color).mul(max(relief, 0)));
+      // froth where the water is thrown hardest: a veil, mottled, drawn out along the stream
+      const Fm = Wv.foam, fq = vec2(flow.mul(Fm.scale * 0.5), c.mul(Fm.scale)).add(slope.mul(Fm.drag)), n1 = noise(fq), n2 = noise(fq.mul(3.1).add(3.7));
+      froth = smoothstep(float(1).sub(foamS.mul(Fm.fill)), float(1).sub(foamS.mul(Fm.fill)).add(Fm.soft), n1.mul(0.55).add(n2.mul(0.45))).mul(smoothstep(0.03, 0.3, foamS)).mul(onW);
+      col = mix(col, v3(R.foam), froth.mul(Fm.k));
     }
     // v99: the ripples' SLOPE, for the sun's glitter (worldLight): small waves going with the current, two
     // layers; their slope in world x and z, calmer down the deep middle and none on the dry bank
@@ -948,7 +989,8 @@ export function buildFloor(T, hx, hz, light, { style = 'grid', bounds: hasBounds
       const k = float(Gl.amp).mul(float(1).sub(bank)).mul(float(1).sub(depth.mul(Gl.calm)));
       rip = (hx >= hz ? vec2(sa, sc) : vec2(sc, sa)).mul(k);
     }
-    return { col, mask: smoothstep(0.5, 0.85, st).mul(float(1).sub(bank)).mul(0.6).add(foam).add(flecks), lineCol: v3(R.waterHi), wet: float(1).sub(bank), rip };
+    if (Wv) rip = (rip ?? vec2(0)).mul(Wv.ripKeep).add(slope.mul(float(1).sub(bank)));   // the sun glitters off the simulation's waves
+    return { col, mask: smoothstep(0.5, 0.85, st).mul(float(1).sub(bank)).mul(0.6).add(foam).add(flecks).add(max(relief, 0)).add(froth.mul(0.5)), lineCol: v3(R.waterHi), wet: float(1).sub(bank), rip };
   };
   // THE ICE SHEET: pale ice, darker where it is deep, cracked, frost along the cracks
   const ice = (p, w) => {
@@ -1013,7 +1055,7 @@ export function buildFloor(T, hx, hz, light, { style = 'grid', bounds: hasBounds
   };
   // THE DEEP: black silt in slow ripples, lit only by what lives in it
   const deep = (p, w) => {
-    const D = W.deep, t = GEL_TIME, S = D.bed;
+    const D = W.deep, t = GEL_TIME, S = D.bed, Wv = water ? D.stir : null;
     const rip = smoothstep(0.7, 1.0, sin(w.x.mul(0.9).add(noise(w.mul(0.3)).mul(6))).mul(0.5).add(0.5));
     let col = mix(v3(D.silt), v3(D.ripple), rip.mul(0.6).add(noise(w.mul(1.7)).mul(0.3)));
     // v101: a SEABED, as the approved picture's — warm silt in soft lumps (the river's cellular pebbles, read
@@ -1037,6 +1079,30 @@ export function buildFloor(T, hx, hz, light, { style = 'grid', bounds: hasBounds
         pool = max(pool, float(1).sub(smoothstep(L.r * S.poolR[0], L.r * S.poolR[1], d)));
       }
       col = col.add(v3(D.glow2).mul(pool.mul(pool).mul(S.poolGlow)));
+    }
+    // v146 (owner, 2026-11-11, of the deep and the core: "Both need more"): this is the BOTTOM OF THE SEA, and now it
+    // is under water. (1) THE LIGHT FROM THE SURFACE, far above: what is left of the day comes down in slow broad
+    // dapples that wander over the bed (`sun`: the caustic net, big and soft), brighter down the swept band.
+    // (2) SOMETHING SWIMS OVER: the shadow of a great ray crosses the floor on its own slow round (`ray`), its wings
+    // beating — the bed is somewhere things live above. (3) THE WATER GLOWS WHERE IT IS STIRRED (`stir`, read from
+    // the simulation, render/water.js): whatever moves through it wakes the plankton — a trail behind every body, a
+    // ring of light going out from every kill — blue-green sparks that fade in a second or two
+    const Su = D.sun;
+    if (Su) {
+      const net = causticNet(w.add(vec2(t.mul(Su.drift[0]), t.mul(Su.drift[1]))), Su.net, t);
+      col = col.mul(float(1).add(net.mul(Su.gain))).add(v3(Su.color).mul(net.mul(Su.add)));
+    }
+    const Ry = D.ray;
+    if (Ry) {
+      // its round: a slow figure over the floor; it heads the way it is going
+      const ax = hx * Ry.round[0], az = hz * Ry.round[1], pa = t.mul(Ry.pace[0]).add(1), pb = t.mul(Ry.pace[1]);
+      const at = vec2(sin(pa).mul(ax), sin(pb).mul(az)), vel = vec2(cos(pa).mul(ax * Ry.pace[0]), cos(pb).mul(az * Ry.pace[1])), hd = vel.div(max(length(vel), 1e-4));
+      const d = w.sub(at), q = vec2(dot(d, hd), d.x.mul(hd.y).sub(d.y.mul(hd.x))).div(Ry.size);   // along its body, across it
+      const beat = sin(t.mul(Ry.beat)).mul(0.1).add(1), ay = abs(q.y).div(beat), sw = q.x.add(ay.mul(0.42));   // wings swept back, beating
+      const wings = float(1).sub(abs(sw).div(0.62).add(ay.div(1.25))), body = float(1).sub(q.x.div(0.8).pow2().add(q.y.div(0.26).pow2()));
+      const tail = float(1).sub(abs(q.y).div(0.035)).min(float(1).sub(abs(q.x.add(1.25)).div(0.75)));
+      const shade = smoothstep(-Ry.soft, Ry.soft, max(max(wings, body), tail.mul(0.5)));
+      col = col.mul(float(1).sub(shade.mul(Ry.dark)));
     }
     // v140: THINGS LIE ON THE SEABED. The ripples in the silt have a lit side and a dark one; and here and there, in
     // its own place and at its own angle, a starfish or a scallop's shell (`finds`: one cell in `keep` has one,
@@ -1066,7 +1132,23 @@ export function buildFloor(T, hx, hz, light, { style = 'grid', bounds: hasBounds
     const speck = smoothstep(S ? float(0.86).sub(pool.mul(0.22)) : float(0.86), S ? float(0.95).sub(pool.mul(0.2)) : float(0.95), rnd)
       .mul(float(1).sub(smoothstep(0.03, 0.14, dot2))).mul(tw).mul(S ? pool : float(1));
     col = col.add(mix(v3(D.glow), v3(D.glow2), S ? float(S.green) : smoothstep(0.9, 0.95, rnd)).mul(speck.mul(1.6)));
-    return { col, mask: speck.add(rip.mul(0.15)), lineCol: v3(D.glow) };
+    let stirred = float(0);
+    if (Wv) {
+      const sv = slopeTex.sample(vec2(p.x, float(1).sub(p.y)));
+      // sparks, not a wash: round points of light, one to a cell of a fine lattice and not in every cell, each where
+      // it likes in its cell and twinkling on a beat of its own — lit as far as the water there was stirred
+      // (two lattices, turned against each other and of different sizes, each spark anywhere in its cell and its own
+      // size: one lattice, however jittered, showed its rows)
+      const lat = (q, seed) => {
+        const gc = tfloor(q), gr = hash(gc.add(seed)), gr2 = fract(gr.mul(41.3)), gd = length(fract(q).sub(vec2(gr2, fract(gr.mul(97.1))).mul(0.8).add(0.1)));
+        const rr = gr2.mul(0.6).add(0.5).mul(Wv.dot);
+        return float(1).sub(smoothstep(rr.mul(0.35), rr, gd)).mul(step(1 - Wv.keep, gr)).mul(sin(t.mul(gr2.mul(5).add(3)).add(gr.mul(40))).mul(0.4).add(0.6));
+      };
+      const spark = max(lat(vec2(w.x.mul(0.857).sub(w.y.mul(0.515)), w.x.mul(0.515).add(w.y.mul(0.857))).mul(Wv.grain), 2.9), lat(vec2(w.x.mul(0.6).add(w.y.mul(0.8)), w.y.mul(0.6).sub(w.x.mul(0.8))).mul(Wv.grain * 1.63), 7.3).mul(0.8));
+      stirred = sv.w.mul(spark.mul(Wv.sparkK).add(Wv.haze));
+      col = col.add(v3(Wv.color).mul(stirred));
+    }
+    return { col, mask: speck.add(rip.mul(0.15)).add(stirred), lineCol: v3(D.glow) };
   };
   // THE CORE: black, traced with circuitry; rings go out from the middle and
   // light the traces as they pass

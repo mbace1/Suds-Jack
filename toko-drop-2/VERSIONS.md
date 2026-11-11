@@ -19,6 +19,21 @@
     Never `--no-verify`.
 -->
 
+## v146 — 2026-11-11
+**The river's water is simulated too, and flows; its fish are of three kinds. The deep is under water: light from the surface, a ray's shadow going over, plankton lit where the water is stirred**
+- WHY (owner, 2026-11-11): of the river, "River looks ok, still should be much more realistic water and effects. Fish maybe too one note. I've seen crazy three.js demos online and we don't compare"; of the deep and the core, "Both need more". (The core is next.)
+- THE RIVER'S WATER is the cistern's wave simulation (v144), carried along with the stream: the texture rides the current, wrapping round the floor's ends, so the simulation is done in the water's own frame. What that buys: a body standing still in the river is moving through the water, and trails a real V of wake downstream; a rock parts the stream; the rings of a splash go off downstream as they spread. Nothing is smeared by being pushed along a grid.
+- The waves are made slower than the stream (0.95 m/s against 1.6), as on a shallow river that shoots: a wave cannot make upstream, which is what makes a V behind what stands in it. At the first cut they were faster, and nothing trailed anything.
+- HOW IT IS SEEN: the pebbles swim under the waves; the face of a wave turned to the sun is bright and the face turned away darker; the sun glitters off the simulation's own slopes; the caustic web is pulled about and gathers under the crests; froth where the water is thrown hardest. v143's drawn wake is gone where the simulation runs.
+- FISH, three kinds: the trout holding in the deep middle, as before; a shoal of fry in the shallows, small and quick, darting together and flashing silver as they turn; a pike or two, long and slow, lying across the current. Each keeps to its own depth and shies from the hero by its own distance. And now and then one rises: a ring on the water.
+- THE DEEP is under water now. The surface's light comes down in slow dapples over the bed. The shadow of a great ray crosses the floor on its own slow round, wings beating. And the water glows where it is stirred: the simulation runs here too, with no surface to draw, and where it says the water was thrown about the plankton lights — sparks trailing behind whatever moves, a ring of them going out from a kill, gone in a second or two.
+- render/water.js: one door for every stamp (`_stamp`), which puts it in the water's frame and, across the texture's seam, at both ends; the textures wrap and the step clamps its own reads where a wall stands; what stands in a flowing water is redrawn in the mask each frame and pushes water aside as a body does.
+- Looks only: nothing in the sim reads any of it.
+- Tests: test/view.mjs holds the flowing frame (the pace, the wrap, a still body's push, the seam, the bank) and the fish kinds (9 checks, 130 in all); the smoke splashes the river and the deep in a browser as it does the cistern (a new scenario, `world6`).
+- Cache tokens `?v=145` → `?v=146`; HUD label → `2.0 · v146`
+
+---
+
 ## v145 — 2026-11-11
 **The sewer's stream runs in a chute, the boiler room is a dark machine hall with square decks, and the ice is broken unevenly under more snow**
 - WHY: three more of the owner's answers to the look film (2026-11-11). The sewer: "Stream should look a bit like a concave slide. Currently very flat". The boiler: "Boiler room islands have to have some rectangular but rounded edge. It's an industrial machinery dungeon so it's meant to have that atmospheric feel also". The ice: "Holes still too regular", and "Want more snow".

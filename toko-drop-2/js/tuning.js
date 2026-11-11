@@ -7,10 +7,10 @@
 // things that work"). The arena is 1.x's, so every 1.x number ports as it is
 // instead of through a rescale. Axes: x across the screen (right +), y up,
 // z toward the bottom of the screen. The arena is centred on the origin.
-import { SPECIES } from './tuning/species/index.js?v=145';
-import WAVES from './tuning/waves.js?v=145';
-import PICKUPS from './tuning/pickups.js?v=145';
-import MUSIC from './tuning/music.js?v=145';
+import { SPECIES } from './tuning/species/index.js?v=146';
+import WAVES from './tuning/waves.js?v=146';
+import PICKUPS from './tuning/pickups.js?v=146';
+import MUSIC from './tuning/music.js?v=146';
 
 export const TUNING = {
   render: {
@@ -380,7 +380,24 @@ export const TUNING = {
       // v143: the hero's WAKE in the river (floor.js river `wake`): the arms open `open` across per m downstream from
       // `r` m off its middle, `w` m wide and `widen`ing, gone by `reach` m; a bow of foam upstream; `k` strong
       river: { wake: { open: 0.36, r: 0.55, w: 0.11, widen: 0.1, reach: 2.4, k: 0.6 },
-               fish: { cell: [3.6, 1.5], keep: 0.34, len: [0.55, 0.95], beat: 5.5, swim: 0.35, dark: [0.35, 0.5, 0.52], k: 0.8, shy: [1.6, 3.6] },
+               // v146 (owner: "Fish maybe too one note"): KINDS of fish (floor.js river). Each: its `cell` (m along, across),
+               // the share of cells that `keep` one, its `len`gth and `girth`, tail `beat`, how fast it makes upstream
+               // (`swim`), how `dark` it reads (`k`), how far it `shy`s from the hero, the `zone` of depth it keeps to
+               // (0 the bank, 1 the deep middle), a `dart` [times a second, m] for a shoal that jumps together, a
+               // `flash` of its flank, a `slant` (radians) for one that lies across the stream
+               fish: { kinds: [
+                 { cell: [3.6, 1.5], keep: 0.34, len: [0.55, 0.95], beat: 5.5, swim: 0.35, dark: [0.35, 0.5, 0.52], k: 0.8, shy: [1.6, 3.6], zone: [0.55, 2] },                                    // trout, holding in the deep
+                 { cell: [0.7, 0.42], keep: 0.5, len: [0.16, 0.26], beat: 13, swim: 0.15, dark: [0.5, 0.6, 0.6], k: 0.6, shy: [2.2, 4.4], zone: [0.08, 0.5], dart: [0.55, 0.5], flash: [0.3, 0.34, 0.32] },   // fry, a shoal in the shallows
+                 { cell: [11, 5.2], keep: 0.3, len: [1.5, 2.1], girth: 0.085, beat: 2.2, swim: 0.08, dark: [0.22, 0.34, 0.33], k: 0.85, shy: [1.2, 2.6], zone: [0.35, 2], slant: 1.5 },          // a pike, lying across
+               ] },
+               // v146: the simulated water's optics in daylight (floor.js river; the simulation is TUNING.water.river):
+               // `gain` × its slope; the pebbles moved `refract` m a unit of slope, the caustic web pulled `netWarp` m;
+               // a crest gathers the web's light `focus` (to `focusMax`), a trough thins it `thin`; a wave's face toward
+               // the sun is lit `relief.k` × its slope (to `max`, in `color`), the face away darkened (to `dark`);
+               // `ripKeep` of the old drawn ripples stay under the sun's glitter; `foam`: a veil mottled `scale` a metre
+               wave: { gain: 1.8, refract: 0.4, netWarp: 0.6, focus: 0.07, focusMax: 0.9, thin: 0.06, ripKeep: 0.55,
+                       relief: { k: 1.9, max: 0.34, dark: 0.3, color: [0.75, 0.9, 0.85] },
+                       foam: { scale: 2.2, fill: 0.95, soft: 0.4, drag: 0.5, k: 0.75 } },
                water: [0.03, 0.36, 0.36], waterHi: [0.36, 0.8, 0.74], flow: 1.6, bank: 0.78, pebble: [0.34, 0.29, 0.2], foam: [0.85, 0.95, 0.95], sky: [0.1, 0.16, 0.08], flecks: 0,
                // v78: a river that RUNS — streaks `stretch`:1 along the flow at `scale`, lifting the water
                // `lift` toward waterHi; `deep` down the middle (`deepK` of the way), the bed showing
@@ -419,7 +436,15 @@ export const TUNING = {
       // v140: the seabed's FINDS (floor.js deep `finds`): the silt's ripples `relief` lit and dark; in cells `cell` m
       // one in `keep` holds a starfish (`stars` of them, `star` m across the arms, `starLo`…`starHi`) or a scallop's
       // shell (`shell` m, `shellCol`)
-      deep: { finds: { cell: 3.1, keep: 0.3, stars: 0.5, relief: 0.1, star: 0.34, starLo: [0.2, 0.05, 0.04], starHi: [0.3, 0.12, 0.05], shell: 0.2, shellCol: [0.16, 0.15, 0.14], k: 0.9 },
+      // v146 (owner: "Both need more"): the deep is UNDER WATER (floor.js deep). `sun`: the surface's light, in slow broad
+      // dapples (`net`, drifting `drift` m/s; `gain` × the bed and `add` of its own `color`). `ray`: the shadow of a
+      // great ray going over — `size` m (a half body), on a `round` of the floor's half sizes at `pace` rad/s, wings
+      // beating at `beat`, `dark` at `soft` edges. `stir`: the plankton lit where the water is stirred (the
+      // simulation's, TUNING.water.deep) — sparks `grain` a metre (`keep` of the cells, `dot` of a cell round), `sparkK` bright over a `haze`
+      deep: { sun: { net: { scale: 0.13, sharp: 11, speed: 0.14, gain: 1 }, drift: [0.22, 0.1], gain: 0.5, add: 0.05, color: [0.4, 0.7, 1.0] },
+              ray: { size: 2.6, round: [0.62, 0.78], pace: [0.083, 0.057], beat: 1.5, dark: 0.34, soft: 0.14 },
+              stir: { grain: 3.0, keep: 0.5, dot: 0.3, sparkK: 2.4, haze: 0.22, color: [0.1, 0.85, 0.75] },
+              finds: { cell: 3.1, keep: 0.3, stars: 0.5, relief: 0.1, star: 0.34, starLo: [0.2, 0.05, 0.04], starHi: [0.3, 0.12, 0.05], shell: 0.2, shellCol: [0.16, 0.15, 0.14], k: 0.9 },
               silt: [0.006, 0.008, 0.02], ripple: [0.012, 0.018, 0.04], glow: [0.2, 0.5, 1.0], glow2: [0.5, 1.0, 0.7], specks: 2.6, sky: [0.002, 0.004, 0.01],
               bed: { cell: 0.9, lumpK: 0.45, lo: [0.03, 0.026, 0.022], hi: [0.1, 0.078, 0.05], swept: 1.35, band: 0.45, cold: [0.012, 0.03, 0.06], coldReach: 3, coldK: 0.65,
                      ripple: 0.5, poolR: [0.25, 0.75], poolGlow: 0.05, strays: 0.12, green: 0.85 } },
@@ -1540,6 +1565,29 @@ export const TUNING = {
                events: { kill: { amp: 0.2, size: 1.3, rMax: 2.2 }, hopLand: { amp: 0.1, size: 1.1 }, land: { amp: 0.1, size: 1.1 }, slam: { amp: 0.09, size: 0.5, rMax: 6 },
                          dash: { amp: 0.12, size: 1.6, r: 0.55 }, lobLand: { amp: 0.12, size: 1.2, r: 0.5 }, hit: { amp: 0.03, size: 0.7, r: 0.4 },
                          worldLand: { amp: 0.3, size: 2.2, r: 0.8 } } },
+    // v146: the DEEP's. There is no surface down here: what the simulation gives the deep is where the water was STIRRED
+    // (its `foam`, at a far gentler threshold) — the floor lights the plankton there (worlds.floor.deep.stir). Coarser,
+    // and no drips
+    deep: { perMetre: 6, maxTexels: 340, hz: 60, maxSteps: 3, c: 2.2, half: 0.3, settle: 1, sink: 0, solid: 0.9,
+            body: { dip: 0.1, foot: 1.0, hero: 0.6, rMax: 1.6, bob: 0, bobHz: 0.7 },
+            foam: { at: [0.28, 0.95], half: 1.1 },
+            events: { kill: { amp: 0.22, size: 1.3, rMax: 2.2 }, hopLand: { amp: 0.1, size: 1.1 }, land: { amp: 0.1, size: 1.1 }, slam: { amp: 0.1, size: 0.5, rMax: 6 },
+                      dash: { amp: 0.12, size: 1.6, r: 0.55 }, lobLand: { amp: 0.12, size: 1.2, r: 0.5 }, worldLand: { amp: 0.3, size: 2.2, r: 0.8 } } },
+    // v146: the RIVER's (owner: "much more realistic water and effects"). It FLOWS: the simulation is carried along the
+    // floor's long axis at `flow.speed` m/s (the stream's own pace, worlds.floor.river.flow — a test holds them equal),
+    // so what stands in the stream moves through the water; `flow.bank`: the share of the half width that is water
+    // at all (nothing on the dry bank disturbs it), `flow.post` × how hard a rock parts the stream. `drip` here is a
+    // fish rising
+    // (`c` is SLOWER than the stream: the water shoots, as it does down a shallow river — a wave cannot make upstream,
+    // so what stands in it trails a V the way a rock in a current does, where in slower water it would trail nothing)
+    river: { perMetre: 8, maxTexels: 448, hz: 60, maxSteps: 3, c: 0.95, half: 1.1, settle: 3, sink: 0.25, solid: 0.9,
+             flow: { speed: 1.6, bank: 0.74, post: 0.9 },
+             body: { dip: 0.13, foot: 1.0, hero: 0.6, rMax: 1.6, bob: 0.02, bobHz: 0.7 },
+             drip: { rate: 0.22, r: 0.28, amp: 0.05 },
+             foam: { at: [1.0, 2.4], half: 0.7 },
+             events: { kill: { amp: 0.2, size: 1.3, rMax: 2.2 }, hopLand: { amp: 0.1, size: 1.1 }, land: { amp: 0.1, size: 1.1 }, slam: { amp: 0.09, size: 0.5, rMax: 6 },
+                       dash: { amp: 0.12, size: 1.6, r: 0.55 }, lobLand: { amp: 0.12, size: 1.2, r: 0.5 }, hit: { amp: 0.03, size: 0.7, r: 0.4 },
+                       worldLand: { amp: 0.3, size: 2.2, r: 0.8 } } },
   },
   goo: {
     cap: 2400,              // drops alive at once (all of them step in ~0.6 ms in bare node: test/goo.mjs)

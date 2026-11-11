@@ -37,8 +37,8 @@ import {
   positionLocal, positionWorld, cameraPosition, modelWorldMatrixInverse, modelViewMatrix, cameraNear, cameraFar,
   viewZToPerspectiveDepth, transformNormalToView,
 } from 'three/tsl';
-import { TUNING } from '../tuning.js?v=145';
-import { gelDisplacement, gelReach, gelGlow, gelThickness, DISP } from './gel.js?v=145';
+import { TUNING } from '../tuning.js?v=146';
+import { gelDisplacement, gelReach, gelGlow, gelThickness, DISP } from './gel.js?v=146';
 
 const T = TUNING, B = T.blob;
 

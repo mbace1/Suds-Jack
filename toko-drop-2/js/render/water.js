@@ -36,7 +36,8 @@ const MAX_SOLID = 96;   // things standing on the floor
 
 export class Water {
   constructor() {
-    const opt = { type: THREE.HalfFloatType, depthBuffer: false, minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter };
+    // (the textures WRAP, for a water that flows — below; where a wall stands instead, the step clamps its own reads)
+    const opt = { type: THREE.HalfFloatType, depthBuffer: false, minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter, wrapS: THREE.RepeatWrapping, wrapT: THREE.RepeatWrapping };
     this.rt = [0, 1].map(() => {
       const rt = new THREE.RenderTarget(16, 16, { ...opt, count: 2 });
       rt.textures[0].name = 'wave'; rt.textures[1].name = 'slope';
@@ -45,9 +46,15 @@ export class Water {
     this.maskRt = new THREE.RenderTarget(16, 16, { depthBuffer: false, minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter });
     this.cur = 0; this.on = false; this.P = null; this.acc = 0; this.dirty = true; this.maskDirty = false; this.sig = 0;
     this.hx = 8; this.hz = 8; this.t = 0; this.stepped = 0; this.carry = 0;
+    // v146: a water that FLOWS (the river) is simulated in the WATER'S OWN FRAME: the texture is carried along with the
+    // stream (`drift` m along the floor's long axis, wrapping round its ends), so what stands still in the stream moves
+    // through the water — and leaves a wake — and nothing is smeared by being pushed along a grid. `driftUV` is where
+    // the floor finds a point of itself in the texture; `wrapU` which way the texture goes round
+    this.flow = null; this.drift = 0; this.alongX = false; this.driftUV = uniform(new THREE.Vector2(0, 0)); this.wrapU = uniform(new THREE.Vector2(0, 0));
     this.cam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 50);
     this.cam.position.set(0, 20, 0); this.cam.up.set(0, 0, -1); this.cam.lookAt(0, 0, 0);
     this.bodies = []; this.nb = 0;   // [x, z, r, vx, vz, id] a body, as the last sync left them
+    this.posts = [];                 // what stands on the floor (the sim's posts), as the last sync left them
     this.sources = [];               // what never stops: [{ x, z, r, rate, amp, size }] (a fall landing)
     const add = { blending: THREE.CustomBlending, blendEquation: THREE.AddEquation, blendSrc: THREE.OneFactor, blendDst: THREE.OneFactor,
       blendEquationAlpha: THREE.AddEquation, blendSrcAlpha: THREE.OneFactor, blendDstAlpha: THREE.OneFactor, transparent: true, depthTest: false, depthWrite: false };
@@ -101,7 +108,8 @@ export class Water {
     const p = uv(), tx = this.texel, c = this.waveIn.sample(p);
     // a neighbour something stands in reads as this texel's own height: the wave meets a wall and turns back
     // (past the arena's edge the texture clamps, which is the same wall)
-    const rd = (ox, oz) => { const n = this.waveIn.sample(p.add(vec2(tx.x.mul(ox), tx.y.mul(oz)))); return mix(n.r, c.r, min(n.b, 1)); };
+    const lo = tx.mul(0.5), hi = vec2(1).sub(tx.mul(0.5));
+    const rd = (ox, oz) => { const q = p.add(vec2(tx.x.mul(ox), tx.y.mul(oz))), n = this.waveIn.sample(mix(clamp(q, lo, hi), q, this.wrapU)); return mix(n.r, c.r, min(n.b, 1)); };
     const hE = rd(1, 0), hW = rd(-1, 0), hS = rd(0, 1), hN = rd(0, -1), hD = rd(1, 1).add(rd(-1, 1)).add(rd(1, -1)).add(rd(-1, -1));
     // nine points, so a ring is round (five draw it a little square: the grid's own axes run faster)
     const lap = hE.add(hW).add(hS).add(hN).mul(4).add(hD).sub(c.r.mul(20)).div(6);
@@ -144,6 +152,8 @@ export class Water {
     this.maskRt.setSize(w, h);
     this.texel.value.set(1 / w, 1 / h); this.px = 2 * hx / w;
     const U = this.U, dt = 1 / P.hz;
+    this.flow = P.flow ?? null; this.alongX = hx >= hz; this.drift = 0; this.driftUV.value.set(0, 0);
+    this.wrapU.value.set(this.flow && this.alongX ? 1 : 0, this.flow && !this.alongX ? 1 : 0);
     U.dx.value = this.px;
     U.K.value = Math.min(1.6, 4 * (P.c * dt / this.px) ** 2);
     U.damp.value = Math.pow(0.5, dt / P.half); U.level.value = Math.pow(0.5, dt / P.settle); U.sink.value = P.sink;
@@ -151,7 +161,7 @@ export class Water {
     this.clear();
   }
 
-  clear() { this.dirty = true; this.ns = 0; this.acc = 0; this.sig = NaN; this.nb = 0; }
+  clear() { this.dirty = true; this.ns = 0; this.acc = 0; this.sig = NaN; this.nb = 0; this.posts = []; }
 
   // the bodies in the water, as this frame draws them: the hero and every gel that is there
   setBodies(w, alpha, simDt) {
@@ -166,24 +176,48 @@ export class Water {
       put(g.px + (g.x - g.px) * alpha, g.pz + (g.z - g.pz) * alpha, g.r, (g.x - g.px) / simDt, (g.z - g.pz) / simDt, g.id);
     }
     this.nb = k;
-    // what stands on the floor, when it has changed (a post that drifts changes every frame)
-    const posts = w.posts ?? [];
-    let sig = posts.length;
+    // what stands on the floor, when it has changed (a post that drifts changes every frame — and in a flowing water
+    // every post does: the mask is drawn in the water's frame)
+    const posts = this.posts = w.posts ?? [];
+    let sig = posts.length + this.drift * 31.7;
     for (const q of posts) sig = sig * 1.37 + q.x * 7.1 + q.z * 13.3 + q.r;
     if (sig !== this.sig) {
       this.sig = sig;
-      const n = Math.min(MAX_SOLID, posts.length);
-      for (let i = 0; i < n; i++) { const q = posts[i]; this.mA.setXYZW(i, q.x, q.z, q.r * (q.pit ? 1 : this.P.solid), q.pit ? 1 : 0); }
+      let n = 0;
+      for (const q of posts) {
+        if (n >= MAX_SOLID) break;
+        let x = q.x, z = q.z; const r = q.r * (q.pit ? 1 : this.P.solid);
+        if (this.flow) { if (this.alongX) x = this._along(x); else z = this._along(z); }
+        this.mA.setXYZW(n++, x, z, r, q.pit ? 1 : 0);
+        if (this.flow && n < MAX_SOLID) {   // across the seam: once more at the other end
+          const h = this.alongX ? this.hx : this.hz, a = this.alongX ? x : z, sh = a + r > h ? -2 * h : a - r < -h ? 2 * h : 0;
+          if (sh) this.mA.setXYZW(n++, this.alongX ? x + sh : x, this.alongX ? z : z + sh, r, q.pit ? 1 : 0);
+        }
+      }
       this.solids.geometry.instanceCount = n; this.mA.clearUpdateRanges(); this.mA.addUpdateRange(0, Math.max(1, n) * 4); this.mA.needsUpdate = true;
       this.maskDirty = true;
     }
   }
 
+  // a point of the floor, in the water's frame (a flowing water's has drifted `drift` m along the long axis, and wraps)
+  _along(v) { const h = this.alongX ? this.hx : this.hz, L = 2 * h; return ((((v - this.drift + h) % L) + L) % L) - h; }
+  // a stamp at a point of the floor: put in the water's frame, and twice where it lies across the texture's seam
+  _stamp(x, z, R, amp, dx, dz, dip) {
+    if (this.flow) { if (this.alongX) x = this._along(x); else z = this._along(z); }
+    const put = (px, pz) => { if (this.ns >= CAP) return; const i = this.ns++; this.wA.setXYZW(i, px, pz, R, amp); this.wB.setXYZ(i, dx, dz, dip); };
+    put(x, z);
+    if (this.flow) {
+      const h = this.alongX ? this.hx : this.hz, a = this.alongX ? x : z, reach = R + Math.abs(this.alongX ? dx : dz);
+      if (a + reach > h) this.alongX ? put(x - 2 * h, z) : put(x, z - 2 * h); else if (a - reach < -h) this.alongX ? put(x + 2 * h, z) : put(x, z + 2 * h);
+    }
+  }
+  // is a point of the floor in the water at all (a river has banks: `flow.bank` of the half width from its middle)
+  _wet(x, z) { return !this.flow?.bank || Math.abs(this.alongX ? z : x) < this.flow.bank * (this.alongX ? this.hz : this.hx); }
+
   // a dent `amp` m deep and `r` m round, and its rim
   splash(x, z, r, amp) {
-    if (!this.on || this.ns >= CAP) return;
-    const i = this.ns++;
-    this.wA.setXYZW(i, x, z, Math.max(r, this.px * 2.5), -amp); this.wB.setXYZ(i, 0, 0, 0);
+    if (!this.on || !this._wet(x, z)) return;
+    this._stamp(x, z, Math.max(r, this.px * 2.5), -amp, 0, 0, 0);
   }
 
   // the frame clock: the bodies' way since the last frame goes in, and whatever never stops
@@ -191,13 +225,22 @@ export class Water {
     if (!this.on || dt <= 0) return;
     const P = this.P, Bd = P.body, t0 = this.t, t1 = (this.t += dt);
     this.acc += dt;
-    for (let i = 0; i < this.nb && this.ns < CAP; i++) {
-      const [x, z, r, vx, vz, id] = this.bodies[i], R = Math.max(r * Bd.foot, this.px * 2.5), w = Bd.bobHz * 6.283 * (0.8 + 0.4 * ((id * 0.618) % 1));
-      // (a step no longer than the body is wide: a dash's dipole is not torn into two bumps)
-      const l = Math.hypot(vx, vz) * dt, cut = l > R * 1.5 ? (R * 1.5) / l : 1, j = this.ns++;
-      this.wA.setXYZW(j, x, z, R, Bd.bob * r * (Math.sin(w * t1 + id) - Math.sin(w * t0 + id)));
-      this.wB.setXYZ(j, vx * dt * cut, vz * dt * cut, Bd.dip * Math.min(r, Bd.rMax));
+    // a flowing water: the texture is carried on, and everything below is put down in ITS frame, moving through it
+    const Fl = this.flow, ux = Fl && this.alongX ? Fl.speed : 0, uz = Fl && !this.alongX ? Fl.speed : 0;
+    if (Fl) {
+      const L = 2 * (this.alongX ? this.hx : this.hz);
+      this.drift = (this.drift + Fl.speed * dt) % L;
+      this.driftUV.value.set(this.alongX ? this.drift / L : 0, this.alongX ? 0 : this.drift / L);
     }
+    for (let i = 0; i < this.nb && this.ns < CAP; i++) {
+      const [x, z, r, bx, bz, id] = this.bodies[i], vx = bx - ux, vz = bz - uz, R = Math.max(r * Bd.foot, this.px * 2.5), w = Bd.bobHz * 6.283 * (0.8 + 0.4 * ((id * 0.618) % 1));
+      if (!this._wet(x, z)) continue;
+      // (a step no longer than the body is wide: a dash's dipole is not torn into two bumps)
+      const l = Math.hypot(vx, vz) * dt, cut = l > R * 1.5 ? (R * 1.5) / l : 1;
+      this._stamp(x, z, R, Bd.bob * r * (Math.sin(w * t1 + id) - Math.sin(w * t0 + id)), vx * dt * cut, vz * dt * cut, Bd.dip * Math.min(r, Bd.rMax));
+    }
+    // and what STANDS in a flowing water moves through it too: each post parts the stream (a pit takes none of it)
+    if (Fl) for (const q of this.posts) if (!q.pit && this._wet(q.x, q.z)) this._stamp(q.x, q.z, Math.max(q.r * P.solid, this.px * 2.5), 0, -ux * dt, -uz * dt, Bd.dip * Math.min(q.r, Bd.rMax) * (Fl.post ?? 1));
     // drips from the vault: `rate` a second over 100 m² of floor
     const D = P.drip;
     if (D) {
@@ -266,6 +309,7 @@ export class Water {
   // a look check: the surface over a square of the floor, read back — its mean |height| and the biggest
   async probe(renderer, x = 0, z = 0, n = 64) {
     const W = this.rt[0].width, H = this.rt[0].height, nx = Math.min(n, W, H);
+    if (this.flow) { if (this.alongX) x = this._along(x); else z = this._along(z); }
     const cx = Math.round((x / (2 * this.hx) + 0.5) * W), cy = Math.round((z / (2 * this.hz) + 0.5) * H);
     const x0 = Math.max(0, Math.min(W - nx, cx - nx / 2));
     let y0 = Math.max(0, Math.min(H - nx, cy - nx / 2));
