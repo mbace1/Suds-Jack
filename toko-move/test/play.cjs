@@ -234,9 +234,10 @@ server.listen(0, '127.0.0.1', async () => {
       await ctx.close();
     }
     // ── the old trams from inside (v3.3): seed 1197's EASY rides the museum tram, then an Nr II
+    // (&written: the shift as v3.21 dealt it, so the trams it rides are the ones named)
     {
       const ctx = await browser.newContext(PHONE), page = await ctx.newPage(), errs = watch(page);
-      await page.goto(`${base}/toko-move/?run=easy&seed=1197`, { waitUntil: 'load' }); await ready(page);
+      await page.goto(`${base}/toko-move/?run=easy&seed=1197&written`, { waitUntil: 'load' }); await ready(page);
       await page.tap('#play'); await page.waitForSelector('#v3panel .eventOpt', { timeout: 15000 });
       const seen = await playOut(page, { maxSteps: 260 });
       // the in-car sign names the model too, but a hurried tap skips it in a frame; the tram at the stop stays
@@ -559,7 +560,7 @@ server.listen(0, '127.0.0.1', async () => {
       const seen = await playOut(page, { maxSteps: 400 }), made = seen.cards.filter(c => c.cardId.startsWith('m:'));
       ok(`${lang}: a shift deals cards made from modules (${made.map(c => c.cardId).join(', ') || 'none'})`, made.length >= 1 && seen.end);
       ok(`${lang}: each with three buttons on the screen`, made.every(c => c.buttons.length === 3 && c.buttons.every(b => b.inside)));
-      if (lang === 'fi') ok(`and its line is Finnish (${made[0]?.line.slice(0, 60)})`, made.every(c => !/\b(the|is|with|has|your)\b/.test(c.line) && /[äö]/.test(c.line)));
+      if (lang === 'fi') ok(`and its line is Finnish (${made[0]?.line.slice(0, 60)})`, made.every(c => c.line.length > 20 && !/\b(the|is|with|has|your|and|of|to)\b/i.test(c.line)));
       ok(`no page or network errors (made cards, ${lang})`, !errs.length, errs.slice(0, 3).join(' | '));
       await ctx.close();
     }

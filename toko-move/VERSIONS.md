@@ -36,6 +36,10 @@ further: every part added multiplies the cards the modules make.
   - `test/journey.mjs`: the regulars check asks that a standing rose, not
     that it is exactly 4 (it reads the shift's end, and a seed may visit the
     same regular twice).
+  - `test/play.cjs`: the museum-tram test that names EASY 1197's rides plays
+    it `&written`; the Finnish check on a made card's line looks for English
+    words left in it, rather than for an ä or ö (*"Tikkaita kantava mies
+    katsoo istumapaikkaasi hyvin toiveikkaasti"* has neither).
 
 ## v3.24 — 2026-11-09
 
