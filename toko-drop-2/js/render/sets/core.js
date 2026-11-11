@@ -8,8 +8,8 @@
 // side. Every number TUNING.scenery.core
 import * as THREE from 'three/webgpu';
 import { Fn, float, vec2, vec3, sin, abs, max, mix, smoothstep, length, clamp, fract, fwidth, atan, uv, instanceIndex, positionWorld, positionLocal, positionGeometry, normalGeometry } from 'three/tsl';
-import { GEL_TIME } from '../gel.js?v=142';
-import { noise, seeded, phase, put, stations, groundPlane } from '../kit.js?v=142';
+import { GEL_TIME } from '../gel.js?v=143';
+import { noise, seeded, phase, put, stations, groundPlane } from '../kit.js?v=143';
 
 const v3 = (a) => vec3(...a);
 const hex = (h) => vec3(...new THREE.Color(h).toArray());

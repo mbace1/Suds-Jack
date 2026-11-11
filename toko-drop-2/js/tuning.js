@@ -7,10 +7,10 @@
 // things that work"). The arena is 1.x's, so every 1.x number ports as it is
 // instead of through a rescale. Axes: x across the screen (right +), y up,
 // z toward the bottom of the screen. The arena is centred on the origin.
-import { SPECIES } from './tuning/species/index.js?v=142';
-import WAVES from './tuning/waves.js?v=142';
-import PICKUPS from './tuning/pickups.js?v=142';
-import MUSIC from './tuning/music.js?v=142';
+import { SPECIES } from './tuning/species/index.js?v=143';
+import WAVES from './tuning/waves.js?v=143';
+import PICKUPS from './tuning/pickups.js?v=143';
+import MUSIC from './tuning/music.js?v=143';
 
 export const TUNING = {
   render: {
@@ -297,12 +297,15 @@ export const TUNING = {
       // elsewhere), and no column stumps in the pool (the picture's columns stand at the back): `plinthK` 0
       cistern: { slab: 2.4, grout: 0.04, stone: [0.075, 0.11, 0.115], water: [0.012, 0.085, 0.1], depth: 0.42, caustic: [0.55, 0.95, 1.0],
                  net: { scale: 0.27, sharp: 13, gain: 0.2, inPool: 0.3, speed: 0.22 }, plinthK: 0,
-                 // v141: the pool's floor is laid, not ruled (floor.js cistern). `long`: the share of pairs along a
+                 // v140: the pool's floor is laid, not ruled (floor.js cistern). `long`: the share of pairs along a
                  // row that are one long slab; `small`: the share of slabs that are four small ones; a slab's `tone`,
                  // between `cool` and `warm` (`greens` of them toward `green`), `tilt` out of level, its edges worn
                  // over `bevel` m and lit `relief` from `sun`; `sunk`: the share lying `sunkDepth` deeper; `silt` in
                  // the joints where a noise passes `siltAt`; `border`: a band of `tile` m tiles `w` m wide, `in` m in
                  // from the pool's edge, `light` and `dark`, `gone` of them missing
+                 // v143: rings from the hero in the pool's water (floor.js cistern `wake`): `gap` m apart, `speed` m/s,
+                 // `width` m thin, gone by `reach` m, `gain` bright
+                 wake: { gap: 1.1, speed: 1.5, width: 0.028, reach: 4.2, gain: 0.26 },
                  vary: { long: 0.24, small: 0.14, tone: 0.5, cool: [0.9, 1.0, 1.1], warm: [1.14, 1.05, 0.9], green: [0.85, 1.12, 0.95], greens: 0.16,
                          tilt: 0.4, bevel: 0.14, relief: 0.32, sun: [-0.5, -0.86], sunk: 0.07, sunkDepth: 0.32,
                          silt: [0.2, 0.22, 0.2], siltAt: 0.58, siltK: 0.7,
@@ -318,7 +321,7 @@ export const TUNING = {
       // frame, bars and frame lit by the fire under them, its `core` white-hot in the middle — and fire in the seams
       // along the edge (`veins`: within `reach` m, `width` of a noise's contour at `scale`, `haze` the glow at the foot)
       boiler: { plate: [3.2, 2.1], seam: 0.035, steel: [0.085, 0.07, 0.06], rivet: [0.2, 0.15, 0.11], grate: 7.2, grateW: [0.85, 0.65],
-                // v142: no two plates alike (floor.js boiler). A plate's `tone`, between `blued`, `bare` and `rusty`;
+                // v140: no two plates alike (floor.js boiler). A plate's `tone`, between `blued`, `bare` and `rusty`;
                 // a third are tread plate (lozenges on a `tread` m lattice, `treadK` bright), a third rolled
                 // (`rolledK` streaks), the rest bare and scraped (`scrapeK`); each stands proud of the deck (`bevel` m,
                 // `relief`, lit from `sun`); `patch`: the share with a patch welded on; `rust` blooms `rustK`; and
@@ -335,10 +338,13 @@ export const TUNING = {
       // v95: in DAYLIGHT, to the owner's approved arena picture (the concept handoff): clear turquoise over sand and
       // pebbles, deep teal down the middle, foam at the banks; `flecks` the share of v78's white dashes kept (they
       // fought the bullets, and the picture has none)
-      // v143: FISH in the river's deep middle (floor.js river `fish`): cells `cell` m (along, across), one in `keep`
+      // v140: FISH in the river's deep middle (floor.js river `fish`): cells `cell` m (along, across), one in `keep`
       // holds a fish `len` m long, working its tail `beat` a second, making `swim` m/s upstream; the water `dark`
       // over it; gone within `shy`[0] m of the hero, all there by `shy`[1]
-      river: { fish: { cell: [3.6, 1.5], keep: 0.34, len: [0.55, 0.95], beat: 5.5, swim: 0.35, dark: [0.35, 0.5, 0.52], k: 0.8, shy: [1.6, 3.6] },
+      // v143: the hero's WAKE in the river (floor.js river `wake`): the arms open `open` across per m downstream from
+      // `r` m off its middle, `w` m wide and `widen`ing, gone by `reach` m; a bow of foam upstream; `k` strong
+      river: { wake: { open: 0.36, r: 0.55, w: 0.11, widen: 0.1, reach: 2.4, k: 0.6 },
+               fish: { cell: [3.6, 1.5], keep: 0.34, len: [0.55, 0.95], beat: 5.5, swim: 0.35, dark: [0.35, 0.5, 0.52], k: 0.8, shy: [1.6, 3.6] },
                water: [0.03, 0.36, 0.36], waterHi: [0.36, 0.8, 0.74], flow: 1.6, bank: 0.78, pebble: [0.34, 0.29, 0.2], foam: [0.85, 0.95, 0.95], sky: [0.1, 0.16, 0.08], flecks: 0,
                // v78: a river that RUNS — streaks `stretch`:1 along the flow at `scale`, lifting the water
                // `lift` toward waterHi; `deep` down the middle (`deepK` of the way), the bed showing
@@ -355,7 +361,7 @@ export const TUNING = {
       // v95: in DAYLIGHT, to the approved arena picture: pale blue ice with white cracks and frost — kept mid blue, not
       // white, so the white hero and the pale gels still stand out on it
       ice: { base: [0.26, 0.46, 0.66], deep: [0.11, 0.26, 0.48], crack: [0.92, 0.97, 1.0], lines: 0.45, scale: 0.35, frost: [0.85, 0.92, 1.0],
-             // v143: SNOW drifted over the pale ice (floor.js ice `snow`): it lies where the sheet's broad field passes
+             // v140: SNOW drifted over the pale ice (floor.js ice `snow`): it lies where the sheet's broad field passes
              // `at` (`soft` to full), broken at `scale`, `k` thick in `color`, ridged `ridge` across the `wind` every 1/`ripple` m
              snow: { at: 0.56, soft: 0.05, scale: 0.4, k: 0.55, color: [0.74, 0.82, 0.92], wind: [0.8, 0.6], ripple: 5, ridge: 0.07, scallop: 0.012 },
              ledgeShadow: { depth: 0.35, soft: 0.25, cotMax: 2.2 },   // v100: the ledge's sun shadow on the ice (scenery.ice.ledge)
@@ -371,7 +377,7 @@ export const TUNING = {
       // v101 (the approved picture's seabed): the `bed` — silt in lumps `cell` m across from `lo` to `hi`, `swept`
       // brighter in a band `band` of the half width down the middle, `cold` within `coldReach` m of the edge; the
       // specks in POOLS round the deep's lights (`poolR` × each light's r, `poolGlow`, `strays` elsewhere), `green`
-      // v143: the seabed's FINDS (floor.js deep `finds`): the silt's ripples `relief` lit and dark; in cells `cell` m
+      // v140: the seabed's FINDS (floor.js deep `finds`): the silt's ripples `relief` lit and dark; in cells `cell` m
       // one in `keep` holds a starfish (`stars` of them, `star` m across the arms, `starLo`…`starHi`) or a scallop's
       // shell (`shell` m, `shellCol`)
       deep: { finds: { cell: 3.1, keep: 0.3, stars: 0.5, relief: 0.1, star: 0.34, starLo: [0.2, 0.05, 0.04], starHi: [0.3, 0.12, 0.05], shell: 0.2, shellCol: [0.16, 0.15, 0.14], k: 0.9 },
@@ -382,7 +388,7 @@ export const TUNING = {
       // tile, glowing `lineGlow`), two disc `pads` (fractions of the half sizes) `padR` m, glowing `padGlow`, rings
       // every `ringEvery` m washing out to `reach` m at `ringSpeed`, lighting the lines (`washGlow`) and the floor
       core: { base: [0.004, 0.0, 0.008], line: [0.8, 0.1, 0.7], pulse: [0.3, 0.9, 1.0], cell: 1.6, ringEvery: 2.4, ringSpeed: 4.5, sky: [0.006, 0.002, 0.01],
-              // v143: the deck is a machine's (floor.js core `vary`): `vents` of the tiles are slotted (`slots` to a tile,
+              // v140: the deck is a machine's (floor.js core `vary`): `vents` of the tiles are slotted (`slots` to a tile,
               // the core's light `ventGlow` under them), `lamps` of them carry a status `lamp`; and `packet`s of light
               // run along the grid's lines — one every `every` tiles, `len` of that long, `speed` tiles a second, on
               // `lanes` of the lines

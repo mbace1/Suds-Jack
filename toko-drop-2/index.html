@@ -280,7 +280,7 @@
   <div id="card" hidden><div class="t"></div><div class="s"></div></div>
   <div id="vignette" aria-hidden="true"></div>
   <div id="menu" class="menu" hidden></div>
-  <div id="ver">2.0 · v142<span id="backend"></span></div>
+  <div id="ver">2.0 · v143<span id="backend"></span></div>
   <pre id="fault" hidden></pre>
   <script>
     // A failure must be visible on the phone: there is no console there.
@@ -396,10 +396,10 @@
     // checkout have no hub beside them, and a request for it there would only 404
     if (/\/toko-drop-2\//.test(location.pathname)) {
       const shell = document.createElement('script');
-      shell.type = 'module'; shell.src = new URL('../hub/shell.js?v=243', location.href).href;
+      shell.type = 'module'; shell.src = new URL('../hub/shell.js?v=244', location.href).href;
       document.head.appendChild(shell);
     }
   </script>
-  <script type="module" src="js/main.js?v=142"></script>
+  <script type="module" src="js/main.js?v=143"></script>
 </body>
 </html>

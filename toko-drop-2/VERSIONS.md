@@ -19,6 +19,20 @@
     Never `--no-verify`.
 -->
 
+## v143 — 2026-11-11
+**The water answers the hero: rings go out from it in the cistern, and the river breaks round it and trails a wake**
+- WHY (owner, 2026-11-10: "we can go way beyond with geometry and art assets"): the driveway's leaves and puddles answer the fight (v138), the ice's chips do (v141). The two floors that are water did nothing when you stood in them.
+- THE CISTERN: you stand in a hand's depth of water, and rings go out from where you stand — thin and bright as the drips' from the vault, a metre apart, gone within four metres. They move with you.
+- THE RIVER: the stream breaks round you. A crescent of foam stands on your upstream side, and behind you a wake opens downstream: two arms of foam, torn by the same lace the banks' foam is torn by (ruled white lines read as a laser, not a wake), gone within two and a half metres. On the water only: none where you stand on the dry bank.
+- Both are a few lines of arithmetic on the hero's place, which the floor already knew (the pool of light it carries); no new noise is read (the wake borrows the banks' foam's).
+- Looks only: nothing in the sim knows of either, and no shot or body is drawn differently for them. They are kept faint on purpose: a texture under the fight.
+- Also: seven comments in v140's floor code named the draft numbers they were written under (v141 to v143) and now say v140, which is what shipped them.
+- Checked by render, the hero alone and in a fight, both orientations. test/view.mjs holds their sizes (2 checks).
+- Cache tokens `?v=142` → `?v=143`; HUD label → `2.0 · v143`
+- Cache tokens `?v=142` → `?v=143`; HUD label → `2.0 · v143`
+
+---
+
 ## v142 — 2026-11-11
 **The campaign's rooms wear the new floors properly: leaves, chips and puddles to the room's own size, and a shaped room's floor cut to its shape**
 - WHY: v138 to v141 changed the floor of every world, and the campaign's 36 rooms wear those worlds' looks. All 36 were rendered on a phone-shaped screen at v141 and read. Two faults, both from rooms being smaller than the arcade's floors and not always rectangles.

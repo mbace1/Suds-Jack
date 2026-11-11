@@ -24,11 +24,11 @@
 // `swirlAt`, out to `swirlR`, and opens a hole of `hole` m in the middle).
 import * as THREE from 'three/webgpu';
 import { Fn, If, uv, uniform, float, abs, fract, min, max, sin, cos, atan, length, smoothstep, step, mix, fwidth, texture, clamp, vec2, vec3, pow, floor as tfloor, round, select, mod, dFdx, dFdy, exp, normalize, dot, cameraPosition, positionWorld, vec4 } from 'three/tsl';
-import { pickStyle, grainAt } from './style.js?v=142';
-import { SUN_AT } from './sun.js?v=142';
-import { GEL_TIME } from './gel.js?v=142';
-import { noise, grate, cells, sewerSpots, treeShade } from './scenery.js?v=142';
-import { lilyPads, DRIFT, hash } from './kit.js?v=142';
+import { pickStyle, grainAt } from './style.js?v=143';
+import { SUN_AT } from './sun.js?v=143';
+import { GEL_TIME } from './gel.js?v=143';
+import { noise, grate, cells, sewerSpots, treeShade } from './scenery.js?v=143';
+import { lilyPads, DRIFT, hash } from './kit.js?v=143';
 
 const _white = new THREE.Color(0xffffff);
 // the floors whose set has a ground of its own under them: a room that is not a rectangle is CUT to its shape there
@@ -571,7 +571,7 @@ export function buildFloor(T, hx, hz, light, { style = 'grid', bounds: hasBounds
   // light off the surface wandering over them, the bases of the columns
   const cistern = (p, w) => {
     const C = W.cistern, Vy = C.vary;
-    // v141 (owner, 2026-11-10: "look at all other worlds ... we can do a lot better than the concept art"): the pool's
+    // v140 (owner, 2026-11-10: "look at all other worlds ... we can do a lot better than the concept art"): the pool's
     // floor is LAID, not ruled — as the sewer's (v140). Of each pair of slabs along a row some are ONE long slab
     // (`long`), and some slabs are four small ones (`small`); every slab has its own tone and tint and lies a little
     // out of level; its edges are worn round and catch the light (softer than the sewer's: this is under water);
@@ -650,7 +650,17 @@ export function buildFloor(T, hx, hz, light, { style = 'grid', bounds: hasBounds
       .add(float(1).sub(smoothstep(float(D.width).sub(daa), float(D.width).add(daa), abs(dd.sub(dk.mul(D.reach * 0.55))))).mul(0.6))
       .mul(float(1).sub(dk).pow(2));
     col = col.add(v3(C.caustic).mul(drip.mul(D.gain)));
-    return { col, mask: min(caustic, 1).mul(0.6).add(grout.mul(0.3)).add(rim.mul(C.plinthK ?? 1)).add(drip), lineCol: v3(C.caustic), wet: float(0.8) };
+    // v143: the water ANSWERS THE HERO, as the driveway's puddles do (v138): it stands in a hand's depth of water, and
+    // rings go out from where it stands — thin and bright as a drip's, `gap` m apart, `speed` m/s, gone by `reach` m
+    let wake = float(0);
+    const Wk = C.wake;
+    if (Wk) {
+      const dp = length(w.sub(toWorld(player))), waa = max(fwidth(dp), 1e-4);
+      const off = abs(fract(dp.div(Wk.gap).sub(t.mul(Wk.speed / Wk.gap))).sub(0.5)).mul(Wk.gap);
+      wake = float(1).sub(smoothstep(float(Wk.width).sub(waa), float(Wk.width).add(waa), off)).mul(float(1).sub(smoothstep(Wk.reach * 0.35, Wk.reach, dp))).mul(smoothstep(0.4, 0.7, dp));
+      col = col.add(v3(C.caustic).mul(wake.mul(Wk.gain)));
+    }
+    return { col, mask: min(caustic, 1).mul(0.6).add(grout.mul(0.3)).add(rim.mul(C.plinthK ?? 1)).add(drip).add(wake.mul(0.5)), lineCol: v3(C.caustic), wet: float(0.8) };
   };
   // THE BOILER ROOM: riveted steel plates, scorched, and grates the fire glows through
   const boiler = (p, w) => {
@@ -664,7 +674,7 @@ export function buildFloor(T, hx, hz, light, { style = 'grid', bounds: hasBounds
     const Vy = B.vary, pid = tfloor(u), soot = noise(w.mul(0.21).add(3.3));
     let col;
     if (Vy) {
-      // v142 (owner, 2026-11-10: "look at all other worlds ... we can do a lot better than the concept art"): NO TWO
+      // v140 (owner, 2026-11-10: "look at all other worlds ... we can do a lot better than the concept art"): NO TWO
       // PLATES ALIKE. Each has its own tone and tint (blued, bare, rusting); a third are TREAD plate (rows of raised
       // lozenges, each catching the light), a third were ROLLED and show it (streaks down their length), and the rest
       // are bare and SCRAPED where things were dragged over them; a plate stands a hair proud of the deck, so its
@@ -721,7 +731,7 @@ export function buildFloor(T, hx, hz, light, { style = 'grid', bounds: hasBounds
     const fireCol = mix(v3(B.glow), v3(G.core), heat.mul(heat)).mul(pulse.mul(0.5).add(0.5)).mul(heat.mul(0.6).add(0.55));
     const fire = hole.mul(pulse);
     const frame = inG.mul(float(1).sub(inner)), bars = inner.mul(float(1).sub(hole));
-    // v142: the steel round a grate, tempered: out from its frame over `temper.reach` m the colours a fire leaves
+    // v140: the steel round a grate, tempered: out from its frame over `temper.reach` m the colours a fire leaves
     if (B.vary?.temper) {
       const Tm = B.vary.temper, k = clamp(gd.div(Tm.reach), 0, 1), on = step(0, gd).mul(float(1).sub(k)).mul(Tm.k);
       const tc2 = mix(mix(v3(Tm.straw), v3(Tm.bronze), smoothstep(0.0, 0.3, k)), mix(v3(Tm.purple), v3(Tm.blue), smoothstep(0.55, 0.9, k)), smoothstep(0.25, 0.6, k));
@@ -778,7 +788,7 @@ export function buildFloor(T, hx, hz, light, { style = 'grid', bounds: hasBounds
     let col = mix(v3(R.water), v3(R.waterHi), smoothstep(0.35, 0.8, st).mul(U.lift).mul(depth.mul(0.6).add(0.4)));
     col = mix(col, v3(U.deep), depth.mul(U.deepK));
     col = mix(mix(bed, col, U.shallowTint), col, depth);
-    // v143 (owner, 2026-11-10: "look at all other worlds ... we can do a lot better than the concept art"): FISH. Dark
+    // v140 (owner, 2026-11-10: "look at all other worlds ... we can do a lot better than the concept art"): FISH. Dark
     // shapes holding against the current in the deep middle of the river, a loose school here and there, each
     // working its tail; they make upstream slowly, and scatter from where the hero stands. Under the water: they
     // darken it, they are not drawn on it. One hash a fish
@@ -807,9 +817,21 @@ export function buildFloor(T, hx, hz, light, { style = 'grid', bounds: hasBounds
     const near = smoothstep(half * 0.42, half * 0.52, ac).mul(smoothstep(bankAt, bankAt.sub(half * 0.06), ac));
     col = mix(col, mix(v3(Pd.lo), v3(Pd.hi), lp.y), lp.x.mul(near)).add(v3(Pd.flower).mul(lp.z.mul(near)));
     const bank = smoothstep(bankAt, bankAt.add(half * 0.08), ac);
-    const foam = float(1).sub(smoothstep(0, 0.45, abs(ac.sub(bankAt)))).mul(smoothstep(0.4, 0.7, noise(vec2(flow.mul(1.5), c.mul(4)))));
+    const fnz = noise(vec2(flow.mul(1.5), c.mul(4))), foam = float(1).sub(smoothstep(0, 0.45, abs(ac.sub(bankAt)))).mul(smoothstep(0.4, 0.7, fnz));
     const flecks = (R.flecks ?? 1) > 0 ? smoothstep(0.86, 0.93, noise(vec2(flow.mul(2.2), c.mul(1.4)).add(4.4))).mul(depth) : float(0);   // v99: none (the glitter is the sparkle now)
     col = mix(col, rock.mul(B?.dry ?? 1), bank).add(v3(R.foam).mul(foam.mul(R.foamK ?? 0.4).add(flecks.mul(0.5 * (R.flecks ?? 1)))));
+    // v143: the stream BREAKS ROUND THE HERO: a crescent of foam on its upstream side, and behind it a wake — two
+    // arms opening downstream at `open` (across per m along), torn by the current's own streaks, gone by `reach` m.
+    // On the water only (none on the dry bank)
+    const Wr = R.wake;
+    if (Wr) {
+      const hw = toWorld(player), ar = a.sub(along(hw)), cr = c.sub(across(hw)), dr = length(vec2(ar, cr));
+      const spread = abs(cr).sub(ar.mul(Wr.open).add(Wr.r)), wd = ar.mul(Wr.widen).add(Wr.w);
+      // (torn by the same lace the banks' foam is: a ruled line of white is a laser, not a wake)
+      const arm = exp(spread.mul(spread).div(wd.mul(wd)).negate()).mul(step(0, ar)).mul(exp(ar.div(-Wr.reach))).mul(smoothstep(0.28, 0.62, fnz).mul(0.85).add(0.15));
+      const bow = exp(dr.sub(Wr.r * 1.25).mul(dr.sub(Wr.r * 1.25)).div(Wr.w * Wr.w * 2).negate()).mul(smoothstep(0.15, 0.75, ar.negate().div(max(dr, 1e-3))));
+      col = mix(col, v3(R.foam), clamp(arm.add(bow.mul(0.8)), 0, 1).mul(Wr.k).mul(float(1).sub(bank)));
+    }
     // v99: the ripples' SLOPE, for the sun's glitter (worldLight): small waves going with the current, two
     // layers; their slope in world x and z, calmer down the deep middle and none on the dry bank
     const Gl = R.glitter;
@@ -849,7 +871,7 @@ export function buildFloor(T, hx, hz, light, { style = 'grid', bounds: hasBounds
     // v72: frost creeping in from the floor's edge, and air caught in the ice, both faint
     const e = min(float(hx).sub(abs(w.x)), float(hz).sub(abs(w.y))), n53 = noise(w.mul(5.3));
     col = col.add(v3(I.frost).mul(smoothstep(I.edgeFrost, 0, e).mul(n53.mul(0.6).add(0.4)).mul(I.edgeFrostGain)));
-    // v143: SNOW has drifted over the sheet. Where the ice is pale (the same broad field that makes it deep or
+    // v140: SNOW has drifted over the sheet. Where the ice is pale (the same broad field that makes it deep or
     // shallow) a dusting lies over it — the cracks under it gone — ridged across the wind in fine ripples, its edge
     // scalloped; and the dark windows between are swept clear. The sheet has places now: drift and clear ice
     const Sn = I.snow;
@@ -905,7 +927,7 @@ export function buildFloor(T, hx, hz, light, { style = 'grid', bounds: hasBounds
       }
       col = col.add(v3(D.glow2).mul(pool.mul(pool).mul(S.poolGlow)));
     }
-    // v143: THINGS LIE ON THE SEABED. The ripples in the silt have a lit side and a dark one; and here and there, in
+    // v140: THINGS LIE ON THE SEABED. The ripples in the silt have a lit side and a dark one; and here and there, in
     // its own place and at its own angle, a starfish or a scallop's shell (`finds`: one cell in `keep` has one,
     // `stars` of those a starfish). A cell with nothing in it costs one hash
     const Fd = D.finds;
@@ -957,7 +979,7 @@ export function buildFloor(T, hx, hz, light, { style = 'grid', bounds: hasBounds
         lit = max(lit, float(1).sub(smoothstep(Tl.padR, Tl.reach * 0.6, d)));   // the pads light the floor round them
       }
       col = col.add(v3(Tl.glow).mul(lit.mul(lit).mul(Tl.halo)));
-      // v143: the deck is a MACHINE's. Some tiles are VENTS (a block of slots, the core's light faint under them),
+      // v140: the deck is a MACHINE's. Some tiles are VENTS (a block of slots, the core's light faint under them),
       // some carry a status LAMP that blinks on its own beat, and light RUNS along the grid's lines — packets, each
       // lane at its own speed, most lanes quiet. One hash a tile and one a lane
       let packet = float(0);
