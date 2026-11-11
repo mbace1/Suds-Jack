@@ -152,6 +152,36 @@
     body.in-run #clockLabel:not(:empty) { display: block; }
     #goalCard { position: absolute; z-index: 6; pointer-events: none; left: 50%; top: max(calc(0.8rem + 86px), 24%); transform: translateX(-50%); max-width: calc(100vw - 2rem); padding: 0.35rem 0.6rem; font-size: clamp(0.62rem, 2.6vw, 1.1rem); font-weight: 800; letter-spacing: 0.08em; text-align: center; white-space: nowrap; width: max-content; overflow: hidden; text-overflow: ellipsis; color: #e8dcc8; background: rgba(0,0,0,0.45); border-top: 1px solid #d8412f; border-bottom: 1px solid #d8412f; text-shadow: 0 1px 4px #000; opacity: 0; visibility: hidden; transition: opacity 0.3s ease, visibility 0s linear 0.3s; }
     #goalCard.show { opacity: 1; visibility: visible; transition: opacity 0.15s ease; }
+    /* v64: how far through the run you are, along the very top edge (a tick
+       per act), and at the foot of the frame the objective in words and, for
+       the first seconds, what the hands do on the device in hand. */
+    #runBar { position: absolute; z-index: 5; pointer-events: none; left: 0; right: 0; top: 0; height: 5px; background: rgba(255,255,255,0.09); display: none; }
+    body.in-run #runBar { display: block; }
+    #runBar i { position: absolute; left: 0; top: 0; bottom: 0; width: 0; background: var(--acc, #e8dcc8); opacity: 0.9; }
+    #runBar b { position: absolute; top: 0; width: 2px; height: 9px; background: #e8dcc8; opacity: 0.55; }
+    #runBar b.fin { height: 13px; opacity: 0.9; background: #d8412f; }
+    #objective, #keysCard { position: absolute; z-index: 5; pointer-events: none; left: 50%; transform: translateX(-50%); white-space: nowrap; max-width: calc(100vw - 1.2rem); overflow: hidden; text-overflow: ellipsis; text-shadow: 0 1px 3px #000, 0 0 8px #000; display: none; }
+    body.in-run #objective { display: block; bottom: max(0.7rem, env(safe-area-inset-bottom)); font-size: clamp(0.68rem, 2.3vmin, 1.05rem); letter-spacing: 0.12em; opacity: 0.92; }
+    #objective b { font-weight: 800; }
+    body.in-run #keysCard { display: block; bottom: calc(max(0.7rem, env(safe-area-inset-bottom)) + clamp(1.3rem, 4.2vmin, 2rem)); font-size: clamp(0.72rem, 2.6vmin, 1.2rem); letter-spacing: 0.06em; padding: 0.3rem 0.7rem; background: rgba(0,0,0,0.55); border: 1px solid rgba(232,220,200,0.25); opacity: 0; visibility: hidden; transition: opacity 0.4s ease, visibility 0s linear 0.4s; }
+    body.in-run #keysCard.show { opacity: 1; visibility: visible; transition: opacity 0.15s ease; }
+    #keysCard b { font-weight: 800; color: #fff; }
+    /* a tablet or a desktop is read from further away than a phone: the same
+       HUD, a size up (the phone-sized frames the gates hold are untouched) */
+    @media (min-width: 900px) and (min-height: 600px) {
+      body.in-run #timer { font-size: 42px; }
+      body.in-run #kills { top: calc(0.8rem + 58px); font-size: 1.1rem; opacity: 0.9; }
+      #clockLabel { top: calc(0.8rem + 88px); font-size: 0.9rem; opacity: 0.9; }
+      #goalCard { top: max(calc(0.8rem + 122px), 24%); }
+      #toast { font-size: 1.9rem; }
+      #runBar { height: 7px; } #runBar b { height: 12px; } #runBar b.fin { height: 17px; }
+    }
+    /* a pad is in hand: its hints show at every size, and focus is unmistakable */
+    body.has-pad .mn-keys { display: block; opacity: 0.95; font-size: 0.95rem; line-height: 1.6; }
+    body.has-pad #msg button.mn-start { box-shadow: 0 0 0 3px #fff, 0 0 0 6px rgba(0,0,0,0.6); }
+    #msg button.gfocus { outline: 3px solid #fff; outline-offset: 2px; }
+    .padbar { position: sticky; bottom: 0; margin-top: 0.6rem; padding: 0.45rem 0.6rem; background: rgba(0,0,0,0.85); font-size: 0.85rem; letter-spacing: 0.08em; }
+    .padbar b { font-weight: 800; }
     body.in-run #pauseBtn { opacity: 0.12; }
     body.in-run #pauseBtn:hover { opacity: 1; }
     body.in-run .arcade-home,
@@ -170,6 +200,9 @@
   <div id="kills">0 kills</div>
   <div id="clockLabel"></div>
   <div id="goalCard"></div>
+  <div id="runBar"></div>
+  <div id="objective"></div>
+  <div id="keysCard"></div>
   <div id="gems">◆ 0 · LV 1</div>
   <div id="style"><div id="styleRank"></div><div id="styleMult"></div><div id="styleFill"></div></div>
   <div id="toast"></div>
@@ -186,10 +219,10 @@
     }
   }
   </script>
-  <script type="module" src="js/main.js?v=122"></script>
+  <script type="module" src="js/main.js?v=123"></script>
   <script>
     if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
-      navigator.serviceWorker.register('sw.js?v=122').catch(() => {});
+      navigator.serviceWorker.register('sw.js?v=123').catch(() => {});
     }
   </script>
   <script type="module" src="../hub/shell.js?v=43"></script>

@@ -51,6 +51,7 @@ export class InputManager {
     this.mouseDown = false;
     this.mouseAltDown = false;
     this.touchMode = false;
+    this.padKind = 'xbox';   // v64: 'ps' prints the PlayStation shapes
     this.gamepad = false; // a controller is connected + active
     this.left = { active: false, ox: 0, oy: 0, dx: 0, dy: 0, t0: 0, hist: [] };
     this.right = { active: false, ox: 0, oy: 0, dx: 0, dy: 0, t0: 0, hist: [] };
@@ -237,6 +238,7 @@ export class InputManager {
       this._pad.firing = false;
       this._pad.altFiring = false;
       this._padPrev = { jump: false, dash: false, up: false, down: false, left: false, right: false, a: false, b: false, start: false };
+      this._rep = null;
       return;
     }
     this.gamepad = true;
@@ -273,10 +275,23 @@ export class InputManager {
     const leftNow = btn(14) || (gp.axes[0] || 0) < -0.55;
     const rightNow = btn(15) || (gp.axes[0] || 0) > 0.55;
     const startNow = btn(9);
+    const yNow = btn(3);                 // Y / triangle: the menu's second action (v64)
+    if (yNow && !this._padPrev.y) this._ui.y = true;
+    this._padPrev.y = yNow;
     if (upNow && !this._padPrev.up) this._ui.up = true;
     if (downNow && !this._padPrev.down) this._ui.down = true;
     if (leftNow && !this._padPrev.left) this._ui.left = true;
     if (rightNow && !this._padPrev.right) this._ui.right = true;
+    // v64: a held direction repeats (a long list one press at a time is a
+    // chore): after 380 ms, every 110 ms
+    const dirNow = upNow ? 'up' : downNow ? 'down' : leftNow ? 'left' : rightNow ? 'right' : null;
+    const nowMs = performance.now();
+    // (and at least 12 polls: on a machine drawing four frames a second, 380 ms
+    // is two frames, and one press must not become three)
+    if (!dirNow || !this._rep || this._rep.dir !== dirNow) this._rep = dirNow ? { dir: dirNow, at: nowMs + 380, n: 0 } : null;
+    else if (++this._rep.n >= 12 && nowMs >= this._rep.at) { this._ui[dirNow] = true; this._rep.at = nowMs + 110; }
+    // which glyphs to print: a PlayStation pad says so in its id
+    this.padKind = /dualsense|dualshock|playstation|054c|wireless controller/i.test(gp.id || '') ? 'ps' : 'xbox';
     if (jumpNow && !this._padPrev.a) this._ui.a = true;
     if (dashNow && !this._padPrev.b) this._ui.b = true;
     if (startNow && !this._padPrev.start) this._ui.start = true;
@@ -304,7 +319,7 @@ export class InputManager {
   /** Edge-detected gamepad UI actions since last call (menus + pause). */
   consumeUi() {
     const u = this._ui;
-    this._ui = { up: false, down: false, left: false, right: false, a: false, b: false, start: false };
+    this._ui = { up: false, down: false, left: false, right: false, a: false, b: false, start: false, y: false };
     return u;
   }
 
@@ -350,12 +365,19 @@ export class InputManager {
   }
 
   get firing() {
-    if (this.touchMode) return this.right.active;
+    // v64: a pad fires in touch mode too. On an iPad the first tap anywhere
+    // sets touchMode for good, and this used to answer with the on-screen
+    // stick alone — so a DualSense's triggers did nothing at all.
+    if (this.touchMode) return this.right.active || this._pad.firing;
     return this.mouseDown || this._pad.firing;
   }
 
+  /** v64: is the stream coming from a pad's trigger? A pad has its own jump
+   *  button, so its trigger fires at once (no short-press-is-a-jump). */
+  get padFiring() { return !!this._pad.firing; }
+
   get altFiring() {
-    if (this.touchMode) return false;
+    if (this.touchMode) return !!this._pad.altFiring;
     return this.mouseAltDown || this._pad.altFiring;
   }
 

@@ -113,6 +113,15 @@ Plan sketch: change the truck mesh/visuals only — remove wheels, add a hover h
 
 Note, 18 Oct (HD-018, v58): there is no haul scoring any more, and the missiles no longer jackknife a truck. The fold itself stays, for the pile-up and HD-016. Read "do not change haul scoring" as "do not bring a cargo score back", and "jackknife" as the fold.
 
+### HD-025 — A pad on a touch screen: it shoots, the menus can be walked, the run says what it wants
+
+- status: In progress
+- size: M
+- blocked-by: —
+- design: Mikael, 11 Nov 2026 playtest (iPad + DualSense) — *"Dualsense with ipad doesn't work well. The menus are hard to navigate. Controller doesn't shoot. Lack of communication of clear objectives. In general hard to read."*
+
+Ahead of HD-024's remaining steps. The trigger was ignored in touch mode (0 daggers in 3 s held; 25 after). Pad hints in the pad's own shapes; the pause list cut to RESUME + five rows + MORE; a run progress strip, an objective line and a controls card; the HUD a size up on a tablet. Gate: `test/pad-tablet.cjs`.
+
 ### HD-024 — The top visual: sky, lit bodies, the sea as a surface, the platforms, SDF as the hero
 
 - status: In progress
