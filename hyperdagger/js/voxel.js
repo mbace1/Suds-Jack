@@ -662,7 +662,15 @@ const WL_FRAG_LIT = /* glsl */`
   }
 `;
 export function applyWorldLightLit(material) {
-  material.onBeforeCompile = shader => {
+  // COMPOSED, not assigned: a body may already carry a shader hook (INCA's
+  // mosaic skin does), and replacing it would trade one look for the other.
+  // And it must be called on the material that is SPAWNED: Material.clone()
+  // copies neither onBeforeCompile nor the cache key, so a hook on the
+  // template never reached a body (#644 review).
+  const prev = material.onBeforeCompile, prevKey = material.customProgramCacheKey;
+  material.onBeforeCompile = (shader, renderer) => {
+    prev?.call(material, shader, renderer);
+    material.userData.worldLit = true;   // set when the patch is COMPILED IN, which is what a gate can hold
     Object.assign(shader.uniforms, WORLD_LIGHT);
     shader.vertexShader = shader.vertexShader
       .replace('#include <common>', '#include <common>\n' + WL_VERT_DECL)
@@ -671,7 +679,7 @@ export function applyWorldLightLit(material) {
       .replace('#include <common>', '#include <common>\n' + WL_FRAG_DECL)
       .replace('#include <opaque_fragment>', WL_FRAG_LIT + '\n#include <opaque_fragment>');
   };
-  material.customProgramCacheKey = () => 'world-lit-lambert';
+  material.customProgramCacheKey = () => 'world-lit-lambert|' + (prevKey ? prevKey.call(material) : '');
   return material;
 }
 /** The same light for a material that has no face tone (the smooth hull). */

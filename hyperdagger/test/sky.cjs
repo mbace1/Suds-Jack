@@ -77,6 +77,41 @@ s.listen(0, '127.0.0.1', async () => {
       await q.context().close();
     } catch (e) { ok(`${season}: the checks ran`, false, e.stack || String(e)); }
   }
+  // THE BODIES THAT SHIP are sculpted meshes, cloned per spawn — and a clone
+  // drops a material's shader hook. So this is asked of the material a body is
+  // actually DRAWN with, assets on: the patch was compiled into it (the flag is
+  // set inside the hook, at compile), and INCA's mosaic skin is still on it too.
+  for (const season of ['ember', 'inca']) {
+    try {
+      const ctx = await b.newContext({ viewport: { width: 640, height: 360 }, serviceWorkers: 'block' });
+      const q = await ctx.newPage();
+      q.on('pageerror', e => errs.push(`${season} bodies pageerror: ${e.message}`));
+      q.on('console', m => { if (m.type() === 'error' && /shader|program|GLSL/i.test(m.text())) errs.push(`${season} bodies shader: ${m.text().slice(0, 200)}`); });
+      await q.addInitScript(sn => { localStorage.setItem('hyperDaggerSeenTips', '1'); localStorage.setItem('hyperDaggerRenderer', 'classic'); localStorage.setItem('hyperDaggerSeason', sn); localStorage.setItem('hyperDaggerOptsV26', JSON.stringify({ perf: 'high', music: false })); }, season);
+      await q.goto(`${base}/hyperdagger/`, { waitUntil: 'load' });
+      await q.waitForFunction(() => window.__hd && window.__hd.debug, null, { timeout: 30000 });
+      await q.evaluate(() => { const d = window.__hd.debug; d.startGame(); d.setInvulnerable(true); d.setLife?.(60); d.setTimeScale(2); });
+      // let the season bring its own bodies, and look at the nearest so it is drawn
+      const r = await q.evaluate(async () => {
+        const d = window.__hd.debug, hd = window.__hd, pl = hd.player; let seen = null;
+        const t0 = d.getState().gameTime;
+        for (let i = 0; i < 6000 && d.getState().gameTime - t0 < 26 && !seen; i++) {
+          d.setLife?.(60);
+          let best = null, bd = 1e9;
+          for (const e of hd.enemies) { if (!e.alive || !e.pos || !e.meshRoot) continue; const dist = e.pos.distanceTo(pl.feet); if (dist > 2 && dist < bd) { bd = dist; best = e; } }
+          if (best) { const dx = best.pos.x - pl.feet.x, dz = best.pos.z - pl.feet.z, dy = best.pos.y - (pl.feet.y + 1.6); pl.yaw = Math.atan2(-dx, -dz); pl.pitch = Math.atan2(dy, Math.hypot(dx, dz)); pl._sync?.();
+            const mats = []; best.meshRoot.traverse(o => { if (o.isMesh && o.material) mats.push(o.material); });
+            if (mats.length && mats.every(m => m.userData.worldLit)) seen = { type: best.type, mats: mats.length, key: mats[0].customProgramCacheKey(), mosaic: mats.every(m => !!m.userData.mosaic), kind: mats[0].type }; }
+          await new Promise(r2 => requestAnimationFrame(r2));
+        }
+        const any = hd.enemies.filter(e => e.meshRoot).length;
+        return { seen, sculpted: any, t: +(d.getState().gameTime - t0).toFixed(1) };
+      });
+      ok(`${season}: a sculpted body the game spawned is drawn with the world-light patch compiled in`, !!r.seen && /world-lit-lambert/.test(r.seen.key), JSON.stringify(r));
+      if (season === 'inca') ok('inca: and its mosaic skin is still on the same material (composed, not replaced)', !!r.seen && r.seen.mosaic && /mosaic-skin/.test(r.seen.key), JSON.stringify(r.seen));
+      await ctx.close();
+    } catch (e) { ok(`${season}: the body checks ran`, false, e.stack || String(e)); }
+  }
   ok('zero page errors, no shader failed to compile', errs.length === 0, errs.slice(0, 3).join(' | '));
   console.log(`\n${pass} passed, ${fail} failed`);
   await b.close(); s.close();
