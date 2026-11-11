@@ -50,6 +50,18 @@ when you ride the 4 to Katajanokka, that's where the 4 goes.
   morning. **Hard** is the rush with one tram line halted. **Night** starts
   at 23:00, and something is off about the trams. Every attempt is a fresh
   shift: between jobs you pick a perk, and too many late drops lose it.
+- **The Long Shift.** An endless run, open after Easy: jobs keep coming
+  until three late drops or ten o'clock end it, and every clock is a little
+  shorter than the last. Stars at 5, 10 and 15 jobs.
+- **No two shifts the same.** Every shift draws its day (the Helsinki
+  Festival, payday, a heatwave, the first snow, a full moon), the part of
+  the city its drops lean to, and a special perk with a price of its own
+  (*Hustle*: better fees, shorter clocks).
+- **Thirty thousand strangers.** Most of the people you meet are put
+  together from parts: somebody (a man walking three dachshunds, a bride on
+  her way to the church), what they want (a ring dropped at the stop, the
+  crossword's last word) and the day around it, each with three ways to
+  answer.
 - **Missions.** Six errands across real places, each on the city map, a
   different version every time you run it. And one errand a day, the same
   for everyone.
@@ -83,7 +95,10 @@ ketä autat ja mitä uskallat. Kello liikkuu vain, kun valitset. Neljä tasoa
 jälkeen. Riskit lukevat napissa sanoin, paketin voi myydä ja ostaja kertoo,
 mitä siinä oli. Joka valinnassa on kolme vaihtoehtoa, ja kolmas on joskus
 erikoinen: taksi, pikakeikka tai tavarapyöräkyyti. Kuusi tehtävää kartalla
-ja päivän asia, sama kaikille. Lumi, sade, mielenosoitus Mannerheimintiellä,
+ja päivän asia, sama kaikille. Pitkä vuoro on loputon: keikkoja tulee,
+kunnes kolme myöhästymistä tai kello kymmenen päättää sen. Jokainen vuoro
+arpoo päivänsä, alueensa ja erikoisetunsa, ja kohtaamiset kootaan osista,
+kymmeniätuhansia erilaisia. Lumi, sade, mielenosoitus Mannerheimintiellä,
 kuusi ratikkamallia uusimmasta museoratikkaan, ja kaupunki muistaa sinut.
 Lopuksi päivän vuoro ja viikko, jonka vuokra erääntyy perjantaina.
 
@@ -92,8 +107,9 @@ Lopuksi päivän vuoro ja viikko, jonka vuokra erääntyy perjantaina.
 Tap a choice. Each button shows its price in time and, when it is a risk,
 its odds in a word (*usually*, *maybe*, *long shot*). Tap the scene to hurry
 a hop or a stamp. MAP, in the corner, opens the whole board. ♪ mutes. On a
-desktop, click works the same, the keys 1, 2 and 3 choose, and Space or
-Enter hurries.
+desktop, click works the same, the keys 1, 2 and 3 choose, M opens and
+closes the map, the arrow keys walk the title's and the end card's buttons
+(1 presses the lit one), and Space or Enter hurries.
 
 ## Media
 

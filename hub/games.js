@@ -118,8 +118,9 @@ export const GAMES = [
       note: 'v3.28の新着：もっと動きを：絵がゆっくり動き続け、カードのボタンが順に現れ、星がひとつずつ決まる。v3.27：ゲーム全体をコントローラーで（iPadのDualSenseも）。v3.26：「ロングシフト」。',
     },
     // v3.20: a pad answers the card — A, B, X are its three buttons, Y hurries what is playing;
-    // v3.27: the d-pad walks the title's and the end card's buttons, and A presses the lit one
-    pad: { keys: { b0: 'Digit1', b1: 'Digit2', b2: 'Digit3', b3: 'Space', up: 'ArrowUp', down: 'ArrowDown', left: 'ArrowLeft', right: 'ArrowRight' } },
+    // v3.27: the d-pad walks the title's and the end card's buttons, and A presses the lit one;
+    // v3.29: a shoulder button opens and closes the map
+    pad: { keys: { b0: 'Digit1', b1: 'Digit2', b2: 'Digit3', b3: 'Space', b4: 'KeyM', b5: 'KeyM', up: 'ArrowUp', down: 'ArrowDown', left: 'ArrowLeft', right: 'ArrowRight' } },
     status: 'active',
     live: true,
     note: 'NEW in v3.28: more motion: the pictures keep moving, a card\'s buttons come in one by one, the stars land one at a time. v3.27: the whole game on a pad (a DualSense on an iPad too). v3.26: THE LONG SHIFT.',

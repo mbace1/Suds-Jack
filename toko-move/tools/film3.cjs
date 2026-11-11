@@ -318,43 +318,51 @@ server.listen(0, '127.0.0.1', async () => {
     console.log(`film3: ${VW}×${VH}${DRAFT ? ' (draft)' : ''}`);
     await card(browser, 'title', 2.6, [{ n: 'bell', t: 0.15 }]);
     // the loop, whole: Dispatch, a tram, a risk in words, the ride, the board, the stamp
-    await take(browser, 'first job', '?run=easy&seed=1002', { ff: s => s.btn, done: s => /DELIVERED/.test(s.stamp), tail: 2.2, max: 30 });
+    await take(browser, 'first job', '?run=easy&seed=1002&written', { ff: s => s.btn, done: s => /DELIVERED/.test(s.stamp), tail: 2.2, max: 30 });
     // v3.9: who you meet at the stop, and what you walk past
     await card(browser, 'cap', 1.6, [{ n: 'deal', t: 0 }], 'Who you meet at the stop.');
-    await take(browser, 'the student', '?run=easy&seed=1000', { ff: s => s.card === 'vappu' && s.btn, done: (s, taps) => taps >= 1, tail: 2.0, max: 8 });
+    await take(browser, 'the student', '?run=easy&seed=1000&written', { ff: s => s.card === 'vappu' && s.btn, done: (s, taps) => taps >= 1, tail: 2.0, max: 8 });
     await card(browser, 'cap', 1.6, [{ n: 'deal', t: 0 }], 'What you walk past.');
-    await take(browser, 'on foot', '?run=medium&seed=1009', { save: { tokoMoveRuns: { easy: { done: true, stars: 2, plays: 1 } } },
+    await take(browser, 'on foot', '?run=medium&seed=1009&written', { save: { tokoMoveRuns: { easy: { done: true, stars: 2, plays: 1 } } },
       ff: s => ['fence', 'fog', 'iceswim', 'karaoke', 'reindeer', 'roadworks', 'slip', 'sofa', 'wet'].includes(s.card) && s.btn, done: (s, taps) => taps >= 1, tail: 1.4, max: 8 });
     // v3.10: every stop is somewhere, and the weather lies on it
     await card(browser, 'cap', 1.6, [{ n: 'deal', t: 0 }], 'Every stop is somewhere.');
-    await take(browser, 'Katajanokka in the snow', '?run=medium&seed=1031', { save: { tokoMoveRuns: { easy: { done: true, stars: 2, plays: 1 } } },
+    await take(browser, 'Katajanokka in the snow', '?run=medium&seed=1031&written', { save: { tokoMoveRuns: { easy: { done: true, stars: 2, plays: 1 } } },
       ff: s => s.scene === 'stop' && s.land === 'katajanokka' && s.btn, done: () => true, tail: 2.6, max: 6 });
     await card(browser, 'cap', 1.6, [{ n: 'deal', t: 0 }], 'Real trams. Some of them very old.');
-    await take(browser, 'museum tram', '?run=easy&seed=1197', { ff: s => s.scene === 'stop' && s.tram === 'museum', done: (s, taps) => s.scene === 'tram' && taps >= 1, tail: 2.0, max: 12 });
+    await take(browser, 'museum tram', '?run=easy&seed=1197&written', { ff: s => s.scene === 'stop' && s.tram === 'museum', done: (s, taps) => s.scene === 'tram' && taps >= 1, tail: 2.0, max: 12 });
     await card(browser, 'cap', 1.6, [{ n: 'deal', t: 0 }], 'On the night shift, a tram with no number.');
-    await take(browser, 'night', '?run=night&seed=60', { save: { tokoMoveRuns: ladder }, ff: s => s.glow && s.scene === 'stop', done: (s, taps) => taps >= 1, tail: 2.0, max: 8 });
+    await take(browser, 'night', '?run=night&seed=60&written', { save: { tokoMoveRuns: ladder }, ff: s => s.glow && s.scene === 'stop', done: (s, taps) => taps >= 1, tail: 2.0, max: 8 });
     await card(browser, 'cap', 1.6, [{ n: 'deal', t: 0 }], 'Another courier wants your jobs.');
-    await take(browser, 'race', '?run=medium&seed=1002', { save: { tokoMoveRuns: { easy: { done: true, stars: 2, plays: 2 }, medium: { plays: 1 } } },
+    await take(browser, 'race', '?run=medium&seed=1002&written', { save: { tokoMoveRuns: { easy: { done: true, stars: 2, plays: 2 }, medium: { plays: 1 } } },
       ff: s => s.btn && !s.busy && /other courier wants it too/.test(s.line), done: (s, taps) => taps >= 1, tail: 1.3, max: 8 });
     // v3.12–v3.15: the job in the owner's illustrations, and the missions
     const easyDone = { tokoMoveRuns: { easy: { done: true, stars: 2, plays: 1 } } };
     // v3.18–v3.19: three ways at every choice, the third sometimes (very) special; the ride, the whole way
     await card(browser, 'cap', 1.6, [{ n: 'deal', t: 0 }], 'Three ways, every time. Sometimes a very special one.');
-    await take(browser, 'the choir', '?run=easy&seed=1001', { pick: 2, ff: s => s.card === 'choir' && s.btn, done: (s, taps) => taps >= 1, tail: 2.6, max: 10 });
+    await take(browser, 'the choir', '?run=easy&seed=1001&written', { pick: 2, ff: s => s.card === 'choir' && s.btn, done: (s, taps) => taps >= 1, tail: 2.6, max: 10 });
     await card(browser, 'cap', 1.6, [{ n: 'deal', t: 0 }], 'The ride, the whole way.');
-    await take(browser, 'the ride', '?run=easy&seed=1357', { ff: s => /SENAATINTORI/.test(s.sign), done: s => !s.sign, tail: 0.6, max: 12 });
+    await take(browser, 'the ride', '?run=easy&seed=1357&written', { ff: s => /SENAATINTORI/.test(s.sign), done: s => !s.sign, tail: 0.6, max: 12 });
     await card(browser, 'cap', 1.6, [{ n: 'deal', t: 0 }], 'Every handover, drawn.');
-    await take(browser, 'pickup', '?run=easy&seed=1003', { ff: s => ['kiosk', 'bench', 'stop-handoff', 'station', 'park'].includes(s.m), done: () => true, tail: 2.0, max: 4 });
-    await take(browser, 'delivery', '?run=easy&seed=1003', { ff: s => ['doorway', 'cyclist', 'ferry', 'quay'].includes(s.m), done: () => true, tail: 2.2, max: 4 });
+    await take(browser, 'pickup', '?run=easy&seed=1003&written', { ff: s => ['kiosk', 'bench', 'stop-handoff', 'station', 'park'].includes(s.m), done: () => true, tail: 2.0, max: 4 });
+    await take(browser, 'delivery', '?run=easy&seed=1003&written', { ff: s => ['doorway', 'cyclist', 'ferry', 'quay'].includes(s.m), done: () => true, tail: 2.2, max: 4 });
     await card(browser, 'cap', 1.6, [{ n: 'deal', t: 0 }], 'Some mornings, Mannerheimintie marches.');
-    await take(browser, 'the march', '?run=medium&seed=15', { save: easyDone, ff: s => s.m === 'demonstration' && s.btn, done: (s, taps) => taps >= 1, tail: 2.4, max: 10 });
+    await take(browser, 'the march', '?run=medium&seed=15&written', { save: easyDone, ff: s => s.m === 'demonstration' && s.btn, done: (s, taps) => taps >= 1, tail: 2.4, max: 10 });
     await card(browser, 'cap', 1.6, [{ n: 'deal', t: 0 }], 'Missions. A different errand every run.');
     await take(browser, 'the wallet', '?mission=wallet&seed=11', { save: easyDone, pick: 0, ff: s => s.card === 'wallet' && s.btn, done: s => s.m === 'wallet', tail: 2.6, max: 10 });
     await card(browser, 'cap', 1.6, [{ n: 'deal', t: 0 }], 'Pick what you carry.');
     await take(browser, 'the perk', '?mission=wallet&seed=11', { save: easyDone, pick: 0, ff: s => /Pick one for the rest/.test(s.line) && s.btn, done: (s, taps) => taps >= 1, tail: 2.0, max: 8 });
     await take(browser, 'the fork', '?mission=east&seed=4', { save: easyDone, pick: 0, ff: s => /Two errands/.test(s.line) && s.btn, done: (s, taps) => taps >= 1, tail: 1.6, max: 8 });
+    // v3.22–v3.26: cards made from parts, the day drawn, the long shift (these three are NOT &written:
+    // they are what the shift draws now; every take above is, so its seed still deals what its caption names)
+    await card(browser, 'cap', 1.6, [{ n: 'deal', t: 0 }], 'Thirty thousand strangers to meet.');
+    await take(browser, 'a made card', '?run=easy&seed=1152', { ff: s => String(s.card).startsWith('m:') && s.btn, done: (s, taps) => taps >= 1, tail: 2.2, max: 10 });
+    await card(browser, 'cap', 1.6, [{ n: 'deal', t: 0 }], 'No two days the same.');
+    await take(browser, 'the day', '?run=easy&seed=7', { ff: s => s.btn, done: (s, taps) => taps >= 1, tail: 1.2, max: 6 });
+    await card(browser, 'cap', 1.6, [{ n: 'deal', t: 0 }], 'The Long Shift. Until you drop.');
+    await take(browser, 'the long shift', '?run=long&seed=7', { save: easyDone, ff: s => /Pick one for the rest/.test(s.line) && s.btn, pick: 2, done: (s, taps) => taps >= 1, tail: 2.0, max: 10 });
     await card(browser, 'cap', 1.6, [{ n: 'deal', t: 0 }], 'And the city remembers you.');
-    await take(browser, 'the lady again', '?run=easy&seed=1152', { ff: s => s.card === 'granny2' && s.btn, done: (s, taps) => taps >= 1, tail: 2.0, max: 9 });
+    await take(browser, 'the lady again', '?run=easy&seed=1152&written', { ff: s => s.card === 'granny2' && s.btn, done: (s, taps) => taps >= 1, tail: 2.0, max: 9 });
     await card(browser, 'end', 3.8, [{ n: 'act', t: 0.15 }]);
 
     // ── the cut: clips crossfaded, the cues laid on the same timeline ──

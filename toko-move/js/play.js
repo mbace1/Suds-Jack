@@ -782,6 +782,8 @@ addEventListener('keydown', e => { const n = /^[1-3]$/.test(e.key) ? Number(e.ke
 //     buttons and links, lit; cross (1) presses the lit one, or the screen's main
 //     button when none is lit (START SHIFT; NEXT, else AGAIN)
 //   · with the map open, any of them closes it
+//   · (v3.29) a shoulder button (M on a keyboard) opens the map from a card, and closes it; the corner
+//     map wears L1 (LB) while a pad is connected
 const PAD_GLYPHS = { ps: ['✕', '○', '□'], xb: ['A', 'B', 'X'] };
 function padKind() {
   const p = [...(navigator.getGamepads?.() || [])].find(x => x && x.connected);
@@ -793,6 +795,7 @@ function padGlyphs() {
     if (!g || !g[i]) { t?.remove(); return; }
     if (!t) { t = document.createElement('span'); t.className = 'evPad'; t.setAttribute('aria-hidden', 'true'); b.prepend(t); }
     t.textContent = g[i]; });
+  const tag = document.querySelector('#v3mini .tag'); if (tag) tag.textContent = k ? `${k === 'ps' ? 'L1' : 'LB'} · MAP` : 'MAP';
 }
 addEventListener('gamepadconnected', padGlyphs); addEventListener('gamepaddisconnected', padGlyphs);
 const PRIMARY = { title: '#play', end: '#nextRun, #again' };
@@ -802,8 +805,9 @@ function padLight(el) { document.querySelectorAll('.padLit').forEach(x => x !== 
 addEventListener('pointerdown', () => document.querySelectorAll('.padLit').forEach(x => x.classList.remove('padLit')));
 addEventListener('keydown', e => {
   const ui = uiState(), arrow = /^Arrow(Up|Down|Left|Right)$/.exec(e.key || ''), n = /^[1-3]$/.test(e.key) ? Number(e.key) : /^Digit[1-3]$/.test(e.code || '') ? Number(e.code.slice(5)) : 0;
-  if (ui === 'card') { if (n) padGlyphs(); return; }                       // the card's own handler answers it
-  if (ui === 'board') { if (arrow || n) { e.preventDefault(); $('v3board').click(); } return; }
+  const map = e.key === 'm' || e.key === 'M' || e.code === 'KeyM';        // (v3.29) M, or a pad's shoulder buttons through the hub
+  if (ui === 'card') { if (map && !$('v3mini').hidden) { e.preventDefault(); openBoard(); } else if (n) padGlyphs(); return; }   // the card's own handler answers 1, 2, 3
+  if (ui === 'board') { if (arrow || n || map) { e.preventDefault(); $('v3board').click(); } return; }
   if (ui !== 'title' && ui !== 'end') return;
   if (!arrow && n !== 1) return;
   const t = padTargets(); if (!t.length) return;

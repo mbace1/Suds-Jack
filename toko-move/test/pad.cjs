@@ -7,7 +7,7 @@
 // (hub/shell.js → hub/padkeys.js → keys) and the game's own handlers:
 //   · the title: the d-pad lights its buttons, cross with nothing lit is START SHIFT
 //   · every card wears ✕ ○ □ while the pad is connected, and cross answers it
-//   · the open map closes on a face button
+//   · a shoulder button opens the map from a card and closes it; a face button closes it too
 //   · the end card: cross with nothing lit is NEXT (or AGAIN), and it goes there
 // No mouse, no touch, no keyboard event from the test itself.
 //
@@ -34,7 +34,7 @@ const PAD = () => {
   navigator.getGamepads = () => [pad, null, null, null];
   window.__pad = { set: (i, down) => { st.buttons[i] = { pressed: down, value: down ? 1 : 0, touched: down }; } };
 };
-const CROSS = 0, CIRCLE = 1, SQUARE = 2, DOWN = 13;
+const CROSS = 0, CIRCLE = 1, SQUARE = 2, L1 = 4, DOWN = 13;
 
 server.listen(0, '127.0.0.1', async () => {
   const base = `http://127.0.0.1:${server.address().port}`;
@@ -68,15 +68,17 @@ server.listen(0, '127.0.0.1', async () => {
     // every card wears its pad buttons, and cross answers it
     const glyphs = await page.evaluate(() => [...document.querySelectorAll('#v3panel .eventOpt .evPad')].map(e => e.textContent).join(''));
     ok(`a card wears the DualSense's buttons while it is connected (${glyphs})`, /^✕○□?$/.test(glyphs) && glyphs.length >= 2);
-    let cards = 0, maps = 0, steps = 0;
+    let cards = 0, maps = 0, steps = 0, tag = '';
     while (steps++ < 500) {
       const u = await ui();
       if (u === 'end') break;
       if (u === 'card') {
-        if (cards === 2 && !maps) {             // open the map once (a tap is the only way in), and close it from the pad
-          await page.evaluate(() => document.getElementById('v3mini')?.click());
-          await page.waitForTimeout(250);
-          if ((await ui()) === 'board') { await press(CIRCLE); await page.waitForTimeout(250); maps = (await ui()) === 'board' ? -1 : 1; continue; }
+        if (cards === 2 && !maps) {             // (v3.29) a shoulder button opens the map, and a face button closes it
+          tag = await page.evaluate(() => document.querySelector('#v3mini .tag')?.textContent || '');
+          await press(L1); await page.waitForTimeout(250);
+          if ((await ui()) === 'board') { await press(CIRCLE); await page.waitForTimeout(250); maps = (await ui()) === 'board' ? -1 : 1;
+            await press(L1); await page.waitForTimeout(250); const again = (await ui()) === 'board'; await press(L1); await page.waitForTimeout(250); if (!again || (await ui()) === 'board') maps = -2; continue; }
+          maps = -3;
         }
         const before = await page.evaluate(() => window.__tm3.state().log.length);
         await press(cards % 5 === 3 ? SQUARE : CROSS); cards++;
@@ -86,7 +88,7 @@ server.listen(0, '127.0.0.1', async () => {
       } else { await press(3, 80); await page.waitForTimeout(200); }   // triangle hurries what is playing
     }
     ok(`a whole shift answered from the pad alone (${cards} cards)`, (await ui()) === 'end' && cards >= 6);
-    ok(maps === 1 ? 'the open map closes on a face button' : `the map was not exercised (${maps})`, maps === 1);
+    ok(maps === 1 ? `L1 opens the map from a card and closes it again, and a face button closes it too; the corner map says so (${tag})` : `the map from the pad failed (${maps})`, maps === 1 && /^L1 · MAP$/.test(tag));
 
     // the end card: cross with nothing lit is its main button
     const main = await page.evaluate(() => (document.getElementById('nextRun') || document.getElementById('again'))?.textContent || '');
