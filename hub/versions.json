@@ -2,97 +2,116 @@
   "sudsjack": {
     "v": "6",
     "n": 6000,
-    "from": "VERSIONS.md"
+    "from": "VERSIONS.md",
+    "d": "2026-09-24"
   },
   "tokodrop": {
     "v": "268",
     "n": 268000,
-    "from": "VERSIONS.md"
+    "from": "VERSIONS.md",
+    "d": "2026-09-24"
   },
   "hyperdagger": {
     "v": "62",
     "n": 62000,
-    "from": "VERSIONS.md"
+    "from": "VERSIONS.md",
+    "d": "2026-11-11"
   },
   "dropcabal": {
     "v": "5",
     "n": 5000,
-    "from": "VERSIONS.md"
+    "from": "VERSIONS.md",
+    "d": "2026-09-26"
   },
   "powder": {
     "v": "11",
     "n": 11000,
-    "from": "VERSIONS.md"
+    "from": "VERSIONS.md",
+    "d": "2026-09-28"
   },
   "paperboy": {
     "v": "6",
     "n": 6000,
-    "from": "cache token"
+    "from": "cache token",
+    "d": "2026-07-28"
   },
   "skltr": {
     "v": "156",
     "n": 156000,
-    "from": "cache token"
+    "from": "cache token",
+    "d": "2026-09-06"
   },
   "flashprince": {
     "v": "71",
     "n": 71000,
-    "from": "VERSIONS.md"
+    "from": "VERSIONS.md",
+    "d": "2026-09-27"
   },
   "eeri": {
     "v": "15.70",
     "n": 15070,
-    "from": "VERSIONS.md"
+    "from": "VERSIONS.md",
+    "d": "2026-10-18"
   },
   "slaykallio": {
     "v": "41",
     "n": 41000,
-    "from": "VERSIONS.md"
+    "from": "VERSIONS.md",
+    "d": "2026-09-26"
   },
   "turf": {
     "v": "42",
     "n": 42000,
-    "from": "VERSIONS.md"
+    "from": "VERSIONS.md",
+    "d": "2026-09-20"
   },
   "gameoflife": {
     "v": "40",
     "n": 40000,
-    "from": "VERSIONS.md"
+    "from": "VERSIONS.md",
+    "d": "2026-07-27"
   },
   "kindling": {
     "v": "24",
     "n": 24000,
-    "from": "World beyond Old Gate \u2014 Pale Reach + Hollow Spire"
+    "from": "World beyond Old Gate — Pale Reach + Hollow Spire",
+    "d": "2026-09-10"
   },
   "radiofree": {
     "v": "73",
     "n": 73000,
-    "from": "cache token"
+    "from": "cache token",
+    "d": "2026-10-15"
   },
   "tokomove": {
     "v": "3.24",
     "n": 3024,
-    "from": "VERSIONS.md"
+    "from": "VERSIONS.md",
+    "d": "2026-11-09"
   },
   "tinyhawk": {
     "v": "6",
     "n": 6000,
-    "from": "VERSIONS.md"
+    "from": "VERSIONS.md",
+    "d": "2026-07-27"
   },
   "tiny2d": {
     "v": "4",
     "n": 4000,
-    "from": "VERSIONS.md"
+    "from": "VERSIONS.md",
+    "d": "2026-08-11"
   },
   "brand": {
     "v": "5",
     "n": 5000,
-    "from": "VERSIONS.md"
+    "from": "VERSIONS.md",
+    "d": "2026-11-09"
   },
   "toko": {
     "v": "5",
     "n": 5000,
-    "from": "VERSIONS.md"
+    "from": "VERSIONS.md",
+    "d": "2026-11-09"
   },
   "piritori": {
     "v": "4.104",
@@ -102,7 +121,8 @@
   "piritori-godot": {
     "v": "4",
     "n": 4000,
-    "from": "VERSIONS.md"
+    "from": "VERSIONS.md",
+    "d": "2026-08-25"
   },
   "tokodropgodot": {
     "v": "3.9",
@@ -112,51 +132,61 @@
   "tokodrop2": {
     "v": "143",
     "n": 143000,
-    "from": "hand"
+    "from": "hand",
+    "d": "2026-11-11"
   },
   "tokotrip": {
     "v": "21",
     "n": 21000,
-    "from": "VERSIONS.md"
+    "from": "VERSIONS.md",
+    "d": "2026-09-27"
   },
   "flowsnow": {
     "v": "7",
     "n": 7000,
-    "from": "VERSIONS.md"
+    "from": "VERSIONS.md",
+    "d": "2026-09-26"
   },
   "concrete": {
     "v": "5",
     "n": 5000,
-    "from": "VERSIONS.md"
+    "from": "VERSIONS.md",
+    "d": "2026-09-20"
   },
   "pajatso": {
     "v": "11",
     "n": 11000,
-    "from": "VERSIONS.md"
+    "from": "VERSIONS.md",
+    "d": "2026-09-30"
   },
   "neonronin": {
     "v": "2",
     "n": 2000,
-    "from": "VERSIONS.md"
+    "from": "VERSIONS.md",
+    "d": "2026-08-11"
   },
   "eerigodot": {
     "v": "40",
     "n": 40000,
-    "from": "cache token"
+    "from": "cache token",
+    "d": "2026-08-27"
   },
   "eyetest": {
     "v": "1",
     "n": 1000,
-    "from": "VERSIONS.md"
+    "from": "VERSIONS.md",
+    "d": "2026-08-08"
   },
   "tokolive": {
     "v": "48",
     "n": 48000,
-    "from": "VERSIONS.md"
+    "from": "VERSIONS.md",
+    "d": "2026-09-26"
   },
   "optionc-lab": {
     "v": "19",
     "n": 19000,
-    "from": "VERSIONS.md"
+    "from": "VERSIONS.md",
+    "d": "2026-09-17"
   }
 }
