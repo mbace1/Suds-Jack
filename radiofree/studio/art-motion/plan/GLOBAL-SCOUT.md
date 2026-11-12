@@ -1526,3 +1526,68 @@ Everything below comes from search summaries. No article was opened.
 - **Reactions:** counts are not visible through search.
 - **Pattern note:** when two outlets give different filing numbers, check the filing dates first. Here three figures
   were three drafts of the same document.
+
+### Check Thu 12 Nov 07:16 (morning; search summaries only; nothing opened)
+- **Big development:** no single break; two money stories moved.
+- **Anthropic IPO, the amended S-1 of 10 Nov (trade and aggregator summaries; EDGAR still not read):**
+  - $70–$78 a share; 825M Class A shares (801,351,354 from the company, 23,648,646 from holders); about $64.4B at the
+    top of the range; a 124M-share greenshoe; a $26B private placement with seven companies; ticker ANT, Nasdaq;
+    Goldman Sachs and Morgan Stanley lead 22 banks; six retail brokers get up to 20%.
+  - Google: up to $10.0B more at the IPO price (Motley Fool, 10 Nov).
+  - Pricing 18 Nov, trading 19 Nov: reported (CNBC via aggregators), not company-confirmed.
+  - One aggregator gives "$90.4B raised"; that conflicts with $64.4B and is not used.
+  - **New:** Reuters (via Quartz, Yahoo): late on 9 Nov Anthropic told banks that emailed pricing terms (about 866.7M
+    shares at $70–$80) were inaccurate and retracted them within about 80 minutes.
+  - Valuation talk ($1T to $1.4T+) is commentary, not a filing number.
+- **OpenAI Q3 (new):** internal documents reviewed by the WSJ, reported 11 Nov: revenue about $10B (Q2 about $6.7B),
+  operating loss about $10.9B (from $10.1B), margin −109% from −150%; one report says the loss excludes $2.6B of
+  stock pay. Brockman: enterprise revenue doubled. Not a filing. A possible pair with The Round Trip ("$1.09 lost per
+  dollar"), but only as attributed reporting.
+  [Forbes](https://www.forbes.com/sites/gabrielalinzainescu/2026/11/11/openai-revenue-hits-10-billion-as-losses-reach-109-billion/),
+  [Forbes, per dollar](https://www.forbes.com/sites/jonmarkman/2026/11/11/openai-revenue-hits-10-billion-in-q3-as-loss-per-dollar-falls-to-109/)
+- **Grok Build, public by default (new; MED-HIGH):**
+  - Claroc, 10 Nov: 35,578 of 37,571 live Grok-built apps opened without a sign-in (94.7%). An estimated 650–800 held
+    private or sensitive data: a hospital group's list of 3,500+ staff, an intensive-care briefing on one patient,
+    plaintext passwords. Most apps were ordinary games, calculators and sites.
+  - 24 apps tied to X and SpaceXSI staff held sales plans and client data; those were removed, others were not (The
+    Hacker News).
+  - Response: SpaceXSI says employee accounts default to "Only you". Claroc says its paid account had "Anyone with
+    the link" preselected.
+  - Open points: the number of affected organizations varies (30 others vs six Fortune 500); some analysts say the
+    apps came from Grok's chat app builder, not the terminal agent of the same name.
+  - Film shape: a default setting as the villain. Attribute every figure to Claroc and carry the company's answer.
+  - [The Hacker News](https://thehackernews.com/2026/11/over-35000-grok-built-apps-exposed.html),
+    [Claroc](https://blog.claroc.io/ghostshares-grok-build-apps/),
+    [Cloud Security Alliance](https://labs.cloudsecurityalliance.org/research/csa-research-note-grok-build-apps-exposed-by-default-2026111/)
+- **OpenAI cuts off Cursor today, 12 Nov (new; LOW-MED):** notice given 28 Aug under a change-of-ownership clause after
+  SpaceX closed its purchase of Anysphere (14 Aug; $60B implied value, in stock). OpenAI: "we cannot be confident that
+  SpaceX will use our technology within our terms of service." Cursor: OpenAI models are about 5% of traffic.
+  [DevOps.com](https://devops.com/openai-cuts-off-cursors-model-access-after-spacex-acquisition/),
+  [MLQ](https://mlq.ai/news/openai-plans-to-end-cursor-model-deal-after-spacex-takeover-setting-nov-12-cutoff/)
+- **10/11 OpenAI, the House letter:** dated 29 Oct, Rep. Casar plus 19. No public answer found. Due **13 Nov**.
+- **Military AI: Project Meridian sued (dated November; MED).** CREW, Public Citizen and POGO say Hegseth's 30 Sep
+  memo set up an advisory committee without following FACA; 19 of 21 members work in the private sector; co-leads
+  Musk, Luckey, Gingrich; recommendations due 28 Jan 2027. MITRE calls it independent, with conflict-of-interest
+  safeguards. No new frontier-lab Pentagon contract found for November. One outlet links a $2B Navy award to the
+  panel's timing; the summary names no company, so it is not used.
+  [Federal News Network](https://federalnewsnetwork.com/litigation/2026/11/pentagon-sued-over-its-project-meridian-advisory-committee/),
+  [POGO](https://www.pogo.org/press-center/release/statement-on-project-meridian-lawsuit)
+- **5 Short Supply (DRAM): the hearing date is confirmed by a docket source.** CourtListener: the motion-to-dismiss
+  hearing was reset from 21 Oct to **13 Nov 2026, 09:00, San Jose, Courtroom 3, Judge Noël Wise** (Garciaguirre v.
+  Samsung; 3:26-cv-06345 on CourtListener, 5:26 on PacerMonitor). Check 13–14 Nov. No government probe found.
+  - Prices: Counterpoint puts Q3 DRAM revenue up 369% year over year, just under $200B. TrendForce spot averages for
+    three mainstream chips slipped 2.1–4.1% in the eight days to 11 Nov; contract prices still rise, more slowly.
+    16 Gb DDR5 contract: $8.70 (Oct 2025) to $48 (Sep 2026).
+    [TechRadar](https://www.techradar.com/pro/memory-price-skyrockets-as-demand-for-ai-data-centers-drives-369-percent-year-over-year-surge),
+    [FourWeekMBA](https://fourweekmba.com/ai-has-memory-peaked-spot-prices-slip-as-micron-rallies-24/)
+- **Whistleblowers:** S. 1792 still shows no Senate vote. Meta: nothing dated November.
+  [Congress.gov](https://www.congress.gov/bill/119th-congress/senate-bill/1792)
+- **Data-center NDAs (US): two November items.** Hubbard Township, Ohio: a resolution that officials report NDA
+  requests, void existing ones and disclose past ones within 30 days. Howell Township, Michigan: an ordinance barring
+  officials and staff from signing NDAs, after NDAs with developers of a Meta-backed project. On file: Raskin's
+  29 Sep letters to Alphabet and Amazon. No new lawsuit dated November.
+  [Tribune Chronicle](https://www.tribtoday.com/news/local-news/2026/11/hubbard-trustees-pass-resolution-against-data-center-ndas),
+  [Yahoo/Howell](https://www.yahoo.com/news/politics/articles/howell-township-poised-pass-nda-232500589.html)
+- **Reactions:** counts are not visible through search.
+- **Pattern note:** three of today's items are defaults and clauses doing the work (a share setting, an ownership
+  clause, a retracted email). "The small print did it" is a device worth keeping for a week like this.

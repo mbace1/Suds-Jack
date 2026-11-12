@@ -1144,3 +1144,90 @@ All facts below come from search summaries; no article was opened.
   - Needs a Designer and Found in Pasila EN/FI are posted, with their links recorded by Grok Bot.
   - **No RFH film is waiting, and none is now wrong.** The only HOLD row is Toko Drop 2.0 (Toko Midori Games).
 - **12 Nov:** re-check the Short Supply docket and the Fitburg appeal, as planned.
+
+## Daily check, Thu 12 Nov 07:16 (morning; search summaries only, nothing opened)
+- **Big development:** no single break. Two money stories moved, both useful to The Round Trip:
+  - **Anthropic IPO, amended S-1 (10 Nov):** $70–$78; 825M Class A shares (801.4M from the company, 23.6M from
+    holders); about $64.4B at the top; a 124M-share greenshoe; the $26B private placement with seven companies; ticker
+    ANT on Nasdaq. Pricing 18 Nov and trading 19 Nov are reported (CNBC via aggregators), not company-confirmed.
+  - **New:** Reuters (via Quartz, Yahoo) says Anthropic told banks late on 9 Nov that emailed pricing terms (about
+    866.7M shares at $70–$80) were inaccurate, and retracted them within about 80 minutes. Valuation talk ($1T to
+    $1.4T+) is commentary, not a filing number.
+  - **OpenAI Q3 (WSJ-reviewed internal documents, 11 Nov):** revenue about $10B, operating loss about $10.9B, so
+    about $1.09 lost per dollar of revenue (down from $1.50). Not a public filing; outlets differ on "operating" vs
+    "adjusted operating".
+    [Forbes](https://www.forbes.com/sites/gabrielalinzainescu/2026/11/11/openai-revenue-hits-10-billion-as-losses-reach-109-billion/)
+- **New Finnish candidate (MED-HIGH): the AI report nobody has finished reading.**
+  - HS, 11 Nov (seen through MTV, STT and regional reprints): the report PM Orpo commissioned from business executive
+    Arto Tenhunen on using AI in public administration was handed over in October and has not been published. HS
+    says it is critical of past state digitalization projects, current AI policy and data-center investments.
+  - The Prime Minister's Office denies shelving it and says it is not finished. Strategy head Harri Martikainen: "I
+    have not had time to read all of it yet."
+  - Device in one line: a report on doing government work faster with AI, waiting for someone to read it. Before a
+    pitch: read the HS original; quote only what is on record; no faces.
+  - [MTV](https://www.mtvuutiset.fi/artikkeli/hs-orpon-tilaamaa-tekoalyraporttia-ei-ole-julkistettu-tyoryhman-luovuttama-raportti-on-kriittinen/9419338),
+    [KSML](https://www.ksml.fi/uutissuomalainen/9944417)
+- **New global candidate (MED-HIGH): Grok Build, public by default.**
+  - Security firm Claroc (10 Nov): 35,578 of 37,571 live Grok-built apps opened without a sign-in (about 94.7%); an
+    estimated 650–800 held private data (a hospital staff list, a patient briefing, plaintext passwords). 24 apps tied
+    to X and SpaceXSI staff held sales plans and were removed.
+  - Company response: SpaceXSI says employee accounts default to "Only you". Claroc says its paid account had
+    "Anyone with the link" preselected. Sources differ on how many organizations are affected.
+  - [The Hacker News](https://thehackernews.com/2026/11/over-35000-grok-built-apps-exposed.html),
+    [Claroc](https://blog.claroc.io/ghostshares-grok-build-apps/)
+- **Also new:**
+  - **OpenAI stops supplying Cursor today (12 Nov)**, after SpaceX bought its parent for $60B in stock. OpenAI: "we
+    cannot be confident that SpaceX will use our technology within our terms of service." Cursor says OpenAI models
+    are about 5% of its traffic. LOW-MED for RFH; possibly a Toko dev-strand item.
+    [DevOps.com](https://devops.com/openai-cuts-off-cursors-model-access-after-spacex-acquisition/)
+  - **Project Meridian sued (November):** CREW, Public Citizen and POGO say the Pentagon's future-of-warfare panel
+    (co-led by Musk, Luckey and Gingrich) broke the advisory-committee law; 19 of 21 members are from the private
+    sector. MITRE calls it independent, with conflict-of-interest safeguards. MED.
+    [Federal News Network](https://federalnewsnetwork.com/litigation/2026/11/pentagon-sued-over-its-project-meridian-advisory-committee/)
+  - **US towns vs data-center NDAs:** Hubbard Township (Ohio) passed a resolution voiding them; Howell Township
+    (Michigan) is preparing a ban for officials. A global echo for Keep It Quiet.
+    [Tribune Chronicle](https://www.tribtoday.com/news/local-news/2026/11/hubbard-trustees-pass-resolution-against-data-center-ndas)
+
+### Pitch facts (the 11 Nov pitches; re-checked 12 Nov from search summaries)
+- **A · Dragged (Fitburg):**
+  - **Holds:** the judgment says the anchor was dragged at least about 130 km, which is about 80 miles. The date is
+    31 Dec 2025. Sentences: captain 3 y 6 m, boatswain 2 y 10 m, aggravated sabotage. Two Elisa Helsinki–Tallinn
+    cables.
+  - **Soften:** "both say they will appeal". The captain's lawyer says he will certainly appeal; the boatswain's side
+    was still weighing it in one report (MTV's headline says both intend to). Prosecutors are undecided. **No notice
+    of appeal is reported.** Keep the card as "not final".
+  - **Extra, single source:** damages of about €1.9M; the telecom-interference charge was rejected as included.
+- **B · Give Way (Highway 9):**
+  - **Holds:** Protective Fence 26 runs 19–27 Nov; the Highway 9 notice is 18–25 Nov (the Jännevirta strip near
+    Kuopio/Rissala); over 40 aircraft including 20 Hornets; about 4,100 people (the Air Force's own pages).
+  - **Change beat 4:** "Also landing: the Netherlands, France, Sweden" is not supported for the highway. One trade
+    source (AeroTime) puts Dutch F-35As at Rissala, French Rafales at Rovaniemi and Swedish Gripens flying from
+    Kallax. Say "Also flying" or "Also taking part", and confirm the list from the Air Force's page.
+  - **Keep beat 5 exactly:** "Finland's new F-35s" must keep the word "Finland's", because Dutch F-35s do take part.
+  - **Timing:** the road closes in six days. To post before 18 Nov, a build needs a yes by about 14 Nov.
+- **C · Keep It Quiet (Jokela):**
+  - **Holds:** Keski-Uusimaa has the emails: the agency wrote that the project "is not yet public", so the zoning
+    change and the project were to be kept separate. The town denies secrecy and issued a release. 96 MW (several
+    sources). About 16.7 ha to funds managed by Blackstone (the town's own page; one paper says 16.8 ha). Keski-Uusimaa
+    says a complaint has gone to the Chancellor of Justice.
+  - **Not re-confirmed today:** the **76 generators** (on file from the YVA documents, 11 Nov) and **€19.2M** (on file
+    from Aamuposti, 11 Nov). Today's summaries did not repeat either. Read both sources before a build.
+  - **Correction to my note:** "Datakeskuksesta uusi tilaisuus Jokelassa" is the announcement of the 10 Nov meeting,
+    not a second event. Still no coverage of the meeting itself.
+  - **New:** Keski-Uusimaa and Aamuposti report construction could start as early as next spring; the YVA is done and
+    the next step is the town's building permit (date not confirmed from the summary). A residents' initiative asks
+    the town to hold further permits until an independent assessment.
+  - [Keski-Uusimaa, the denial](https://www.keski-uusimaa.fi/paikalliset/9821801),
+    [Keski-Uusimaa, next spring](https://www.keski-uusimaa.fi/paikalliset/9912383),
+    [residents' initiative](https://www.kuntalaisaloite.fi/fi/aloite/48850)
+
+### Re-checks and films
+- **Short Supply: the hearing date exists.** The docket (CourtListener) shows the motion-to-dismiss hearing reset
+  from 21 Oct to **Fri 13 Nov, 09:00, San Jose, Courtroom 3, Judge Noël Wise**. Check the outcome 13–14 Nov. The film
+  is not made wrong by it. TrendForce spot DRAM prices slipped 2–4% in the eight days to 11 Nov; contract prices
+  still rise.
+- **OpenAI, the House letter:** no answer reported; due **13 Nov**.
+- **Posted films:** Cut First (no report that the 5 Nov water plan was delivered), Right of Way, Sleep Tight, Five
+  Pins: nothing new surfaced. Night Flight makes no factual claim.
+- **Waiting films:** none. **Films now wrong:** none. The only HOLD row is Toko Drop 2.0.
+- **Reactions:** counts are not visible through search.

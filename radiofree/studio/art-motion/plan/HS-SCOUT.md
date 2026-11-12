@@ -1290,3 +1290,58 @@ Search summaries only; nothing opened. One device each, from STORY-DEVICES.md or
 - **ICEYE (Sleep Tight, posted):** no November news; it exhibits at Space Tech Expo Europe 17–19 Nov.
 - **HS sweep:** no new HS data-center or AI story surfaced.
 - **Reactions:** counts are not visible through search.
+
+### Check Thu 12 Nov 07:16 (morning; search summaries only; nothing opened)
+- **New HS lead (MED-HIGH): Orpo's AI report has not been published.**
+  - HS, 11 Nov, seen through MTV, Keskisuomalainen/Uutissuomalainen, Demokraatti, Suomenmaa and SSS (the HS original
+    was not opened): PM Petteri Orpo asked business executive Arto Tenhunen to find ways to use AI effectively in
+    public administration. The working group handed the report to the Prime Minister's Office in October. It has not
+    been published.
+  - HS, which has the report, says it gives a critical assessment of earlier state digitalization projects, Finland's
+    current AI policy and data-center investments.
+  - The office denies shelving it and says it is not finished. Strategy department head Harri Martikainen: "en ole
+    vielä kokonaan ehtinyt lukea sitä" (I have not had time to read all of it yet). He would not say what is missing.
+  - Why it fits RFH: a paper trail, an on-record denial, and a one-line irony that needs no invention. It also touches
+    the data-center strand from the government's own side. Before a pitch: read the HS original and note exactly
+    what the report says about data centers.
+  - [MTV](https://www.mtvuutiset.fi/artikkeli/hs-orpon-tilaamaa-tekoalyraporttia-ei-ole-julkistettu-tyoryhman-luovuttama-raportti-on-kriittinen/9419338),
+    [KSML](https://www.ksml.fi/uutissuomalainen/9944417),
+    [Demokraatti](https://demokraatti.fi/hs-orpon-tilaama-tekoalyraportti-valmistui-ei-julkistettu)
+- **Fitburg (pitch A), the appeal:** no notice of appeal reported. The captain's lawyer says he will certainly
+  appeal; the boatswain's side was still weighing it in one report, while MTV's headline says both intend to;
+  prosecutors are undecided. On record from the judgment: dragged at least about 130 km (about 80 miles), 31 Dec 2025,
+  captain 3 y 6 m, boatswain 2 y 10 m, aggravated sabotage; the telecom-interference charge was rejected as included.
+  The court's own release is on tuomioistuimet.fi. Damages of about €1.9M appear in one outlet only.
+- **Protective Fence 26 (pitch B):** the Air Force's pages give 19–27 Nov, over 40 aircraft including 20 Hornets and
+  about 4,100 people; the Highway 9 notice is 18–25 Nov at the Jännevirta strip near Kuopio/Rissala. Allies, from one
+  trade source (AeroTime): Dutch F-35As at Rissala, French Rafales at Rovaniemi, Swedish Gripens flying from Kallax.
+  Finland's own F-35As do not take part (the first two reached Rovaniemi on 18 Sep). So the highway landings can only
+  be claimed for Finnish Hornets unless the Air Force says otherwise.
+- **Tuusula (Jokela) (pitch C):**
+  - Keski-Uusimaa's headline says the town asked the agency for help with secrecy; the town's release denies it and
+    says the preliminary agreement required wide confidentiality. Councilors were shown the data center as one
+    option when the preliminary agreement had been signed months earlier (Keski-Uusimaa).
+  - "Datakeskuksesta uusi tilaisuus Jokelassa" is the announcement of the 10 Nov meeting (Jokela school center,
+    17:30), not a second event. No coverage of the meeting itself was found. A protest was held outside QTS's own
+    earlier residents' event.
+  - New: construction could start as early as next spring; the YVA is finished and the next permit is the town's
+    building permit (Keski-Uusimaa, Aamuposti; date not confirmed from the summary).
+  - A residents' initiative asks the town to hold further permits until an independent assessment, and says no
+    binding plan for the waste heat is on record.
+  - Confirmed today: 96 MW; about 16.7 ha (the town; 16.8 ha in one paper); the Chancellor of Justice complaint
+    (Keski-Uusimaa). Not repeated in today's summaries: 76 generators and €19.2M (both on file from 11 Nov).
+  - [Keski-Uusimaa, the denial](https://www.keski-uusimaa.fi/paikalliset/9821801),
+    [Keski-Uusimaa, next spring](https://www.keski-uusimaa.fi/paikalliset/9912383),
+    [Aamuposti](https://www.aamuposti.fi/paikalliset/9918956),
+    [the 10 Nov meeting](https://www.keski-uusimaa.fi/paikalliset/9906728),
+    [residents' initiative](https://www.kuntalaisaloite.fi/fi/aloite/48850)
+- **Helsinki protest (7 Nov):** no government response found. Organizers named in MTV's report: Elokapina and the
+  citizens' initiative "Datakeskukset kuriin".
+  [MTV](https://mtvuutiset.fi/artikkeli/datakeskuksia-vastaan-osoitetaan-mielta-ympari-suomea-mtv-paikalla-helsingissa/9417652)
+- **Liperi (Viinijärvi) (LOW):** on 3 Nov a town board approved leasing about 1.35 ha for a data center; a
+  counter-proposal to wait failed and a dissent was recorded.
+  [Kotiseutu-uutiset](https://kotiseutu-uutiset.com/uutiset/2026/11/03/kunta-on-valmis-vuokraamaan-tontit-viinijarvelta-datakeskukselle-lautakunnassa-erimielisyytta/)
+- **Muhos (Cut First):** still no report on whether the water plan was delivered by 5 Nov. On file: LVV's request for
+  a police investigation, and Google's choice of air cooling.
+- **Hamina (Right of Way), ICEYE (Sleep Tight):** nothing new surfaced.
+- **Reactions:** counts are not visible through search.
