@@ -46,7 +46,7 @@ wipers and a sat-nav on a stalk, all lit by what happens outside.
 No people and no faces. The landing over a stopped car is a picture of the joke. The real closure keeps traffic away
 from the strip, and `copy.json` says so under `props`.
 
-## Beats (22.0 s + the sign-off)
+## Beats (22.5 s + the sign-off)
 
 | t | picture | the sat-nav says (caption) | on its screen |
 |---|---|---|---|
@@ -55,7 +55,7 @@ from the strip, and `copy.json` says so under `props`.
 | 4.9 | A Hornet comes over the roof and lands beyond the block; the car stops | Road closed. / The Air Force / is [landing here]. | AIR FORCE EXERCISE · Protective Fence 26 · 19–27 Nov · OVER 40 AIRCRAFT · 20 HORNETS |
 | 10.0 | Three flights cross the sky | Also flying: / the Netherlands, / France, [Sweden]. | ALSO IN THE AIR: Netherlands · F-35s, France · Rafales, Sweden · Gripens (FLYING) |
 | 13.9 | The Hornet turns at the far end; its lamp grows | Not taking part: / Finland's new / [F-35s]. | a fourth row: Finland · F-35s, NOT TAKING PART |
-| 17.4 | It takes off over the car; its wash throws snow at the glass | Recalculating. / This road is / a [runway]. | RECALCULATING…, then THIS ROAD IS A RUNWAY · Expect delays: fighter jets |
+| 17.4 | It takes off over the car (overhead at 18.45, after the F-35 line has cleared); its wash throws snow at the glass | Recalculating. / This road is / a [runway]. | RECALCULATING…, then THIS ROAD IS A RUNWAY · Expect delays: fighter jets |
 
 ## Sound: the cabin kit (`pipeline/sound/cabin.py`, new)
 

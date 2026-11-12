@@ -59,7 +59,7 @@
     {
       "id": "runway",
       "role": "punchline",
-      "at": "s5+1.25",
+      "at": "s5+1.75",
       "until": "end-0.3",
       "hold": "end",
       "text": {

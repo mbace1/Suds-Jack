@@ -12,14 +12,14 @@ import * as CAP from '../../pipeline/text/captions.js';
 
 const LANG = Q.get('lang') || 'en', MAG = '#F0027F', AMBER = '#f2b83a';
 const COPY = await CAP.loadCopy('copy.json');
-const BEATS = [['s1', 0], ['s2', 5.0], ['s3', 10.0], ['s4', 13.9], ['s5', 17.4], ['end', 22.0]];
+const BEATS = [['s1', 0], ['s2', 5.0], ['s3', 10.0], ['s4', 13.9], ['s5', 17.4], ['end', 22.5]];
 const P = CAP.plan(COPY, LANG, BEATS, { snap: 0.25 }), T = P.T, DUR = T.end, UI = P.ui;
 const popT = (id) => { const c = P.captions.find((c) => c.id === id); return (c.words.find((w) => w.pop) || c.words[0]).t; };
 const wordT = (id, w0) => { const c = P.captions.find((c) => c.id === id); return (c.words.find((w) => w.w.toLowerCase().startsWith(w0)) || c.words[0]).t; };
 
 // ------------------------------------------------------------------ the clock: the car, and the jet that needs its road
 const V0 = 27, ZSTOP = 17, EYE = 1.85, LANE = 1.8;
-const EV = { alert: T.s1 + 0.9, brake: T.s1 + 2.8, stop: T.s2 + 2.4, strip: T.s1 + 2.3, pass1: T.s2 - 0.1, navEx: T.s2 + 1.35, pass2: T.s5 + 0.55 };
+const EV = { alert: T.s1 + 0.9, brake: T.s1 + 2.8, stop: T.s2 + 2.4, strip: T.s1 + 2.3, pass1: T.s2 - 0.1, navEx: T.s2 + 1.35, pass2: T.s5 + 1.05 };   // the take-off waits for the F-35 line to clear: a jet under that caption would be read as one
 const carV = (t) => V0 * (1 - smooth((t - EV.brake) / (EV.stop - EV.brake)));
 const carZ = (t) => { if (t >= EV.stop) return ZSTOP; const d = EV.stop - EV.brake; if (t < EV.brake) return ZSTOP + V0 * (EV.brake - t) + V0 * d / 2;
   const u = (t - EV.brake) / d; return ZSTOP + V0 * d * ((1 - u) - (1 - u * u * u) + (1 - u * u * u * u) / 2); };
