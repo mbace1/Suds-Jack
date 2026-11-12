@@ -1,0 +1,28 @@
+{
+  "name": "bottom-row-controlled-pipeline",
+  "visibility": "hidden_until_approved",
+  "source": "user supplied six-sprite bottom-row reference",
+  "characters": [
+    {"id": "bottom_grey_hoodie", "front": "bottom_grey_hoodie_front_iso.png", "rear": "bottom_grey_hoodie_rear_iso.png"},
+    {"id": "bottom_tattoo_tank", "front": "bottom_tattoo_tank_front_iso.png", "rear": "bottom_tattoo_tank_rear_iso.png"},
+    {"id": "bottom_flatcap_bat", "front": "bottom_flatcap_bat_front_iso.png", "rear": "bottom_flatcap_bat_rear_iso.png"}
+  ],
+  "stages": [
+    {"action": "idle", "frames": 4, "directions": ["front_iso", "rear_iso"]},
+    {"action": "move", "frames": 12, "directions": ["front_iso", "rear_iso"]}
+  ],
+  "hardRules": [
+    "no side/profile/cardinal view",
+    "no multi-direction sheet",
+    "pose skeleton must pass three-quarter isometric structural gate before generation",
+    "candidate remains quarantined after generation",
+    "reject duplicate or near-duplicate adjacent frames",
+    "reject failed opposite-contact ownership",
+    "reject identity/anatomy/scale/origin drift",
+    "only human-approved complete animation may surface"
+  ],
+  "promotion": {
+    "requires": ["output_gate", "facing_gate", "duplicate_gate", "mechanical_gate", "human_approval"],
+    "partialFramesSurface": false
+  }
+}
