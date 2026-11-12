@@ -97,3 +97,32 @@ Per `SOUND.md`, "Sound per film". 90 BPM, E minor landing on C.
 **Owner:** "Approved for posting on Nov 17 at noon". Scheduled in `POSTED.md` for **Tue 17 Nov 12:00 Helsinki** on RFH
 Instagram (the loop master), X and YouTube (the film with the sign-off). The 17 Nov 07:16 check re-reads the dates and
 the F-35 line first; if either has moved, the post holds and the owner hears why.
+
+## Socials copy (RFH; English, US spelling)
+
+The body is the copy the owner approved on 12 Nov; only the hashtags and the YouTube title are added here.
+
+**Instagram** (Reel; the loop master `films/12-11-Helsinki3-Give-Way-loop.mp4`, Original aspect, uncropped; 296 characters):
+
+```
+In 300 meters, give way to fighter jets. Highway 9 at Jännevirta near Kuopio is closed 18–25 Nov: the Air Force lands Hornets on it in Protective Fence 26 (19–27 Nov, 40+ aircraft). Dutch, French and Swedish jets fly too. Finland's new F-35s sit it out.
+
+#Finland #Kuopio #Ilmavoimat #Hornet #F35
+```
+
+**X** (`films/12-11-Helsinki3-Give-Way.mp4`, with the sign-off; 270 of 280 characters):
+
+```
+In 300 meters, give way to fighter jets. Highway 9 at Jännevirta near Kuopio is closed 18–25 Nov: the Air Force lands Hornets on it in Protective Fence 26 (19–27 Nov, 40+ aircraft). Dutch, French and Swedish jets fly too. Finland's new F-35s sit it out. #Finland #Kuopio
+```
+
+**YouTube Short** (`films/12-11-Helsinki3-Give-Way.mp4`; Public; not made for kids):
+- Title (35 characters): `Give Way: fighter jets on Highway 9`
+- Description: the Instagram caption above, as is.
+
+**If someone asks for sources** (a reply, not part of the post): the Finnish Air Force's page on Protective Fence 26
+(dates, over 40 aircraft, 20 Hornets, the highway strip); Siilinjärvi municipality's Highway 9 notice (Jännevirta,
+closures 18–25 Nov); AeroTime and Nordic Defence Sector (the allied jets and their bases; Finland's F-35s not taking
+part).
+
+No pin. No links in the post.
