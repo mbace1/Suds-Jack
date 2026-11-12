@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { bakeShading } from './voxel.js?v=85';
+import { bakeShading, applyWorldLightLit } from './voxel.js?v=86';
 
 /**
  * ARENA MESH ASSETS — the Meshy pipeline's landing pad for ENVIRONMENT.
@@ -138,6 +138,7 @@ export function toLambert(root, emissive) {
       emissive: emissive ? new THREE.Color(emissive) : new THREE.Color(0x000000),
     });
     o.material.side = THREE.FrontSide;
+    applyWorldLightLit(o.material);   // v63: the season's rim and the look's event lights
   });
   return root;
 }

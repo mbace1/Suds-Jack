@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { createSdfSkull, carveSdfImpact, sdfSkullsEnabled } from './sdf-skull.js?v=3';
-import { VoxelSprite, MODELS, modelFor, getRosterPalette } from './voxel.js?v=85';
-import { MESH_FOR_TYPE, cloneMeshEnemy, flashMeshRoot, updateMeshRoot } from './mesh-enemies.js?v=107';
+import { VoxelSprite, MODELS, modelFor, getRosterPalette } from './voxel.js?v=86';
+import { MESH_FOR_TYPE, cloneMeshEnemy, flashMeshRoot, updateMeshRoot } from './mesh-enemies.js?v=108';
 
 // fraction of the lattice lost before the mesh skin comes off (v4.35: ~22%)
 const SKIN_SHED = 0.22;
