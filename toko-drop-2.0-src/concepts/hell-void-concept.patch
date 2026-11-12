@@ -1,14 +1,15 @@
---- a/js/render/concept.js	1970-01-01 00:00:00.000000000 +0000
-+++ b/js/render/concept.js	2026-11-12 17:03:38.347743737 +0000
-@@ -0,0 +1,133 @@
+--- a/js/render/concept.js
++++ b/js/render/concept.js
+@@ -0,0 +1,289 @@
 +// concept.js — CONCEPT ONLY (scratch, never shipped): two worlds the owner is thinking of, drawn far enough to
 +// be judged from a still. HELL: plates of basalt afloat on lava, the lava seen DOWN the cracks between them.
 +// THE VOID: a pane of glass over deep space — a nebula and a turning galaxy far below, stars at three depths, a
 +// star chart's lines on the glass to say where the floor is. Each is one function of the world point, used by the
 +// floor (render/floor.js) and by the ground past it (render/scenery.js), so the two meet without a seam.
-+import { float, vec2, vec3, fract, sin, cos, dot, floor as tfloor, mix, length, min, max, abs, atan, fwidth, smoothstep, step, select, exp, pow, clamp, normalize, cameraPosition, positionWorld } from 'three/tsl';
++import * as THREE from 'three/webgpu';
++import { Fn, float, vec2, vec3, fract, sin, cos, dot, floor as tfloor, mix, length, min, max, abs, atan, fwidth, smoothstep, step, select, exp, pow, clamp, normalize, cameraPosition, positionWorld, positionLocal, positionGeometry, normalWorld, attribute } from 'three/tsl';
 +import { GEL_TIME } from './gel.js?v=153';
-+import { hash, noise } from './kit.js?v=153';
++import { hash, noise, seeded, phase, stokeAt, stations, put, stoneGeometry, risers, motes } from './kit.js?v=153';
 +
 +const v3 = (a) => vec3(...a);
 +// the ray's run for a metre of fall: what lies `d` m under the point w is seen at w + run × d
@@ -27,70 +28,225 @@
 +};
 +
 +// ── HELL ────────────────────────────────────────────────────────────────────────────────────────────────────
-+const lavaAt = (wl, H, mid) => {
-+  const t = GEL_TIME, flow = vec2(t.mul(H.flow[0]), t.mul(H.flow[1]));
-+  const n1 = noise(wl.mul(H.scale).add(flow)), n2 = noise(wl.mul(H.scale * 2.7).sub(flow.mul(1.7)).add(4.3));
-+  const surge = sin(dot(wl, vec2(...H.surge.dir)).mul(H.surge.k).sub(t.mul(H.surge.rate))).mul(0.5).add(0.5);
-+  // whole reaches of the floor run cool and crusted, others hot: a slow, wide field under the fine one
-+  const big = smoothstep(0.3, 0.75, noise(wl.mul(H.big).add(flow.mul(0.3)).add(23.7)));
-+  const heat = clamp(n1.mul(0.5).add(n2.mul(0.3)).mul(big.mul(0.9).add(0.25)).add(surge.mul(H.surge.gain).mul(big.mul(0.7).add(0.3))).add(mid.mul(0.2)), 0, 1);
-+  const lavaCol = mix(mix(v3(H.cool), v3(H.hot), smoothstep(0.2, 0.62, heat)), v3(H.white), smoothstep(0.66, 0.98, heat));
-+  const crust = smoothstep(H.crust[0], H.crust[1], noise(wl.mul(H.scale * 2.3).add(flow.mul(0.6)).add(11.3))).mul(float(1).sub(mid.mul(0.8)));
-+  return { col: mix(lavaCol, v3(H.skin), crust.mul(0.9)), heat, surge };
++// Second cut (owner, 2026-11-12: "less lava stream and more like a martian cavern with lava on the side and just
++// hellish feel. Moving lava or steaming eruptions help"). The floor is the cave's own: dark rust rock worn into
++// terraces, dust combed into its hollows, loose stones, hairline cracks. The lava is BESIDE it: a river down the
++// left side with boulders riding it, a lake along the far side under a wall the lava falls down. Everything is lit
++// from there. Two things go off on a beat: vents in the floor (their cracks light, then steam) and domes in the
++// lava (a swell, a burst, spatter and smoke).
++const beatS = (B, at) => fract(GEL_TIME.div(B.period).sub(stokeAt(B, at)));
++const ventSpots = (H, hx, hz) => H.vent.at.map(([fx, fz]) => [fx * hx, fz * hz]);
++const eruptSpots = (H, hx, hz) => H.erupt.at.map((e) => (e.side === 'left' ? [-(hx + H.bank.left + e.out), -hz + e.along * 2 * hz] : [-hx + e.along * 2 * hx, -(hz + H.bank.far + e.out)]));
++// metres into the lava (> 0) from its bank (< 0: metres back from it): a river down the left side, a lake along
++// the far side, a pool or two out on the right shelf
++const lavaField = (p, H, hx, hz) => {
++  const B = H.bank, wig = noise(p.mul(B.wig[0])).sub(0.5).mul(B.wig[1]).add(noise(p.mul(B.wig[0] * 3.1).add(4.7)).sub(0.5).mul(B.wig[1] * 0.35));
++  const left = p.x.negate().sub(hx + B.left).add(wig), far = p.y.negate().sub(hz + B.far).add(wig);
++  const pool = min(noise(p.mul(B.pool.scale).add(31.3)).sub(B.pool.at).mul(B.pool.k), p.x.sub(hx + B.pool.from));
++  return max(max(left, far), pool);
++};
++// the cave's rock at a point: { rock, hgt, grain }
++const caveRock = (w, H) => {
++  const R = H.rock;
++  const hAt = (q) => noise(q.mul(R.swell)).mul(0.62).add(noise(q.mul(R.swell * 2.7).add(7.1)).mul(0.38));
++  // which way the ground falls here, toward the lava's light (+) or away from it (−): a step's edge is lit or in shade by it
++  const hgt = hAt(w), face = clamp(hAt(w.add(vec2(...H.light.from).mul(0.2))).sub(hgt).mul(-R.faceK), -1, 1);
++  const lev = hgt.mul(R.steps), fl = fract(lev), aa = max(fwidth(lev), 1e-3);
++  const edge = float(1).sub(smoothstep(aa, aa.add(R.line), min(fl, float(1).sub(fl))));
++  const relief = float(1).add(edge.mul(max(face, 0).mul(R.lipK).add(min(face, 0).mul(R.footK)))).add(face.mul(R.soft));
++  const tone = hash(vec2(tfloor(lev), 3.7)).mul(R.tone).add(1 - R.tone * 0.5);
++  const grain = noise(w.mul(5.7)).mul(0.5).add(noise(w.mul(17.3)).mul(0.3)).add(0.6);
++  let rock = v3(R.color).mul(tone).mul(grain);
++  rock = mix(rock, v3(R.basalt).mul(grain), smoothstep(R.patch[0], R.patch[1], noise(w.mul(R.patchScale).add(51.3))));   // old flow, darker and glassier
++  return { rock, hgt, grain, relief };
 +};
 +export const hellFloor = (w, H, hx, hz) => {
-+  const t = GEL_TIME, run = viewRun();
-+  const plates = (q) => cellular(q.add(vec2(noise(q.mul(0.21)), noise(q.mul(0.21).add(7.7))).sub(0.5).mul(H.warp)), H.cell);
-+  const top = plates(w), gapT = top.d2.sub(top.d1);
-+  const cw = float(H.crack / H.cell).mul(noise(w.mul(0.45).add(3.1)).mul(1.1).add(0.45));
-+  const aa = max(fwidth(gapT), 1e-3), onTop = smoothstep(cw, cw.add(aa), gapT);
-+  // down a crack: the point `depth` m lower along the view. Under a plate there: a WALL, the plate's own side, lit
-+  // from below. Open there: the lava
-+  const wl = w.add(run.mul(H.depth)), low = plates(wl), gapL = low.d2.sub(low.d1);
-+  const wall = smoothstep(cw, cw.add(0.015), gapL);
-+  const L = lavaAt(wl, H, float(1).sub(smoothstep(0, cw, gapL)));
-+  const lightCol = mix(v3(H.cool), v3(H.hot), 0.75);
-+  // the plate's top: basalt, each plate a shade of its own, grained, with hairline fissures and ash in its hollows
-+  const idh = hash(top.id), tone = idh.mul(0.55).add(0.72);
-+  const grain = noise(w.mul(5.3)).mul(0.45).add(noise(w.mul(17.1)).mul(0.25)).add(0.62);
-+  const fissure = float(1).sub(smoothstep(0.0, 0.03, abs(noise(w.mul(1.25).add(idh.mul(9))).sub(0.5))));
-+  // ropy lava: the wrinkles a flow sets in, each plate's running its own way
-+  const ra = idh.mul(6.283), rd = vec2(cos(ra), sin(ra)), rope = pow(sin(dot(w, rd).mul(H.rope.pitch).add(noise(w.mul(0.9).add(idh.mul(17))).mul(H.rope.bend))).mul(0.5).add(0.5), float(3));
-+  let rock = v3(H.rock).mul(tone).mul(grain).mul(float(1).sub(fissure.mul(0.5))).mul(rope.mul(H.rope.k).add(1 - H.rope.k * 0.4));
-+  rock = mix(rock, v3(H.ash).mul(grain), smoothstep(0.52, 0.86, noise(w.mul(0.55).add(21))).mul(H.ashK));
-+  // lit by the cracks: a plate's edge takes the lava's light and loses it toward its middle; the surge goes over
-+  const metres = gapT.sub(cw).max(0).mul(H.cell * 0.5), edge = exp(metres.div(H.edge.r).negate());
-+  const surgeT = sin(dot(w, vec2(...H.surge.dir)).mul(H.surge.k).sub(t.mul(H.surge.rate))).mul(0.5).add(0.5);
-+  const under = lavaAt(w, H, float(0)).heat;   // how hot the lava under this point runs: a cool reach lights nothing
-+  rock = rock.add(rock.mul(lightCol).mul(edge.mul(H.edge.k)).mul(under.mul(1.6).add(0.15)).mul(surgeT.mul(0.5).add(0.75))).add(lightCol.mul(edge.mul(edge).mul(edge)).mul(H.edge.bounce).mul(under));
-+  // one plate in a few is HOT: veins of fire through it, beating — the one that is about to go
-+  const hot = step(float(1 - H.hotPlate.share), hash(top.id.add(vec2(3.3, 9.1)))), beat = sin(t.mul(H.hotPlate.rate).add(idh.mul(6.283))).mul(0.5).add(0.5);
-+  const veins = float(1).sub(smoothstep(0.0, H.hotPlate.w, abs(noise(w.mul(H.hotPlate.scale).add(idh.mul(31))).sub(0.5))));
-+  rock = rock.add(mix(v3(H.cool), v3(H.hot), beat).mul(veins.mul(hot).mul(beat.mul(0.75).add(0.25)).mul(H.hotPlate.k)).mul(float(1).sub(edge.mul(0.5))));
-+  // the wall: darker rock, brightest at its foot where the lava is
-+  const foot = float(1).sub(smoothstep(cw, cw.add(H.wall.rise), gapL));
-+  const wallCol = v3(H.rock).mul(H.wall.top).add(mix(v3(H.cool), lightCol, L.heat).mul(foot.mul(foot).mul(H.wall.k)).mul(L.heat.mul(0.9).add(0.35)));
-+  let col = mix(mix(L.col, wallCol, wall), rock, onTop);
-+  // scorched toward the edge of the slab
-+  const e = min(float(hx).sub(abs(w.x)), float(hz).sub(abs(w.y)));
-+  col = col.mul(float(1).sub(float(1).sub(smoothstep(0, H.rim, e)).mul(0.35)));
-+  const open = float(1).sub(onTop).mul(float(1).sub(wall));
-+  return { col, mask: open.mul(L.heat).mul(0.8).add(edge.mul(onTop).mul(0.15)), lineCol: v3(H.hot), wet: float(0.1) };
++  const t = GEL_TIME, run = viewRun(), from = vec2(...H.light.from), R = H.rock;
++  const C = caveRock(w, H);
++  let alb = C.rock;
++  // dust in the low ground, combed into ripples
++  const D = H.dust, dust = smoothstep(D.at[0], D.at[1], float(1).sub(C.hgt).mul(0.6).add(noise(w.mul(D.scale).add(21)).mul(0.4)));
++  const rip = sin(dot(w, vec2(...D.dir)).mul(D.pitch).add(noise(w.mul(0.6).add(9.9)).mul(D.bend))).mul(0.5).add(0.5);
++  alb = mix(alb, v3(D.color).mul(rip.mul(D.rip).add(1 - D.rip * 0.5)).mul(noise(w.mul(9.1)).mul(0.2).add(0.9)), dust.mul(D.k));
++  const bare = float(1).sub(dust.mul(0.7));
++  alb = alb.mul(float(1).add(C.relief.sub(1).mul(bare)));
++  // loose stones, each lit on its side toward the lava and throwing a short shadow the other way
++  const P = H.pebble, u = w.div(P.cell), pid = tfloor(u), pf = fract(u);
++  const pc = vec2(hash(pid), hash(pid.add(vec2(7.1, 3.9)))).mul(0.5).add(0.25), ph = hash(pid.add(vec2(13.7, 29.3)));
++  const po = pf.sub(pc), pd = length(po).mul(P.cell), pr = mix(float(P.r[0]), float(P.r[1]), fract(ph.mul(17.3)));
++  const pon = step(float(1 - P.share), ph), paa = max(fwidth(pd), 1e-3);
++  const stone = float(1).sub(smoothstep(pr.sub(paa), pr, pd)).mul(pon);
++  const pl = dot(po.div(max(length(po), 1e-4)), from).mul(0.5).add(0.5);
++  const shadow = float(1).sub(smoothstep(pr.mul(0.6), pr.mul(1.8), length(po.add(from.mul(pr.div(P.cell)).mul(0.9))).mul(P.cell))).mul(pon).mul(P.shadow);
++  alb = alb.mul(float(1).sub(shadow.mul(float(1).sub(stone))));
++  alb = mix(alb, v3(P.color).mul(fract(ph.mul(41.7)).mul(0.5).add(0.75)).mul(pl.mul(P.lit).add(1 - P.lit * 0.5)), stone);
++  // hairline cracks, here and there
++  const K = H.crack, cc = cellular(w.add(vec2(noise(w.mul(0.23)), noise(w.mul(0.23).add(7.7))).sub(0.5).mul(K.warp)), K.cell), gap = cc.d2.sub(cc.d1);
++  const cwid = float(K.w / K.cell).mul(noise(w.mul(0.5).add(3.1)).mul(1.2).add(0.4)), caa = max(fwidth(gap), 1e-3);
++  const crack = float(1).sub(smoothstep(cwid, cwid.add(caa), gap)).mul(smoothstep(K.some[0], K.some[1], noise(w.mul(0.17).add(61.1))));
++  alb = alb.mul(float(1).sub(crack.mul(K.dark)));
++  // the light: from the lava, down the left side and along the far side, never quite steady
++  const Lt = H.light, dl = w.x.add(hx), df = w.y.add(hz);
++  const flick = sin(t.mul(1.7)).mul(0.5).add(sin(t.mul(2.9).add(1.3)).mul(0.3)).add(sin(t.mul(0.6).add(4.1)).mul(0.2)).mul(Lt.flicker).add(1);
++  const side = exp(dl.div(Lt.r).negate()).mul(Lt.left).add(exp(df.div(Lt.r).negate()).mul(Lt.far)).mul(flick);
++  // the vents: a hole in a low mound, sulphur thrown round it. Before it blows the cracks round it light; then steam
++  const V = H.vent, rT = V.r * 0.5;
++  let nearVent = float(0), ventLight = float(0), ventFire = float(0), pitMask = float(0), pitCol = vec3(0);
++  for (const [fx, fz] of V.at) {
++    const c = [fx * hx, fz * hz], sb = beatS(H.beat, c);
++    const tell = smoothstep(1 - V.tell, 1, sb), blow = float(1).sub(smoothstep(0, H.beat.on, sb)), heat = max(tell.mul(tell), blow);
++    const rel = w.sub(vec2(...c)), wob = noise(w.mul(2.3).add(fx * 31.7)).sub(0.5).mul(V.r * 0.35), len = max(length(rel), 1e-4);
++    const d = len.add(wob), dT = length(rel.add(run.mul(V.deep))).add(wob);
++    const open = float(1).sub(smoothstep(rT - 0.04, rT, d)), bottom = float(1).sub(smoothstep(rT * 0.7, rT, dT));
++    const hotCol = mix(v3(H.cool).mul(0.45), v3(H.hot), heat).add(v3(H.white).mul(blow.mul(0.5)));
++    const mound = smoothstep(V.r * 2.8, V.r * 0.9, d);
++    alb = alb.mul(mound.mul(dot(rel.div(len), from)).mul(V.relief).add(1));
++    // it has split the rock round it: fissures out from the hole, alight when it is about to go
++    const fiss = float(1).sub(smoothstep(0, float(V.fissW).div(d.max(0.3)), abs(noise(rel.div(len).mul(V.fiss).add(vec2(fx * 5.1, fz * 3.7))).sub(0.5))))
++      .mul(smoothstep(V.r * 0.6, V.r * 0.9, d)).mul(float(1).sub(smoothstep(V.r * 1.4, V.fissR, d)));
++    alb = alb.mul(float(1).sub(fiss.mul(0.75)));
++    ventFire = ventFire.add(fiss.mul(heat));
++    const streak = noise(rel.div(len).mul(V.streaks).add(vec2(fx * 13.1, d.mul(0.35))));
++    const sulf = smoothstep(V.stain, V.r * 0.8, d).mul(smoothstep(0.3, 0.75, streak.mul(0.35).add(noise(w.mul(2.9).add(fx * 3.3)).mul(0.65)))).mul(V.sulfK);
++    alb = mix(alb, v3(V.sulfur).mul(C.grain), sulf);
++    pitCol = mix(pitCol, mix(v3(R.basalt).mul(0.3).add(hotCol.mul(0.22)), hotCol, bottom), open);
++    pitMask = max(pitMask, open);
++    nearVent = nearVent.add(exp(d.div(V.reach).negate()).mul(heat));
++    ventLight = ventLight.add(exp(d.div(V.lightR).negate()).mul(blow));
++  }
++  const light = v3(Lt.amb).add(v3(Lt.color).mul(side)).add(v3(H.hot).mul(ventLight.mul(V.lightK)));
++  // fire deep in the cracks: near the lava's sides, and round a vent about to blow
++  const nearLava = min(exp(dl.div(K.reach).negate()).add(exp(df.div(K.reach).negate())), 1).mul(sin(t.mul(0.9).add(dot(w, vec2(0.21, 0.13)))).mul(0.25).add(0.75));
++  const fire = crack.mul(nearLava.mul(K.glow).add(nearVent.mul(K.vent))).add(ventFire.mul(V.fissK));
++  let col = alb.mul(light).add(mix(v3(H.cool), v3(H.hot), min(nearVent.add(nearLava.mul(0.5)), 1)).mul(fire));
++  col = mix(col, pitCol, pitMask);
++  return { col, mask: fire.mul(0.5).add(pitMask.mul(0.4)), lineCol: v3(H.hot), wet: float(0.06) };
 +};
-+// past the slab: the lava sea — rafts of cooling crust, bright where they part, open where it is hottest
-+export const lavaSea = (w, H, hz) => {
-+  const S = H.sea, t = GEL_TIME, flow = vec2(t.mul(S.flow[0]), t.mul(S.flow[1]));
-+  const q = w.mul(S.scale).add(flow), n = noise(q).mul(0.6).add(noise(q.mul(2.3).add(5.1)).mul(0.4));
-+  const seam = float(1).sub(smoothstep(0.0, S.seam, abs(n.sub(0.5))));
-+  const heat = noise(w.mul(S.scale * 0.37).sub(flow.mul(0.5)).add(9.3));
-+  const glow = mix(v3(H.cool), v3(H.hot), smoothstep(0.3, 0.8, heat));
-+  const crust = v3(H.skin).mul(noise(w.mul(1.7)).mul(0.7).add(0.65));
-+  // the crust parts only here and there; far past the far side it is all alight, and what stands there stands against it
-+  const part = smoothstep(S.part[0], S.part[1], noise(w.mul(S.scale * 0.8).add(41.7))), far = smoothstep(hz + S.far[0], hz + S.far[1], w.y.negate());
-+  const lit = seam.mul(heat.mul(0.7).add(0.3)).mul(part.mul(0.9).add(0.1));
-+  // (the far light is in the seams and the open lava, never in the crust: lit crust is a brown haze)
-+  return mix(crust, glow.mul(S.glow).mul(far.mul(S.farK).add(1)), min(lit.mul(far.mul(1.5).add(1)), 1)).add(v3(H.hot).mul(smoothstep(S.open[0], S.open[1], heat).mul(far.mul(1.5).add(1))).mul(S.openK));
++// the lava's top at a point `L` m in from its bank
++const lavaTop = (p, L, H, hx, hz) => {
++  const S = H.lava, t = GEL_TIME;
++  const wR = smoothstep(-(hz + H.bank.far) - 3, -(hz + H.bank.far) + 1.5, p.y);   // 1: the river (runs toward the near end) · 0: the lake (creeps toward the river's head)
++  const qa = p.sub(vec2(0, t.mul(S.river))), qb = p.add(vec2(t.mul(S.lake), 0)).add(17.3);
++  const plates = (q) => { const c = cellular(q.add(vec2(noise(q.mul(0.31)), noise(q.mul(0.31).add(5.5))).sub(0.5).mul(S.warp)), S.cell); return { gap: c.d2.sub(c.d1), idh: hash(c.id) }; };
++  const heatAt = (q) => noise(q.mul(S.big)).mul(0.6).add(noise(q.mul(S.big * 2.9).add(4.3)).mul(0.4));
++  const a = plates(qa), b = plates(qb), gap = mix(b.gap, a.gap, wR), idh = mix(b.idh, a.idh, wR);
++  const heat = clamp(mix(heatAt(qb), heatAt(qa), wR).mul(0.8).add(smoothstep(0, S.mid, L).mul(S.midK)), 0, 1);
++  const seamW = float(S.seam).mul(heat.mul(1.7).add(0.25)), seam = float(1).sub(smoothstep(seamW.mul(0.35), seamW, gap));
++  const open = smoothstep(S.open[0], S.open[1], heat);
++  const stre = mix(noise(vec2(qb.x.mul(0.45), qb.y.mul(2.4))), noise(vec2(qa.x.mul(2.4), qa.y.mul(0.45))), wR);   // drawn out along its run
++  const k = heat.mul(0.6).add(stre.mul(0.5));
++  const melt = mix(v3(H.cool), v3(H.hot), smoothstep(0.2, 0.75, k)).add(v3(H.white).mul(smoothstep(0.78, 1.05, k).mul(0.45)));
++  const crust = v3(S.skin).mul(idh.mul(0.9).add(0.55)).add(v3(H.cool).mul(float(1).sub(smoothstep(0, 0.25, gap)).mul(0.3)));
++  let col = mix(crust, melt, max(seam, open)).add(melt.mul(exp(L.max(0).div(S.shoreR).negate()).mul(S.shoreK)));
++  // the domes: a swell of white heat, a burst, a ring running out over the crust
++  const E = H.erupt;
++  for (const c of eruptSpots(H, hx, hz)) {
++    const sb = beatS(E.beat, c), d = length(p.sub(vec2(...c)));
++    const swell = smoothstep(1 - E.tell, 1, sb), r = swell.mul(E.r);
++    const dome = float(1).sub(smoothstep(r.mul(0.55), r.add(0.01), d)).mul(swell);
++    const v = sb.div(E.ring), live = float(1).sub(step(1, v)), rr = v.mul(E.reach).add(E.r);
++    const ring = float(1).sub(smoothstep(0, E.w, abs(d.sub(rr)))).mul(float(1).sub(v)).mul(live);
++    const after = float(1).sub(smoothstep(0, E.r * 1.5, d)).mul(float(1).sub(v).pow(2)).mul(live);
++    col = mix(col, v3(H.white), clamp(dome.mul(0.9).add(after.mul(0.8)), 0, 1)).add(v3(H.hot).mul(ring.mul(E.ringK)));
++  }
++  return col;
 +};
++// past the floor: the cave's rock going on to the lava's bank, lit by it
++export const cavernGround = (p, H, hx, hz) => {
++  const B = H.bank, L = lavaField(p, H, hx, hz), C = caveRock(p, H);
++  const rock = C.rock.mul(C.relief);
++  const lit = exp(L.min(0).div(B.lightR));
++  // where the wall's falls come down into the lake
++  let splash = float(0);
++  for (const F of H.wall.falls) splash = splash.add(exp(length(p.sub(vec2(F.x * hx, -(hz + H.wall.z)))).div(1.6).negate()));
++  const bank = rock.mul(v3(B.amb).add(v3(H.light.color).mul(lit.mul(B.lightK)))).mul(float(1).sub(smoothstep(-0.45, 0, L).mul(0.6)));
++  return mix(bank, lavaTop(p, L, H, hx, hz).add(v3(H.white).mul(splash.mul(0.5))), smoothstep(0, B.aa, L));
++};
++// a stalagmite: a cone grown in rings, no two rings the same
++const spireGeometry = (seed) => {
++  const g = new THREE.ConeGeometry(1, 1, 9, 7), p = g.getAttribute('position'), rnd = seeded(seed);
++  const rings = Array.from({ length: 4 }, () => [4 + rnd() * 9, rnd() * 6.283, 0.05 + rnd() * 0.13]), lean = [(rnd() - 0.5) * 0.3, (rnd() - 0.5) * 0.3];
++  for (let i = 0; i < p.count; i++) {
++    const y = p.getY(i) + 0.5, a = Math.atan2(p.getZ(i), p.getX(i));
++    let k = 1 + 0.12 * Math.sin(a * 3 + seed) * (1 - y);
++    for (const [f, ph, amp] of rings) k += amp * Math.sin(y * f + ph);
++    p.setXYZ(i, p.getX(i) * k + lean[0] * y * y, y, p.getZ(i) * k + lean[1] * y * y);
++  }
++  g.computeVertexNormals();
++  return g;
++};
++// what stands and moves in the cave (scenery.js calls this for the concept)
++export function hellSet(sc, hx, hz) {
++  const H = sc.T.worlds.floor.hell, B = H.bank, E = H.erupt, Wl = H.wall, t = GEL_TIME, rnd = seeded(H.seed ?? 66);
++  const lightCol = v3(H.light.color);
++  // the far wall, the lava coming down it into the lake
++  const wallMat = new THREE.MeshBasicNodeMaterial();
++  wallMat.colorNode = Fn(() => {
++    const x = positionWorld.x, y = positionWorld.y;
++    const but = noise(vec2(x.mul(0.3), y.mul(0.07))).mul(0.6).add(noise(vec2(x.mul(0.9), y.mul(0.2)).add(3.1)).mul(0.4));   // buttresses: tall forms
++    const strata = noise(vec2(x.mul(0.12), y.mul(1.9).add(but.mul(3))));
++    const crease = float(1).sub(smoothstep(0, 0.07, abs(noise(vec2(x.mul(0.45), y.mul(0.05)).add(9.3)).sub(0.5))));
++    const rock = v3(Wl.rock).mul(but.mul(0.9).add(0.45)).mul(strata.mul(0.55).add(0.72)).mul(float(1).sub(crease.mul(0.7)));
++    let col = rock.mul(v3(Wl.amb).add(lightCol.mul(exp(y.div(Wl.lightR).negate()).mul(Wl.lightK))));
++    for (const F of Wl.falls) {
++      const dx = abs(x.sub(F.x * hx).sub(noise(vec2(y.mul(0.45), F.x * 7.7)).sub(0.5).mul(0.35)));
++      const below = float(1).sub(smoothstep(F.top - 0.5, F.top, y)), wide = float(F.w).mul(float(1.5).sub(y.div(F.top).mul(0.6)));   // wider toward its foot
++      const core = float(1).sub(smoothstep(wide.mul(0.5), wide, dx)).mul(below);
++      const st = noise(vec2(x.mul(5), y.mul(0.7).add(t.mul(Wl.fallSpeed)))).mul(0.6).add(noise(vec2(x.mul(11), y.mul(1.7).add(t.mul(Wl.fallSpeed * 1.5)))).mul(0.4));
++      const lava = mix(v3(H.cool), v3(H.hot), st.mul(0.75).add(0.3)).add(v3(H.white).mul(smoothstep(0.55, 0.95, st).mul(float(1).sub(smoothstep(0, wide.mul(0.6), dx))).mul(0.6)));
++      col = col.add(rock.mul(lightCol).mul(exp(dx.div(Wl.fallGlowR).negate()).mul(below).mul(Wl.fallGlowK)));
++      col = mix(col, lava, core);
++    }
++    return col.mul(float(1).sub(smoothstep(Wl.dark[0], Wl.dark[1], y)));
++  })();
++  const wall = sc._add(new THREE.Mesh(new THREE.PlaneGeometry(2 * (hx + Wl.past), Wl.h), wallMat));
++  wall.rotation.x = -Wl.lean; wall.position.set(0, Wl.h / 2 * Math.cos(Wl.lean) - 0.3, -(hz + Wl.z) - Wl.h / 2 * Math.sin(Wl.lean));
++  // stalagmites: on the banks, out in the lava, under the wall. Lit from their feet
++  for (const Sp of H.spires) {
++    const spots = stations(hx, hz, rnd, Sp);
++    for (let v = 0; v < 3; v++) {
++      const mine = spots.filter((_, i) => i % 3 === v);
++      if (!mine.length) continue;
++      const mat = new THREE.MeshStandardNodeMaterial({ color: Sp.color, roughness: 0.96, metalness: 0, flatShading: true });
++      mat.emissiveNode = lightCol.mul(exp(positionWorld.y.div(Sp.footR).negate()).mul(Sp.foot)).mul(v3(Wl.rock));
++      const inst = sc._add(new THREE.InstancedMesh(spireGeometry(H.seed + v * 17 + Sp.every), mat, mine.length));
++      mine.forEach(([x, z], i) => { const h = Sp.h[0] + rnd() * (Sp.h[1] - Sp.h[0]), r = Sp.r[0] + rnd() * (Sp.r[1] - Sp.r[0]); put(inst, i, x, -0.05, z, r, h, r, 0, rnd() * 6.283, 0); });
++    }
++  }
++  // boulders riding the river down the left side
++  const Bd = H.boulders, z0 = -(hz + Bd.reach[0]), len = 2 * hz + Bd.reach[0] + Bd.reach[1];
++  const bm = new THREE.MeshStandardNodeMaterial({ color: Bd.color, roughness: 0.95, metalness: 0, flatShading: true });
++  const bp = phase(), bu = fract(t.mul(H.lava.river / len).add(bp)), size = mix(float(Bd.r[0]), float(Bd.r[1]), fract(bp.mul(7.31)));
++  bm.positionNode = Fn(() => positionLocal.sub(positionGeometry)
++    .add(vec3(sin(t.mul(0.31).add(bp.mul(6.283))).mul(0.25), sin(t.mul(0.9).add(bp.mul(40))).mul(0.05).sub(size.mul(Bd.sunk)), bu.mul(len)))
++    .add(positionGeometry.mul(size).mul(smoothstep(0, 0.05, bu).mul(float(1).sub(smoothstep(0.95, 1, bu))))))();
++  bm.emissiveNode = v3(H.hot).mul(float(1).sub(smoothstep(-0.85, 0.1, normalWorld.y))).mul(Bd.under);
++  const rocks = sc._add(new THREE.InstancedMesh(stoneGeometry(31, 1, 0.4), bm, Bd.n));
++  rocks.frustumCulled = false;
++  for (let i = 0; i < Bd.n; i++) put(rocks, i, -(hx + B.left + Bd.out[0] + rnd() * (Bd.out[1] - Bd.out[0])), 0, z0);
++  // the domes' spatter: gobs thrown up on the burst, falling back
++  const spots = eruptSpots(H, hx, hz), Q = E.spat;
++  const sm = new THREE.MeshBasicNodeMaterial();
++  const sb = fract(t.div(E.beat.period).sub(attribute('beat', 'float'))), h1 = phase(), h2 = fract(h1.mul(7.31)), h3 = fract(h1.mul(13.7)), h4 = fract(h1.mul(29.3));
++  const vy = mix(float(Q.vy[0]), float(Q.vy[1]), h2), ang = h3.mul(6.283), vr = mix(float(Q.vr[0]), float(Q.vr[1]), h4);
++  const tt = sb.mul(E.beat.period).sub(h1.mul(Q.spread)).max(0), yy = vy.mul(tt).sub(tt.mul(tt).mul(Q.g / 2)), life = clamp(tt.div(vy.mul(2 / Q.g)), 0, 1);
++  const alive = step(1e-4, tt).mul(step(0, yy));
++  sm.positionNode = Fn(() => positionLocal.sub(positionGeometry).add(vec3(cos(ang).mul(vr).mul(tt), yy.max(0), sin(ang).mul(vr).mul(tt)))
++    .add(positionGeometry.mul(mix(float(Q.r[0]), float(Q.r[1]), h4).mul(alive).mul(float(1).sub(life.mul(0.5))))))();
++  sm.colorNode = mix(v3(H.white), mix(v3(H.hot), v3(H.cool), smoothstep(0.55, 1, life)), smoothstep(0, 0.3, life));
++  const gobs = sc._add(new THREE.InstancedMesh(new THREE.SphereGeometry(1, 6, 4), sm, spots.length * Q.per));
++  gobs.frustumCulled = false;
++  const beats = new Float32Array(spots.length * Q.per);
++  spots.forEach(([x, z], j) => { for (let i = 0; i < Q.per; i++) { put(gobs, j * Q.per + i, x, 0.1, z); beats[j * Q.per + i] = stokeAt(E.beat, [x, z]); } });
++  gobs.geometry.setAttribute('beat', new THREE.InstancedBufferAttribute(beats, 1));
++  // smoke off each burst; steam out of the floor's vents on theirs, and out of two more on the right shelf
++  risers(sc, spots.map(([x, z]) => [x, 0.2, z]), { ...E.smoke, beat: { ...E.beat, lag: 0.02 } });
++  const vents = [...ventSpots(H, hx, hz), ...H.vent.shelf.map(([fx, fz]) => [fx * hx, fz * hz])];
++  risers(sc, vents.map(([x, z]) => [x, 0.05, z]), { ...H.steam, beat: { ...H.beat, lag: 0 } });
++  // embers off the lava, ash coming down over everything
++  motes(sc, [[-(hx + B.left + 4), 0, 9, 2 * hz + 8, 0.1], [0, -(hz + B.far + 4), 2 * hx + 14, 9, 0.1]], H.embers);
++  motes(sc, [[0, 0, 2 * hx + 8, 2 * hz + 8, 0.05]], H.ash);
++}
 +
 +// ── THE VOID ────────────────────────────────────────────────────────────────────────────────────────────────
 +// `chart`: the star chart on the glass (the floor has it, the space past the floor does not)
@@ -134,8 +290,8 @@
 +  col = col.add(v3(K.color).mul(marks)).add(v3(K.color).mul(sheen));
 +  return { col, mask: line.mul(0.5).add(node).add(ring.mul(0.6)), lineCol: v3(K.color) };
 +};
---- a/js/render/floor.js	2026-11-12 15:58:11.854916493 +0000
-+++ b/js/render/floor.js	2026-11-12 16:59:12.499750739 +0000
+--- a/js/render/floor.js
++++ b/js/render/floor.js
 @@ -27,6 +27,7 @@
  import { pickStyle, grainAt } from './style.js?v=153';
  import { SUN_AT } from './sun.js?v=153';
@@ -154,35 +310,36 @@
  
    // v93 THE WORLD'S OWN LIGHT (TUNING.worlds.lit, docs/ENVIRONMENTS.md): what the floor is lit by, worked out
    // here because the floor is a picture. Every source is baked into this world's shader (the floor is rebuilt
---- a/js/render/scenery.js	2026-11-12 15:58:11.815894293 +0000
-+++ b/js/render/scenery.js	2026-11-12 17:02:35.866705134 +0000
+--- a/js/render/scenery.js
++++ b/js/render/scenery.js
 @@ -56,6 +56,7 @@
  import { SUN_AT } from './sun.js?v=153';
  import { treeAtlas } from './trees.js?v=153';
  import { LeafLitter } from './leaves.js?v=153';
-+import { lavaSea, cosmosAt } from './concept.js?v=153';
++import { cavernGround, hellSet, cosmosAt } from './concept.js?v=153';
  import { boiler } from './sets/boiler.js?v=153';
  import { river } from './sets/river.js?v=153';
  import { ice } from './sets/ice.js?v=153';
-@@ -534,6 +535,7 @@
+@@ -534,6 +535,8 @@
      if (S.ground) this._ground(S.ground, hx, hz);
      this._edgeAndProps(S, id, hx, hz);
      if (S.neon) this._neon(S.neon, hx, hz);   // v123: world 1's lines of neon in the void
 +    for (const M of S.motes ?? []) motes(this, [[0, 0, 2 * hx + 6, 2 * hz + 6, 0.05]], M);   // CONCEPT
++    if (id === 'hell') hellSet(this, hx, hz);   // CONCEPT
    }
  
    // the ground: two tones of noise, a grid or traces if the world has one,
-@@ -545,6 +547,8 @@
+@@ -545,6 +548,8 @@
        const p = positionWorld.xz;
        const n1 = noise(p.mul(G.scale ?? 0.6)), n2 = noise(p.mul((G.scale ?? 0.6) * 4.1).add(5.7));
        let col = mix(vec3(...G.lo), vec3(...G.hi), n1.mul(0.7).add(n2.mul(0.3)));
-+      if (G.concept === 'hell') col = lavaSea(p, this.T.worlds.floor.hell, hz);
++      if (G.concept === 'hell') col = cavernGround(p, this.T.worlds.floor.hell, hx, hz);
 +      if (G.concept === 'cosmos') col = cosmosAt(p, this.T.worlds.floor.cosmos, hx, hz, false).col;
        if (G.line) {
          const c = p.div(G.cell), f = abs(fract(c).sub(0.5)).mul(2);
          const ln = smoothstep(0.92, 0.985, max(f.x, f.y));
---- a/js/main.js	2026-11-12 15:58:11.873636384 +0000
-+++ b/js/main.js	2026-11-12 16:59:12.501037765 +0000
+--- a/js/main.js
++++ b/js/main.js
 @@ -875,6 +875,8 @@
  function roomLook(WD, id) {
    const look = WD?.rooms?.find((r) => r.id === id)?.look ?? WD?.look ?? 'grid';
@@ -201,8 +358,8 @@
    actors.water.sources = scenery.waterSources ?? [];
    applyLight(L.look);   // v75: the light of the world its look comes from (v153: the room's own, if it names one)
    DRIFT.value.set(0, 0);
---- a/js/tuning.js	2026-11-12 15:58:11.867777167 +0000
-+++ b/js/tuning.js	2026-11-12 17:03:38.347223470 +0000
+--- a/js/tuning.js
++++ b/js/tuning.js
 @@ -144,6 +144,7 @@
      // m between their pools); `sun` the world's sun's sheen on water and ice; `sheen` how much the floor
      // mirrors its point lights (wet stone, water, steel: k, shine). Worlds 1 and 2 are lit by the sky alone.
@@ -215,24 +372,40 @@
        core:    { ambient: 0.85, rim: { w: 1.9, k: 0.6, glow: 0.3, color: [1, 0.3, 0.85], sides: 'all' } },
      },
      light: {
-+      hell:   { sun: 0xff7a3a, sunI: 1.5, at: [3, 10, -14], ambient: 0xa04028, ambientI: 0.45, env: 0.7 },
++      hell:   { sun: 0xff6a2a, sunI: 1.7, at: [-11, 7, -13], ambient: 0x8a3524, ambientI: 0.5, env: 0.75 },
 +      cosmos: { sun: 0xd6dcff, sunI: 1.2, at: [-9, 18, -8], ambient: 0x5a58a8, ambientI: 0.45, env: 1.0 },
        // v123 (owner, 2026-11-08: "push for more lights"): in the neon world the bullets throw `shots` × their light,
        // and every body is a light of its own (render/light.js `bodies`)
        grid:     { sun: 0xffffff, sunI: 1.3, at: [8, 20, 10],    ambient: 0xffffff, ambientI: 0.45, env: 1.0,
-@@ -237,6 +240,25 @@
+@@ -237,6 +240,41 @@
      // floor `twist` rad at the drain, falling off as (1 − r/R)^falloff, and
      // draws it `pull` × in toward it
      floor: {
 +      // CONCEPT (scratch): HELL and THE VOID (render/concept.js)
-+      hell: { cell: 3.6, warp: 0.9, crack: 0.44, depth: 0.7, scale: 0.6, big: 0.16, flow: [0.04, 0.1], crust: [0.3, 0.58],
-+              surge: { dir: [0.35, 1], k: 0.24, rate: 0.8, gain: 0.22 },
-+              rock: [0.03, 0.024, 0.025], ash: [0.085, 0.074, 0.07], ashK: 0.45, skin: [0.03, 0.009, 0.006],
++      hell: { seed: 66, sky: [0.02, 0.006, 0.004],
 +              cool: [0.5, 0.035, 0.006], hot: [1.25, 0.34, 0.035], white: [1.7, 0.95, 0.3],
-+              edge: { r: 0.22, k: 1.3, bounce: 0.015 }, wall: { rise: 0.12, k: 0.42, top: 0.3 }, rim: 1.4,
-+              rope: { k: 0.5, pitch: 7, bend: 5 },
-+              hotPlate: { share: 0.08, rate: 2.2, scale: 1.5, w: 0.035, k: 0.7 },
-+              sea: { scale: 0.2, flow: [0.015, 0.04], seam: 0.02, glow: 0.4, part: [0.45, 0.7], far: [4, 16], farK: 2.2, open: [0.74, 0.95], openK: 0.12 }, sky: [0.012, 0.004, 0.003] },
++              beat: { period: 6.5, dir: [0.4, 1], len: 30, on: 0.22 },
++              light: { from: [-0.75, -0.66], color: [1.0, 0.36, 0.1], amb: [0.27, 0.18, 0.19], r: 4.5, left: 1.5, far: 1.2, flicker: 0.12 },
++              rock: { color: [0.2, 0.085, 0.055], basalt: [0.07, 0.05, 0.05], swell: 0.11, steps: 7, line: 0.06, tone: 0.35, footK: 0.6, lipK: 0.55, soft: 0.12, faceK: 120, patch: [0.55, 0.8], patchScale: 0.22 },
++              dust: { color: [0.36, 0.17, 0.09], at: [0.5, 0.78], scale: 0.35, dir: [0.8, 0.6], pitch: 9, bend: 5, rip: 0.3, k: 0.85 },
++              pebble: { cell: 0.7, share: 0.4, r: [0.05, 0.14], color: [0.16, 0.085, 0.065], lit: 1.0, shadow: 0.5 },
++              crack: { cell: 5.2, warp: 1.6, w: 0.05, some: [0.42, 0.68], dark: 0.75, reach: 3.5, glow: 0.9, vent: 1.4 },
++              vent: { at: [[-0.5, -0.55], [0.45, -0.1], [-0.3, 0.42], [0.55, 0.72]], shelf: [[1.4, -0.45], [1.55, 0.3]], r: 0.8, deep: 0.4, tell: 0.3, relief: 0.5, stain: 2.1, streaks: 4, sulfK: 0.45, fiss: 2.6, fissW: 0.035, fissR: 2.4, fissK: 1.3,
++                      sulfur: [0.5, 0.36, 0.07], reach: 1.8, lightR: 2.4, lightK: 0.9 },
++              steam: { per: 9, period: 1.2, rise: 4.4, r: [0.12, 1.0], sway: 0.3, gain: 0.55, fade: 1.2, color: [0.9, 0.78, 0.7] },
++              bank: { left: 1.5, far: 3.0, wig: [0.22, 2.2], pool: { scale: 0.16, at: 0.74, k: 9, from: 3 }, lightR: 2.2, lightK: 1.6, amb: [0.22, 0.12, 0.1], aa: 0.12 },
++              lava: { cell: 1.9, warp: 0.8, river: 0.55, lake: 0.2, big: 0.2, mid: 2.5, midK: 0.15, seam: 0.06, open: [0.72, 0.95], skin: [0.03, 0.012, 0.01], shoreR: 0.3, shoreK: 0.35 },
++              erupt: { beat: { period: 8.3, dir: [1, 0.25], len: 34, on: 0.3 }, r: 0.7, tell: 0.16, ring: 0.2, reach: 3.2, w: 0.18, ringK: 0.8,
++                       at: [{ side: 'left', along: 0.22, out: 2.4 }, { side: 'left', along: 0.62, out: 3.2 }, { side: 'far', along: 0.3, out: 2.6 }, { side: 'far', along: 0.82, out: 3.4 }],
++                       spat: { per: 16, vy: [4.5, 9], vr: [0.4, 2.2], g: 14, r: [0.07, 0.18], spread: 0.25 },
++                       smoke: { per: 7, period: 2.8, rise: 5.5, r: [0.3, 1.7], sway: 0.5, gain: 0.5, fade: 1.3, color: [0.1, 0.06, 0.05] } },
++              wall: { z: 10.5, past: 24, h: 17, lean: 0.22, rock: [0.2, 0.09, 0.06], amb: [0.42, 0.22, 0.19], lightR: 5, lightK: 1.8, dark: [8, 17], fallSpeed: 2.6, fallGlowR: 1.3, fallGlowK: 1.2,
++                      falls: [{ x: -0.6, top: 8.5, w: 0.55 }, { x: 0.42, top: 6.5, w: 0.4 }, { x: 1.5, top: 9.5, w: 0.5 }] },
++              spires: [{ every: 4.2, out: [3.5, 9.5], h: [2.5, 7.5], r: [0.6, 1.4], color: 0x2a1610, foot: 2.2, footR: 1.2, sides: ['far', 'left', 'right'] },
++                       { every: 2.6, out: [0.5, 1.3], h: [0.4, 1.5], r: [0.18, 0.42], color: 0x331b12, foot: 1.6, footR: 0.8, sides: ['far', 'right', 'left'] }],
++              boulders: { n: 7, r: [0.45, 1.0], out: [1.4, 5.5], reach: [9, 8], sunk: 0.35, color: 0x1a0f0c, under: 0.9 },
++              embers: { n: 170, h: 5, vy: 0.6, sway: 0.35, wobble: 0.9, r: 0.045, gain: 2.6, color: [1.0, 0.42, 0.08], blink: [5, 0.5], seed: 31 },
++              ash: { n: 90, h: 6, vy: -0.22, sway: 0.5, wobble: 0.4, r: 0.028, gain: 0.5, color: [0.5, 0.44, 0.42], add: false, seed: 57 } },
 +      cosmos: { space: [0.004, 0.005, 0.014], starCool: [0.75, 0.85, 1.25], starWarm: [1.25, 0.95, 0.7],
 +                nebula: { depth: 14, scale: 0.055, drift: [0.004, 0.002], warp: 2.2, lo: 0.45, hi: 0.82, lane: 0.07, gain: 0.36, outside: 0.8,
 +                          a: [0.42, 0.1, 0.62], b: [0.06, 0.38, 0.6], c: [0.8, 0.22, 0.32] },
@@ -246,16 +419,12 @@
        swirl: { falloff: 1.4, twist: 9, pull: 0.8 },
        // v66 (owner, 2026-10-31): world 2 in SUMMER DAYLIGHT, where it was a
        // night slab under a garage flood: light concrete in the sun, a little
-@@ -789,6 +811,16 @@
+@@ -789,6 +827,12 @@
      // sides: `every` m apart, `out` [min, max] m past the edge, `h`/`r`/`w`
      // [min, max] in m, a `glow` colour at `glowI`
      surround: {
-+      hell: { ground: { concept: 'hell', out: 22, fade: 30, lo: [0, 0, 0], hi: [0, 0, 0] },
-+              edge: { color: 0xff5a22, glow: 1.6, width: 0.1, height: 0.05 },
-+              motes: [{ n: 150, h: 5, vy: 0.55, sway: 0.35, wobble: 0.9, r: 0.028, gain: 2.6, color: [1.0, 0.42, 0.08], blink: [5, 0.5], seed: 31 },
-+                      { n: 90, h: 6, vy: -0.22, sway: 0.5, wobble: 0.4, r: 0.03, gain: 0.5, color: [0.5, 0.46, 0.44], add: false, seed: 57 }],
-+              props: [{ shape: 'shard', every: 3.3, out: [1.8, 7.5], h: [2.2, 7.5], r: [0.5, 1.3], color: 0x0b0808, metal: 0.0, rough: 0.95, tilt: 0.22 },
-+                      { shape: 'rock', every: 3.4, out: [1.2, 5.5], h: [0.5, 1.5], r: [0.7, 1.5], color: 0x120d0c, tilt: 0.4 }] },
++      hell: { ground: { concept: 'hell', out: 24, fade: 34, lo: [0, 0, 0], hi: [0, 0, 0] },
++              edge: { color: 0xff5a22, glow: 1.5, width: 0.09, height: 0.05 }, props: [] },
 +      cosmos: { ground: { concept: 'cosmos', out: 22, fade: 30, lo: [0, 0, 0], hi: [0, 0, 0] },
 +                edge: { color: 0xa9a2ff, glow: 1.5, width: 0.08, height: 0.04 },
 +                motes: [{ n: 130, h: 7, vy: 0.03, sway: 0.6, wobble: 0.15, r: 0.022, gain: 1.6, color: [0.75, 0.82, 1.0], blink: [1.3, 0.6], seed: 91 }],
@@ -263,7 +432,7 @@
        // v123 (owner, 2026-11-08: "take out the environment art away from world 1, let's keep it super minimalistic.
        // Only ... some moving neon lines in the void around the arena. Push for more lights and sharper visuals"): the
        // arena alone in the void — the grid that ran on past its rail and its bollards are gone — and lines of neon
-@@ -1354,7 +1386,7 @@
+@@ -1354,7 +1398,7 @@
        // round each other, and the grid has nothing to explain. And the two places no world of the
        // campaign wore: NEEDLE in the `sewer` (THE VEIN, with the stream down its middle) and the last
        // room, THE CORE, in the `core` — so every arcade world is somewhere in the campaign
