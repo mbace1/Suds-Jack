@@ -7,10 +7,10 @@
 // things that work"). The arena is 1.x's, so every 1.x number ports as it is
 // instead of through a rescale. Axes: x across the screen (right +), y up,
 // z toward the bottom of the screen. The arena is centred on the origin.
-import { SPECIES } from './tuning/species/index.js?v=151';
-import WAVES from './tuning/waves.js?v=151';
-import PICKUPS from './tuning/pickups.js?v=151';
-import MUSIC from './tuning/music.js?v=151';
+import { SPECIES } from './tuning/species/index.js?v=152';
+import WAVES from './tuning/waves.js?v=152';
+import PICKUPS from './tuning/pickups.js?v=152';
+import MUSIC from './tuning/music.js?v=152';
 
 export const TUNING = {
   render: {
@@ -287,18 +287,16 @@ export const TUNING = {
       sewer: { stone: [0.042, 0.05, 0.058], groutCol: [0.008, 0.009, 0.011], water: [0.007, 0.032, 0.036], waterHi: [0.09, 0.27, 0.25],
                kerbStone: { w: 0.34, joint: 1.15, color: [0.1, 0.1, 0.098], lit: [0.07, 0.08, 0.08], shadow: 0.45 },
                kerb: [0.06, 0.06, 0.062], channel: 3.4, slab: [1.7, 0.85], grout: 0.035, flow: 1.2, wetLight: 0.9,
-               // v145 (owner: "Stream should look a bit like a concave slide"): the channel as a CHUTE (floor.js sewer).
-               // v148 ("Better, still too flat"): a HALF-PIPE — an arc of a circle `deep` m at its middle (no deeper
-               // than its half width); the wall's `stone`, lit `diffuse` from the tunnel's light leaning
-               // `lightAcross`, `ambient` in its shade, `ao` darker at the bottom, the near `lipShade` cast down it
-               // (`k` dark, `soft` m), a wet `gleam` (`shine` tight, × `gloss` on the water); `courses` of brick
-               // round it, a joint every `ring` m. The `stream`: a sheet `width` of the wall wide, its middle
-               // swinging `swing` of the way to each lip every `every` m (drifting on `drift` m/s, its beat pulled
-               // about `wobble` cycles), running `speed` × the old flow drawn out `stretch` ×, `clear` over its first
-               // m, a `thread` m wide; the track it `wet`s is `dark`er and mirrors `gloss` × more
-               chute: { deep: 1.5, speed: 2.6, stretch: 2.6, stone: [0.15, 0.15, 0.145], diffuse: 1.25, ambient: 0.2, ao: 0.4, lightAcross: 1.3,
-                        lipShade: { k: 0.6, soft: 0.3 }, gleam: [0.12, 0.19, 0.19], shine: 30, gloss: 1.6, courses: 9, ring: 1.3,
-                        stream: { width: 0.33, swing: 0.36, every: 11, drift: 0.3, wobble: 1.3 }, wet: { dark: 0.3, gloss: 0.5 }, clear: 0.2, thread: 0.2 },
+               // v145 (owner: "Stream should look a bit like a concave slide"): the channel is sunk (floor.js sewer).
+               // v152 (owner, on the phone, of v148's half-pipe: "a rectangular hole, when it should be a gentle concave
+               // stream ... subtle and rounded, not boxy"): a GENTLE TRENCH — a cosine dip `deep` m at its middle, level at
+               // its shoulders; level water `fill` of the way up it (v145's, which was good), running `speed` × the old
+               // flow drawn out `stretch` ×, its edge `surge`ing m and `clear` over its first m, a `thread` m wide down
+               // it. The banks: the floor's own stone at the shoulder going to smooth `stone` between `blend` of the
+               // way down, `damp` darker toward the water; shaded `relief` × as a slope turns to the light leaning
+               // `lightAcross` (never more than `bright` lighter or `dark` darker)
+               chute: { deep: 0.6, fill: 0.5, speed: 2.6, stretch: 2.6, stone: [0.075, 0.085, 0.092], blend: [0.12, 0.6], damp: 0.4, lightAcross: 1.3,
+                        relief: 0.85, bright: 0.45, dark: 0.45, surge: 0.12, clear: 0.28, thread: 0.3 },
                // v140: no two flagstones alike (floor.js sewer). `long`/`short`: the share of pairs along a course that
                // are one long stone / cut in halves; `tone` how far a stone's brightness strays, between the tints
                // `cool` and `warm` (and `greens` of them toward `green`); `tilt` how far out of level; the edges worn

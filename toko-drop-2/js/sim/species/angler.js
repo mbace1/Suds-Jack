@@ -9,8 +9,8 @@
 //
 //   CREEP → (near the light) TELL → BITE → REST → CREEP
 // Numbers: js/tuning/species/angler.js. Seeded: w.rng only.
-import { steerTo } from './base.js?v=151';
-import { rage, range, toHero, inside } from './bosskit.js?v=151';
+import { steerTo } from './base.js?v=152';
+import { rage, range, toHero, inside } from './bosskit.js?v=152';
 
 export default {
   init(w, g, api) {

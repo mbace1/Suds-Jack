@@ -19,6 +19,17 @@
     Never `--no-verify`.
 -->
 
+## v152 — 2026-11-12
+**The sewer's stream runs in a gentle trench: shallow, rounded, level water in the bottom of it**
+- The owner, playing v151 on the phone: "The 'pipe' is a rectangular hole, when it should be a gentle concave stream. Previous stream water was good, no need to have a small river going back and forth. Just make the trench itself look subtle and rounded, not boxy". v148's half-pipe was as deep as it was half wide; walls that stand nearly upright are two flat faces from above, a lit one and a shadowed one, and that is a box.
+- The trench is a cosine dip now: 0.6 m at its middle in 3.4 m, level at both shoulders, so it has no lip — the floor turns down into it. Its banks are the floor's own stone at the shoulder, going to smooth damp stone toward the water, and are shaded as a slope is (a little lighter where it turns to the light, a little darker where it turns away, nothing at the shoulders): a gradient and no line. No brick courses, no lip shadow, no gleam.
+- The water is v145's again: level, filling the bottom half of the dip, running fast along the flow with a brighter thread down it and foam where it meets the banks. The stream that swung from wall to wall is gone.
+- The view ray is met with the bank by three Newton steps kept between the floor and the trench's bottom (`test/view.mjs` runs the same steps for rays out to the far edge of a phone's view).
+- Tests: `test/view.mjs` 161 checks.
+- Cache tokens `?v=151` → `?v=152`; HUD label → `2.0 · v152`
+
+---
+
 ## v151 — 2026-11-12
 **REDUCE MOTION reaches the floors: the core's beat and the boiler's flare are held back when it is on**
 - OPTIONS' REDUCE MOTION (and the device's own setting) stilled the camera's shake and softened the dark, and nothing a shader drew knew of it. v149 and v150 gave two floors a pulse — the boiler's stoke, and the core's beat, a flash across the whole deck that the LOOK 3 film measured at about 6% of full brightness from one frame to the next. With REDUCE MOTION on, the core keeps a quarter of its beat and of its rings and none of the arcs on its grid; the boiler keeps 40% of its flare (`kit.js` CALM, set from the option, on the toggle, and when the device's setting changes). With it off, nothing is changed.
