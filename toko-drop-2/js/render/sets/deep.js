@@ -6,9 +6,9 @@
 // lit; and vents breathing bubbles up out of the silt. Never along the near
 // side. Every number TUNING.scenery.deep
 import * as THREE from 'three/webgpu';
-import { Fn, float, vec2, vec3, sin, cos, abs, max, mix, smoothstep, length, clamp, fract, uv, positionWorld, positionLocal, positionGeometry, normalWorld } from 'three/tsl';
-import { GEL_TIME } from '../gel.js?v=149';
-import { noise, seeded, phase, put, stations, groundPlane, edgeLine, stoneGeometry, risers, merge, motes, ledgeBlocks, ledgeMesh } from '../kit.js?v=149';
+import { Fn, float, vec2, vec3, sin, cos, abs, max, mix, smoothstep, length, clamp, fract, uv, positionWorld, positionLocal, positionGeometry, normalWorld, normalView } from 'three/tsl';
+import { GEL_TIME } from '../gel.js?v=150';
+import { noise, seeded, phase, put, stations, groundPlane, edgeLine, stoneGeometry, risers, merge, motes, ledgeBlocks, ledgeMesh } from '../kit.js?v=150';
 
 const v3 = (a) => vec3(...a);
 
@@ -115,4 +115,46 @@ export function deep(sc, hx, hz) {
   const vm = sc._add(new THREE.InstancedMesh(new THREE.CylinderGeometry(0.14, 0.32, 0.18, 10), ventMat, vents.length));
   vents.forEach(([x, z], i) => put(vm, i, x, 0.09, z));
   risers(sc, vents.map(([x, z]) => [x, 0.2, z]), D.bubbles);
+
+  // v150 (owner on v147: "Needs both" — more life, more light): SHAFTS of the surface's light, a fan of them to each
+  // of the floor's lights marked `shaft` (the cistern's rays: scenery.js _rays), so the bed is lit where they land
+  const Sf = D.shafts;
+  if (Sf) for (const L of sc.T.worlds.lit?.deep?.lights ?? []) if (L.shaft) sc._rays(Sf, L, hx, hz);
+
+  // JELLYFISH adrift over the far side, the two sides and a little way in over the floor's edge (never the near
+  // side): a bell that pulses, thin tentacles trailing under it, clear but for its rim. Each drifts on a slow round
+  // of its own. An instance is only ever placed: its size, its beat and its drift are the shader's
+  const J = D.jelly;
+  if (J) {
+    const prof = []; for (let i = 0; i <= 8; i++) { const a = (i / 8) * (Math.PI / 2); prof.push(new THREE.Vector2(Math.cos(a) * (1 - 0.12 * Math.sin(a * 2)) + 0.001, Math.sin(a) * 0.72)); }
+    const parts = [new THREE.LatheGeometry(prof, 18)];
+    for (let k = 0; k < J.tent; k++) { const a = (k / J.tent) * Math.PI * 2, r = 0.55 + 0.3 * ((k * 7) % 3) / 2; parts.push(new THREE.PlaneGeometry(0.07, J.tentL, 1, 8).translate(0, -J.tentL / 2, 0).rotateY(a).translate(Math.cos(a) * r, 0, Math.sin(a) * r)); }
+    const jm = new THREE.MeshBasicNodeMaterial({ transparent: true, depthWrite: false, side: THREE.DoubleSide });
+    const size = () => mix(float(J.r[0]), float(J.r[1]), fract(phase().mul(7.31)));
+    jm.positionNode = Fn(() => {
+      const g = positionGeometry, ph = phase().mul(6.283), t = GEL_TIME, here = positionLocal.sub(g);
+      const beat = sin(t.mul(J.pulse * 6.283).add(ph)), sq = beat.max(0).mul(0.2), bell = g.y.greaterThanEqual(0);
+      // the bell draws in and lengthens; the tentacles trail, the wave of each beat running down them
+      const hang = g.y.min(0).negate(), wave = sin(t.mul(J.pulse * 6.283).add(ph).sub(hang.mul(2.2))).mul(hang.mul(0.07));
+      const local = vec3(g.x.mul(float(1).sub(sq)).add(wave), bell.select(g.y.mul(sq.mul(0.7).add(1)), g.y), g.z.mul(float(1).sub(sq)).add(wave.mul(0.6)));
+      const drift = vec3(sin(t.mul(J.pace).add(ph)).mul(J.drift), sin(t.mul(J.pace * 1.7).add(ph.mul(1.3))).mul(0.5).add(beat.mul(0.1)), cos(t.mul(J.pace * 0.8).add(ph.mul(2.1))).mul(J.drift));
+      return here.add(local.mul(size())).add(drift);
+    })();
+    // (its rim is what shows: looked at face on a bell is nearly clear)
+    jm.opacityNode = Fn(() => {
+      const bell = positionGeometry.y.greaterThanEqual(0), rim = float(1).sub(abs(normalView.z)).pow(1.5).mul(0.85).add(0.15);
+      return bell.select(rim, float(1).sub(uv().y).oneMinus().mul(0.5)).mul(J.alpha);
+    })();
+    const jl = sc._add(new THREE.InstancedMesh(merge(parts), jm, J.n));
+    jl.frustumCulled = false; jl.renderOrder = 5;
+    const c = new THREE.Color();
+    for (let i = 0; i < J.n; i++) {
+      // round the far side and the two sides; a third of them a little way in over the floor
+      const side = i % 3, inn = i % 3 === 0 ? -J.over * rnd() : J.out * rnd();
+      const x = side === 0 ? (rnd() * 2 - 1) * hx : (side === 1 ? -1 : 1) * (hx + inn), z = side === 0 ? -(hz + inn) : -hz + rnd() * hz * 1.5;
+      put(jl, i, x, J.y[0] + rnd() * (J.y[1] - J.y[0]), z);
+      const tone = J.tones[i % J.tones.length]; jl.setColorAt(i, c.setRGB(...tone));
+    }
+    if (jl.instanceColor) jl.instanceColor.needsUpdate = true;
+  }
 }

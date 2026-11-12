@@ -32,7 +32,7 @@
 //               foot? h, prop?, g? (an island's), h? (its height), pit? true, depth? }]
 //            none in world 1 (1.x's floor) or a campaign room
 //   w.props  [{ kind, x, z, s, y, g }]  what stands on an island (render only: the island's circles block)
-import { TUNING } from '../tuning.js?v=149';
+import { TUNING } from '../tuning.js?v=150';
 
 const T = TUNING, G = T.pickups.gate;
 const smooth = (k) => k * k * (3 - 2 * k), _q = { x: 0, z: 0 };

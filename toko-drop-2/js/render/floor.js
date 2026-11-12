@@ -24,11 +24,11 @@
 // `swirlAt`, out to `swirlR`, and opens a hole of `hole` m in the middle).
 import * as THREE from 'three/webgpu';
 import { Fn, If, uv, uniform, float, abs, fract, min, max, sin, cos, atan, length, smoothstep, step, mix, fwidth, texture, clamp, vec2, vec3, pow, floor as tfloor, round, select, mod, dFdx, dFdy, exp, sqrt, sign, normalize, dot, cameraPosition, positionWorld, vec4 } from 'three/tsl';
-import { pickStyle, grainAt } from './style.js?v=149';
-import { SUN_AT } from './sun.js?v=149';
-import { GEL_TIME } from './gel.js?v=149';
-import { noise, grate, cells, sewerSpots, treeShade } from './scenery.js?v=149';
-import { lilyPads, DRIFT, hash, stoke } from './kit.js?v=149';
+import { pickStyle, grainAt } from './style.js?v=150';
+import { SUN_AT } from './sun.js?v=150';
+import { GEL_TIME } from './gel.js?v=150';
+import { noise, grate, cells, sewerSpots, treeShade } from './scenery.js?v=150';
+import { lilyPads, DRIFT, hash, stoke } from './kit.js?v=150';
 
 const _white = new THREE.Color(0xffffff);
 // the floors whose set has a ground of its own under them: a room that is not a rectangle is CUT to its shape there
@@ -1144,6 +1144,7 @@ export function buildFloor(T, hx, hz, light, { style = 'grid', bounds: hasBounds
       // the specks GATHER where the deep's lights are (worlds.lit.deep: the light IS theirs), a few strays between
       pool = float(S.strays);
       for (const L of T.worlds.lit?.deep?.lights ?? []) {
+        if (L.shaft) continue;   // (v150: a shaft of the surface's light is not the plankton's)
         const d = length(w.sub(vec2(L.frac[0] * hx, L.frac[1] * hz)));
         pool = max(pool, float(1).sub(smoothstep(L.r * S.poolR[0], L.r * S.poolR[1], d)));
       }
@@ -1159,7 +1160,11 @@ export function buildFloor(T, hx, hz, light, { style = 'grid', bounds: hasBounds
     const Su = D.sun;
     if (Su) {
       const net = causticNet(w.add(vec2(t.mul(Su.drift[0]), t.mul(Su.drift[1]))), Su.net, t);
-      col = col.mul(float(1).add(net.mul(Su.gain))).add(v3(Su.color).mul(net.mul(Su.add)));
+      // (v150: under a shaft the web is `shaft` × as bright again)
+      let under = float(0);
+      for (const L of T.worlds.lit?.deep?.lights ?? []) if (L.shaft) under = max(under, float(1).sub(smoothstep(L.r * 0.3, L.r * 1.3, length(w.sub(vec2(L.frac[0] * hx, L.frac[1] * hz))))));
+      const sk = under.mul(Su.shaft ?? 0).add(1);
+      col = col.mul(float(1).add(net.mul(Su.gain).mul(sk))).add(v3(Su.color).mul(net.mul(Su.add).mul(sk)));
     }
     const Ry = D.ray;
     if (Ry) {
@@ -1172,6 +1177,40 @@ export function buildFloor(T, hx, hz, light, { style = 'grid', bounds: hasBounds
       const tail = float(1).sub(abs(q.y).div(0.035)).min(float(1).sub(abs(q.x.add(1.25)).div(0.75)));
       const shade = smoothstep(-Ry.soft, Ry.soft, max(max(wings, body), tail.mul(0.5)));
       col = col.mul(float(1).sub(shade.mul(Ry.dark)));
+    }
+    // v150 (owner on v147: "Needs both" — more life, more light). LIGHT: where the shafts from the surface land
+    // (scenery: sets/deep.js `shafts`, at the lights marked `shaft` in worlds.lit.deep) the caustic web is at its
+    // brightest. LIFE: SHOALS of lantern fish over the bed — small bright bodies, each kind its own colour, size and
+    // heading, swimming together in clouds that travel with them, weaving, their tails working; each fish throws a
+    // shadow on the silt a little way off (they are ABOVE the bed, and that is what says so); and they part round
+    // the hero. One hash a cell, and a cell with no fish in it costs no more
+    const Sh = D.shoal;
+    if (Sh) {
+      const hw = toWorld(player), saa = max(length(fwidth(w)), 1e-4), dHero = length(w.sub(hw));
+      const fishAt = (wq, K, ki) => {
+        const dx = Math.cos(K.heading), dz = Math.sin(K.heading);
+        const a0 = wq.x.mul(dx).add(wq.y.mul(dz)), c0 = wq.y.mul(dx).sub(wq.x.mul(dz));
+        const fa = a0.sub(t.mul(K.swim)), fcx = c0.add(sin(a0.mul(K.weave[0]).add(t.mul(K.weave[1]))).mul(K.weave[2]));
+        const fc = vec2(fa.div(K.cell[0]), fcx.div(K.cell[1])), fid = tfloor(fc), fh = hash(fid.add(11.3 + ki * 17.3)), fh2 = fract(fh.mul(37.7));
+        const m = float(0).toVar();
+        If(fh.greaterThan(1 - K.keep), () => {
+          const q = fract(fc).sub(vec2(fh2.mul(0.5).add(0.25), fract(fh.mul(91.3)).mul(0.5).add(0.25))).mul(vec2(...K.cell));
+          const len = fh2.mul(K.len[1] - K.len[0]).add(K.len[0]), s01 = q.x.div(len).add(0.5);   // 1 at its nose (it swims toward +a), 0 at its tail
+          const back = float(1).sub(s01), bend = sin(t.mul(K.beat).add(fh.mul(30)).add(s01.mul(4))).mul(back.mul(back)).mul(len.mul(0.14));
+          const y = abs(q.y.sub(bend));
+          const body = sin(clamp(s01, 0, 1).pow(0.8).mul(3.1416)).mul(len.mul(K.girth)), tail = clamp(float(0.2).sub(s01).div(0.2), 0, 1).mul(len.mul(0.15));
+          const wide = max(body, tail).mul(step(-0.02, s01)).mul(step(s01, 1));
+          m.assign(float(1).sub(smoothstep(wide.sub(saa), wide.add(saa), y)).mul(step(0.001, wide)));
+        });
+        // the cloud it swims in, going the same way at the same pace
+        const cloud = smoothstep(K.cloud[0], K.cloud[1], noise(vec2(fa.mul(K.cloudScale), c0.mul(K.cloudScale * 1.6)).add(ki * 9.7)));
+        return m.mul(cloud);
+      };
+      for (const [ki, K] of Sh.kinds.entries()) {
+        const shy = smoothstep(K.shy[0], K.shy[1], dHero);
+        col = col.mul(float(1).sub(fishAt(w.add(vec2(...Sh.shadow)), K, ki).mul(shy).mul(Sh.shadowK)));
+        col = mix(col, v3(K.color), fishAt(w, K, ki).mul(shy).mul(K.k));
+      }
     }
     // v140: THINGS LIE ON THE SEABED. The ripples in the silt have a lit side and a dark one; and here and there, in
     // its own place and at its own angle, a starfish or a scallop's shell (`finds`: one cell in `keep` has one,
@@ -1239,7 +1278,7 @@ export function buildFloor(T, hx, hz, light, { style = 'grid', bounds: hasBounds
       // BEATS — twice, and a rest — with arcs standing off it; it is what the rings are seen against, and what
       // lights their edges. And each beat goes out through the deck: a ring of light along the grid's lines
       const Un = Tl.under;
-      let beat = float(0), ringB = float(0);
+      let beat = float(0), ringB = float(0), arcLive = float(0);
       if (Un) {
         const V = normalize(cameraPosition.sub(positionWorld)), run = V.xz.div(max(V.y, 0.3)).negate();   // the ray's run for a metre of fall
         const tb = fract(GEL_TIME.div(Un.period));
@@ -1252,18 +1291,45 @@ export function buildFloor(T, hx, hz, light, { style = 'grid', bounds: hasBounds
         // the rotor, over it
         const wr = w.add(run.mul(Un.rotor)), rr = length(wr), ar = atan(wr.y, wr.x), ri = tfloor(rr.div(Un.ringW)), rf = fract(rr.div(Un.ringW));
         const rh1 = hash(vec2(ri, 3.7)), dir = select(fract(ri.mul(0.5)).greaterThan(0.25), float(1), float(-1));
-        const segs = tfloor(ri.add(0.5).mul(Un.ringW * 6.2832 / Un.seg)).max(3), sq = fract(ar.div(6.2832).add(GEL_TIME.mul(dir).mul(rh1.mul(0.6).add(0.5)).mul(Un.turn).div(ri.add(1))).mul(segs));
+        // v150 (owner on v147: "Needs more"): the rotor is DRIVEN by the heart — it turns as before, and every beat
+        // KICKS it on a step (`kick` of a segment, a smaller one on the second beat): a ratchet, not a fan
+        const nb = tfloor(GEL_TIME.div(Un.period)), kicked = nb.mul(1.6).add(smoothstep(0, 0.1, tb)).add(smoothstep(Un.second, Un.second + 0.1, tb).mul(0.6));
+        const segs = tfloor(ri.add(0.5).mul(Un.ringW * 6.2832 / Un.seg)).max(3), sq = fract(ar.div(6.2832).add(GEL_TIME.mul(dir).mul(rh1.mul(0.6).add(0.5)).mul(Un.turn).div(ri.add(1))).mul(segs).add(kicked.mul(dir).mul(Un.kick ?? 0)));
         const raa = max(fwidth(rr.div(Un.ringW)), 1e-4), saa = max(fwidth(ar.div(6.2832).mul(segs)), 1e-4);
         const plate = smoothstep(float(Un.gap).sub(raa), float(Un.gap).add(raa), min(rf, float(1).sub(rf))).mul(smoothstep(float(Un.cut).sub(saa), float(Un.cut).add(saa), min(sq, float(1).sub(sq))));
         const rib = smoothstep(0.42, 0.5, abs(fract(sq.mul(3)).sub(0.5))).mul(0.35), edgeL = float(1).sub(smoothstep(0, 0.12, min(min(rf, float(1).sub(rf)).sub(Un.gap), min(sq, float(1).sub(sq)).sub(Un.cut).mul(4)))).mul(plate);
         const lightUp = exp(rr.div(Un.heartR * Un.haloR * 1.3).negate()).mul(beat.mul(0.6).add(0.4));
         const metal = v3(Un.metal).mul(float(1).sub(rib)).add(v3(Tl.glow).mul(edgeL.mul(lightUp).mul(Un.edgeK)));
-        const under = mix(heart, metal, plate.mul(step(Un.hub, rr)));
+        // v150: between the rotor and the heart, the STATOR — `vanes.n` great vanes standing out from the middle,
+        // `vanes.depth` m down, dark against the heart, so its light comes up between them in beams; a CONDUIT down
+        // each one, and on every beat a charge runs out along it (`run` m/s, `len` of the way a pulse long)
+        const Vn = Un.vanes;
+        let below = heart;
+        if (Vn) {
+          const wv = w.add(run.mul(Vn.depth)), rv = length(wv), av = atan(wv.y, wv.x), vq = abs(fract(av.div(6.2832).mul(Vn.n).add(0.5)).sub(0.5)).mul(6.2832 / Vn.n).mul(rv);   // m off the vane's line
+          const vaa = max(fwidth(vq), 1e-4), vane = float(1).sub(smoothstep(float(Vn.w).sub(vaa), float(Vn.w).add(vaa), vq)).mul(step(Vn.from, rv));
+          const duct = float(1).sub(smoothstep(0, Vn.duct, vq)).mul(vane);
+          const charge = smoothstep(1 - Vn.len, 1, fract(GEL_TIME.div(Un.period).sub(rv.div(Vn.run * Un.period)))).mul(exp(rv.div(Vn.reach).negate()));
+          const vcol = v3(Vn.metal).mul(exp(rv.div(Un.heartR * Un.haloR).negate()).mul(beat.mul(0.5).add(0.5)).mul(Vn.lit).add(1)).add(v3(Tl.glow).mul(duct.mul(float(Vn.idle).add(charge.mul(Vn.k)))));
+          below = mix(heart, vcol, vane);
+        }
+        const under = mix(below, metal, plate.mul(step(Un.hub, rr)));
         // through the glass: the pane takes its tint and keeps a little of its own sheen
         col = under.mul(v3(Un.glass)).add(col.mul(Un.pane));
         // the beat going out along the lines
         const rw = length(w), ph = fract(GEL_TIME.div(Un.period).sub(rw.div(Un.waveSpeed * Un.period)));
         ringB = smoothstep(1 - Un.waveLen, 1, ph).mul(exp(rw.div(Un.waveReach).negate()));
+        // v150: THE BEAT HITS THE DECK. A second ring follows the first (the heart beats twice); the whole pane takes
+        // a breath of the heart's light with each beat (`thump`, fading out from the middle); and for a moment after
+        // it the grid near the heart is LIVE — arcs jumping along its lines, a different few each instant (`arc`)
+        const ph2 = fract(GEL_TIME.div(Un.period).sub(Un.second).sub(rw.div(Un.waveSpeed * Un.period)));
+        ringB = ringB.add(smoothstep(1 - Un.waveLen * 0.7, 1, ph2).mul(exp(rw.div(Un.waveReach).negate())).mul(0.6));
+        if (Un.thump) col = col.add(v3(Tl.glow).mul(beat.mul(exp(rw.div(Un.thump.reach).negate())).mul(Un.thump.k)));
+        if (Un.arc) {
+          const Ac = Un.arc, live = exp(tb.mul(-Ac.fade)).add(exp(max(tb.sub(Un.second), 0).mul(-Ac.fade)).mul(step(Un.second, tb)).mul(0.6));
+          const jump = step(1 - Ac.share, hash(tfloor(q.mul(2)).add(tfloor(GEL_TIME.mul(Ac.rate)).mul(vec2(7.3, 3.1)))));
+          arcLive = jump.mul(live).mul(exp(rw.div(Ac.reach).negate())).mul(Ac.k);
+        }
       }
       for (const P of Tl.pads) {
         const d = length(w.sub(vec2(P[0] * hx, P[1] * hz))), daa = max(fwidth(d), 1e-4);
@@ -1291,8 +1357,8 @@ export function buildFloor(T, hx, hz, light, { style = 'grid', bounds: hasBounds
         packet = smoothstep(1 - Pk.len, 1, ph).mul(line).mul(step(1 - Pk.lanes, lh));
         col = col.add(v3(Pk.color).mul(packet.mul(Pk.gain)));
       }
-      col = col.add(v3(Tl.line_).mul(line.mul(float(Tl.lineGlow).add(wash.mul(Tl.washGlow)).add(lit.mul(0.5)).add(ringB.mul(Un?.waveK ?? 0))))).add(v3(Tl.glow).mul(wash.mul(Tl.washFloor)));
-      col = mix(col, v3(Tl.glow).mul(Tl.padGlow), pad.min(1));
+      col = col.add(v3(Tl.line_).mul(line.mul(float(Tl.lineGlow).add(wash.mul(Tl.washGlow)).add(lit.mul(0.5)).add(ringB.mul(Un?.waveK ?? 0)).add(arcLive)))).add(v3(Tl.glow).mul(wash.mul(Tl.washFloor)));
+      col = mix(col, v3(Tl.glow).mul(float(Tl.padGlow).add(ringB.mul(Un?.padKick ?? 0))), pad.min(1));   // (v150: a pad flares as a beat's ring crosses it)
       return { col, mask: line.add(pad), lineCol: v3(Tl.line_) };
     }
     const u = w.div(K.cell), f = fract(u).sub(0.5), id = tfloor(u);

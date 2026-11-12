@@ -19,146 +19,16 @@
     Never `--no-verify`.
 -->
 
-## v149 — 2026-11-11
-**The boiler room stokes — fire in pits under the grates, blown on a beat, steam off the floor, engines turning; the ice keeps the trails of what slides over it, under more snow**
-- From the owner's read of the LOOK 2 film (v147): the boiler, "Decks right, mood weak"; the ice, "More snow, sliding on ice trails etc".
-- **Boiler — the fire is DOWN THERE.** Under each grate is a pit with a bed of coals in it, seen as a sunk thing is: the view followed down through the lattice to the bed, or to the pit's wall where that comes first, so the bars stand against the fire and slide over it as the camera moves.
-- **The room STOKES** (`kit.js` stoke): every 7.5 s the bellows go and a flare runs down the hall grate by grate — the coals going from red toward white, the light each grate throws swelling with it. Between the fires the hall is darker (ambient 0.26 → 0.13, each grate's pool tighter), so it is lit in pools and the pools breathe.
-- **Steam off the floor**: the grates near the rail let off a gust just after the flare has passed them (never the grates in the middle of the floor: the fight is there). **Engines** between the boilers along the far side: a piston rod pumping out of a cylinder, a flywheel turning beside it, each at its own point of the turn.
-- **Ice — the sheet keeps a TRAIL** (`render/water.js` `trail`): the same two textures and stamps as the simulated water, holding not a height but how much snow has been swept off each place. A body sweeps the strip it crossed, the harder the faster it slid; a block of ice adrift trails one too; a burst, a landing or a slam clears a disc. The floor draws it: the snow gone, the ice bare and polished, a berm along the furrow's edge, its walls lit and shaded by the sun. It fills in again by half every 13 s.
-- **More snow**: a thin dusting over the whole sheet now (so there is snow to sweep wherever a thing slides), the drifts wider, the bank deeper in, and spindrift blowing over all of it on the wind.
-- Tests: `test/view.mjs` 152 checks (a trail's stamps: sliding, standing, a block, a hole, a burst; its refill; the stoke's run down the hall; the pit; where steam is let off). `test/smoke.mjs`: the ice stands on a trail map that takes a mark.
-- Cache tokens `?v=148` → `?v=149`; HUD label → `2.0 · v149`
-
----
-
-## v148 — 2026-11-11
-**The river's lily pads stay where they grow; the sewer's chute is a half-pipe with the stream swinging in it; leaves afloat in the cistern**
-- From the owner's read of the LOOK 2 film (v147), asked one world at a time. Three of the seven answers are built here.
-- **River — "the lily pads move and then dissapear"** (a fault, v72's): the pads added the current rule's push up without end, so they slid at the current's own 2.6 m/s out of the band they are drawn in and were masked away. A pad is TETHERED now: it keeps its cell, leans up to 26 cm the way the current pushes (eased, and back when it stops), swings a little of its own and rides the simulated waves. Whether a pad is there is asked at its own centre, so none is ever cut by the band's edge or by the bank. The same pads past the floor's ends (`sets/river.js`).
-- **Sewer — "Better, still too flat"**: the chute was a shallow dish more than half full of level water. It is a HALF-PIPE: an arc of a circle 1.5 m deep in 3.4 m, each pixel's view ray met with it exactly (one quadratic, where three steps down a parabola only held while it was shallow). Its wall is lit as a cylinder is — the far wall to the light, the near side in its own lip's shadow, a wet gleam standing along it — and bricked in courses even round the curve. The water is a thin fast sheet that SWINGS up one wall, down through the bottom and up the other, foam on the edge it climbs with, a darker wet track where it has been. A level surface was the thing that said flat.
-- **Cistern — "Looks good. Needs some leaf like debris things"**: FLOTSAM (`render/leaves.js` 'flotsam'). The driveway's leaves, washed down the drain and through the sewer, sodden and afloat here. The water carries them: from under the fall, across the floor, round to the nearest well and over its lip; one that goes down a well comes back in under the fall. A body going by pushes them aside and a burst throws them, as on the driveway. Looks only: the sim never knows a leaf.
-- HARDCADE re-read at v147 with 48 seeds after v145's squarer boiler decks: the boiler 45.0 (44.3 before), everything inside one standard error, nothing retuned (`docs/CURVE.md`). What the seven reworked worlds cost to draw is in `docs/ENVIRONMENTS.md` (+7 to +16% a frame on the software GPU).
-- Tests: `test/view.mjs` 141 checks (the chute's ray on its arc from every angle, the stream inside its lips; a pad inside its cell; flotsam carried to a well and back in at the fall, never asleep, pushed by a body). `test/smoke.mjs`: the river's pads lean no further than their tether; the cistern has flotsam afloat.
-- Cache tokens `?v=147` → `?v=148`; HUD label → `2.0 · v148`
-
----
-
-## v147 — 2026-11-11
-**The core's deck is glass, and the machine is under it: a great rotor turning over a heart that beats**
-- WHY (owner, 2026-11-11, of the deep and the core): "Both need more". The deep was v146. The core was a grid of lit lines over dark tiles, with lamps: a floor with nothing behind it, in the last world of the game.
-- THE DECK IS GLASS. Each pixel's view is followed down through the pane to two depths (as into the sewer's chute, v145), so what is below slides against the grid as the camera moves, the way things at a depth do.
-- THE ROTOR, three metres down: rings of dark plate filling the shaft, each cut into segments and turning its own way round the middle of the floor, alternate rings against each other, the outer ones slower. Light comes up through the seams between them.
-- THE HEART, nine metres down, under the middle of the floor: a body of light with arcs standing off it. It beats, twice and a rest, every second and a quarter. The rotor is seen against it, its edges lit from below; through the eye at the rotor's middle you look straight down at it.
-- EACH BEAT GOES OUT THROUGH THE DECK: a ring of light running out along the grid's lines from the middle, across the floor in about two beats.
-- The vents, the lamps and the running packets of v140 are still on the deck, over the glass.
-- Looks only. Checked by render with the hero alone and in a fight, both orientations: the plates are dark under the fight and the seams are thin, so shots and gels read as before. test/view.mjs holds the machine's numbers (4 checks, 134 in all).
-- THE GATE: the full run passed 24 of its 25 browser scenarios and failed one, `world6` (new in v146), on "the goo check could not kill its gel": the river's current had carried the hero behind an island, where no shot reaches. That is the check's fault, not the game's (nothing in v147 touches the river): after a second with no kill the check now puts the hero down beside the gel in the open. Run three times more on the same game files, `world6` passed three times.
-- Cache tokens `?v=146` → `?v=147`; HUD label → `2.0 · v147`
-
----
-
-## v146 — 2026-11-11
-**The river's water is simulated too, and flows; its fish are of three kinds. The deep is under water: light from the surface, a ray's shadow going over, plankton lit where the water is stirred**
-- WHY (owner, 2026-11-11): of the river, "River looks ok, still should be much more realistic water and effects. Fish maybe too one note. I've seen crazy three.js demos online and we don't compare"; of the deep and the core, "Both need more". (The core is next.)
-- THE RIVER'S WATER is the cistern's wave simulation (v144), carried along with the stream: the texture rides the current, wrapping round the floor's ends, so the simulation is done in the water's own frame. What that buys: a body standing still in the river is moving through the water, and trails a real V of wake downstream; a rock parts the stream; the rings of a splash go off downstream as they spread. Nothing is smeared by being pushed along a grid.
-- The waves are made slower than the stream (0.95 m/s against 1.6), as on a shallow river that shoots: a wave cannot make upstream, which is what makes a V behind what stands in it. At the first cut they were faster, and nothing trailed anything.
-- HOW IT IS SEEN: the pebbles swim under the waves; the face of a wave turned to the sun is bright and the face turned away darker; the sun glitters off the simulation's own slopes; the caustic web is pulled about and gathers under the crests; froth where the water is thrown hardest. v143's drawn wake is gone where the simulation runs.
-- FISH, three kinds: the trout holding in the deep middle, as before; a shoal of fry in the shallows, small and quick, darting together and flashing silver as they turn; a pike or two, long and slow, lying across the current. Each keeps to its own depth and shies from the hero by its own distance. And now and then one rises: a ring on the water.
-- THE DEEP is under water now. The surface's light comes down in slow dapples over the bed. The shadow of a great ray crosses the floor on its own slow round, wings beating. And the water glows where it is stirred: the simulation runs here too, with no surface to draw, and where it says the water was thrown about the plankton lights — sparks trailing behind whatever moves, a ring of them going out from a kill, gone in a second or two.
-- render/water.js: one door for every stamp (`_stamp`), which puts it in the water's frame and, across the texture's seam, at both ends; the textures wrap and the step clamps its own reads where a wall stands; what stands in a flowing water is redrawn in the mask each frame and pushes water aside as a body does.
-- Looks only: nothing in the sim reads any of it.
-- Tests: test/view.mjs holds the flowing frame (the pace, the wrap, a still body's push, the seam, the bank) and the fish kinds (9 checks, 130 in all); the smoke splashes the river and the deep in a browser as it does the cistern (a new scenario, `world6`).
-- Cache tokens `?v=145` → `?v=146`; HUD label → `2.0 · v146`
-
----
-
-## v145 — 2026-11-11
-**The sewer's stream runs in a chute, the boiler room is a dark machine hall with square decks, and the ice is broken unevenly under more snow**
-- WHY: three more of the owner's answers to the look film (2026-11-11). The sewer: "Stream should look a bit like a concave slide. Currently very flat". The boiler: "Boiler room islands have to have some rectangular but rounded edge. It's an industrial machinery dungeon so it's meant to have that atmospheric feel also". The ice: "Holes still too regular", and "Want more snow".
-- THE SEWER'S CHUTE: the channel is a trough now, most of a metre deep and wider than it was (3.4 m, from 2.4), with the water running down the bottom of it. It is drawn the way a sunk thing is seen: each pixel's view is followed down past the floor to the trough's wall or the water, so the near wall draws short behind its lip and the far wall stands open. The wall is lit as a curve is (bright toward the tunnel's light, in its own shade away from it, a wet gleam along it), coursed along its length with the courses crowding toward the lips, and ringed across. The water runs faster and is drawn out longer, a brighter thread wandering down its middle, thin and clear at its edges. A first cut with chevrons in the water read as a conveyor belt and was dropped.
-- THE BOILER'S DECKS: the two raised decks are rectangles with rounded corners, where they were three circles run together. A small circle in each corner fills what the three big ones leave, so what blocks is what is drawn (within a step).
-- THE BOILER ROOM: dark. What lights the deck is the fire under its grates, a pool of orange at each, and the pale light down two ventilation shafts through the great fans turning in them, one each way, a turn every sixteen and twenty-one seconds: wedges of light and shadow going slowly round the room. The air's own light went from 0.58 to 0.26.
-- THE ICE'S HOLES: nothing about a hole is even now. Its sides are of very different lengths, it is long one way and narrow the other, and the ice round it has broken back unevenly, a few corners thrown far out, so the whole break is a jagged star and not a ring. The cracks run twice as far. The frost follows the break's own edge (round a circle it drew the circle back).
-- THE SNOW: more of the sheet lies under it, and it is banked along the rail, deeper there, with a soft shade at its foot. In a campaign room the bank is scaled to the room, so a small rink keeps its ice.
-- Looks only, except the boiler's eight corner circles (0.75 m, inside the decks' old outline's reach): the decks block a little more squarely. HARDCADE's curve is not re-measured for it.
-- Checked by render in both orientations, and five campaign rooms on the three looks. test/view.mjs holds the new numbers (5 checks, 121 in all); test/posts.mjs's "an island is one piece" now asks that every circle overlap one laid before it, not only the one just before.
-- Cache tokens `?v=144` → `?v=145`; HUD label → `2.0 · v145`
-
----
-
-## v144 — 2026-11-11
-**The cistern's water is water: a wave simulation the fight stands in. And the cistern is dark, with the sewer's water falling into it**
-- WHY (owner, 2026-11-11, shown v143): "This is the worst looking level. There is very little variation or identity and the water vfx are too simple and subtle. Could entertain actual water physics. Also a mood and light flip. Many of these levels are about dropping down a level to go lower in the sewers or get pushed further out of the sewers. It looks like a regular day puddle".
-- THE WATER (new, `js/render/water.js`): the surface's height over the floor, a number every hand's width, stepped sixty times a second by the wave equation. None of what it does is drawn by hand. A ring from a splash spreads, meets the kerb and comes back; two rings pass through each other; a body running through leaves a wake, and a dash a bigger one; a column throws the waves back and leaves a calm behind it; a well swallows them.
-- WHAT MOVES IT: every body in the pool (the water it pushed aside: standing still makes nothing), every kill, landing, hop and slam (a dent and the rim that holds its water), the hero's dash, drips from the vault, and the fall.
-- HOW IT IS SEEN: the slabs swim under a wave and lie still under still water; light gathers in a line under each crest (v143's rings and v71's drips, which were drawn, are gone: the simulation makes them); a wave's face turned to the light is lit and the face turned away is dark, which is what carries a ring across a dark pool on a phone; the lamps glint off the faces turned to them; where the water is thrown hardest it froths white for a moment.
-- THE MOOD: the level under the sewer, and dark. The air barely shows the stone, which is teal under the water. The light is what comes down a breach in the vault at the far left (cold, a pale pool where it lands) and the lamps at the columns' feet along the back and sides (warm). The pool has deeps now, where the slabs go down into black water.
-- THE FALL: the sewer's water comes down through the same breach the light does, fifteen metres of it, strands running faster the further they have fallen, a skirt of thrown water and spray where it lands. It lands in the simulated water, so its rings are real and go out across the pool. It stands in the far left, never the near side, and not in a campaign room too small for it.
-- THE WELLS: the two holes in the floor are where the water goes on down. It pours over their lips and down their walls, and the waves that reach them are lost in them.
-- FIXED, in every world (found filming the fall): the ground round a floor lies three centimetres under it, as two triangles tens of metres across. With the hero in a far corner their depth came out wrong by more than that, and for a frame at a time the ground showed THROUGH half the floor. It is laid in small pieces now, a little further back (`kit.js groundGeo`); 29 bad frames in 108 of that shot became none.
-- Looks only: nothing in the sim reads the water. On the software GPU the cistern's frame is about a seventh slower, nearly all of it the simulation's own passes (a fifth of a megapixel twice a frame, which a phone's GPU does not notice); the floor's own shading costs what v143's did. Checked on WebGPU and on the WebGL 2 fallback.
-- Tests: test/view.mjs holds the simulation's numbers and what goes into it (12 checks, 116 in all); the smoke throws a splash into the cistern in a browser and reads the surface back, on both backends (a new scenario, `world4-gl`), and checks no other world has water it should not.
-- Cache tokens `?v=143` → `?v=144`; HUD label → `2.0 · v144`
-
----
-
-## v143 — 2026-11-11
-**The water answers the hero: rings go out from it in the cistern, and the river breaks round it and trails a wake**
-- WHY (owner, 2026-11-10: "we can go way beyond with geometry and art assets"): the driveway's leaves and puddles answer the fight (v138), the ice's chips do (v141). The two floors that are water did nothing when you stood in them.
-- THE CISTERN: you stand in a hand's depth of water, and rings go out from where you stand — thin and bright as the drips' from the vault, a metre apart, gone within four metres. They move with you.
-- THE RIVER: the stream breaks round you. A crescent of foam stands on your upstream side, and behind you a wake opens downstream: two arms of foam, torn by the same lace the banks' foam is torn by (ruled white lines read as a laser, not a wake), gone within two and a half metres. On the water only: none where you stand on the dry bank.
-- Both are a few lines of arithmetic on the hero's place, which the floor already knew (the pool of light it carries); no new noise is read (the wake borrows the banks' foam's).
-- Looks only: nothing in the sim knows of either, and no shot or body is drawn differently for them. They are kept faint on purpose: a texture under the fight.
-- Also: seven comments in v140's floor code named the draft numbers they were written under (v141 to v143) and now say v140, which is what shipped them.
-- Checked by render, the hero alone and in a fight, both orientations. test/view.mjs holds their sizes (2 checks).
-- Cache tokens `?v=142` → `?v=143`; HUD label → `2.0 · v143`
-- Cache tokens `?v=142` → `?v=143`; HUD label → `2.0 · v143`
-
----
-
-## v142 — 2026-11-11
-**The campaign's rooms wear the new floors properly: leaves, chips and puddles to the room's own size, and a shaped room's floor cut to its shape**
-- WHY: v138 to v141 changed the floor of every world, and the campaign's 36 rooms wear those worlds' looks. All 36 were rendered on a phone-shaped screen at v141 and read. Two faults, both from rooms being smaller than the arcade's floors and not always rectangles.
-- TOO MANY LEAVES. The driveway's 150 leaves were counted for the arcade's floor; a room of THE SURFACE is about a quarter of that, so the same 150 lay four times as thick and a small room was carpeted. A floor now takes its SHARE: the count scales with the floor's area (the lawn's with its edge), so the arcade's driveway is exactly as it was and FIRST LIGHT has 44 leaves on its slab where it had 174. The ice's chips do the same (18 on THE FOAM's rink, 64 on the arcade's sheet), and the driveway's two puddles are drawn to the room's scale.
-- ONE FLAT COLOUR PAST THE EDGE. In a room that is not a rectangle the floor painted everything past its shape one colour, so a disc of river sat in an olive square, and a cistern's cross in navy blocks. Each of those sets lays its own ground under the whole floor, so the floor is now CUT to its shape there (as the driveway's has been since v73) and what shows past the edge is what is there: the stream running on and its pebble bank, the cistern's dark water, the snowfield. The boiler and the deep keep their dark — under a deck and past a reef the dark is what is there.
-- Checked by render: the rooms of every campaign world before and after, a room whose floor moves (PULSE), and the arcade's river and ice. test/view.mjs holds the share (3 checks): a quarter-size room has a quarter of the leaves, on its own slab, and the chips likewise; the arcade's counts are untouched (the leaves' and chips' own checks stand).
-- Not changed: the arcade. Its floors are the full size and rectangles, so every count and picture there is as v141 left it.
-- Cache tokens `?v=141` → `?v=142`; HUD label → `2.0 · v142`
-- Cache tokens `?v=141` → `?v=142`; HUD label → `2.0 · v142`
-
----
-
-## v141 — 2026-11-10
-**Chips of broken ice lie on the sheet, and they skitter: a kick sends one a long way, off the banks and the blocks — and into a hole, and gone**
-- THE ASK (owner, 2026-11-10): "we can go way beyond with geometry and art assets", and of the worlds after the driveway "we can do a lot better than the concept art". The driveway has leaves that answer the fight (v138); the ice has holes broken through it (v139). This is what broke off.
-- CHIPS OF ICE (render/leaves.js, kind 'chips'): 64 of them scattered over the sheet, each a broken five-sided plate 30 to 60 cm long, its top smaller than its foot, in the sheet's own blues and whites; ice lets light through, so a chip never goes as dark as a stone in shade would.
-- THEY SKITTER. It is ice on ice: the same kick that moves a leaf a metre and a half sends a chip several times as far, spinning. A body going by knocks them on, a dash sweeps them ahead of it, a burst throws them. They come back off the banks on all four sides, the near one too, and off the blocks that stand on the sheet.
-- AND A HOLE TAKES THEM: a chip that slides to within 0.6 of a hole's radius of its middle tips, goes down it and is gone for the rest of the world. One that slides past lies on. So the sheet remembers the fight, as the driveway does: by the end the chips are along the banks, and fewer.
-- Looks only, as the leaves are: the sim never knows a chip, their dice are their own, and nothing here can change a run.
-- The leaves' code is the chips' code: LeafLitter takes a kind (its numbers, its shape, where it lies, what stops it). The driveway's leaves are as they were — the same seed lays the same leaves, and their nine checks stand.
-- test/view.mjs holds the chips (6 checks): the same chips in the same places every time, all on the sheet; a kicked chip goes more than two and a half times as far as a kicked leaf; one comes back off the near bank; one that slides into a hole is gone and one that slides past is not; nothing brings a sunk chip back; the leaves carry none of the chips' numbers.
-- Tried and left out: cinders on the boiler's deck. Dark lumps on a dark deck under the paint of a fight: sixty of them added nothing you could see.
-- Cache tokens `?v=140` → `?v=141`; HUD label → `2.0 · v141`
-- Cache tokens `?v=140` → `?v=141`; HUD label → `2.0 · v141`
-
----
-
-## v140 — 2026-11-10
-**The floors of worlds 3 to 9, past their concepts: no two flagstones, slabs or plates alike — and fish in the river, snow drifted over the ice, starfish on the seabed, light running through the core's deck**
-- THE ASK (owner, 2026-11-10): "Also look at all other worlds, and like said we can do a lot better than the concept art". The driveway got pours that differ (v138); this is the same for the seven worlds after it. Each floor was a single material ruled by joints. Now each is made of pieces, and has places in it.
-- THE SEWER (3) is STONES. The courses start where they start (each was offset by exactly half a stone); of each pair along a course about a quarter are ONE long stone and a sixth are cut in halves. Every stone has its own tone and its own tint between a cool blue-grey and a warm brown-grey (a few greenish), lies a little out of level, and is worn round at its edges — the edge toward the light bright, the one away from it dark, so it reads as stones lying in a floor and not as a drawing of joints. One in ten is cracked across. Within 2.6 m of the channel, and at the walls' feet, the stones lie damp, and slime has taken in the joints.
-- THE CISTERN (4) is LAID: long slabs and slabs of four small tiles among the square ones, each its own tone and tint, out of level, its edges catching the light through the water; a slab here and there has SUNK and lies deeper, in its neighbours' shade; silt has settled pale in the joints in patches; and round the pool, 0.9 m in from its edge, runs a BORDER of small tiles, light and dark, some of them gone. The border follows the pool's edge as it stands (a wave's floor may be smaller than the room) and is left out of a room whose floor is not a rectangle.
-- THE BOILER (5) is PLATES: each its own tone, blued or bare or rusting; a third are TREAD plate (rows of raised lozenges catching the light), a third were rolled and show it, the rest are bare and scraped; each stands a hair proud of the deck, lit on one edge and shaded on the other; a few carry a PATCH welded on, with its bead; rust blooms where the soot is not; and round every grate the steel is TEMPERED by the fire under it — straw, bronze, purple, blue, going out.
-- THE RIVER (6) has FISH: dark shapes holding against the current in the deep middle, a loose school here and there, each working its tail; they make upstream slowly, and scatter from where you stand. Under the water: they darken it, they are not drawn on it.
-- THE ICE (7) has SNOW: it has drifted over the pale ice, its edge scalloped and its surface ridged across the wind, the cracks gone under it, and the dark windows between are swept clear. The sheet has places now.
-- THE DEEP (8) has FINDS: the ripples in the silt have a lit side and a dark one, and here and there lies a starfish or a scallop's shell, each in its own place at its own angle.
-- THE CORE (9) is a MACHINE's deck: some tiles are VENTS (a block of slots, the core's light faint under them), some carry a status LAMP that blinks on its own beat, and light RUNS along the grid's lines in packets, each lane at its own speed and most lanes quiet.
-- Cost: every stone, slab, plate, tile, fish and find is arithmetic on one hash, the rest of its numbers spun off that one (v138's lesson); the sewer's and the cistern's old per-piece noise went to pay for it. Measured against v139 on the software GPU (portrait, the set alone): the sewer, the cistern and the boiler cost between a twentieth and a tenth more a frame, the ice about a twentieth, and the river, the deep and the core nothing that machine can tell from its own run-to-run spread.
-- Checked by render: every world in both orientations on WebGPU, and all seven on the WebGL 2 fallback, with no shader or page error (a derivative may not sit in a branch on WebGPU, v68: the fish's and the finds' edges take a pixel's width from outside theirs). test/view.mjs holds what must not overlap: a piece's kind is read off one hash against shares, so the sewer's long and cut stones, and the core's vents and lamps, may not add up past the whole; the cistern's border fits inside its pool; the boiler's temper colours stop short of the next grate; the fish and the finds fit their cells; the snow is a dusting the floor shows through (7 checks).
-- The v13x entries are rolled into the Archive, one line each.
-- Cache tokens `?v=139` → `?v=140`; HUD label → `2.0 · v140`
-- Cache tokens `?v=139` → `?v=140`; HUD label → `2.0 · v140`
+## v150 — 2026-11-12
+**The deep is alive and lit from above — shoals, jellyfish, crabs, shafts of the surface's light; the core's heart drives its machine, every beat a kick**
+- From the owner's read of the LOOK 2 film (v147): the deep, "Needs both" (more life, more light); the core, "Needs more". With v148 and v149 this answers all seven.
+- **Deep — life.** SHOALS of small fish over the bed, two kinds, each its own size, colour and heading, swimming in clouds that travel with them, weaving, tails working; each throws a shadow on the silt a little way off, which is what says they are above it; they part round the hero. CRABS on the bed (`render/leaves.js` 'crabs'): each scuttles sideways a little way, waits, goes again, and runs from any body that comes near; a burst throws them. JELLYFISH adrift over the far side, the sides and a little way in over the floor's edge: a bell that pulses, tentacles trailing, clear but for its rim.
+- **Deep — light.** SHAFTS of the surface's light come down in three fans (the cistern's rays) and the bed is lit where they land, the caustic web at its brightest under them; the surface's dapple is stronger everywhere; the bed a little lighter and bluer; the plankton brighter where the water is stirred.
+- **Core — the heart DRIVES the machine.** Every beat kicks the rotor on part of a segment (a ratchet now, not a fan). Between the rotor and the heart stands the STATOR: ten great vanes, dark against the heart, its light coming up between them in beams; a conduit down each, and on every beat a charge runs out along it. On the deck the beat hits harder: a second ring follows the first, the pane takes a breath of the heart's light, a pad flares as a ring crosses it, and for a moment after each beat the grid near the heart is live with arcs.
+- `scripts/itch-clips.mjs`: a LOOK 3 clip — the seven worlds again, one shot each and its question.
+- Tests: `test/view.mjs` 159 checks (crabs: where they start, that they scuttle and wait, never sleep, never walk through what stands on the bed, run from a body; the deep's lights and shoals; the stator between rotor and heart; the kick).
+- Archive: v140 to v149 rolled to one line each.
+- Cache tokens `?v=149` → `?v=150`; HUD label → `2.0 · v150`
 
 ---
 
@@ -166,6 +36,16 @@
 
 One line per version; the full entries are in git history (`git log -p VERSIONS.md`).
 
+- **v149** (2026-11-11) — The boiler room stokes — fire in pits under the grates, blown on a beat, steam off the floor, engines turning; the ice keeps the trails of what slides over it, under more snow
+- **v148** (2026-11-11) — The river's lily pads stay where they grow; the sewer's chute is a half-pipe with the stream swinging in it; leaves afloat in the cistern
+- **v147** (2026-11-11) — The core's deck is glass, and the machine is under it: a great rotor turning over a heart that beats
+- **v146** (2026-11-11) — The river's water is simulated too, and flows; its fish are of three kinds. The deep is under water: light from the surface, a ray's shadow going over, plankton lit where the water is stirred
+- **v145** (2026-11-11) — The sewer's stream runs in a chute, the boiler room is a dark machine hall with square decks, and the ice is broken unevenly under more snow
+- **v144** (2026-11-11) — The cistern's water is water: a wave simulation the fight stands in. And the cistern is dark, with the sewer's water falling into it
+- **v143** (2026-11-11) — The water answers the hero: rings go out from it in the cistern, and the river breaks round it and trails a wake
+- **v142** (2026-11-11) — The campaign's rooms wear the new floors properly: leaves, chips and puddles to the room's own size, and a shaped room's floor cut to its shape
+- **v141** (2026-11-10) — Chips of broken ice lie on the sheet, and they skitter: a kick sends one a long way, off the banks and the blocks — and into a hole, and gone
+- **v140** (2026-11-10) — The floors of worlds 3 to 9, past their concepts: no two flagstones, slabs or plates alike — and fish in the river, snow drifted over the ice, starfish on the seabed, light running through the core's deck
 - **v139** (2026-11-10) — A hole in the ice is broken through, not bored; and the blockers of worlds 3 to 9 belong to their floors — a rock is a mound, and everything stands in what gathers round it
 - **v138** (2026-11-10) — World 2 to the owner's concept, and past it: an old slab, worn curb stones, a puddle with the sky in it, and fallen leaves that are really there
 - **v137** (2026-11-10) — The blockers block out the floor: rounded islands and footprints of each world's own material, and pits

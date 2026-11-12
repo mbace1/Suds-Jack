@@ -7,10 +7,10 @@
 // things that work"). The arena is 1.x's, so every 1.x number ports as it is
 // instead of through a rescale. Axes: x across the screen (right +), y up,
 // z toward the bottom of the screen. The arena is centred on the origin.
-import { SPECIES } from './tuning/species/index.js?v=149';
-import WAVES from './tuning/waves.js?v=149';
-import PICKUPS from './tuning/pickups.js?v=149';
-import MUSIC from './tuning/music.js?v=149';
+import { SPECIES } from './tuning/species/index.js?v=150';
+import WAVES from './tuning/waves.js?v=150';
+import PICKUPS from './tuning/pickups.js?v=150';
+import MUSIC from './tuning/music.js?v=150';
 
 export const TUNING = {
   render: {
@@ -188,7 +188,11 @@ export const TUNING = {
       // mid grey) — the deep's silt and the core's black are near black, and light that only multiplies left them so
       deep:    { ambient: 0.62, lights: [{ frac: [-0.55, 0.3], h: 1.2, r: 3.6, k: 0.75, glow: 0.07, color: [0.35, 1, 0.6], flicker: [0.9, 0.25] },
                                          { frac: [0.38, -0.42], h: 1.2, r: 3.2, k: 0.7, glow: 0.07, color: [0.35, 1, 0.6], flicker: [1.3, 0.25] },
-                                         { frac: [0.62, 0.48], h: 1.2, r: 3.0, k: 0.65, glow: 0.07, color: [0.35, 1, 0.6], flicker: [0.7, 0.25] }],
+                                         { frac: [0.62, 0.48], h: 1.2, r: 3.0, k: 0.65, glow: 0.07, color: [0.35, 1, 0.6], flicker: [0.7, 0.25] },
+                                         // v150: where the SHAFTS from the surface land (sets/deep.js `shafts`): broad, blue-white, soft
+                                         { frac: [-0.28, -0.5], h: 9, r: 6.5, k: 0.5, color: [0.5, 0.78, 1], sheen: false, shaft: true },
+                                         { frac: [0.5, 0.05], h: 9, r: 5.5, k: 0.42, color: [0.5, 0.78, 1], sheen: false, shaft: true },
+                                         { frac: [-0.5, 0.62], h: 9, r: 5, k: 0.36, color: [0.5, 0.78, 1], sheen: false, shaft: true }],
                  rim: { w: 2.2, k: 0.8, glow: 0.08, color: [0.25, 0.62, 1], sides: 'all' } },
       core:    { ambient: 0.85, rim: { w: 1.9, k: 0.6, glow: 0.3, color: [1, 0.3, 0.85], sides: 'all' } },
     },
@@ -462,12 +466,20 @@ export const TUNING = {
       // great ray going over — `size` m (a half body), on a `round` of the floor's half sizes at `pace` rad/s, wings
       // beating at `beat`, `dark` at `soft` edges. `stir`: the plankton lit where the water is stirred (the
       // simulation's, TUNING.water.deep) — sparks `grain` a metre (`keep` of the cells, `dot` of a cell round), `sparkK` bright over a `haze`
-      deep: { sun: { net: { scale: 0.13, sharp: 11, speed: 0.14, gain: 1 }, drift: [0.22, 0.1], gain: 0.5, add: 0.05, color: [0.4, 0.7, 1.0] },
+      // v150 (owner on v147: "Needs both" — more life, more light): the surface's light stronger (`gain`, `add`), and
+      // `shaft` × as strong again where a shaft lands; `shoal`: lantern fish over the bed — each kind's `heading` (rad),
+      // `swim` m/s, one fish in `keep` of the `cell`s [along, across] m, `len` m long and `girth` of that wide, tail
+      // beating `beat`, weaving (`weave`: per m, per s, m), in clouds (`cloud` of a noise `cloudScale` a metre), shy of
+      // the hero inside `shy` m, in `color` (`k` solid); each throws a shadow `shadow` m off (`shadowK` dark)
+      deep: { sun: { net: { scale: 0.13, sharp: 11, speed: 0.14, gain: 1 }, drift: [0.22, 0.1], gain: 0.75, add: 0.09, color: [0.4, 0.7, 1.0], shaft: 1.6 },
+              shoal: { shadow: [0.4, 0.3], shadowK: 0.45, kinds: [
+                { heading: 0.5, swim: 1.2, cell: [0.9, 0.55], keep: 0.5, len: [0.24, 0.36], girth: 0.2, beat: 9, weave: [0.12, 0.25, 1.3], cloud: [0.6, 0.68], cloudScale: 0.12, shy: [1.2, 2.6], color: [0.16, 0.52, 0.5], k: 0.85 },
+                { heading: 2.6, swim: 0.75, cell: [1.7, 1.0], keep: 0.4, len: [0.42, 0.62], girth: 0.17, beat: 6, weave: [0.08, 0.18, 1.8], cloud: [0.6, 0.68], cloudScale: 0.09, shy: [1.5, 3.2], color: [0.55, 0.26, 0.42], k: 0.85 }] },
               ray: { size: 2.6, round: [0.62, 0.78], pace: [0.083, 0.057], beat: 1.5, dark: 0.34, soft: 0.14 },
-              stir: { grain: 3.0, keep: 0.5, dot: 0.3, sparkK: 2.4, haze: 0.22, color: [0.1, 0.85, 0.75] },
+              stir: { grain: 3.0, keep: 0.55, dot: 0.32, sparkK: 3.0, haze: 0.26, color: [0.1, 0.85, 0.75] },
               finds: { cell: 3.1, keep: 0.3, stars: 0.5, relief: 0.1, star: 0.34, starLo: [0.2, 0.05, 0.04], starHi: [0.3, 0.12, 0.05], shell: 0.2, shellCol: [0.16, 0.15, 0.14], k: 0.9 },
               silt: [0.006, 0.008, 0.02], ripple: [0.012, 0.018, 0.04], glow: [0.2, 0.5, 1.0], glow2: [0.5, 1.0, 0.7], specks: 2.6, sky: [0.002, 0.004, 0.01],
-              bed: { cell: 0.9, lumpK: 0.45, lo: [0.03, 0.026, 0.022], hi: [0.1, 0.078, 0.05], swept: 1.35, band: 0.45, cold: [0.012, 0.03, 0.06], coldReach: 3, coldK: 0.65,
+              bed: { cell: 0.9, lumpK: 0.45, lo: [0.03, 0.03, 0.03], hi: [0.1, 0.085, 0.065], swept: 1.35, band: 0.45, cold: [0.012, 0.03, 0.06], coldReach: 3, coldK: 0.65,
                      ripple: 0.5, poolR: [0.25, 0.75], poolGlow: 0.05, strays: 0.12, green: 0.85 } },
       // v101 (the approved picture and module sheet): `tiles` — dark tiles `cell` m on a magenta grid (`line` of the
       // tile, glowing `lineGlow`), two disc `pads` (fractions of the half sizes) `padR` m, glowing `padGlow`, rings
@@ -487,8 +499,17 @@ export const TUNING = {
                        // pane tints what is under it `glass` and keeps `pane` of its own sheen
                        under: { rotor: 3.2, heart: 9, ringW: 3.1, gap: 0.05, seg: 5.5, cut: 0.035, turn: 0.5, hub: 1.5, metal: [0.012, 0.006, 0.02], edgeK: 0.9,
                                 heartR: 3.4, haloR: 5, haloK: 1.15, hot: [1.3, 0.75, 1.2], arcs: 7, arcK: 0.6, arcSpeed: 0.8,
-                                period: 1.25, second: 0.27, sharp: 90, beatK: 0.6, waveSpeed: 11, waveLen: 0.12, waveK: 1.6, waveReach: 22,
-                                glass: [0.9, 0.8, 1.0], pane: 0.3 },
+                                period: 1.25, second: 0.27, sharp: 90, beatK: 0.72, waveSpeed: 11, waveLen: 0.12, waveK: 2.2, waveReach: 24,
+                                glass: [0.9, 0.8, 1.0], pane: 0.3,
+                                // v150 (owner on v147: "Needs more"): every beat KICKS the rotor on `kick` of a segment (a ratchet);
+                                // between it and the heart the STATOR's `vanes` (`n` of them, `depth` m down, `w` m half wide, from
+                                // `from` m out, their `metal` `lit` by the heart) each with a conduit (`duct` m, `idle` bright) a
+                                // charge runs out along on the beat (`run` m/s, `len` of a period long, `k` bright, gone by `reach` m);
+                                // the pane takes the heart's light with each beat (`thump`); for a moment after it `arc.share` of the
+                                // grid's half tiles near the heart are live, changing `rate` times a second, dying off at `fade`;
+                                // a pad flares `padKick` as a beat's ring crosses it
+                                kick: 0.16, vanes: { n: 10, depth: 6.2, w: 0.55, from: 2.6, metal: [0.012, 0.005, 0.02], lit: 1.2, duct: 0.16, idle: 0.12, run: 16, len: 0.1, k: 2.6, reach: 26 },
+                                thump: { k: 0.035, reach: 12 }, arc: { share: 0.2, rate: 22, fade: 7, reach: 9, k: 2.4 }, padKick: 0.8 },
                        vary: { vents: 0.16, slots: 7, ventGlow: 0.035, lamps: 0.14, lamp: [0.25, 0.85, 1.0],
                                packet: { every: 5, len: 0.12, speed: 0.5, lanes: 0.45, color: [0.5, 0.95, 1.0], gain: 0.9 } },
                        cell: 2.2, line: 0.045, tile: [0.016, 0.012, 0.022], line_: [1.0, 0.18, 0.72], lineGlow: 0.55, glow: [1.0, 0.25, 0.7],
@@ -728,7 +749,22 @@ export const TUNING = {
             vent: { every: 9, out: [2.3, 4.2], color: [0.02, 0.025, 0.035] },
             bubbles: { per: 8, period: 3.6, rise: 4.5, r: [0.08, 0.17], sway: 0.12, wobble: 9, gain: 1.0, color: [0.35, 0.65, 1.0], rim: true, add: true, fade: 0.8 },
             // v77: marine snow sinking through the whole view
-            motes: { n: 120, h: 6, vy: -0.12, sway: 0.1, wobble: 0.4, r: 0.02, gain: 0.8, color: [0.5, 0.7, 1.0], out: 8 } },
+            motes: { n: 120, h: 6, vy: -0.12, sway: 0.1, wobble: 0.4, r: 0.02, gain: 0.8, color: [0.5, 0.7, 1.0], out: 8 },
+            // v150 (owner: "Needs both"): SHAFTS of the surface's light, one fan to each light marked `shaft` (the cistern's
+            // rays, scenery.js _rays: `n` of them `len` m up along `dir`, feet `spread` m across); JELLYFISH adrift (`jelly`:
+            // `n` of them, bells `r` m, `y` m up, over the far side and the two sides and `over` m in over the floor's edge,
+            // drifting `drift` m on a `pace` of their own, pulsing `pulse` a second, `tent` tentacles `tentL` × the bell
+            // long, in `tones`, `alpha` solid at the rim); and CRABS on the bed (render/leaves.js 'crabs': `n`, `size` m,
+            // scuttling sideways `run` m/s for `dart` s then waiting up to `wait` s, away from any body inside `fear` m
+            // at `flee` m/s)
+            shafts: { n: 4, len: 19, dir: [0.25, -1, 0.3], spread: 4.5, mouth: 0.3, r: 1.0, top: 0.45, alpha: 0.05, vary: 0.4, lift: 1.5, foot: 0.1, roof: 0.3, breathe: 0.4, color: [0.45, 0.72, 1.0] },
+            jelly: { n: 11, r: [0.35, 0.7], y: [2.2, 5.5], over: 5, out: 5, drift: 2.2, pace: 0.11, pulse: 0.55, tent: 7, tentL: 2.6, alpha: 0.55,
+                     tones: [[0.55, 0.85, 1.0], [1.0, 0.55, 0.85], [0.6, 1.0, 0.8]] },
+            crabs: { seed: 150, n: 14, size: [0.34, 0.5], lie: 0.0, rough: 0.5, shadow: 0.3, tilt: 0, lit: [0.07, 0.02, 0.012],
+                     tones: [[0.85, 0.3, 0.14], [0.7, 0.22, 0.1], [0.95, 0.45, 0.2]],
+                     run: 1.5, dart: [0.5, 1.1], wait: [0.6, 2.6], fear: 2.6, flee: 4.2,
+                     scuff: 0.3, gust: 1.6, gustK: 1.3, minSpeed: 1.2, push: 0.3, carry: 0.2, liftAt: 8, lift: 2.0, max: 8,
+                     drag: 5, airDrag: 0.9, fall: 9, spin: 3, spinDrag: 6, rest: 0, burst: 5, burstR: 3.0, bounce: 0.2 } },
     // v72 (from the World 9 brief, art-ref/briefs/world-9-core.md): THE CORE. A
     // traced deck (`ground`: a grid every `cell` m, power running in toward the
     // floor in rings `pulseEvery` m apart); `tower`s along the far side and the

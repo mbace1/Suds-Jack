@@ -21,11 +21,14 @@
 //   'flotsam'  the cistern's (TUNING.scenery.cistern.flotsam): the driveway's leaves, washed down here and AFLOAT.
 //              The water carries them — from under the fall, across the floor, round to the nearest well and over
 //              its lip — and one that goes down a well comes back in under the fall. They never lie still
+// v150 (owner on v147's deep: "Needs both" — more life, more light):
+//   'crabs'    the deep's (TUNING.scenery.deep.crabs): ALIVE. Each scuttles sideways a little way, waits, and goes
+//              again; and runs from any body that comes near. A burst throws them like anything else
 import * as THREE from 'three/webgpu';
 import { uv, vec3, float, abs, smoothstep, mix } from 'three/tsl';
-import { TUNING } from '../tuning.js?v=149';
-import { seeded } from './kit.js?v=149';
-import { SUN_AT } from './sun.js?v=149';
+import { TUNING } from '../tuning.js?v=150';
+import { seeded, merge } from './kit.js?v=150';
+import { SUN_AT } from './sun.js?v=150';
 
 const T = TUNING;
 
@@ -68,6 +71,17 @@ function chipGeometry(L) {
   for (let i = 1; i < 4; i++) tris.push([top[0], top[i], top[i + 1]]);
   return facets(tris, [0, h / 2, 0]);
 }
+// a crab, a metre across its shell: a low domed shell, two claws held out in front, three legs a side
+function crabGeometry() {
+  const parts = [new THREE.SphereGeometry(0.5, 12, 6).scale(1, 0.34, 0.72).translate(0, 0.17, 0)];
+  for (const sd of [-1, 1]) {
+    parts.push(new THREE.SphereGeometry(0.17, 8, 5).scale(1, 0.6, 1.3).translate(sd * 0.36, 0.14, 0.46));   // a claw
+    parts.push(new THREE.BoxGeometry(0.1, 0.07, 0.3).rotateY(sd * -0.5).translate(sd * 0.3, 0.12, 0.28));    // its arm
+    for (let k = 0; k < 3; k++) parts.push(new THREE.BoxGeometry(0.42, 0.06, 0.07).rotateZ(sd * -0.5).rotateY(sd * (0.35 - k * 0.4)).translate(sd * 0.58, 0.1, 0.12 - k * 0.2));
+    parts.push(new THREE.SphereGeometry(0.05, 6, 4).translate(sd * 0.14, 0.36, 0.3));   // an eye on its stalk
+  }
+  return merge(parts);
+}
 // v142: the counts are the ARCADE floor's (16 × 27.5 m half sizes). A campaign room wears the same look on a floor a
 // quarter the size, and the same count lay four times as thick there: a smaller floor takes its share
 const FULL = 16 * 27.5, share = (hx, hz) => Math.min(1, (hx * hz) / FULL);
@@ -83,6 +97,7 @@ const KINDS = {
   leaves: { L: () => T.scenery.driveway.leaves, geo: (L) => leafGeometry(L), spots: null, walls: 'curb', leaf: true },
   chips: { L: () => T.scenery.ice.chips, geo: (L) => chipGeometry(L), spots: openSpots, walls: 'rail' },
   flotsam: { L: () => T.scenery.cistern.flotsam, geo: (L) => leafGeometry(L), spots: openSpots, walls: 'rail', leaf: true, afloat: true },
+  crabs: { L: () => T.scenery.deep.crabs, geo: () => crabGeometry(), spots: openSpots, walls: 'rail', alive: true },
 };
 
 export class LeafLitter {
@@ -127,6 +142,7 @@ export class LeafLitter {
     this.vx = new Float32Array(n); this.vz = new Float32Array(n); this.vy = new Float32Array(n);
     this.yaw = new Float32Array(n); this.spin = new Float32Array(n); this.roll = new Float32Array(n); this.flip = new Float32Array(n);
     this.size = new Float32Array(n); this.free = new Uint8Array(n); this.awake = new Uint8Array(n); this.age = new Float32Array(n).fill(1e3);
+    this.tm = new Float32Array(n); this.go = new Float32Array(n); this.gx = new Float32Array(n); this.gz = new Float32Array(n);   // (what is alive: its clock, whether it is going, and which way)
     const geo = this.K.geo(L), mat = new THREE.MeshStandardNodeMaterial({ side: THREE.DoubleSide, roughness: L.rough, metalness: 0 });
     // its own colour (per leaf), darker along the midrib and browner toward the tip
     if (this.K.leaf) mat.colorNode = mix(vec3(1), vec3(...L.tip), smoothstep(0.55, 1.0, uv().y).mul(L.tipK)).mul(float(1).sub(float(1).sub(smoothstep(0.0, 0.16, abs(uv().x.sub(0.5)))).mul(L.rib)));
@@ -156,7 +172,8 @@ export class LeafLitter {
     const L = this.L, fl = this.K.afloat, s = this.size[i] * (this.sunk[i] === 2 ? 0 : 1) * (fl ? Math.min(1, this.age[i] / L.grow) : 1), y = this.y[i];
     // in the air it tumbles (flip); lying, it keeps the tilt it settled with (afloat, it rocks on the water)
     const ph = fl && y === 0 ? this.time * L.bobHz * 6.2832 + i * 2.4 : 0, bx = fl && y === 0 ? Math.sin(ph) * L.bob : 0, bz = fl && y === 0 ? Math.cos(ph * 0.77) * L.bob : 0;
-    this._e.set(this.flip[i] + bx, this.yaw[i], this.roll[i] + bz, 'YXZ'); this._q.setFromEuler(this._e);
+    const rock = this.K.alive && y === 0 && this.go[i] ? Math.sin(this.time * 22 + i * 1.7) * 0.07 : 0;   // (a crab under way rocks on its legs)
+    this._e.set(this.flip[i] + bx, this.yaw[i], this.roll[i] + bz + rock, 'YXZ'); this._q.setFromEuler(this._e);
     this._s.set(s, s, s); this._p.set(this.x[i], L.lie + y, this.z[i]);
     this.mesh.setMatrixAt(i, this._m.compose(this._p, this._q, this._s));
     // the shadow: flat, the further from it the higher it flies, and fainter (smaller) up there
@@ -195,14 +212,14 @@ export class LeafLitter {
     if (h.alive && !(h.fall > 0) && !(h.sink > 0)) { const d = h.dash > 0; M.push(h.x, h.z, h.velX || 0, h.velZ || 0, hr + (d ? L.gust : L.scuff), d ? L.gustK : 1); }
     for (const g of w.gels) if (g.alive) M.push(g.x, g.z, g.velX || 0, g.velZ || 0, g.r + L.scuff, 1);
     let moved = false;
-    const fl = this.K.afloat;
+    const fl = this.K.afloat, live = this.K.alive;
     this.time += dt;
     // afloat: the wells the water runs to
     let wells = null;
     if (fl) { wells = this._wells ?? (this._wells = []); wells.length = 0; if (w.posts) for (const p of w.posts) if (p.pit) wells.push(p.x, p.z); }
     for (let i = 0; i < this.n; i++) {
       if (!this.free[i]) continue;
-      if (fl) { this.awake[i] = 1; this.age[i] += dt; }
+      if (fl || live) { this.awake[i] = 1; this.age[i] += dt; }
       const x = this.x[i], z = this.z[i];
       if (this.y[i] < 0.4 && !this.sunk[i]) for (let k = 0; k < M.length; k += 6) {
         const dx = x - M[k], dz = z - M[k + 1], R = M[k + 4];
@@ -228,6 +245,22 @@ export class LeafLitter {
         if (bd < 1e9) { const d = Math.sqrt(bd) || 1e-3; cx = (bx / d - (bz / d) * L.flow.swirl) * L.flow.speed; cz = (bz / d + (bx / d) * L.flow.swirl) * L.flow.speed; }
         else { const d = Math.hypot(x, z) || 1e-3; cx = (-z / d) * L.flow.lone; cz = (x / d) * L.flow.lone; }
         if (Math.abs(this.spin[i]) < L.turn) this.spin[i] += (i % 2 ? 1 : -1) * L.turn * dt;
+      }
+      // (alive: it goes where it means to — away from the nearest body inside `fear` m, or else a little way sideways,
+      // a wait, and again — and it faces across its own way: a crab walks sideways)
+      if (live && !air && !this.sunk[i]) {
+        let fx = 0, fz = 0, fd = L.fear * L.fear;
+        for (let k = 0; k < M.length; k += 6) { const dx = x - M[k], dz = z - M[k + 1], d = dx * dx + dz * dz; if (d < fd) { fd = d; fx = dx; fz = dz; } }
+        if (fx || fz) { const d = Math.sqrt(fd) || 1e-3; cx = (fx / d) * L.flee; cz = (fz / d) * L.flee; this.go[i] = 1; this.tm[i] = L.wait[0]; this.gx[i] = fx / d; this.gz[i] = fz / d; }
+        else {
+          this.tm[i] -= dt;
+          if (this.tm[i] <= 0) {
+            if (this.go[i]) { this.go[i] = 0; this.tm[i] = L.wait[0] + this._rnd() * (L.wait[1] - L.wait[0]); }
+            else { const a = this._rnd() * Math.PI * 2; this.go[i] = 1; this.gx[i] = Math.cos(a); this.gz[i] = Math.sin(a); this.tm[i] = L.dart[0] + this._rnd() * (L.dart[1] - L.dart[0]); }
+          }
+          if (this.go[i]) { cx = this.gx[i] * L.run; cz = this.gz[i] * L.run; }
+        }
+        if (this.go[i]) { const want = Math.atan2(this.gx[i], this.gz[i]) + Math.PI / 2; let da = want - this.yaw[i]; da -= Math.round(da / Math.PI) * Math.PI; this.yaw[i] += da * Math.min(1, 10 * dt); }   // (either flank leads)
       }
       this.vx[i] = cx + (this.vx[i] - cx) * drag; this.vz[i] = cz + (this.vz[i] - cz) * drag;
       this.x[i] += this.vx[i] * dt; this.z[i] += this.vz[i] * dt;
@@ -260,7 +293,7 @@ export class LeafLitter {
           if (vn < 0) { this.vx[i] -= (1 - bk) * vn * nx; this.vz[i] -= (1 - bk) * vn * nz; }
         }
       }
-      if (!fl && !this.sunk[i] && this.y[i] === 0 && Math.hypot(this.vx[i], this.vz[i]) < L.rest && Math.abs(this.spin[i]) < 0.3) { this.awake[i] = 0; this.vx[i] = this.vz[i] = this.spin[i] = 0; }
+      if (!fl && !live && !this.sunk[i] && this.y[i] === 0 && Math.hypot(this.vx[i], this.vz[i]) < L.rest && Math.abs(this.spin[i]) < 0.3) { this.awake[i] = 0; this.vx[i] = this.vz[i] = this.spin[i] = 0; }
       this._put(i);
     }
     if (moved) { this.mesh.instanceMatrix.needsUpdate = true; this.shade.instanceMatrix.needsUpdate = true; }
