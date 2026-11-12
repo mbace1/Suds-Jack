@@ -1591,3 +1591,77 @@ Everything below comes from search summaries. No article was opened.
 - **Reactions:** counts are not visible through search.
 - **Pattern note:** three of today's items are defaults and clauses doing the work (a share setting, an ownership
   clause, a retracted email). "The small print did it" is a device worth keeping for a week like this.
+
+### Check Thu 12 Nov 17:16 (evening; search summaries only; nothing opened)
+- **Big development:** none confirmed. The item to watch is the Anthropic price.
+- **Anthropic IPO (The Round Trip):**
+  - **The price may go above the filed range.** The FT, citing five people, says the bankers are weighing or expect a
+    price above $70–$78, which would lift the valuation to $1.5T or more (relayed by Bloomberg, Seeking Alpha, MLQ;
+    headlines differ on "weigh" versus "expect"). **No amended filing found.** Reporting, not a filing number.
+  - Company-confirmed (its own roadshow release, 10 Nov): 825,000,000 Class A shares, $70–$78, an application to list
+    on the Nasdaq Global Select Market as "ANT". Per the summary, the registration statement is not yet effective.
+  - Still "sources say" (CNBC): pricing 18 Nov, trading 19 Nov. Other outlets give 19 or 20 Nov for first trading.
+  - Demand: the book was covered at the range at launch (CNBC: "on an allocable basis"; Bloomberg). "Several times
+    oversubscribed" reaches us only through aggregators quoting Bloomberg. Retail allocation about 20% (CNBC through
+    an aggregator).
+  - TechCrunch's headline puts the top of the range at an implied $1.404T, fully diluted.
+  - Commitments (DCD's summary of the amendment, on file for the total): $895.4B in all; Google $121.3B, **SpaceX
+    $120.5B**, Amazon $110B, Microsoft $44.9B. One summary adds a "true-up" (Anthropic pays Google the shortfall if
+    it spends less) and a further $125–150B of TPU compute for 2028–2031 outside the total. Both are single-source
+    readings of the filing; unverified.
+  - **New to file: Senator Warren's letter, 27 Oct.** The ranking Democrat on Senate Banking asked the CEO for answers
+    by 3 Nov on AI safeguards, how going public affects AI development and markets, and conflicts involving strategic
+    partners. Coverage from late October says Anthropic did not immediately comment; no later answer was found. The
+    request is not binding. One summary quotes loss and revenue figures from the letter; they were not confirmed and
+    are not used.
+  - **A third-party reading, unverified (Equibles):** the S-1 defines related persons by voting stock, so the
+    related-party financing tables list only Spark Capital and a director's company, not Google or Amazon. This is
+    an analyst's reading, not a company statement. It would be a strong beat, but only from the filing.
+  - No SEC action or lawsuit about the offering was found.
+  - [Seeking Alpha/FT](https://seekingalpha.com/news/4670408-anthropic-bankers-weigh-higher-ipo-price-range-as-investor-demand-surges-ft),
+    [Bloomberg](https://www.bloomberg.com/news/articles/2026-11-10/anthropic-targets-64-4-billion-ipo-nearing-spacex-s-record),
+    [CNBC](https://www.cnbc.com/2026/11/10/anthropic-sets-price-range-of-70-to-78-in-upcoming-ipo.html),
+    [Anthropic](https://www.anthropic.com/news/roadshow-launch),
+    [TechCrunch](https://techcrunch.com/2026/11/10/anthropic-sets-ipo-price-range-of-70-to-78-per-share-to-reach-an-implied-valuation-of-1-404-trillion/),
+    [CFO Dive, Warren](https://www.cfodive.com/news/sen-warren-probes-ai-safety-market-risks-anthropic-ipo/873076/),
+    [MLex, Warren](https://www.mlex.com/mlex/articles/2543718),
+    [Equibles](https://equibles.com/research/anthropics-s-1-checked-against-amazon-google-microsoft-and-broadcom-filings)
+- **10/11 OpenAI, the House letter:** no public answer found. Due **Fri 13 Nov**.
+  - The letter itself is on Rep. Casar's site (29 Oct, 20 signers, 11 sets of questions). It also asks OpenAI to keep
+    its pause on its most capable models until there is independent oversight (TNW).
+  - **New for the naming rule:** summaries say the three researchers published their own open letter on 8 Oct (CBS,
+    Yahoo, Fortune 9 Oct). If so, they went public themselves. Open the letter before naming anyone.
+  - Company response on record: the firings followed an internal investigation that found "a significant breach of
+    trust"; they were not for raising safety concerns (CBS). The researchers say they shared nothing confidential.
+  - [The letter](https://casar.house.gov/sites/evo-subsites/casar.house.gov/files/evo-media-document/openai-employee-firing_cyber-security-follow-up_0.pdf),
+    [CBS](https://www.cbsnews.com/news/openai-defends-firing-safety-researchers/),
+    [Yahoo, the researchers' letter](https://www.yahoo.com/news/politics/articles/read-letter-fired-openai-researchers-094316813.html)
+- **OpenAI Q3 (the WSJ figures):** no OpenAI statement on the loss figure was found. On record from 4 Nov: Brockman
+  said annualized revenue grew 70% in Q3 and business customers are now more than half of revenue.
+- **5 Short Supply (DRAM):** the hearing is tomorrow, **Fri 13 Nov, 09:00, San Jose** (19:00 Helsinki), Judge Noël
+  Wise, Garciaguirre v. Samsung, 5:26-cv-06345 (Justia, PacerMonitor). The defendants' reply is listed for 7 Oct
+  (PacerMonitor shows "Wed 10/07" without a year). No tentative ruling, no government statement of interest and no
+  DOJ, EU or KFTC probe found. An undated Network World item about a 34-state suit appears to be the 2000s case; not
+  used. Prices: nothing newer than this morning's TrendForce and Counterpoint figures.
+  [Justia](https://dockets.justia.com/docket/california/candce/5:2026cv06345/472931)
+- **Military AI, Project Meridian:** new detail only. The suit was filed **2 Nov** in the D.C. federal court against
+  Hegseth and Pentagon technology chief Emil Michael; it asks the judge to shut the panel down and bar the Pentagon
+  from acting on its recommendations (Common Dreams). No government answer and no ruling found. No new frontier-lab
+  contract dated November. [Common Dreams](https://www.commondreams.org/news/project-meridian-lawsuit)
+- **Grok Build, public by default:** follow-ups, no official action.
+  - A Cursor representative (SpaceXSI owns Cursor): apps are private by default and nothing goes public unless the
+    creator shares it (The Decoder). Claroc: the company took down its own staff's 24 apps but not the others. No
+    change to the default is confirmed. No regulator or hospital response found.
+  - An IBTimes headline adds "3,784 medical exams" and Navy-contractor data and says apps went offline; headline
+    only, not confirmed.
+  - [The Decoder](https://the-decoder.com/grok-built-apps-exposed-patient-data-plaintext-passwords-and-spacexsis-own-sales-pipeline/)
+- **OpenAI and Cursor (12 Nov):** today is the cut-off date. No report was found confirming the models were actually
+  removed today; coverage still describes the date as proposed. Anthropic said it would add compute for Claude in
+  Cursor (one summary). LOW-MED.
+- **Whistleblowers:** S. 1792: no markup or vote found. Meta: nothing dated November.
+- **Data-center NDAs (US):** nothing newer than Hubbard and Howell. The Howell vote's result was not found (the
+  search returned 2025 items).
+- **Nvidia–OpenAI financing:** nothing dated November; Q3 earnings are late November.
+- **Reactions:** counts are not visible through search.
+- **Pattern note:** in an IPO week the filing and the reporting move apart fast. The range is a filing fact; "above
+  the range", the dates and the demand are sourcing. A film should print only the first kind and date it.

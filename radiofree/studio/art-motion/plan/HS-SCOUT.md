@@ -1345,3 +1345,96 @@ Search summaries only; nothing opened. One device each, from STORY-DEVICES.md or
   a police investigation, and Google's choice of air cooling.
 - **Hamina (Right of Way), ICEYE (Sleep Tight):** nothing new surfaced.
 - **Reactions:** counts are not visible through search.
+
+### Check Thu 12 Nov 17:16 (evening; search summaries only; nothing opened; hs.fi refuses the search tool's crawler)
+- **HS sweep:** no new HS data-center or AI story surfaced since the 11 Nov Orpo report. hs.fi cannot be searched
+  directly from here; HS stories are seen only through reprints.
+- **Orpo's AI report (HS, 11 Nov):** no follow-up found. More reprints (Karjalainen, SSS, Suomenmaa), all resting on
+  HS. No publication date, no opposition demand and no on-record comment from the PM in the summaries. The office's
+  line stands: not shelved, not finished.
+- **New candidate (MED): Lapinlahti (Alapitkä), "nobody had standing"** · *secondary: Yle, Savon Sanomat, Iisalmen
+  Sanomat*
+  - Helios Nordic Energy plans a data center complex of up to 500 MW at Alapitkä (the figure is from a search
+    summary; its outlet was not confirmed). The building inspector granted a deviation permit for the first phase
+    (5 Aug, per a council member's dissent in the board minutes), and building permits followed.
+  - About 30 rectification requests were filed against the permits (Yle: "kymmeniä"; Iisalmen Sanomat: "yli 30").
+    The building inspector decided **not to examine them**, because the objectors were not considered to have a
+    right of appeal under the Building Act.
+  - **Five appeals** are now at the Eastern Finland Administrative Court against those decisions (Yle's headline).
+    One is a joint appeal by three people; all but one share a structure.
+  - The dissent on record says the site is zoned for solar power in a partial master plan that took effect on
+    19 Feb 2026, and that this is not a minor deviation. A second data center is planned in the same village
+    (Savon Sanomat headline).
+  - Why it fits RFH: the paper trail is public and the absurdity is procedural. Dates of the Yle pieces were not
+    confirmed from the summaries. Before a pitch: read both Yle pieces and the inspector's decision; carry the
+    town's reason exactly.
+  - How verified: three outlets' headlines and summaries agree; nothing opened; no court ruling yet.
+  - [Yle, five appeals](https://yle.fi/a/74-20256036), [Yle, the objections](https://yle.fi/a/74-20252963),
+    [Savon Sanomat](https://www.savonsanomat.fi/paikalliset/9939669),
+    [Iisalmen Sanomat](https://www.iisalmensanomat.fi/paikalliset/9877516)
+- **New, watch (LOW-MED): Yle is collecting town employees' accounts** · *Yle*
+  - Headline only: "Työskenteletkö kunnassa, jonne on suunnitteilla datakeskus? Kerro meille, onko se vaikeuttanut
+    työtäsi jotenkin" (Do you work in a town where a data center is planned? Tell us whether it has made your work
+    harder). Date not confirmed. It reads like the lead-in to a story in the Muhos building-inspector vein.
+  - [Yle](https://yle.fi/a/74-20253414)
+- **New, background (LOW-MED): the national risk assessment** · *STT through SSS, Etelä-Saimaa, Suomenmaa*
+  - Presented at the Interior Ministry on 2 Nov; 24 risks. It names data-center buildings as possible terror
+    targets; Supo's Veli-Pekka Kivimäki notes that not all data centers are alike. AI is covered for the first time
+    (the 2023 edition did not use the word).
+  - [SSS](https://www.sss.fi/2026/11/kansallinen-riskiarvio-tuo-esiin-datakeskuksiin-liittyvan-terroriuhan/)
+- **Alajärvi (LOW)** · *Ilkka-Pohjalainen*: a 9.2 MW data center; the town and E-Heat Oy are using a lease arrangement
+  because a pending Electricity Market Act change could delay the project.
+  [Ilkka-Pohjalainen](https://ilkkapohjalainen.fi/alajarvelle-suunnitellaan-jattikokoista-datakeskus/13743814)
+- **Tuusula (Jokela) (pitch C):**
+  - **76 generators, confirmed** from the environment administration's project page: 76 diesel generators of 6.3 MW
+    fuel power each; **at most 66 in use at once** (415.8 MW combined). Developer: Jokelan Vihreä Maa Oy (QTS,
+    Blackstone). 96 MW of IT capacity.
+  - **€19.2M, confirmed** from Aamuposti's summary: the town itself announced it would get €19.2M for the Vallunlenkki
+    plot.
+  - New on record: QTS told the council it is studying battery storage as an alternative to the diesel generators,
+    and that assessment is unfinished (a press release on the council briefing). The detailed plan's noise limits are
+    55 dB by day and 45 dB by night (a public submission to the YVA).
+  - Timeline from the summaries: talks began in 2024; a preliminary sale agreement in May 2025; the council approved
+    the plan changes on 6 Oct 2025 ("unanimously and quietly", Aamuposti's headline); LVV's reasoned conclusion on
+    the YVA was reported on 26 Oct 2026.
+  - The 10 Nov residents' meeting: held (Jokela school center); still no coverage found.
+  - Aamuposti on the denial: the dispute looks like a difference of interpretation over whether deliberately not
+    telling can be called "salailu" (secrecy). That is the paper's wording, not the town's.
+  - [Project page](https://www.ymparisto.fi/fi/osallistu-ja-vaikuta/ymparistovaikutusten-arviointi/jokelan-datakeskushanke-tuusula-nurmijarvi),
+    [Aamuposti, the emails](https://www.aamuposti.fi/paikalliset/9814716),
+    [Aamuposti, the denial](https://www.aamuposti.fi/paikalliset/9821936),
+    [Aamuposti, "vähin äänin"](https://www.aamuposti.fi/paikalliset/9712526),
+    [the council briefing](https://www.epressi.com/tiedotteet/kaupungit-ja-kunnat/tuusulan-valtuusto-sai-katsauksen-qtsn-datakeskushankkeeseen-jokelaan.html)
+- **Fitburg (pitch A):** no notice of appeal reported. Unchanged since the morning: the captain's lawyer says he will
+  certainly appeal; the boatswain is considering it (Yle) or finds it "natural" (MTV); the prosecutors are satisfied
+  and will decide later whether to appeal the rejected charge. Generic procedure pages give seven days to declare
+  dissatisfaction, which for a 5 Nov judgment would run out about now; not confirmed for this case, and no report
+  says who declared. One summary mentions gas-pipeline repair costs in the damages; that looks like a mix-up with
+  another cable case and is not used. [Yle](https://yle.fi/a/74-20255202)
+- **Protective Fence 26 (pitch B):** holds; no change or cancellation found.
+  - The exercise is 19–27 Nov (Lapin Kansa, Kaleva: "next week's Thursday"); the Highway 9 closure is 18–25 Nov (the
+    Air Force, Kuopio and Siilinjärvi notices). These are two notices, not a conflict.
+  - Closed: Highway 9 from the Toivalantie/Joensuuntie junction to east of the Jännevirta bridge, and road 562
+    (Lentokentäntie). Detour through Riistavesi toward Juankoski and Nilsiä. Passes come from the Karelia Air Wing.
+  - From the Air Force's English release (summary): the Jännevirta strip reopens to traffic by noon on 25 Nov; phase
+    two (22–24 Nov) uses all bases with flying round the clock; in phase three (25–27 Nov) there is no flying
+    00–08.
+  - Allies: the Air Force's own page puts the Dutch F-35As at Rissala. French Rafales from Rovaniemi and Swedish
+    Gripens from Kallax (Nordic Defence Sector, AeroTime). The RAF, the US Air Force and the Virginia Air National
+    Guard send personnel and specialists (Verkkouutiset's summary). Finland's own F-35As do not take part (AeroTime;
+    a second summary repeats it without naming its outlet).
+  - Over 40 aircraft, 20 of them Finnish Hornets; about 4,100 people; ten bases, one in Sweden; civilian airports at
+    Oulu, Seinäjoki, Kajaani, Halli and Pori.
+  - [Air Force, the exercise](https://ilmavoimat.fi/en/-/protective-fence-26-to-be-the-finnish-air-force-s-main-exercise-of-the-year),
+    [Air Force, Highway 9](https://ilmavoimat.fi/en/-/finnish-air-force-exercise-to-close-highway-9-near-kuopio-airport-in-november-2026),
+    [Verkkouutiset](https://www.verkkouutiset.fi/a/ilmavoimien-sotaharjoituksessa-yli-40-lentokonetta-ja-4100-sotilasta/),
+    [Nordic Defence Sector](https://nordicdefencesector.com/en/article/gripen-and-f-35-take-part-in-finnish-air-force-exercise)
+- **Muhos (Cut First):** nothing since STT's 6 Nov story (on file). Kaleva's summary still expects the Muhos YVA by
+  the end of 2026. No report on the water plan.
+- **Hamina (Right of Way):** no LVV decision found. **ICEYE (Sleep Tight):** no November news.
+- **Helsinki protest (7 Nov) and the "Datakeskukset kuriin" initiative:** no government response found. The
+  initiative's 50,000 signatures (three days from 15 Sep) are on record; its handling in parliament was not found.
+- **Found in Pasila (glyphosate):** nothing new; no Yle, city or Tukes reaction.
+- **Reactions:** counts are not visible through search.
+- **Pattern note:** the fastest official move is still the one that costs nothing. In Lapinlahti it was a ruling that
+  nobody may object; in Tuusula, a release saying nothing was hidden. Both leave the paper trail as the story.

@@ -1231,3 +1231,86 @@ All facts below come from search summaries; no article was opened.
   Pins: nothing new surfaced. Night Flight makes no factual claim.
 - **Waiting films:** none. **Films now wrong:** none. The only HOLD row is Toko Drop 2.0.
 - **Reactions:** counts are not visible through search.
+
+## Daily check, Thu 12 Nov 17:16 (evening; search summaries only, nothing opened)
+- **Big development:** none confirmed. One to watch, and it touches The Round Trip:
+  - **Anthropic may price above its own range.** The FT (five unnamed people; relayed by Bloomberg, Seeking Alpha and
+    MLQ) says the bankers are weighing, or expect, a price **above $70–$78**, lifting the valuation to $1.5T or more.
+    Headlines differ on "weigh" versus "expect". **No amended filing was found.** If the range moves, every "$70–78"
+    in pitch D is stale.
+  - Still reported, not company-confirmed: pricing 18 Nov, trading 19 Nov (CNBC: "sources say"). Company-confirmed in
+    its own roadshow release (10 Nov): 825M Class A shares, $70–$78, Nasdaq "ANT".
+  - Demand: the book was covered at the range at launch (CNBC, Bloomberg); "several times" the shares on offer is
+    Bloomberg through aggregators, not read directly.
+  - [Seeking Alpha/FT](https://seekingalpha.com/news/4670408-anthropic-bankers-weigh-higher-ipo-price-range-as-investor-demand-surges-ft),
+    [CNBC](https://www.cnbc.com/2026/11/10/anthropic-sets-price-range-of-70-to-78-in-upcoming-ipo.html),
+    [Anthropic](https://www.anthropic.com/news/roadshow-launch)
+- **New to file, also for The Round Trip:**
+  - **Senator Warren's letter (27 Oct).** The Senate Banking Committee's ranking Democrat asked Anthropic's CEO for
+    answers by 3 Nov on AI safeguards, market risk and conflicts with strategic partners. No public answer was found;
+    the request is not binding. [CFO Dive](https://www.cfodive.com/news/sen-warren-probes-ai-safety-market-risks-anthropic-ipo/873076/)
+  - **A third-party reading of the S-1 (Equibles), unverified:** the related-party tables list only Spark Capital and
+    a director's company, because Google and Amazon hold non-voting stock. If the filing says that, it is the film's
+    sharpest line. It needs the filing itself; do not use it from the analysis.
+    [Equibles](https://equibles.com/research/anthropics-s-1-checked-against-amazon-google-microsoft-and-broadcom-filings)
+- **Top new Finnish candidate (MED): Lapinlahti, "nobody had standing".**
+  - Yle and Savon Sanomat: about 30 objections to the Helios data center's deviation and building permits at Alapitkä
+    were **left unexamined**, because the building inspector found that none of the objectors had a right of appeal.
+    Five appeals are now at the Eastern Finland Administrative Court.
+  - Device in one line: thirty people objected and the answer was that none of them counts. Dates of the Yle pieces
+    were not confirmed from the summaries; read both before a pitch.
+  - [Yle, five appeals](https://yle.fi/a/74-20256036), [Savon Sanomat](https://www.savonsanomat.fi/paikalliset/9939669)
+- **Also new (Finland):**
+  - **Yle is asking town employees** whether a planned data center has made their work harder (headline only; date
+    not confirmed). A follow-up story is likely. [Yle](https://yle.fi/a/74-20253414)
+  - **The national risk assessment** (Interior Ministry, presented 2 Nov; STT) names data-center buildings as
+    possible terror targets and covers AI for the first time. Background for the data-center strand; LOW-MED.
+  - **Orpo's AI report:** no follow-up found. No publication date, no on-record comment from the PM.
+
+### Open pitches: what changed (A–D in `PITCHES-11-11.md`; that file was not edited)
+- **A · Dragged (Fitburg): no change.** No notice of appeal is reported. The captain's lawyer says he will appeal;
+  the boatswain is "considering"; prosecutors have not decided. Keep "not final". One summary mentions gas-pipeline
+  damages, which looks like a mix-up with another case: not used.
+- **B · Give Way (Highway 9): holds, with two days left for a yes (about Sat 14 Nov).**
+  - Dates hold: the exercise is 19–27 Nov; the road is closed 18–25 Nov. One search summary called 18–25 Nov
+    "outdated"; it is not, they are two different notices.
+  - Beat 4 holds and is now better sourced: the Air Force's own page puts Dutch F-35As at Rissala; French Rafales fly
+    from Rovaniemi and Swedish Gripens from Kallax (Nordic Defence Sector, AeroTime). "Also flying" is right; "also
+    landing" on the highway is still unsupported.
+  - Beat 5 holds: Finland's own F-35As do not take part (AeroTime; a second summary repeats it without naming its
+    outlet). Confirm it on the Air Force's page before a build.
+  - New details available: the strip reopens by noon on 25 Nov; flying is round the clock 22–24 Nov; ten bases, one in
+    Sweden. No cancellation or change found.
+  - [Air Force](https://ilmavoimat.fi/en/-/protective-fence-26-to-be-the-finnish-air-force-s-main-exercise-of-the-year),
+    [Verkkouutiset](https://www.verkkouutiset.fi/a/ilmavoimien-sotaharjoituksessa-yli-40-lentokonetta-ja-4100-sotilasta/)
+- **C · Keep It Quiet (Jokela): two figures re-confirmed, one beat needs a change.**
+  - **76 generators: confirmed** (the environment administration's project page: 76 diesel generators, 6.3 MW of fuel
+    power each). **€19.2M: confirmed** (Aamuposti: the town itself announced the price).
+  - **Change beat 6:** "all 76 are humming" is not the plan. The same page says **at most 66 can run at once**. Say
+    "76 on the plan", or stop the hum at 66.
+  - **Add the other side:** QTS told the council it is studying battery storage as an alternative to diesel; that
+    assessment is not finished (a press release on the council briefing).
+  - Still no coverage of the 10 Nov residents' meeting.
+  - [Project page](https://www.ymparisto.fi/fi/osallistu-ja-vaikuta/ymparistovaikutusten-arviointi/jokelan-datakeskushanke-tuusula-nurmijarvi),
+    [Aamuposti](https://www.aamuposti.fi/paikalliset/9814716),
+    [the council briefing](https://www.epressi.com/tiedotteet/kaupungit-ja-kunnat/tuusulan-valtuusto-sai-katsauksen-qtsn-datakeskushankkeeseen-jokelaan.html)
+- **D · The Round Trip (Anthropic): the range may move (see the top).** Write "$70–78" as "the range filed on
+  10 Nov" and re-check on 17–18 Nov. The Google figure (about $121.3B) is unchanged; DCD's total is $895.4B, with
+  SpaceX at $120.5B, Amazon $110B and Microsoft $44.9B (a trade summary of the amendment, not the filing). The two
+  owner decisions are still open.
+
+### Re-checks, films and tomorrow
+- **Posted films:** nothing found that makes one wrong. Cut First (Muhos): no news since STT's 6 Nov story. Right of
+  Way (Hamina): no decision found. Sleep Tight (ICEYE): no November news. Night Flight makes no factual claim.
+- **Waiting films:** none. **Films now wrong:** none. The only HOLD row is Toko Drop 2.0.
+- **Not moved:** S. 1792 (no vote found), Meta (nothing dated November), US data-center NDAs (nothing newer than
+  Hubbard and Howell), Project Meridian (the suit was filed 2 Nov; no government answer found).
+- **Due Fri 13 Nov:**
+  - **Short Supply:** the motion-to-dismiss hearing, 09:00 in San Jose, which is 19:00 in Helsinki, so the outcome
+    belongs to Saturday morning's check. No tentative ruling or government filing found.
+  - **OpenAI:** the answer to the House letter. None found yet. Summaries say the three researchers published their
+    own open letter on 8 Oct (CBS, Yahoo, Fortune), which would meet the "went public themselves" rule; open it
+    before naming anyone.
+- **Reactions:** counts are not visible through search.
+- **Housekeeping:** the session's container restarted before this check. The local branch had come up on main's tip
+  with no commits of its own, so it was pointed back at the pushed branch tip before writing; nothing was lost.
