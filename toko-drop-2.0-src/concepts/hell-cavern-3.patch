@@ -1,6 +1,6 @@
 --- a/js/render/concept.js
 +++ b/js/render/concept.js
-@@ -0,0 +1,409 @@
+@@ -0,0 +1,455 @@
 +// concept.js — CONCEPT ONLY (scratch, never shipped): two worlds the owner is thinking of, drawn far enough to
 +// be judged from a still. HELL: plates of basalt afloat on lava, the lava seen DOWN the cracks between them.
 +// THE VOID: a pane of glass over deep space — a nebula and a turning galaxy far below, stars at three depths, a
@@ -51,18 +51,24 @@
 +// a sum of sines, as a number or a node: the canyons' lines are made of them so the set can stand things on them
 +const sinesJS = (u, W) => W.reduce((s, [a, f, p]) => s + a * Math.sin(f * u + p), 0);
 +const sinesN = (u, W) => W.reduce((s, [a, f, p]) => s.add(sin(u.mul(f).add(p)).mul(a)), float(0));
-+const leftMidJS = (z, C, hx) => -(hx + C.left.off) + sinesJS(z, C.left.wig);
-+const farMidJS = (x, C, hz) => -(hz + C.far.off) + sinesJS(x, C.far.wig);
-+// metres inside the lava's canyons (< 0: metres out from their rim), and which canyon: { L, river }
++// the canyon is ONE path: down the left side, round a bend of radius `elbow`, and along the far side (two bands
++// crossing stood their corners up as slivers of wall). Its middle wanders by a few sines, still at the bend
++const fadeJS = (u, a) => Math.min(1, Math.max(0, (u - a) / 4));
++const leftMidJS = (z, C, hx, hz) => -(hx + C.left.off) + sinesJS(z, C.left.wig) * fadeJS(z, -(hz + C.far.off) + C.elbow);
++const farMidJS = (x, C, hz, hx) => -(hz + C.far.off) + sinesJS(x, C.far.wig) * fadeJS(x, -(hx + C.left.off) + C.elbow);
++// metres inside the lava's canyon (< 0: metres out from its rim), and how much of it is the river: { L, river }
 +const canyons = (p, H, hx, hz) => {
-+  const C = H.canyon;
-+  const lm = sinesN(p.y, C.left.wig).sub(hx + C.left.off), lw = sin(p.y.mul(0.21).add(1.3)).mul(0.22).add(1).mul(C.left.w);
-+  const fm = sinesN(p.x, C.far.wig).sub(hz + C.far.off), fw = sin(p.x.mul(0.17).add(0.4)).mul(0.22).add(1).mul(C.far.w);
-+  const Ll = lw.sub(abs(p.x.sub(lm))), Lf = fw.sub(abs(p.y.sub(fm))).min(p.x.negate().add(hx + C.far.reach));
-+  const Lp = float(C.pool.r).sub(length(p.sub(vec2(hx + C.pool.off, C.pool.z * hz))));
-+  // joined smoothly (a smooth max): where two canyons meet the rim curves round instead of crossing in an X
-+  const smax = (a, b, k) => { const h = max(float(k).sub(abs(a.sub(b))), 0).div(k); return max(a, b).add(h.mul(h).mul(k * 0.25)); };
-+  return { L: smax(smax(Ll, Lf, C.join), Lp, C.join), river: smoothstep(-0.4, 0.4, Ll.sub(max(Lf, Lp))), lm };
++  const C = H.canyon, xc = -(hx + C.left.off), zc = -(hz + C.far.off), R = C.elbow;
++  const fade = (u, a) => clamp(u.sub(a).div(4), 0, 1);
++  const lm = sinesN(p.y, C.left.wig).mul(fade(p.y, zc + R)).add(xc), fm = sinesN(p.x, C.far.wig).mul(fade(p.x, xc + R)).add(zc);
++  const lw = sin(p.y.mul(0.21).add(1.3)).mul(0.22).add(1).mul(C.left.w), fw = sin(p.x.mul(0.17).add(0.4)).mul(0.22).add(1).mul(C.far.w);
++  const dA = abs(p.x.sub(lm)), dB = abs(p.y.sub(fm)), dC = abs(length(p.sub(vec2(xc + R, zc + R))).sub(R));
++  const inX = step(xc + R, p.x), inZ = step(zc + R, p.y);   // 1: past the bend that way
++  const d = select(inX.mul(inZ).greaterThan(0.5), min(dA, dB), select(inZ.greaterThan(0.5), dA, select(inX.greaterThan(0.5), dB, dC)));
++  const river = select(inZ.greaterThan(0.5), select(inX.greaterThan(0.5), step(dA, dB), float(1)), select(inX.greaterThan(0.5), float(0), clamp(p.y.sub(zc).div(R), 0, 1)));
++  const w = mix(fw, lw, river);
++  const Lc = w.sub(d), Lp = float(C.pool.r).sub(length(p.sub(vec2(hx + C.pool.off, C.pool.z * hz))));
++  return { L: max(Lc, Lp), river: river.mul(step(Lp, Lc)), lm };
 +};
 +// the cave's own floor at a point: { alb, shade, rock }
 +const caveFloor = (w, H) => {
@@ -163,7 +169,7 @@
 +  const Bd = H.boulders, len = Bd.len;
 +  for (let i = 0; i < Bd.n; i++) {
 +    const z = fract(t.mul(M.river / len).add(i / Bd.n + 0.13 * i * i)).mul(len).sub(len / 2), r = Bd.r[0] + ((i * 0.618) % 1) * (Bd.r[1] - Bd.r[0]);
-+    const cx = sinesN(z, H.canyon.left.wig).sub(hx + H.canyon.left.off).add(((i * 0.37) % 1 - 0.5) * Bd.spread);
++    const cx = sinesN(z, H.canyon.left.wig).mul(clamp(z.sub(-(hz + H.canyon.far.off) + H.canyon.elbow).div(4), 0, 1)).sub(hx + H.canyon.left.off).add(((i * 0.37) % 1 - 0.5) * Bd.spread);
 +    const o = q.sub(vec2(cx, z)), d = length(o), k = clamp(d.div(r), 0, 1), in_ = float(1).sub(smoothstep(r - 0.03, r, d)).mul(river);
 +    const lit = dot(o.div(r), from2(H)).mul(-0.6).add(sqrt(float(1).sub(k.mul(k))).mul(0.8)).max(0);
 +    const stoneCol = v3(Bd.color).mul(lit.mul(1.2).add(0.25)).add(v3(M.red).mul(smoothstep(0.7, 1, k).mul(Bd.under)));
@@ -182,7 +188,7 @@
 +  return col;
 +};
 +const from2 = (H) => vec2(...H.light.from);
-+const eruptSpots = (H, hx, hz) => H.erupt.at.map((e) => (e.side === 'left' ? [leftMidJS(e.z * hz, H.canyon, hx), e.z * hz] : [e.x * hx, farMidJS(e.x * hx, H.canyon, hz)]));
++const eruptSpots = (H, hx, hz) => H.erupt.at.map((e) => (e.side === 'left' ? [leftMidJS(e.z * hz, H.canyon, hx, hz), e.z * hz] : [e.x * hx, farMidJS(e.x * hx, H.canyon, hz, hx)]));
 +// past the floor: the cave floor going on to the canyons' rims, and down into them
 +export const cavernGround = (p, H, hx, hz) => {
 +  const C = H.canyon, run = viewRun(), D = C.depth, N = C.steps;
@@ -190,7 +196,7 @@
 +  const F = caveFloor(p, H);
 +  // the rim: a lip of harder rock, lit from below
 +  const lip = smoothstep(-C.lip, 0, L0).mul(float(1).sub(step(0, L0)));
-+  const behind = smoothstep(0.2, 1.6, sinesN(p.x, C.far.wig).sub(hz + C.far.off).sub(C.far.w * 1.22).sub(p.y));
++  const behind = smoothstep(0.2, 1.6, float(-(hz + C.far.off) - C.far.w * 1.22).sub(p.y)).mul(step(-(hx + C.left.off), p.x));
 +  let ground = F.alb.mul(F.shade).mul(float(1).sub(behind.mul(0.85))).mul(float(1).sub(lip.mul(0.35))).mul(lavaLight(L0, H)).add(v3(H.magma.red).mul(lip.mul(lip).mul(C.lipGlow)));
 +  // the room's edge: shade under the rocks that line it
 +  const edge = blobSdf(p, hx - BLOB_REACH, hz - BLOB_REACH, H.outline.rc);
@@ -347,7 +353,7 @@
 +  spots.forEach(([x, z], j) => { for (let i = 0; i < E.smoke.per; i++) sbeats.array[j * E.smoke.per + i] = ((x * 0.13 + z * 0.07) % 1) + 0.02; });
 +  sbeats.needsUpdate = true;
 +  // embers up out of the canyons, ash down over everything
-+  motes(sc, [[leftMidJS(0, C, hx), 0, C.left.w * 2, 2 * hz + 8, -D * 0.5], [0, farMidJS(0, C, hz), 2 * hx + 10, C.far.w * 2, -D * 0.5]], H.embers);
++  motes(sc, [[leftMidJS(0, C, hx, hz), 0, C.left.w * 2, 2 * hz + 8, -D * 0.5], [0, farMidJS(0, C, hz, hx), 2 * hx + 10, C.far.w * 2, -D * 0.5]], H.embers);
 +  motes(sc, [[0, 0, 2 * hx + 8, 2 * hz + 8, 0.05]], H.ash);
 +}
 +
@@ -409,6 +415,46 @@
 +  const one = (o, r) => { if (!(o.flyY > 0) || n >= 64) return; const s = r * (1.05 - Math.min(0.5, o.flyY * 0.1)); put(shadows, n++, o.x, 0.03, o.z, s, 1, s); };
 +  if (w?.vents) { for (const g of w.gels) one(g, g.r); one(w.hero, 0.5); }
 +  shadows.count = n; shadows.instanceMatrix.needsUpdate = true;
++}
++
++// CONCEPT: where a body dies on the hot floor its jelly boils off — a short hiss of steam over the spot. A body is
++// seen to go when it leaves w.gels between two frames (a frame can hold several steps, and each step clears its events)
++let hiss = null;
++export function deathSteam(scene, w, H) {
++  const P = H?.hiss;
++  if (!hiss) {
++    if (!P) return;
++    const n = P.slots * P.per, mat = new THREE.MeshBasicNodeMaterial({ transparent: true, depthWrite: false });
++    const born = attribute('born', 'float'), k = fract(instanceIndex.toFloat().div(P.per)), size = attribute('size', 'float');
++    const age = GEL_TIME.sub(born).sub(k.mul(P.spread)), u = clamp(age.div(P.life), 0, 1), live = step(0, age).mul(float(1).sub(step(P.life, age)));
++    mat.colorNode = v3(P.color);
++    mat.opacityNode = float(P.gain).mul(smoothstep(0, 0.08, u)).mul(float(1).sub(u).pow(1.6)).mul(live).mul(normalView.z.max(0).pow(1.5));
++    const ph = k.mul(37.1);
++    mat.positionNode = Fn(() => positionLocal.sub(positionGeometry)
++      .add(vec3(sin(u.mul(4).add(ph)).mul(0.3).mul(size), float(1).sub(float(1).sub(u).pow(2)).mul(P.rise).add(0.15), cos(u.mul(3).add(ph)).mul(0.25).mul(size)))
++      .add(positionGeometry.mul(mix(float(P.r[0]), float(P.r[1]), u).mul(size))))();
++    const geo = new THREE.SphereGeometry(1, 10, 8);
++    hiss = new THREE.InstancedMesh(geo, mat, n);
++    geo.setAttribute('born', new THREE.InstancedBufferAttribute(new Float32Array(n).fill(-99), 1));
++    geo.setAttribute('size', new THREE.InstancedBufferAttribute(new Float32Array(n).fill(1), 1));
++    hiss.frustumCulled = false; hiss.renderOrder = 3; hiss.userData = { P, next: 0, seen: new Map() };
++    scene.add(hiss);
++  }
++  const D = hiss.userData, on = !!(w?.vents && P);
++  hiss.visible = on;
++  if (!on) { D.seen.clear(); return; }
++  const now = GEL_TIME.value, born = hiss.geometry.getAttribute('born'), size = hiss.geometry.getAttribute('size');
++  const alive = new Set();
++  for (const g of w.gels) { alive.add(g.id); D.seen.set(g.id, [g.x, g.z, g.r]); }
++  let dirty = false;
++  for (const [id, [x, z, r]] of D.seen) {
++    if (alive.has(id)) continue;
++    D.seen.delete(id);
++    const s = D.next; D.next = (D.next + 1) % D.P.slots;
++    for (let i = 0; i < D.P.per; i++) { const j = s * D.P.per + i; put(hiss, j, x + (Math.random() - 0.5) * r, 0.05, z + (Math.random() - 0.5) * r); born.array[j] = now; size.array[j] = Math.max(0.6, r * 1.6); }
++    dirty = true;
++  }
++  if (dirty) { born.needsUpdate = true; size.needsUpdate = true; hiss.instanceMatrix.needsUpdate = true; }
 +}
 --- a/js/render/floor.js
 +++ b/js/render/floor.js
@@ -509,9 +555,30 @@
        contactEase(v, fdt, v.yaw);   // v82: eased here, on the frame clock, where the press is fresh
      }
      for (const [id, v] of this.views) if (!seen.has(id)) { this._release(v); this.views.delete(id); }
+@@ -936,7 +939,7 @@
+     const fric = Math.exp(-D.friction * dt);
+     for (let i = this.chunks.length - 1; i >= 0; i--) {
+       const c = this.chunks[i];
+-      if ((c.life -= dt) <= 0) { this.chunks.splice(i, 1); continue; }
++      if ((c.life -= dt * (this.burn ?? 1)) <= 0) { this.chunks.splice(i, 1); continue; }   // CONCEPT burn: a hot floor
+       c.age += dt;
+       c.vy -= D.gravity * dt;
+       c.x += c.vx * dt; c.y += c.vy * dt; c.z += c.vz * dt;
 --- a/js/render/goo.js
 +++ b/js/render/goo.js
-@@ -82,7 +82,7 @@
+@@ -77,12 +77,19 @@
+   // v116: one stamp, too thin to see and off the film, on the floor's film and the wall's (actors.warmStep), and
+   // the film's clock put past its step so the next frame draws it (on the title nothing steps the film): their
+   // stamping shaders compile on the title, not at the run's first kill
++  // CONCEPT: a hot floor (hell): the film boils off `evap` × as fast and its stain fades `half` × as fast, leaving `dep` × of it;
++  // drops and chunks live 1 / `burn` as long, a drop on the floor shrinking as it goes
++  setHeat(H) {
++    const F = this.film; if (!F) return;
++    F.uEvap.value = F.F0.evap * (H?.evap ?? 1); F.uHalf.value = F.F0.dryHalfLife / (H?.half ?? 1); F.uDep.value = H?.dep ?? 1;
++    this.sim.burn = H?.burn ?? 1; this.sim.shrinkK = H?.shrink ?? 0;
++  }
+   warm() { for (const f of [this.film, this.wall]) if (f) { f.add(1e4, 1e4, 1, 0, 0, 0.01, 1e-6, 1, 1, 1); f.dt = 1; } }
+ 
    setArena(hx, hz) { this.hx = hx; this.hz = hz; this.sim.setArena(hx, hz); this.film.setArena(hx, hz); if (this.wall) { this.wall.setArena(hx, hz); this._fitWall(hx, hz); } }
  
    // the title's SPLATTER switch: the strip draws nothing while the goo is off
@@ -520,6 +587,50 @@
  
    // The wall's strip (v81): one quad a wall, standing just inside the rail
    // and facing in, its u the rail unwrapped (goo-sim.js wallS) and its v the
+@@ -453,6 +460,7 @@
+     // what evaporated and fades. One pass writes both, reading the last pair.
+     this.texel = uniform(new THREE.Vector2(1 / 16, 1 / 16));
+     this.uDt = uniform(1 / 30); this.uSize = uniform(new THREE.Vector2(38, 22));
++    this.F0 = F; this.uEvap = uniform(F.evap); this.uHalf = uniform(F.dryHalfLife); this.uDep = uniform(1);   // CONCEPT: a hot floor sets them (setHeat)
+     this.wetIn = texture(this.rt[0].textures[0]); this.dryIn = texture(this.rt[0].textures[1]); this.velIn = texture(this.vel.texture);
+     const wetFlow = Fn(() => {
+       const p = uv(), tx = this.texel;
+@@ -493,7 +501,7 @@
+         o = o.add(vec4(up.rgb.div(max(up.a, 1e-4)).mul(gin), gin)).sub(vec4(c.rgb.div(max(c.a, 1e-4)).mul(gout), gout));
+       }
+       // evaporation: a constant depth a second, whatever the depth
+-      const e = min(o.a, float(F.evap).mul(this.uDt));
++      const e = min(o.a, this.uEvap.mul(this.uDt));
+       const keep = select(o.a.greaterThan(1e-4), o.a.sub(e).div(max(o.a, 1e-4)), float(0));
+       return o.mul(keep);
+     })();
+@@ -505,12 +513,12 @@
+     const dryFlow = Fn(() => {
+       const p = uv(), tx = this.texel;
+       const c = this.wetIn.sample(p), d = this.dryIn.sample(p);
+-      const e = min(c.a, float(F.evap).mul(this.uDt));
++      const e = min(c.a, this.uEvap.mul(this.uDt));
+       const got = select(c.a.greaterThan(1e-4), c.mul(e.div(max(c.a, 1e-4))), vec4(0));
+       const mn = min(min(this.wetIn.sample(p.add(vec2(tx.x, 0))).a, this.wetIn.sample(p.sub(vec2(tx.x, 0))).a),
+         min(this.wetIn.sample(p.add(vec2(0, tx.y))).a, this.wetIn.sample(p.sub(vec2(0, tx.y))).a));
+       const rim = float(1).sub(smoothstep(0, F.ringAt, mn));
+-      return d.mul(pow(float(0.5), this.uDt.div(F.dryHalfLife))).add(got.mul(mix(float(F.deposit), float(F.ring), rim)));
++      return d.mul(pow(float(0.5), this.uDt.div(this.uHalf))).add(got.mul(mix(float(F.deposit), float(F.ring), rim)).mul(this.uDep));
+     })();
+     const m = new THREE.NodeMaterial(); m.depthTest = false; m.depthWrite = false;
+     m.fragmentNode = mrt({ wet: wetFlow, dry: dryFlow });
+--- a/js/render/goo-sim.js
++++ b/js/render/goo-sim.js
+@@ -166,7 +166,8 @@
+     for (let k = 0; k < nb; k++) bi.set(bodies[k * BODY + 6], k);
+     // newest first: a splash's crown is appended past the end and waits a step
+     for (let i = this.n - 1; i >= 0; i--) {
+-      if ((this.life[i] -= dt) <= 0) { this._kill(i); continue; }
++      if ((this.life[i] -= dt * (this.burn ?? 1)) <= 0) { this._kill(i); continue; }
++      if (this.burn > 1 && this.st[i] !== AIR) { this.r[i] *= Math.exp(-this.shrinkK * dt); if (this.r[i] < 0.01) { this._kill(i); continue; } }   // CONCEPT: hot floor
+       const r = this.r[i], st = this.st[i];
+       if (st === AIR) {
+         this.vy[i] -= G * dt;
 --- a/js/main.js
 +++ b/js/main.js
 @@ -6,6 +6,8 @@
@@ -527,7 +638,7 @@
  // The rules live in sim/ and run on a fixed step; this file feeds them input,
  // hands their events to the view and the sound, and draws in between steps.
 +import { ventsInit } from './sim/vents.js?v=153';   // CONCEPT
-+import { ventView, flyShadows } from './render/concept.js?v=153';   // CONCEPT
++import { ventView, flyShadows, deathSteam } from './render/concept.js?v=153';   // CONCEPT
  import * as THREE from 'three/webgpu';
  import { TUNING } from './tuning.js?v=153';
  import { buildFloor } from './render/floor.js?v=153';
@@ -540,7 +651,7 @@
    return n > 0 ? { n, look, style: FLOOR_STYLE.street[n - 1], rail: T.worlds.list[n - 1].rail ?? WD.rail } : { n: 1, look: 'grid', style: 'grid', rail: WD?.rail };
  }
  function useRoom(w) {
-@@ -890,7 +894,9 @@
+@@ -890,7 +894,11 @@
    if (rail != null) floor.setRail(rail);
    scene.add(floor.group);
    scene.background.copy(floor.reveal.void.value);
@@ -548,14 +659,16 @@
 +  scenery.build(L.n, hx, hz, { look: 'street', id: L.concept ? L.look : null, region: w.region?.shape });
 +  if (L.look === 'hell') ventsInit(w, T.worlds.floor.hell.vent); else w.vents = null;   // CONCEPT
 +  actors.gooKit.noWall = L.look === 'hell'; actors.gooKit.setOn(!!actors.goo);   // CONCEPT: no box walls round a natural outline
++  const heat = L.look === 'hell' ? T.worlds.floor.hell.boil : null;   // CONCEPT: the jelly boils off a hot floor
++  actors.gooKit.setHeat(heat); actors.burn = heat?.burn ?? 1;
    actors.water.sources = scenery.waterSources ?? [];
    applyLight(L.look);   // v75: the light of the world its look comes from (v153: the room's own, if it names one)
    DRIFT.value.set(0, 0);
-@@ -1307,6 +1313,7 @@
+@@ -1307,6 +1315,7 @@
    const wall = now - last, dt = dtFixed ?? Math.min(0.1, wall / 1000), time = now / 1000;
    last = now;
    GEL_TIME.value = time;
-+  ventView(world?.vents); flyShadows(scene, world);   // CONCEPT
++  ventView(world?.vents); flyShadows(scene, world); deathSteam(scene, world, T.worlds.floor.hell);   // CONCEPT
    actors.light.extra = scenery.lightsAt(time);   // v123: world 1's neon lines light the floor's edge as they pass
    ui.pollPad(); ui.tick(dt);
    const inp = input.read(null), padTap = padTapped();
@@ -578,7 +691,7 @@
        // v123 (owner, 2026-11-08: "push for more lights"): in the neon world the bullets throw `shots` × their light,
        // and every body is a light of its own (render/light.js `bodies`)
        grid:     { sun: 0xffffff, sunI: 1.3, at: [8, 20, 10],    ambient: 0xffffff, ambientI: 0.45, env: 1.0,
-@@ -237,6 +240,53 @@
+@@ -237,6 +240,58 @@
      // floor `twist` rad at the drain, falling off as (1 − r/R)^falloff, and
      // draws it `pull` × in toward it
      floor: {
@@ -601,7 +714,7 @@
 +              steam: { per: 24, spread: 1.0, life: 2.6, rise: 5.5, r: [0.15, 0.85], sway: 0.3, gain: 0.32, color: [0.82, 0.74, 0.68],
 +                       wisps: 3, wispPeriod: 3.2, wispRise: 1.6, wispGain: 0.12, tellGain: 0.45 },
 +              grit: { per: 18, vy: [3, 7.5], vr: [0.8, 3.2], g: 14, life: 1.4, r: [0.025, 0.07], color: [0.12, 0.07, 0.05] },
-+              canyon: { depth: 2.2, steps: 6, slope: 0.32, join: 2.5, lip: 0.45, lipGlow: 0.25, rock: [0.17, 0.075, 0.05], amb: [0.16, 0.08, 0.07], glowR: 0.8, glowK: 2.2,
++              canyon: { depth: 2.2, steps: 6, slope: 0.32, elbow: 3.5, lip: 0.45, lipGlow: 0.25, rock: [0.17, 0.075, 0.05], amb: [0.16, 0.08, 0.07], glowR: 0.8, glowK: 2.2,
 +                        left: { off: 4.1, w: 1.9, wig: [[0.75, 0.13, 0.4], [0.35, 0.31, 2.2]] },
 +                        far: { off: 5.0, w: 2.2, reach: 30, wig: [[0.7, 0.16, 1.1], [0.3, 0.37, 0.3]] },
 +                        pool: { off: 4.6, z: -0.25, r: 2.4 } },
@@ -617,6 +730,11 @@
 +                      falls: [{ x: -0.4, top: 6, w: 0.26 }, { x: 1.35, top: 8, w: 0.3 }] },
 +              spires: [{ every: 5.5, out: [2.5, 9], h: [2.5, 7], r: [0.6, 1.3], color: 0x1d0f0a, sides: ['right'] },
 +                       { every: 4.5, out: [9, 10], h: [3, 8.5], r: [0.8, 1.6], color: 0x1d0f0a, sides: ['far'] }],
++              // the jelly boils off the hot floor (owner: "Jelly should also evaporate fast after enemies die"): the film
++              // `evap` × as fast, its stain `half` × as fast and `dep` × as much; drops and chunks `burn` × as fast, a drop on the
++              // floor losing `shrink` of its size a second; a puff of steam where a body died (render/concept.js deathSteam)
++              boil: { evap: 4, half: 4, dep: 0.25, burn: 3, shrink: 1.6 },
++              hiss: { slots: 24, per: 7, life: 1.4, rise: 2.4, r: [0.12, 0.75], spread: 0.35, gain: 0.4, color: [0.85, 0.78, 0.72] },
 +              embers: { n: 120, h: 5, vy: 0.65, sway: 0.35, wobble: 0.9, r: 0.04, gain: 2.4, color: [1.0, 0.36, 0.06], blink: [5, 0.5], seed: 31 },
 +              ash: { n: 80, h: 6, vy: -0.22, sway: 0.5, wobble: 0.4, r: 0.026, gain: 0.45, color: [0.5, 0.44, 0.42], add: false, seed: 57 } },
 +      cosmos: { space: [0.004, 0.005, 0.014], starCool: [0.75, 0.85, 1.25], starWarm: [1.25, 0.95, 0.7],
@@ -632,7 +750,7 @@
        swirl: { falloff: 1.4, twist: 9, pull: 0.8 },
        // v66 (owner, 2026-10-31): world 2 in SUMMER DAYLIGHT, where it was a
        // night slab under a garage flood: light concrete in the sun, a little
-@@ -789,6 +839,11 @@
+@@ -789,6 +844,11 @@
      // sides: `every` m apart, `out` [min, max] m past the edge, `h`/`r`/`w`
      // [min, max] in m, a `glow` colour at `glowI`
      surround: {
@@ -644,7 +762,7 @@
        // v123 (owner, 2026-11-08: "take out the environment art away from world 1, let's keep it super minimalistic.
        // Only ... some moving neon lines in the void around the arena. Push for more lights and sharper visuals"): the
        // arena alone in the void — the grid that ran on past its rail and its bollards are gone — and lines of neon
-@@ -1354,7 +1409,7 @@
+@@ -1354,7 +1414,7 @@
        // round each other, and the grid has nothing to explain. And the two places no world of the
        // campaign wore: NEEDLE in the `sewer` (THE VEIN, with the stream down its middle) and the last
        // room, THE CORE, in the `core` — so every arcade world is somewhere in the campaign
