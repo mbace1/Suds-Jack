@@ -37,7 +37,7 @@ import { makeCard } from './modules.js?v=3';
 import { DAYS, dayFor, dayLine, AREAS, areaFor, pullOf, perksFor } from './days.js?v=3';
 import { lineFamily } from './board.js?v=8';
 import { CARGO } from './deliveries.js?v=28';
-import { MISSION_CARDS, MISSION_CALLBACKS, PERKS, STRIKES, perkPool } from './missions.js?v=5';
+import { MISSION_CARDS, MISSION_CALLBACKS, PERKS, STRIKES, perkPool } from './missions.js?v=6';
 
 export const SHIFT_SECONDS = 75 * 60;            // 07:00–08:15, or 23:00–00:15
 // a run may name its own length (the long shift, v3.26: three hours)
@@ -611,7 +611,9 @@ function arrive(net, s, out) {
     if (s.done >= s.target) { s.phase = 'end'; out.end = true; return out; }
     // between a mission's jobs, the draft: two of the pool you do not have yet
     if (s.run.mission || s.run.perks) { const pool = (s.run.perkPool || perkPool(0)).filter(p => !s.perks.includes(p));
-      if (pool.length >= 2) { const a = pickOf(s, pool), b = pickOf(s, pool.filter(p => p !== a)); s.perkOffer = [a, b]; s.phase = 'perk'; return out; } }
+      // (v3.30) a trade-off the long shift opened is never the first button beside a plain perk:
+      // whoever taps the first thing takes the plain one (the sort is stable, so two of a kind keep their order)
+      if (pool.length >= 2) { const a = pickOf(s, pool), b = pickOf(s, pool.filter(p => p !== a)); s.perkOffer = [a, b].sort((x, y) => (PERKS[x].drawn ? 1 : 0) - (PERKS[y].drawn ? 1 : 0)); s.phase = 'perk'; return out; } }
     dispatch(net, s); return out;
   }
   return nextMoment(net, s, out, 'stop');

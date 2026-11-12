@@ -109,21 +109,21 @@ export const GAMES = [
       tagline: 'Lähetin vuoro Helsingissä kortti kerrallaan: mikä ratikka, mihin suuntaan, ketä autat. Kello liikkuu vain, kun valitset.',
       lineage: '80 Days × Mini Metro × oikea Helsinki',
       controls: 'napauta korttia · valitse ratikka tai kävely · avaa kartta kulmasta',
-      note: 'UUTTA v3.29: kartta aukeaa ohjaimen olkanapista (L1) tai M-näppäimestä. v3.28: enemmän liikettä: kuvat elävät, napit saapuvat yksi kerrallaan. v3.27: koko peli ohjaimella (myös DualSense iPadilla).',
+      note: 'UUTTA v3.30: Pitkän vuoron tähdet avaavat uusia etuja pysyvästi, ja tuloksen voi kopioida ja lähettää. v3.29: kartta aukeaa ohjaimen olkanapista (L1) tai M-näppäimestä. v3.28: enemmän liikettä.',
     },
     ja: {
       tagline: 'ヘルシンキの配達シフトを一枚ずつ。どのトラム、どの道、誰を助けるか。時計は選んだときだけ進む。',
       lineage: '80 Days × Mini Metro × 実在のヘルシンキ',
       controls: 'カードをタップ · トラムか徒歩を選ぶ · 角の地図を開く',
-      note: 'v3.29の新着：コントローラーのL1（またはMキー）で地図を開閉。v3.28：もっと動きを：絵が動き続け、ボタンが順に現れる。v3.27：ゲーム全体をコントローラーで（iPadのDualSenseも）。',
+      note: 'v3.30の新着：ロングシフトの星で新しい特典がずっと使えるように。結果はコピーして送れる。v3.29：コントローラーのL1（またはMキー）で地図を開閉。v3.28：もっと動きを。',
     },
     // v3.20: a pad answers the card — A, B, X are its three buttons, Y hurries what is playing;
     // v3.27: the d-pad walks the title's and the end card's buttons, and A presses the lit one;
-    // v3.29: a shoulder button opens and closes the map
+    // v3.30: the long shift's stars open the trade-off perks for good; a result line to send
     pad: { keys: { b0: 'Digit1', b1: 'Digit2', b2: 'Digit3', b3: 'Space', b4: 'KeyM', b5: 'KeyM', up: 'ArrowUp', down: 'ArrowDown', left: 'ArrowLeft', right: 'ArrowRight' } },
     status: 'active',
     live: true,
-    note: 'NEW in v3.29: the map opens from a pad\'s shoulder button (L1), or M. v3.28: more motion: the pictures keep moving, a card\'s buttons come in one by one. v3.27: the whole game on a pad (a DualSense on an iPad too).',
+    note: 'NEW in v3.30: The Long Shift\'s stars open new perks for good, and its result is a line you can copy and send. v3.29: the map opens from a pad\'s shoulder button (L1), or M. v3.28: more motion.',
     title: 'Toko Move',
     tagline: 'A courier\'s shift in Helsinki, one card at a time: which tram, which way, who to help. The clock only moves when you choose.',
     lineage: '80 Days × Mini Metro × real Helsinki',

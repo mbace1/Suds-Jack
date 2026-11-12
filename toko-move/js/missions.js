@@ -115,7 +115,11 @@ export const PERKS = {
 // the pool grows with what you have finished: the first three from the start,
 // one more for each mission done
 export const PERK_ORDER = ['shoes', 'pass', 'map', 'coin', 'number', 'umbrella'];
-export const perkPool = (doneCount = 0) => PERK_ORDER.slice(0, Math.min(PERK_ORDER.length, 3 + doneCount));
+// (v3.30) the long shift's stars open the trade-offs for good, two a star, the
+// gentle ones first: from then on they are in the pool of every shift's draft
+// (a mission's draft stays its own)
+export const LONG_PERKS = [['thermos', 'charm'], ['bike', 'easy'], ['hustle', 'nerve']];
+export const perkPool = (doneCount = 0, longStars = 0) => [...PERK_ORDER.slice(0, Math.min(PERK_ORDER.length, 3 + doneCount)), ...LONG_PERKS.slice(0, Math.max(0, Math.min(LONG_PERKS.length, longStars | 0))).flat()];
 
 // the run a mission is played as: MEDIUM's city, on the mission's clock (and
 // none of the run's own levers: no march, no forks of its own — v3.16)

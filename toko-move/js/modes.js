@@ -9,10 +9,10 @@
 //     rent (week.js). Its own key, so a ?classic week (scored in points) is
 //     never mixed in; a reload mid-shift is the clock-out, as it always was.
 // `&classic` keeps the real-time versions (boot.js).
-import * as Runs from './runs.js?v=7';
+import * as Runs from './runs.js?v=8';
 import { dateKey, dailySeed, dailyNumber, dateLabel } from './daily.js?v=2';
 import * as W from './week.js?v=4';
-import { MISSIONS, MISSION_BY_ID, missionRun, loadMissions, doneCount, PERK_ORDER } from './missions.js?v=5';
+import { MISSIONS, MISSION_BY_ID, missionRun, loadMissions, doneCount, PERK_ORDER } from './missions.js?v=6';
 
 const ls = () => { try { return globalThis.localStorage; } catch { return null; } };
 // the journey's week lives beside ?classic's under its own key
@@ -60,5 +60,10 @@ export function dailyShare(m, results, target, euros, url = '') {
 export function errandShare(m, { results, target, score, lost, perks }, url = '') {
   const grid = Array.from({ length: target }, (_, i) => ({ ok: '🟩', late: '🟨' })[results[i]] || (lost ? '🟥' : '⬛')).join('');
   return [`Toko Move · Errand ${m.number} · ${m.label}`, `${m.mission.name} ${grid} · €${score}${perks?.length ? ` · ${perks.join(', ')}` : ''}`, url || null].filter(Boolean).join('\n');
+}
+// The long shift's line (v3.30): how far it went, a square a job, the euros, the build.
+export function longShare({ results, score, stars, perks }, url = '') {
+  const grid = results.map(r => ({ ok: '🟩', late: '🟨' })[r] || '⬛').join('');
+  return [`Toko Move · The Long Shift · ${results.length} jobs ${'★'.repeat(stars)}${'☆'.repeat(3 - stars)}`, `${grid} · €${score}${perks?.length ? ` · ${perks.join(', ')}` : ''}`, url || null].filter(Boolean).join('\n');
 }
 export { W };

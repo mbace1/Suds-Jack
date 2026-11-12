@@ -25,9 +25,9 @@
 // nothing happens while you read. Every animation is skippable by a tap and
 // none of them is a timer the game waits on to be fair: the state has already
 // moved when it starts.
-import { tr } from './lang.js?v=22';
-import * as J from './journey.js?v=14';
-import * as Runs from './runs.js?v=7';
+import { tr } from './lang.js?v=23';
+import * as J from './journey.js?v=15';
+import * as Runs from './runs.js?v=8';
 import { HopBoard } from './hopboard.js?v=4';
 import * as PL from './playlog.js?v=2';
 import { loadGround } from './ground.js?v=12';
@@ -42,12 +42,12 @@ import { TRAMS } from './cards.js?v=4';
 import { mountAudio } from './audio.js?v=2';
 import { loadStanding, saveStanding } from './regulars.js?v=4';
 import { addNote } from './sealed.js?v=2';
-import { MISSIONS, PERKS, STRIKES, loadMissions, missionOpen, recordMission, perkPool, doneCount } from './missions.js?v=5';
+import { MISSIONS, PERKS, STRIKES, LONG_PERKS, loadMissions, missionOpen, recordMission, perkPool, doneCount } from './missions.js?v=6';
 import { MOMENTS, faceIn, keepIn, pickupMoment, deliveryMoment, boardMoment, walkMoment, cardMoment, choiceMoment, haltMoment } from './moments.js?v=4';
-import { resolveMode, dailyShare, errandShare, errandStore, errandOf, W } from './modes.js?v=8';
+import { resolveMode, dailyShare, errandShare, longShare, errandStore, errandOf, W } from './modes.js?v=9';
 import { recordDaily, todayRecord, streak, dateKey } from './daily.js?v=2';
 
-export const BUILD_VERSION = '3.29';
+export const BUILD_VERSION = '3.30';
 const $ = id => document.getElementById(id);
 const params = new URLSearchParams(location.search);
 // a run of the ladder, today's daily, or a day of the week (modes.js, ACT1.md §12)
@@ -980,17 +980,22 @@ function finish() {
   const why = RUN.endless ? `${S.done} jobs · ${struck ? `${COUNT[S.strikes].toLowerCase()} late drops ended it` : 'the clock ended it'}${r.stars < 3 ? ` · ${RUN.stars[r.stars]} for the next star` : ''}`
     : r.done ? (r.stars === 1 ? 'every job delivered · some late' : r.stars === 2 ? `every job on time · €${RUN.par} for the third star` : 'every job on time, at par') : struck ? `${COUNT[S.strikes].toLowerCase()} late drops: the shift is lost` : `deliver all ${S.target} to complete ${RUN.name}`;
   const build = S.perks.length ? `<p class="hint">your build: ${S.perks.map(p => esc(PERKS[p].name)).join(' · ')}</p>` : '';
-  const opened = r.opened.map(id => `<p class="runOpened">${esc(Runs.BY_ID[id].name)} IS OPEN</p>`).join('') + (r.extrasOpened ? '<p class="runOpened">THE DAILY AND THE WEEK ARE OPEN</p>' : '') + (RUN.id === 'night' && r.first ? '<p class="runOpened">ACT 1 COMPLETE</p>' : '');
+  // (v3.30) the long shift: each new star opens two trade-offs for every shift after it, and the result is a line to send
+  const gained = RUN.endless ? LONG_PERKS.slice(r.starsWas, r.stars).flat() : [];
+  const longText = RUN.endless ? longShare({ results: S.results, score: S.score, stars: r.stars, perks: S.perks.map(p => PERKS[p].name) }, location.href.split('#')[0].replace(/[?&](lang|seed)=[^&]*/g, '')) : '';
+  const share = RUN.endless && S.done ? `<p class="dailyGrid">${esc(longText.split('\n')[1].split(' · ')[0])}</p><button class="btn ghost wide" id="shareLong" type="button">COPY THE RESULT</button><pre class="shareText" id="shareText" translate="no" hidden>${esc(longText)}</pre>` : '';
+  const opened = gained.map(id => `<p class="runOpened">NEW IN EVERY DRAFT: ${esc(PERKS[id].name.toUpperCase())}</p>`).join('') + r.opened.map(id => `<p class="runOpened">${esc(Runs.BY_ID[id].name)} IS OPEN</p>`).join('') + (r.extrasOpened ? '<p class="runOpened">THE DAILY AND THE WEEK ARE OPEN</p>' : '') + (RUN.id === 'night' && r.first ? '<p class="runOpened">ACT 1 COMPLETE</p>' : '');
   const go = r.done && next && Runs.unlocked(next.id, r.all) ? `<a class="btn prime wide" id="nextRun" href="${Runs.runHref(next.id, location.search)}">NEXT · ${esc(next.name)}</a>` : '';
   $('endTitle').textContent = RUN.endless ? `${S.done} JOBS` : r.done ? `${RUN.name} COMPLETE` : 'NOT YET';
   const carried = S.seen.length ? `<div class="carried"><h3>WHAT YOU CARRIED</h3><ul>${S.seen.map(x => `<li>${esc(x.contents)} <small>· ${x.how}</small></li>`).join('')}</ul></div>` : '';
-  $('endStats').innerHTML = `<div class="dailyBox runBox"><p class="dailyHead">${esc(RUN.name)} · ${esc(RUN.title)}</p><p class="runStars" aria-label="${r.stars} of 3 stars">${[...star(r.stars)].map(ch => `<span class="st">${ch}</span>`).join('')}</p><p class="hint">${esc(why)}${r.newBest && r.all[RUN.id].plays > 1 ? ' · a new best' : ''}</p>${build}${opened}${go}</div>`
+  $('endStats').innerHTML = `<div class="dailyBox runBox"><p class="dailyHead">${esc(RUN.name)} · ${esc(RUN.title)}</p><p class="runStars" aria-label="${r.stars} of 3 stars">${[...star(r.stars)].map(ch => `<span class="st">${ch}</span>`).join('')}</p><p class="hint">${esc(why)}${r.newBest && r.all[RUN.id].plays > 1 ? ' · a new best' : ''}</p>${build}${opened}${share}${go}</div>`
     + `<p>earned <b>€${S.score}</b></p><p>deliveries <b>${RUN.endless ? `${S.done} · best ${r.all[RUN.id].best}` : `${S.done}/${S.target}`}</b></p><p>on time <b>${S.done - S.late}</b></p>${J.strikesOf(RUN) ? `<p>strikes <b>${S.strikes}/${J.strikesOf(RUN)}</b></p>` : ''}${S.sold ? `<p>sold <b>${S.sold}</b></p>` : ''}<p>best streak <b>${S.bestStreak}</b></p>${carried}`;
   $('endNote').textContent = RUN.endless ? (struck ? 'Too many late drops.' : 'Ten o\'clock. The shift is over.') : r.done ? 'Every job delivered.' : struck ? 'Too many late drops.' : 'The shift ended.';
   const again = $('again'); if (again) { again.textContent = RUN.endless ? `${RUN.name} AGAIN` : r.done ? `${RUN.name} AGAIN · A NEW SHIFT` : `TRY ${RUN.name} AGAIN`; again.classList.toggle('prime', !go); again.classList.toggle('ghost', !!go); again.onclick = () => { location.href = Runs.runHref(RUN.id, location.search); }; }
+  if ($('shareLong')) $('shareLong').onclick = async () => { const pre = $('shareText'); pre.hidden = false; try { await navigator.clipboard.writeText(longText); $('shareLong').textContent = 'COPIED'; } catch { $('shareLong').textContent = 'SELECT AND COPY'; } };
   $('end').hidden = false;
   sfx(RUN.id === 'night' && r.first && r.done ? 'act' : r.done ? 'end' : 'miss');
-  game.result = r;
+  game.result = RUN.endless ? { ...r, gained, text: longText } : r;
 }
 
 // The daily's end: the grid, the euros, whether this finish stands, the streak,
@@ -1062,7 +1067,7 @@ async function start() {
   if (MODE.mode === 'week' && W.isOver(MODE.week)) { W.clearWeek(MODE.store); location.href = location.href; return; }
   const own = MODE.mode !== 'daily' && !MODE.errand;   // the daily is the same shift for everyone: nothing of this device's in it
   // a run's perks come from the same pool the missions grow (the daily's is the first three, the same for everyone)
-  let run = MODE.mode === 'mission' || !RUN.perks ? RUN : { ...RUN, perkPool: perkPool(own ? doneCount(loadMissions()) : 0) };
+  let run = MODE.mode === 'mission' || !RUN.perks ? RUN : { ...RUN, perkPool: perkPool(own ? doneCount(loadMissions()) : 0, own ? Runs.loadRuns().long.stars : 0) };   // (v3.30) and what the long shift's stars opened
   // ?written is the shift as v3.21 dealt it, for a seed a test or a trailer names: the written deck only,
   // none made from modules (v3.22), and an ordinary day (v3.23)
   if (params.has('written')) run = { ...run, modules: 0, days: false };

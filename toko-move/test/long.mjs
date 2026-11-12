@@ -50,5 +50,23 @@ const early = limits.filter(([d]) => d <= 1).map(x => x[1]), late = limits.filte
 ok(late.length && mean(late) < mean(early) * 0.85, `every clock a little shorter: ${mean(early).toFixed(2)}× the best route on the first jobs, ${mean(late).toFixed(2)}× from the ninth`);
 ok(band.reader.median >= band.left.median && band.reader.median >= 7 && band.reader.median <= 14 && band.left.median >= 5, `measured, median jobs: reader ${band.reader.median} (best ${band.reader.best}), tapper ${band.left.median} (best ${band.left.best})`);
 ok(band.reader.best < 25, 'and nobody runs it forever');
+
+// ── v3.30: its stars open the trade-offs for good, and the result is a line to send
+import { PERKS, PERK_ORDER, LONG_PERKS, perkPool, MISSIONS, missionRun } from '../js/missions.js';
+import { longShare } from '../js/modes.js';
+ok(LONG_PERKS.length === LONG.stars.length && LONG_PERKS.flat().length === 6 && LONG_PERKS.flat().every(p => PERKS[p].drawn) && new Set(LONG_PERKS.flat()).size === 6, 'a star opens two trade-offs: six over three stars, each once');
+ok(perkPool(0, 0).join() === 'shoes,pass,map' && perkPool(0, 1).join() === 'shoes,pass,map,thermos,charm' && perkPool(2, 3).length === 5 + 6 && perkPool(0, 9).length === 9, 'the pool: what the missions opened, then what the long shift opened (gentle ones first)');
+ok(MISSIONS.every(m => missionRun(BY_ID.easy, m, 2).perkPool.every(p => PERK_ORDER.includes(p))), 'a mission\'s draft stays its own');
+{ const st = mem(); record('easy', { delivered: 3, target: 3, late: 0, score: 10 }, st);
+  const a = record('long', { delivered: 6, target: 99 }, st), b = record('long', { delivered: 11, target: 99 }, st), c = record('long', { delivered: 7, target: 99 }, st);
+  ok(a.starsWas === 0 && a.stars === 1 && b.starsWas === 1 && b.stars === 2 && c.starsWas === 2 && c.stars === 1 && loadRuns(st).long.stars === 2, 'a finish says what it had before, so the end card names only what is new; stars are kept, never lost'); }
+ok(longShare({ results: ['ok', 'ok', 'late', 'ok', 'ok'], score: 88, stars: 1, perks: ['Nerve'] }, 'https://x') === 'Toko Move · The Long Shift · 5 jobs ★☆☆\n🟩🟩🟨🟩🟩 · €88 · Nerve\nhttps://x', 'the line to send: how far, a square a job, the euros, the build');
+{ let drafts = 0, bad = 0, mixed = 0;
+  for (let seed = 1; seed <= 80; seed++) { const s = J.newRun(net, { ...BY_ID.hard, perkPool: perkPool(0, 3) }, seed); let st = 0;
+    while (s.phase !== 'end' && st++ < 600) { const c = J.card(net, s); if (c.kind === 'perk') { drafts++; const [x, y] = c.options.slice(0, 2).map(o => !!PERKS[o.perk].drawn); if (x !== y) mixed++; if (x && !y) bad++; } J.choose(net, s, 0); } }
+  ok(drafts > 100 && mixed > 20 && bad === 0, `with the trade-offs opened, one is never the first button beside a plain perk (${mixed} mixed drafts of ${drafts})`); }
+{ const won = pool => { let n = 0; for (let seed = 1; seed <= 60; seed++) { const s = J.newRun(net, { ...BY_ID.medium, perkPool: pool }, 7000 + seed); let st = 0; while (s.phase !== 'end' && st++ < 600) { J.card(net, s); J.choose(net, s, 0); } if (J.complete(s)) n++; } return n; };
+  const plain = won(perkPool(0, 0)), opened = won(perkPool(0, 3));
+  ok(Math.abs(opened - plain) <= 5, `and tapping the first button is no worse off for having opened them: MEDIUM ${plain}/60 before, ${opened}/60 with all six`); }
 console.log(`  long: reader ${JSON.stringify(band.reader)} · tapper ${JSON.stringify(band.left)}`);
 console.log(`long: ${n} checks passed`);
