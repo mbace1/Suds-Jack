@@ -75,3 +75,19 @@ Per `SOUND.md`, "Sound per film". 90 BPM, E minor landing on C.
 1. **The F-35 line** on the Air Force's page (see above).
 2. **The dates** once more on 17 Nov (the daily check does this).
 3. The post copy (253 characters) is in `copy.json`.
+
+## Filed, Thu 12 Nov (awaiting the owner's yes; not in POSTED.md until he gives it)
+
+- **Build:** 88 checks pass, 0 warn, 0 fail (`qa/give-way/build-report.md`; contact sheet and sound sheet beside it).
+  22.5 s, 675 frames, no holds. Delivered −14.1 LUFS, −3.1 dBTP; with the sign-off −14.4 LUFS, −3.7 dBTP.
+- **Files:**
+  - `films/12-11-Helsinki3-Give-Way.mp4`: the film with the current sign-off, 25.5 s, 38 MB (X and YouTube);
+  - `films/12-11-Helsinki3-Give-Way-loop.mp4`: without the sign-off, 22.5 s, 37 MB (the Instagram loop master);
+  - `films/12-11-Helsinki3-Give-Way.en.srt`;
+  - `previews/12-11-RFH-Give-Way-en.mp4` (14 MB) and `previews/12-11-RFH-Give-Way-stills.jpg`.
+- **Render:** one process in two halves, about 69 and 59 minutes. The first test stills had no snow at all: the flake
+  quads faced away from the camera (their winding is always clockwise on screen), so the material is double-sided.
+- **One timing change after the stills:** the take-off passes overhead at 18.45, not 17.95, so the jet does not loom
+  under the line "Not taking part: Finland's new F-35s", where it would be read as one.
+- **Sign-off:** the current one (`previews/signoff-papercut.mp4`). Sign-off v2 still waits for the owner's approval.
+- **Post (en, 253 characters):** in `copy.json`.
