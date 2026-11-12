@@ -1,0 +1,77 @@
+# 45 · Give Way (RFH, Highway 9 · the road base): full build for approval, 12 Nov
+
+**Owner, Wed 11 Nov:** "Start pitching new videos with cool visuals and interesting stories. Render and approve".
+This is pitch B of `plan/PITCHES-11-11.md`. It was built first because it has a date: the road closes on 18 Nov and
+the exercise starts on 19 Nov. The owner had not picked a pitch when the build started; the film waits for his yes.
+
+## The story (search summaries, 9–12 Nov)
+
+- The Finnish Air Force's main exercise of the year, **Protective Fence 26**, runs **19–27 Nov**: over 40 aircraft,
+  20 of them F/A-18 Hornets, and about 4,100 people, flying from bases, civilian airports and a highway strip
+  (the Air Force's own page; Verkkouutiset).
+- The strip is **Jännevirta on Highway 9**, near Kuopio and the Rissala air base. The road notice gives closures
+  **18–25 Nov** (Nordic Defence Sector; Siilinjärvi's notice).
+- Allies fly too: **Dutch F-35As** at Rissala (the Air Force's page), **French Rafales** from Rovaniemi and
+  **Swedish Gripens** from Kallax (Nordic Defence Sector, AeroTime). No source puts allied jets on the highway.
+- **Finland's own new F-35As do not take part** (AeroTime; the first two reached Rovaniemi on 18 Sep). This rests on
+  one trade source and one unattributed summary. The Air Force's page could not be opened from the build machine
+  (its host is blocked there), so the owner or Grok Bot should confirm the line before it posts.
+
+## The device (story first)
+
+**A borrowed format in one unbroken shot: the car's sat-nav tells the story.** The camera sits on the dashboard and
+never cuts. The sat-nav does what a sat-nav does: it announces, lists and recalculates, in the same calm voice
+whatever comes over the roof. Every fact is on its screen, so the picture never needs a label.
+
+The title is the sat-nav's own idiom: "In 300 meters, give way to fighter jets." The "300 meters" is the phrase, not
+a measured distance.
+
+## The look
+
+The night kit (`clay/kit/night.js`) with one new part, **the dashboard**: a dash top, a strip of snow-dusted hood,
+wipers and a sat-nav on a stalk, all lit by what happens outside.
+
+- **Highway 9:** a road surface drawn in its own texture (wheel tracks worn down to wet asphalt, packed snow
+  between), about 2,400 spruces, snow stakes, a speed limit and the red Highway 9 plate on one post.
+- **The block:** two striped boards, four amber flashers and a sign, TIE SULJETTU / ROAD CLOSED.
+- **The strip beyond it:** portable edge lights that come on in a wave running away, a green threshold, tents, a truck
+  with a beacon and two light masts.
+- **The jet:** a plain grey twin-tail fighter with no markings. It lands over the car, rolls out, turns and takes off
+  back over the roof with its afterburners lit.
+- **Snow in the air:** every flake is a streak as long as it travels past the lens in one exposure, lit by the
+  headlights, the flashers and the jet's lamp.
+- **Frames:** 6 jittered exposures a frame while the car or the jet moves, 16 for the two close passes, 3 when only the
+  lamps and the snow move.
+
+No people and no faces. The landing over a stopped car is a picture of the joke. The real closure keeps traffic away
+from the strip, and `copy.json` says so under `props`.
+
+## Beats (22.0 s + the sign-off)
+
+| t | picture | the sat-nav says (caption) | on its screen |
+|---|---|---|---|
+| 0.0 | A night drive under the aurora | | Continue on Highway 9 |
+| 0.9 | The chime; amber flashers far ahead; the car brakes | In 300 meters, / give way to / [fighter jets]. | ROAD CLOSED AHEAD · Reason: fighter jets · JÄNNEVIRTA · CLOSURES 18–25 NOV |
+| 4.9 | A Hornet comes over the roof and lands beyond the block; the car stops | Road closed. / The Air Force / is [landing here]. | AIR FORCE EXERCISE · Protective Fence 26 · 19–27 Nov · OVER 40 AIRCRAFT · 20 HORNETS |
+| 10.0 | Three flights cross the sky | Also flying: / the Netherlands, / France, [Sweden]. | ALSO IN THE AIR: Netherlands · F-35s, France · Rafales, Sweden · Gripens (FLYING) |
+| 13.9 | The Hornet turns at the far end; its lamp grows | Not taking part: / Finland's new / [F-35s]. | a fourth row: Finland · F-35s, NOT TAKING PART |
+| 17.4 | It takes off over the car; its wash throws snow at the glass | Recalculating. / This road is / a [runway]. | RECALCULATING…, then THIS ROAD IS A RUNWAY · Expect delays: fighter jets |
+
+## Sound: the cabin kit (`pipeline/sound/cabin.py`, new)
+
+Per `SOUND.md`, "Sound per film". 90 BPM, E minor landing on C.
+
+- The car all the way through: engine and tires on snow, braking on the picture's own curve, then idling.
+- The sat-nav's chimes (soft glass bells) announce every caption; a blip lands each row of its list, and two falling
+  notes land the row that is not taking part.
+- **The hazard relay is the click track.** From the moment the car stops, its tick-tock runs to the end and a marimba
+  vamp answers it (Em, C, G, D).
+- The two passes: the low end first, the roar, the turbine's whine bent by the pass; the dashboard rattles and the
+  music ducks. The take-off adds the afterburner's crackle and the snow against the glass.
+- On "runway" the chime resolves to C. Then the station's sting and the current sign-off.
+
+## What to confirm before it posts
+
+1. **The F-35 line** on the Air Force's page (see above).
+2. **The dates** once more on 17 Nov (the daily check does this).
+3. The post copy (253 characters) is in `copy.json`.

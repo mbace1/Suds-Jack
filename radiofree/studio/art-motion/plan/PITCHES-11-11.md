@@ -92,3 +92,15 @@ is timely next week. Two things are the owner's to decide before any build:
 
 Device as planned: a closed loop (the marble run), with Google's stake as a ticker that grew across three filings
 ($111.1B, $114.5B, about $121.3B).
+
+## Status and corrections, Thu 12 Nov (evening check)
+
+- **B · Give Way is built as a full film** (`plan/films/45-give-way.md`, `clay/giveway/`). The owner had not picked;
+  it went first because of its date. The facts held on 12 Nov; the F-35 line still rests on AeroTime and should be
+  confirmed on the Air Force's page before it posts.
+- **C · Keep It Quiet: beat 6 must change.** The 76 generators and €19.2M are confirmed, but at most 66 of the 76 can
+  run at once, so "all 76 are humming" is wrong. QTS told the council it is studying batteries as an alternative to
+  diesel; that goes in as the other side. There is still no coverage of the 10 Nov residents' meeting.
+- **D · The Round Trip:** write the range as "the range filed on 10 Nov" and re-check on 17–18 Nov; the FT says
+  bankers may price above it.
+- **A · Dragged:** unchanged; keep "not final".

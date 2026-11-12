@@ -106,10 +106,10 @@ float fbm2(vec2 p){ float a=.5,s=0.; for(int i=0;i<4;i++){ s+=a*vnoise(p); p=p*2
 // ------------------------------------------------------------------ the sky: gradient, a city's light dome, the moon, the aurora, stars
 function makeSky(scene, o) {
   const U = { uTime: { value: 0 }, uTop: { value: C3(o.top) }, uHor: { value: C3(o.hor) }, uGlowDir: { value: V(o.glowDir || [0, 0, -1]).normalize() }, uGlowCol: { value: C3(o.glowCol || '#000000') }, uGlow: { value: o.glow ?? 0 },
-    uGlowP: { value: o.glowP ?? 9 }, uGlowE: { value: o.glowE ?? 13 }, uMoon: { value: V(o.moon).normalize() }, uAur: { value: o.aurora ?? 0 }, uAurAz: { value: o.auroraAz ?? 0 } };
+    uGlowP: { value: o.glowP ?? 9 }, uGlowE: { value: o.glowE ?? 13 }, uMoon: { value: V(o.moon).normalize() }, uMoonC: { value: new THREE.Vector2(...(o.moonCos || [0.99962, 0.9998])) }, uAur: { value: o.aurora ?? 0 }, uAurAz: { value: o.auroraAz ?? 0 } };
   const dome = new THREE.Mesh(new THREE.SphereGeometry(4000, 48, 24), new THREE.ShaderMaterial({ side: THREE.BackSide, depthWrite: false, uniforms: U,
     vertexShader: `varying vec3 vD; void main(){ vD = normalize(position); gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.); }`,
-    fragmentShader: `uniform float uTime, uGlow, uGlowP, uGlowE, uAur, uAurAz; uniform vec3 uTop, uHor, uGlowDir, uGlowCol, uMoon; varying vec3 vD;
+    fragmentShader: `uniform float uTime, uGlow, uGlowP, uGlowE, uAur, uAurAz; uniform vec3 uTop, uHor, uGlowDir, uGlowCol, uMoon; uniform vec2 uMoonC; varying vec3 vD;
 ${GLSL_NOISE}
 void main(){
   vec3 d = normalize(vD); float el = d.y;
@@ -118,7 +118,7 @@ void main(){
   float g = max(dot(normalize(vec3(d.x, 0.0001, d.z)), uGlowDir), 0.);
   col += uGlowCol * uGlow * pow(g, uGlowP) * exp(-max(el, 0.) * uGlowE);
   float m = dot(d, uMoon);
-  col += vec3(1.0, 0.97, 0.9) * (smoothstep(0.99962, 0.9998, m) * 5. + pow(max(m, 0.), 700.) * 0.5 + pow(max(m, 0.), 30.) * 0.06);
+  col += vec3(1.0, 0.97, 0.9) * (smoothstep(uMoonC.x, uMoonC.y, m) * 5. + pow(max(m, 0.), 700.) * 0.5 + pow(max(m, 0.), 30.) * 0.06);
   if (uAur > 0.) {
     float az = atan(d.x, -d.z) - uAurAz;
     float c = 0.30 + 0.09 * sin(az * 2.1 + uTime * 0.15) + 0.045 * sin(az * 5.3 - uTime * 0.22);

@@ -27,6 +27,7 @@ itself.
 | **creature** | animals and the robot (`looks/robot`) as characters in a habitat | Right of Way's squirrel already; the robot's first story is to be found | partly |
 | **court** | a toy courtroom with bench, gavel and docket boxes | Short Supply's 13 Nov hearing follow-up | idea |
 | **night** (`clay/kit/night.js`) | the cinematic night look: height fog, a sky dome (moon, aurora, stars), a water mirror, snow with ripples and glints, moon and lamp shadows, light shafts, a lens streak, and frames made of jittered exposures (antialiasing and real motion blur) | Night Flight (the channel promo); the 11 Nov pitch stills (seabed, runway, Jokela) | in use |
+| **dashboard** (in `clay/giveway/film.js`) | the night kit seen from a driver's seat in one unbroken shot: a dash top, a strip of hood, wipers and a sat-nav on a stalk whose screen carries every fact; a road surface drawn in its own texture, snow as streaks, glare on the glass | Give Way (Highway 9, the road base) | built 12 Nov |
 
 ## Upgrades waiting on the owner's OK (from `looks/README.md`)
 

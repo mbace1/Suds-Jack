@@ -1,0 +1,137 @@
+{
+  "film": "give-way",
+  "cut": "v1 (12 Nov, en only). Pitch B of plan/PITCHES-11-11.md. Device: a BORROWED FORMAT in one unbroken shot. The car's sat-nav tells the story from the dashboard: it announces the closure, lists who is flying, and recalculates. Every fact is on the sat-nav's own screen.",
+  "series": "rfh",
+  "captionSize": "big",
+  "argument": "For a week in November a stretch of Highway 9 near Kuopio closes so the Air Force can land Hornets on it; allied jets fly too, and Finland's new F-35s sit it out.",
+  "langs": [
+    "en"
+  ],
+  "native_read": {
+    "en": true
+  },
+  "syntax": "'/' breaks a line, [word] is the pop word",
+  "captions": [
+    {
+      "id": "giveway",
+      "role": "setup",
+      "at": "s1+1.1",
+      "until": "s2-0.6",
+      "hold": "s2",
+      "text": {
+        "en": "In 300 meters, / give way to / [fighter jets]."
+      },
+      "source": "The sat-nav's own idiom; the satire's line, not a quoted notice. What it stands on: the Highway 9 traffic notice for the Jännevirta road base near Kuopio/Rissala, 18–25 Nov 2026, during the Air Force exercise Protective Fence 26 (Nordic Defence Sector; Siilinjärvi municipality's notice; search summaries, 9–12 Nov). '300 meters' is the sat-nav phrase, not a measured distance."
+    },
+    {
+      "id": "landing",
+      "role": "evidence",
+      "at": "s2+1.5",
+      "until": "s3-0.25",
+      "hold": "s3",
+      "text": {
+        "en": "Road closed. / The Air Force / is [landing here]."
+      },
+      "source": "Finnish Air Force, 'Protective Fence 26 to be the Finnish Air Force's main exercise of the year' (ilmavoimat.fi): 19–27 Nov 2026, over 40 aircraft including 20 F/A-18 Hornets, about 4,100 people, dispersed operations from bases, civilian airports and a highway strip. Verkkouutiset repeats the figures. The highway landings are claimed for Finnish Hornets only. Search summaries, 11–12 Nov; the Air Force's page could not be opened from the build machine."
+    },
+    {
+      "id": "allies",
+      "role": "evidence",
+      "at": "s3+0.3",
+      "until": "s4-0.25",
+      "hold": "s4",
+      "text": {
+        "en": "Also flying: / the Netherlands, / France, [Sweden]."
+      },
+      "source": "Dutch F-35As at Rissala (the Air Force's own page, per search summary 12 Nov); French Rafales from Rovaniemi and Swedish Gripens from Kallax (Nordic Defence Sector; AeroTime). 'Flying', not 'landing': no source puts allied jets on the highway strip."
+    },
+    {
+      "id": "f35",
+      "role": "evidence",
+      "at": "s4+0.3",
+      "until": "s5-0.25",
+      "hold": "s5",
+      "text": {
+        "en": "Not taking part: / Finland's new / [F-35s]."
+      },
+      "source": "AeroTime: Finland's own F-35As do not take part; the first two reached Rovaniemi on 18 Sep 2026. One trade source plus one unattributed summary (12 Nov). 'Finland's' stays in the line because Dutch F-35s do take part. To confirm on the Air Force's page before posting."
+    },
+    {
+      "id": "runway",
+      "role": "punchline",
+      "at": "s5+1.25",
+      "until": "end-0.3",
+      "hold": "end",
+      "text": {
+        "en": "Recalculating. / This road is / a [runway]."
+      },
+      "source": "The turn: the satire's own line in the sat-nav's voice. Not a factual claim beyond the documented closure for the road base."
+    }
+  ],
+  "ui": {
+    "navGo": {
+      "en": "Continue on Highway 9"
+    },
+    "navGoSub": {
+      "en": "HIGHWAY 9 · NEAR KUOPIO"
+    },
+    "navClosed": {
+      "en": "ROAD CLOSED AHEAD"
+    },
+    "navReason": {
+      "en": "Reason: fighter jets"
+    },
+    "navWhere": {
+      "en": "JÄNNEVIRTA · CLOSURES 18–25 NOV"
+    },
+    "navEx": {
+      "en": "AIR FORCE EXERCISE"
+    },
+    "navEx1": {
+      "en": "Protective Fence 26 · 19–27 Nov"
+    },
+    "navEx2": {
+      "en": "OVER 40 AIRCRAFT · 20 HORNETS"
+    },
+    "navAlso": {
+      "en": "ALSO IN THE AIR"
+    },
+    "navNL": {
+      "en": "Netherlands · F-35s"
+    },
+    "navFR": {
+      "en": "France · Rafales"
+    },
+    "navSE": {
+      "en": "Sweden · Gripens"
+    },
+    "navFI": {
+      "en": "Finland · F-35s"
+    },
+    "navFlying": {
+      "en": "FLYING"
+    },
+    "navNot": {
+      "en": "NOT TAKING PART"
+    },
+    "navSrc": {
+      "en": "AIR FORCE · AEROTIME"
+    },
+    "navRecalc": {
+      "en": "RECALCULATING…"
+    },
+    "navRunway": {
+      "en": "THIS ROAD IS A RUNWAY"
+    },
+    "navUntil": {
+      "en": "JÄNNEVIRTA · CLOSURES 18–25 NOV"
+    },
+    "navDelay": {
+      "en": "Expect delays: fighter jets"
+    }
+  },
+  "props": "In-world text stays in its own language: the road block's sign reads TIE SULJETTU / ROAD CLOSED, and the roadside post carries a speed limit and the red Highway 9 plate. The sat-nav is an invented generic device with no brand; its clock and map are props. The jet is a simplified twin-tail fighter in plain grey with no markings. No people, no faces. The landing over a stopped car is a picture of the joke, not a depiction of how the road base operates: the real closure keeps traffic away from the strip.",
+  "post": {
+    "en": "In 300 meters, give way to fighter jets. Highway 9 at Jännevirta near Kuopio is closed 18–25 Nov: the Air Force lands Hornets on it in Protective Fence 26 (19–27 Nov, 40+ aircraft). Dutch, French and Swedish jets fly too. Finland's new F-35s sit it out."
+  }
+}
