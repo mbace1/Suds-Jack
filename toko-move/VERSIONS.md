@@ -1,5 +1,29 @@
 # Toko Move — versions
 
+## v3.30 — 2026-11-12
+
+**SOMETHING TO CHASE** — the long shift had stars and nothing behind them.
+
+- **Its stars open the trade-off perks, for good.** The six trade-offs
+  (v3.24) were drawn two a shift as the draft's special third button. Each
+  star of The Long Shift now puts two of them in every draft after it, on
+  every run: one star *A thermos* and *Charm*, two *A bike* and *Take it
+  easy*, three *Hustle* and *Nerve* (`LONG_PERKS`, `perkPool(done, stars)`).
+  The end card names what a shift just opened (*NEW IN EVERY DRAFT: …*) and
+  only that; stars are kept, never lost.
+  - A trade-off is never the first button beside a plain perk, so tapping
+    the first option is no worse off for having opened them. Measured, 60
+    seeds, first-button bot, none opened → all six: EASY 60 → 60, MEDIUM
+    48 → 48, HARD 32 → 36, NIGHT 27 → 24.
+  - A mission's draft stays its own.
+- **A result to send.** The long shift's end card has the shift as a line:
+  how far, a square a job (green on time, yellow late), the euros and the
+  build, with COPY THE RESULT (`longShare`). Nothing is sent anywhere; it
+  is your clipboard.
+- Gates: `test/long.mjs` (+7), `test/play.cjs` plays LONG 28 to its end on a
+  phone: five jobs, one star, the two perks named, the line, and the next
+  shift drafting from them.
+
 ## v3.29 — 2026-11-11
 
 **THE MAP FROM THE PAD, AND THE TRAILER CAUGHT UP**

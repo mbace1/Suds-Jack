@@ -846,6 +846,7 @@ const PATTERNS = [
   [/^(AINO'S MORNING|LOST AND FOUND|EAST OF THE BRIDGE|THE HARBOUR ROUND|THE STICKER|THE LAST TRAM) IS OPEN$/, (m, a) => `${FI.get(a)} ON AUKI`],
   [/^NEXT · (AINO'S MORNING|LOST AND FOUND|EAST OF THE BRIDGE|THE HARBOUR ROUND|THE STICKER|THE LAST TRAM)$/, (m, a) => `SEURAAVA · ${FI.get(a)}`],
   [/^A NEW PERK: (.+)$/, (m, a) => `UUSI ETU: ${a}`],
+  [/^NEW IN EVERY DRAFT: (.+)$/, (m, a) => { const k = shouted().get(a); return `UUSI JOKA VALINTAAN: ${k ? FI.get(k).toUpperCase() : a}`; }],
   [/^(EASY|MEDIUM|HARD|NIGHT) AGAIN$/, (m, a) => `${FI.get(a)} UUDESTAAN`],
   [/^TRY (EASY|MEDIUM|HARD|NIGHT) AGAIN$/, (m, a) => `YRITÄ UUDESTAAN · ${FI.get(a)}`],
   [/^deliver all (\d+) to complete (EASY|MEDIUM|HARD|NIGHT)$/, (m, n, a) => `toimita kaikki ${n}, niin ${FI.get(a)} on suoritettu`],

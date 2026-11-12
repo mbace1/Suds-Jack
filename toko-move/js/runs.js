@@ -148,7 +148,7 @@ export function record(id, result, s = store()) {
   saveRuns(all, s);
   const opened = SAVED.filter(x => unlocked(x, all) && !openedBefore.includes(x));
   const newBest = run.endless ? (result.delivered | 0) > was.best : done && result.score > was.best;
-  return { stars, done, first: done && !was.done, newBest, opened, extrasOpened: !extrasBefore && extrasOpen(all), all };
+  return { stars, done, first: done && !was.done, newBest, opened, extrasOpened: !extrasBefore && extrasOpen(all), all, starsWas: was.stars };
 }
 
 // Which run this visit is. `?run=` names one, if it is open; with no run and

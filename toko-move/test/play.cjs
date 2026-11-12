@@ -119,7 +119,7 @@ server.listen(0, '127.0.0.1', async () => {
         runs: [...document.querySelectorAll('#mutRow .run[data-run]')].map(r => ({ id: r.dataset.run, open: !r.classList.contains('locked'), lit: r.classList.contains('on') })),
         goal: document.getElementById('titleGoal').textContent, play: document.getElementById('play').textContent,
         links: ['dailyLink', 'weekLink', 'liveLink'].filter(id => { const e = document.getElementById(id); return e && !e.hidden && getComputedStyle(e).display !== 'none'; }) }));
-      ok(`the bare address is the card journey, not the real-time game (v${t.v})`, !t.classic && t.v === '3.29' && /v3\.29/.test(t.hero));
+      ok(`the bare address is the card journey, not the real-time game (v${t.v})`, !t.classic && t.v === '3.30' && /v3\.30/.test(t.hero));
       ok(`it is Act 1, in Helsinki (${await page.evaluate(() => document.getElementById('titleWhen').textContent)})`, await page.evaluate(() => /^Act 1 · Helsinki · 07:00/.test(document.getElementById('titleWhen').textContent)));
       ok(`the ladder: EASY open and lit, three locked, and the long shift locked beside them (${t.runs.map(r => r.id + (r.open ? '' : '🔒')).join(' ')})`, t.runs.map(r => r.id).join() === 'easy,medium,hard,night,long' && t.runs[0].open && t.runs[0].lit && t.runs.slice(1).every(r => !r.open) && t.run === 'easy');
       ok(`the goal and the button (${t.goal} · ${t.play})`, /^Three deliveries before 08:15/.test(t.goal) && t.play === 'START SHIFT');
@@ -563,6 +563,27 @@ server.listen(0, '127.0.0.1', async () => {
         ok(`the dots are the jobs so far and the one under way, with no last one (${done} done: "${dots}")`, done >= 2 && dots.replace(/[^●○]/g, '').length === done + 1);
       }
       ok(`no page or network errors (the long shift, ${lang})`, !errs.length, errs.slice(0, 3).join(' | '));
+      await ctx.close();
+    }
+    // ── the long shift's end (v3.30): LONG 28, tapped through, is five jobs and three late drops — one star.
+    // The end card names the two trade-offs that star opens and offers the result as a line to send; and the
+    // next shift's draft pool has them
+    {
+      const ctx = await browser.newContext(PHONE); await seedRuns(ctx, { easy: { done: true, stars: 1, best: 40, plays: 1 } });
+      const page = await ctx.newPage(), errs = watch(page);
+      await page.goto(`${base}/toko-move/?run=long&seed=28`, { waitUntil: 'load' }); await ready(page);
+      await page.tap('#play'); await page.waitForSelector('#v3panel .eventOpt', { timeout: 15000 });
+      const seen = await playOut(page, { maxSteps: 400 });
+      const end = await page.evaluate(() => ({ t: document.getElementById('endTitle').textContent, stars: document.querySelector('.runStars')?.textContent || '', opened: [...document.querySelectorAll('.runOpened')].map(e => e.textContent),
+        grid: document.querySelector('#endStats .dailyGrid')?.textContent || '', btn: document.getElementById('shareLong')?.textContent || '', text: window.__tm3.result?.text || '', gained: window.__tm3.result?.gained || [] }));
+      ok(`the long shift ends on its jobs and its stars (${end.t} ${end.stars})`, seen.end && end.t === '5 JOBS' && end.stars === '★☆☆');
+      ok(`its first star opens two trade-offs for every draft after it (${end.opened.join(' | ')})`, end.gained.join() === 'thermos,charm' && end.opened.includes('NEW IN EVERY DRAFT: A THERMOS') && end.opened.includes('NEW IN EVERY DRAFT: CHARM'));
+      ok(`and the result is a line to send (${end.text.split('\n').slice(0, 2).join(' / ')})`, /^Toko Move · The Long Shift · 5 jobs ★☆☆\n[🟩🟨]{5} · €\d+/u.test(end.text) && end.btn === 'COPY THE RESULT' && /^[🟩🟨]{5}$/u.test(end.grid));
+      await page.goto(`${base}/toko-move/?run=easy&seed=3`, { waitUntil: 'load' }); await ready(page);
+      await page.tap('#play'); await page.waitForSelector('#v3panel .eventOpt', { timeout: 15000 });
+      const pool = await page.evaluate(() => window.__tm3.state().run.perkPool);
+      ok(`the next shift drafts from them too (${pool.join(', ')})`, pool.join() === 'shoes,pass,map,thermos,charm');
+      ok('no page or network errors (the long shift\'s end)', !errs.length, errs.slice(0, 3).join(' | '));
       await ctx.close();
     }
     // ── the day (v3.23) and the area (v3.24): EASY 7 is the Helsinki Festival with its drops east
