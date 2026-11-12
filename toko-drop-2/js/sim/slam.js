@@ -10,7 +10,7 @@
 //
 //   g.slam  { t, phase: 'idle' | 'warn', x, z }
 //   events  slamWarn { id, x, z, r, t } · slam { id, x, z, r, color }
-import { TUNING } from '../tuning.js?v=148';
+import { TUNING } from '../tuning.js?v=149';
 
 const T = TUNING;
 

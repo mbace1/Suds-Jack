@@ -7,10 +7,10 @@
 // things that work"). The arena is 1.x's, so every 1.x number ports as it is
 // instead of through a rescale. Axes: x across the screen (right +), y up,
 // z toward the bottom of the screen. The arena is centred on the origin.
-import { SPECIES } from './tuning/species/index.js?v=148';
-import WAVES from './tuning/waves.js?v=148';
-import PICKUPS from './tuning/pickups.js?v=148';
-import MUSIC from './tuning/music.js?v=148';
+import { SPECIES } from './tuning/species/index.js?v=149';
+import WAVES from './tuning/waves.js?v=149';
+import PICKUPS from './tuning/pickups.js?v=149';
+import MUSIC from './tuning/music.js?v=149';
 
 export const TUNING = {
   render: {
@@ -174,7 +174,8 @@ export const TUNING = {
       // turning in each (`fans`: where on the floor it stands over, `blades` of it, a turn every `period` s — one
       // each way — its light `k` out to `r` m, `duty` of each sector blade, `soft` at a blade's edge, a dark `hub`),
       // so wedges of light and shadow go round the room, slowly
-      boiler:  { ambient: 0.26, grates: { h: 1.4, r: 3.0, k: 1.5, color: [1, 0.42, 0.1], flicker: [1.6, 0.3] },
+      // (v149: darker again between the fires, and each grate's light `stoke` × brighter when its fire is blown)
+      boiler:  { ambient: 0.13, grates: { h: 1.2, r: 2.3, k: 1.7, color: [1, 0.42, 0.1], flicker: [1.6, 0.3], stoke: 1.3 },
                  fans: [{ frac: [-0.42, -0.4], blades: 5, period: 16, r: 10, k: 0.75, duty: 0.52, soft: 0.1, hub: 1.3, color: [0.72, 0.82, 0.95] },
                         { frac: [0.42, 0.42], blades: 5, period: -21, r: 10, k: 0.75, duty: 0.52, soft: 0.1, hub: 1.3, color: [0.72, 0.82, 0.95] }],
                  rim: { w: 1.5, k: 0.75, glow: 0.03, color: [1, 0.42, 0.1], sides: 'all' }, sheen: { k: 0.3, shine: 20 } },
@@ -369,7 +370,13 @@ export const TUNING = {
                 vary: { tone: 0.5, blued: [0.78, 0.92, 1.2], bare: [1.0, 1.0, 1.0], rusty: [1.3, 0.9, 0.62], tread: 0.16, treadK: 0.5, rolledK: 0.16, scrapeK: 0.22,
                         bevel: 0.12, relief: 0.5, sun: [-0.5, -0.86], patch: 0.08, rust: [0.16, 0.06, 0.025], rustK: 0.45,
                         temper: { reach: 1.1, k: 0.6, straw: [1.0, 0.82, 0.42], bronze: [0.85, 0.5, 0.28], purple: [0.55, 0.3, 0.7], blue: [0.3, 0.5, 0.95] } },
-                lattice: { hole: 0.17, pitch: 0.26, frame: 0.12, steel: [0.03, 0.026, 0.024], core: [1.0, 0.85, 0.45], barGlow: 0.18, frameGlow: 0.05 },
+                // v149 (owner: "Decks right, mood weak"): under each grate a PIT `depth` m deep (its `wall`, lit `wallGlow` from
+                // below) with a bed of coals (`coal` a metre, from `coalLo` to `coalHi`, the hottest going `white`); and the
+                // room STOKES (`stoke`, kit.js): every `period` s a flare runs down the hall along `dir`, a cycle every `len`
+                // m, up in `rise` of a cycle and gone by `fall`, the fire `k` brighter at its height
+                lattice: { hole: 0.17, pitch: 0.26, frame: 0.12, steel: [0.03, 0.026, 0.024], core: [1.0, 0.85, 0.45], barGlow: 0.18, frameGlow: 0.05,
+                           pit: { depth: 0.55, wall: [0.035, 0.02, 0.014], wallGlow: 0.9, coal: 6.5, coalLo: [0.32, 0.03, 0.004], coalHi: [1.0, 0.42, 0.07], white: 1.6 } },
+                stoke: { period: 7.5, dir: [0.3, 1], len: 62, rise: 0.05, fall: 0.5, k: 0.9 },
                 veins: { reach: 1.6, scale: 0.9, width: 0.025, gain: 1.4, haze: 0.22, pulse: 1.3, color: [1.0, 0.38, 0.07] },
                 glow: [1.0, 0.35, 0.06], scorch: [0.012, 0.008, 0.006], pulse: 1.6, sky: [0.012, 0.008, 0.006],
                 // v78: oily PUDDLES within `band` m of the long sides, under the pipe runs: the steel
@@ -422,8 +429,18 @@ export const TUNING = {
              // `at` (`soft` to full), broken at `scale`, `k` thick in `color`, ridged `ridge` across the `wind` every 1/`ripple` m
              // v145 (owner: "Want more snow"): more of the sheet under it (`at` 0.56 → 0.5), and BANKED along the rail — within
              // `reach` m of the edge it lies `lift` more readily and `deep` thicker (never past `max`), shaded `shade` at its foot
-             snow: { at: 0.5, soft: 0.05, scale: 0.4, k: 0.58, color: [0.74, 0.82, 0.92], wind: [0.8, 0.6], ripple: 5, ridge: 0.08, scallop: 0.012,
-                     bank: { reach: 3.2, lift: 0.34, deep: 0.3, max: 0.86, shade: 0.22, shadeW: 0.06 } },
+             // v149 (owner: "More snow, sliding on ice trails etc"): a DUSTING over the rest of the sheet too (`dust`:
+             // `k` thick where its own field, `scale` a metre, passes `at`), the drifts a little wider (`at` 0.5 → 0.46)
+             // and the bank deeper in; SPINDRIFT blowing over it all (`spindrift`: wisps `scale` [along, across the
+             // wind] a metre, `speed` m/s, `k` thick past `at`); and what slides over it SWEEPS it (water.js `trail`):
+             // `trail.sweep` of the snow gone where a body went, a berm `pile` thick along the furrow's edge (where the
+             // swept field climbs `edge` a metre), its walls lit `relief` × toward the sun and shaded to `dark`, the bare
+             // ice under it polished (`polish` its tint, `gloss` its shine)
+             snow: { at: 0.46, soft: 0.05, scale: 0.4, k: 0.6, color: [0.74, 0.82, 0.92], wind: [0.8, 0.6], ripple: 5, ridge: 0.05, scallop: 0.012,
+                     bank: { reach: 3.8, lift: 0.36, deep: 0.3, max: 0.88, shade: 0.22, shadeW: 0.06 },
+                     dust: { k: 0.5, scale: 0.55, at: [0.08, 0.34] },
+                     spindrift: { scale: [0.2, 1.5], speed: 3.4, at: [0.6, 0.84], k: 0.3 },
+                     trail: { sweep: 0.96, pile: 0.9, edge: [0.2, 0.9], relief: 0.45, dark: 0.35, polish: [0.55, 0.74, 0.95], gloss: 0.35 } },
              ledgeShadow: { depth: 0.35, soft: 0.25, cotMax: 2.2 },   // v100: the ledge's sun shadow on the ice (scenery.ice.ledge)
              // v100: the FRACTURES — plates `cell[0]` m across with cracks `width[0]` m wide between them (half widths),
              // finer cracks across the plates (`cell[1]`, `width[1]`, `minor` as bright), the field warped `warp` m over
@@ -624,6 +641,15 @@ export const TUNING = {
               valve: { every: 7, h: 0.55, r: 0.26, color: [0.36, 0.035, 0.02] },
               vent: { per: 4, period: 2.2, rise: 1.6, r: [0.12, 0.5], sway: 0.2, gain: 0.3, color: [0.6, 0.6, 0.58], duty: 0.55, dutyRate: 0.45 },
               tank: { every: 6, out: 3.6, r: 0.8, h: 2.0, dome: 0.5, bands: [0.5, 1.3] },
+              // v149: STEAM OFF THE FLOOR — the grates nearer the rail than `inside` (of the half sizes) let off a gust
+              // after the stoke's flare passes (`lag` of a cycle after it, for `on` of one): `per` puffs a grate, as the
+              // stacks' (never the grates in the middle of the floor: the fight is there)
+              floorVent: { per: 8, period: 2.1, rise: 3.8, r: [0.18, 1.1], sway: 0.35, gain: 0.42, fade: 1.2, color: [0.85, 0.66, 0.5], inside: [0.4, 0.45], lag: 0.06, on: 0.3 },
+              // v149: ENGINES between the boilers along the far side: a bed, a cylinder standing on it, a piston rod
+              // working `stroke` m out of its top with a crosshead, and a FLYWHEEL `wheelR` m turning beside it once every
+              // `turn` s (each engine at its own point of the turn, rod and wheel together)
+              engine: { bed: [2.9, 0.42, 1.25], cyl: [0.46, 1.45], rod: [0.07, 1.5], head: [0.5, 0.2, 0.34], stroke: 0.42, wheelR: 1.15, rim: 0.1, spokes: 6, hub: 0.2, wheelY: 1.55,
+                        turn: 2.6, iron: [0.075, 0.065, 0.058], bright: [0.3, 0.27, 0.23], wheel: [0.17, 0.045, 0.03] },
               // v77: embers rising off the boilers and over the pipe runs, never over the floor
               motes: { n: 40, h: 6, vy: 0.6, sway: 0.4, wobble: 1.3, r: 0.06, gain: 3.0, color: [1.0, 0.5, 0.15], far: 6, side: 3 } },
     // v72 (from the World 6 brief, art-ref/briefs/world-6-river.md): THE RIVER
@@ -1599,6 +1625,16 @@ export const TUNING = {
     // v146: the DEEP's. There is no surface down here: what the simulation gives the deep is where the water was STIRRED
     // (its `foam`, at a far gentler threshold) — the floor lights the plankton there (worlds.floor.deep.stir). Coarser,
     // and no drips
+    // v149 (owner on v147's ice: "More snow, sliding on ice trails etc"): the ice keeps a TRAIL, not a wave (water.js
+    // `trail`) — how much of the snow has been swept off each place. A body sweeps the strip it crosses, `foot` × its
+    // radius wide (the hero `hero` m), `rate` a second of the way to bare, in full from `full` m/s and not at all
+    // under `minSpeed`; a block of ice adrift keeps `block` × its radius swept; a burst, a landing, a slam clears a
+    // disc (`events`, `splash` × their depth). It fills in again by half every `refill` s, its edge softened `blur`
+    ice: { perMetre: 8, maxTexels: 448, hz: 30, maxSteps: 2,
+           trail: { rate: 16, full: 4, minSpeed: 0.7, block: 1.05, refill: 13, blur: 0.02, splash: 8 },
+           body: { foot: 0.8, hero: 0.5 },
+           events: { kill: { size: 1.7, amp: 0.12 }, hopLand: { size: 1.2, amp: 0.1 }, land: { size: 1.3, amp: 0.1 }, slam: { size: 1.0, amp: 0.125 },
+                     lobLand: { size: 1.2, amp: 0.1 }, worldLand: { size: 1.5, amp: 0.125 } } },
     deep: { perMetre: 6, maxTexels: 340, hz: 60, maxSteps: 3, c: 2.2, half: 0.3, settle: 1, sink: 0, solid: 0.9,
             body: { dip: 0.1, foot: 1.0, hero: 0.6, rMax: 1.6, bob: 0, bobHz: 0.7 },
             foam: { at: [0.28, 0.95], half: 1.1 },

@@ -51,23 +51,23 @@
 // TUNING.scenery.
 import * as THREE from 'three/webgpu';
 import { Fn, float, vec2, vec3, fract, sin, cos, dot, texture, floor as tfloor, mix, smoothstep, abs, positionWorld, positionLocal, normalWorld, normalView, clamp, max, min, length, step, fwidth, uv, attribute } from 'three/tsl';
-import { GEL_TIME } from './gel.js?v=148';
-import { hash, noise, seeded, motes, phase, groundGeo, sunk } from './kit.js?v=148';
-import { SUN_AT } from './sun.js?v=148';
-import { treeAtlas } from './trees.js?v=148';
-import { LeafLitter } from './leaves.js?v=148';
-import { boiler } from './sets/boiler.js?v=148';
-import { river } from './sets/river.js?v=148';
-import { ice } from './sets/ice.js?v=148';
-import { deep } from './sets/deep.js?v=148';
-import { core } from './sets/core.js?v=148';
+import { GEL_TIME } from './gel.js?v=149';
+import { hash, noise, seeded, motes, phase, groundGeo, sunk } from './kit.js?v=149';
+import { SUN_AT } from './sun.js?v=149';
+import { treeAtlas } from './trees.js?v=149';
+import { LeafLitter } from './leaves.js?v=149';
+import { boiler } from './sets/boiler.js?v=149';
+import { river } from './sets/river.js?v=149';
+import { ice } from './sets/ice.js?v=149';
+import { deep } from './sets/deep.js?v=149';
+import { core } from './sets/core.js?v=149';
 
 // worlds 5-9 (v72): a set of their own each, built to its brief (render/sets/)
 const SETS = { boiler, river, ice, deep, core };
 
 // the noise, the cracks and the seeded numbers are the kit's (v72: render/kit.js),
 // and the floor still takes them from here
-export { noise, cells } from './kit.js?v=148';
+export { noise, cells } from './kit.js?v=149';
 
 // the storm drain's grate (v65, the owner's world-2 sheet), in its own units
 // (q, its frame's radius 1): x the grate, y a slot, z the frame. Rows of

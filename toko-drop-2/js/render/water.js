@@ -28,6 +28,12 @@
 //   a splash          a dent with a raised rim round it that holds the dent's water (so the level stays), which
 //                     the wave equation turns into rings
 // Looks only: nothing in the sim reads it.
+//
+// v149: the same two textures and the same stamps also keep a TRAIL (`P.trail`, the ice's): not a height but how
+// much of the snow has been SWEPT off a place, 0 to 1. A body going by paints the strip it crossed (a capsule from
+// where it was to where it is), a burst a disc; the step lets it fill in again (`refill` s to half) and softens
+// its edge a little; `slope` is then the way the swept field rises (so the furrow's walls can be lit) and its `a`
+// the field itself. No wave runs in a trail
 import * as THREE from 'three/webgpu';
 import { uv, uniform, float, vec2, vec3, vec4, texture, attribute, positionGeometry, clamp, max, min, mix, mrt, abs, dot, smoothstep, step, length } from 'three/tsl';
 
@@ -83,7 +89,11 @@ export class Water {
     // a dent and the rim that holds its water: (1 − u)² (1 − 4u) over the disc sums to nothing
     const u1 = dot(q1, q1).div(R2), m1 = clamp(float(1).sub(u1), 0, 1), hat = m1.mul(m1).mul(float(1).sub(u1.mul(4)));
     const dh = bump(q0).sub(bump(q1)).mul(B.z).add(hat.mul(A.w));
-    sm.fragmentNode = mrt({ wave: vec4(dh, 0, 0, 0), slope: vec4(0) });
+    // (a trail's stamp: the strip between where the body was and where it is, A.w of the way to swept, soft at its edge)
+    this.paintU = uniform(0);
+    const tq = clamp(dot(q0, B.xy).div(max(dot(B.xy, B.xy), 1e-8)), 0, 1), dv = q0.sub(B.xy.mul(tq));
+    const swept = smoothstep(0, 0.4, clamp(float(1).sub(dot(dv, dv).div(R2)), 0, 1)).mul(A.w);
+    sm.fragmentNode = mrt({ wave: vec4(mix(dh, swept, this.paintU), 0, 0, 0), slope: vec4(0) });
     this.stamps = new THREE.Mesh(instanced({ wA: this.wA, wB: this.wB }), sm);
     this.stamps.frustumCulled = false;
     this.stampScene = new THREE.Scene(); this.stampScene.add(this.stamps);
@@ -103,7 +113,7 @@ export class Water {
     // ── the step
     this.texel = uniform(new THREE.Vector2(1 / 16, 1 / 16));
     const U = this.U = { K: uniform(0.4), damp: uniform(0.99), level: uniform(0.999), sink: uniform(0.2), dx: uniform(0.1),
-      foam0: uniform(0.01), foam1: uniform(0.03), foamKeep: uniform(0.98) };
+      foam0: uniform(0.01), foam1: uniform(0.03), foamKeep: uniform(0.98), trail: uniform(0), blur: uniform(0.03) };
     this.waveIn = texture(this.rt[0].textures[0]); this.slopeIn = texture(this.rt[0].textures[1]); this.maskIn = texture(this.maskRt.texture);
     const p = uv(), tx = this.texel, c = this.waveIn.sample(p);
     // a neighbour something stands in reads as this texel's own height: the wave meets a wall and turns back
@@ -117,8 +127,10 @@ export class Water {
     const v = c.g.add(lap.mul(U.K)).mul(U.damp).mul(keep).mul(open);
     const h = c.r.add(v).mul(U.level).mul(keep).mul(open);
     const foam = max(this.slopeIn.sample(p).a.mul(U.foamKeep), smoothstep(U.foam0, U.foam1, abs(v))).mul(open);
+    // (a trail: no wave — what was swept stays, softens a little, and fills in again)
+    const hT = clamp(c.r.add(lap.mul(U.blur)), 0, 1).mul(U.level);
     const sm2 = new THREE.NodeMaterial(); sm2.depthTest = false; sm2.depthWrite = false;
-    sm2.fragmentNode = mrt({ wave: vec4(h, v, c.b, c.a), slope: vec4(hE.sub(hW).div(U.dx.mul(2)), hS.sub(hN).div(U.dx.mul(2)), lap.div(U.dx.mul(U.dx)), foam) });
+    sm2.fragmentNode = mrt({ wave: vec4(mix(h, hT, U.trail), mix(v, 0, U.trail), c.b, c.a), slope: vec4(hE.sub(hW).div(U.dx.mul(2)), hS.sub(hN).div(U.dx.mul(2)), lap.div(U.dx.mul(U.dx)), mix(foam, hT, U.trail)) });
     this.stepQuad = new THREE.QuadMesh(sm2);
     // what stands in it, written into the wave's b and a (and the water taken out of where it stands)
     const rm = new THREE.NodeMaterial(); rm.depthTest = false; rm.depthWrite = false;
@@ -155,9 +167,14 @@ export class Water {
     this.flow = P.flow ?? null; this.alongX = hx >= hz; this.drift = 0; this.driftUV.value.set(0, 0);
     this.wrapU.value.set(this.flow && this.alongX ? 1 : 0, this.flow && !this.alongX ? 1 : 0);
     U.dx.value = this.px;
-    U.K.value = Math.min(1.6, 4 * (P.c * dt / this.px) ** 2);
-    U.damp.value = Math.pow(0.5, dt / P.half); U.level.value = Math.pow(0.5, dt / P.settle); U.sink.value = P.sink;
-    U.foam0.value = P.foam.at[0] * dt; U.foam1.value = P.foam.at[1] * dt; U.foamKeep.value = Math.pow(0.5, dt / P.foam.half);
+    const Tr = this.trail = P.trail ?? null;
+    U.trail.value = Tr ? 1 : 0; this.paintU.value = Tr ? 1 : 0;
+    if (Tr) { U.level.value = Math.pow(0.5, dt / Tr.refill); U.blur.value = Tr.blur; U.sink.value = 0; }
+    else {
+      U.K.value = Math.min(1.6, 4 * (P.c * dt / this.px) ** 2);
+      U.damp.value = Math.pow(0.5, dt / P.half); U.level.value = Math.pow(0.5, dt / P.settle); U.sink.value = P.sink;
+      U.foam0.value = P.foam.at[0] * dt; U.foam1.value = P.foam.at[1] * dt; U.foamKeep.value = Math.pow(0.5, dt / P.foam.half);
+    }
     this.clear();
   }
 
@@ -179,6 +196,7 @@ export class Water {
     // what stands on the floor, when it has changed (a post that drifts changes every frame — and in a flowing water
     // every post does: the mask is drawn in the water's frame)
     const posts = this.posts = w.posts ?? [];
+    if (this.trail) return;   // (a trail has no walls: what stands on the ice sweeps it as the bodies do — step())
     let sig = posts.length + this.drift * 31.7;
     for (const q of posts) sig = sig * 1.37 + q.x * 7.1 + q.z * 13.3 + q.r;
     if (sig !== this.sig) {
@@ -217,7 +235,7 @@ export class Water {
   // a dent `amp` m deep and `r` m round, and its rim
   splash(x, z, r, amp) {
     if (!this.on || !this._wet(x, z)) return;
-    this._stamp(x, z, Math.max(r, this.px * 2.5), -amp, 0, 0, 0);
+    this._stamp(x, z, Math.max(r, this.px * 2.5), this.trail ? Math.min(1, Math.abs(amp) * this.trail.splash) : -amp, 0, 0, 0);
   }
 
   // the frame clock: the bodies' way since the last frame goes in, and whatever never stops
@@ -231,6 +249,19 @@ export class Water {
       const L = 2 * (this.alongX ? this.hx : this.hz);
       this.drift = (this.drift + Fl.speed * dt) % L;
       this.driftUV.value.set(this.alongX ? this.drift / L : 0, this.alongX ? 0 : this.drift / L);
+    }
+    if (this.trail) {
+      // what slides over the ice sweeps it: the strip each body crossed this frame, the harder the faster it went (to
+      // `full` m/s); and what stands on it (a block of ice adrift) keeps its own footprint swept, so it trails one too
+      const Tr = this.trail;
+      for (let i = 0; i < this.nb && this.ns < CAP; i++) {
+        const [x, z, r, bx, bz] = this.bodies[i], sp = Math.hypot(bx, bz);
+        if (sp < Tr.minSpeed) continue;
+        const l = sp * dt, cut = l > 3 ? 3 / l : 1;   // (a frame's way, never a jump across the floor: a body put somewhere new)
+        this._stamp(x, z, Math.max(r * Bd.foot, this.px * 1.5), Math.min(1, Tr.rate * dt * Math.min(1, sp / Tr.full)), bx * dt * cut, bz * dt * cut, 0);
+      }
+      for (const q of this.posts) if (!q.pit && this.ns < CAP) this._stamp(q.x, q.z, Math.max(q.r * Tr.block, this.px * 1.5), Math.min(1, Tr.rate * dt), 0, 0, 0);
+      return;
     }
     for (let i = 0; i < this.nb && this.ns < CAP; i++) {
       const [x, z, r, bx, bz, id] = this.bodies[i], vx = bx - ux, vz = bz - uz, R = Math.max(r * Bd.foot, this.px * 2.5), w = Bd.bobHz * 6.283 * (0.8 + 0.4 * ((id * 0.618) % 1));

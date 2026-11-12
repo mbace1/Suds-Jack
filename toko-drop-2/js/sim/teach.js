@@ -11,9 +11,9 @@
 //
 //   k       { slam, ram }  showings so far, `cap` = learned · `dirty` when one moved (main.js stores them)
 //   update  this frame's tags: [{ kind: 'slam' | 'ram', x, y, z }]
-import { TUNING } from '../tuning.js?v=148';
-import { reach } from './slam.js?v=148';
-import { inLane } from './posts.js?v=148';
+import { TUNING } from '../tuning.js?v=149';
+import { reach } from './slam.js?v=149';
+import { inLane } from './posts.js?v=149';
 
 const T = TUNING;
 

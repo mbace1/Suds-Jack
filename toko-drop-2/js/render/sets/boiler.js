@@ -7,9 +7,9 @@
 // them. A hazard-striped band round the floor, tread plate past it, going
 // into the dark. Never along the near side. Every number TUNING.scenery.boiler
 import * as THREE from 'three/webgpu';
-import { Fn, float, vec2, vec3, fract, sin, abs, min, max, mix, smoothstep, length, atan, uv, clamp, fwidth, floor as tfloor, positionWorld, positionGeometry, normalWorld } from 'three/tsl';
-import { GEL_TIME } from '../gel.js?v=148';
-import { noise, seeded, phase, put, groundPlane, edgeLine, frameGeometry, risers, motes, ledgeBlocks, ledgeMesh } from '../kit.js?v=148';
+import { Fn, float, vec2, vec3, fract, sin, cos, abs, min, max, mix, smoothstep, length, atan, uv, clamp, fwidth, floor as tfloor, positionWorld, positionLocal, positionGeometry, normalWorld } from 'three/tsl';
+import { GEL_TIME } from '../gel.js?v=149';
+import { noise, seeded, phase, put, merge, groundPlane, edgeLine, frameGeometry, risers, motes, ledgeBlocks, ledgeMesh } from '../kit.js?v=149';
 
 const v3 = (a) => vec3(...a);
 
@@ -124,6 +124,47 @@ export function boiler(sc, hx, hz) {
   });
   // steam out of every stack
   risers(sc, xs.map((x) => [x, top + R.stack + 0.1, zb]), B.steam);
+
+  // v149 (owner on v147: "Decks right, mood weak"): the room WORKS. ENGINES between the boilers — a piston rod
+  // pumping out of a cylinder, a flywheel turning beside it — and STEAM off the floor: the grates near the rail let
+  // off a gust after the stoke's flare has passed them (kit.js stoke), so the hall breathes fire and then steam
+  const En = B.engine;
+  if (En && xs.length > 1) {
+    const mids = xs.slice(1).map((x, i) => (x + xs[i]) / 2), ne = mids.length, ze = zb + 0.3;
+    const iron = new THREE.MeshStandardNodeMaterial({ color: new THREE.Color(...En.iron), roughness: 0.6, metalness: 0.55 });
+    const bright = new THREE.MeshStandardNodeMaterial({ color: new THREE.Color(...En.bright), roughness: 0.3, metalness: 0.85 });
+    const wheelMat = new THREE.MeshStandardNodeMaterial({ color: new THREE.Color(...En.wheel), roughness: 0.5, metalness: 0.4 });
+    // where each engine is in its turn: the wheel's angle, and the rod with it
+    const ang = () => GEL_TIME.mul((2 * Math.PI) / En.turn).add(phase().mul(6.283));
+    const here = () => positionLocal.sub(positionGeometry);   // (an instance is only ever moved: its own place)
+    bright.positionNode = Fn(() => here().add(positionGeometry).add(vec3(0, cos(ang()).mul(En.stroke), 0)))();
+    wheelMat.positionNode = Fn(() => { const g = positionGeometry, a = ang(), c = cos(a), sn = sin(a); return here().add(vec3(g.x.mul(c).sub(g.y.mul(sn)), g.x.mul(sn).add(g.y.mul(c)), g.z)); })();
+    const beds = sc._add(new THREE.InstancedMesh(new THREE.BoxGeometry(...En.bed), iron, ne));
+    const cyls = sc._add(new THREE.InstancedMesh(new THREE.CylinderGeometry(En.cyl[0], En.cyl[0] * 1.08, En.cyl[1], 18), iron, ne));
+    const rodG = merge([new THREE.CylinderGeometry(En.rod[0], En.rod[0], En.rod[1], 10), new THREE.BoxGeometry(...En.head).translate(0, En.rod[1] / 2, 0)]);
+    const rods = sc._add(new THREE.InstancedMesh(rodG, bright, ne));
+    const wparts = [new THREE.TorusGeometry(En.wheelR, En.rim, 8, 36), new THREE.CylinderGeometry(En.hub, En.hub, 0.3, 12).rotateX(Math.PI / 2)];
+    for (let k = 0; k < En.spokes / 2; k++) wparts.push(new THREE.BoxGeometry(2 * En.wheelR, 0.09, 0.07).rotateZ((k * 2 * Math.PI) / En.spokes));
+    const wheels = sc._add(new THREE.InstancedMesh(merge(wparts), wheelMat, ne));
+    for (const m of [rods, wheels]) m.frustumCulled = false;   // (they move out of the bounds their places give)
+    mids.forEach((x, i) => {
+      put(beds, i, x, En.bed[1] / 2, ze);
+      put(cyls, i, x - En.bed[0] * 0.26, En.bed[1] + En.cyl[1] / 2, ze);
+      put(rods, i, x - En.bed[0] * 0.26, En.bed[1] + En.cyl[1] + En.rod[1] / 2 - En.stroke, ze);
+      put(wheels, i, x + En.bed[0] * 0.2, En.wheelY, ze + 0.2);
+    });
+  }
+  const Fv = B.floorVent, Sk = sc.T.worlds.floor.boiler.stoke, g = sc.T.worlds.floor.boiler.grate;
+  if (Fv && Sk) {
+    const spots = [];
+    for (let ix = -Math.floor(hx / g); ix <= Math.floor(hx / g); ix++) for (let iz = -Math.floor(hz / g); iz <= Math.floor(hz / g); iz++) {
+      const x = ix * g, z = iz * g;
+      if (Math.abs(x) > hx - 1 || Math.abs(z) > hz - 1) continue;
+      if (Math.abs(x) / hx < Fv.inside[0] && Math.abs(z) / hz < Fv.inside[1]) continue;
+      spots.push([x, 0.1, z]);
+    }
+    if (spots.length) risers(sc, spots, { ...Fv, beat: { ...Sk, lag: Fv.lag, on: Fv.on } });
+  }
 
   // the pipe run down each side: two pipes, flanged, standing off the floor
   const P = B.pipe, z0 = -(hz + P.back), z1 = hz + P.front, len = z1 - z0, zc = (z0 + z1) / 2;

@@ -23,12 +23,12 @@
 // vortex (sim/worlds.js's transition: `swirl` 0 → 1 winds it up round
 // `swirlAt`, out to `swirlR`, and opens a hole of `hole` m in the middle).
 import * as THREE from 'three/webgpu';
-import { Fn, If, uv, uniform, float, abs, fract, min, max, sin, cos, atan, length, smoothstep, step, mix, fwidth, texture, clamp, vec2, vec3, pow, floor as tfloor, round, select, mod, dFdx, dFdy, exp, sqrt, normalize, dot, cameraPosition, positionWorld, vec4 } from 'three/tsl';
-import { pickStyle, grainAt } from './style.js?v=148';
-import { SUN_AT } from './sun.js?v=148';
-import { GEL_TIME } from './gel.js?v=148';
-import { noise, grate, cells, sewerSpots, treeShade } from './scenery.js?v=148';
-import { lilyPads, DRIFT, hash } from './kit.js?v=148';
+import { Fn, If, uv, uniform, float, abs, fract, min, max, sin, cos, atan, length, smoothstep, step, mix, fwidth, texture, clamp, vec2, vec3, pow, floor as tfloor, round, select, mod, dFdx, dFdy, exp, sqrt, sign, normalize, dot, cameraPosition, positionWorld, vec4 } from 'three/tsl';
+import { pickStyle, grainAt } from './style.js?v=149';
+import { SUN_AT } from './sun.js?v=149';
+import { GEL_TIME } from './gel.js?v=149';
+import { noise, grate, cells, sewerSpots, treeShade } from './scenery.js?v=149';
+import { lilyPads, DRIFT, hash, stoke } from './kit.js?v=149';
 
 const _white = new THREE.Color(0xffffff);
 // the floors whose set has a ground of its own under them: a room that is not a rectangle is CUT to its shape there
@@ -850,8 +850,29 @@ export function buildFloor(T, hx, hz, light, { style = 'grid', bounds: hasBounds
     const hole = float(1).sub(smoothstep(float(G.hole / 2).sub(haa), float(G.hole / 2).add(haa), max(lq.x, lq.y))).mul(inner);
     const pulse = float(0.55).add(sin(GEL_TIME.mul(B.pulse).add(noise(tfloor(w.div(B.grate)).mul(3)).mul(6))).mul(0.45));
     const heat = float(1).sub(smoothstep(0, 1.1, length(gq.div(vec2(...B.grateW)))));   // hotter toward the middle
-    const fireCol = mix(v3(B.glow), v3(G.core), heat.mul(heat)).mul(pulse.mul(0.5).add(0.5)).mul(heat.mul(0.6).add(0.55));
-    const fire = hole.mul(pulse);
+    // v149 (owner on v147: "Decks right, mood weak"): the fire is DOWN THERE, and it is BLOWN. Under each grate is a
+    // pit `pit.depth` m deep with a bed of coals in it, seen as a sunk thing is — the view followed down through
+    // the lattice to the bed, or to the pit's wall where that comes first, so the bars stand against the fire and
+    // slide over it as the camera moves, and the near wall is hidden and the far one lit from below. And the room
+    // STOKES (kit.js stoke): on a beat the bellows go and a flare runs down the hall grate by grate, the coals
+    // going from red toward white and the light they throw (worldLight) swelling with them
+    const Pt = G.pit, Sk = B.stoke, gcell = w.sub(gq), flare = Sk ? stoke(Sk, gcell) : float(0), blown = flare.mul(Sk?.k ?? 0).add(1);
+    let fireCol;
+    if (Pt) {
+      const Vv = normalize(cameraPosition.sub(positionWorld)), run = Vv.xz.div(max(Vv.y, 0.3)).negate();   // the ray's run, a metre of fall
+      const hb = [B.grateW[0] - G.frame, B.grateW[1] - G.frame];
+      const tx = float(hb[0]).sub(gq.x.mul(sign(run.x))).div(max(abs(run.x), 1e-3)), tz = float(hb[1]).sub(gq.y.mul(sign(run.y))).div(max(abs(run.y), 1e-3));
+      const tw = min(tx, tz), onBed = step(Pt.depth, tw), dq = gq.add(run.mul(min(tw, Pt.depth)));
+      const heatD = float(1).sub(smoothstep(0, 1.15, length(dq.div(vec2(...B.grateW)))));
+      // the bed: coals, each its own heat, breathing; whiter where the bed is hottest and when it is blown
+      const cn = noise(dq.mul(Pt.coal).add(gcell.mul(0.37))).mul(0.65).add(noise(dq.mul(Pt.coal * 2.7).add(GEL_TIME.mul(0.35))).mul(0.35));
+      const hot = smoothstep(0.28, 0.72, cn).mul(pulse.mul(0.35).add(0.65)).mul(blown).mul(heatD.mul(0.6).add(0.5));
+      const bed = mix(v3(Pt.coalLo), v3(Pt.coalHi), clamp(hot, 0, 1)).add(v3(G.core).mul(clamp(hot.sub(0.75), 0, 1).mul(Pt.white)));
+      // the wall: dark, lit from the bed below it
+      const up = clamp(tw.div(Pt.depth), 0, 1), wallC = v3(Pt.wall).add(v3(B.glow).mul(up.mul(up).mul(Pt.wallGlow).mul(pulse.mul(0.3).add(0.7)).mul(blown)));
+      fireCol = mix(wallC, bed, onBed);
+    } else fireCol = mix(v3(B.glow), v3(G.core), heat.mul(heat)).mul(pulse.mul(0.5).add(0.5)).mul(heat.mul(0.6).add(0.55));
+    const fire = hole.mul(pulse).mul(flare.mul(0.5).add(1));
     const frame = inG.mul(float(1).sub(inner)), bars = inner.mul(float(1).sub(hole));
     // v140: the steel round a grate, tempered: out from its frame over `temper.reach` m the colours a fire leaves
     if (B.vary?.temper) {
@@ -860,7 +881,7 @@ export function buildFloor(T, hx, hz, light, { style = 'grid', bounds: hasBounds
       col = mix(col, col.mul(tc2).mul(2.2), on);
     }
     col = mix(col, v3(G.steel), frame.add(bars).min(1));   // the frame and the bars, dark iron
-    col = col.add(v3(B.glow).mul(bars.mul(heat).mul(G.barGlow))).add(v3(B.glow).mul(frame.mul(G.frameGlow)));   // lit from the fire under them
+    col = col.add(v3(B.glow).mul(bars.mul(heat).mul(G.barGlow).mul(blown))).add(v3(B.glow).mul(frame.mul(G.frameGlow).mul(blown)));   // lit from the fire under them
     col = mix(col, fireCol, hole);
     col = col.add(v3(B.glow).mul(pud.mul(fire).mul(PD.fire)));   // v78: the fire in the puddles
     // v101: FIRE IN THE SEAMS along the deck's edge (the approved picture's veins of light at the wall's foot):
@@ -1044,7 +1065,7 @@ export function buildFloor(T, hx, hz, light, { style = 'grid', bounds: hasBounds
     // shallow) a dusting lies over it — the cracks under it gone — ridged across the wind in fine ripples, its edge
     // scalloped; and the dark windows between are swept clear. The sheet has places now: drift and clear ice
     const Sn = I.snow;
-    let drift = float(0);
+    let drift = float(0), cover = float(0), bare = float(0);
     if (Sn) {
       // (its edge scalloped by the same ridges that ripple it: a fine noise there showed its grid as steps)
       const wd = w.x.mul(Sn.wind[0]).add(w.y.mul(Sn.wind[1])), ridge = sin(wd.mul(Sn.ripple).add(depth.mul(20)));
@@ -1056,8 +1077,33 @@ export function buildFloor(T, hx, hz, light, { style = 'grid', bounds: hasBounds
       const lay = depth.mul(0.75).add(noise(w.mul(Sn.scale).add(8.8)).mul(0.25)).add(ridge.mul(Sn.scallop)).add(banked.mul(Bk?.lift ?? 0));
       drift = smoothstep(Sn.at, Sn.at + Sn.soft, lay);
       const thick = Bk ? drift.mul(float(Sn.k).add(banked.mul(Bk.deep))) : drift.mul(Sn.k);
-      col = mix(col, v3(Sn.color).mul(ridge.mul(Sn.ridge).add(1)), min(thick, Bk?.max ?? 1));
-      if (Bk) col = col.mul(float(1).sub(smoothstep(Sn.at - Bk.shadeW, Sn.at, lay).mul(float(1).sub(drift)).mul(banked.add(0.35)).mul(Bk.shade)));
+      // v149 (owner on v147: "More snow, sliding on ice trails etc"): a DUSTING over the rest of the sheet, thin and
+      // patchy, so there is snow to be swept wherever a thing slides; SPINDRIFT going over all of it on the wind;
+      // and the TRAILS — the sheet keeps where bodies have been (water.js `trail`): there the snow is gone and the ice
+      // is bare and polished, a berm of it pushed up along each edge, the furrow's walls lit and shaded by the sun
+      const Du = Sn.dust, dn = Du ? noise(w.mul(Du.scale).add(13.1)).mul(0.6).add(noise(w.mul(Du.scale * 3.3).add(2.7)).mul(0.4)).add(ridge.mul(0.05)) : float(0);
+      const dust = Du ? smoothstep(Du.at[0], Du.at[1], dn).mul(Du.k) : float(0);
+      const lain = max(min(thick, Bk?.max ?? 1), dust), Tr = water ? Sn.trail : null;
+      let swept = float(0), tg = vec2(0);
+      if (Tr) { const sv = slopeTex.sample(vec2(p.x, float(1).sub(p.y))); swept = clamp(sv.a, 0, 1); tg = sv.xy; }
+      cover = lain.mul(float(1).sub(swept.mul(Tr?.sweep ?? 0)));
+      col = mix(col, v3(Sn.color).mul(ridge.mul(Sn.ridge).add(1)), cover);
+      if (Bk) col = col.mul(float(1).sub(smoothstep(Sn.at - Bk.shadeW, Sn.at, lay).mul(float(1).sub(drift)).mul(banked.add(0.35)).mul(Bk.shade).mul(float(1).sub(swept))));
+      if (Tr) {
+        // the furrow: `tg` points into it. Its wall toward the sun is lit, the other in shade; the berm along its edge
+        const sl = max(length(SUN_AT.xz), 1e-3), turn = dot(tg, SUN_AT.xz.div(sl)).negate(), steep = length(tg);
+        const wall = smoothstep(Tr.edge[0], Tr.edge[1], steep).mul(lain);
+        col = col.mul(float(1).add(clamp(turn.mul(Tr.relief), -Tr.dark, Tr.relief * 1.5).mul(lain)));
+        col = mix(col, v3(Sn.color).mul(1.08), wall.mul(float(1).sub(swept)).mul(Tr.pile));
+        bare = swept.mul(lain);   // ice that had snow on it and has none now
+        col = mix(col, col.mul(v3(Tr.polish)), swept);   // (polished wherever it was swept, snow or no snow there before: a trail shows on bare ice too)
+      }
+      const Sd = Sn.spindrift;
+      if (Sd) {
+        const sa = wd, sc2 = w.x.mul(Sn.wind[1]).sub(w.y.mul(Sn.wind[0])), tt = GEL_TIME.mul(Sd.speed);
+        const sp = noise(vec2(sa.sub(tt).mul(Sd.scale[0]), sc2.mul(Sd.scale[1]))).mul(0.62).add(noise(vec2(sa.sub(tt.mul(1.6)).mul(Sd.scale[0] * 2.7), sc2.mul(Sd.scale[1] * 2.3).add(4.2))).mul(0.38));
+        col = mix(col, v3(Sn.color).mul(1.05), smoothstep(Sd.at[0], Sd.at[1], sp).mul(Sd.k));
+      }
     }
     const Bb = I.bubble, bc = tfloor(w.div(Bb.cell)), bh = noise(bc.mul(1.7).add(0.5));
     const bq = fract(w.div(Bb.cell)).sub(0.5).sub(vec2(noise(bc.add(3.1)), noise(bc.add(7.7))).sub(0.5).mul(0.5)).mul(Bb.cell);
@@ -1074,7 +1120,7 @@ export function buildFloor(T, hx, hz, light, { style = 'grid', bounds: hasBounds
       col = col.mul(float(1).sub(max(max(band(w.y.add(hz), farLen), band(w.x.add(hx), leftLen)), band(float(hx).sub(w.x), rightLen)).mul(LS.depth)));
     }
     // the cracks are a texture under the fight, not lines across it (v48: at full strength they were the loudest thing on screen)
-    return { col, mask: min(crack, 1).mul(I.lines).mul(float(1).sub(drift.mul(Sn?.k ?? 0))), lineCol: v3(I.crack), wet: float(0.6) };
+    return { col, mask: min(crack, 1).mul(I.lines).mul(float(1).sub(cover)), lineCol: v3(I.crack), wet: bare.mul(Sn?.trail?.gloss ?? 0).add(0.6) };
   };
   // THE DEEP: black silt in slow ripples, lit only by what lives in it
   const deep = (p, w) => {
@@ -1306,7 +1352,9 @@ export function buildFloor(T, hx, hz, light, { style = 'grid', bounds: hasBounds
     if (WL.grates) {
       // the boiler: the fire under the NEAREST grate (they stand on a lattice), breathing with it
       const G = WL.grates, g = W.boiler.grate, c = round(wp.div(g)).mul(g);
-      point(c.x, c.y, G, float(1).add(sin(GEL_TIME.mul(G.flicker[0]).add(noise(c.mul(0.37)).mul(6))).mul(G.flicker[1])));
+      // (v149: and swelling when its fire is blown — the stoke, kit.js)
+      const Sk = W.boiler.stoke, sw = Sk && G.stoke ? stoke(Sk, c).mul(G.stoke).add(1) : float(1);
+      point(c.x, c.y, G, float(1).add(sin(GEL_TIME.mul(G.flicker[0]).add(noise(c.mul(0.37)).mul(6))).mul(G.flicker[1])).mul(sw));
     }
     if (WL.fans) for (const Fa of WL.fans) {
       // v145: the light down a ventilation shaft, through the fan turning in it: wedges of light and of shadow going round

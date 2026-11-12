@@ -3,8 +3,8 @@
 // the plane, the crack network, a seeded stream of numbers, the stations
 // round a floor props stand on, and the few shapes more than one set makes
 import * as THREE from 'three/webgpu';
-import { Fn, float, vec2, vec3, fract, sin, cos, dot, floor as tfloor, mix, length, min, max, abs, atan, fwidth, smoothstep, step, uniform, instanceIndex, normalView, positionLocal, positionGeometry } from 'three/tsl';
-import { GEL_TIME } from './gel.js?v=148';
+import { Fn, float, vec2, vec3, fract, sin, cos, dot, floor as tfloor, mix, length, min, max, abs, atan, fwidth, smoothstep, step, uniform, attribute, instanceIndex, normalView, positionLocal, positionGeometry } from 'three/tsl';
+import { GEL_TIME } from './gel.js?v=149';
 
 // a hash and value noise on the world plane, cheap enough for a picture
 export const hash = (p) => fract(sin(dot(p, vec2(127.1, 311.7))).mul(43758.5453));
@@ -61,6 +61,16 @@ export const seeded = (seed) => () => {
 // an instance's own number in [0, 1), the same for every vertex of it: what
 // sets a sway, a puff or a bubble off on a beat of its own
 export const phase = () => fract(instanceIndex.toFloat().mul(0.6180339));
+
+// v149: THE STOKE (world 5). The boiler room's fires are blown on a beat: every `period` s the bellows go, and the
+// flare runs down the hall along `dir`, a cycle every `len` m — up in `rise` of the cycle, dying away by `fall`.
+// 0 → 1 at a place `at` (a vec2 node of the floor, or [x, z]). The grates' fire, the light it throws and the steam
+// let off after it all read this, so the room breathes as one machine
+export const stokeAt = (S, at) => (Array.isArray(at) ? (at[0] * S.dir[0] + at[1] * S.dir[1]) / S.len : dot(at, vec2(...S.dir)).div(S.len));
+export const stoke = (S, at, t = GEL_TIME) => {
+  const s = fract(t.div(S.period).sub(stokeAt(S, at)));
+  return smoothstep(0, S.rise, s).mul(float(1).sub(smoothstep(S.rise, S.fall, s)));
+};
 
 // stations every `every` m round a floor of half sizes hx × hz: along the far
 // side (past both corners) and the two sides (to the near edge), `out` m past
@@ -195,7 +205,9 @@ export function edgeLine(sc, hx, hz, E) {
 // own: the boiler's steam, the deep's bubbles. `per` to a spot, each rising
 // `rise` m over `period` s and growing from r[0] to r[1] m, swaying `sway` m;
 // a puff is lit in its middle, a bubble (`rim`) round its edge; `duty`
-// (−1 → 1) lets a spot breathe out only now and then, all its puffs together
+// (−1 → 1) lets a spot breathe out only now and then, all its puffs together;
+// v149 `beat` { period, dir, len, lag, on }: a spot breathes out on the STOKE instead (above) — from `lag` of a cycle
+// after the flare reaches it, for `on` of a cycle
 export function risers(sc, spots, P) {
   const mat = new THREE.MeshBasicNodeMaterial({ transparent: true, depthWrite: false, blending: P.add ? THREE.AdditiveBlending : THREE.NormalBlending });
   const k = fract(GEL_TIME.div(P.period).add(phase())), face = normalView.z.max(0);
@@ -203,6 +215,7 @@ export function risers(sc, spots, P) {
   let a = float(P.gain).mul(smoothstep(0, 0.12, k)).mul(float(1).sub(k).pow(P.fade ?? 1.5));
   a = a.mul(P.rim ? float(1).sub(face).pow(2).mul(0.85).add(0.15) : face.pow(1.5));
   if (P.duty != null) a = a.mul(smoothstep(P.duty, P.duty + 0.2, sin(GEL_TIME.mul(P.dutyRate ?? 0.5).add(spot.mul(6.283)))));
+  if (P.beat) { const sb = fract(GEL_TIME.div(P.beat.period).sub(attribute('beat', 'float'))); a = a.mul(smoothstep(0, 0.04, sb)).mul(float(1).sub(smoothstep(P.beat.on, P.beat.on + 0.12, sb))); }
   mat.colorNode = vec3(...P.color);
   mat.opacityNode = a;
   mat.positionNode = Fn(() => {
@@ -212,6 +225,11 @@ export function risers(sc, spots, P) {
   const inst = sc._add(new THREE.InstancedMesh(new THREE.SphereGeometry(1, 10, 8), mat, spots.length * P.per));
   inst.frustumCulled = false;   // they rise out of the bounds their spots give
   spots.forEach(([x, y, z], j) => { for (let i = 0; i < P.per; i++) put(inst, j * P.per + i, x, y, z); });
+  if (P.beat) {
+    const arr = new Float32Array(spots.length * P.per);
+    spots.forEach(([x, , z], j) => { for (let i = 0; i < P.per; i++) arr[j * P.per + i] = stokeAt(P.beat, [x, z]) + P.beat.lag; });
+    inst.geometry.setAttribute('beat', new THREE.InstancedBufferAttribute(arr, 1));
+  }
   return inst;
 }
 

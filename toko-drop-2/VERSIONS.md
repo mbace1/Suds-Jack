@@ -19,6 +19,19 @@
     Never `--no-verify`.
 -->
 
+## v149 — 2026-11-11
+**The boiler room stokes — fire in pits under the grates, blown on a beat, steam off the floor, engines turning; the ice keeps the trails of what slides over it, under more snow**
+- From the owner's read of the LOOK 2 film (v147): the boiler, "Decks right, mood weak"; the ice, "More snow, sliding on ice trails etc".
+- **Boiler — the fire is DOWN THERE.** Under each grate is a pit with a bed of coals in it, seen as a sunk thing is: the view followed down through the lattice to the bed, or to the pit's wall where that comes first, so the bars stand against the fire and slide over it as the camera moves.
+- **The room STOKES** (`kit.js` stoke): every 7.5 s the bellows go and a flare runs down the hall grate by grate — the coals going from red toward white, the light each grate throws swelling with it. Between the fires the hall is darker (ambient 0.26 → 0.13, each grate's pool tighter), so it is lit in pools and the pools breathe.
+- **Steam off the floor**: the grates near the rail let off a gust just after the flare has passed them (never the grates in the middle of the floor: the fight is there). **Engines** between the boilers along the far side: a piston rod pumping out of a cylinder, a flywheel turning beside it, each at its own point of the turn.
+- **Ice — the sheet keeps a TRAIL** (`render/water.js` `trail`): the same two textures and stamps as the simulated water, holding not a height but how much snow has been swept off each place. A body sweeps the strip it crossed, the harder the faster it slid; a block of ice adrift trails one too; a burst, a landing or a slam clears a disc. The floor draws it: the snow gone, the ice bare and polished, a berm along the furrow's edge, its walls lit and shaded by the sun. It fills in again by half every 13 s.
+- **More snow**: a thin dusting over the whole sheet now (so there is snow to sweep wherever a thing slides), the drifts wider, the bank deeper in, and spindrift blowing over all of it on the wind.
+- Tests: `test/view.mjs` 152 checks (a trail's stamps: sliding, standing, a block, a hole, a burst; its refill; the stoke's run down the hall; the pit; where steam is let off). `test/smoke.mjs`: the ice stands on a trail map that takes a mark.
+- Cache tokens `?v=148` → `?v=149`; HUD label → `2.0 · v149`
+
+---
+
 ## v148 — 2026-11-11
 **The river's lily pads stay where they grow; the sewer's chute is a half-pipe with the stream swinging in it; leaves afloat in the cistern**
 - From the owner's read of the LOOK 2 film (v147), asked one world at a time. Three of the seven answers are built here.
