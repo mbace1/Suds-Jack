@@ -19,9 +19,9 @@
 // Reads the world, never writes it. Every number is TUNING.posts (sim) and the look's own below.
 import * as THREE from 'three/webgpu';
 import { Fn, float, vec2, vec3, smoothstep, mix, positionWorld, positionLocal, normalWorld, cameraPosition, normalize, dot, sqrt, max, select, fract, abs, atan, uniform, floor as tfloor, attribute, sin, cos, clamp, step } from 'three/tsl';
-import { TUNING } from '../tuning.js?v=150';
-import { noise, merge, hash } from './kit.js?v=150';
-import { GEL_TIME } from './gel.js?v=150';
+import { TUNING } from '../tuning.js?v=151';
+import { noise, merge, hash } from './kit.js?v=151';
+import { GEL_TIME } from './gel.js?v=151';
 
 const T = TUNING;
 const std = (color, rough = 0.6, metal = 0, extra = {}) => new THREE.MeshStandardNodeMaterial({ color, roughness: rough, metalness: metal, ...extra });

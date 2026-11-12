@@ -19,6 +19,17 @@
     Never `--no-verify`.
 -->
 
+## v151 — 2026-11-12
+**REDUCE MOTION reaches the floors: the core's beat and the boiler's flare are held back when it is on**
+- OPTIONS' REDUCE MOTION (and the device's own setting) stilled the camera's shake and softened the dark, and nothing a shader drew knew of it. v149 and v150 gave two floors a pulse — the boiler's stoke, and the core's beat, a flash across the whole deck that the LOOK 3 film measured at about 6% of full brightness from one frame to the next. With REDUCE MOTION on, the core keeps a quarter of its beat and of its rings and none of the arcs on its grid; the boiler keeps 40% of its flare (`kit.js` CALM, set from the option, on the toggle, and when the device's setting changes). With it off, nothing is changed.
+- The boiler's fire pits are worked out only where there is a hole in a grate, and a shoal's cloud once a kind (it was asked twice, and a fish was looked for where there was no cloud). Neither showed as a saving on the software GPU, which may run both sides of a branch; they are kept for the GPUs that do not.
+- Measured (`docs/ENVIRONMENTS.md`): against v147, a frame of the boiler costs about 11 to 18% more and of the deep about 6 to 16%; the sewer, the cistern, the river, the ice and the core are inside the measurement's noise. Not timed on a phone.
+- The owner's read of the LOOK 3 film (v150): the sewer "about right", no preference on the other six. The looks pass is closed; A8 9 of 10, C10 5 of 5 (`docs/COMPLETION.md`: ARCADE 93, CAMPAIGN 93).
+- Tests: `test/view.mjs` 161 checks; `test/smoke.mjs`: the pulses are whole with REDUCE MOTION off.
+- Cache tokens `?v=150` → `?v=151`; HUD label → `2.0 · v151`
+
+---
+
 ## v150 — 2026-11-12
 **The deep is alive and lit from above — shoals, jellyfish, crabs, shafts of the surface's light; the core's heart drives its machine, every beat a kick**
 - From the owner's read of the LOOK 2 film (v147): the deep, "Needs both" (more life, more light); the core, "Needs more". With v148 and v149 this answers all seven.

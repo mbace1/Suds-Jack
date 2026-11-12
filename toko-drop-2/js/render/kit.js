@@ -4,7 +4,7 @@
 // round a floor props stand on, and the few shapes more than one set makes
 import * as THREE from 'three/webgpu';
 import { Fn, float, vec2, vec3, fract, sin, cos, dot, floor as tfloor, mix, length, min, max, abs, atan, fwidth, smoothstep, step, uniform, attribute, instanceIndex, normalView, positionLocal, positionGeometry } from 'three/tsl';
-import { GEL_TIME } from './gel.js?v=150';
+import { GEL_TIME } from './gel.js?v=151';
 
 // a hash and value noise on the world plane, cheap enough for a picture
 export const hash = (p) => fract(sin(dot(p, vec2(127.1, 311.7))).mul(43758.5453));
@@ -62,6 +62,12 @@ export const seeded = (seed) => () => {
 // sets a sway, a puff or a bubble off on a beat of its own
 export const phase = () => fract(instanceIndex.toFloat().mul(0.6180339));
 
+// v151: REDUCE MOTION reaches the floors. OPTIONS' REDUCE MOTION (and the device's own setting) stilled the camera's
+// shake and softened the dark, and nothing drawn by a shader knew of it — while v149 and v150 gave two floors a
+// pulse: the boiler's stoke and the core's beat, the second a flash across the whole deck. 1 while the option is
+// on (main.js sets it); what pulses reads it and holds most of its pulse back (`calm` in its own numbers)
+export const CALM = uniform(0);
+
 // v149: THE STOKE (world 5). The boiler room's fires are blown on a beat: every `period` s the bellows go, and the
 // flare runs down the hall along `dir`, a cycle every `len` m — up in `rise` of the cycle, dying away by `fall`.
 // 0 → 1 at a place `at` (a vec2 node of the floor, or [x, z]). The grates' fire, the light it throws and the steam
@@ -69,7 +75,7 @@ export const phase = () => fract(instanceIndex.toFloat().mul(0.6180339));
 export const stokeAt = (S, at) => (Array.isArray(at) ? (at[0] * S.dir[0] + at[1] * S.dir[1]) / S.len : dot(at, vec2(...S.dir)).div(S.len));
 export const stoke = (S, at, t = GEL_TIME) => {
   const s = fract(t.div(S.period).sub(stokeAt(S, at)));
-  return smoothstep(0, S.rise, s).mul(float(1).sub(smoothstep(S.rise, S.fall, s)));
+  return smoothstep(0, S.rise, s).mul(float(1).sub(smoothstep(S.rise, S.fall, s))).mul(float(1).sub(CALM.mul(S.calm ?? 0)));
 };
 
 // stations every `every` m round a floor of half sizes hx × hz: along the far

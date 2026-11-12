@@ -24,11 +24,11 @@
 // `swirlAt`, out to `swirlR`, and opens a hole of `hole` m in the middle).
 import * as THREE from 'three/webgpu';
 import { Fn, If, uv, uniform, float, abs, fract, min, max, sin, cos, atan, length, smoothstep, step, mix, fwidth, texture, clamp, vec2, vec3, pow, floor as tfloor, round, select, mod, dFdx, dFdy, exp, sqrt, sign, normalize, dot, cameraPosition, positionWorld, vec4 } from 'three/tsl';
-import { pickStyle, grainAt } from './style.js?v=150';
-import { SUN_AT } from './sun.js?v=150';
-import { GEL_TIME } from './gel.js?v=150';
-import { noise, grate, cells, sewerSpots, treeShade } from './scenery.js?v=150';
-import { lilyPads, DRIFT, hash, stoke } from './kit.js?v=150';
+import { pickStyle, grainAt } from './style.js?v=151';
+import { SUN_AT } from './sun.js?v=151';
+import { GEL_TIME } from './gel.js?v=151';
+import { noise, grate, cells, sewerSpots, treeShade } from './scenery.js?v=151';
+import { lilyPads, DRIFT, hash, stoke, CALM } from './kit.js?v=151';
 
 const _white = new THREE.Color(0xffffff);
 // the floors whose set has a ground of its own under them: a room that is not a rectangle is CUT to its shape there
@@ -859,18 +859,23 @@ export function buildFloor(T, hx, hz, light, { style = 'grid', bounds: hasBounds
     const Pt = G.pit, Sk = B.stoke, gcell = w.sub(gq), flare = Sk ? stoke(Sk, gcell) : float(0), blown = flare.mul(Sk?.k ?? 0).add(1);
     let fireCol;
     if (Pt) {
-      const Vv = normalize(cameraPosition.sub(positionWorld)), run = Vv.xz.div(max(Vv.y, 0.3)).negate();   // the ray's run, a metre of fall
-      const hb = [B.grateW[0] - G.frame, B.grateW[1] - G.frame];
-      const tx = float(hb[0]).sub(gq.x.mul(sign(run.x))).div(max(abs(run.x), 1e-3)), tz = float(hb[1]).sub(gq.y.mul(sign(run.y))).div(max(abs(run.y), 1e-3));
-      const tw = min(tx, tz), onBed = step(Pt.depth, tw), dq = gq.add(run.mul(min(tw, Pt.depth)));
-      const heatD = float(1).sub(smoothstep(0, 1.15, length(dq.div(vec2(...B.grateW)))));
-      // the bed: coals, each its own heat, breathing; whiter where the bed is hottest and when it is blown
-      const cn = noise(dq.mul(Pt.coal).add(gcell.mul(0.37))).mul(0.65).add(noise(dq.mul(Pt.coal * 2.7).add(GEL_TIME.mul(0.35))).mul(0.35));
-      const hot = smoothstep(0.28, 0.72, cn).mul(pulse.mul(0.35).add(0.65)).mul(blown).mul(heatD.mul(0.6).add(0.5));
-      const bed = mix(v3(Pt.coalLo), v3(Pt.coalHi), clamp(hot, 0, 1)).add(v3(G.core).mul(clamp(hot.sub(0.75), 0, 1).mul(Pt.white)));
-      // the wall: dark, lit from the bed below it
-      const up = clamp(tw.div(Pt.depth), 0, 1), wallC = v3(Pt.wall).add(v3(B.glow).mul(up.mul(up).mul(Pt.wallGlow).mul(pulse.mul(0.3).add(0.7)).mul(blown)));
-      fireCol = mix(wallC, bed, onBed);
+      // (v151: only where a hole is — the grates are a few hundredths of the floor, and the pit was worked out for every pixel of it)
+      const pitCol = vec3(0).toVar();
+      If(hole.greaterThan(0.001), () => {
+        const Vv = normalize(cameraPosition.sub(positionWorld)), run = Vv.xz.div(max(Vv.y, 0.3)).negate();   // the ray's run, a metre of fall
+        const hb = [B.grateW[0] - G.frame, B.grateW[1] - G.frame];
+        const tx = float(hb[0]).sub(gq.x.mul(sign(run.x))).div(max(abs(run.x), 1e-3)), tz = float(hb[1]).sub(gq.y.mul(sign(run.y))).div(max(abs(run.y), 1e-3));
+        const tw = min(tx, tz), onBed = step(Pt.depth, tw), dq = gq.add(run.mul(min(tw, Pt.depth)));
+        const heatD = float(1).sub(smoothstep(0, 1.15, length(dq.div(vec2(...B.grateW)))));
+        // the bed: coals, each its own heat, breathing; whiter where the bed is hottest and when it is blown
+        const cn = noise(dq.mul(Pt.coal).add(gcell.mul(0.37))).mul(0.65).add(noise(dq.mul(Pt.coal * 2.7).add(GEL_TIME.mul(0.35))).mul(0.35));
+        const hot = smoothstep(0.28, 0.72, cn).mul(pulse.mul(0.35).add(0.65)).mul(blown).mul(heatD.mul(0.6).add(0.5));
+        const bed = mix(v3(Pt.coalLo), v3(Pt.coalHi), clamp(hot, 0, 1)).add(v3(G.core).mul(clamp(hot.sub(0.75), 0, 1).mul(Pt.white)));
+        // the wall: dark, lit from the bed below it
+        const up = clamp(tw.div(Pt.depth), 0, 1), wallC = v3(Pt.wall).add(v3(B.glow).mul(up.mul(up).mul(Pt.wallGlow).mul(pulse.mul(0.3).add(0.7)).mul(blown)));
+        pitCol.assign(mix(wallC, bed, onBed));
+      });
+      fireCol = pitCol;
     } else fireCol = mix(v3(B.glow), v3(G.core), heat.mul(heat)).mul(pulse.mul(0.5).add(0.5)).mul(heat.mul(0.6).add(0.55));
     const fire = hole.mul(pulse).mul(flare.mul(0.5).add(1));
     const frame = inG.mul(float(1).sub(inner)), bars = inner.mul(float(1).sub(hole));
@@ -1202,14 +1207,17 @@ export function buildFloor(T, hx, hz, light, { style = 'grid', bounds: hasBounds
           const wide = max(body, tail).mul(step(-0.02, s01)).mul(step(s01, 1));
           m.assign(float(1).sub(smoothstep(wide.sub(saa), wide.add(saa), y)).mul(step(0.001, wide)));
         });
-        // the cloud it swims in, going the same way at the same pace
-        const cloud = smoothstep(K.cloud[0], K.cloud[1], noise(vec2(fa.mul(K.cloudScale), c0.mul(K.cloudScale * 1.6)).add(ki * 9.7)));
-        return m.mul(cloud);
+        return m;
       };
+      // the cloud a kind swims in, going the same way at the same pace (v151: asked once a kind — the fish and its shadow
+      // are in the same cloud — and no fish is looked for where there is no cloud)
       for (const [ki, K] of Sh.kinds.entries()) {
-        const shy = smoothstep(K.shy[0], K.shy[1], dHero);
-        col = col.mul(float(1).sub(fishAt(w.add(vec2(...Sh.shadow)), K, ki).mul(shy).mul(Sh.shadowK)));
-        col = mix(col, v3(K.color), fishAt(w, K, ki).mul(shy).mul(K.k));
+        const dx = Math.cos(K.heading), dz = Math.sin(K.heading), fa = w.x.mul(dx).add(w.y.mul(dz)).sub(t.mul(K.swim)), c0 = w.y.mul(dx).sub(w.x.mul(dz));
+        const cloud = smoothstep(K.cloud[0], K.cloud[1], noise(vec2(fa.mul(K.cloudScale), c0.mul(K.cloudScale * 1.6)).add(ki * 9.7))).mul(smoothstep(K.shy[0], K.shy[1], dHero));
+        const fishV = float(0).toVar(), shadeV = float(0).toVar();
+        If(cloud.greaterThan(0.001), () => { fishV.assign(fishAt(w, K, ki).mul(cloud)); shadeV.assign(fishAt(w.add(vec2(...Sh.shadow)), K, ki).mul(cloud)); });
+        col = col.mul(float(1).sub(shadeV.mul(Sh.shadowK)));
+        col = mix(col, v3(K.color), fishV.mul(K.k));
       }
     }
     // v140: THINGS LIE ON THE SEABED. The ripples in the silt have a lit side and a dark one; and here and there, in
@@ -1282,7 +1290,7 @@ export function buildFloor(T, hx, hz, light, { style = 'grid', bounds: hasBounds
       if (Un) {
         const V = normalize(cameraPosition.sub(positionWorld)), run = V.xz.div(max(V.y, 0.3)).negate();   // the ray's run for a metre of fall
         const tb = fract(GEL_TIME.div(Un.period));
-        beat = exp(tb.mul(tb).mul(-Un.sharp)).add(exp(tb.sub(Un.second).mul(tb.sub(Un.second)).mul(-Un.sharp)).mul(0.7));
+        beat = exp(tb.mul(tb).mul(-Un.sharp)).add(exp(tb.sub(Un.second).mul(tb.sub(Un.second)).mul(-Un.sharp)).mul(0.7)).mul(float(1).sub(CALM.mul(Un.calm ?? 0)));   // (v151: REDUCE MOTION holds most of the beat back — kit.js CALM)
         // the heart
         const wh = w.add(run.mul(Un.heart)), rh = length(wh), ah = atan(wh.y, wh.x);
         const arcs = smoothstep(0.55, 0.95, noise(vec2(ah.mul(Un.arcs), GEL_TIME.mul(Un.arcSpeed).add(rh.mul(0.25))))).mul(exp(rh.div(Un.heartR * 2.2).negate()));
@@ -1323,12 +1331,12 @@ export function buildFloor(T, hx, hz, light, { style = 'grid', bounds: hasBounds
         // a breath of the heart's light with each beat (`thump`, fading out from the middle); and for a moment after
         // it the grid near the heart is LIVE — arcs jumping along its lines, a different few each instant (`arc`)
         const ph2 = fract(GEL_TIME.div(Un.period).sub(Un.second).sub(rw.div(Un.waveSpeed * Un.period)));
-        ringB = ringB.add(smoothstep(1 - Un.waveLen * 0.7, 1, ph2).mul(exp(rw.div(Un.waveReach).negate())).mul(0.6));
+        ringB = ringB.add(smoothstep(1 - Un.waveLen * 0.7, 1, ph2).mul(exp(rw.div(Un.waveReach).negate())).mul(0.6)).mul(float(1).sub(CALM.mul(Un.calm ?? 0)));
         if (Un.thump) col = col.add(v3(Tl.glow).mul(beat.mul(exp(rw.div(Un.thump.reach).negate())).mul(Un.thump.k)));
         if (Un.arc) {
           const Ac = Un.arc, live = exp(tb.mul(-Ac.fade)).add(exp(max(tb.sub(Un.second), 0).mul(-Ac.fade)).mul(step(Un.second, tb)).mul(0.6));
           const jump = step(1 - Ac.share, hash(tfloor(q.mul(2)).add(tfloor(GEL_TIME.mul(Ac.rate)).mul(vec2(7.3, 3.1)))));
-          arcLive = jump.mul(live).mul(exp(rw.div(Ac.reach).negate())).mul(Ac.k);
+          arcLive = jump.mul(live).mul(exp(rw.div(Ac.reach).negate())).mul(Ac.k).mul(float(1).sub(CALM));   // (no arcs under REDUCE MOTION: they are a flicker)
         }
       }
       for (const P of Tl.pads) {

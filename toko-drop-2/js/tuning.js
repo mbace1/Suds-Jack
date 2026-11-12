@@ -7,10 +7,10 @@
 // things that work"). The arena is 1.x's, so every 1.x number ports as it is
 // instead of through a rescale. Axes: x across the screen (right +), y up,
 // z toward the bottom of the screen. The arena is centred on the origin.
-import { SPECIES } from './tuning/species/index.js?v=150';
-import WAVES from './tuning/waves.js?v=150';
-import PICKUPS from './tuning/pickups.js?v=150';
-import MUSIC from './tuning/music.js?v=150';
+import { SPECIES } from './tuning/species/index.js?v=151';
+import WAVES from './tuning/waves.js?v=151';
+import PICKUPS from './tuning/pickups.js?v=151';
+import MUSIC from './tuning/music.js?v=151';
 
 export const TUNING = {
   render: {
@@ -380,7 +380,7 @@ export const TUNING = {
                 // m, up in `rise` of a cycle and gone by `fall`, the fire `k` brighter at its height
                 lattice: { hole: 0.17, pitch: 0.26, frame: 0.12, steel: [0.03, 0.026, 0.024], core: [1.0, 0.85, 0.45], barGlow: 0.18, frameGlow: 0.05,
                            pit: { depth: 0.55, wall: [0.035, 0.02, 0.014], wallGlow: 0.9, coal: 6.5, coalLo: [0.32, 0.03, 0.004], coalHi: [1.0, 0.42, 0.07], white: 1.6 } },
-                stoke: { period: 7.5, dir: [0.3, 1], len: 62, rise: 0.05, fall: 0.5, k: 0.9 },
+                stoke: { period: 7.5, dir: [0.3, 1], len: 62, rise: 0.05, fall: 0.5, k: 0.9, calm: 0.6 },   // (`calm`: how much of the flare REDUCE MOTION holds back, v151)
                 veins: { reach: 1.6, scale: 0.9, width: 0.025, gain: 1.4, haze: 0.22, pulse: 1.3, color: [1.0, 0.38, 0.07] },
                 glow: [1.0, 0.35, 0.06], scorch: [0.012, 0.008, 0.006], pulse: 1.6, sky: [0.012, 0.008, 0.006],
                 // v78: oily PUDDLES within `band` m of the long sides, under the pipe runs: the steel
@@ -509,7 +509,8 @@ export const TUNING = {
                                 // grid's half tiles near the heart are live, changing `rate` times a second, dying off at `fade`;
                                 // a pad flares `padKick` as a beat's ring crosses it
                                 kick: 0.16, vanes: { n: 10, depth: 6.2, w: 0.55, from: 2.6, metal: [0.012, 0.005, 0.02], lit: 1.2, duct: 0.16, idle: 0.12, run: 16, len: 0.1, k: 2.6, reach: 26 },
-                                thump: { k: 0.035, reach: 12 }, arc: { share: 0.2, rate: 22, fade: 7, reach: 9, k: 2.4 }, padKick: 0.8 },
+                                thump: { k: 0.035, reach: 12 }, arc: { share: 0.2, rate: 22, fade: 7, reach: 9, k: 2.4 }, padKick: 0.8,
+                                calm: 0.75 },   // (v151: REDUCE MOTION holds `calm` of the beat back — its flash, its rings — and all of the arcs)
                        vary: { vents: 0.16, slots: 7, ventGlow: 0.035, lamps: 0.14, lamp: [0.25, 0.85, 1.0],
                                packet: { every: 5, len: 0.12, speed: 0.5, lanes: 0.45, color: [0.5, 0.95, 1.0], gain: 0.9 } },
                        cell: 2.2, line: 0.045, tile: [0.016, 0.012, 0.022], line_: [1.0, 0.18, 0.72], lineGlow: 0.55, glow: [1.0, 0.25, 0.7],
