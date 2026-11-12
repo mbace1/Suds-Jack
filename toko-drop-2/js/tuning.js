@@ -7,10 +7,10 @@
 // things that work"). The arena is 1.x's, so every 1.x number ports as it is
 // instead of through a rescale. Axes: x across the screen (right +), y up,
 // z toward the bottom of the screen. The arena is centred on the origin.
-import { SPECIES } from './tuning/species/index.js?v=152';
-import WAVES from './tuning/waves.js?v=152';
-import PICKUPS from './tuning/pickups.js?v=152';
-import MUSIC from './tuning/music.js?v=152';
+import { SPECIES } from './tuning/species/index.js?v=153';
+import WAVES from './tuning/waves.js?v=153';
+import PICKUPS from './tuning/pickups.js?v=153';
+import MUSIC from './tuning/music.js?v=153';
 
 export const TUNING = {
   render: {
@@ -1345,12 +1345,21 @@ export const TUNING = {
       // river's, the sweep the cistern's, the dark the deep's, the slip the ice's, the updraft
       // the boiler's), and the driveway for THE SURFACE, which has none. `base`/`gridHi` are
       // still the colours of its tile on the grid
-      { name: 'THE SURFACE', look: 'driveway', rail: 0x5555cc, base: [0.079, 0.079, 0.169], gridHi: [0.0, 0.55, 0.50], rule: null, rooms: [{ id: 'first-light' }, { id: 'high-ground' }, { id: 'three-rings' }, { id: 'first-swarm' }, { id: 'hands-up' }, { id: 'gate-run' }] },
-      { name: 'THE WELL', look: 'river', rail: 0x33ccbb, base: [0.030, 0.105, 0.115], gridHi: [0.10, 0.70, 0.60], rule: 'current', rooms: [{ id: 'in-order' }, { id: 'eddy' }, { id: 'the-sludge' }, { id: 'flotsam' }, { id: 'slug-run' }, { id: 'undertow' }] },
-      { name: 'THE VEIN', look: 'cistern', rail: 0xdd3344, base: [0.130, 0.030, 0.040], gridHi: [0.85, 0.16, 0.22], rule: 'sweep', rooms: [{ id: 'splitter' }, { id: 'clot' }, { id: 'pulse' }, { id: 'spike' }, { id: 'needle' }, { id: 'crossfire' }] },
-      { name: 'THE VOID', look: 'deep', rail: 0x8866cc, base: [0.012, 0.012, 0.022], gridHi: [0.18, 0.10, 0.32], rule: 'dark', rooms: [{ id: 'the-pull' }, { id: 'lights-out' }, { id: 'six-shots' }, { id: 'orbit' }, { id: 'deep-end' }, { id: 'siren' }] },
-      { name: 'THE FOAM', look: 'ice', rail: 0x99ffee, base: [0.055, 0.105, 0.125], gridHi: [0.60, 1.00, 0.92], rule: 'slip', rooms: [{ id: 'rink' }, { id: 'salmon' }, { id: 'pack-ice' }, { id: 'breath' }, { id: 'skate' }, { id: 'bubble-bath' }] },
-      { name: 'THE KILN', look: 'boiler', rail: 0xffaa33, base: [0.130, 0.060, 0.018], gridHi: [1.00, 0.62, 0.14], rule: 'updraft', rooms: [{ id: 'forge' }, { id: 'anvil' }, { id: 'bellows' }, { id: 'boil-over' }, { id: 'crucible' }, { id: 'the-core' }] },
+      // v153 (owner, 2026-11-12: "campaign can use any world"; "circular, moving, shape shifting levels
+      // would work there better ... these levels fit those better than the environment ones"): a ROOM
+      // may name a `look` of its own — any arcade world's id — and wears it instead of its world's.
+      // The rule the list keeps (test/campaign.mjs): a room whose floor is a SHAPE (not one plain
+      // rectangle) or MOVES wears the neon `grid`, in its world's `base`/`gridHi` and `rail`; a plain
+      // rectangle wears an environment. A place cannot explain a floor that is three circles going
+      // round each other, and the grid has nothing to explain. And the two places no world of the
+      // campaign wore: NEEDLE in the `sewer` (THE VEIN, with the stream down its middle) and the last
+      // room, THE CORE, in the `core` — so every arcade world is somewhere in the campaign
+      { name: 'THE SURFACE', look: 'driveway', rail: 0x5555cc, base: [0.079, 0.079, 0.169], gridHi: [0.0, 0.55, 0.50], rule: null, rooms: [{ id: 'first-light' }, { id: 'high-ground' }, { id: 'three-rings', look: 'grid' }, { id: 'first-swarm' }, { id: 'hands-up' }, { id: 'gate-run' }] },
+      { name: 'THE WELL', look: 'river', rail: 0x33ccbb, base: [0.030, 0.105, 0.115], gridHi: [0.10, 0.70, 0.60], rule: 'current', rooms: [{ id: 'in-order' }, { id: 'eddy', look: 'grid' }, { id: 'the-sludge', look: 'grid' }, { id: 'flotsam', look: 'grid' }, { id: 'slug-run' }, { id: 'undertow' }] },
+      { name: 'THE VEIN', look: 'cistern', rail: 0xdd3344, base: [0.130, 0.030, 0.040], gridHi: [0.85, 0.16, 0.22], rule: 'sweep', rooms: [{ id: 'splitter' }, { id: 'clot', look: 'grid' }, { id: 'pulse', look: 'grid' }, { id: 'spike' }, { id: 'needle', look: 'sewer' }, { id: 'crossfire', look: 'grid' }] },
+      { name: 'THE VOID', look: 'deep', rail: 0x8866cc, base: [0.012, 0.012, 0.022], gridHi: [0.18, 0.10, 0.32], rule: 'dark', rooms: [{ id: 'the-pull', look: 'grid' }, { id: 'lights-out' }, { id: 'six-shots' }, { id: 'orbit', look: 'grid' }, { id: 'deep-end', look: 'grid' }, { id: 'siren', look: 'grid' }] },
+      { name: 'THE FOAM', look: 'ice', rail: 0x99ffee, base: [0.055, 0.105, 0.125], gridHi: [0.60, 1.00, 0.92], rule: 'slip', rooms: [{ id: 'rink', look: 'grid' }, { id: 'salmon' }, { id: 'pack-ice' }, { id: 'breath', look: 'grid' }, { id: 'skate' }, { id: 'bubble-bath', look: 'grid' }] },
+      { name: 'THE KILN', look: 'boiler', rail: 0xffaa33, base: [0.130, 0.060, 0.018], gridHi: [1.00, 0.62, 0.14], rule: 'updraft', rooms: [{ id: 'forge', look: 'grid' }, { id: 'anvil' }, { id: 'bellows' }, { id: 'boil-over', look: 'grid' }, { id: 'crucible', look: 'grid' }, { id: 'the-core', look: 'core' }] },
     ],
     // A ROOM IS GRADED ON ITS SCORE (v51, owner 2026-10-27: "Campaign room
     // goals should be score based"; "F is a small but still challenging

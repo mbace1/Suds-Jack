@@ -19,6 +19,17 @@
     Never `--no-verify`.
 -->
 
+## v153 — 2026-11-12
+**A campaign room can wear any world: the shaped and moving rooms take the neon grid, and the sewer and the core are in the campaign**
+- The owner, 2026-11-12: "campaign can use any world", and of the neon grid: "Circular, moving, shape shifting levels would work there better anyways. And these levels fit those better than the environment ones". Since v73 each campaign world wore one place, the arcade world its rule comes from, and every one of its six rooms wore it. A room may name a look of its own now (`TUNING.campaign.worlds[].rooms[].look`, any arcade world's id) and wears that: its floor, the set round it, its light and its rail.
+- Seventeen rooms whose floor is a shape or moves wear the neon grid, in their own world's colours and rail (THE WELL's teal, THE VEIN's red, THE VOID's violet, THE FOAM's pale green, THE KILN's amber, THE SURFACE's blue): THREE RINGS; EDDY, THE SLUDGE, FLOTSAM; CLOT, PULSE, CROSSFIRE; THE PULL, ORBIT, THE DEEP END, SIREN; RINK, BREATH, BUBBLE BATH; FORGE, BOIL OVER, CRUCIBLE. Rendered both ways first: a place cannot explain a floor that is three circles going round each other (the river ran on outside EDDY's ring as it did inside, and BREATH's ice lay white on white snow), and on the grid the floor is the one lit thing in the void. The nineteen plain rectangles keep a place, so every world of the campaign has rooms of both kinds.
+- The two places no campaign world wore are in it: NEEDLE is in the sewer (THE VEIN, with the stream down its middle) and the last room, THE CORE, is in the core. All nine arcade worlds are worn somewhere in the campaign.
+- Nothing a room plays by has moved: its rule, its goal, its clock and its grade lines are what they were. Only what it is drawn as.
+- Tests: `test/campaign.mjs` 305 checks (every room's look is an arcade world's; a shape or a moving floor wears the grid and a plain rectangle a place; every world has both; every arcade world is worn somewhere), `test/smoke.mjs` reads the room's own look.
+- Cache tokens `?v=152` → `?v=153`; HUD label → `2.0 · v153`
+
+---
+
 ## v152 — 2026-11-12
 **The sewer's stream runs in a gentle trench: shallow, rounded, level water in the bottom of it**
 - The owner, playing v151 on the phone: "The 'pipe' is a rectangular hole, when it should be a gentle concave stream. Previous stream water was good, no need to have a small river going back and forth. Just make the trench itself look subtle and rounded, not boxy". v148's half-pipe was as deep as it was half wide; walls that stand nearly upright are two flat faces from above, a lit one and a shadowed one, and that is a box.

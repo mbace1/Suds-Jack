@@ -26,9 +26,9 @@
 //              again; and runs from any body that comes near. A burst throws them like anything else
 import * as THREE from 'three/webgpu';
 import { uv, vec3, float, abs, smoothstep, mix } from 'three/tsl';
-import { TUNING } from '../tuning.js?v=152';
-import { seeded, merge } from './kit.js?v=152';
-import { SUN_AT } from './sun.js?v=152';
+import { TUNING } from '../tuning.js?v=153';
+import { seeded, merge } from './kit.js?v=153';
+import { SUN_AT } from './sun.js?v=153';
 
 const T = TUNING;
 

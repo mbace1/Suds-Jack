@@ -17,7 +17,7 @@
 // under the river's 31, and as near the deep's 30 as the measure can tell: scripts/curve.mjs, docs/CURVE.md.) ARCADE's BERG, and the campaign's
 // (HARD PAIN too), are as they were.
 // Numbers: js/tuning/species/berg.js. Seeded: w.rng only.
-import { rage, range, toHero, inside } from './bosskit.js?v=152';
+import { rage, range, toHero, inside } from './bosskit.js?v=153';
 
 function slideAt(w, g, sp) { const { ux, uz } = toHero(w, g.x, g.z); g.s.vx = ux * sp; g.s.vz = uz * sp; }
 // v136: the lunge is HARDCADE's alone
