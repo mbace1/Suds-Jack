@@ -17,7 +17,17 @@ await page.addStyleTag({ content: '#ver,#fault,#sticks,#fps{display:none!importa
 const r = await page.evaluate(async ([ROOM, tree, V, ADV]) => {
   const t = __toko, { think, SKILLS, prng } = await import(`/${tree}/scripts/bot.mjs?v=${V}`);
   const mem = { quarry: null, lineup: null, seen: new WeakMap(), rnd: prng(91) };
-  t.nointro = true; t.capPlay((w) => think(w, mem, SKILLS.expert), 5152); await t.room(ROOM);
+  // the bot, but when a vent near him is about to blow he walks onto it (to show a vent throwing the hero)
+  const ride = (w) => {
+    const base = think(w, mem, SKILLS.expert), h = w.hero;
+    if (!w.vents || h.fly || !(+(window.__RIDE ?? 1))) return base;
+    const P = w.ventSpec.period, v = w.vents.map((v) => ({ v, tb: (1 - v.s) * P, d: Math.hypot(v.x - h.x, v.z - h.z) })).filter((o) => o.tb < 2.8 && o.v.blew % 2 === 0 && o.d < o.tb * 6 + 1).sort((a, b) => a.d - b.d)[0]?.v;
+    if (!v) return base;
+    const dx = v.x - h.x, dz = v.z - h.z, d = Math.hypot(dx, dz) || 1;
+    const tb = (1 - v.s) * w.ventSpec.period, hold = d < 0.6 && tb < 0.9;   // the last moment on it he holds his fire, so what comes for him goes up with him
+    return { ...base, mx: d > 0.4 ? dx / d : 0, mz: d > 0.4 ? dz / d : 0, dash: false, fire: hold ? false : base.fire };
+  };
+  t.nointro = true; t.capPlay(ride, 5152); await t.room(ROOM);
   for (let i = 0; i < 150 && t.state !== 'play'; i++) await new Promise((r) => setTimeout(r, 100));
   if (t.state !== 'play') return `${ROOM}: not playing (${t.state})`;
   t.advance(+(ADV)); t.loop(false); t.ui.bannerEl.hidden = true;
@@ -33,5 +43,6 @@ for (let i = 0; i < N; i++) {
   await page.screenshot({ path: `${OUT}/f${String(i).padStart(4, '0')}.jpg`, type: 'jpeg', quality: 90, timeout: 300000 });
   if (i % 30 === 0) console.log('frame', i, new Date().toISOString().slice(11, 19));
 }
+console.log(await page.evaluate(() => JSON.stringify((__toko.world.vents || []).map((v) => ({ blew: v.blew, thrown: v.thrown })))));
 await browser.close();
 console.log('done');
