@@ -104,3 +104,5 @@ Device as planned: a closed loop (the marble run), with Google's stake as a tick
 - **D · The Round Trip:** write the range as "the range filed on 10 Nov" and re-check on 17–18 Nov; the FT says
   bankers may price above it.
 - **A · Dragged:** unchanged; keep "not final".
+
+- **B · Give Way: approved** (owner, Thu 12 Nov: "Approved for posting on Nov 17 at noon"); scheduled in `POSTED.md`.

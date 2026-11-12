@@ -91,3 +91,9 @@ Per `SOUND.md`, "Sound per film". 90 BPM, E minor landing on C.
   under the line "Not taking part: Finland's new F-35s", where it would be read as one.
 - **Sign-off:** the current one (`previews/signoff-papercut.mp4`). Sign-off v2 still waits for the owner's approval.
 - **Post (en, 253 characters):** in `copy.json`.
+
+## Approved, Thu 12 Nov
+
+**Owner:** "Approved for posting on Nov 17 at noon". Scheduled in `POSTED.md` for **Tue 17 Nov 12:00 Helsinki** on RFH
+Instagram (the loop master), X and YouTube (the film with the sign-off). The 17 Nov 07:16 check re-reads the dates and
+the F-35 line first; if either has moved, the post holds and the owner hears why.
