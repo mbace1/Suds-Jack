@@ -5,6 +5,15 @@
 > lines, one section per project). This file is a short, older copy. If you
 > are about to author anything here, check `origin/main` first.
 
+## Producer design docs
+
+Toko Drop 2.0 lives on this branch. Read [`toko-drop-2/DESIGN.md`](toko-drop-2/DESIGN.md) before design-affecting work, and [`toko-drop-2/docs/ACTIVEPRODUCER.md`](toko-drop-2/docs/ACTIVEPRODUCER.md) for how decisions are recorded. See also `toko-drop-2/CLAUDE.md` and `toko-drop-2/AGENTS.md`.
+
+Items are tagged **SHIPPED** / **LOCKED-NOT-BUILT** / **PROPOSAL**. Do not decide open design questions silently — list them in the PR description or ask the producer (D-sign) / Mikael. Do not implement LOCKED-NOT-BUILT systems without a producer brief. Do not merge Drop Zero into 2.0 without a joint Mikael + producer decision.
+
+Producer docs for Toko Move and Hyper Dagger are on `main` (`toko-move/DESIGN.md`, `hyperdagger/DESIGN.md`).
+
+
 ## Eeri (`eeri/`) — MULTI-AGENT. Read the docs before you touch a file.
 
 A Mario 3 / Yoshi-shaped platformer for a six-year-old, on a worksite of
