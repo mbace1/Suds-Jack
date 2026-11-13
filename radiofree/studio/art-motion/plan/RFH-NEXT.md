@@ -1314,3 +1314,43 @@ All facts below come from search summaries; no article was opened.
 - **Reactions:** counts are not visible through search.
 - **Housekeeping:** the session's container restarted before this check. The local branch had come up on main's tip
   with no commits of its own, so it was pointed back at the pushed branch tip before writing; nothing was lost.
+
+## Daily check, Fri 13 Nov 07:16 (morning; search summaries only, nothing opened)
+- **Big development:** none. The Anthropic range is unchanged ($70–$78, no amended filing found); the FT's "above the
+  range" report has no follow-up. Two deadlines fall later today: OpenAI's answer to the House letter, and the DRAM
+  motion-to-dismiss hearing at 19:00 Helsinki. Both are for tonight's or Saturday's check.
+- **Top new item (MED): the Orpo AI report was due 31 Oct.** The PM's appointment decision gives the review's term as
+  10 Apr – 31 Oct 2026 (Hankeikkuna PDF, government release; search summaries). HS reported on 11 Nov that it is
+  unpublished. A report on speeding up AI in government is itself late. Read HS's piece before a pitch.
+- **Also new, on file:**
+  - **Lapinlahti:** 33 people and a local association were turned away; the association because no YVA was applied.
+  - **Project Meridian:** the suit is under the Federal Advisory Committee Act; 19 of 21 members are from the private
+    sector; recommendations are due 28 Jan 2027. No ruling.
+  - **Fitburg context:** the Helsinki Court of Appeal ruled on 27 Aug in the Eagle S case that Finland has
+    jurisdiction, and sent it back to the district court.
+
+### Pre-posting check: Give Way (Tue 17 Nov 12:00) — **HOLDS**
+- Exercise 19–27 Nov and the Highway 9 closure 18–25 Nov (from 08:00 on 18 Nov, reopening by noon on 25 Nov) both
+  hold (the Air Force, Kuopio, Siilinjärvi, Lentoposti, Kaleva). No cancellation or change found.
+- The F-35 line holds: AeroTime says Finland's own F-35As will not take part; the F-35s in Lentoposti's headline are
+  the Dutch ones at Rissala. No report says Finland's take part. The Air Force's page itself was still not opened.
+- The allies are unchanged: Dutch F-35As at Rissala, French Rafales from Rovaniemi, Swedish Gripens from Kallax.
+- Re-check once more on Mon 16 Nov evening and Tue 17 Nov morning.
+
+### Open pitches
+- **A · Dragged (Fitburg):** no notice of appeal reported; keep "not final". New context worth a tag if it is built:
+  the appeal court has already ruled against the jurisdiction argument once, in Eagle S (27 Aug). Damages are
+  about €1.9M (one outlet) or about €2M (another); use neither without the court's release.
+- **C · Keep It Quiet (Jokela):** no change. Still no coverage of the 10 Nov meeting; beat 6 still needs "66 at once"
+  and the battery study as the other side.
+- **D · The Round Trip:** no change; the range is unchanged. The two owner decisions are still open. Pricing 18 Nov.
+
+### Re-checks, films and next dates
+- **Posted films:** nothing found that makes one wrong (Muhos, Hamina, ICEYE, Pasila: no news).
+- **Films now wrong:** none. **Scheduled:** Give Way, holds (above).
+- **Due:** today, OpenAI's answer (US day) and the DRAM hearing (19:00 Helsinki); Mon 16 Nov, the last check before
+  Give Way; Tue 17 Nov 12:00, Give Way posts; possibly 17 Nov, Nvidia's results (an August article; unconfirmed);
+  Wed 18 Nov, the Anthropic pricing (expected); Thu 19 Nov, first trade (expected) and the exercise begins;
+  Thu 20 Nov, the Howell Township vote (year not shown; unconfirmed).
+- **Could not verify:** anything behind hs.fi; the Air Force's page directly; the S-1 itself (EDGAR not tried);
+  reaction counts.

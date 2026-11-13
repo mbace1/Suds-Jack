@@ -1665,3 +1665,53 @@ Everything below comes from search summaries. No article was opened.
 - **Reactions:** counts are not visible through search.
 - **Pattern note:** in an IPO week the filing and the reporting move apart fast. The range is a filing fact; "above
   the range", the dates and the demand are sourcing. A film should print only the first kind and date it.
+
+### Check Fri 13 Nov 07:16 (morning; search summaries only; nothing opened)
+- **Big development:** none. No item moved overnight in a way a film could use today.
+- **Anthropic IPO (The Round Trip):** no change found since last night.
+  - **No amended filing and no revised range found.** The filed range is still $70–$78 (825M Class A shares; the
+    roadshow release, 10 Nov). The FT's "may price above the range" is still the only report of that; nothing new on
+    it this morning. Several write-ups stress that a covered book does not by itself mean pricing above the range.
+  - Dates: pricing 18 Nov and first trade 19 Nov now also appear as the company's own IPO-site listing in one summary
+    (Financefeeds); CNBC still says "sources say". Treat both dates as expected, not fixed.
+  - Valuation figures still differ by source and by basis (about $916B–$1.02T on shares outstanding; up to about
+    $1.40T fully diluted per CNBC and TechCrunch). Reporting, not the filing; EDGAR not tried.
+  - **Warren letter (27 Oct):** still no public answer found. Coverage from 28 Oct onward says Anthropic did not
+    respond publicly or did not immediately comment. The 3 Nov deadline has passed.
+  - [Financefeeds](https://financefeeds.com/anthropic-ipo-date-price-range-70-78-trading-19-november/),
+    [CNBC](https://www.cnbc.com/2026/11/10/anthropic-sets-price-range-of-70-to-78-in-upcoming-ipo.html),
+    [Fortune](https://fortune.com/2026/11/10/anthropic-ipo-price-range-ai-stock-sell-off/),
+    [Spectrum News, Warren](https://spectrumnews1.com/ky/northern-ky/technology/2026/10/28/sen--elizabeth-warren-anthropic-ipo-letter)
+- **10/11 OpenAI, the House letter:** due today, **Fri 13 Nov**. No answer found yet (it is early in the US day). On
+  record from earlier: OpenAI says the firings were for breaking rules on sensitive information, "not for raising
+  safety concerns or speaking out" (CNBC, 9 Oct); the researchers dispute that and say they shared nothing
+  confidential. The letter's own account of the firings rests on press reports. Check again tonight and Saturday.
+  [Nextgov](https://www.nextgov.com/artificial-intelligence/2026/10/democrats-press-openai-over-safety-researcher-firings-security-incidents/416954/),
+  [CNBC](https://www.cnbc.com/2026/10/09/openai-fired-researchers-ai-concerns.html)
+- **5 Short Supply (DRAM):** the motion-to-dismiss hearing is **today, 09:00 San Jose (19:00 Helsinki)**. Nothing new
+  before it: the defendants' motion (MLex, 3 Sep) leans on the 2022 dismissal of a similar case; the plaintiffs'
+  opposition is on file (MLex headline). No tentative ruling found. The outcome belongs to Saturday's check.
+  Prices: TrendForce's week to 3 Nov has the DDR4 spot price flat to slightly down ($46.82 for DDR4 1Gx8 3200);
+  Q4 contract prices still rising, more slowly for PC DRAM, strongest for server DRAM. Two TrendForce Q4 outlooks
+  give different totals (about +20% and +10–15% QoQ); not reconciled, so neither is used.
+  [MLex](https://www.mlex.com/mlex/antitrust/articles/2521308)
+- **1 The Panel (Project Meridian):** no ruling and no government answer found. New detail from the coverage: the
+  plaintiffs are CREW, Public Citizen and POGO; the suit cites the Federal Advisory Committee Act and says 19 of the
+  21 members work in the private sector; Hegseth's memo set **28 Jan 2027** for the recommendations. The Pentagon's
+  line on record: MITRE will review the recommendations with conflict-of-interest safeguards.
+  [Federal News Network](https://federalnewsnetwork.com/litigation/2026/11/pentagon-sued-over-its-project-meridian-advisory-committee/)
+- **Pentagon frontier-AI contracts:** no new award or release found; results return the 2025 awards only.
+- **Whistleblowers:** S. 1792 still shows its 2025 committee referral as the last recorded action; the September
+  report of a possible unanimous-consent push after the Senate's 9 Nov return has no follow-up. Meta: nothing dated
+  November (the latest are the July Hawley and Grassley letters).
+- **Data-center NDAs (US):** nothing new dated November. The Howell Township moratorium vote is listed for Thu 20 Nov
+  in one summary, but its year is not shown; unconfirmed.
+- **Nvidia–OpenAI financing:** an August article gives **17 Nov** for Nvidia's next results; unconfirmed, check the
+  company's investor page before using it.
+- **OpenAI and Cursor:** still no report confirming the 12 Nov cut-off took effect; coverage only describes it as
+  planned. Cursor's CEO put OpenAI at about 5% of its traffic (earlier coverage).
+- **Grok Build:** nothing new beyond Claroc's 10 Nov figures (on file). No regulator response found.
+- **Reactions:** counts are not visible through search.
+- **Pattern note:** deadlines that fall on a Friday (OpenAI's letter, the DRAM hearing) are answered after the
+  morning check by design. The useful move is to log what is on record before the deadline, so the evening check
+  can tell an answer from silence.

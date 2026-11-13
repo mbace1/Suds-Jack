@@ -1438,3 +1438,55 @@ Search summaries only; nothing opened. One device each, from STORY-DEVICES.md or
 - **Reactions:** counts are not visible through search.
 - **Pattern note:** the fastest official move is still the one that costs nothing. In Lapinlahti it was a ruling that
   nobody may object; in Tuusula, a release saying nothing was hidden. Both leave the paper trail as the story.
+
+### Check Fri 13 Nov 07:16 (morning; search summaries only; nothing opened; hs.fi refuses the search tool)
+- **HS sweep:** no new HS data-center or AI story surfaced since the 11 Nov Orpo report.
+- **Orpo's AI report (HS, 11 Nov) · new detail:** the government's appointment decision for the review (Arto
+  Tenhunen, appointed by the PM) gives the term as **10 Apr – 31 Oct 2026**. So the report HS says is unpublished
+  was due at the end of October. Source: the appointment PDF on Hankeikkuna and the government's release, both from
+  search summaries. Still no publication, no opposition demand found. This makes the story sharper: a report on
+  speeding up AI in government is late itself. MED.
+  [Valtioneuvosto](https://valtioneuvosto.fi/-/hallitus-vauhdittaa-tekoalyn-hyodyntamista-julkisessa-hallinnossa),
+  [the appointment](https://api.hankeikkuna.fi/asiakirjat/a361326d-70fb-4cec-b152-34c57f4f3f87/49b8d86d-99e8-4412-84d5-9f01dd05c7cf/ASETTAMISPAATOS_20260410101449.PDF)
+- **Lapinlahti (Alapitkä) · detail confirmed:** **33 private individuals and the Lapinlahti-Maailmanparaspaikka
+  association** filed the rectification requests; building inspector Ari Jaaranen decided not to examine them
+  (no standing under the Building Act). The association was also turned away because no YVA was applied to the
+  project, so it had no standing either. The size is reported as up to 500 MW in one outlet and about 80–100 MW in
+  the exemption decision in another; both carried, neither chosen. No court ruling yet.
+  [Iisalmen Sanomat](https://www.iisalmensanomat.fi/paikalliset/9939669), [Yle](https://yle.fi/a/74-20256036)
+- **Tuusula (Jokela) (pitch C):** still no coverage of the 10 Nov residents' meeting found. On file for the shape of
+  the night: QTS's own open evening on 19 Oct drew protesters and "a flood of questions" (Aamuposti headline), with
+  worries about noise, drones and disappointment in the town. The Chancellor of Justice complaint and the Kreab emails
+  did not surface in today's searches (no denial either; it simply did not come up).
+  [Aamuposti, 19 Oct](https://www.aamuposti.fi/paikalliset/9888486), [Tuusula, the meeting](https://tuusula.fi/en/2026/10/27/tuusula-municipality-is-organising-a-residents-meeting-on-the-data-centre-project/)
+- **Fitburg (pitch A):** still no notice of appeal reported. **New context, on record:** in the Eagle S case the
+  Helsinki Court of Appeal ruled on **27 Aug 2026** that Finland does have jurisdiction and sent the case back to the
+  district court (Kaleva, Maritime Executive, The Record); that decision could still go to the Supreme Court with
+  leave. So the Fitburg defence's jurisdiction argument has already lost once at the appeal level in a sister case.
+  Damages: about €1.9M (Selkosanomat) or about €2M (Länsi-Savo editorial).
+  [Kaleva](https://www.kaleva.fi/helsingin-hovioikeus-kumosi-karajaoikeuden-paatoks/13640137),
+  [The Record](https://therecord.media/finland-appeals-court-revives-case-against-eagle-s)
+- **Protective Fence 26 (Give Way, scheduled Tue 17 Nov 12:00): holds.**
+  - Dates hold: the exercise 19–27 Nov (Air Force, Kaleva); Highway 9 closed 18–25 Nov from 08:00 on 18 Nov,
+    reopening by noon on 25 Nov (Air Force; Kuopio; Siilinjärvi; Lentoposti).
+  - **F-35s, re-confirmed:** "Finland's own F-35As will not participate in Protective Fence 26" (AeroTime, summary).
+    The Dutch F-35As fly from Rissala; Lentoposti's own headline lists "Hornetit, F-35:t, Rafalet ja Gripenit", where
+    the F-35s are the Dutch ones. No report says Finland's take part.
+  - New this week, no change to the facts: Stara (12 Nov) "the road closes for a week, Hornets instead of cars";
+    Kaleva: the exercise may be visible in northern skies from next week; Viikko Savo on effects on public
+    transport around Rissala. No cancellation or change found.
+  - [Air Force](https://ilmavoimat.fi/en/-/protective-fence-26-to-be-the-finnish-air-force-s-main-exercise-of-the-year),
+    [Kuopio](https://www.kuopio.fi/2026/09/23/ilmavoimien-harjoitus-sulkee-valtatien-9-kuopion-lentokentan-kohdalla-marraskuussa-2026-kulkulupien-hakuohje-ajalle-18-%e2%80%9225-11-2026/),
+    [Lentoposti](https://lentoposti.fi/uutiset/protective_fence_26_hornetit_f_35t_rafalet_ja_gripenit_10_tukikohtaa_ja_j_nnevirran_varalaskupaikka),
+    [AeroTime](https://www.aerotime.aero/articles/finland-hornets-highway-strip-protective-fence-26-ace),
+    [Stara](https://stara.fi/2026/11/12/ilmavoimat-sulkee-valtatien-viikoksi-f-a-18-hornetit-autojen-tilalle)
+- **Muhos (Cut First):** no November story found; the latest on record is LVV's October halt and Google's apology.
+  **Hamina (Right of Way):** no LVV decision found.
+- **"Datakeskukset kuriin" initiative:** reached 50,000 in three days (Yle); no committee handling found. Vestman's
+  bill (over 100 MPs) is headed to the Finance Committee.
+- **Helsinki siting:** nothing new beyond the 2 Nov decision on file.
+- **Yle's call-out to town employees:** no follow-up story found.
+- **Found in Pasila (glyphosate):** nothing new; no Yle, city or Tukes reaction.
+- **Reactions:** counts are not visible through search.
+- **Pattern note:** a sister case's ruling is the quiet fact that changes how a verdict reads. Fitburg's appeal now
+  runs into a Court of Appeal that has already said Finland has jurisdiction.
