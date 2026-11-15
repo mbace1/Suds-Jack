@@ -64,13 +64,15 @@ function phases(w, g, B, api) {
     s.phase = 0; s.pace = 1; s.since = w.time; s.phS = TUNING.species[g.kind];
     s.wave = { speed: g.speedMult, interval: g.intervalMult };
   }
-  // a phase is not skipped: until it has lasted minPhase s, the health holds at the next one's line
+  // a phase is not skipped: until it has lasted its `min` (else minPhase) s, the health holds just over the next one's line (a whole point over: on the line counts as crossed)
   const next = B.phases[s.phase + 1];
-  if (next && w.time - s.since < BOSS_PHASES.minPhase) g.hp = Math.max(g.hp, Math.ceil(g.maxHp * next.at));
-  for (let i = s.phase + 1; i < B.phases.length; i++) {
-    const ph = B.phases[i];
-    if (g.hp > g.maxHp * ph.at && !(ph.after != null && w.time - s.since >= ph.after)) break;
-    enter(w, g, B, i, api);
+  if (next && w.time - s.since < (B.phases[s.phase].min ?? BOSS_PHASES.minPhase)) g.hp = Math.max(g.hp, Math.floor(g.maxHp * next.at) + 1);
+  // one phase per step: a big hit that crosses two lines enters the next one,
+  // whose own hold then lifts the health back to the line after it
+  if (next && (g.hp <= g.maxHp * next.at || (next.after != null && w.time - s.since >= next.after))) {
+    enter(w, g, B, s.phase + 1, api);
+    const after = B.phases[s.phase + 1];
+    if (after) g.hp = Math.max(g.hp, Math.floor(g.maxHp * after.at) + 1);
   }
   return !!B.phases[s.phase].rage;
 }

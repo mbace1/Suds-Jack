@@ -20,20 +20,36 @@
 -->
 
 ## v154 — 2026-11-15
-**Bosses fight in three phases and die slowly; a testers' unlock (?unlock=all, ?room=N)**
+**Bosses fight in three phases, each a little longer, and die slowly; WORLD CLEAR moves to a side card; a testers' unlock (?unlock=all, ?room=N)**
 - Owner decisions of 2026-11-15 (producer doc `DESIGN.md`):
   - "Bosses should be multiple waves, like 3 with harder strategy each wave. Usually ramping up pacing."
   - "No need for any freezes. Big bosses can have elaborate death animations instead."
   - Full health on arrival in each world is unchanged.
+  - "3 stages, slightly longer each time is a good general rule."
+  - WORLD CLEAR becomes a side card at the far right, showing the world transition, instead of the centred card over the boss's death.
 - **Three phases** (`js/tuning/bossphases.js`, `sim/species/bosskit.js`). The seven world bosses (CURB KING, MAW, BLISTER, KETTLE, PIKE, BERG, ANGLER) now fight in phases instead of one rage at half health:
   - P1 is the boss's own pattern.
-  - P2, at ≤66%, is its old rage.
-  - P3, at ≤33%, brings in the world's own gel (HOPPA, WORMA, BUBBLA, STEAMA, SALMA, SKATA, GLOWA), raises the pace and tightens the boss's numbers: shorter tells and windows, more shots, longer chains.
+  - P2 is its old rage.
+  - P3 brings in the world's own gel (HOPPA, WORMA, BUBBLA, STEAMA, SALMA, SKATA, GLOWA), raises the pace and tightens the boss's numbers: shorter tells and windows, more shots, longer chains.
   - Each phase is data: `at` (a health share), an optional `after` (seconds), `pace`, `adds`, and `set`, which is laid over the species' tuning and reaches the behaviour through `api.S(g)`.
-  - A phase cannot be skipped. Health holds at the next line until the phase has lasted `minPhase` (5 s). BLISTER's first bare window used to carry it through both lines at once.
+  - A phase cannot be skipped. Health holds one point above the next line until the phase has lasted its own `min` (else `minPhase`, 5 s). BLISTER's first bare window used to carry it through both lines at once.
+    - The hold now sits a whole point over the line. Before this fix, a line that fell on a whole number (BLISTER's 40 × 0.55 = 22) counted as crossed, so P2 could still be skipped.
+    - At most one phase is entered per step.
+  - **Stage lengths: each stage a little longer than the one before** (target 1 : 1.15 : 1.3). The lines are per boss, not 66%/33%, and so are the P1/P2 `min`s. Both were tuned on the bot bench, because each boss deals out its damage windows in its own rhythm. The table is in `DESIGN.md`.
   - The phases apply in ARCADE and HARDCADE. Campaign boss rooms are unchanged unless `?bossphases=all` is set. `?bossphases=off` gives the v153 bosses back for an A/B.
   - TWIN PRISMS and OMEGA keep their own 1.x phases.
-- **The fights evened out.** Health is CURB KING 200→110, BLISTER 30→40, KETTLE 140→120, PIKE 80→90 and BERG 88→100, with MAW and ANGLER unchanged. A simple dodge-and-shoot bot (8 seeds, ARCADE) took worlds 2–8 in 7–38 s on v153 and 22–32 s here (table in `DESIGN.md`, "Boss phases").
+- **The fights evened out.**
+  - Health: CURB KING 200→110, MAW 54→70, BLISTER 30→40, KETTLE 140→120, PIKE 80→90, BERG 88→100; ANGLER unchanged.
+  - A simple dodge-and-shoot bot (16 seeds, ARCADE, medians) took worlds 2–8 in 7–38 s on v153 and **26–36 s** here (table in `DESIGN.md`, "Boss phases").
+  - Stages, P1 / P2 / P3 in s:
+    - CURB KING 7.8 / 9.2 / 9.9
+    - MAW 8.5 / 10.2 / 12.3
+    - BLISTER 6.6 / 8.5 / 9.2
+    - KETTLE 7.7 / 10.4 / 10.5
+    - PIKE 7.6 / 9.2 / 10.4
+    - BERG 6.7 / 7.9 / 8.9
+    - ANGLER 7.9 / 9.1 / 10.0
+  - In HARDCADE, BLISTER does not keep the shape (7.2 / 13.3 / 6.9).
   - The grade lines are the measured v42 lines × a per-boss estimate (`tiers`). `scripts/boss-tiers.mjs` has not been re-run with the phases on.
 - **A big boss's death** (`TUNING.bossDeath`, `render/actors.js` `_throe`). The worlds' bosses and OMEGA no longer pop at once:
   - Over 2 s the body stays where it fell. It shudders, swells and flashes white faster and faster.
@@ -41,6 +57,13 @@
   - It ends in a kill burst 1.6× its size, with its death sound again.
   - Nothing freezes: the sim has already removed it, scored it and cleared the wave. REDUCE MOTION drops the shudder and the shakes.
   - Placeholder art.
+- **WORLD CLEAR is a side card** (`ui.card(..., 'side')`, `index.html` `#card.side`):
+  - It sits flush to the right edge, halfway down, and slides in from off-screen.
+  - It shows the world just cleared with its grade, and `NEXT → WORLD n · NAME`.
+  - The middle of the floor, where the boss dies, stays clear.
+  - REDUCE MOTION, whether the in-game option (now also an `html.calm` class) or the device setting, shows it without the slide.
+  - On a phone held upright it sits at 58% height, ≤46vw wide.
+  - The boss's intro card stays in the top band.
 - **Testers' unlock** (`main.js`):
   - `?unlock=all` opens all 36 campaign rooms (HARD PAIN's too) and every arcade start world.
   - `?room=N` (1–36, or a room id) goes straight into that room and implies the unlock.
@@ -53,6 +76,7 @@
   - `?room=12` lands in UNDERTOW, playing, and localStorage is byte-identical afterwards.
   - World 2's boss goes P1→P2→P3 with banners and adds.
   - The death plays over about 2 s of real frames.
+  - WORLD CLEAR shows as the side card during the death, in landscape (960×540), portrait (390×844) and reduced motion (no animation).
   - Not checked on a phone or a real GPU.
 - Cache tokens `?v=153` → `?v=154`; HUD label → `2.0 · v154`
 

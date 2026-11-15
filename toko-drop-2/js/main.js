@@ -149,7 +149,7 @@ actors.fx = { shake: (a) => shake(a), sound: (e) => sound.event(e) };   // v154:
 // REDUCE MOTION (1.x v81): OPTIONS' choice (toko2.motion), else the device's
 const reduceMotion = () => { const m = store.str('toko2.motion'); return m ? m === 'on' : matchMedia('(prefers-reduced-motion: reduce)').matches; };
 // (v151: and the floors' own pulses hear of it — kit.js CALM: set here, on the option, and when the device's setting changes)
-const tellCalm = () => { CALM.value = reduceMotion() ? 1 : 0; };
+const tellCalm = () => { CALM.value = reduceMotion() ? 1 : 0; document.documentElement.classList.toggle('calm', !!CALM.value); };   // v154: and CSS (the side card's slide)
 tellCalm(); matchMedia('(prefers-reduced-motion: reduce)').addEventListener?.('change', tellCalm);
 // v86: CONTROLS (OPTIONS) — LEFT-HANDED, the stick's size, the dead zone; applied to the input layer at once
 const SIZES = ['small', 'normal', 'large'];
@@ -1084,7 +1084,11 @@ function onEvent(e) {
   else if (e.type === 'wave' && e.kind === 'boss' && world?.fight && world.world) ui.card(bossName(world.fight.kind), `${t('bossOf')} · ${t(`world${world.world}`)}`, 2.4, 'band');
   else if (e.type === 'wave') ui.banner(`${t('wave')} ${e.wave}${e.label ? ` · ${e.label}` : ''}`, e.dur ?? 1.4);
   // and when it is down and its wave is clear, the world is: WORLD CLEAR in the middle, the fight over, before the floor opens
-  else if (e.type === 'worldClear') ui.card(t('worldClear'), `${t(`world${e.world}`)}${e.grade ? ` · ${e.grade}` : ''}`, e.dur ?? 2.4, 'center');
+  // v154: WORLD CLEAR is a side card at the far right (owner, 2026-11-15) — the world just done, and the next one
+  else if (e.type === 'worldClear') {
+    const nk = `world${e.world + 1}`, nx = t(nk);
+    ui.card(t('worldClear'), `${t(`world${e.world}`)}${e.grade ? ` · ${e.grade}` : ''}`, e.dur ?? 2.4, 'side', nx !== nk ? `${t('nextWorld')} → ${nx}` : '');
+  }
   // a boss wave's clear comes a beat after its fight's banner: it joins it rather than writing over it (v42)
   else if (e.type === 'clear' && world?.fight?.done) ui.banner(`${bossName(world.fight.kind)} ${t('bossDown')} · ${world.fight.grade} · +${(world.fight.bonus + e.bonus).toLocaleString('en-US')}`, 2.2);
   else if (e.type === 'clear') ui.banner(`${t('wave')} ${e.wave} ${t('clear')} +${e.bonus.toLocaleString('en-US')}`, e.dur ?? 1.0);

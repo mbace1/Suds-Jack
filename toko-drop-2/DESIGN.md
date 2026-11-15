@@ -130,22 +130,37 @@ Classic `toko-drop/` remains the historical / hub v221 lineage. Godot port follo
 Per **Decision 15 Nov 2026: Bosses are multi-wave fights**. Implemented in v154 (`toko-drop-2/js/tuning/bossphases.js`, `sim/species/bosskit.js`). It applies in ARCADE and HARDCADE. Campaign boss rooms (PACK ICE, BOIL OVER, THE DEEP END) keep v153 behaviour unless `?bossphases=all` is set. `?bossphases=off` restores v153 for A/B.
 
 Rules:
-- Each world boss has 3 phases, gated by health: P2 at ≤66%, P3 at ≤33%. Phases only go up, and none can be skipped, because health holds at the next line until the phase has lasted 5 s.
-- P1 is the boss's own trick. P2 is its old half-health rage, now starting at 66%. P3 adds that world's signature gel and a pace ramp, and tightens the boss's own numbers.
+- Each world boss has 3 phases, gated by health lines set per boss. Phases only go up, and none can be skipped: health holds one point above the next line until the phase has lasted its `min`.
+- **Stage lengths (owner, 15 Nov 2026: "3 stages, slightly longer each time is a good general rule").** Each stage lasts a little longer than the one before, targeting about 1 : 1.15 : 1.3 of fight time.
+  - The lines are not thirds. Each boss takes damage in its own rhythm: MAW only while surfaced, BLISTER only while bare, KETTLE between stalls.
+  - So the hp split and each phase's `min` (shortest length, in s) were tuned against the bot bench.
+- P1 is the boss's own trick. P2 is its old half-health rage. P3 adds that world's signature gel and a pace ramp, and tightens the boss's own numbers.
 - Big bosses get a ~2 s death sequence (shudder, white flashes, floor cracks of light and goo, 8 goo bursts, then a 1.6× final burst). It is visual only, with no freeze.
+- **WORLD CLEAR is a side card (owner, 15 Nov 2026).** It sits flush to the far right edge, halfway down, and slides in from off-screen, so it no longer covers the dying boss in the centre.
+  - It shows the cleared world and grade, plus a line for the next world: `NEXT → WORLD n · NAME`.
+  - With REDUCE MOTION (the in-game option or the device setting) it appears without the slide.
+  - On a phone held upright it sits a little lower (58%) and narrower (≤46vw).
+  - The boss intro card is unchanged (top band).
 - TWIN PRISMS (w1) and OMEGA (w9) keep their 1.x phases. OMEGA already has 3 acts at 66%/33%.
 
-| World · boss | HP v153→v154 | P1 (100%) | P2 (≤66%) | P3 (≤33%) | Bot median fight s, v153→v154 |
-|---|---|---|---|---|---|
-| 2 · CURB KING | 200→**110** | single hop, 10-ring | hops twice, doubled ring, HOPPA brood every 5th landing | **+3 HOPPA**, pace ×1.15, 12-ring, crouch 0.4 s, brood every 3rd | 38→25 |
-| 3 · MAW | 54→54 | surface + 3-arm spiral | surfaces sooner, sludge holes | **+2 WORMA**, pace ×1.1, 4-arm spiral, 18-ring erupt, up 2.6 s | 20→26 |
-| 4 · BLISTER | 30→**40** | shell 10, bare 4 s | faster blows, bigger bursts | **+3 BUBBLA**, pace ×1.15, shell 11, bare 3.4 s, 7-shot panic fans | 7→22 |
-| 5 · KETTLE | 140→**120** | 3 jets, stalls every 2nd vent | 4 jets, alternating spin, fill 1.9 s | **+2 STEAMA**, pace ×1.1, 5 jets, fill 1.5 s, stalls only every 3rd vent, bigger steam | 35→32 |
-| 6 · PIKE | 80→**90** | circle, 1 charge | **2** chained charges, aim 0.6 s | **+3 SALMA**, pace ×1.1, **3** charges, aim 0.5 s, charge speed 19 | 28→29 |
-| 7 · BERG | 88→**100** | slide, 4 icicle lines | calves 2 SKATA, faster, 8 lines | **+2 SKATA**, pace ×1.1, freezes every 3.6–4.4 s, tell 0.65 s, 6-icicle walls | 20→22 |
-| 8 · ANGLER | 150→150 | creep, bite, 3 lanterns | 2 GLOWA, lanterns ×2 | **+2 GLOWA**, pace ×1.15, bite tell 0.45 s, rest 0.9 s, 16-ring, 4 lanterns | 26→28 |
+| World · boss | HP v153→v154 | P1 (min s) | P2 line (min s) | P3 line | P1 / P2 / P3, s | Fight s |
+|---|---|---|---|---|---|---|
+| 2 · CURB KING: single hop, 10-ring → hops twice, doubled ring, HOPPA brood every 5th → **+3 HOPPA**, pace ×1.15, 12-ring, crouch 0.4 s, brood every 3rd | 200→**110** | 6.8 | ≤65% (8.4) | ≤37% | 7.8 / 9.2 / 9.9 (1 : 1.18 : 1.27) | 29 |
+| 3 · MAW: surface + 3-arm spiral → surfaces sooner, sludge holes → **+2 WORMA**, pace ×1.1, 4-arm spiral, 18-ring erupt, up 2.6 s | 54→**70** | 5.3 | ≤75% (9) | ≤64% | 8.5 / 10.2 / 12.3 (1 : 1.20 : 1.45) | 29 |
+| 4 · BLISTER: shell 10, bare 4 s → faster blows, bigger bursts → **+3 BUBBLA**, pace ×1.15, shell 11, bare 3.4 s, 7-shot panic fans | 30→**40** | 6.3 | ≤73% (7.2) | ≤44% | 6.6 / 8.5 / 9.2 (1 : 1.28 : 1.39) | 27.5 |
+| 5 · KETTLE: 3 jets, stalls every 2nd vent → 4 jets, alternating spin, fill 1.9 s → **+2 STEAMA**, pace ×1.1, 5 jets, fill 1.5 s, stalls every 3rd vent, bigger steam | 140→**120** | 7.6 | ≤72% (8.9) | ≤69% | 7.7 / 10.4 / 10.5 (1 : 1.34 : 1.37) | 36 |
+| 6 · PIKE: circle, 1 charge → **2** chained charges, aim 0.6 s → **+3 SALMA**, pace ×1.1, **3** charges, aim 0.5 s, charge speed 19 | 80→**90** | 6.8 | ≤76.3% (8.4) | ≤54.4% | 7.6 / 9.2 / 10.4 (1 : 1.21 : 1.37) | 27 |
+| 7 · BERG: slide, 4 icicle lines → calves 2 SKATA, faster, 8 lines → **+2 SKATA**, pace ×1.1, freezes every 3.6–4.4 s, tell 0.65 s, 6-icicle walls | 88→**100** | 6.0 | ≤61% (7.5) | ≤40% | 6.7 / 7.9 / 8.9 (1 : 1.18 : 1.33) | 26 |
+| 8 · ANGLER: creep, bite, 3 lanterns → 2 GLOWA, lanterns ×2 → **+2 GLOWA**, pace ×1.15, bite tell 0.45 s, rest 0.9 s, 16-ring, 4 lanterns | 150→150 | 7.2 | ≤62.3% (8.9) | ≤44.8% | 7.9 / 9.1 / 10.0 (1 : 1.14 : 1.26) | 32 |
 
-The fight times come from my own simple dodge-and-shoot bot: 8 seeds, ARCADE, run in node against the sim. It is not the repo's `scripts/boss-tiers.mjs` pass, so use them only to compare v153 with v154. The spread across worlds 2–8 narrowed from 7–38 s to 22–32 s. The grade lines (S/A/B) are the old measured lines × a per-boss estimate (`tiers`) until boss-tiers is re-run.
+These numbers come from my own simple dodge-and-shoot bot: 16 seeds, ARCADE, run in node against the sim (`stagebench.mjs`). They are medians per stage and per fight. It is not the repo's `scripts/boss-tiers.mjs` pass, so use them only for comparison.
+
+- **Fight band:** v153 7–38 s; first v154 cut (66%/33%, 5 s holds) 20–33 s; now **26–36 s**.
+- **HARDCADE** follows the same shape for 6 of 7 bosses. BLISTER is the exception at 7.2 / 13.3 / 6.9: its bare windows quantise the stages.
+- **Open questions:**
+  - MAW's and KETTLE's P3 lines sit high (64%, 69%). Their stages are bounded by surfacings and stalls, so their P2 is mostly a timed hold.
+  - MAW needed +16 hp so its last stage could outlast its second.
+- **Grade lines:** the S/A/B lines are still the old measured lines × a per-boss estimate (`tiers`) until boss-tiers is re-run.
 
 ## 7. Open questions
 
