@@ -14,24 +14,24 @@
 // moves, then everything is tested, against post-move positions.
 //
 // Modes: 'arcade', 'hardcade' (corpses fire back) and 'survival'.
-import { TUNING } from '../tuning.js?v=153';
-import { press, pressReset } from './press.js?v=153';
-import { makeRng } from './rng.js?v=153';
-import { BEHAVIOUR } from './species/index.js?v=153';
-import { DIRECTORS } from './director/index.js?v=153';
-import * as fire from './fire.js?v=153';
-import { makeHero, heroStep, applyPull, hurtHero, invincible } from './hero.js?v=153';
-import { swarmForces, resolveCrowd } from './crowd.js?v=153';
-import { revengeColor } from './color.js?v=153';
-import * as pickups from './pickups.js?v=153';
-import * as worlds from './worlds.js?v=153';
-import * as reshape from './reshape.js?v=153';
-import { Arena, levelShape, levelMoves, levelEnvelope, KIND } from './shape.js?v=153';
-import * as rules from './rules.js?v=153';
-import * as heat from './heat.js?v=153';
-import * as formation from './formation.js?v=153';
-import * as posts from './posts.js?v=153';
-import * as slam from './slam.js?v=153';
+import { TUNING } from '../tuning.js?v=154';
+import { press, pressReset } from './press.js?v=154';
+import { makeRng } from './rng.js?v=154';
+import { BEHAVIOUR } from './species/index.js?v=154';
+import { DIRECTORS } from './director/index.js?v=154';
+import * as fire from './fire.js?v=154';
+import { makeHero, heroStep, applyPull, hurtHero, invincible } from './hero.js?v=154';
+import { swarmForces, resolveCrowd } from './crowd.js?v=154';
+import { revengeColor } from './color.js?v=154';
+import * as pickups from './pickups.js?v=154';
+import * as worlds from './worlds.js?v=154';
+import * as reshape from './reshape.js?v=154';
+import { Arena, levelShape, levelMoves, levelEnvelope, KIND } from './shape.js?v=154';
+import * as rules from './rules.js?v=154';
+import * as heat from './heat.js?v=154';
+import * as formation from './formation.js?v=154';
+import * as posts from './posts.js?v=154';
+import * as slam from './slam.js?v=154';
 
 const T = TUNING;
 
@@ -83,7 +83,8 @@ export function createWorld({ seed = 1, mode = 'arcade', arena = T.arena.landsca
 // ── what species and directors may call (docs/SIM_CONTRACT.md) ──────
 export const api = {
   T, fire,
-  S: (g) => T.species[g.kind],
+  // v154: a boss fought in phases (tuning/bossphases.js) reads its phase's numbers (sim/species/bosskit.js)
+  S: (g) => g.s?.phS ?? T.species[g.kind],
   // the body's walking speed now: its species' speed, the wave's escalation,
   // the SWIFT affix and a SIREN's surge
   speed(g) {

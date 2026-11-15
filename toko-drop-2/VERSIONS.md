@@ -19,6 +19,45 @@
     Never `--no-verify`.
 -->
 
+## v154 — 2026-11-15
+**Bosses fight in three phases and die slowly; a testers' unlock (?unlock=all, ?room=N)**
+- Owner decisions of 2026-11-15 (producer doc `DESIGN.md`):
+  - "Bosses should be multiple waves, like 3 with harder strategy each wave. Usually ramping up pacing."
+  - "No need for any freezes. Big bosses can have elaborate death animations instead."
+  - Full health on arrival in each world is unchanged.
+- **Three phases** (`js/tuning/bossphases.js`, `sim/species/bosskit.js`). The seven world bosses (CURB KING, MAW, BLISTER, KETTLE, PIKE, BERG, ANGLER) now fight in phases instead of one rage at half health:
+  - P1 is the boss's own pattern.
+  - P2, at ≤66%, is its old rage.
+  - P3, at ≤33%, brings in the world's own gel (HOPPA, WORMA, BUBBLA, STEAMA, SALMA, SKATA, GLOWA), raises the pace and tightens the boss's numbers: shorter tells and windows, more shots, longer chains.
+  - Each phase is data: `at` (a health share), an optional `after` (seconds), `pace`, `adds`, and `set`, which is laid over the species' tuning and reaches the behaviour through `api.S(g)`.
+  - A phase cannot be skipped. Health holds at the next line until the phase has lasted `minPhase` (5 s). BLISTER's first bare window used to carry it through both lines at once.
+  - The phases apply in ARCADE and HARDCADE. Campaign boss rooms are unchanged unless `?bossphases=all` is set. `?bossphases=off` gives the v153 bosses back for an A/B.
+  - TWIN PRISMS and OMEGA keep their own 1.x phases.
+- **The fights evened out.** Health is CURB KING 200→110, BLISTER 30→40, KETTLE 140→120, PIKE 80→90 and BERG 88→100, with MAW and ANGLER unchanged. A simple dodge-and-shoot bot (8 seeds, ARCADE) took worlds 2–8 in 7–38 s on v153 and 22–32 s here (table in `DESIGN.md`, "Boss phases").
+  - The grade lines are the measured v42 lines × a per-boss estimate (`tiers`). `scripts/boss-tiers.mjs` has not been re-run with the phases on.
+- **A big boss's death** (`TUNING.bossDeath`, `render/actors.js` `_throe`). The worlds' bosses and OMEGA no longer pop at once:
+  - Over 2 s the body stays where it fell. It shudders, swells and flashes white faster and faster.
+  - Six cracks of light and dark goo run out across the floor, and eight bursts of goo break out of it, each with a small shake.
+  - It ends in a kill burst 1.6× its size, with its death sound again.
+  - Nothing freezes: the sim has already removed it, scored it and cleared the wave. REDUCE MOTION drops the shudder and the shakes.
+  - Placeholder art.
+- **Testers' unlock** (`main.js`):
+  - `?unlock=all` opens all 36 campaign rooms (HARD PAIN's too) and every arcade start world.
+  - `?room=N` (1–36, or a room id) goes straight into that room and implies the unlock.
+  - Either makes the page a sandbox: saves are read, never written, and the title says `TEST UNLOCK · NOT SAVED`.
+  - Documented in `AGENTS.md`.
+- `DESIGN.md` and `AGENTS.md` are #647's producer docs, plus a "Boss phases" section and a testers' section.
+- Checked in headless Chrome (software WebGL) on the default URL:
+  - Loads with no page errors.
+  - The rooms grid has 0 of 36 locked with `?unlock=all` and 35 of 36 without.
+  - `?room=12` lands in UNDERTOW, playing, and localStorage is byte-identical afterwards.
+  - World 2's boss goes P1→P2→P3 with banners and adds.
+  - The death plays over about 2 s of real frames.
+  - Not checked on a phone or a real GPU.
+- Cache tokens `?v=153` → `?v=154`; HUD label → `2.0 · v154`
+
+---
+
 ## v153 — 2026-11-12
 **A campaign room can wear any world: the shaped and moving rooms take the neon grid, and the sewer and the core are in the campaign**
 - The owner, 2026-11-12: "campaign can use any world", and of the neon grid: "Circular, moving, shape shifting levels would work there better anyways. And these levels fit those better than the environment ones". Since v73 each campaign world wore one place, the arcade world its rule comes from, and every one of its six rooms wore it. A room may name a look of its own now (`TUNING.campaign.worlds[].rooms[].look`, any arcade world's id) and wears that: its floor, the set round it, its light and its rail.
@@ -26,7 +65,7 @@
 - The two places no campaign world wore are in it: NEEDLE is in the sewer (THE VEIN, with the stream down its middle) and the last room, THE CORE, is in the core. All nine arcade worlds are worn somewhere in the campaign.
 - Nothing a room plays by has moved: its rule, its goal, its clock and its grade lines are what they were. Only what it is drawn as.
 - Tests: `test/campaign.mjs` 305 checks (every room's look is an arcade world's; a shape or a moving floor wears the grid and a plain rectangle a place; every world has both; every arcade world is worn somewhere), `test/smoke.mjs` reads the room's own look.
-- Cache tokens `?v=152` → `?v=153`; HUD label → `2.0 · v153`
+- Cache tokens `?v=152` → `?v=154`; HUD label → `2.0 · v153`
 
 ---
 

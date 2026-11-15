@@ -10,7 +10,7 @@
 //
 //   CIRCLE → AIM → CHARGE → (STUN at a wall) → CIRCLE
 // Numbers: js/tuning/species/pike.js. Seeded: w.rng only.
-import { rage, range, toHero } from './bosskit.js?v=153';
+import { rage, range, toHero } from './bosskit.js?v=154';
 
 // the far end of the lane from (x, z) along (dx, dz): where it meets a wall
 function laneEnd(w, x, z, dx, dz, m) {
@@ -38,7 +38,7 @@ export default {
 
   step(w, g, dt, api) {
     const S = api.S(g), s = g.s, R = S.rage, C = S.circle;
-    const mad = rage(w, g, S);
+    const mad = rage(w, g, S, api);
     g.anchored = true;
     s.t -= dt;
     const opts = { color: S.bulletColor, src: g.kind };

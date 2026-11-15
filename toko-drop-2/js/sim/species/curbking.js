@@ -12,9 +12,9 @@
 //           it squats again at once for a second hop, then rests; the ring
 //           comes doubled; every `brood.every`th landing shakes HOPPA loose
 // Numbers: js/tuning/species/curbking.js. Seeded: w.rng only.
-import { steerTo } from './base.js?v=153';
-import { rage, range, inside } from './bosskit.js?v=153';
-import { TUNING } from '../../tuning.js?v=153';
+import { steerTo } from './base.js?v=154';
+import { rage, range, inside } from './bosskit.js?v=154';
+import { TUNING } from '../../tuning.js?v=154';
 
 function squat(w, g, S, crouch) {
   const s = g.s, h = w.hero;
@@ -38,7 +38,7 @@ export default {
 
   step(w, g, dt, api) {
     const S = api.S(g), s = g.s, h = w.hero, R = S.rage;
-    const mad = rage(w, g, S);
+    const mad = rage(w, g, S, api);
     s.t -= dt;
     g.anchored = true;                        // a king is not shoved about by the crowd
     if (s.state === 'rest') {

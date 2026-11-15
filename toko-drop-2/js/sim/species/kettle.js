@@ -11,8 +11,8 @@
 //   VENT   the jets and the steam
 //   STALL  (every second vent) still and red-hot
 // Numbers: js/tuning/species/kettle.js. Seeded: w.rng only.
-import { rage, toHero } from './bosskit.js?v=153';
-import { TUNING } from '../../tuning.js?v=153';
+import { rage, toHero } from './bosskit.js?v=154';
+import { TUNING } from '../../tuning.js?v=154';
 
 export default {
   init(w, g, api) {
@@ -23,7 +23,7 @@ export default {
 
   step(w, g, dt, api) {
     const S = api.S(g), s = g.s, V = S.vent, R = S.rage;
-    const mad = rage(w, g, S);
+    const mad = rage(w, g, S, api);
     g.anchored = true;
     const { ux, uz, d } = toHero(w, g.x, g.z);
     g.faceX = ux; g.faceZ = uz;

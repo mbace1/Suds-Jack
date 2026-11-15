@@ -7,40 +7,45 @@
 // The rules live in sim/ and run on a fixed step; this file feeds them input,
 // hands their events to the view and the sound, and draws in between steps.
 import * as THREE from 'three/webgpu';
-import { TUNING } from './tuning.js?v=153';
-import { buildFloor } from './render/floor.js?v=153';
-import { fitCamera, screenToWorld, screenDown } from './render/view.js?v=153';
-import * as worldsSim from './sim/worlds.js?v=153';
-import { shapeAt as shiftShape } from './sim/floorshift.js?v=153';
-import * as reshapeSim from './sim/reshape.js?v=153';
-import { Scenery } from './render/scenery.js?v=153';
-import { DRIFT, CALM } from './render/kit.js?v=153';
-import { Transit } from './render/transit.js?v=153';
-import { Splats } from './render/splats.js?v=153';
-import { Actors } from './render/actors.js?v=153';
-import { GEL_TIME, GEL_SUN, GEL_GLINT, GEL_CORE } from './render/gel.js?v=153';
-import { studioEnvironment, skyEnvironment } from './render/env.js?v=153';
-import { Specimen } from './render/specimen.js?v=153';
-import { createWorld, step, api as simApi, runPhase } from './sim/world.js?v=153';
-import { heroState } from './sim/hero.js?v=153';
-import { stage as stagePk } from './sim/pickups.js?v=153';
-import { Input } from './input.js?v=153';
-import { UI, t, timeText, LANGS, getLang, setLang, goalText, bossName } from './ui.js?v=153';
-import { Announcer } from './announcer.js?v=153';
-import { rooms as campaignRooms, isOpen as roomOpen, better as betterGrade } from './sim/director/campaign.js?v=153';
-import { levelShape, slots as regionSlots } from './sim/shape.js?v=153';
-import { Sound } from './audio.js?v=153';
-import { Music, worldWant, cueFor, renderMusicWav } from './music.js?v=153';
-import { Intro, CUES as INTRO } from './intro/intro.js?v=153';
-import { scheduleIntroSfx, renderIntroSfxWav } from './intro/sfx.js?v=153';
-import { Readout } from './readout.js?v=153';
-import { Meter, device, Quality } from './meter.js?v=153';
-import * as record from './record.js?v=153';
-import { dailySeed } from './sim/rng.js?v=153';
-import { machine } from './fsm.js?v=153';
+import { TUNING } from './tuning.js?v=154';
+import { BOSS_PHASES } from './tuning/bossphases.js?v=154';
+import { buildFloor } from './render/floor.js?v=154';
+import { fitCamera, screenToWorld, screenDown } from './render/view.js?v=154';
+import * as worldsSim from './sim/worlds.js?v=154';
+import { shapeAt as shiftShape } from './sim/floorshift.js?v=154';
+import * as reshapeSim from './sim/reshape.js?v=154';
+import { Scenery } from './render/scenery.js?v=154';
+import { DRIFT, CALM } from './render/kit.js?v=154';
+import { Transit } from './render/transit.js?v=154';
+import { Splats } from './render/splats.js?v=154';
+import { Actors } from './render/actors.js?v=154';
+import { GEL_TIME, GEL_SUN, GEL_GLINT, GEL_CORE } from './render/gel.js?v=154';
+import { studioEnvironment, skyEnvironment } from './render/env.js?v=154';
+import { Specimen } from './render/specimen.js?v=154';
+import { createWorld, step, api as simApi, runPhase } from './sim/world.js?v=154';
+import { heroState } from './sim/hero.js?v=154';
+import { stage as stagePk } from './sim/pickups.js?v=154';
+import { Input } from './input.js?v=154';
+import { UI, t, timeText, LANGS, getLang, setLang, goalText, bossName } from './ui.js?v=154';
+import { Announcer } from './announcer.js?v=154';
+import { rooms as campaignRooms, isOpen as roomOpen, better as betterGrade } from './sim/director/campaign.js?v=154';
+import { levelShape, slots as regionSlots } from './sim/shape.js?v=154';
+import { Sound } from './audio.js?v=154';
+import { Music, worldWant, cueFor, renderMusicWav } from './music.js?v=154';
+import { Intro, CUES as INTRO } from './intro/intro.js?v=154';
+import { scheduleIntroSfx, renderIntroSfxWav } from './intro/sfx.js?v=154';
+import { Readout } from './readout.js?v=154';
+import { Meter, device, Quality } from './meter.js?v=154';
+import * as record from './record.js?v=154';
+import { dailySeed } from './sim/rng.js?v=154';
+import { machine } from './fsm.js?v=154';
 
 const T = TUNING;
 const params = new URLSearchParams(location.search);
+// v154: the bosses' three phases (tuning/bossphases.js) — ?bossphases=off is the v153 bosses (one rage at half
+// health, their old health), for an A/B on the phone; ?bossphases=all puts the phases in the campaign's boss rooms too
+if (params.get('bossphases') === 'off') BOSS_PHASES.on = false;
+else if (params.get('bossphases') === 'all') BOSS_PHASES.campaign = true;
 const stage = document.getElementById('stage');
 
 // three reports its own failures (a shader that will not compile on this GPU,
@@ -107,10 +112,18 @@ function applyLight(id) {
 }
 
 const splats = new Splats(scene);
+// v154: the TESTERS' UNLOCK. ?unlock=all opens every campaign room (HARD PAIN's too) and every arcade world to
+// start from; ?room=N (the room's number on the grid, 1-36, or its id) goes straight into that room, and opens the
+// rest as ?unlock=all does. Either way the page is a SANDBOX: nothing it does is written to this phone's saves
+// (grades, bests, the furthest world, the kept run, the play record, the settings) — it reads them, and what it would
+// have written lives in memory until the page is closed. A tag on the title says so
+const ROOM_PARAM = params.get('room');
+const UNLOCK_ALL = params.get('unlock') === 'all' || !!ROOM_PARAM;
+const sandbox = UNLOCK_ALL ? new Map() : null;
 const store = {
-  num(k) { try { return Number(localStorage.getItem(k)) || 0; } catch { return 0; } },
-  str(k) { try { return localStorage.getItem(k) || ''; } catch { return ''; } },
-  set(k, v) { try { localStorage.setItem(k, String(v)); } catch { /* private mode */ } },
+  num(k) { if (sandbox?.has(k)) return Number(sandbox.get(k)) || 0; try { return Number(localStorage.getItem(k)) || 0; } catch { return 0; } },
+  str(k) { if (sandbox?.has(k)) return sandbox.get(k) || ''; try { return localStorage.getItem(k) || ''; } catch { return ''; } },
+  set(k, v) { if (sandbox) { sandbox.set(k, String(v)); return; } try { localStorage.setItem(k, String(v)); } catch { /* private mode */ } },
 };
 // the goo (render/goo.js) is on unless the title's SPLATTER switch says off
 // (localStorage toko2.goo); ?goo=off|on overrides it for a link, as ?gels does
@@ -132,6 +145,7 @@ const camAt = new THREE.Vector3();
 let trauma = 0;
 // 1.x's shake: trauma adds up to 1 and decays; the camera moves by its square
 const shake = (amount) => { if (!reduceMotion()) trauma = Math.min(1, trauma + amount); };
+actors.fx = { shake: (a) => shake(a), sound: (e) => sound.event(e) };   // v154: a big boss's death plays out over two seconds (render/actors.js _throe)
 // REDUCE MOTION (1.x v81): OPTIONS' choice (toko2.motion), else the device's
 const reduceMotion = () => { const m = store.str('toko2.motion'); return m ? m === 'on' : matchMedia('(prefers-reduced-motion: reduce)').matches; };
 // (v151: and the floors' own pulses hear of it — kit.js CALM: set here, on the option, and when the device's setting changes)
@@ -382,7 +396,7 @@ const bests = () => Object.fromEntries(MODES.map((m) => [m, store.num(bestKey(m)
 // and said on the ARCADE button, so nobody plays from world 4 by accident
 const reachedKey = (m) => `toko2.reached.${m}`, startAtKey = (m) => `toko2.startAt.${m}`;
 const bestFromKey = (m, n) => `toko2.heat.best.${m}.from${n}`;
-const reachedOf = (m) => Math.max(1, Math.min(T.worlds.list.length, store.num(reachedKey(m)) || 1));
+const reachedOf = (m) => UNLOCK_ALL ? T.worlds.list.length : Math.max(1, Math.min(T.worlds.list.length, store.num(reachedKey(m)) || 1));   // v154: ?unlock=all, every world
 const startAtOf = (m) => Math.max(1, Math.min(reachedOf(m), store.num(startAtKey(m)) || 1));
 let startedAt = 1;   // the world this run started at
 // The title's two test switches (owner, 2026-10-22: "the pushing dash should
@@ -399,7 +413,7 @@ let startedAt = 1;   // the world this run started at
 // A dash saved before v124 (PUSH was the default then) is let go once, so a
 // phone that played v123 meets 1.x's dash too; a choice made after it stays.
 const DASHES = ['pass', 'push', 'cut'], DASH_BY = ['lift', 'flick'], HP_STEPS = [1, 2, 3];
-if (store.str('toko2.dash124') !== '1') { try { localStorage.removeItem('toko2.dash'); } catch { /* private mode */ } store.set('toko2.dash124', '1'); }
+if (!sandbox && store.str('toko2.dash124') !== '1') { try { localStorage.removeItem('toko2.dash'); } catch { /* private mode */ } store.set('toko2.dash124', '1'); }
 const tests = () => {
   const hp = store.num('toko2.gelHp'), d = store.str('toko2.dash'), by = store.str('toko2.dashBy');
   return { dash: DASHES.includes(d) ? d : 'pass', hp: HP_STEPS.includes(hp) ? hp : 1, by: DASH_BY.includes(by) ? by : 'lift' };
@@ -467,7 +481,7 @@ function saveContinue() {
   const h = world.hero;
   store.set(CONT_KEY, JSON.stringify({ mode, world: world.world, score: world.score, kills: world.kills, heat: world.heat || 0, lives: h.lives, weapon: h.weapon ? { ...h.weapon } : null, dashLevel: h.dashLevel || 0, when: Date.now(), v: T.version ?? null }));
 }
-const clearContinue = () => { try { localStorage.removeItem(CONT_KEY); } catch { /* private mode */ } };
+const clearContinue = () => { if (sandbox) { sandbox.set(CONT_KEY, ''); return; } try { localStorage.removeItem(CONT_KEY); } catch { /* private mode */ } };
 // v118: DAILY — the day's seed (sim/rng.js dailySeed: the UTC day) for everyone, ARCADE's rules (HARDCADE's with
 // the title's HARD switch on), from world 1, every wave drawn from dice of its own so that how a player played
 // cannot move what comes next (sim/director/arcade.js waveRng). Its best and tries are kept a day at a time
@@ -478,6 +492,7 @@ const dailyKey = (m, day) => `toko2.daily.${m}.${day}`;
 const dailyGet = (m, day = dayOf()) => { try { const v = JSON.parse(store.str(dailyKey(m, day)) || 'null'); return { best: v?.best || 0, tries: v?.tries || 0 }; } catch { return { best: 0, tries: 0 }; } };
 let daily = null;   // the day this run is the DAILY of, { day, seed }, or null
 (function pruneDailies() {
+  if (sandbox) return;   // v154: the testers' sandbox touches no save
   try {
     const keep = new Set(Array.from({ length: T.daily.keep }, (_, i) => dayOf(new Date(Date.now() - i * 864e5))));
     for (let i = localStorage.length - 1; i >= 0; i--) { const k = localStorage.key(i); if (k?.startsWith('toko2.daily.') && !keep.has(k.slice(-10))) localStorage.removeItem(k); }
@@ -596,9 +611,9 @@ const specimen = new Specimen(T, actors, scene.environment);
 // menu). It takes effect at run start; the menu also redraws the world left
 // behind the title in the new style. The HUD label says ' · sdf' while on.
 const GELS = ['classic', 'sdf'];
-import { STYLES } from './render/style.js?v=153';
-import { Lens } from './render/lens.js?v=153';
-import { setSceneSun } from './render/sun.js?v=153';
+import { STYLES } from './render/style.js?v=154';
+import { Lens } from './render/lens.js?v=154';
+import { setSceneSun } from './render/sun.js?v=154';
 let urlGels = GELS.includes(params.get('gels')) ? params.get('gels') : null;
 const gels = () => urlGels ?? (GELS.includes(store.str('toko2.gels')) ? store.str('toko2.gels') : 'classic');
 // The LENS switch (render/lens.js, v94): NONE or TILT-SHIFT, localStorage toko2.lens; ?lens=tilt|none for a link
@@ -809,7 +824,7 @@ let lastRoom = null;   // AGAIN replays it
 const levels = new Map();
 async function loadLevel(id) {
   // v125: a load that failed is forgotten, so the room's START asks again (it was kept as a failure: START did nothing until a reload)
-  if (!levels.has(id)) levels.set(id, fetch(new URL(`../levels/${id}.json?v=153`, import.meta.url)).then((r) => { if (!r.ok) throw new Error(`levels/${id}.json ${r.status}`); return r.json(); }).catch((e) => { levels.delete(id); throw e; }));
+  if (!levels.has(id)) levels.set(id, fetch(new URL(`../levels/${id}.json?v=154`, import.meta.url)).then((r) => { if (!r.ok) throw new Error(`levels/${id}.json ${r.status}`); return r.json(); }).catch((e) => { levels.delete(id); throw e; }));
   return levels.get(id);
 }
 // the list the room screen draws: worlds, their rooms, open or not, best grades
@@ -819,9 +834,9 @@ async function campaignList() {
   const lv = await Promise.all(all.map((r) => loadLevel(r.id).catch(() => null)));   // each room's level: its name, what it asks, its chart
   return T.campaign.worlds.map((wd, wi) => {
     const mine = all.filter((r) => r.world === wi), rail = `#${wd.rail.toString(16).padStart(6, '0')}`;
-    return { name: wd.name, rail, open: roomOpen(mine[0].index, p, normal),
+    return { name: wd.name, rail, open: UNLOCK_ALL || roomOpen(mine[0].index, p, normal),   // v154: ?unlock=all
       rooms: mine.map((r) => ({ ...r, level: lv[r.index], name: lv[r.index]?.name ?? r.id.toUpperCase(), d: lv[r.index]?.plan?.d ?? 1, rail,
-        hard, open: roomOpen(r.index, p, normal), grade: p[r.id]?.grade ?? null, best: p[r.id]?.pts ?? null })) };
+        hard, open: UNLOCK_ALL || roomOpen(r.index, p, normal), grade: p[r.id]?.grade ?? null, best: p[r.id]?.pts ?? null })) };
   });
 }
 // the campaign's end (v54): what every room paid, then the rooms
@@ -1201,6 +1216,7 @@ const debug = {
   endingPreview,   // v120: ?ending, for the smoke
   quality, applyQuality, meter,   // v86: the quality step and the frame meter, for the smoke
   // ?nointro, switched at run time: the smoke turns the film back on to check it plays from the title only
+  unlock: UNLOCK_ALL, get sandbox() { return sandbox ? Object.fromEntries(sandbox) : null; },   // v154: the testers' unlock and what it kept from the saves
   get nointro() { return introOff; }, set nointro(v) { introOff = !!v; }, room: (id) => startRoom(id), get rule() { return world?.rule ?? null; },
   // the GELS style ('classic' | 'sdf'), for the smoke and the captures; the readout
   get gels() { return actors.gels; }, setGels(g) { urlGels = GELS.includes(g) ? g : null; actors.setGels(gels()); setLabel(); }, readout,
@@ -1303,6 +1319,16 @@ window.__toko = debug;
 let last = performance.now();
 toMenu();
 if (params.has('ending')) endingPreview(params.get('ending') === 'hard');   // v120: ?ending — the campaign's end, previewed
+// v154: the testers' unlock (see `store`): said on the title, and ?room=N goes straight in (N the room's number on
+// the grid, 1-36, or its id; an unknown one leaves the title up and says so in the console)
+if (UNLOCK_ALL) {
+  ui.banner(ROOM_PARAM ? `TEST · ROOM ${ROOM_PARAM} · NOT SAVED` : 'TEST UNLOCK · NOT SAVED', 3.0);
+  if (ROOM_PARAM) {
+    const all = campaignRooms(), n = Number(ROOM_PARAM);
+    const r = Number.isInteger(n) && n >= 1 && n <= all.length ? all[n - 1] : all.find((x) => x.id === ROOM_PARAM);
+    if (r) startRoom(r.id); else console.warn(`?room=${ROOM_PARAM}: no such room (1-${all.length}, or an id)`);
+  }
+}
 function frame(now, dtFixed) {
   const wall = now - last, dt = dtFixed ?? Math.min(0.1, wall / 1000), time = now / 1000;
   last = now;

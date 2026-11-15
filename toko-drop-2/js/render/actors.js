@@ -15,24 +15,25 @@
 // that springs in and fades (splats.js). Views are pooled per species, so a
 // gel's material is built once and reused, never compiled mid-fight.
 import * as THREE from 'three/webgpu';
-import { TUNING } from '../tuning.js?v=153';
+import { TUNING } from '../tuning.js?v=154';
 import * as TSL from 'three/tsl';
-import { gelMaterial, domeGeometry, cubeGeometry, heroGeometry, GEL_TIME, GEL_SUN, GEL_GLINT, GEL_CORE } from './gel.js?v=153';
-import { LOOKS } from './looks/index.js?v=153';
-import { styleName, setStyle as setStyleMode, styledBody } from './style.js?v=153';
-import { JellyBody } from './jelly.js?v=153';
-import { Juice } from './juice.js?v=153';
-import { ArenaLight } from './light.js?v=153';
-import { toSdf } from './sdf.js?v=153';
-import { PickupView } from './pickups.js?v=153';
-import { ChallengeView } from './challenge.js?v=153';
-import { PostView } from './posts.js?v=153';
-import { SlamView } from './slam.js?v=153';
-import { HintView } from './hints.js?v=153';
-import { Goo } from './goo.js?v=153';
-import { Water } from './water.js?v=153';
-import { mult as heatMult } from '../sim/heat.js?v=153';
-import { strands as liveStrands } from '../sim/formation.js?v=153';
+import { gelMaterial, domeGeometry, cubeGeometry, heroGeometry, GEL_TIME, GEL_SUN, GEL_GLINT, GEL_CORE } from './gel.js?v=154';
+import { LOOKS } from './looks/index.js?v=154';
+import { styleName, setStyle as setStyleMode, styledBody } from './style.js?v=154';
+import { JellyBody } from './jelly.js?v=154';
+import { Juice } from './juice.js?v=154';
+import { ArenaLight } from './light.js?v=154';
+import { toSdf } from './sdf.js?v=154';
+import { PickupView } from './pickups.js?v=154';
+import { ChallengeView } from './challenge.js?v=154';
+import { PostView } from './posts.js?v=154';
+import { SlamView } from './slam.js?v=154';
+import { HintView } from './hints.js?v=154';
+import { Goo } from './goo.js?v=154';
+import { Water } from './water.js?v=154';
+import { mult as heatMult } from '../sim/heat.js?v=154';
+import { CALM } from './kit.js?v=154';
+import { strands as liveStrands } from '../sim/formation.js?v=154';
 
 const T = TUNING;
 const B = T.blob, D = T.death;
@@ -62,6 +63,8 @@ export class Actors {
     this.look = styleName();     // v92: how they are painted: 'physical', 'cel' or 'watercolor' (setStyle, render/style.js)
     this.pools = {};             // released views by species, per gels × look: a view keeps the style it was built in (_pool)
     this.dying = [];             // killed gels playing out their last beat
+    this.throes = [];            // v154: big bosses playing out their death (TUNING.bossDeath, _throe)
+    this.fx = null;              // v154: main.js's shake and sound, for the throes' bursts
     this.jellies = [];           // big gels dying as jelly halves (jelly.js)
     this.jellyMats = new Map();  // their material, per species, built and warmed when it first appears
     // the cut's code, warmed while the game loads: cold, the first slice of a
@@ -440,6 +443,8 @@ export class Actors {
     if (style === this.gels) return;
     for (const v of this.views.values()) this._release(v);
     for (const v of this.dying) this._release(v);
+    for (const th of this.throes) this._release(th.v);
+    this.throes.length = 0;
     this.views.clear(); this.dying.length = 0;
     this.gels = style;
   }
@@ -453,6 +458,8 @@ export class Actors {
     if (look === this.look) return;
     for (const v of this.views.values()) this._release(v);
     for (const v of this.dying) this._release(v);
+    for (const th of this.throes) this._release(th.v);
+    this.throes.length = 0;
     this.views.clear(); this.dying.length = 0;
     this.look = look;
     const hv = this.hero, old = hv.mat;
@@ -466,6 +473,8 @@ export class Actors {
     this._unholdWarm();
     for (const v of this.views.values()) this._release(v);
     for (const v of this.dying) this._release(v);
+    for (const th of this.throes) this._release(th.v);
+    this.throes.length = 0;
     this.views.clear(); this.dying.length = 0; this.chunks.length = 0; this.heat = 0;
     for (const m of Object.values(this.chunkMesh)) m.count = 0;   // v127: stepFx draws them, and nothing steps on the title
     this.strands.count = this.strandCount = 0; this.cords.count = 0;
@@ -500,6 +509,7 @@ export class Actors {
 
   // the sim's events that only the view cares about
   onEvent(e, w) {
+    if (e.type === 'kill' && !e.throeDone && this._throe(e, w)) return;   // v154: a big boss dies slowly (the rest of its kill comes at the end)
     this.juice.onEvent(e, w);
     this.light.onEvent(e);
     this.pickups.onEvent(e);
@@ -869,6 +879,72 @@ export class Actors {
     }
   }
 
+  // v154: a BIG BOSS's death (TUNING.bossDeath). Its view is taken out of the live ones and kept, shuddering,
+  // flashing and cracking, for `dur` s; then the kill it came from is played out as any kill is, `final` × its size.
+  // The view's alone: the sim, the score and the wave went on without it
+  _throe(e, w) {
+    const BD = T.bossDeath, v = this.views.get(e.id);
+    if (!BD?.on || !e.boss || !BD.kinds.includes(e.kind) || !v) return false;
+    this.views.delete(e.id);
+    const p = v.root.position, a0 = Math.random() * Math.PI * 2;
+    const cracks = Array.from({ length: BD.cracks }, (_, i) => ({ a: a0 + (i / BD.cracks) * Math.PI * 2 + (Math.random() - 0.5) * 0.5, d: e.r * 0.6 }));
+    const scale = v.own ? v.root.scale.x : v.body.scale.x;
+    this.throes.push({ v, e, w, t: 0, pop: 0, crackT: 0, x: p.x, y: p.y, z: p.z, scale, cracks, emissive: v.mat?.emissive?.getHex?.() ?? null });
+    v.squash.scale.set(1, v.squat ?? 1, 1);
+    this.fx?.shake?.(BD.shake[0]);
+    return true;
+  }
+
+  _stepThroes(dt) {
+    const BD = T.bossDeath, LB = T.light.arena.burstCap;
+    for (let i = this.throes.length - 1; i >= 0; i--) {
+      const th = this.throes[i], { v, e } = th, hex = e.color ?? T.species[e.kind]?.color ?? 0xffffff;
+      th.t += dt;
+      const u = Math.min(1, th.t / BD.dur);
+      // the body: a shudder that rises, a slow swell, a white flash that comes faster and faster
+      const calm = CALM.value, sh = BD.shudder * u * (1 - calm) * e.r;
+      v.root.position.set(th.x + (Math.random() - 0.5) * 2 * sh, th.y, th.z + (Math.random() - 0.5) * 2 * sh);
+      const k = th.scale * (1 + BD.swell * u * u);
+      if (v.own) v.root.scale.setScalar(k); else v.body.scale.setScalar(k);
+      th.ph = (th.ph ?? 0) + dt * (BD.flash[0] + (BD.flash[1] - BD.flash[0]) * u * u);
+      const lit = Math.sin(th.ph * Math.PI * 2) > 0.2;
+      if (v.mat?.emissive) v.mat.emissive.setHex(lit ? hex : 0x000000).lerp(_white, lit ? BD.whiten * (0.4 + 0.6 * u) : 0);
+      // the cracks: light and dark goo run out along each line
+      if ((th.crackT -= dt) <= 0) {
+        th.crackT = BD.crackEvery;
+        const C = BD.crackLight, G = BD.crackGoo, len = e.r * BD.crackLen;
+        for (const c of th.cracks) {
+          if (c.d >= len) continue;
+          const step = (len / (BD.dur * 0.75)) * BD.crackEvery * (0.6 + Math.random() * 0.8);
+          const cx = Math.cos(c.a), cz = Math.sin(c.a), x0 = th.x + cx * c.d, z0 = th.z + cz * c.d;
+          c.d += step; c.a += (Math.random() - 0.5) * 0.25;   // a crack wanders a little
+          if (this.goo) this.goo.pour(x0, z0, G.rad, G.vol, _dim.setHex(hex).multiplyScalar(0.3).getHex(), cx, cz, step);
+          else this.splats?.puddle(x0 + cx * step, z0 + cz * step, G.rad * 2, hex);
+          if (this.light.bursts.length < LB) this.light.bursts.push({ x: x0 + cx * step, z: z0 + cz * step, r: C.r, k: C.k, life: C.life, max: C.life, hex });
+        }
+      }
+      // the pops: goo bursts out of it, a little shake each
+      while (th.pop < BD.pops.length && th.t >= BD.pops[th.pop]) {
+        th.pop++;
+        const a = Math.random() * Math.PI * 2, px = th.x + Math.cos(a) * e.r * 0.8, pz = th.z + Math.sin(a) * e.r * 0.8, P = BD.popLight;
+        if (this.goo) this.goo.spray(px, e.r * 0.8, pz, BD.popN, hex, { dx: Math.cos(a), dz: Math.sin(a), cone: 0.9, speed: [3, 8], up: [2, 6] });
+        else this.spray(px, pz, BD.popN, hex, BD.popSize);
+        if (this.light.bursts.length < LB) this.light.bursts.push({ x: px, z: pz, r: P.r, k: P.k, life: P.life, max: P.life, hex });
+        this.fx?.shake?.(BD.shake[0]);
+      }
+      if (th.t < BD.dur) continue;
+      // the end: the kill it came from, played out as any kill is, bigger
+      this.throes.splice(i, 1);
+      v.root.position.set(th.x, th.y, th.z);
+      if (v.mat?.emissive && th.emissive != null) v.mat.emissive.setHex(th.emissive);
+      this.views.set(e.id, v);
+      const fin = { ...e, r: e.r * BD.final, throeDone: true };
+      this.onEvent(fin, th.w);
+      this.fx?.shake?.(BD.shake[1]);
+      this.fx?.sound?.({ type: 'kill', kind: e.kind, x: e.x, z: e.z, m: 1 });
+    }
+  }
+
   // Everything that runs on the frame clock rather than the sim's: ripples
   // dying out, the dying playing out their last beat, chunks in flight.
   stepFx(dt, time) {
@@ -913,6 +989,7 @@ export class Actors {
     for (const v of this.views.values()) {
       if (v.hit > 0) { v.hit = Math.max(0, v.hit - dt / B.hitRipple); if (v.mat?.gel) v.mat.gel.hit.value = v.hit; }
     }
+    this._stepThroes(dt);   // v154
     // the dying: 1.x updateDeath — swell to 2.3x and thrash out over 0.28 s
     for (let i = this.dying.length - 1; i >= 0; i--) {
       const v = this.dying[i];
@@ -990,7 +1067,7 @@ export class Actors {
   }
 }
 
-const _white = new THREE.Color(0xffffff), _gooC = new THREE.Color(), _tickS = new THREE.Vector3(), _hsl = { h: 0, s: 0, l: 0 };
+const _white = new THREE.Color(0xffffff), _dim = new THREE.Color(), _gooC = new THREE.Color(), _tickS = new THREE.Vector3(), _hsl = { h: 0, s: 0, l: 0 };
 const VOLC = 4 / 3 * Math.PI;   // a chunk of radius s is drawn as VOLC s³ of goo
 
 // v82: the press the sim reported (v.press, the body itself: sim/press.js's

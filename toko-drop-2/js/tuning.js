@@ -7,10 +7,10 @@
 // things that work"). The arena is 1.x's, so every 1.x number ports as it is
 // instead of through a rescale. Axes: x across the screen (right +), y up,
 // z toward the bottom of the screen. The arena is centred on the origin.
-import { SPECIES } from './tuning/species/index.js?v=153';
-import WAVES from './tuning/waves.js?v=153';
-import PICKUPS from './tuning/pickups.js?v=153';
-import MUSIC from './tuning/music.js?v=153';
+import { SPECIES } from './tuning/species/index.js?v=154';
+import WAVES from './tuning/waves.js?v=154';
+import PICKUPS from './tuning/pickups.js?v=154';
+import MUSIC from './tuning/music.js?v=154';
 
 export const TUNING = {
   render: {
@@ -1590,6 +1590,21 @@ export const TUNING = {
   // A kill, as 1.x played it (enemy.js destroy/updateDeath, main.js onKill):
   // chunks and droplets of goo thrown out, a puddle with satellites, a
   // shockwave through nearby bodies when a big one goes, and the camera shaken.
+  // v154 (Decision 15 Nov 2026, the owner: "No need for any freezes. Big bosses can have elaborate death
+  // animations instead"): a BIG BOSS does not pop the moment it dies. The sim has already taken it, scored it and
+  // cleared its wave — nothing waits and nothing freezes — but its body stays drawn where it fell for `dur` s: it
+  // shudders (`shudder` m, rising), swells (`swell`), flashes white `flash[0]`→`flash[1]` times a second, and CRACKS:
+  // `cracks` lines of light and dark goo run out across the floor from it (`crackLen` × its radius, a step every
+  // `crackEvery` s); goo bursts out of it at each of `pops` (s), with a shake of `shake[0]`; then it goes up in one
+  // burst `final` × its size, with `shake[1]` and its death sound again. Placeholder art (owner's call on the look).
+  // `kinds`: the worlds' bosses and OMEGA; the TWIN PRISMS are a pair of small ones and pop as they did.
+  // REDUCE MOTION keeps the cracks, flashes and bursts and drops the shudder (main.js's shake already honours it)
+  bossDeath: { on: true, kinds: ['curbking', 'maw', 'blister', 'kettle', 'pike', 'berg', 'angler', 'omega'],
+    dur: 2.0, shudder: 0.14, swell: 0.22, flash: [3, 16], whiten: 0.85,
+    cracks: 6, crackLen: 3.4, crackEvery: 0.07, crackLight: { r: 1.6, k: 0.9, life: 0.35 }, crackGoo: { rad: 0.16, vol: 0.05 },
+    pops: [0.35, 0.7, 1.0, 1.25, 1.45, 1.62, 1.76, 1.88], popN: 8, popSize: [0.12, 0.26], popLight: { r: 2.6, k: 1.2, life: 0.3 },
+    final: 1.6, shake: [0.12, 0.7] },
+
   death: {
     chunks: [7, 9], chunkSize: 0.22, chunkSpeed: [3, 7], chunkUp: [3, 8],
     droplets: 4, dropletsBig: 8, dropletsBoss: 14,   // 1.x's extra burst: 4 small, 8 big, 14 a boss (main.js:4499)
