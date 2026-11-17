@@ -124,7 +124,7 @@ const ballGeo = new THREE.SphereGeometry(BALL_R, 18, 12);
 const BALLS = CURVES.map(() => { const m = new THREE.InstancedMesh(ballGeo, gold, BASE_N + EXTRA_N); m.castShadow = true; m.frustumCulled = false; S.add(m); return m; });
 const _D = new THREE.Object3D();
 function ballsAt(t) {
-  CURVES.forEach((c, k) => { const L = LEN[k], m = BALLS[k], u0 = (t * SPEED / L) % 1; let n = 0;
+  CURVES.forEach((c, k) => { const L = LEN[k], m = BALLS[k], u0 = (((t * SPEED / L) % 1) + 1) % 1;   // a sub-exposure before 0 s is negative time let n = 0;
     for (let i = 0; i < BASE_N; i++) { const u = (u0 + i / BASE_N + k * 0.013) % 1; _D.position.copy(c.getPointAt(u)); _D.rotation.set(u * 400, u * 300, 0); _D.scale.setScalar(1); _D.updateMatrix(); m.setMatrixAt(n++, _D.matrix); }
     // the extra stream is born at the gate: a ball at u (past the gate) passed it (u-gate)·L/SPEED seconds ago
     const ug = U[k].gate;
