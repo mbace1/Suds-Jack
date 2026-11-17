@@ -1,0 +1,729 @@
+{
+ "format": 2,
+ "id": "boil-over",
+ "name": "BOIL OVER",
+ "arena": {
+  "shapes": [
+   {
+    "kind": "circle",
+    "c": [
+     0,
+     0
+    ],
+    "r": 12
+   }
+  ]
+ },
+ "duration": 75,
+ "goal": {
+  "type": "boss"
+ },
+ "plan": {
+  "world": 5,
+  "d": 9,
+  "teaches": "kettle; the red-hot stall",
+  "strategy": [
+   "priority",
+   "risk",
+   "position",
+   "aim"
+  ]
+ },
+ "spawns": [
+  {
+   "t": 0.6,
+   "type": "GLOBBO",
+   "px": 9.58,
+   "pz": 4.05
+  },
+  {
+   "t": 0.9,
+   "type": "GLOBBO",
+   "px": -9.58,
+   "pz": -4.05
+  },
+  {
+   "t": 2,
+   "type": "GLOBBO",
+   "px": -9.8,
+   "pz": 3.48
+  },
+  {
+   "t": 2.3,
+   "type": "GLOBBO",
+   "px": 9.8,
+   "pz": -3.48
+  },
+  {
+   "t": 3,
+   "type": "kettle",
+   "px": 0,
+   "pz": -9.5,
+   "boss": true,
+   "hp": 125
+  },
+  {
+   "t": 4.4,
+   "type": "GLOBBO",
+   "px": 4.87,
+   "pz": -9.19
+  },
+  {
+   "t": 4.7,
+   "type": "steama",
+   "px": -4.87,
+   "pz": 9.19
+  },
+  {
+   "t": 5.8,
+   "type": "GLOBBO",
+   "px": 2.61,
+   "pz": 10.07
+  },
+  {
+   "t": 6.1,
+   "type": "GLOBBO",
+   "px": -2.61,
+   "pz": -10.07
+  },
+  {
+   "t": 7.9,
+   "type": "GLOBBO",
+   "px": -8.73,
+   "pz": -5.66
+  },
+  {
+   "t": 8.2,
+   "type": "GLOBBO",
+   "px": 5.66,
+   "pz": -8.73
+  },
+  {
+   "t": 8.5,
+   "type": "GLOBBO",
+   "px": 8.73,
+   "pz": 5.66
+  },
+  {
+   "t": 8.8,
+   "type": "GLOBBO",
+   "px": -5.66,
+   "pz": 8.73
+  },
+  {
+   "t": 10.4,
+   "type": "GLOBBO",
+   "px": 10.26,
+   "pz": -1.72
+  },
+  {
+   "t": 10.7,
+   "type": "GLOBBO",
+   "px": -10.26,
+   "pz": 1.72
+  },
+  {
+   "t": 11.8,
+   "type": "GLOBBO",
+   "px": -6.4,
+   "pz": 8.2
+  },
+  {
+   "t": 12.1,
+   "type": "steama",
+   "px": 6.4,
+   "pz": -8.2
+  },
+  {
+   "t": 14.4,
+   "type": "GLOBBO",
+   "px": -0.82,
+   "pz": -10.37
+  },
+  {
+   "t": 14.7,
+   "type": "GLOBBO",
+   "px": 9.61,
+   "pz": -3.98
+  },
+  {
+   "t": 15,
+   "type": "steama",
+   "px": 6.76,
+   "pz": 7.91
+  },
+  {
+   "t": 15.3,
+   "type": "GLOBBO",
+   "px": -5.43,
+   "pz": 8.87
+  },
+  {
+   "t": 15.6,
+   "type": "GLOBBO",
+   "px": -10.11,
+   "pz": -2.43
+  },
+  {
+   "t": 17,
+   "type": "GLOBBO",
+   "px": 7.61,
+   "pz": 7.09
+  },
+  {
+   "t": 17.3,
+   "type": "GLOBBO",
+   "px": -9.95,
+   "pz": 3.04
+  },
+  {
+   "t": 17.6,
+   "type": "GLOBBO",
+   "px": 2.34,
+   "pz": -10.13
+  },
+  {
+   "t": 20.9,
+   "type": "GLOBBO",
+   "px": -10.4,
+   "pz": -0.09
+  },
+  {
+   "t": 21.2,
+   "type": "GLOBBO",
+   "px": -5.12,
+   "pz": -9.05
+  },
+  {
+   "t": 21.5,
+   "type": "steama",
+   "px": 5.28,
+   "pz": -8.96
+  },
+  {
+   "t": 21.8,
+   "type": "GLOBBO",
+   "px": 10.4,
+   "pz": 0.09
+  },
+  {
+   "t": 22.1,
+   "type": "GLOBBO",
+   "px": 5.12,
+   "pz": 9.05
+  },
+  {
+   "t": 22.4,
+   "type": "steama",
+   "px": -5.28,
+   "pz": 8.96
+  },
+  {
+   "t": 23.4,
+   "type": "GLOBBO",
+   "px": 7.73,
+   "pz": -6.96
+  },
+  {
+   "t": 23.7,
+   "type": "GLOBBO",
+   "px": 2.16,
+   "pz": 10.17
+  },
+  {
+   "t": 24,
+   "type": "GLOBBO",
+   "px": -9.89,
+   "pz": -3.22
+  },
+  {
+   "t": 25,
+   "type": "GLOBBO",
+   "px": -1,
+   "pz": 10.35
+  },
+  {
+   "t": 25.3,
+   "type": "GLOBBO",
+   "px": 1,
+   "pz": -10.35
+  },
+  {
+   "t": 27.4,
+   "type": "GLOBBO",
+   "px": -6.25,
+   "pz": -8.31
+  },
+  {
+   "t": 27.7,
+   "type": "GLOBBO",
+   "px": 2.6,
+   "pz": -10.07
+  },
+  {
+   "t": 28,
+   "type": "steama",
+   "px": 9.49,
+   "pz": -4.25
+  },
+  {
+   "t": 28.3,
+   "type": "GLOBBO",
+   "px": 9.24,
+   "pz": 4.77
+  },
+  {
+   "t": 28.6,
+   "type": "GLOBBO",
+   "px": 2.03,
+   "pz": 10.2
+  },
+  {
+   "t": 28.9,
+   "type": "steama",
+   "px": -6.71,
+   "pz": 7.95
+  },
+  {
+   "t": 29.2,
+   "type": "GLOBBO",
+   "px": -10.4,
+   "pz": -0.29
+  },
+  {
+   "t": 29.9,
+   "type": "GLOBBO",
+   "px": 10.22,
+   "pz": 1.9
+  },
+  {
+   "t": 30.2,
+   "type": "GLOBBO",
+   "px": -6.76,
+   "pz": 7.9
+  },
+  {
+   "t": 30.5,
+   "type": "GLOBBO",
+   "px": -3.46,
+   "pz": -9.81
+  },
+  {
+   "t": 31.5,
+   "type": "GLOBBO",
+   "px": -8.83,
+   "pz": 5.5
+  },
+  {
+   "t": 31.8,
+   "type": "GLOBBO",
+   "px": 8.83,
+   "pz": -5.5
+  },
+  {
+   "t": 33.9,
+   "type": "GLOBBO",
+   "px": 2.79,
+   "pz": -10.02
+  },
+  {
+   "t": 34.2,
+   "type": "GLOBBO",
+   "px": 9.57,
+   "pz": -4.06
+  },
+  {
+   "t": 34.5,
+   "type": "steama",
+   "px": 9.15,
+   "pz": 4.95
+  },
+  {
+   "t": 34.8,
+   "type": "GLOBBO",
+   "px": 1.83,
+   "pz": 10.24
+  },
+  {
+   "t": 35.1,
+   "type": "GLOBBO",
+   "px": -6.86,
+   "pz": 7.82
+  },
+  {
+   "t": 35.4,
+   "type": "steama",
+   "px": -10.39,
+   "pz": -0.49
+  },
+  {
+   "t": 35.7,
+   "type": "GLOBBO",
+   "px": -6.09,
+   "pz": -8.43
+  },
+  {
+   "t": 36.4,
+   "type": "GLOBBO",
+   "px": 4.71,
+   "pz": 9.27
+  },
+  {
+   "t": 36.7,
+   "type": "GLOBBO",
+   "px": -10.39,
+   "pz": -0.56
+  },
+  {
+   "t": 37,
+   "type": "GLOBBO",
+   "px": 5.68,
+   "pz": -8.71
+  },
+  {
+   "t": 38,
+   "type": "GLOBBO",
+   "px": -9.74,
+   "pz": -3.66
+  },
+  {
+   "t": 38.3,
+   "type": "GLOBBO",
+   "px": 9.74,
+   "pz": 3.66
+  },
+  {
+   "t": 40.4,
+   "type": "GLOBBO",
+   "px": 9.65,
+   "pz": -3.88
+  },
+  {
+   "t": 40.7,
+   "type": "GLOBBO",
+   "px": 9.05,
+   "pz": 5.13
+  },
+  {
+   "t": 41,
+   "type": "steama",
+   "px": 1.64,
+   "pz": 10.27
+  },
+  {
+   "t": 41.3,
+   "type": "GLOBBO",
+   "px": -7.01,
+   "pz": 7.68
+  },
+  {
+   "t": 41.6,
+   "type": "GLOBBO",
+   "px": -10.38,
+   "pz": -0.69
+  },
+  {
+   "t": 41.9,
+   "type": "steama",
+   "px": -5.93,
+   "pz": -8.54
+  },
+  {
+   "t": 42.2,
+   "type": "GLOBBO",
+   "px": 2.98,
+   "pz": -9.96
+  },
+  {
+   "t": 42.9,
+   "type": "GLOBBO",
+   "px": -4.49,
+   "pz": 9.38
+  },
+  {
+   "t": 43.2,
+   "type": "GLOBBO",
+   "px": -5.87,
+   "pz": -8.58
+  },
+  {
+   "t": 43.5,
+   "type": "GLOBBO",
+   "px": 10.37,
+   "pz": -0.8
+  },
+  {
+   "t": 45.6,
+   "type": "GLOBBO",
+   "px": 9.58,
+   "pz": 4.05,
+   "speedMult": 1
+  },
+  {
+   "t": 45.9,
+   "type": "GLOBBO",
+   "px": -9.58,
+   "pz": -4.05,
+   "speedMult": 1
+  },
+  {
+   "t": 47,
+   "type": "GLOBBO",
+   "px": -9.8,
+   "pz": 3.48,
+   "speedMult": 1
+  },
+  {
+   "t": 47.3,
+   "type": "GLOBBO",
+   "px": 9.8,
+   "pz": -3.48,
+   "speedMult": 1
+  },
+  {
+   "t": 49.4,
+   "type": "GLOBBO",
+   "px": 4.87,
+   "pz": -9.19,
+   "speedMult": 1
+  },
+  {
+   "t": 49.7,
+   "type": "steama",
+   "px": -4.87,
+   "pz": 9.19,
+   "speedMult": 1
+  },
+  {
+   "t": 50.8,
+   "type": "GLOBBO",
+   "px": 2.61,
+   "pz": 10.07,
+   "speedMult": 1
+  },
+  {
+   "t": 51.1,
+   "type": "GLOBBO",
+   "px": -2.61,
+   "pz": -10.07,
+   "speedMult": 1
+  },
+  {
+   "t": 52.9,
+   "type": "GLOBBO",
+   "px": -8.73,
+   "pz": -5.66,
+   "speedMult": 1
+  },
+  {
+   "t": 53.2,
+   "type": "GLOBBO",
+   "px": 5.66,
+   "pz": -8.73,
+   "speedMult": 1
+  },
+  {
+   "t": 53.5,
+   "type": "GLOBBO",
+   "px": 8.73,
+   "pz": 5.66,
+   "speedMult": 1
+  },
+  {
+   "t": 53.8,
+   "type": "GLOBBO",
+   "px": -5.66,
+   "pz": 8.73,
+   "speedMult": 1
+  },
+  {
+   "t": 55.4,
+   "type": "GLOBBO",
+   "px": 10.26,
+   "pz": -1.72,
+   "speedMult": 1
+  },
+  {
+   "t": 55.7,
+   "type": "GLOBBO",
+   "px": -10.26,
+   "pz": 1.72,
+   "speedMult": 1
+  },
+  {
+   "t": 56.8,
+   "type": "GLOBBO",
+   "px": -6.4,
+   "pz": 8.2,
+   "speedMult": 1
+  },
+  {
+   "t": 57.1,
+   "type": "steama",
+   "px": 6.4,
+   "pz": -8.2,
+   "speedMult": 1
+  },
+  {
+   "t": 59.4,
+   "type": "GLOBBO",
+   "px": -0.82,
+   "pz": -10.37,
+   "speedMult": 1
+  },
+  {
+   "t": 59.7,
+   "type": "GLOBBO",
+   "px": 9.61,
+   "pz": -3.98,
+   "speedMult": 1
+  },
+  {
+   "t": 60,
+   "type": "steama",
+   "px": 6.76,
+   "pz": 7.91,
+   "speedMult": 1
+  },
+  {
+   "t": 60.3,
+   "type": "GLOBBO",
+   "px": -5.43,
+   "pz": 8.87,
+   "speedMult": 1
+  },
+  {
+   "t": 60.6,
+   "type": "GLOBBO",
+   "px": -10.11,
+   "pz": -2.43,
+   "speedMult": 1
+  },
+  {
+   "t": 62,
+   "type": "GLOBBO",
+   "px": 7.61,
+   "pz": 7.09,
+   "speedMult": 1
+  },
+  {
+   "t": 62.3,
+   "type": "GLOBBO",
+   "px": -9.95,
+   "pz": 3.04,
+   "speedMult": 1
+  },
+  {
+   "t": 62.6,
+   "type": "GLOBBO",
+   "px": 2.34,
+   "pz": -10.13,
+   "speedMult": 1
+  },
+  {
+   "t": 65.9,
+   "type": "GLOBBO",
+   "px": -10.4,
+   "pz": -0.09,
+   "speedMult": 1
+  },
+  {
+   "t": 66.2,
+   "type": "GLOBBO",
+   "px": -5.12,
+   "pz": -9.05,
+   "speedMult": 1
+  },
+  {
+   "t": 66.5,
+   "type": "steama",
+   "px": 5.28,
+   "pz": -8.96,
+   "speedMult": 1
+  },
+  {
+   "t": 66.8,
+   "type": "GLOBBO",
+   "px": 10.4,
+   "pz": 0.09,
+   "speedMult": 1
+  },
+  {
+   "t": 67.1,
+   "type": "GLOBBO",
+   "px": 5.12,
+   "pz": 9.05,
+   "speedMult": 1
+  },
+  {
+   "t": 67.4,
+   "type": "steama",
+   "px": -5.28,
+   "pz": 8.96,
+   "speedMult": 1
+  },
+  {
+   "t": 68.4,
+   "type": "GLOBBO",
+   "px": 7.73,
+   "pz": -6.96,
+   "speedMult": 1
+  },
+  {
+   "t": 68.7,
+   "type": "GLOBBO",
+   "px": 2.16,
+   "pz": 10.17,
+   "speedMult": 1
+  },
+  {
+   "t": 69,
+   "type": "GLOBBO",
+   "px": -9.89,
+   "pz": -3.22,
+   "speedMult": 1
+  },
+  {
+   "t": 70,
+   "type": "GLOBBO",
+   "px": -1,
+   "pz": 10.35,
+   "speedMult": 1
+  },
+  {
+   "t": 70.3,
+   "type": "GLOBBO",
+   "px": 1,
+   "pz": -10.35,
+   "speedMult": 1
+  },
+  {
+   "t": 72.4,
+   "type": "GLOBBO",
+   "px": -6.25,
+   "pz": -8.31,
+   "speedMult": 1
+  },
+  {
+   "t": 72.7,
+   "type": "GLOBBO",
+   "px": 2.6,
+   "pz": -10.07,
+   "speedMult": 1
+  }
+ ],
+ "tiers": {
+  "S": 20000,
+  "A": 18000,
+  "B": 16000,
+  "C": 14000,
+  "source": "bot pass (v56 look-ahead bots), 24 seeds a skill: got through sharp 100%, average 58%, rough 0%. score lines: S the sharp median, A the average median, B the average's weaker quarter, C the rough median or the average's weakest tenth (scripts/lines.mjs)"
+ },
+ "tiersHard": {
+  "S": 29000,
+  "A": 26000,
+  "B": 23000,
+  "C": 21000,
+  "source": "HARD bot pass (v56 look-ahead bots), 24 seeds a skill: got through sharp 96%, average 54%, rough 0%. score lines: S the sharp median, A the average median, B the average's weaker quarter, C the rough median or the average's weakest tenth (scripts/lines.mjs)"
+ }
+}

@@ -1,0 +1,171 @@
+{
+ "format": 2,
+ "id": "anvil",
+ "name": "ANVIL",
+ "arena": {
+  "shapes": [
+   {
+    "kind": "rect",
+    "hx": 19,
+    "hz": 11
+   }
+  ]
+ },
+ "duration": 30,
+ "goal": {
+  "type": "quota",
+  "kills": 14
+ },
+ "plan": {
+  "world": 5,
+  "d": 7,
+  "teaches": "elites",
+  "strategy": [
+   "priority",
+   "aim",
+   "risk"
+  ]
+ },
+ "spawns": [
+  {
+   "t": 0,
+   "type": "GLOBBO",
+   "px": 17.21,
+   "pz": 9.4,
+   "elite": true
+  },
+  {
+   "t": 1.47,
+   "type": "YELA_CUBE",
+   "px": -17.4,
+   "pz": 4.29,
+   "elite": true
+  },
+  {
+   "t": 2.93,
+   "type": "FANNER",
+   "px": 6.26,
+   "pz": -9.4,
+   "elite": true
+  },
+  {
+   "t": 4.4,
+   "type": "ORANGE_CUBE",
+   "px": 1.46,
+   "pz": 9.4,
+   "elite": true
+  },
+  {
+   "t": 5.87,
+   "type": "GLOBBO",
+   "px": -11.74,
+   "pz": -9.4,
+   "elite": true
+  },
+  {
+   "t": 7.33,
+   "type": "YELA_CUBE",
+   "px": 17.4,
+   "pz": -1.16,
+   "elite": true
+  },
+  {
+   "t": 8.8,
+   "type": "FANNER",
+   "px": -8.98,
+   "pz": 9.4,
+   "elite": true
+  },
+  {
+   "t": 10.27,
+   "type": "ORANGE_CUBE",
+   "px": 0.2,
+   "pz": -9.4,
+   "elite": true
+  },
+  {
+   "t": 11.73,
+   "type": "GLOBBO",
+   "px": 8.26,
+   "pz": 9.4,
+   "elite": true
+  },
+  {
+   "t": 13.2,
+   "type": "YELA_CUBE",
+   "px": -17.4,
+   "pz": -1.9,
+   "elite": true
+  },
+  {
+   "t": 14.67,
+   "type": "FANNER",
+   "px": 12.81,
+   "pz": -9.4,
+   "elite": true
+  },
+  {
+   "t": 16.13,
+   "type": "ORANGE_CUBE",
+   "px": -1.87,
+   "pz": 9.4,
+   "elite": true
+  },
+  {
+   "t": 17.6,
+   "type": "GLOBBO",
+   "px": -5.71,
+   "pz": -9.4,
+   "elite": true
+  },
+  {
+   "t": 19.07,
+   "type": "YELA_CUBE",
+   "px": 17.4,
+   "pz": 5.07,
+   "elite": true
+  },
+  {
+   "t": 20.53,
+   "type": "FANNER",
+   "px": -17.4,
+   "pz": 8.58,
+   "elite": true
+  },
+  {
+   "t": 22,
+   "type": "ORANGE_CUBE",
+   "px": 3.66,
+   "pz": -9.4,
+   "elite": true
+  },
+  {
+   "t": 23.47,
+   "type": "GLOBBO",
+   "px": 3.65,
+   "pz": 9.4,
+   "elite": true
+  },
+  {
+   "t": 24.93,
+   "type": "YELA_CUBE",
+   "px": -17.4,
+   "pz": -8.59,
+   "elite": true
+  }
+ ],
+ "tiers": {
+  "S": 4000,
+  "A": 3600,
+  "B": 3200,
+  "C": 2800,
+  "source": "bot pass (v56 look-ahead bots), 24 seeds a skill: got through sharp 100%, average 100%, rough 38%. score lines: S the sharp median, A the average median, B the average's weaker quarter, C the rough median or the average's weakest tenth (scripts/lines.mjs). v135 (the owner's C-line rule, 2026-11-10): C at the rough bot's lower quartile, 2,900 → 2,800"
+ },
+ "tiersHard": {
+  "S": 6200,
+  "A": 5300,
+  "B": 4800,
+  "C": 4300,
+  "source": "HARD bot pass (v56 look-ahead bots), 24 seeds a skill: got through sharp 100%, average 96%, rough 25%. score lines: S the sharp median, A the average median, B the average's weaker quarter, C the rough median or the average's weakest tenth (scripts/lines.mjs)"
+ }
+}

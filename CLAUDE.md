@@ -21,6 +21,9 @@ carrier colour and "other colours for a context or a mood"). Each is a direction
 not a spec: the lanes turn it into a design their owner signs off before building.
 
 
+### Toko Drop 2.0 (`toko-drop-2/`) — the release candidate, ACTIVE
+**Read `toko-drop-2/CLAUDE.md`, `AGENTS.md` and `DESIGN.md` first.** 2.0 ships from `gh-pages` (live at `/Suds-Jack/toko-drop-2/`). This folder on `main` is its reconciled copy, from v155 on: ship by PR into `gh-pages`, then bring the folder back here in the same session. It is designed through the Sakurai skill (`.claude/skills/sakurai`). Classic `toko-drop/` is not the ship target.
+
 ### The arcade — `index.html` + `hub/`
 The landing page: **every playable thing in the repo on one page**, each cabinet with a
 **Play** link and a **Feedback** button. Vanilla ES modules, no build step, no image

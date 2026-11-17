@@ -1,0 +1,1916 @@
+// tuning.js — every number in the game lives here. Never duplicate a tuned
+// constant in code: import it. spec/toko2.json (the Godot port's seam) will be
+// emitted from this file, so a number that lives anywhere else is a number the
+// port re-derives by guesswork.
+//
+// World units are 1.x's own (owner, 2026-10-20: "gameplay on par, copy the
+// things that work"). The arena is 1.x's, so every 1.x number ports as it is
+// instead of through a rescale. Axes: x across the screen (right +), y up,
+// z toward the bottom of the screen. The arena is centred on the origin.
+import { SPECIES } from './tuning/species/index.js?v=155';
+import WAVES from './tuning/waves.js?v=155';
+import PICKUPS from './tuning/pickups.js?v=155';
+import MUSIC from './tuning/music.js?v=155';
+
+export const TUNING = {
+  render: {
+    clearColor: 0x0d0d1a,   // 1.x's background: the void past the floor, and the UI's ground
+    maxPixelRatio: 2,       // a Pixel 10 Pro reports ~3; full-res HD gels at 2 are plenty
+  },
+  // v86 (the owner's third QoL pick): CONTROLS AND AUTO-QUALITY, in OPTIONS.
+  // `controls`: the touch stick's size (px of thumb travel for a full stick;
+  // the flick's lengths are in units of it, so a bigger stick asks a longer
+  // flick) and the aim stick's dead zone (px before it aims and fires; the
+  // pad's radial dead zone scales with it, `padDead` at NORMAL). LEFT-HANDED
+  // swaps the halves: the left thumb aims, the right moves.
+  controls: { stick: { small: 46, normal: 60, large: 78 }, dead: { small: 10, normal: 15, large: 22 }, padDead: 0.2 },
+  // `quality`: the picture's pixel ratio as a share of what the phone would
+  // get (render.maxPixelRatio), walked DOWN a step when a window of `window`
+  // s had more than `down.late` % of its frames late (over one and a half of
+  // the refresh) or the game ran under `down.sim` of real time, and back UP a
+  // step after `up.windows` windows in a row under `up.late` %. The step is
+  // remembered (toko2.qstep) so a slow phone starts where it ended, and the
+  // play record's device line says `q0.72` for a run drawn at a lower step
+  // v104 (owner: "more HD graphics"): no step under 0.8 — a remembered low step kept a phone that once ran
+  // late at 0.6 of its pixels (1.2 on a 2× cap) for good; a late frame now costs frames, not the picture
+  quality: { steps: [1, 0.9, 0.8], window: 3, down: { late: 25, sim: 0.9 }, up: { late: 4, windows: 5 } },
+
+  // 1.x's arena presets (main.js:20-33), picked at the start of each run by
+  // the screen's shape. Half sizes.
+  arena: {
+    landscape: { hx: 19, hz: 11, tiltDeg: 28.2 },   // 38 x 22; camera ray atan(11/20.5)
+    // v43 (owner, 2026-10-24: "make the portrait mode levels a bit bigger"):
+    // 41.6° → 30°, near landscape's 28.2. The floor is fitted to the phone's
+    // WIDTH either way, so a flatter camera gives it more of the height (43% → 52%
+    // of a 412 × 915 phone, measured) and a wider far edge; the floor is the same
+    portrait:  { hx: 11, hz: 18, tiltDeg: 30 },     // 22 x 36
+  },
+
+  // WORLDS (owner, 2026-10-23): ARCADE and HARDCADE go somewhere. Beat a
+  // world's boss (its last wave is its boss wave, every waves.rhythm.bossEvery)
+  // and the floor swallows the droplet: world 1's grid twists into a drain
+  // VORTEX, world 2's driveway opens a DRAIN where the boss died. The droplet
+  // goes down it and drops into the next world. 1.x's arena is world 1;
+  // the driveway is bigger than the screen, with a curb and the lawn beyond
+  // it, and the camera follows (owner: "bigger driveway, camera follows");
+  // the sewer is a long tunnel. From world 2 a share of the bodies arrive
+  // HEAVY (owner: "slightly bigger and more durable"): the gels you know,
+  // bigger, tougher and darker. Half sizes, per the run's screen shape; a
+  // world's tilt is its shape's own (the view fits the screen as world 1).
+  worlds: {
+    modes: ['arcade', 'hardcade'],
+    // v54 (owner: "gentler ramp"): a world's boss beaten gives lives back as the
+    // next world opens — ARCADE all of them; HARDCADE one (v62, owner: "Give back
+    // a life per world in Hardcade"; v55 gave none, and a good player's run mostly
+    // ended in world 3 on the lives it had left), up to T.hero.lives (sim/worlds.js swap)
+    heal: { arcade: 3, hardcade: 1 },
+    // v59, the curve on purpose: a world's `room` would be the share of its waves' bodies its floor holds
+    // (1 if unset; sim/director/arcade.js startWave). None is set. Started with the bare gun, the worlds
+    // asked for 0.85-1.07; walked into with the pod and DASH level a run carries to the door (the way a
+    // player arrives, scripts/curve.mjs), every world's own crowd already falls in the right order, and
+    // those numbers bent it out of order again. It is a knob for `curve.mjs --rooms`, not a setting
+    // a world's floor that moves for a wave (`shift` below; sim/floorshift.js, v44): warned this long first.
+    // v59: a shift's `room` is the share of the wave's bodies its smaller floor holds — the square root
+    // of the share of the floor left (the ice's floe leaves 29%, the core's twins 26%, the river's
+    // breathing banks 65% on average), so it is denser than a whole floor but not three times as crowded.
+    // Measured (scripts/curve.mjs): with the whole wave on it the ice's floe wave took 40% of the six
+    // skilled bots' lives in its world; with this and the floe moved, no wave but a boss takes a third
+    shift: { warn: 1.6, close: 1.2 },   // `close`: s the floor takes to close in on its shape (v59)
+    list: [
+      { id: 'grid', heavy: 0 },
+      { id: 'driveway', trial: 'gates', heavy: 0.35, species: [['hoppa', 0, 3]], speciesWeight: 4, arena: { landscape: { hx: 27.5, hz: 16 }, portrait: { hx: 16, hz: 27.5 } } },
+      { id: 'sewer', trial: 'hold', heavy: 0.5, species: [['worma', 0, 3]], speciesWeight: 3, arena: { landscape: { hx: 30, hz: 11 }, portrait: { hx: 11, hz: 30 } } },
+      // v27 (owner, 2026-10-23: "let's do both and make it 9 worlds"): down
+      // the pipes, then out to sea. Each world past the sewer plays under one
+      // of 1.x's world rules (sim/rules.js; TUNING.campaign.rules), and has a
+      // floor of its own (render/floor.js, TUNING.worlds.floor[id])
+      { id: 'cistern', trial: 'collect', squeeze: 0.72, heavy: 0.5, species: [['bubbla', 0, 3]], speciesWeight: 3, rule: 'sweep', rail: 0x3fb8d0,
+        arena: { landscape: { hx: 26, hz: 14 }, portrait: { hx: 14, hz: 26 } } },
+      { id: 'boiler', trial: 'protect', squeeze: 0.78, heavy: 0.55, species: [['steama', 0, 3]], speciesWeight: 3, rule: 'updraft', rail: 0xff8a33,
+        arena: { landscape: { hx: 23, hz: 14 }, portrait: { hx: 14, hz: 23 } } },
+      { id: 'river', trial: 'hold', heavy: 0.55, species: [['salma', 0, 3]], speciesWeight: 3, rule: 'current', rail: 0x44ddbb,
+        // its third wave the banks breathe in and out (sim/floorshift.js, v44)
+        shift: { at: 3, kind: 'breathe', room: 0.8, parts: [{ kind: 'rect', hx: 1, hz: 1, pulse: { from: 1, to: 0.58, period: 9, mode: 'breathe' } }] },
+        arena: { landscape: { hx: 34, hz: 12 }, portrait: { hx: 12, hz: 34 } } },
+      // v110 `room` 0.92: the ice's blocks drift (TUNING.posts), and a floor that moves under a fight costs a sharp
+      // player ~10 points of its clears (scripts/curve.mjs, 48 seeds); 8% fewer bodies gives them back
+      { id: 'ice', trial: 'combo', heavy: 0.6, room: 0.92, species: [['skata', 0, 3]], speciesWeight: 3, rule: 'slip', rail: 0xbfe6ff,
+        // its seventh wave, the breather before its boss, the floor is a round floe drifting round the
+        // middle (v59: it was the third, a swarm — on a third of the floor, on ice, that one wave took 40%
+        // of the six skilled bots' lives in the world, 62% of the expert's; the river's and the core's
+        // shifts fall on breathers too)
+        shift: { at: 7, kind: 'floe', room: 0.54, parts: [{ kind: 'circle', c: [0, 0], r: 0.78, orbit: { r: 0.32, period: 16 } }] },
+        arena: { landscape: { hx: 28, hz: 17 }, portrait: { hx: 17, hz: 28 } } },
+      { id: 'deep', trial: 'collect', heavy: 0.6, species: [['glowa', 0, 3]], speciesWeight: 3, rule: 'dark', rail: 0x4455cc,
+        arena: { landscape: { hx: 24, hz: 16 }, portrait: { hx: 16, hz: 24 } } },
+      { id: 'core', squeeze: 0.7, heavy: 0.65, species: [['mirra', 0, 3]], speciesWeight: 3, rule: 'cycle', rail: 0xee44dd,
+        // its third wave the floor is two discs going round each other: cross the gap when they meet
+        shift: { at: 3, kind: 'twins', room: 0.51, combine: 'union', parts: [{ kind: 'circle', r: 0.55, orbit: { r: 0.42, period: 14 } }, { kind: 'circle', r: 0.55, orbit: { r: 0.42, period: 14, phase: 3.14159 } }] },
+        arena: { landscape: { hx: 19, hz: 11 }, portrait: { hx: 11, hz: 19 } } },
+    ],
+    // THE CORE plays every rule in turn, `cycleEvery` s each
+    // a world's `trial` is its SIGNATURE, the challenge its challenge waves ask
+    // (sim/challenge.js, v37); `squeeze` closes its walls in for them, to that share
+    cycle: { rules: ['current', 'sweep', 'dark', 'slip', 'updraft'], every: 20 },
+    heavy: { radius: 1.3, hp: 2 },   // × a normal body's; not an elite's, a boss's or a child's
+    heavyLook: { darken: 0.55 },     // its colour (and what light becomes inside it) × this: denser
+    // the transition, in seconds: pulled round and in to the hole, sinking
+    // into it, the dark, the drop falling into the next world, the beat
+    // before the next wave's breather starts. `spin` turns the pull makes.
+    trans: { pull: 1.9, sink: 0.6, dark: 0.45, fall: 0.95, settle: 0.7, spin: 1.6, grace: 1.0, drainInset: 3 },
+    // how a world change looks (render/transit.js): the droplet falls from
+    // `fallH` m; the light comes back over `lightUp` of the fall; the floor
+    // runs out of it over `reveal` s; the vortex's hole and the drain's swirl
+    // and hole, in m; the drain rises out of the slab over `drainRise` s
+    view: { fallH: 14, splashRing: 4.5, banner: 2.4, vortexHole: 1.9, drainSwirl: 5.5, drainHole: 0.55, drainRise: 0.35, lightUp: 0.45, reveal: 1.3, sceneryAt: 0.45 },
+    // v75 (owner, 2026-10-31: "upgrade visuals and vfx"; per-world light first):
+    // each world lit in its own light. 1.x lit every world with one white sun
+    // and a white ambient; now the sun's colour, strength and where it stands,
+    // the ambient's colour and strength and how much the jelly reflects
+    // (`env`, × TUNING.env.intensity) are the world's — firelight low from the
+    // far side in the boiler room, a cold moon on the ice, the surface's blue
+    // from straight above in the deep. The gels and the sets take it; the
+    // floors are pictures and carry their own. `grid` is 1.x's light, and the
+    // title's; a campaign room takes its world's look's (main.js roomLook)
+    // v93 THE WORLD'S OWN LIGHT on its floor (render/floor.js worldLight; owner, 2026-10-31: "better lights.
+    // Actual things that make sense"; the approved arena pictures, docs/ENVIRONMENTS.md). The floor is a
+    // picture (owner, 2026-10-22: matte, no reflections of the scene), so its light is worked out in its own
+    // shader from the sources that stand in each world: `ambient` the floor's level away from every source;
+    // `lights` point sources [x, z] in arena fractions (`frac`) `h` m up, reaching `r` m, `k` strong, in their
+    // `color`, `flicker` [rad/s, depth]; `pools` the sewer's sunlight through its street grates (scenery.js
+    // sewerSpots, so the shafts and their pools agree); `grates` the fire under every boiler grate; `rim` a band
+    // of light along the arena's edge `w` m deep (the boiler's fire seam, the deep's living edge, the core's
+    // neon; `sides` 'all' or 'back' — the far side and the long ones, where the cistern's lamps stand, `every`
+    // m between their pools); `sun` the world's sun's sheen on water and ice; `sheen` how much the floor
+    // mirrors its point lights (wet stone, water, steel: k, shine). Worlds 1 and 2 are lit by the sky alone.
+    lit: {
+      // v128 (the owner's golden-hour concept): the driveway under DAYLIGHT (floor.js): a low warm sun and a cool sky,
+      // the slab in the trees' dappled shade toward the far left (the sun stands there, past the far-left corner)
+      concrete: { daylight: { sky: [0.42, 0.43, 0.52], sun: [1.55, 0.98, 0.46], bodies: 0.95, contact: 0.18,
+                              // v129: the trees past the slab, drawn as trees (render/trees.js, scenery.js treeShade): [fx, fz,
+                              // out m, h m tall, w m across, atlas tile, flipped]; the leaves block `k` of the sun
+                              trees: { n: 4, px: 512, seed: 11, k: 0.85, sway: 0.006, penumbra: 2.2,
+                                       at: [[-1, -1, 3, 9.5, 9, 0, 0], [-0.42, -1, 5, 10.5, 10, 1, 1], [0.28, -1, 7, 9, 8.5, 2, 0], [-1, -0.12, 4, 10, 9.5, 3, 1]],
+                                       shape: { trunk: 0.03, lean: 0.07, fork0: [0.24, 0.08], limbs: [3, 4], spread: 0.55, limb: [0.15, 0.05], depth: 4,
+                                                third: 0.35, fork: [0.42, 0.3], shrink: [0.68, 0.12], thin: 0.6, leafDepth: 2, leaves: [3, 6],
+                                                leaf: [0.009, 0.012], clump: 0.09, blur: 0.003 } } } },
+      sewer:   { ambient: 0.72, pools: { h: 7, r: 4.4, k: 0.85, color: [1, 0.84, 0.6] }, sheen: { k: 0.4, shine: 34 } },
+      // the cistern: the shaft through the roof is a broad, soft key on the far-left half (the approved picture's
+      // god rays), not a lamp — at 0.9 with a sharp sheen it read as a white fog blob; the lamps warm the back rim
+      // v98: and where the shafts land (scenery.cistern.rays), a warm patch of daylight — the approved picture's
+      // light is pale warm white on a teal room (its pool reads +72/+65/+46 over the floor round it) — that the
+      // caustic web gathers in; no sheen from it, as low and near as it is (a glint there is the fog blob again)
+      // v144 (owner, 2026-11-11: "Also a mood and light flip ... It looks like a regular day puddle"): the level UNDER
+      // the sewer, and DARK — `ambient` barely shows the stone. What light there is comes down the breach the water
+      // falls through (far left): a broad cold key, its glint sharp on the waves' faces (`shine`, `sheenK`), and the
+      // pale patch where it lands; and the lamps at the columns' feet, warm, along the back and the sides, glinting
+      // off the water too (`rim.sheen`: a row `y` m up, `off` m out from the edge)
+      cistern: { ambient: 0.15, lights: [{ frac: [-0.56, -0.66], h: 14, r: 9.5, k: 0.5, color: [0.5, 0.74, 1], shine: 700, sheenK: 3 },
+                                        { frac: [-0.56, -0.66], h: 5.5, r: 5.5, k: 1.0, color: [0.78, 0.93, 1], sheen: false, caustics: true, shafts: true }],
+                 rim: { w: 2.6, k: 1.7, color: [1, 0.6, 0.28], sides: 'back', every: 8.8, depth: 0.86, sheen: { y: 0.9, off: 2.3, shine: 90, k: 2.4, r: 9 } }, sheen: { k: 0.35, shine: 40 } },
+      // v145 (owner, 2026-11-11: "It's an industrial machinery dungeon so it's meant to have that atmospheric feel"):
+      // the boiler room is a DUNGEON OF MACHINES, and dark. What lights the deck is the fire under its grates (each a
+      // pool of orange, breathing) and what comes down the ventilation shafts: a pale light through a great FAN
+      // turning in each (`fans`: where on the floor it stands over, `blades` of it, a turn every `period` s — one
+      // each way — its light `k` out to `r` m, `duty` of each sector blade, `soft` at a blade's edge, a dark `hub`),
+      // so wedges of light and shadow go round the room, slowly
+      // (v149: darker again between the fires, and each grate's light `stoke` × brighter when its fire is blown)
+      boiler:  { ambient: 0.13, grates: { h: 1.2, r: 2.3, k: 1.7, color: [1, 0.42, 0.1], flicker: [1.6, 0.3], stoke: 1.3 },
+                 fans: [{ frac: [-0.42, -0.4], blades: 5, period: 16, r: 10, k: 0.75, duty: 0.52, soft: 0.1, hub: 1.3, color: [0.72, 0.82, 0.95] },
+                        { frac: [0.42, 0.42], blades: 5, period: -21, r: 10, k: 0.75, duty: 0.52, soft: 0.1, hub: 1.3, color: [0.72, 0.82, 0.95] }],
+                 rim: { w: 1.5, k: 0.75, glow: 0.03, color: [1, 0.42, 0.1], sides: 'all' }, sheen: { k: 0.3, shine: 20 } },
+      // the sun on water and ice is a glint, not a haze: broad and white it read as fog (shine 14 / 30)
+      // v99: and the GLITTER the approved picture is covered in — the sun off the ripples (floor.js river hands
+      // their slope over): a lobe `shine` tight, `k` bright, never past `max`
+      river:   { ambient: 1.0, sun: { k: 0.2, shine: 70, color: [1, 1, 0.95], glitter: { shine: 600, k: 1.2, max: 0.75 } } },
+      ice:     { ambient: 1.0, sun: { k: 0.24, shine: 90, color: [1, 1, 1] } },
+      // a glowing source also shows on a floor too dark to light (`glow`: the share it adds as if the floor were
+      // mid grey) — the deep's silt and the core's black are near black, and light that only multiplies left them so
+      deep:    { ambient: 0.62, lights: [{ frac: [-0.55, 0.3], h: 1.2, r: 3.6, k: 0.75, glow: 0.07, color: [0.35, 1, 0.6], flicker: [0.9, 0.25] },
+                                         { frac: [0.38, -0.42], h: 1.2, r: 3.2, k: 0.7, glow: 0.07, color: [0.35, 1, 0.6], flicker: [1.3, 0.25] },
+                                         { frac: [0.62, 0.48], h: 1.2, r: 3.0, k: 0.65, glow: 0.07, color: [0.35, 1, 0.6], flicker: [0.7, 0.25] },
+                                         // v150: where the SHAFTS from the surface land (sets/deep.js `shafts`): broad, blue-white, soft
+                                         { frac: [-0.28, -0.5], h: 9, r: 6.5, k: 0.5, color: [0.5, 0.78, 1], sheen: false, shaft: true },
+                                         { frac: [0.5, 0.05], h: 9, r: 5.5, k: 0.42, color: [0.5, 0.78, 1], sheen: false, shaft: true },
+                                         { frac: [-0.5, 0.62], h: 9, r: 5, k: 0.36, color: [0.5, 0.78, 1], sheen: false, shaft: true }],
+                 rim: { w: 2.2, k: 0.8, glow: 0.08, color: [0.25, 0.62, 1], sides: 'all' } },
+      core:    { ambient: 0.85, rim: { w: 1.9, k: 0.6, glow: 0.3, color: [1, 0.3, 0.85], sides: 'all' } },
+    },
+    light: {
+      // v123 (owner, 2026-11-08: "push for more lights"): in the neon world the bullets throw `shots` × their light,
+      // and every body is a light of its own (render/light.js `bodies`)
+      grid:     { sun: 0xffffff, sunI: 1.3, at: [8, 20, 10],    ambient: 0xffffff, ambientI: 0.45, env: 1.0,
+                  shots: 2.0, bodies: { r: 2.4, add: 0.7, k: 0.3, boss: 1.6 } },
+      // v93: the sun from the near left, lower (38°): the long curb on the left throws its shadow onto the slab, every
+      // body's shadow falls away toward the far right, and the bodies are lit from the camera's side
+      // v121: `hero`, how strong the light the hero carries is in this world (TUNING.light.arena.hero × it): in the sun a
+      // pool of light only washes out the floor round a pale hero — a screenshot pass found it white on white on the ice
+      // v128 (the owner's concept: the driveway at golden hour): the sun low behind the slab on the left (23°), so every
+      // shadow runs long toward you and the jelly is lit THROUGH; a warm sun and a cool sky fill. `sky`: the outdoor
+      // sky the gels reflect (render/env.js skyEnvironment, linear colours), its sun a glint in every body
+      // `glint`: the sun's highlight in the jelly, its colour × strength; `core` × every gel's inner glow (lit through);
+      // `shadow`: the bodies' shadows `k` × darker and `hard` of the way to a crisp edge (render/light.js)
+      driveway: { sun: 0xffc488, sunI: 1.9, at: [-14, 8, -12],  ambient: 0xa8bce6, ambientI: 0.5, env: 1.0, hero: 0.3,
+                  glint: [1.0, 0.86, 0.66], core: 2.6,
+                  // v132 (owner: "Shadows should not be as circular at the point where they connect with character"):
+                  // `cast`, each body throws its own projection — its foot, then the rest of it laid out away from the
+                  // sun, as wide as the body where it leaves it (render/light.js): its edge `near` (of the foot's radius)
+                  // wide at the foot and `far` at the tip, `tip` as dark at the tip as at the foot; a cube's outline `box`;
+                  // a jelly dome's run × `dome` — the concept's domes throw theirs about half as far again as a dome one
+                  // radius tall would in this sun, and so do ours (a choice of the look, not the sun's geometry)
+                  shadow: { k: 1.45, cast: { near: 0.08, far: 0.45, tip: 0.55, box: 6, dome: 1.45 } },
+                  // `caustic`: the light through each body pools in its shadow just past its foot — `at` × its radius
+                  // on, `long` × and `wide` × its radius in size, `k` as bright (render/actors.js): a pool in the dark,
+                  // not a tail down the shadow that washes it out
+                  caustic: { at: 1.0, long: 0.42, wide: 0.36, k: 0.7, ring: 0, soft: 1 },
+                  sky: { zenith: [0.16, 0.3, 0.62], horizon: [1.0, 0.66, 0.36], ground: [0.09, 0.11, 0.05], curve: 0.45,
+                         sun: { color: [1.0, 0.8, 0.52], size: 0.05, radiance: 40, halo: 1.4, haloWidth: 0.22 } } },
+      sewer:    { sun: 0xd4ecdc, sunI: 1.0, at: [3, 22, 4],     ambient: 0x9cc6c0, ambientI: 0.42, env: 0.85 },
+      cistern:  { sun: 0xffc98e, sunI: 1.0, at: [-6, 10, -14],  ambient: 0x7fa2aa, ambientI: 0.40, env: 0.9 },
+      boiler:   { sun: 0xffbd7a, sunI: 1.3, at: [4, 9, -16],    ambient: 0xb49070, ambientI: 0.38, env: 0.8 },
+      river:    { sun: 0xfff4e2, sunI: 1.5, at: [8, 24, 10],     ambient: 0xd8ecff, ambientI: 0.62, env: 1.08, hero: 0.6 },
+      ice:      { sun: 0xfff8ee, sunI: 1.5, at: [-10, 22, 10],   ambient: 0xdceeff, ambientI: 0.66, env: 1.12, hero: 0.3 },
+      deep:     { sun: 0x6a8cff, sunI: 1.0, at: [0, 20, 2],     ambient: 0x4a5c8c, ambientI: 0.50, env: 0.7 },
+      core:     { sun: 0xff6ae0, sunI: 1.0, at: [-10, 18, -10], ambient: 0x6c48a8, ambientI: 0.42, env: 1.1 },
+    },
+    // the floors (render/floor.js `style`), linear rgb. The swirl winds the
+    // floor `twist` rad at the drain, falling off as (1 − r/R)^falloff, and
+    // draws it `pull` × in toward it
+    floor: {
+      swirl: { falloff: 1.4, twist: 9, pull: 0.8 },
+      // v66 (owner, 2026-10-31): world 2 in SUMMER DAYLIGHT, where it was a
+      // night slab under a garage flood: light concrete in the sun, a little
+      // warmer toward the far end (`flood`), the hero's own pool of light
+      // (`pool`) all but gone in the day, the curb's contact shade on the slab
+      // along it (`curbAO` m wide, `curbAODepth` dark), and the haze past the
+      // lawn (`sky`: the background and the void the floor runs out over)
+      // v93: a stop darker and warmer (it read overexposed under the sun), and the curb's SUN shadow on the slab (sunShadow:
+      // depth, the band's soft edge in m, cot θ held to cotMax): a slab in the sun is defined by its shadows
+      concrete: { lo: [0.1, 0.092, 0.08], hi: [0.215, 0.195, 0.165], sunShadow: { depth: 0.42, soft: 0.35, cotMax: 2.2 }, speck: [0.05, 0.05, 0.05], oil: [0.07, 0.068, 0.066], oilDepth: 0.4,
+                  // v138 (the owner's concept, art-ref/world-2-driveway-concept.jpg): big old pours (`joint` 4 → 8 m,
+                  // wider and dirtier), `weather` — broad damp patches (`dampTint` × the slab) and sun-bleached ones —
+                  // `moss` in the joints (out to `joint` m) and against the curb (`edge` m), `dirt` along both, and
+                  // PUDDLES ([fx, fz, r m, seed]; `warp` how far their edges wander, the slab `dark` and damp `damp`
+                  // radii past them; in them the sky `skyNear`→`skyFar`, the trees' crowns `trees`, a `rim` of light,
+                  // rings from the hero [per m, speed, falloff, depth] and a `shimmer`)
+                  lip: [0.42, 0.41, 0.39], joint: 8.0, jointW: 0.04, flood: 0.12, ambient: 1.0, floodTint: [1.0, 0.85, 0.6], pool: 0.06,
+                  weather: { dampAt: 0.5, dampTint: [0.52, 0.56, 0.64], bleachAt: 0.42, bleach: 0.3 },
+                  // v138 (owner, 2026-11-10: "the concrete ground ... more detailed ... better slate visual variety"): no two pours alike. Per
+                  // slab: `tone` how far its brightness strays, `cool`/`warm` the two tints it lies between, `grain`
+                  // the float's drag (cells/m along, across: a third are dragged one way, a third the other, a third
+                  // floated smooth), `weather` how far a whole pour leans damp or bleached, `pit` its frost pitting;
+                  // `cut`: the saw cuts (the share `at` left whole; of the rest some are cut across, some along,
+                  // some both: `w` m half-wide, `depth` dark, the pieces `tone` apart); `patch`: a repair in the
+                  // share past `at` (`size` of the slab, its `tint`, a cut edge `w` m, `depth` dark); `settle`: how
+                  // proud one pour stands of the next along a joint; `chip`: how far a joint's width wanders
+                  slabs: { tone: 0.24, cool: [0.95, 0.98, 1.05], warm: [1.06, 1.0, 0.9], grain: [34, 5], weather: 0.3, pit: 0.3,
+                           cut: { at: 0.4, w: 0.014, depth: 0.5, tone: 0.1 }, patch: { at: 0.82, size: [0.1, 0.2], tint: [1.2, 1.2, 1.22], w: 0.02, depth: 0.5 },
+                           settle: 0.9, chip: 0.9 },
+                  moss: { at: 0.44, joint: 0.32, edge: 2.2, color: [0.045, 0.07, 0.028], k: 0.8, dirt: 0.36 },
+                  puddles: { at: [[-0.72, -0.66, 2.6, 3.1], [0.76, 0.2, 1.5, 7.7]], warp: 0.8, edge: 0.82, damp: 0.5, dark: 0.5, k: 0.96,
+                             skyNear: [0.2, 0.31, 0.5], skyFar: [0.72, 0.78, 0.86], cloud: 0.45, sun: [1.2, 0.95, 0.6], glint: 0.9, trees: 0.88, treeAt: [1.5, -2.5],
+                             rim: 0.45, ring: [9, 6, 0.9, 0.22], shimmer: 0.1 },
+                  curbAO: 0.9, curbAODepth: 0.18, sky: [0.55, 0.7, 0.85],
+                  // v65 (the owner's world-2 sheet): hairline cracks, a few to a slab and faint
+                  // (the ice's lesson, v48: a texture under the fight, never lines across it):
+                  // cells `crackScale` to the m (how far a crack runs before it forks),
+                  // `crackJag` how jagged, `crackBreak` the scale they stop at, `crackPatch`
+                  // the scale of the slabs that have them, `crackW` m wide, `crackDepth` how dark
+                  crackScale: 0.6, crackJag: 0.07, crackBreak: 0.8, crackPatch: 0.2, crackW: 0.006, crackDepth: 0.3,
+                  // and the storm drain set in the slab, `at` m in from the far right corner
+                  // (x left, z toward you: clear of the HUD in the corner), `r` m across its frame
+                  grate: { at: [2.4, 5.5], r: 0.95, iron: [0.03, 0.031, 0.034], frame: [0.12, 0.12, 0.125], slot: [0.002, 0.002, 0.003],
+                           stain: { r: 3.0, dark: 0.34, moss: 0.3 } } },
+      // v101 (the module sheet: wet grey-blue flagstones, a stone-kerbed channel): the slabs a little lighter and
+      // bluer, the water lighter teal, the puddles fewer and quieter (their bright rims were noise over everything),
+      // and the channel's `kerbStone`: `w` m blocks `joint` m long, `lit` on their water edge, a `shadow` beyond
+      sewer: { stone: [0.042, 0.05, 0.058], groutCol: [0.008, 0.009, 0.011], water: [0.007, 0.032, 0.036], waterHi: [0.09, 0.27, 0.25],
+               kerbStone: { w: 0.34, joint: 1.15, color: [0.1, 0.1, 0.098], lit: [0.07, 0.08, 0.08], shadow: 0.45 },
+               kerb: [0.06, 0.06, 0.062], channel: 3.4, slab: [1.7, 0.85], grout: 0.035, flow: 1.2, wetLight: 0.9,
+               // v145 (owner: "Stream should look a bit like a concave slide"): the channel is sunk (floor.js sewer).
+               // v152 (owner, on the phone, of v148's half-pipe: "a rectangular hole, when it should be a gentle concave
+               // stream ... subtle and rounded, not boxy"): a GENTLE TRENCH — a cosine dip `deep` m at its middle, level at
+               // its shoulders; level water `fill` of the way up it (v145's, which was good), running `speed` × the old
+               // flow drawn out `stretch` ×, its edge `surge`ing m and `clear` over its first m, a `thread` m wide down
+               // it. The banks: the floor's own stone at the shoulder going to smooth `stone` between `blend` of the
+               // way down, `damp` darker toward the water; shaded `relief` × as a slope turns to the light leaning
+               // `lightAcross` (never more than `bright` lighter or `dark` darker)
+               chute: { deep: 0.6, fill: 0.5, speed: 2.6, stretch: 2.6, stone: [0.075, 0.085, 0.092], blend: [0.12, 0.6], damp: 0.4, lightAcross: 1.3,
+                        relief: 0.85, bright: 0.45, dark: 0.45, surge: 0.12, clear: 0.28, thread: 0.3 },
+               // v140: no two flagstones alike (floor.js sewer). `long`/`short`: the share of pairs along a course that
+               // are one long stone / cut in halves; `tone` how far a stone's brightness strays, between the tints
+               // `cool` and `warm` (and `greens` of them toward `green`); `tilt` how far out of level; the edges worn
+               // round over `bevel` m, lit by `relief` from `sun` (along, across: where the light stands); `crack`
+               // the share cracked across (`crackW` m); `chip` how far a joint's width wanders; the stones `damp`
+               // within `dampReach` m of the channel (and of the walls, 0.6 as far), `slime` in the joints there
+               vary: { long: 0.26, short: 0.16, tone: 0.55, cool: [0.9, 1.0, 1.12], warm: [1.16, 1.04, 0.86], green: [0.86, 1.1, 0.92], greens: 0.18,
+                       tilt: 0.5, bevel: 0.12, relief: 0.5, sun: [-0.55, -0.83], crack: 0.1, crackW: 0.012, chip: 0.8,
+                       damp: 0.3, dampReach: 2.6, slime: [0.03, 0.075, 0.035], slimeK: 0.8 },
+               sky: [0.005, 0.014, 0.017],   // v70: the dark past the walls and the gates, a deep teal
+               // v78 (owner, 2026-10-31: the waters must differ): PUDDLES on the flagstones —
+               // `scale` cells/m, more of them the lower `t`, the stone `dark` under them and the
+               // vault's `sky` reflected `reflect` of the way, a meniscus `rim` in `rimCol`; and the
+               // channel's MURK: streaks `stretch`:1 along the flow at `scale`, lifting the water
+               // `lift` toward waterHi, foam `foamW` m in from each kerb in `foam`
+               puddle: { scale: 0.7, t: 0.745, soft: 0.03, dark: 0.55, sky: [0.035, 0.07, 0.08], reflect: 0.55, rim: 0.12, rimCol: [0.3, 0.38, 0.4] },
+               murk: { stretch: 7, scale: 1.6, lift: 0.55, foamW: 0.25, foam: [0.35, 0.42, 0.4] } },
+      // WORLDS · NEON (v23): the abstract floors
+      hex: { cell: 1.8, line: 0.035, waveK: 0.55, waveHz: 2.2, base: [0.02, 0.012, 0.035], cell2: [0.09, 0.02, 0.08],
+             lineLo: [0.35, 0.03, 0.3], lineHi: [1.0, 0.35, 0.75] },
+      tide: { scale: 0.11, flow: 0.12, bands: 7, line: 0.06, grid: 2.2, lo: [0.004, 0.01, 0.02], hi: [0.01, 0.04, 0.06],
+              lineCol: [0.15, 0.85, 0.8], gridCol: [0.03, 0.06, 0.12] },
+      // worlds 4-9 (v28): linear rgb
+      // v97: to the approved arena picture — clear shallow water over pale slabs, a NETWORK of caustic light on them
+      // (`net`: scale, iterations' strength, sharpness, gain; brightest in the roof shaft's pool, `inPool` of it
+      // elsewhere), and no column stumps in the pool (the picture's columns stand at the back): `plinthK` 0
+      cistern: { slab: 2.4, grout: 0.04, stone: [0.2, 0.3, 0.31], water: [0.004, 0.03, 0.048], depth: 0.45, caustic: [0.5, 0.92, 1.0],
+                 net: { scale: 0.27, sharp: 13, gain: 0.24, inPool: 0.22, speed: 0.22 }, plinthK: 0,
+                 // v144: the simulated water's optics (floor.js cistern; the simulation itself is TUNING.water.cistern).
+                 // `gain` × the simulation's slope; the bed moved `refract` m a unit of slope; the caustic net pulled
+                 // `netWarp` m; a crest's light `focus` (to `focusMax`, `inDark` of it away from the breach's light), a
+                 // trough's `thin`; `fine`: the cross-ripple too small for the simulation, [kx, kz rad/m, rad/s, m];
+                 // `foam`: a veil mottled `scale` a metre, `fill` × the foam the simulation holds, `soft` at its edge, `k` thick;
+                 // `wet`: how much of the bullets' light the surface takes; `swell`: a slow unevenness the lights glint off
+                 // (cells a metre, its drift, its slope); `relief`: a wave's face turned to the breach is lit `k` × its
+                 // slope (to `max`, in `color`) and the face turned away darkened (to `dark`), `far` of it far from the breach
+                 wave: { gain: 2, refract: 0.5, netWarp: 0.8, focus: 0.1, focusMax: 1.4, inDark: 0.55, thin: 0.08, wet: 0.35, glintAt: [0.03, 0.14],
+                         swell: [0.55, 0.12, 0.014], relief: { k: 3.2, max: 0.5, dark: 0.45, r: 16, far: 0.35, color: [0.36, 0.6, 0.8] },
+                         fine: [[7.1, 3.3, 2.3, 0.0022], [-4.2, 8.8, -1.9, 0.0018], [11.5, -6.4, 3.4, 0.0011]],
+                         foam: { scale: 2.4, fill: 0.95, soft: 0.4, drag: 0.6, k: 0.7, color: [0.62, 0.7, 0.74] } },
+                 // v144: the pool's DEEPS (floor.js cistern): where a slow field (`scale` a metre) passes `at`, `k` more
+                 // water over the bed, and the light on it `dim`med
+                 deeps: { scale: 0.085, at: [0.5, 0.76], k: 0.36, dim: 0.6 },
+                 // v140: the pool's floor is laid, not ruled (floor.js cistern). `long`: the share of pairs along a
+                 // row that are one long slab; `small`: the share of slabs that are four small ones; a slab's `tone`,
+                 // between `cool` and `warm` (`greens` of them toward `green`), `tilt` out of level, its edges worn
+                 // over `bevel` m and lit `relief` from `sun`; `sunk`: the share lying `sunkDepth` deeper; `silt` in
+                 // the joints where a noise passes `siltAt`; `border`: a band of `tile` m tiles `w` m wide, `in` m in
+                 // from the pool's edge, `light` and `dark`, `gone` of them missing
+                 // v143: rings from the hero in the pool's water (floor.js cistern `wake`): `gap` m apart, `speed` m/s,
+                 // `width` m thin, gone by `reach` m, `gain` bright
+                 wake: { gap: 1.1, speed: 1.5, width: 0.028, reach: 4.2, gain: 0.26 },
+                 vary: { long: 0.24, small: 0.14, tone: 0.5, cool: [0.9, 1.0, 1.1], warm: [1.14, 1.05, 0.9], green: [0.85, 1.12, 0.95], greens: 0.16,
+                         tilt: 0.4, bevel: 0.14, relief: 0.32, sun: [-0.5, -0.86], sunk: 0.07, sunkDepth: 0.32,
+                         silt: [0.2, 0.22, 0.2], siltAt: 0.58, siltK: 0.7,
+                         border: { in: 0.9, w: 0.9, tile: 0.3, grout: 0.022, light: [0.17, 0.25, 0.25], dark: [0.04, 0.075, 0.085], gone: 0.16 } },
+                 column: 8, plinth: 0.75, rim: [0.2, 0.6, 0.7],
+                 // v71: the cut top of a fallen column in each plinth (`stump` × its
+                 // half size), and drip rings: in every `drip.cell` m a drip from the
+                 // vault every `period` s, its rings spreading to `reach` m
+                 stump: 0.82, stumpTone: [0.075, 0.08, 0.078],
+                 drip: { cell: 6, period: 3.6, reach: 1.5, width: 0.035, gain: 0.32 } },
+      // v101 (the approved picture): the plates a stop lighter (it read as a black floor plan), the grates square
+      // LATTICES `grateW` half sizes on a `grate` m lattice — `lattice`: holes `hole` m at `pitch`, a `frame` m iron
+      // frame, bars and frame lit by the fire under them, its `core` white-hot in the middle — and fire in the seams
+      // along the edge (`veins`: within `reach` m, `width` of a noise's contour at `scale`, `haze` the glow at the foot)
+      boiler: { plate: [3.2, 2.1], seam: 0.035, steel: [0.085, 0.07, 0.06], rivet: [0.2, 0.15, 0.11], grate: 7.2, grateW: [0.85, 0.65],
+                // v140: no two plates alike (floor.js boiler). A plate's `tone`, between `blued`, `bare` and `rusty`;
+                // a third are tread plate (lozenges on a `tread` m lattice, `treadK` bright), a third rolled
+                // (`rolledK` streaks), the rest bare and scraped (`scrapeK`); each stands proud of the deck (`bevel` m,
+                // `relief`, lit from `sun`); `patch`: the share with a patch welded on; `rust` blooms `rustK`; and
+                // `temper`: the colours the fire leaves in the steel round a grate, out to `reach` m
+                vary: { tone: 0.5, blued: [0.78, 0.92, 1.2], bare: [1.0, 1.0, 1.0], rusty: [1.3, 0.9, 0.62], tread: 0.16, treadK: 0.5, rolledK: 0.16, scrapeK: 0.22,
+                        bevel: 0.12, relief: 0.5, sun: [-0.5, -0.86], patch: 0.08, rust: [0.16, 0.06, 0.025], rustK: 0.45,
+                        temper: { reach: 1.1, k: 0.6, straw: [1.0, 0.82, 0.42], bronze: [0.85, 0.5, 0.28], purple: [0.55, 0.3, 0.7], blue: [0.3, 0.5, 0.95] } },
+                // v149 (owner: "Decks right, mood weak"): under each grate a PIT `depth` m deep (its `wall`, lit `wallGlow` from
+                // below) with a bed of coals (`coal` a metre, from `coalLo` to `coalHi`, the hottest going `white`); and the
+                // room STOKES (`stoke`, kit.js): every `period` s a flare runs down the hall along `dir`, a cycle every `len`
+                // m, up in `rise` of a cycle and gone by `fall`, the fire `k` brighter at its height
+                lattice: { hole: 0.17, pitch: 0.26, frame: 0.12, steel: [0.03, 0.026, 0.024], core: [1.0, 0.85, 0.45], barGlow: 0.18, frameGlow: 0.05,
+                           pit: { depth: 0.55, wall: [0.035, 0.02, 0.014], wallGlow: 0.9, coal: 6.5, coalLo: [0.32, 0.03, 0.004], coalHi: [1.0, 0.42, 0.07], white: 1.6 } },
+                stoke: { period: 7.5, dir: [0.3, 1], len: 62, rise: 0.05, fall: 0.5, k: 0.9, calm: 0.6 },   // (`calm`: how much of the flare REDUCE MOTION holds back, v151)
+                veins: { reach: 1.6, scale: 0.9, width: 0.025, gain: 1.4, haze: 0.22, pulse: 1.3, color: [1.0, 0.38, 0.07] },
+                glow: [1.0, 0.35, 0.06], scorch: [0.012, 0.008, 0.006], pulse: 1.6, sky: [0.012, 0.008, 0.006],
+                // v78: oily PUDDLES within `band` m of the long sides, under the pipe runs: the steel
+                // `dark` under a film with a `sheen` (a thin-film rainbow), the grates' `fire` in them
+                puddle: { scale: 0.45, t: 0.69, soft: 0.03, band: 3.0, dark: 0.3, sheen: 0.07, fire: 0.6, rim: 0.3 } },
+      // v95: in DAYLIGHT, to the owner's approved arena picture (the concept handoff): clear turquoise over sand and
+      // pebbles, deep teal down the middle, foam at the banks; `flecks` the share of v78's white dashes kept (they
+      // fought the bullets, and the picture has none)
+      // v140: FISH in the river's deep middle (floor.js river `fish`): cells `cell` m (along, across), one in `keep`
+      // holds a fish `len` m long, working its tail `beat` a second, making `swim` m/s upstream; the water `dark`
+      // over it; gone within `shy`[0] m of the hero, all there by `shy`[1]
+      // v143: the hero's WAKE in the river (floor.js river `wake`): the arms open `open` across per m downstream from
+      // `r` m off its middle, `w` m wide and `widen`ing, gone by `reach` m; a bow of foam upstream; `k` strong
+      river: { wake: { open: 0.36, r: 0.55, w: 0.11, widen: 0.1, reach: 2.4, k: 0.6 },
+               // v146 (owner: "Fish maybe too one note"): KINDS of fish (floor.js river). Each: its `cell` (m along, across),
+               // the share of cells that `keep` one, its `len`gth and `girth`, tail `beat`, how fast it makes upstream
+               // (`swim`), how `dark` it reads (`k`), how far it `shy`s from the hero, the `zone` of depth it keeps to
+               // (0 the bank, 1 the deep middle), a `dart` [times a second, m] for a shoal that jumps together, a
+               // `flash` of its flank, a `slant` (radians) for one that lies across the stream
+               fish: { kinds: [
+                 { cell: [3.6, 1.5], keep: 0.34, len: [0.55, 0.95], beat: 5.5, swim: 0.35, dark: [0.35, 0.5, 0.52], k: 0.8, shy: [1.6, 3.6], zone: [0.55, 2] },                                    // trout, holding in the deep
+                 { cell: [0.7, 0.42], keep: 0.5, len: [0.16, 0.26], beat: 13, swim: 0.15, dark: [0.5, 0.6, 0.6], k: 0.6, shy: [2.2, 4.4], zone: [0.08, 0.5], dart: [0.55, 0.5], flash: [0.3, 0.34, 0.32] },   // fry, a shoal in the shallows
+                 { cell: [11, 5.2], keep: 0.3, len: [1.5, 2.1], girth: 0.085, beat: 2.2, swim: 0.08, dark: [0.22, 0.34, 0.33], k: 0.85, shy: [1.2, 2.6], zone: [0.35, 2], slant: 1.5 },          // a pike, lying across
+               ] },
+               // v146: the simulated water's optics in daylight (floor.js river; the simulation is TUNING.water.river):
+               // `gain` × its slope; the pebbles moved `refract` m a unit of slope, the caustic web pulled `netWarp` m;
+               // a crest gathers the web's light `focus` (to `focusMax`), a trough thins it `thin`; a wave's face toward
+               // the sun is lit `relief.k` × its slope (to `max`, in `color`), the face away darkened (to `dark`);
+               // `ripKeep` of the old drawn ripples stay under the sun's glitter; `foam`: a veil mottled `scale` a metre
+               wave: { gain: 1.8, refract: 0.4, netWarp: 0.6, focus: 0.07, focusMax: 0.9, thin: 0.06, ripKeep: 0.55,
+                       relief: { k: 1.9, max: 0.34, dark: 0.3, color: [0.75, 0.9, 0.85] },
+                       foam: { scale: 2.2, fill: 0.95, soft: 0.4, drag: 0.5, k: 0.75 } },
+               water: [0.03, 0.36, 0.36], waterHi: [0.36, 0.8, 0.74], flow: 1.6, bank: 0.78, pebble: [0.34, 0.29, 0.2], foam: [0.85, 0.95, 0.95], sky: [0.1, 0.16, 0.08], flecks: 0,
+               // v78: a river that RUNS — streaks `stretch`:1 along the flow at `scale`, lifting the water
+               // `lift` toward waterHi; `deep` down the middle (`deepK` of the way), the bed showing
+               // through the shallows from `shallow` of the half width to the bank, tinted `shallowTint`
+               run: { stretch: 11, scale: 1.2, lift: 0.35, shallow: 0.55, deep: [0.008, 0.19, 0.23], deepK: 0.6, shallowTint: 0.55 },
+               // v99 (to the approved picture): the shore wanders `amp` of the half width over `scale` cycles a metre;
+               // the bed is pebbles `cell` m across (`round` the crown's width, `tones` and the dark `joint`), the bank's
+               // drier (`dry`), with the caustic web (`net`, `caustic`) running over them `drift` of the current's
+               // pace; the ripples the sun glitters off: `scale` [along, across], `amp` slope, `calm` down the middle
+               shore: { amp: 0.1, scale: 0.06 },
+               bed: { cell: 0.42, gap: 0.16, crown: 0.4, tones: [[0.36, 0.31, 0.22], [0.3, 0.29, 0.27], [0.5, 0.46, 0.38]], joint: [0.07, 0.06, 0.045], dry: 1.12,
+                      drift: 0.25, caustic: [0.75, 1.0, 0.92], net: { scale: 0.42, sharp: 11, gain: 0.6, speed: 0.55 } },
+               glitter: { scale: [0.55, 2.2], amp: 0.32, calm: 0.7, with: 1.1 } },
+      // v95: in DAYLIGHT, to the approved arena picture: pale blue ice with white cracks and frost — kept mid blue, not
+      // white, so the white hero and the pale gels still stand out on it
+      ice: { base: [0.26, 0.46, 0.66], deep: [0.11, 0.26, 0.48], crack: [0.92, 0.97, 1.0], lines: 0.45, scale: 0.35, frost: [0.85, 0.92, 1.0],
+             // v140: SNOW drifted over the pale ice (floor.js ice `snow`): it lies where the sheet's broad field passes
+             // `at` (`soft` to full), broken at `scale`, `k` thick in `color`, ridged `ridge` across the `wind` every 1/`ripple` m
+             // v145 (owner: "Want more snow"): more of the sheet under it (`at` 0.56 → 0.5), and BANKED along the rail — within
+             // `reach` m of the edge it lies `lift` more readily and `deep` thicker (never past `max`), shaded `shade` at its foot
+             // v149 (owner: "More snow, sliding on ice trails etc"): a DUSTING over the rest of the sheet too (`dust`:
+             // `k` thick where its own field, `scale` a metre, passes `at`), the drifts a little wider (`at` 0.5 → 0.46)
+             // and the bank deeper in; SPINDRIFT blowing over it all (`spindrift`: wisps `scale` [along, across the
+             // wind] a metre, `speed` m/s, `k` thick past `at`); and what slides over it SWEEPS it (water.js `trail`):
+             // `trail.sweep` of the snow gone where a body went, a berm `pile` thick along the furrow's edge (where the
+             // swept field climbs `edge` a metre), its walls lit `relief` × toward the sun and shaded to `dark`, the bare
+             // ice under it polished (`polish` its tint, `gloss` its shine)
+             snow: { at: 0.46, soft: 0.05, scale: 0.4, k: 0.6, color: [0.74, 0.82, 0.92], wind: [0.8, 0.6], ripple: 5, ridge: 0.05, scallop: 0.012,
+                     bank: { reach: 3.8, lift: 0.36, deep: 0.3, max: 0.88, shade: 0.22, shadeW: 0.06 },
+                     dust: { k: 0.5, scale: 0.55, at: [0.08, 0.34] },
+                     spindrift: { scale: [0.2, 1.5], speed: 3.4, at: [0.6, 0.84], k: 0.3 },
+                     trail: { sweep: 0.96, pile: 0.9, edge: [0.2, 0.9], relief: 0.45, dark: 0.35, polish: [0.55, 0.74, 0.95], gloss: 0.35 } },
+             ledgeShadow: { depth: 0.35, soft: 0.25, cotMax: 2.2 },   // v100: the ledge's sun shadow on the ice (scenery.ice.ledge)
+             // v100: the FRACTURES — plates `cell[0]` m across with cracks `width[0]` m wide between them (half widths),
+             // finer cracks across the plates (`cell[1]`, `width[1]`, `minor` as bright), the field warped `warp` m over
+             // `warpScale` cycles a metre; frost `frost` m along the big cracks; each plate `plates` lighter or darker;
+             // stretches of the big cracks gone where a noise at `gapScale` is under `gaps`, the fine ones in `minorKeep` of the plates
+             fracture: { cell: [5.6, 1.5], width: [0.032, 0.015], minor: 0.5, warp: 0.7, warpScale: 0.4, frost: 0.35, plates: 0.07,
+                         gaps: [0.36, 0.5], gapScale: 0.28, minorKeep: 0.45 },
+             // v72: frost in from the floor's edge over `edgeFrost` m, and air caught in the ice: in one
+             // `bubble.cell` m cell in `keep` a bubble `r` m round; the dark past the snowfield
+             edgeFrost: 1.6, edgeFrostGain: 0.22, bubble: { cell: 2.2, keep: 0.35, r: [0.12, 0.3], gain: 0.22 }, sky: [0.55, 0.65, 0.78] },
+      // v101 (the approved picture's seabed): the `bed` — silt in lumps `cell` m across from `lo` to `hi`, `swept`
+      // brighter in a band `band` of the half width down the middle, `cold` within `coldReach` m of the edge; the
+      // specks in POOLS round the deep's lights (`poolR` × each light's r, `poolGlow`, `strays` elsewhere), `green`
+      // v140: the seabed's FINDS (floor.js deep `finds`): the silt's ripples `relief` lit and dark; in cells `cell` m
+      // one in `keep` holds a starfish (`stars` of them, `star` m across the arms, `starLo`…`starHi`) or a scallop's
+      // shell (`shell` m, `shellCol`)
+      // v146 (owner: "Both need more"): the deep is UNDER WATER (floor.js deep). `sun`: the surface's light, in slow broad
+      // dapples (`net`, drifting `drift` m/s; `gain` × the bed and `add` of its own `color`). `ray`: the shadow of a
+      // great ray going over — `size` m (a half body), on a `round` of the floor's half sizes at `pace` rad/s, wings
+      // beating at `beat`, `dark` at `soft` edges. `stir`: the plankton lit where the water is stirred (the
+      // simulation's, TUNING.water.deep) — sparks `grain` a metre (`keep` of the cells, `dot` of a cell round), `sparkK` bright over a `haze`
+      // v150 (owner on v147: "Needs both" — more life, more light): the surface's light stronger (`gain`, `add`), and
+      // `shaft` × as strong again where a shaft lands; `shoal`: lantern fish over the bed — each kind's `heading` (rad),
+      // `swim` m/s, one fish in `keep` of the `cell`s [along, across] m, `len` m long and `girth` of that wide, tail
+      // beating `beat`, weaving (`weave`: per m, per s, m), in clouds (`cloud` of a noise `cloudScale` a metre), shy of
+      // the hero inside `shy` m, in `color` (`k` solid); each throws a shadow `shadow` m off (`shadowK` dark)
+      deep: { sun: { net: { scale: 0.13, sharp: 11, speed: 0.14, gain: 1 }, drift: [0.22, 0.1], gain: 0.75, add: 0.09, color: [0.4, 0.7, 1.0], shaft: 1.6 },
+              shoal: { shadow: [0.4, 0.3], shadowK: 0.45, kinds: [
+                { heading: 0.5, swim: 1.2, cell: [0.9, 0.55], keep: 0.5, len: [0.24, 0.36], girth: 0.2, beat: 9, weave: [0.12, 0.25, 1.3], cloud: [0.6, 0.68], cloudScale: 0.12, shy: [1.2, 2.6], color: [0.16, 0.52, 0.5], k: 0.85 },
+                { heading: 2.6, swim: 0.75, cell: [1.7, 1.0], keep: 0.4, len: [0.42, 0.62], girth: 0.17, beat: 6, weave: [0.08, 0.18, 1.8], cloud: [0.6, 0.68], cloudScale: 0.09, shy: [1.5, 3.2], color: [0.55, 0.26, 0.42], k: 0.85 }] },
+              ray: { size: 2.6, round: [0.62, 0.78], pace: [0.083, 0.057], beat: 1.5, dark: 0.34, soft: 0.14 },
+              stir: { grain: 3.0, keep: 0.55, dot: 0.32, sparkK: 3.0, haze: 0.26, color: [0.1, 0.85, 0.75] },
+              finds: { cell: 3.1, keep: 0.3, stars: 0.5, relief: 0.1, star: 0.34, starLo: [0.2, 0.05, 0.04], starHi: [0.3, 0.12, 0.05], shell: 0.2, shellCol: [0.16, 0.15, 0.14], k: 0.9 },
+              silt: [0.006, 0.008, 0.02], ripple: [0.012, 0.018, 0.04], glow: [0.2, 0.5, 1.0], glow2: [0.5, 1.0, 0.7], specks: 2.6, sky: [0.002, 0.004, 0.01],
+              bed: { cell: 0.9, lumpK: 0.45, lo: [0.03, 0.03, 0.03], hi: [0.1, 0.085, 0.065], swept: 1.35, band: 0.45, cold: [0.012, 0.03, 0.06], coldReach: 3, coldK: 0.65,
+                     ripple: 0.5, poolR: [0.25, 0.75], poolGlow: 0.05, strays: 0.12, green: 0.85 } },
+      // v101 (the approved picture and module sheet): `tiles` — dark tiles `cell` m on a magenta grid (`line` of the
+      // tile, glowing `lineGlow`), two disc `pads` (fractions of the half sizes) `padR` m, glowing `padGlow`, rings
+      // every `ringEvery` m washing out to `reach` m at `ringSpeed`, lighting the lines (`washGlow`) and the floor
+      core: { base: [0.004, 0.0, 0.008], line: [0.8, 0.1, 0.7], pulse: [0.3, 0.9, 1.0], cell: 1.6, ringEvery: 2.4, ringSpeed: 4.5, sky: [0.006, 0.002, 0.01],
+              // v140: the deck is a machine's (floor.js core `vary`): `vents` of the tiles are slotted (`slots` to a tile,
+              // the core's light `ventGlow` under them), `lamps` of them carry a status `lamp`; and `packet`s of light
+              // run along the grid's lines — one every `every` tiles, `len` of that long, `speed` tiles a second, on
+              // `lanes` of the lines
+              tiles: { // v147 (owner: "Both need more"): the deck is GLASS over the machine (floor.js core `under`): a ROTOR `rotor` m down —
+                       // rings `ringW` m wide with `gap` between, cut into segments ~`seg` m long with `cut` between, turning
+                       // `turn` (alternate rings opposite ways; nothing within `hub` m), dark `metal`, its edges lit `edgeK`
+                       // from below; the HEART `heart` m down, `heartR` m round in `hot`, its halo `haloR` × that (`haloK`),
+                       // `arcs` standing off it (`arcK`, `arcSpeed`); it BEATS every `period` s — twice (`second` of the
+                       // period apart, `sharp`), `beatK` of its light on the beat — and each beat goes out along the grid's
+                       // lines at `waveSpeed` m/s (`waveLen` of a period long, `waveK` bright, gone by `waveReach` m). The
+                       // pane tints what is under it `glass` and keeps `pane` of its own sheen
+                       under: { rotor: 3.2, heart: 9, ringW: 3.1, gap: 0.05, seg: 5.5, cut: 0.035, turn: 0.5, hub: 1.5, metal: [0.012, 0.006, 0.02], edgeK: 0.9,
+                                heartR: 3.4, haloR: 5, haloK: 1.15, hot: [1.3, 0.75, 1.2], arcs: 7, arcK: 0.6, arcSpeed: 0.8,
+                                period: 1.25, second: 0.27, sharp: 90, beatK: 0.72, waveSpeed: 11, waveLen: 0.12, waveK: 2.2, waveReach: 24,
+                                glass: [0.9, 0.8, 1.0], pane: 0.3,
+                                // v150 (owner on v147: "Needs more"): every beat KICKS the rotor on `kick` of a segment (a ratchet);
+                                // between it and the heart the STATOR's `vanes` (`n` of them, `depth` m down, `w` m half wide, from
+                                // `from` m out, their `metal` `lit` by the heart) each with a conduit (`duct` m, `idle` bright) a
+                                // charge runs out along on the beat (`run` m/s, `len` of a period long, `k` bright, gone by `reach` m);
+                                // the pane takes the heart's light with each beat (`thump`); for a moment after it `arc.share` of the
+                                // grid's half tiles near the heart are live, changing `rate` times a second, dying off at `fade`;
+                                // a pad flares `padKick` as a beat's ring crosses it
+                                kick: 0.16, vanes: { n: 10, depth: 6.2, w: 0.55, from: 2.6, metal: [0.012, 0.005, 0.02], lit: 1.2, duct: 0.16, idle: 0.12, run: 16, len: 0.1, k: 2.6, reach: 26 },
+                                thump: { k: 0.035, reach: 12 }, arc: { share: 0.2, rate: 22, fade: 7, reach: 9, k: 2.4 }, padKick: 0.8,
+                                calm: 0.75 },   // (v151: REDUCE MOTION holds `calm` of the beat back — its flash, its rings — and all of the arcs)
+                       vary: { vents: 0.16, slots: 7, ventGlow: 0.035, lamps: 0.14, lamp: [0.25, 0.85, 1.0],
+                               packet: { every: 5, len: 0.12, speed: 0.5, lanes: 0.45, color: [0.5, 0.95, 1.0], gain: 0.9 } },
+                       cell: 2.2, line: 0.045, tile: [0.016, 0.012, 0.022], line_: [1.0, 0.18, 0.72], lineGlow: 0.55, glow: [1.0, 0.25, 0.7],
+                       pads: [[-0.32, 0.18], [0.3, -0.22]], padR: 1.5, padGlow: 0.85, ringEvery: 2.2, ringSpeed: 0.45, reach: 9, washGlow: 1.2, washFloor: 0.035, halo: 0.06 } },
+    },
+  },
+  // what stands round a world's floor (render/scenery.js). Colours are
+  // linear rgb; the lawn and the slab are pictures, the rest is lit.
+  scenery: {
+    // v65 (the owner's world-2 module sheet): the curb in PIECES — a rounded top
+    // (`curbRound` m off each edge), `curbJoint` m long with a `curbGap` m seam
+    // between them, an L at each far corner with arms `curbArm` m along the
+    // slab, and a rounded end `curbNose` m long where it stops at the open near
+    // side; `curbTone` how much one piece differs from the next, `curbShade` how
+    // much darker it is where it meets the grass, and `curbShadow` the grass's
+    // shadow along it (v93: thrown away from the world's sun, sun.js). Grass TUFTS against it, thickest at
+    // the corners: one every `every` m (`skip` of them left out), `out` m past
+    // the curb, `h` m tall, of `blades` blades in a clump `r` × its height
+    // across, each `w` × its height wide and bent out `bend` × its height
+    // v66 (owner, 2026-10-31): MICRO MACHINES scale, the curb taller than the
+    // hero (1 m across) so the arena reads as a toy on the lawn, the grass's
+    // blades and tufts grown to match; and SUMMER DAYLIGHT, the lawn bright and
+    // fading `fadeTo` of the way into the haze (`haze`) over `fade` m
+    driveway: { lawnOut: 40, bladeScale: 4.5, tuftScale: 0.45, stripe: 4.2, grassLo: [0.05, 0.13, 0.03], grassHi: [0.27, 0.4, 0.085], fade: 30,
+                haze: [0.42, 0.56, 0.5], fadeTo: 0.55,
+                // v138 (the owner's concept): the curb is worn STONES — shorter (`curbJoint` 3 → 1.9 m, each `vary` of
+                // that longer or shorter), wider joints, every stone a little taller (`tall`), out of line (`out` m)
+                // and off level (`lean`), its ends rounded over (`round` of its height over `end` m); stained down
+                // its faces, `lichen` on its top, `moss` in its seams and up `mossTo` of its height from the ground
+                curb: [0.5, 0.47, 0.42], curbWidth: 1.0, curbHeight: 1.2, curbRound: 0.3, curbJoint: 1.9, curbGap: 0.1, curbArm: 1.6, curbNose: 1.0,
+                curbTone: 0.16, curbShade: 0.3, curbShadow: 0.4,
+                stone: { vary: 0.22, tall: 0.05, out: 0.05, lean: 0.05, round: 0.22, end: 0.2, stain: 0.3, lichen: 0.5, lichenCol: [0.6, 0.6, 0.5],
+                         moss: [0.05, 0.085, 0.03], mossTo: 0.3, mossK: 0.85 },
+                tuft: { every: 2.0, skip: 0.2, out: [0.15, 4.5], h: [0.5, 1.1], blades: 30, r: 0.8, w: 0.15, bend: 0.35,
+                        lo: [0.04, 0.12, 0.03], hi: [0.3, 0.5, 0.1] },
+                // v138: the lawn is rough and lived in (`rough`: clumps darker by this much, at `clump` to the m) and
+                // DAISIES grow in it: `n` clumps of `per` flowers within `spread` m, out to `out` m past the curb on
+                // the far side and the long ones, each `r` m across on a stalk `h` m tall
+                rough: 0.45, clump: 0.9,
+                daisies: { seed: 21, n: 44, per: [4, 9], spread: 1.3, out: 7, r: [0.13, 0.2], h: [0.25, 0.45], petals: 8, white: [0.95, 0.94, 0.88], eye: [0.95, 0.7, 0.1] },
+                // v138 FALLEN LEAVES (render/leaves.js; the owner's concept): `slab` of them on the slab — `open` of
+                // the chance out in the open, the rest gathering within `drift` m of its edges — `corner` heaped in
+                // each far corner (`cornerR` m), `lawn` on the grass out to `lawnOut` m. Each `size` m long, `wide` ×
+                // that across, cupped (`fold`) and curled (`curl`), lying `lie` m up, in one of `tones`, browner at
+                // its `tip`, darker along its `rib`, its `shadow` under it.
+                // A body within `scuff` m of its side moving faster than `minSpeed` pushes them out of its road
+                // (`push` × its speed) and along with it (`carry`); a dash is a gust (`gust` m, `gustK` × as hard);
+                // past `liftAt` they leave the floor (`lift` m/s up), a burst throws them (`burst` m/s, `burstR` ×
+                // its radius). They `drag` to a stop (`airDrag` in the air), fall at `fall`, spin and settle
+                leaves: { seed: 138, slab: 150, open: 0.2, drift: 3.0, corner: 12, cornerR: 3.2, lawn: 70, lawnOut: 3.5,
+                          size: [0.5, 0.85], wide: 0.56, curl: 0.16, fold: 0.22, lie: 0.03, rough: 0.7, tip: [0.45, 0.28, 0.14], tipK: 0.5, rib: 0.3, shadow: 0.3,
+                          tones: [[0.95, 0.38, 0.05], [0.7, 0.22, 0.04], [1.0, 0.64, 0.1], [0.4, 0.2, 0.07], [0.7, 0.46, 0.18], [0.85, 0.27, 0.05], [0.5, 0.52, 0.12]],
+                          scuff: 0.35, gust: 2.2, gustK: 1.6, minSpeed: 1.2, push: 0.5, carry: 0.35, liftAt: 6, lift: 2.6, max: 14,
+                          drag: 3.2, airDrag: 0.9, fall: 9, spin: 14, spinDrag: 2.2, rest: 0.12, burst: 7, burstR: 3.2 } },
+    // v70 (owner, 2026-10-31: "continue with world 3", from the World 3 brief,
+    // art-ref/briefs/world-3-sewer.md): the walls in pieces `segment` m long
+    // with a `seam`, a stone capstone (`cap`: m tall, m over each face) up to
+    // `wallHeight`; a brick pier at each corner; the gates framed by posts
+    // every `gate.every` m and rails top and bottom; a pipe mouth in the walls
+    // every `pipe.every` m (staggered side to side), `pipe.r` m across, with a
+    // green trickle down the wall that runs on over the floor to the channel;
+    // and SUNLIGHT through a street grate every `sun.every` m, `sun.c` m off
+    // the channel's middle (side to side), a shaft of it standing over each
+    sewer: { brick: [0.44, 0.15], brickColor: [0.3, 0.15, 0.11], mortar: [0.07, 0.07, 0.08], damp: 0.7, wallHeight: 1.2, wallThick: 0.6,
+             segment: 3, seam: 0.05, cap: { h: 0.14, over: 0.06, color: [0.3, 0.3, 0.28] },
+             pier: { w: 0.95, h: 1.55, cap: 0.16 },
+             bar: 0x34383e, barR: 0.05, barGap: 0.42, barHeight: 1.7, gate: { every: 3.7, post: 0.2, rail: 0.1 },
+             pipe: { every: 10, r: 0.34, wall: 0.06, y: 0.62, out: 0.2, color: 0x4b5053, trickle: [0.3, 0.85, 0.55], trickleW: 0.16, rivulet: 0.34, reach: 4.5, flow: 0.9 },
+             sun: { every: 12, c: 5.5, r: 1.1, color: [1.0, 0.82, 0.55], gain: 0.5, halo: 2.4, haloGain: 0.07, shaft: 7, shaftR: 0.95, shaftAlpha: 0.03, tilt: 0.05 },
+             // v77: dust drifting down in each sun shaft
+             motes: { n: 18, h: 6, vy: -0.15, sway: 0.2, wobble: 0.6, r: 0.02, gain: 1.0, color: [1.0, 0.9, 0.7], box: 1.8 } },
+    // v71 (owner, 2026-10-31: "continue", after world 3; from the World 4 brief,
+    // art-ref/briefs/world-4-cistern.md): THE CISTERN, a forest of stone columns
+    // standing in still dark water, lamps at their feet. Columns every `every`
+    // m along the far side and both long sides, in rows `rows` m out from the
+    // platform's edge, `h` m tall, `r` m round the shaft on a `base` block
+    // (m across, m tall), the rows' stone `tint`; a lamp at every `lampEvery`th
+    // column of the inner row, its pool of light `pool` m on the water; rings
+    // spreading round every column's foot; a stone kerb round the platform; the
+    // water `out` m round it, going dark over `fade` m. Never along the near side
+    cistern: { every: 4.4, rows: [2.0, 6.3], h: 5.5, r: 0.62, base: [1.45, 0.45], abacus: 0.28, tint: [[1, 1, 1], [0.68, 0.68, 0.7]],
+               stone: [0.29, 0.26, 0.21], lampEvery: 2,
+               lamp: { y: 0.6, r: 0.12, post: 0.035, color: [1.0, 0.68, 0.36], glow: 1.5, halo: 3.4, haloGain: 0.55, pool: 3.0, poolGain: 0.6, warm: [1.18, 1.0, 0.82] },
+               ripple: { r: 1.25, period: 3.4, color: [0.45, 0.75, 0.78], gain: 0.22 },
+               kerb: { w: 0.5, h: 0.18, color: [0.1, 0.11, 0.11] }, edge: { color: 0x3fb8d0, glow: 1.6, width: 0.12, height: 0.05 },
+               water: { out: 24, fade: 15, lo: [0.003, 0.013, 0.019], hi: [0.012, 0.048, 0.06], scale: 0.32 },
+               // v77: motes hanging in each lamp's light
+               motes: { n: 10, h: 1.4, vy: 0.08, sway: 0.15, wobble: 0.5, r: 0.03, gain: 2.0, color: [1.0, 0.8, 0.5], box: 1.6 },
+               // v98 (the approved picture's brightest feature): the light through an opening in the roof
+               // `len` m up the fall along `dir`, landing on the floor's key pool (worlds.lit.cistern.lights[0]):
+               // `n` shafts FANNING as they fall, their feet `spread` m across the pool and their tops gathered
+               // to `mouth` of that, `r` m round at the foot and `top`× that at the roof, `alpha` at their
+               // brightest (each a little different, `vary`), `lift`× brighter where narrow, in from the floor
+               // over `foot` of the way and out over the last `roof`, breathing `breathe` as the sky over the
+               // roof moves; dust turning in them (`dust`)
+               rays: { n: 6, len: 17, dir: [0.3, -1, 0.42], spread: 5.5, mouth: 0.22, r: 0.85, top: 0.4, alpha: 0.07, vary: 0.45, lift: 1.6,
+                       foot: 0.12, roof: 0.25, breathe: 0.35, color: [0.74, 0.9, 1.0],
+                       dust: { n: 4, h: 1.2, vy: -0.1, sway: 0.18, wobble: 0.45, r: 0.03, gain: 1.6, color: [0.8, 0.92, 1.0], box: 1.4, seed: 98 } },
+               // v144: THE FALL (scenery.js _fall) — the water coming down the breach, onto the light's pool (`off` m from
+               // its middle): `h` m of it, `r` m round at the foot and `top`× that at the head, not in a room under
+               // `minArea` m² (half sizes multiplied). `stream`: `strands` round it, the pattern laid along √depth
+               // × `stretch` and run at `speed`, `head` m fallen before it is seen, torn `tear` more toward the foot
+               // from `cut`, `edge` thin at its sides, in out of the dark over `fadeIn` of its height. `skirt`: the
+               // thrown water round the landing. `spray` hangs over it. `source`: what it does to the simulated water
+               // — `rate` splashes a second within `r` m, each `size` m round and to `amp` m deep
+               // v148 (owner on v147: "Looks good. Needs some leaf like debris things"): FLOTSAM (render/leaves.js
+               // 'flotsam') — the driveway's leaves, washed down the drain and through the sewer, sodden and afloat
+               // here: `n` of them, flat on the water (`curl`, `fold`), in dark wet `tones`. The water CARRIES them:
+               // `flow.speed` m/s toward the nearest well (`swirl` of it sideways, so they come round to it), and
+               // one within `sink` × a well's radius of its middle goes over the lip and down; it comes back in
+               // under the fall (`spawn` m round its foot, pushed off at `spawnPush` m/s, grown in over `grow` s).
+               // They rock (`bob` rad at `bobHz`) and turn slowly (`turn` rad/s). The rest as the driveway's leaves
+               flotsam: { seed: 148, n: 58, size: [0.5, 1.0], wide: 0.56, curl: 0.04, fold: 0.08, lie: 0.02, rough: 0.35, tip: [0.3, 0.2, 0.1], tipK: 0.5, rib: 0.35, shadow: 0.22,
+                          lit: [0.05, 0.035, 0.018], tilt: 0.1,
+                          tones: [[0.8, 0.3, 0.05], [0.58, 0.19, 0.04], [0.85, 0.52, 0.09], [0.34, 0.18, 0.06], [0.55, 0.38, 0.13], [0.36, 0.4, 0.1], [0.7, 0.64, 0.46]],
+                          flow: { speed: 0.42, swirl: 0.55, lone: 0.16 }, sink: 0.82, spawn: 1.6, spawnPush: 1.1, grow: 0.9, bob: 0.09, bobHz: 0.5, turn: 0.25,
+                          scuff: 0.4, gust: 2.2, gustK: 1.5, minSpeed: 0.9, push: 0.42, carry: 0.4, liftAt: 7, lift: 2.2, max: 9,
+                          drag: 2.2, airDrag: 0.9, fall: 9, spin: 8, spinDrag: 1.6, rest: 0, burst: 5, burstR: 3.0, bounce: 0.3 },
+               fall: { h: 15, r: 0.5, top: 0.5, minArea: 260, off: [0, 0], dark: [0.2, 0.34, 0.42], light: [0.8, 0.93, 1.0],
+                       stream: { strands: 9, stretch: 2.6, speed: 5.2, head: 1.5, tear: 0.3, cut: 0.24, edge: 0.5, fadeIn: 0.3, alpha: 0.95 },
+                       skirt: { top: 1.1, foot: 3.1, h: 0.75, strands: 14, speed: 2.4, alpha: 0.5 },
+                       spray: { n: 26, h: 1.3, vy: 0.9, sway: 0.25, wobble: 1.4, r: 0.035, gain: 0.55, color: [0.8, 0.92, 1.0], add: false, seed: 44 },
+                       source: { r: 0.5, rate: 46, amp: 0.05, size: 0.36 } } },
+    // v72 (owner, 2026-10-31: "you can build all levels/worlds now"; from the
+    // World 5 brief, art-ref/briefs/world-5-boiler.md): THE BOILER ROOM. Boilers
+    // along the far side, `every` m apart and `side` m past its corners, `out` m
+    // out, each a drum `r` m round and `h` m to its `dome`, banded at `bands`
+    // with `rivets` round each; a firebox door (`door` m) at its foot, its fire
+    // breathing and its light thrown `pool` m on the deck; a stack out of its
+    // dome with `steam` going up. Down the sides a `pipe` run (two pipes, `r`,
+    // at `y`, flanged every `every` m) with a red `valve` wheel every `every` m
+    // venting now and then, and `tank`s behind. A hazard `band` `w` m wide round
+    // the floor, tread plate (`deck`, lugs `tread` m) past it into the dark
+    boiler: { deck: { out: 16, fade: 10, tread: 0.42, lo: [0.022, 0.019, 0.016], hi: [0.055, 0.046, 0.038] },
+              edge: { color: 0xff8a33, glow: 1.8, width: 0.12, height: 0.05 },
+              band: { w: 0.55, stripe: 0.8, yellow: [0.4, 0.26, 0.02], black: [0.018, 0.016, 0.014], worn: [0.1, 0.085, 0.07] },
+              // v101: the LOW STEEL WALL (the approved module sheet's 3 × 1.2 m panels, kept low so the fireboxes show
+              // over it from the play camera): panels `len` m on the hazard band `gap` m out, `h` m tall, `deep` m thick,
+              // rivets every `rivetEvery` m in rows at `rivetY` m, a lighter `cap`, `footDark` grime at the foot and the
+              // seams' fire on it (`glow` up to `glowH` m, `footGlow`). Never along the near side (kit.js ledgeBlocks)
+              wall: { len: 3, deep: 0.42, h: 0.8, gap: 0.14, tilt: 0, rivetEvery: 0.36, rivetY: [0.1, 0.68],
+                      steel: [0.075, 0.064, 0.055], rivet: [0.13, 0.11, 0.09], cap: [0.12, 0.1, 0.085], footDark: 0.55,
+                      glow: [1.0, 0.38, 0.07], glowH: 0.32, footGlow: 0.55 },
+              boiler: { every: 7.2, side: 2.5, out: 3.4, r: 1.3, h: 3.2, dome: 0.85, bands: [0.55, 1.6, 2.65], rivets: 40,
+                        iron: [0.12, 0.1, 0.085], rust: [0.16, 0.07, 0.03], rivet: [0.26, 0.22, 0.18], stackColor: [0.05, 0.045, 0.04],
+                        stackR: 0.22, stack: 2.4, door: [0.95, 0.9], doorY: 0.72, frame: [0.025, 0.022, 0.02],
+                        fireHi: [1.0, 0.75, 0.25], fireLo: [1.0, 0.32, 0.06], fireGlow: 2.2, pool: 2.6, poolGain: 0.32 },
+              steam: { per: 6, period: 4.2, rise: 3.2, r: [0.28, 0.85], sway: 0.35, gain: 0.32, color: [0.55, 0.53, 0.5] },
+              pipe: { out: 1.1, r: [0.42, 0.3], y: [0.5, 1.3], every: 3.2, back: 7, front: 14, color: [0.1, 0.085, 0.075], flange: [0.17, 0.14, 0.11] },
+              valve: { every: 7, h: 0.55, r: 0.26, color: [0.36, 0.035, 0.02] },
+              vent: { per: 4, period: 2.2, rise: 1.6, r: [0.12, 0.5], sway: 0.2, gain: 0.3, color: [0.6, 0.6, 0.58], duty: 0.55, dutyRate: 0.45 },
+              tank: { every: 6, out: 3.6, r: 0.8, h: 2.0, dome: 0.5, bands: [0.5, 1.3] },
+              // v149: STEAM OFF THE FLOOR — the grates nearer the rail than `inside` (of the half sizes) let off a gust
+              // after the stoke's flare passes (`lag` of a cycle after it, for `on` of one): `per` puffs a grate, as the
+              // stacks' (never the grates in the middle of the floor: the fight is there)
+              floorVent: { per: 8, period: 2.1, rise: 3.8, r: [0.18, 1.1], sway: 0.35, gain: 0.42, fade: 1.2, color: [0.85, 0.66, 0.5], inside: [0.4, 0.45], lag: 0.06, on: 0.3 },
+              // v149: ENGINES between the boilers along the far side: a bed, a cylinder standing on it, a piston rod
+              // working `stroke` m out of its top with a crosshead, and a FLYWHEEL `wheelR` m turning beside it once every
+              // `turn` s (each engine at its own point of the turn, rod and wheel together)
+              engine: { bed: [2.9, 0.42, 1.25], cyl: [0.46, 1.45], rod: [0.07, 1.5], head: [0.5, 0.2, 0.34], stroke: 0.42, wheelR: 1.15, rim: 0.1, spokes: 6, hub: 0.2, wheelY: 1.55,
+                        turn: 2.6, iron: [0.075, 0.065, 0.058], bright: [0.3, 0.27, 0.23], wheel: [0.17, 0.045, 0.03] },
+              // v77: embers rising off the boilers and over the pipe runs, never over the floor
+              motes: { n: 40, h: 6, vy: 0.6, sway: 0.4, wobble: 1.3, r: 0.06, gain: 3.0, color: [1.0, 0.5, 0.15], far: 6, side: 3 } },
+    // v72 (from the World 6 brief, art-ref/briefs/world-6-river.md): THE RIVER
+    // runs on past both ends of the floor (`ground`: past the banks `mudW` m of
+    // mud, then grass), `pile`s across it at `at` m past each end with `foam`
+    // round them; `stone`s along the banks `out` m clear of the floor, `inWater`
+    // more past each end; `reed` clumps with cattails (`tails`) along the banks;
+    // a `log` or two washed up; lily `pads` (one in `keep` of the `cell` m cells)
+    // drifting the way the current rule pushes. Never along the near side
+    // v95: the banks in daylight, to the approved picture (sand, pebbles, green reeds and grass); dandelion fluff where the fireflies were
+    river: { ground: { out: 18, fade: 11, grassLo: [0.06, 0.15, 0.03], grassHi: [0.15, 0.34, 0.06], mud: [0.3, 0.25, 0.16], mudW: 1.2 },
+             edge: { color: 0x44ddbb, glow: 1.3, width: 0.1, height: 0.04 },
+             // (v148: tethered — `lean` m the way the current rule pushes, eased over `ease` s; `sway` m of its own; `ride` m per
+             // unit of the simulated water's slope; `clear` m kept between a pad's rim and the bank)
+             pads: { cell: 3.2, keep: 0.4, lo: [0.06, 0.2, 0.04], hi: [0.18, 0.42, 0.08], flower: [0.95, 0.75, 0.85], lean: 0.26, ease: 1.4, sway: 0.07, ride: 0.08, clear: 0.1 },
+             stone: { every: 2.6, past: 4, skip: 0.25, out: [0.15, 2.4], r: [0.45, 1.25], inWater: 5, waterPast: 7, wetR: [0.35, 0.8],
+                      lo: [0.22, 0.21, 0.18], hi: [0.48, 0.45, 0.4], moss: [0.15, 0.3, 0.06] },
+             reed: { every: 1.5, past: 6, skip: 0.35, out: [0.25, 1.8], h: [1.1, 2.0], blades: 16, r: 0.3, w: 0.07, bend: 0.1, tails: 3,
+                     lo: [0.06, 0.18, 0.04], hi: [0.26, 0.44, 0.1], head: [0.3, 0.2, 0.1] },
+             log: { per: 2, out: [2.4, 3.6], len: [2.8, 4.6], r: [0.3, 0.45], bark: [0.18, 0.12, 0.07], barkHi: [0.3, 0.22, 0.14], wood: [0.6, 0.45, 0.3] },
+             pile: { at: [1.6, 4.5], every: 1.5, skip: 0.3, h: [0.6, 1.6], r: [0.13, 0.2], wood: [0.3, 0.22, 0.14], wet: [0.12, 0.1, 0.08] },
+             foam: { r: 1.6, period: 2.2, gain: 0.35, color: [0.85, 0.95, 0.95] },
+             // v77: fireflies over the banks at dusk; v95: by day, dandelion fluff drifting over them (it does not glow or blink)
+             motes: { n: 18, h: 1.6, vy: 0.03, sway: 0.7, wobble: 0.7, r: 0.035, gain: 0.6, color: [1.0, 1.0, 0.92], out: 2, deep: 3 } },
+    // v72 (from the World 7 brief, art-ref/briefs/world-7-ice.md): THE ICE. A
+    // snowfield (`ground`: ribbed by the wind, snow blowing over it at `wind`
+    // m/s) round the floor; ice `crystal` clusters along the far side and
+    // the two sides, every `every` m `out` m clear of the floor, `n` prisms each
+    // (the tallest `h` m, the rest leaning out `lean` rad), lit from inside
+    // (`inner`) and brighter at the edge (`rim`); snow `drift`s banked against
+    // their feet, snow-capped `rock`s between. Never along the near side
+    // v95: a snowfield by DAY, to the approved picture: white snow, pale crystals, blue shadows in the drifts
+    ice: { ground: { out: 16, fade: 10, lo: [0.58, 0.66, 0.76], hi: [0.85, 0.9, 0.96], wind: 1.1, wisp: [0.95, 0.97, 1.0], wispGain: 0.12 },
+           // v141: CHIPS of broken ice lying on the sheet (render/leaves.js 'chips'): `n` of them, `size` m long and
+           // `thick` (× its length), in `tones`. Ice on ice — a kick sends one a long way (`drag`, the leaves' is
+           // 3.2), spinning (`spinDrag`), back off the banks and the blocks (`bounce`); one that slides within
+           // `sink` × a hole's radius of its middle goes down it; `lit`: the light it lets through. The rest as the
+           // driveway's leaves
+           chips: { seed: 141, n: 64, size: [0.3, 0.62], thick: 0.42, tilt: 0.12, lie: 0.012, rough: 0.14, shadow: 0.25, lit: [0.2, 0.3, 0.42],
+                    tones: [[0.9, 0.96, 1.0], [0.72, 0.88, 1.0], [0.95, 0.98, 1.0], [0.6, 0.8, 1.0]],
+                    scuff: 0.3, gust: 2.0, gustK: 1.5, minSpeed: 1.0, push: 0.75, carry: 0.55, liftAt: 9, lift: 1.6, max: 16,
+                    drag: 0.75, airDrag: 0.5, fall: 12, spin: 16, spinDrag: 0.7, rest: 0.1, burst: 8, burstR: 3.2, bounce: 0.6, sink: 0.6 },
+           edge: { color: 0xbfe6ff, glow: 1.2, width: 0.1, height: 0.04 },
+           // v100 (the approved picture's banks): the LEDGE of ice round the floor, never along the near side —
+           // blocks `len` m along, `deep` m back, `h` m tall, `gap` m off the floor's edge, turned `tilt` rad at
+           // most; a lower step in front of some (`step`: how often, its height × the block's, its depth); the face
+           // from `foot` to `face` blue, streaked `melt`, its `lip` pale (`rim`), lit from inside at its foot
+           // (`glow`, `footGlow`), snow on top. Its sun shadow on the floor: TUNING.worlds.floor.ice.ledgeShadow.
+           // The crystals and rocks stand behind it now (their `out` past its depth)
+           ledge: { len: [1.1, 2.4], deep: [1.4, 2.4], h: [0.75, 1.35], gap: 0.06, tilt: 0.05, step: { chance: 0.3, h: 0.5, deep: 0.55 },
+                    foot: [0.03, 0.22, 0.5], face: [0.16, 0.56, 0.86], lip: [0.8, 0.94, 1.0], snow: [0.93, 0.96, 1.0], melt: 0.3, rim: 0.8,
+                    glow: [0.2, 0.62, 1.0], footGlow: 0.22, through: 0.16, rough: 0.55 },
+           crystal: { every: 4.2, out: [2.8, 5.8], n: [3, 6], h: [1.6, 3.6], lean: [0.25, 0.7], spread: 0.6, thick: [0.12, 0.2],
+                      deep: [0.25, 0.5, 0.75], pale: [0.75, 0.88, 0.98], glow: [0.5, 0.8, 1.0], rim: 0.5, inner: 0.06 },
+           drift: { chance: 0.75, len: [1.4, 2.6], w: 0.35, h: 0.55, lo: [0.62, 0.72, 0.84], hi: [0.94, 0.96, 1.0] },
+           rock: { every: 5.5, out: [2.9, 6.4], r: [0.4, 1.0], lo: [0.2, 0.22, 0.26], snow: [0.92, 0.95, 1.0] },
+           // v77: snow falling over the whole view
+           motes: { n: 160, h: 7, vy: -0.5, sway: 0.5, wobble: 0.9, r: 0.03, gain: 0.8, color: [0.95, 0.97, 1.0], out: 10 } },
+    // v72 (from the World 8 brief, art-ref/briefs/world-8-deep.md): THE DEEP. The
+    // seabed (`ground`) round the floor; `kelp` in clumps every `every` m (`n`
+    // ribbons `h` m tall, twisting `twist` rad up their length, swaying `sway`
+    // m at the top, `beads` of light down their middles); `boulder`s with barnacles on their
+    // tops, an `anemone` at the feet of some (`n` tentacles, tips lit); `vent`s
+    // breathing `bubbles` up out of the silt. Never along the near side
+    deep: { ground: { out: 18, fade: 11, lo: [0.012, 0.011, 0.014], hi: [0.04, 0.034, 0.03] },
+            edge: { color: 0x5577ff, glow: 2.2, width: 0.12, height: 0.05 },
+            // v101: the BANKS (the approved picture's raised rims, glowing blue down their faces; kit.js ledgeBlocks)
+            // — `face` dark blue, `top` silt, lit from the lip (`lipGlow`) and faintly all down (`faceGlow`); the kelp,
+            // the boulders and the vents stand behind them now
+            bank: { len: [1.2, 2.6], deep: [1.1, 2.0], h: [0.38, 0.7], gap: 0.08, tilt: 0.06, step: { chance: 0.25, h: 0.5, deep: 0.45 },
+                    face: [0.015, 0.035, 0.07], top: [0.06, 0.05, 0.042], glow: [0.25, 0.65, 1.0], lipGlow: 2.4, faceGlow: 0.3 },
+            kelp: { every: 2.8, out: [2.3, 5.6], n: [2, 5], h: [1.8, 4.6], w: 0.22, twist: 2.6, sway: 0.22, speed: 0.7, beads: 9,
+                    lo: [0.02, 0.045, 0.025], hi: [0.06, 0.13, 0.06], glow: [0.2, 1.0, 0.65], glowI: 1.4 },
+            boulder: { every: 5, out: [2.6, 6.4], r: [0.7, 1.5], barnacles: 5, lo: [0.03, 0.035, 0.05], hi: [0.07, 0.08, 0.1], barnacle: [0.22, 0.22, 0.2], anemone: 0.6 },
+            anemone: { n: 12, r: 0.06, h: [0.8, 1.3], sway: 0.08, speed: 1.3, lo: [0.12, 0.03, 0.08], hi: [0.3, 0.08, 0.2], glow: [1.0, 0.3, 0.7], glow2: [0.3, 0.9, 1.0], glowI: 2.2 },
+            vent: { every: 9, out: [2.3, 4.2], color: [0.02, 0.025, 0.035] },
+            bubbles: { per: 8, period: 3.6, rise: 4.5, r: [0.08, 0.17], sway: 0.12, wobble: 9, gain: 1.0, color: [0.35, 0.65, 1.0], rim: true, add: true, fade: 0.8 },
+            // v77: marine snow sinking through the whole view
+            motes: { n: 120, h: 6, vy: -0.12, sway: 0.1, wobble: 0.4, r: 0.02, gain: 0.8, color: [0.5, 0.7, 1.0], out: 8 },
+            // v150 (owner: "Needs both"): SHAFTS of the surface's light, one fan to each light marked `shaft` (the cistern's
+            // rays, scenery.js _rays: `n` of them `len` m up along `dir`, feet `spread` m across); JELLYFISH adrift (`jelly`:
+            // `n` of them, bells `r` m, `y` m up, over the far side and the two sides and `over` m in over the floor's edge,
+            // drifting `drift` m on a `pace` of their own, pulsing `pulse` a second, `tent` tentacles `tentL` × the bell
+            // long, in `tones`, `alpha` solid at the rim); and CRABS on the bed (render/leaves.js 'crabs': `n`, `size` m,
+            // scuttling sideways `run` m/s for `dart` s then waiting up to `wait` s, away from any body inside `fear` m
+            // at `flee` m/s)
+            shafts: { n: 4, len: 19, dir: [0.25, -1, 0.3], spread: 4.5, mouth: 0.3, r: 1.0, top: 0.45, alpha: 0.05, vary: 0.4, lift: 1.5, foot: 0.1, roof: 0.3, breathe: 0.4, color: [0.45, 0.72, 1.0] },
+            jelly: { n: 11, r: [0.35, 0.7], y: [2.2, 5.5], over: 5, out: 5, drift: 2.2, pace: 0.11, pulse: 0.55, tent: 7, tentL: 2.6, alpha: 0.55,
+                     tones: [[0.55, 0.85, 1.0], [1.0, 0.55, 0.85], [0.6, 1.0, 0.8]] },
+            crabs: { seed: 150, n: 14, size: [0.34, 0.5], lie: 0.0, rough: 0.5, shadow: 0.3, tilt: 0, lit: [0.07, 0.02, 0.012],
+                     tones: [[0.85, 0.3, 0.14], [0.7, 0.22, 0.1], [0.95, 0.45, 0.2]],
+                     run: 1.5, dart: [0.5, 1.1], wait: [0.6, 2.6], fear: 2.6, flee: 4.2,
+                     scuff: 0.3, gust: 1.6, gustK: 1.3, minSpeed: 1.2, push: 0.3, carry: 0.2, liftAt: 8, lift: 2.0, max: 8,
+                     drag: 5, airDrag: 0.9, fall: 9, spin: 3, spinDrag: 6, rest: 0, burst: 5, burstR: 3.0, bounce: 0.2 } },
+    // v72 (from the World 9 brief, art-ref/briefs/world-9-core.md): THE CORE. A
+    // traced deck (`ground`: a grid every `cell` m, power running in toward the
+    // floor in rings `pulseEvery` m apart); `tower`s along the far side and the
+    // sides, windows lit in `bands`, capped, an `antenna` blinking on some, a
+    // neon `ring` a light chases round on the tallest; light `pillar`s along the
+    // far side pulsing down the row; the `edge` with light running round it
+    core: { ground: { out: 18, fade: 7, lo: [0.004, 0.002, 0.008], hi: [0.014, 0.005, 0.022], cell: 2.6, line: [0.05, 0.01, 0.05], pulse: [0.4, 0.9, 1.0], pulseEvery: 6, pulseSpeed: 0.35 },
+            edge: { color: 0xff55ee, glow: 1.6, width: 0.12, height: 0.05, dash: 3, speed: 0.6, dashGlow: 2.2 },
+            // v101 (the approved module sheet): low NEON STUMPS in place of the towers — every `every` m, `out` m past
+            // the edge, `r` m round and `h` m tall, `lines` neon strips up the side, the top lit (`topGlow`) with rings
+            // going out across it (`ringGlow`, `ringSpeed`)
+            stump: { every: 6.5, out: [1.4, 2.6], r: [0.5, 0.8], h: [0.7, 1.2], color: [0.035, 0.03, 0.045], base: [0.05, 0.045, 0.06],
+                     neon: 0xff3fb8, lines: 6, glowI: 1.6, topGlow: 0.9, ringGlow: 0.8, ringSpeed: 2.4 },
+            tower: { every: 3.6, out: [1.6, 5.0], h: [1.4, 5.2], w: [0.6, 1.4], color: [0.03, 0.012, 0.04], cap: [0.08, 0.05, 0.1], bands: 3, windows: 3, glow: 0xff44dd, glowI: 1.8 },
+            antenna: { chance: 0.4, h: [0.8, 1.8], color: 0xffffff, glow: 2.5, rate: 2.2 },
+            ring: { minH: 3.8, r: 1.15, tube: 0.04, at: 0.62, color: 0x44e0ff, glow: 0.8, chaseGlow: 3, speed: 0.4, bob: 1.1 },
+            pillar: { every: 6, out: 3.2, r: 0.32, h: 4.5, color: 0xff55ee, alpha: 0.28, padGlow: 1.6, speed: 1.6, lag: 0.7 } },
+    drain: { r: 0.95, iron: 0x2a2d32, frame: 0x484b52, slot: 0x020306 },
+    // v43: round every other world's floor (render/scenery.js _surround). A
+    // ground `out` m past the floor fading out over `fade` m (`line`/`cell`
+    // draw a grid or traces on it), a glowing `edge` where the floor stops (the
+    // grid has 1.x's rail instead), and `props` along the far side and the two
+    // sides: `every` m apart, `out` [min, max] m past the edge, `h`/`r`/`w`
+    // [min, max] in m, a `glow` colour at `glowI`
+    surround: {
+      // v123 (owner, 2026-11-08: "take out the environment art away from world 1, let's keep it super minimalistic.
+      // Only ... some moving neon lines in the void around the arena. Push for more lights and sharper visuals"): the
+      // arena alone in the void — the grid that ran on past its rail and its bollards are gone — and lines of neon
+      // running round it on loops that sink deeper into the dark the further out they are (render/scenery.js _neon).
+      // A loop: `out` m past the floor's edge, `y` m down, `w` m wide; `n` lines on it at `speed` m/s (the sign is
+      // the way round), each a white-hot head and a `tail` m streak of `color` × `i`; `light`: the inner loop's lines
+      // light the floor's edge in their colour as they pass — `along` pools down the streak, `step` m apart, each
+      // that share of `k`, `r` m across (round pools at the head alone read as blobs). `track`: the loops' own line, faint
+      grid: { neon: { track: 0.05, tip: 1.0, loops: [
+        { out: 0.8, y: -0.02, w: 0.08, n: 6, speed: 6.5, tail: 9, color: 0x22f2ff, i: 2.2, light: { r: 2.2, k: 0.75, step: 2.4, along: [1, 0.65, 0.35] } },
+        { out: 2.1, y: -0.45, w: 0.09, n: 5, speed: -5, tail: 12, color: 0xff2fe0, i: 2.0 },
+        { out: 3.8, y: -1.2, w: 0.1, n: 5, speed: 4, tail: 14, color: 0x8a6bff, i: 1.9 },
+        { out: 6.0, y: -2.2, w: 0.12, n: 4, speed: -3.2, tail: 16, color: 0x22f2ff, i: 1.6 },
+        { out: 8.8, y: -3.5, w: 0.14, n: 4, speed: 2.5, tail: 18, color: 0xff2fe0, i: 1.3 },
+      ] } },
+      cistern: { ground: { lo: [0.004, 0.018, 0.026], hi: [0.016, 0.06, 0.075], scale: 0.5, out: 18, fade: 11 },
+                 edge: { color: 0x3fb8d0, glow: 1.6, width: 0.12, height: 0.05 },
+                 props: [{ shape: 'column', every: 4.4, out: [1.9, 2.1], h: [5.5, 5.5], r: 0.62, color: 0x8a8272, rough: 0.9 },
+                         { shape: 'column', every: 4.4, out: [6.2, 6.4], h: [5.5, 5.5], r: 0.62, color: 0x5e584e, rough: 0.9 }] },
+      boiler: { ground: { lo: [0.025, 0.02, 0.016], hi: [0.06, 0.045, 0.032], scale: 0.9, line: [0.05, 0.03, 0.015], cell: 2.2, out: 16, fade: 10 },
+                edge: { color: 0xff8a33, glow: 1.8, width: 0.12, height: 0.05 },
+                props: [{ shape: 'pipe', out: [1.1, 1.1], r: 0.42, y: 0.5, every: 3.2, color: 0x4a3f38, band: 0x7a6650 },
+                        { shape: 'stack', every: 6.5, out: [3.8, 4.6], h: [3.0, 5.5], r: [0.55, 0.8], color: 0x2c2826, glow: 0xff7a22, glowI: 2.2, metal: 0.6, rough: 0.5 }] },
+      river: { ground: { lo: [0.06, 0.15, 0.03], hi: [0.15, 0.32, 0.06], scale: 0.7, out: 16, fade: 10 },
+               edge: { color: 0x44ddbb, glow: 1.3, width: 0.1, height: 0.04 },
+               props: [{ shape: 'rock', every: 2.3, out: [1.0, 4.5], h: [0.4, 1.1], r: [0.5, 1.1], color: 0x6b695e, tilt: 0.5 },
+                       { shape: 'reed', every: 0.8, out: [0.5, 2.6], h: [0.8, 1.9], r: 0.05, color: 0x4a6a2e, tilt: 0.35 }] },
+      ice: { ground: { lo: [0.58, 0.66, 0.76], hi: [0.85, 0.9, 0.96], scale: 0.6, out: 16, fade: 10 },
+             edge: { color: 0xbfe6ff, glow: 1.2, width: 0.1, height: 0.04 },
+             props: [{ shape: 'shard', every: 1.7, out: [1.0, 5.0], h: [0.8, 3.4], r: [0.25, 0.6], color: 0x8fbad6, glow: 0x6fb8ff, glowI: 0.25, metal: 0.1, rough: 0.2, tilt: 0.45 }] },
+      deep: { ground: { lo: [0.004, 0.008, 0.02], hi: [0.014, 0.03, 0.06], scale: 0.5, out: 18, fade: 11 },
+              edge: { color: 0x5577ff, glow: 2.2, width: 0.12, height: 0.05 },
+              props: [{ shape: 'rock', every: 3.4, out: [1.6, 6.0], h: [1.4, 3.6], r: [0.7, 1.4], color: 0x1c2232, tilt: 0.3 },
+                      { shape: 'kelp', every: 1.5, out: [0.8, 4.2], h: [1.6, 4.6], r: 0.07, color: 0x0d3324, glow: 0x33ffaa, glowI: 1.2, tilt: 0.25 }] },
+      core: { ground: { lo: [0.008, 0.004, 0.016], hi: [0.03, 0.008, 0.05], scale: 0.4, line: [0.13, 0.02, 0.11], cell: 2.6, out: 18, fade: 9 },
+              edge: { color: 0xff55ee, glow: 2.0, width: 0.12, height: 0.05 },
+              props: [{ shape: 'tower', every: 3.6, out: [1.6, 5.0], h: [1.4, 5.2], w: [0.6, 1.4], color: 0x120818, glow: 0xff44dd, glowI: 1.8, stripes: 3, rough: 0.4, metal: 0.5 }] },
+    },
+  },
+
+  // One fixed view of the whole arena, refitted on every resize and rotation.
+  camera: {
+    fov: 60,                // 1.x's vertical FOV
+    near: 0.5,
+    far: 400,
+    // CSS px kept clear round the arena (owner, 2026-10-23: trim the
+    // margins). 1.x fitted to 0.96 / 0.93 of the screen and v17 kept 5%;
+    // the HUD sits over the far edge's empty corners and the pause button
+    // was already over its middle, so a few px is all the arena needs
+    margin: { x: 10, y: 8 },
+    // a world bigger than the screen (sim/worlds.js): the camera follows the
+    // hero, easing over `tau` s, and at a side shows `edge` m past the floor
+    // (the curb, the lawn) — no further
+    follow: { tau: 0.22, edge: 2.5 },
+    // v104 (owner, 2026-11-02: "We need a slight zoom in"): in play the camera fits this share of the run's
+    // arena, not all of it, and follows the hero over the rest (main.js viewBox), as it does over a bigger world
+    zoom: 0.88,
+    // and the bodies it leaves off screen: an arrow on the edge, `inset` px in
+    pips: { inset: 14, max: 40, fade: 0.8, minAlpha: 0.35 },
+    searchMin: 5,
+    searchMax: 200,
+  },
+
+  // 1.x's floor (FLOOR_FRAG, the studio-default depth). Colours are what 1.x
+  // put on screen; grid cells are square at 1.286 units.
+  floor: {
+    base: 0x14142b, gridLo: 0x211261, gridHi: 0x008c80,
+    // v123 (owner, 2026-11-08: "sharper visuals"): the lines brighter (0.55) and the rim's darkening less deep
+    // (0.55, 0.45), so the grid reads crisp to its edge against the void
+    gridCell: 1.286, gridLine: 0.012, gridGlow: 0.8,   // line half-width in cells; strength
+    vignetteInner: 0.55, vignetteDepth: 0.38, gridFalloff: 0.3,
+    poolRadius: 0.30, poolLift: 0.30,
+    rail: 0x5555cc, railHeight: 0.05,
+  },
+
+  // 1.x's lights (main.js:774-779): white ambient and one sun. No tone mapping.
+  light: {
+    ambient: 0.45,
+    sun: { intensity: 1.3, position: [8, 20, 10] },
+    // 2.0's ARENA LIGHT (render/light.js; owner, 2026-10-22: the graphics
+    // pass's third step, no reflective floor). A top-down light map of the
+    // arena, perMetre texels a metre: soft pools of light (k = strength, in
+    // the colour of what threw it; r in metres) and contact shadows (r × the
+    // body's radius). `floor` is how the floor reads it: light lifts the
+    // whole floor by `spill` and its grid lines by `grid`.
+    arena: {
+      perMetre: 12, pow: 1.6, cap: 640, burstCap: 64,
+      bullet: { hero: { r: 0.9, k: 0.10 }, gel: { r: 1.15, k: 0.16 } },
+      hero: { r: 3.6, k: 0.3, color: 0xfff0dc },   // v104: the light the hero carries — a pool on the floor round it, not a glow
+      burst: {
+        kill: { r: 4.0, k: 1.4, life: 0.32, big: 1.6, boss: 2.4 },   // a kill; a big or boss kill multiplies its strength (and its reach by the root)
+        dash: { r: 4.5, k: 1.1, life: 0.3 },                          // the dash boom
+        muzzle: { r: 1.3, k: 0.35, life: 0.06 },                       // each of the hero's shots
+      },
+      shadow: { cap: 300, r: 1.35, strength: 0.6,
+        // v93: the shadows go away from the world's sun, 1/sin θ long (cot θ held to cotMax), their middle offset × cot θ × r on from the foot
+        sun: { cotMax: 2.2, offset: 0.55 } },
+      floor: { spill: 0.18, grid: 0.9 },
+      // v76 (the owner's second visual pick): CAUSTICS — light focused through
+      // the jelly onto the floor round every body's foot, in the body's own
+      // colour (render/actors.js, an additive decal on the floor; it was tried
+      // in the light map first, where the body covered it and the floor showed
+      // it only on its lines). A quad `r` × the body's radius (× its squash: a
+      // landed body spreads it): a `core` under the body, a `ring` [where,
+      // width, strength] of the quad's half size that shimmers round in
+      // `lobes` arcs at `shimmer` rad/s, and a faint `glow` out to the edge;
+      // `k` the alpha (a heavy body's × `heavy`, a boss's × `boss`), slid
+      // `offset` × r away from the world's sun, `y` m over the floor
+      caustic: { cap: 200, r: 1.7, k: 0.65, core: 0.4, ring: [0.62, 0.1, 1.0], lobes: 3, shimmer: 4, glow: 0.3, offset: 0.25, heavy: 0.8, boss: 1.4, y: 0.012 },
+    },
+  },
+
+  // The gelatin: 1.x's satin preset (tuning.js `material`), per-family
+  // overrides, and the contrast floor that rims a body too dark to read.
+  material: {
+    sss: 0.70, roughness: 0.16, clearcoat: 1.00, clearcoatRoughness: 0.06,
+    sheen: 0.45, transmission: 0.15, thickness: 0.8, ior: 1.38,
+    contrast: { minLum: 0.16, rim: 2.2, rimPow: 2.0, rimWhite: 0.55, lift: 0.6 },
+    // v128: the sun's GLINT in every gel (render/gel.js), × the world's `glint` (TUNING.worlds.light[…], none where
+    // unsaid): `hot` at Blinn power `pow`, a `sheen` round it at `sheenPow`, and the light let `through` on the
+    // side away from the sun (power `throughPow`), in the body's own hue
+    glint: { pow: 220, hot: 2.4, sheenPow: 24, sheen: 0.22, through: 1.0, throughPow: 1.4 },
+    families: {
+      blob: {},
+      cube: { roughness: 0.10, transmission: 0.25, jelly: { transmission: 0.82, roughness: 0.07 } },   // firmer candy-glass
+    },
+    // 2.0's JELLY (owner, 2026-10-22: the graphics pass, "real gelatin" first,
+    // held to their melon-jelly reference: refraction and Beer–Lambert colour).
+    // The body is mostly see-through: the floor bends behind it, and the hue
+    // is carried by absorption, so light that crosses a thick belly comes out
+    // deep and saturated while a thin edge stays pale and bright. The surface
+    // colour is the hue lifted toward white by `tintWhite` (three multiplies
+    // transmitted light by it as well as by the absorption); `attenuation` is
+    // the distance, in body radii, over which white light becomes the hue.
+    // `thickness` is local units (the unit dome is ~2 across). The hero keeps
+    // 1.x's white satin. `on: false` puts every gel back on 1.x's satin.
+    // `core`: an inner glow in the full hue where the body faces you (light
+    // scattered inside the jelly), so a gel keeps its colour over the dark
+    // floor it lets through; `corePow` how tightly it gathers to the middle
+    jelly: { on: true, transmission: 0.92, roughness: 0.05, thickness: 1.6, ior: 1.36, tintWhite: 0.6, attenuation: 0.85, sss: 0.3, dispersion: 0, core: 0.32, corePow: 1.6 },
+  },
+
+  // What the jelly reflects (render/env.js, 2.0's): a studio painted in code —
+  // the room's dark gradient, a soft box overhead that slides across every
+  // crown, and strip lights on the horizon that catch the sides (one in the
+  // grid's teal, one warm opposite). `intensity` is scene.environmentIntensity.
+  // the live portrait on the death screen and the pause menu (render/specimen.js):
+  // the camera in body radii, a slow turn, the card's own dark behind it
+  specimen: { fov: 30, dist: 5.2, up: 2.0, look: 0.35, turn: 0.6, turnHz: 0.7, back: 0x0b0b18, hz: 20, margin: 0.95 },
+  env: {
+    on: true, size: 512, intensity: 0.9,
+    zenith: 0x1a1c33, horizon: 0x2a2d4a, floor: 0x0d0d1a,
+    softbox: { color: 0xffffff, strength: 0.85, depth: 0.22 },
+    strips: [
+      { bearing: 70, width: 38, height: 0.06, span: 0.05, color: 0x7fffe0, strength: 0.9 },
+      { bearing: 250, width: 38, height: 0.06, span: 0.05, color: 0xffc890, strength: 0.75 },
+    ],
+  },
+
+  // The blob's shape and life (1.x `blob`): a dome with a rounded flat
+  // bottom, squat by default, per-species silhouettes, a breath, and a smear
+  // along the floor when it moves.
+  blob: {
+    // v132 (owner, 2026-11-09: "the enemy and characters look like they are full circles floating … They should be
+    // flatter and close to the ground"): 1.x cut its sphere 0.7 below the middle — 85% of a ball, widest above the
+    // floor and curling in under itself, so the floor showed lit under every body's rim. Cut 0.25 below, a dome stands
+    // on the widest of it (about one radius tall, as v131's squat drew it) — the concept's jelly dome
+    domeCut: 0.25, domeRound: 0.22,
+    shape: { x: 1.05, y: 0.82, z: 1.05 },
+    shapes: {
+      spittor: { x: 1.02, y: 0.78, z: 1.26 },     // snouty
+      fanner:  { x: 1.30, y: 0.66, z: 1.08 },     // wide flat pancake
+    },
+    // v131 (owner: "They should be flatter and close to the ground"): 2.0 SQUATS every dome by this much as it is
+    // drawn (render/actors.js, on the body's squash); 1 from v132, whose lower cut (domeCut) stands it about one
+    // radius tall without squeezing it. The shapes above stay 1.x's, which the species checks hold them to
+    squat: 1,
+    breatheAmp: 0.13, breatheAmpSplitta: 0.18, breatheHz: 2.4,
+    dragStretchPerSpeed: 0.10, dragMax: 0.35, rearDragTilt: 0.35,
+    // v129 (the owner's jelly notes): the top WOBBLES with the body's motion — a damped spring on its acceleration
+    // (render/actors.js wobble): `hz` for a body `r0` m round (slower the bigger), `damp` of critical, `gain` radii
+    // of lean a m/s² of push, `max` radii at most. Drawn only; the sim never sees it
+    wobble: { hz: 2.3, r0: 0.8, damp: 0.2, gain: 0.85, max: 0.24 },
+    hitRipple: 0.28,        // seconds a hit ripple takes to die out
+    // 2.0's dent (the graphics pass): a shot pushes the jelly in where it lands
+    // and the dent springs back with an overshoot, over the ripple's 0.28 s.
+    // `depth` in radii, `focus` how tightly it gathers round the impact,
+    // `freq` rad/s and `damp` 1/s of the spring. 1.x only rippled.
+    dent: { depth: 0.24, focus: 5.5, freq: 34, damp: 9 },
+    // v82 (owner, 2026-10-31: "more physical splatter and jelly like effects"):
+    // CONTACT SQUASH. A body pressed on — by another body it stands in, by a
+    // wall, by the hero — flattens where it is pressed and bulges at its
+    // sides, the way jelly against glass does. The sim reports the press as
+    // a vector toward what pressed (world.js pressX/pressZ: the crowd's
+    // overlaps, the walls' push-back, the hero's overlap), the view turns its
+    // length, in the body's own radii × `gain`, into a flattening DEPTH of at
+    // most `max` radii (eased in at `attack` 1/s and out at `release` 1/s, so
+    // one step's jostle reads and a jitter does not), and the gel's
+    // displacement law (gel.js gelDisplacement, shared with the SDF look)
+    // cuts the body by a plane that far in from its rim on the contact's
+    // side, over a belt from the floor to the body's widest (`belt`: where
+    // the belt starts fading, in radii, and where it is gone), pushing
+    // `bulge` × the depth out at the sides. The hero flattens too.
+    contact: { gain: 8, max: 0.42, attack: 28, release: 7, belt: [0.95, 1.5], bulge: 0.3 },
+    death: 0.28,            // seconds a dying gel thrashes, swells and fades before it bursts
+    deathSwell: 1.3,        // how much bigger it gets by the end
+  },
+
+  // The SDF gels (render/sdf.js), the title's GELS · SDF: the dome and the
+  // rounded cube drawn as ray-marched fields on a fitted proxy hull, with the
+  // same physical jelly, the same displacement law (gel.js gelDisplacement,
+  // taken at the rest point) and the same per-gel writes as the mesh. The
+  // switch itself is localStorage `toko2.gels` ('classic' | 'sdf'), not here.
+  //   steps     the march's budget; epsPx a hit within that many pixels;
+  //   acceptPx  a ray out of steps that close to the surface is a hit;
+  //   minStepPx the smallest step, in pixels at the ray's distance;
+  //   aa        alpha-to-coverage edges: a near miss within half a pixel of the
+  //             surface gets partial coverage (a wider feather grew every
+  //             silhouette, globbo +13%, and drew a dark fringe);
+  //   relax     × the Lipschitz step 1/√(1+T²), T = lip · (wobble, hit, tear).
+  //             The lip constants are MEASURED, not worst-case sums: 2.8 for
+  //             the hit (the research's sum of term bounds) made every hit gel
+  //             step at a third of the distance and run out of steps at the
+  //             rim (holes); against a 2000-step ground truth (bare node, the
+  //             dome field, idle/hit/death) hit 0.5 and wobble 0.3 overstep
+  //             nothing, and tear needs ~1.0 (below it the thrash crests
+  //             tunnel). The near-surface gradient is 1.0-1.4 at p90;
+  //   burstSteps more steps × max(hit, tear) while a hit or the thrash runs;
+  //   normalEps the gradient's tap, in radii; pad the hull's slack, in radii;
+  //   normals   'field' shades the lumps and dents, 'rest' the bare dome
+  //             (classic shades the rest normal: lumps only in the outline);
+  //   merge     smooth union between gels: off, the owner's call.
+  sdf: {
+    steps: 32, epsPx: 0.25, acceptPx: 2, minStepPx: 0.1, normalEps: 0.003, relax: 0.9, burstSteps: 32,
+    lip: { wobble: 0.3, hit: 0.5, tear: 1.0 },
+    hull: 'ico2', pad: 0.03,
+    normals: 'field', aa: true, merge: { on: false },
+    debug: null,           // 'steps': a heat map of the march instead of the jelly
+  },
+
+  // The hero's body (1.x player.js): a white satin sphere, calmer than the
+  // gels, with black eyes that face the last shot. Times are seconds; the
+  // blinks are 1.x's opacity curves, base + amp·|sin(rate·t)| on the timer.
+  heroLook: {
+    wobble: 0.6,            // 1.x uWobble on the hero (player.js:65); the gels wear 1.0
+    // 1.x's black ovals (player.js:81-93, 478-494): r 0.13 scaled (0.55, 1.15,
+    // 0.4), a 0.042 glint. 1.x set them 0.4 forward and 0.16 up, which buried
+    // them in the body (player-controls.md §14.2); 0.44 / 0.18 stand them proud.
+    // v96 (the owner's style sheet, 3) HERO EYES: tall black ovals, a big white highlight in the upper part (`hi`: half
+    // width, half height, where) and a small white dot lower right (`dot`: radius, where), in eye-local metres
+    eye: { r: 0.13, scale: [0.55, 1.15, 0.4], forward: 0.44, side: 0.14, up: 0.18, glint: 0.042,
+           hi: { size: [0.03, 0.046], at: [-0.008, 0.062] }, dot: { r: 0.012, at: [0.02, -0.042] } },
+    opacity: 0.98,          // the body at rest (player.js:63)
+    flashColor: 0xff1100,   // red emissive from the hit to the END of mercy (player.js:266-273, 329-331)
+    mercyBlink: { base: 0.3, amp: 0.7, rate: 12 },    // opacity through mercy (player.js:328)
+    dashBlink: { base: 0.35, amp: 0.65, rate: 55 },   // opacity through a dash (player.js:280-282)
+    // dash ghosts: one every 0.03 s from the dash's first step (the sim emits
+    // a `ghost` event each time, 6 a dash), pooled 7, living 0.28 s at
+    // opacity 0.45·t and scale 0.6 + 0.4·t (player.js:13-15, 70-78, 284-294, 336-348)
+    // 2.0 pools 10, not 7: a long flick dash lays a ghost every 2 steps for
+    // up to 24, and with 0.28 s lives as many as 9 are up at once
+    ghost: { count: 10, every: 0.03, life: 0.28, color: 0x88bbff, opacity: 0.45, scale: 0.6,
+             // v76: a ghost keeps the body's squash of the moment and is lit at its rim (`rim`
+             // × the fresnel), and each lays light on the floor under it that fades with it
+             // (`streak`: r m, k strength, life s) — the dash leaves a streak of light
+             rim: 1.4, streak: { r: 1.3, k: 0.5, life: 0.3 } },
+    // the muzzle pop (player.js:99-108, 351-359, 467-474): at radius + 0.35
+    // along the shot, y 0.3, 0.05 s, opacity 0.9 → 0 while it swells 0.6 → 1.4
+    muzzle: { r: 0.2, color: 0xaaffcc, life: 0.05, opacity: 0.9, scale: [0.6, 1.4], offset: 0.35, y: 0.3 },
+    // the lunge (player.js:371-385), per 60 Hz step from the post-clamp
+    // position: walking settles at 0.15, a dash caps at 0.45. The sim keeps
+    // it (hero.stretch, stretchX/Z) so the view only copies it.
+    stretch: { vel: 0.4, perSpeed: 0.025, max: 0.45, ease: 0.35, minSpeed: 0.3 },
+    // the red screen vignette on a hit (main.js:4798, 5550-5564): alpha
+    // (t / 0.32)·0.55 from 0.35·min(cx, cy) to 1.05·max(cx, cy); off under reduce motion
+    vignette: { life: 0.32, alpha: 0.55, inner: 0.35, outer: 1.05 },
+    haptics: { hit: 35, death: [50, 40, 90] },        // navigator.vibrate ms (haptics.js:25, 30)
+    deathShake: 0.9,        // the fatal hit's extra shake, on top of the hit's (main.js:9033)
+  },
+
+  // ── the game ──────────────────────────────────────────────────────
+  // 1.x numbers (js/player.js, js/bullet.js, js/input.js, js/enemy.js at
+  // v268), on 1.x's own arena, so none of them needs a rescale.
+  sim: { dt: 1 / 60, maxSteps: 5 },       // fixed step, and the most a frame may catch up
+
+  input: {
+    stickRadius: 60,        // px of thumb travel for a full stick (1.x STICK_RADIUS)
+    aimDeadzone: 15,        // px before the aim stick aims and fires (1.x AIM_DEADZONE)
+    padDeadzone: 0.2,       // 1.x GP_DEADZONE
+    pauseStripHeight: 56,   // the top-centre pause strip on touch (1.x)
+    pauseStripHalfWidth: 40,
+    // The FLICK (js/flick.js; owner, 2026-10-23): the dash read off the aim
+    // stick as it is let go. Lengths are in units of stickRadius CSS px (CSS
+    // px are already near physical: ~6.3 a mm on a Pixel, ~5.2 on an iPad
+    // Air, so a thumb's flick reads about the same on both); times in ms of
+    // the events' own timeStamps; speeds in units a second (5 = 0.3 px/ms).
+    // Measured against synthetic thumb strokes (scratchpad dashlab/gestures.mjs:
+    // a touchmove a display frame while the thumb moves, none while it rests)
+    // at 60 and 120 Hz. v91 (owner, 2026-10-31: "get flick to dash to 1.x
+    // parity"; 1.x dashed on every lift): a flick of 4 mm in 60 ms, of 7 mm
+    // in 160 ms, and a 7 mm flick that slows to a stop and lifts up to 150 ms
+    // later all dash, as they did in 1.x; a thumb at rest for longer, a slow
+    // aim sweep and a 2 mm aim correction do not. v18's reader asked the thumb
+    // to be still moving AT the lift, and at 60 Hz no decelerating stroke was.
+    flick: {
+      tap: false,                  // a tap is no dash (1.x's was); true makes it 1.x's dash again
+      tapMs: 200, tapPx: 12,       // shorter and stiller than this is a TAP
+      landMs: 160,                 // the thumb may slow, stop and lift within this of its stroke's end: still that flick. Longer, it had come to rest (v91)
+      releaseMs: 50,               // the stroke's end speed is fitted over this much of it (the ?fps readout)
+      peakFloor: 3,                // u/s the stroke must reach somewhere (0.18 px/ms; an aim sweep peaks near 2)
+      lengthFloor: 0.25,           // u of stroke under which it is a let-go (15 px, ~2.4 mm)
+      strokeFloor: 1.5,            // u/s: walking back from the stroke's end, it ends where the thumb was slower; slower than this at the lift is the landing
+      strokeMs: 350,               // and it looks back no further
+      spanMs: 14,                  // a speed sample spans at least this (one sample's jitter is not a speed)
+      restMs: 30,                  // a gap with no events this long was the thumb at rest
+      length: [0.75, 2.5],         // stroke length → sL 0..1 (45 → 150 px): an ordinary 7 mm flick buys 1.x's own dash, a long one more (v91)
+      speed: [6, 40],              // peak stroke speed → sV 0..1 (0.36 → 2.4 px/ms)
+    },
+  },
+
+  // The TILT-SHIFT lens (render/lens.js, v94; owner, 2026-11-01: "look into the tilt-shift look, detailed
+  // central area"): the circle of confusion |z − f| / z (f the hero's depth) is sharp inside `band`, opens to
+  // mip `maxLevel` over `ramp`; `saturation` the miniature's toy colours. Off unless OPTIONS → LENS says so
+  // `near` scales the blur nearer than the focus: the near side is where the next threat comes from on a phone held
+  // low, so it softens, it does not melt (at 1 the gate at the bottom of the screen was a smear)
+  lens: { band: 0.1, ramp: 0.26, maxLevel: 4, near: 0.5, saturation: 1.16 },
+
+  // The STYLE switch (render/style.js, v92; owner: "watercolor, cell shaded,
+  // physical 3d"): how the gels and the goo are painted. PHYSICAL is the game's
+  // own look (material, blob, goo.look); these two are painted flat from the
+  // same bodies. Tones are factors on the body's own colour.
+  style: {
+    cel: {
+      shadow: 0.52, mid: 0.4, lit: 0.72, midTone: 0.5,   // three tones: below `mid`, between, above `lit` (nl = dot(N, L) × ½ + ½)
+      specAt: 0.985, spec: 0.32,                          // the highlight dot: a hard cut on the half vector (a cube's whole face takes it, so it lightens rather than whitens)
+      inkAt: 0.74, ink: 0.2,                              // the ink line: where 1 − dot(N, V) passes inkAt, the colour × ink
+      film: { inner: 3.2, innerLift: 0.22, inkBand: 1.8, ink: 0.3, tone: 0.95, dryTone: 0.8 },   // the film: a flat wash, a lighter pool past edge × inner, an ink band at the contour
+      drop: { shadow: 0.55, lit: 0.6, inkAt: 0.7, ink: 0.25 },
+    },
+    watercolor: {
+      shadow: 0.6, shadeFrom: 0.25, shadeTo: 0.75, bands: 3, banding: 0.4,   // the shade: soft, part-banded
+      gamma: 1.55,                                        // the pigment: the colour deepened (the pale first cut read as the washed-out look it replaces)
+      edgePow: 2.2, edge: 0.85, edgeDark: 0.42,           // dark at the edges, where the wash pools
+      grainScale: 9, grain: 0.18, paper: 0.04,            // granulation, and a little paper
+      film: { gamma: 1.45, rimTo: 4, rim: 0.6, grainScale: 14, grain: 0.3, alpha: 0.9, bleed: 0.6, dryRim: 0.55 },   // the film: pigment pooling dark at its border, grained, a bleed past the edge; the stain a dried ring
+      drop: { shadow: 0.6, edgePow: 2, edge: 0.6, edgeDark: 0.5 },
+    },
+  },
+
+  // The hero, as 1.x played it (player.js; docs/port-1x/player-controls.md
+  // §3-§9). Every timer is 1.x's per-frame one, ticked once a 60 Hz step,
+  // so the frame-quantised feel ports exactly: a dash is 11 steps, its
+  // cooldown runs out 45 steps after it ends, the gun fires every 6th step.
+  hero: {
+    radius: 0.5,            // the body, and the hitbox (1.x PLAYER_RADIUS, player.js:17)
+    hitRadius: 0.5,         // a gel bullet hits at its 0.15 + 0.5 from the centre (main.js:10840-10853)
+    speed: 6,               // walk, u/s; no acceleration, an analog stick walks slower (SPEED, player.js:5, 320-321)
+    dashSpeed: 26,          // DASH_SPEED (player.js:6)
+    dashTime: 0.18,         // DASH_DUR (player.js:7): 11 steps, 4.77 u, i-frames through the 10 before it ends
+    dashCooldown: 0.75,     // DASH_CD (player.js:8), from the dash's END; a press inside it is lost (no buffer)
+    // 1.x dashes along the RAW move stick (main.js:9156-9158, player.js:247-249),
+    // so half a stick is half a dash; only with no move at all does it take the
+    // last shot's direction. true normalises it (player-controls.md trap T1).
+    dashNormalise: false,
+    // v124: under this much stick the dash is a still one, along the last shot (a thumb resting on the move stick
+    // jitters a few px: in 1.x that dashed a tenth of a unit, a dash in name only)
+    dashMoveMin: 0.15,
+    // The FLICK dash (owner, 2026-10-23: the dash reacts to the flick's
+    // length and speed, goes where it was flicked, and runs longer than
+    // 1.x's). input.js reads the gesture, dashPlan below prices it: sL 0..1
+    // → the distance, sV 0..1 → the speed. Distance is exact (the last step
+    // moves what is left); it lasts ceil(d / (v·dt)) steps, clamped to
+    // `steps`, and when the clamp bites the speed gives way, never the
+    // distance. The i-frames are the dash, as 1.x's were. The cooldown, from
+    // the dash's END, grows with the distance: 1.x's 0.75 s at 1.x's 4.77 u.
+    // A button (A / RB / RT, Space) is still 1.x's own dash, to the step
+    // (owner: the pad keeps a fixed dash), and so is a bare input.dash true.
+    flick: {
+      // v91 (1.x parity): the lightest flick is 1.x's own dash — 4.77 u at 26 u/s, 11 steps — and a longer,
+      // faster one goes further and faster; v18's 2.4 u at 18 u/s made an ordinary 7 mm flick a dash shorter
+      // and slower than the one a 1.x thumb knew (measured: 4.1 u at 18 u/s)
+      d: [26 * 11 / 60, 11], v: [26, 46],   // a flick: sL → distance (u), sV → speed (u/s)
+      dPow: 1, vPow: 1,
+      vStd: 26,                            // the speed the scaled effects are measured against (1.x's)
+      steps: [4, 24],                      // 0.067 .. 0.4 s
+      cooldown: { at: 0.75, perU: 0.1, min: 0.35 },   // 0.75 s at 4.77 u, ± 0.1 s a unit
+      push: [0.75, 1.6],                   // the PUSH plough's force × v / vStd, clamped
+      cut: [1, 4],                         // the CUT's hits = round(cut.hits × v / vStd), clamped: a faster flick cuts deeper
+      squash: [0.6, 1.5],                  // the dash's squash kick × v / vStd, clamped
+    },
+    fireEvery: 0.09,        // FIRE_RATE (player.js:9), ASSIGNED on each shot, not carried (player.js:465): 6 steps, 10/s
+    muzzle: 0.3,            // a shot leaves at radius + 0.3 = 0.8 from the centre (player.js:402-403)
+    mouseNoAim: 0.5,        // the mouse does not aim (so cannot fire) within this of the centre (main.js:9235)
+    rapidMult: 0.4,         // the fire-rate pickup's period while `rapid` runs (player.js:416)
+    // 1.x's pickups (tuning/pickups.js, sim/pickups.js): taken within reach + radius
+    // (main.js:11242), each timer takes the LONGER of what it has and what it
+    // is given (player.js:177-178; hero.js grantInvincibility / grantRapid)
+    pickup: { reach: 0.8, invincible: 3.0, rapid: 8.0 },   // main.js:11242, 11249, 11268
+    aim0: [1, 0],           // _lastAim before the first shot: screen-right (player.js:32; 1.x's reset() kept the last run's, player.js:191-232)
+    lives: 3,               // MAX_HP: lives are hp, a lost one does not respawn (player.js:10)
+    mercy: 1.2,             // MERCY_DURATION (player.js:11), from a non-fatal hit
+    flash: 0.25,            // the red hit flash (player.js:238); the body stays red until mercy ends
+    // The dash is 1.x's (i-frames, it passes through bodies) and upgrades
+    // (owner, 2026-10-21): level 1 KILLS what it passes through (a boss takes
+    // one hit a dash); level 2 adds 1.x's dash boom, a ring of hero bullets
+    // from where the dash's first step left you (1.x main.js:10216-10224, a
+    // roguelike card). The convoy's DASH pod raises it (tuning/pickups.js dashPod).
+    // Touching = within the body's radius + reach: the hero's own radius, so a
+    // dash cuts exactly what would have hurt to walk into (1.x's contact test,
+    // e.radius + PLAYER_RADIUS, main.js:10895). 1.x's one body-cutting dash
+    // (NEX DEUS, a cabinet) reached 0.2 further and HIT for 1 rather than
+    // killing (main.js:10166-10183); bossHits is that 1, once a pass.
+    dashKill: { reach: 0.5, bossHits: 1 },
+    dashBoom: { count: 12, shake: 0.18, color: 0xff8844 },   // 12 rays, addShake(0.18), 0xff8844 (main.js:10216-10225)
+    // a hit knocks dash level 2 down to 1, never below 1, as a hit does a pod
+    // (weaponTakeHit, main.js:2083-2091); false keeps the level for the run.
+    // The level comes from the convoy's DASH pod (tuning/pickups.js dashPod);
+    // whether a hit should cost it is the owner's open question ("maybe", 2026-10-22)
+    dashUpgrade: { loseOnHit: true },
+    // The PUSH dash, on test beside 1.x's pass-through (owner, 2026-10-22: "the
+    // pushing dash should be tested as it may be a better dynamic, allowing
+    // for more bullet sponge enemies"). The world's `dashMode` picks ('pass' |
+    // 'push'); the title's DASH switch sets it. It began as 2.0 v3-v4's
+    // body-check (one knock of 11 at first contact, world.js:113-123 at v4),
+    // and measured, that opened almost no room: the hero overtakes what it
+    // just shoved and ends the dash inside the crowd (gap to the four nearest
+    // gels at 0.5 s: 0.89 with PASS, 1.02 with v4's shove). So it PLOUGHS:
+    // every step a body is within `reach` of the dashing hero it is kept
+    // moving straight away at no less than force × heavy / its radius, and it
+    // slides out on the core's knock friction (gel.knockFriction 3): 2.09 at
+    // 0.5 s, 1.45 at 1.0 s. A small gel flies, a boss barely moves; planted
+    // bodies (the ANCHORED affix, the FIXED role) do not move at all. At dash
+    // level 1 the first touch of a dash also hurts.
+    push: { reach: 1.5, force: 18, heavy: 0.55, plough: true, squash: -0.45, hurt: 1 },
+    // The CUT dash (owner, 2026-10-22: "likely we want dashes that go through
+    // and do damage in the end"): 1.x's pass-through, with the dash level 1
+    // cut from the start, as damage. Every body it passes takes `hits` (2 is
+    // 0.2 s of the gun: at GEL HP ×1 it kills every body of 2 hp or less —
+    // GLOBBO, YELA, SLUDGE, BAMBU, BOTFLY and the minis — and takes 2 off the
+    // rest). It touches as the level 1 cut does
+    // (dashKill.reach); from dash level 1 a body that is not a boss dies outright.
+    cut: { hits: 2 },
+    color: 0xffffff,        // 1.x: white satin (player.js:61)
+    // 1.x's weapon pods (tuning.js:141-160, main.js:1985-2005, player.js:404-464):
+    // one table, two levels a family; `rate` multiplies fireEvery. A pod drops
+    // at level 1, the same family again earns level 2, and a hit knocks level
+    // 2 back to 1 — never off. HOMING is enemy-only since v88 (BOTFLY). The
+    // pods drop from the convoy and the bounty (tuning/pickups.js); `color` is each pod's orb (L1, L2).
+    weapons: {
+      spread:  { l1: { shots: 5, step: 9, rate: 1 }, l2: { shots: 7, step: 11, rate: 1 }, color: [0xffcc44, 0xffee11] },
+      burst:   { l1: { rounds: 4, rate: 2.0 }, l2: { rounds: 6, rate: 2.2 }, color: [0x44ffcc, 0x11ffee] },
+      laser:   { l1: { rails: 1, rate: 1 }, l2: { rails: 2, railGap: 0.55, rate: 1.5 }, color: [0xff3355, 0xff1133] },
+      rapid:   { l1: { rate: 0.45 }, l2: { rate: 0.30 }, color: [0xaa55ff, 0xcc22ff] },
+      shotgun: { l1: { pellets: 5, spread: 0.45, rate: 1.55 }, l2: { pellets: 7, spread: 0.5, rate: 1.5 }, color: [0xff8833, 0xffaa22] },
+      hitCostsLevel: true,
+      favourUnheld: 0.7,     // how strongly a drop favours a family you are NOT holding
+    },
+    // 1.x's squash spring, per 60 Hz step (player.js:362-365): a dash
+    // stretches it tall (player.js:252), a hit flattens it (player.js:241)
+    sq: { spring: 0.28, damp: 0.84, min: 0.55, max: 1.55, dash: 0.6, hit: -0.9 },
+  },
+
+  bullets: {
+    heroSpeed: 24,          // 1.x PLAYER_BULLET_SPEED
+    heroRadius: 0.15,       // 1.x BULLET_R
+    heroDamage: 1,
+    gelSpeed: 7,            // 1.x ENEMY_BULLET_SPEED; never escalates with the wave
+    gelRadius: 0.15,
+    // v104 (owner: "No cheap effects like glow"): how a bullet looks without its halo — drawn `draw` × its
+    // radius (bigger than it hits), white toward its middle (`core`: from, to, how white) and darker at its
+    // edge (`rim`: from, to, how dark), so it reads crisp over any floor
+    look: { draw: { hero: 1.25, gel: 1.6 }, core: [0.55, 0.92, 0.8], rim: [0.08, 0.38, 0.32] },
+    life: 4,
+    maxHero: 200,           // separate pools, so a dense field never silences your gun
+    maxGel: 300,            // 1.x's shared pool size
+    heroColor: 0x66ffcc,    // 1.x's player halo
+    gelColor: 0xff5533,     // 1.x's default enemy bullet
+  },
+
+  graze: { radius: 1.2, points: 25 },   // 1.x: a gel bullet passing this close while you are vulnerable, once each
+
+  // 1.x's score (main.js:4421-4453): every kill pays 100 × the streak, and the
+  // streak only resets when you are hit. A banner every 25,000; no extra lives.
+  score: { perKill: 100, milestone: 25000 },
+  // HEAT (v51, sim/heat.js): the score's one multiplier, in every mode. A kill
+  // pays perKill × (1 + floor(heat)), ×1 … ×`levels`. Heat comes from the
+  // risky things — a kill (`kill`, and up to ×k0 that for one made close: the
+  // extra falls as (1 − u)^pow from r0 m to nothing at r1 m; a dash kill is point-blank), a graze, a room's goal
+  // taken — holds for `grace` s after each, then drains `drain` + `drainPer` ×
+  // the level a second, and only while there is something on the floor to kill
+  // (v53: an empty floor holds it); the kill that empties the floor heats
+  // `clear` more. A hit keeps `hitKeep` of it (none). COLD GUN, a room's
+  // mutator, takes `coldShot` a shot.
+  // the play record (js/record.js, v61): the newest this many finished rooms and runs are kept
+  record: { cap: 400 },
+  // v118: DAILY — what its share line links to, and how many days of its bests this phone keeps
+  daily: { url: 'https://mbace1.github.io/Suds-Jack/toko-drop-2/', keep: 30 },
+
+  heat: {
+    levels: 8, kill: 0.2, near: { r0: 2, r1: 6, k0: 4, pow: 2 }, graze: 0.08,
+    grace: 0.4, drain: 0.45, drainPer: 0.08, clear: 0.8, hitKeep: 0, coldShot: 0.012,
+    // WHITE HEAT, a room's mutator (v60): the multiplier's ceiling, ×levels in its rooms. Above ×8
+    // the drain is drainPer × the level on top of `drain`, so ×16 holds only while you keep killing
+    white: { levels: 16 },
+    goal: { gate: 0.6, orb: 0.3, hill: 0.6, leg: 0.3 },
+    // what you see and hear of it (v52): a halo on the floor under you and a
+    // tint in the gel, from `colors[0]` at ×2 to the last at ×8, growing with
+    // the level; every kill's voice up `pitch` a level; a chime as a level is
+    // crossed, a fall when a hit throws it away. Past ×8 (WHITE HEAT, v60) the
+    // halo stops growing, and it and the tint go `white` of the way to white by the ceiling
+    view: { colors: [0xffc040, 0xffa030, 0xff8028, 0xff6020, 0xff4a20, 0xff3020, 0xff2050], halo: { r: 1.9, per: 0.22, alpha: 0.32, perAlpha: 0.05 }, tint: 0.07, white: 0.85,
+            ring: { inner: 0.465, alpha: 0.5, perAlpha: 0.06 } },   // v104: the halo is a crisp ring, `inner`..0.5 of its quad (owner: no glow)
+    sound: { pitch: 0.05 },
+  },
+
+  gel: {
+    // 1.x: a bullet never moves a body. Knock (kx, kz) is for whatever throws
+    // a body — nothing in the roster does yet.
+    knockFriction: 3,       // knock velocity decays this fast (1/s); only the PUSH dash knocks: 3 lets a shoved gel slide out (it was 6, under which a shove opened no room)
+    wallBounce: 0.6,        // a wall returns this share of the knock
+    // seconds a new body is DRAWN swelling in, from 15% (its shadow from 0):
+    // the view's alone. It acts, hurts and can be hit from its first step, as
+    // 1.x's did (1.x had no appear phase; owner, 2026-10-22, "c or less": it
+    // was 0.3 s of a body that could neither hurt nor be hit). 0 pops it in
+    // at full size; a child (a split, a brood) never swells
+    swell: 0.15,
+    flash: 0.12,            // 1.x hit flash
+    // 1.x's squash spring, per 60 Hz step (enemy.js:2728-2729), and its kicks
+    sq: { blob: [0.24, 0.86], cube: [0.18, 0.90], hit: -0.75, wall: -0.3 },
+    contactRadius: 0.5,     // touching: within the body's radius + 0.5 (1.x main.js:10886-10906)
+  },
+
+  // SURVIVAL's director: pressure rises over `ramp` seconds and then holds.
+  // 1.x pops bodies in on an ellipse at 0.85 of the arena.
+  // SURVIVAL's floor changes size as you play (sim/reshape.js; owner,
+  // 2026-10-23: "like Sektori"): it starts small; `first` s in and every
+  // `every` s after, the next size (fractions of the run's 1.x arena, x then
+  // z) is picked, the floor warns for `warn` s where it will change, and the
+  // walls slam there over `move` s. Past 1 the floor is bigger than the
+  // screen and the camera follows.
+  // THE CAMPAIGN (1.x v263-v265, tuning.js:165-195): WORLDS of rooms, each
+  // room an authored level (levels/<id>.json) with its own clock and goal,
+  // graded S/A/B/C, and F for a room you did not get through. A room opens
+  // when the one before it has a grade above F, so the list is a route.
+  //   survive  — last the room's clock (the default)
+  //   quota    — put down `kills` bodies; the room ends the moment you do
+  //   flawless — one hit ends the room
+  // `name` is 1.x's depth look the world played in (its rule comes later).
+  campaign: {
+    worlds: [
+      // `base` / `gridHi` are the floor's own colours (sRGB 0..1, 1.x verbatim), `rule` the one mechanic (TUNING.campaign.rules)
+      // `look` (v73, owner, 2026-10-31: "apply same to the campaign levels"): the arcade world whose
+      // floor, set and rail its rooms wear — the one its rule comes from (the current is the
+      // river's, the sweep the cistern's, the dark the deep's, the slip the ice's, the updraft
+      // the boiler's), and the driveway for THE SURFACE, which has none. `base`/`gridHi` are
+      // still the colours of its tile on the grid
+      // v153 (owner, 2026-11-12: "campaign can use any world"; "circular, moving, shape shifting levels
+      // would work there better ... these levels fit those better than the environment ones"): a ROOM
+      // may name a `look` of its own — any arcade world's id — and wears it instead of its world's.
+      // The rule the list keeps (test/campaign.mjs): a room whose floor is a SHAPE (not one plain
+      // rectangle) or MOVES wears the neon `grid`, in its world's `base`/`gridHi` and `rail`; a plain
+      // rectangle wears an environment. A place cannot explain a floor that is three circles going
+      // round each other, and the grid has nothing to explain. And the two places no world of the
+      // campaign wore: NEEDLE in the `sewer` (THE VEIN, with the stream down its middle) and the last
+      // room, THE CORE, in the `core` — so every arcade world is somewhere in the campaign
+      { name: 'THE SURFACE', look: 'driveway', rail: 0x5555cc, base: [0.079, 0.079, 0.169], gridHi: [0.0, 0.55, 0.50], rule: null, rooms: [{ id: 'first-light' }, { id: 'high-ground' }, { id: 'three-rings', look: 'grid' }, { id: 'first-swarm' }, { id: 'hands-up' }, { id: 'gate-run' }] },
+      { name: 'THE WELL', look: 'river', rail: 0x33ccbb, base: [0.030, 0.105, 0.115], gridHi: [0.10, 0.70, 0.60], rule: 'current', rooms: [{ id: 'in-order' }, { id: 'eddy', look: 'grid' }, { id: 'the-sludge', look: 'grid' }, { id: 'flotsam', look: 'grid' }, { id: 'slug-run' }, { id: 'undertow' }] },
+      { name: 'THE VEIN', look: 'cistern', rail: 0xdd3344, base: [0.130, 0.030, 0.040], gridHi: [0.85, 0.16, 0.22], rule: 'sweep', rooms: [{ id: 'splitter' }, { id: 'clot', look: 'grid' }, { id: 'pulse', look: 'grid' }, { id: 'spike' }, { id: 'needle', look: 'sewer' }, { id: 'crossfire', look: 'grid' }] },
+      { name: 'THE VOID', look: 'deep', rail: 0x8866cc, base: [0.012, 0.012, 0.022], gridHi: [0.18, 0.10, 0.32], rule: 'dark', rooms: [{ id: 'the-pull', look: 'grid' }, { id: 'lights-out' }, { id: 'six-shots' }, { id: 'orbit', look: 'grid' }, { id: 'deep-end', look: 'grid' }, { id: 'siren', look: 'grid' }] },
+      { name: 'THE FOAM', look: 'ice', rail: 0x99ffee, base: [0.055, 0.105, 0.125], gridHi: [0.60, 1.00, 0.92], rule: 'slip', rooms: [{ id: 'rink', look: 'grid' }, { id: 'salmon' }, { id: 'pack-ice' }, { id: 'breath', look: 'grid' }, { id: 'skate' }, { id: 'bubble-bath', look: 'grid' }] },
+      { name: 'THE KILN', look: 'boiler', rail: 0xffaa33, base: [0.130, 0.060, 0.018], gridHi: [1.00, 0.62, 0.14], rule: 'updraft', rooms: [{ id: 'forge', look: 'grid' }, { id: 'anvil' }, { id: 'bellows' }, { id: 'boil-over', look: 'grid' }, { id: 'crucible', look: 'grid' }, { id: 'the-core', look: 'core' }] },
+    ],
+    // A ROOM IS GRADED ON ITS SCORE (v51, owner 2026-10-27: "Campaign room
+    // goals should be score based"; "F is a small but still challenging
+    // score"). Its level's `tiers` are score lines S/A/B/C from bot play
+    // (scripts/room-tiers.mjs); under C, or losing the room's own way (dying,
+    // the heart, the orbs, the clock on a goal), is F. What a room's goal pays,
+    // each × the heat: a gate, an orb, a ring filled (hills), a second in the
+    // ring (hold), a leg the heart walks, a hunted body on top of its kill.
+    // When a room is won early, every second left on its clock pays `timeLeft`
+    // (flat), and a heart pays `heart` × the share of it kept.
+    points: { gate: 500, orb: 300, hill: 1000, holdPerS: 60, leg: 300, hunt: 300, timeLeft: 250, heart: 4000 },
+    // a room with no tiers yet: lines at these points a second of its clock
+    scoreRate: { S: 900, A: 600, B: 400, C: 200 },
+    heart: { bite: 0.6 },   // PROTECT: a body on the heart takes one of its hp a this many s
+    orb: { reach: 0.9 },    // COLLECT: the hero takes an orb within this + its radius
+    // how a room's asks are drawn (render/challenge.js)
+    view: { zone: 0x44ffcc, heart: 0xff3355, lit: 0xffee66, orb: { r: 0.35, y: 0.7, color: 0xffcc44 } },
+    // 1.x's level type names → 2.0's species keys (a level may also name a 2.0 key itself)
+    kinds: { GLOBBO: 'globbo', YELA_CUBE: 'yela', SPITTOR: 'spittor', FANNER: 'fanner', ORANGE_CUBE: 'orange', WEEVA: 'weeva',
+             SLUDGE_CUBE: 'sludge', BAMBU: 'bambu', SPLITTA: 'splitta', REDD_CUBE: 'redd', PURP_CUBE: 'purp', PYRA: 'pyra',
+             BOTFLY: 'botfly', TORO: 'toro', BULWARK: 'bulwark', WARDEN: 'warden', DRAPER: 'draper', SIREN: 'siren',
+             CLOAKER: 'cloaker', MAGNA: 'magna', SHEPHERD: 'shepherd', RIBBON: 'ribbon', SLUG: 'slug' },
+    endHold: 0.6,   // s the room holds on its last frame before the list comes back
+    // ONE RULE PER WORLD (1.x v264, tuning.js:217-232), as 1.x wrote them:
+    //   current  THE WELL: the whole floor drifts on a current that turns slowly
+    //   sweep    THE VEIN: the rail flashes, then fires a line across with a gap in it
+    //   dark     THE VOID: the dark closes in on you and opens again
+    //   slip     THE FOAM: the floor is slick; you carry momentum
+    //   updraft  THE KILN: every few seconds the floor shoves everything out from the middle
+    rules: {
+      current: { speed: 2.6, playerMult: 0.42, turn: 0.22 },
+      sweep: { every: 7.5, warn: 1.1, spacing: 2.6, gapSlots: 2, speed: 9, color: 0xff4466 },
+      dark: { period: 9, near: 6, far: 20 },   // at its darkest you see `near` to `far` units round you
+      slip: { accel: 3.2, drag: 0.9 },
+      updraft: { every: 6.5, warn: 0.8, push: 13, dur: 0.45, playerMult: 0.55 },
+    },
+  },
+  survival: {
+    reshape: {
+      on: true, first: 20, every: 30, warn: 2.2, move: 0.45, shake: 0.32,
+      start: [0.55, 0.6],
+      sizes: [[0.55, 0.6], [0.85, 0.7], [0.7, 1.0], [1.0, 1.0], [1.3, 0.8], [0.62, 0.62], [1.35, 1.25], [0.9, 1.25], [1.15, 0.6]],
+    },
+  },
+
+  director: {
+    firstSpawn: 0.6,
+    ramp: 600,
+    spawnEvery: [1.4, 0.45],
+    maxAlive: [8, 30],
+    groupOf: [1, 3],
+    ring: 0.85,
+    clearOfHero: 6,
+    secondsPerWave: 12,      // SURVIVAL reads ARCADE's roster as if a wave passed this often
+  },
+
+  // Every species: one file each under tuning/species/ (1.x's CFG rows and
+  // each species' own numbers).
+  species: SPECIES,
+
+  // ARCADE's waves (tuning/waves.js).
+  waves: WAVES,
+
+  // 1.x's classic pickups: the drops, the gates, the convoy, the bounty (tuning/pickups.js).
+  pickups: PICKUPS,
+
+  // 1.x's crowd solver (crowd.js, tuning.js:284): bodies keep a pad apart, and
+  // one closing on the hero behind another is pushed back and slid aside
+  crowd: { pad: 0.6, comfort: 1.5, push: 4.0, slide: 5.0, passes: 2 },
+
+  // 1.x's swarm forces (v210; tuning.js:287-319): each species takes a share
+  // of dodge (sidestep the hero's bullets), flock, the wave's current and a
+  // weave, by its role
+  movement: {
+    roles: {
+      SCHOOL:  { dodge: 0.9, flock: 1.0, current: 1.0,  weave: 0 },
+      DARTER:  { dodge: 1.0, flock: 0.5, current: 0.9,  weave: 0.5 },
+      DRIFTER: { dodge: 0.3, flock: 0.6, current: 1.0,  weave: 0.25 },
+      HUNTER:  { dodge: 0.4, flock: 0,   current: 0.5,  weave: 0.8 },
+      HOLDER:  { dodge: 0,   flock: 0,   current: 0.25, weave: 0 },
+      COMMIT:  { dodge: 0,   flock: 0,   current: 0.15, weave: 0 },
+      MASS:    { dodge: 0,   flock: 0,   current: 0.10, weave: 0 },
+      FIXED:   { dodge: 0,   flock: 0,   current: 0,    weave: 0 },
+      SUPPORT: { dodge: 0.5, flock: 0.3, current: 0.6,  weave: 0.3 },
+      HERDER:  { dodge: 0.6, flock: 0,   current: 0.3,  weave: 0.2 },
+    },
+    weaveSpeed: 1.7, weaveGain: 1.6,
+    dodge: { ahead: [0.5, 7], lane: 1.0, speed: 12, time: 0.3, decay: 5, cooldown: [0.8, 1.5], maxRadius: 1.1 },
+    flock: { radius: 4, cohesion: 0.5, align: 0.25 },
+    current: { stream: 1.2, ring: 1.1, pincer: 1.0, pincerSide: 6 },
+  },
+
+  // v105 (owner, 2026-11-02: "Essential more enemies in a pool maybe each on a size scale 1-5. Or different
+  // color giants, etc. The more defined options you have, the better choices you can make for waves that play
+  // well"; and "Some enemies should be more tank and bullet sponge, a bit less shooting"): every body the arcade
+  // spawns carries a SIZE CLASS, one rule for every species, so the pool is each species × five defined bodies.
+  // Each class is × the species' radius, hit points (rounded up, at least 1), walking speed, fire clock (slower
+  // is bigger: `fire` × its period) and what a kill pays. 1 a MITE (never a shooter: the arcade draws it only
+  // for bodies that do not fire), 2 the body as it was, 3 a BRUTE (HEAVY's place: v20's later-world bodies), 4 a
+  // TANK, a bullet sponge, slow, that a dash cannot kill outright (it takes `dashHits` a pass, as a boss does), 5
+  // a GIANT in its own colour that splits, dying, into `split.n` class-4s of its kind. Bodies that size
+  // themselves (BAMBU's and SLUG's segments, PYRA's holes) and bosses keep their own size.
+  sizes: {
+    classes: {
+      1: { r: 0.62, hp: 0.5, speed: 1.3, fire: 1, score: 0.5 },
+      2: { r: 1, hp: 1, speed: 1, fire: 1, score: 1 },
+      3: { r: 1.3, hp: 2, speed: 0.85, fire: 1.15, score: 2 },
+      4: { r: 1.65, hp: 4, speed: 0.68, fire: 1.4, score: 4, dashHits: 2 },
+      5: { r: 2.1, hp: 6, speed: 0.5, fire: 1.8, score: 8, dashHits: 2, split: { into: 3, n: 2 } },
+    },
+    skip: ['bambu', 'slug', 'pyra', 'ribbon'],   // they size themselves, or are chains
+    mites: ['globbo', 'yela', 'sludge', 'redd', 'splitta', 'toro', 'bulwark', 'hoppa', 'bubbla', 'worma'],   // the bodies that never fire: the only ones drawn as mites
+    // the arcade's draw (sim/director/arcade.js drawSize): world 1's weights [mite, —, brute, tank]; past it a
+    // `mite` share, and the world's HEAVY share (TUNING.worlds.list[].heavy) split `tank` of it into tanks and
+    // the rest brutes. A GIANT is a wave's event: from world `from`, `chance` + `perWorld` a world past it
+    draw: { first: [0.15, 0.8, 0.05, 0], mite: 0.15, tank: 0.25, giant: { from: 2, chance: 0.2, perWorld: 0.025 } },
+    // what a class costs a wave, in ordinary bodies (a giant counts the two brutes it splits into), the share of
+    // what the big ones cost over that the wave pays back in ordinary bodies off its end (what one is `worth`,
+    // by its variant), never thinning its mob under `keep`
+    cost: { 1: 0.5, 2: 1, 3: 2, 4: 4, 5: 10 }, pay: 0.6, keep: 0.5, worth: { elite: 2, elitelite: 1.5 },
+    fireMult: 1.25,   // "a bit less shooting" (owner): the worlds' bodies run their fire clocks this much slower
+    // v112 a GIANT's SLAM (sim/slam.js; owner: "more unique patterns"): its first beat `first` s in (+ `stagger` × its
+    // id mod 5), then every `every` s, it gathers for `warn` s — still, squashed to `squash` by 1/`gather` of the way — and
+    // slams: `reach` m past its rim you are hit, the bodies in reach thrown out at up to `push` m/s; the screen
+    // shakes `shake`, and it rebounds at `rebound`
+    slam: { first: 3, stagger: 0.45, every: 5.5, warn: 0.9, squash: 0.68, gather: 2.5, reach: 2.4, push: 9, shake: 0.22, rebound: 0.09 },
+    // v114 a big body WEARS: hit, a brute, tank or giant (size 3-5) sheds goo where the shot went in — `n` droplets of
+    // `size` every `every`th hit — and it draws up to `shrink` smaller as its life goes (the view's alone: its reach
+    // in the sim is its size's, whatever is left of it)
+    wear: { shrink: 0.08, every: { 3: 2, 4: 2, 5: 1 }, n: { 3: 1, 4: 2, 5: 2 }, size: [0.05, 0.11] },
+    // how a class reads (render/actors.js _heavy): a mite `mite` of the way to white, a brute × `brute` (a tank
+    // takes HEAVY's own darken), a giant its species' hue turned `hue`, saturated × `sat`, lightness × `light`
+    look: { mite: 0.22, brute: 0.75, giant: { hue: 0.11, sat: 1.4, light: 0.58 } },
+  },
+  // v115 the FIRST-TIME TAGS (sim/teach.js, render/hints.js): STEP OUT! over a giant gathering with you within `near`
+  // m of its ring, CLEAR THE LANE! by a ram's lane that warns with you within `near` m of it — until this browser
+  // has once got out of one in time, or has seen one `cap` times. The slam's sits `lift` over the giant's top (as a
+  // bounty's tag, r × 3 + lift), the ram's `laneY` up, `past` m beyond its lane's end (over the lane, it hid the hero
+  // standing in it) and, where the lane runs across the screen, `beside` m clear of its side; both beat as DASH THROUGH! does
+  // (alpha[0] + alpha[1] sin(rate t)). The colours are the ring's and the lane's own; the shadow is dark, so the line
+  // reads on the snow and the river as on the sewer (a shadow under the letters, not a glow)
+  hints: { cap: 8, near: 2, lift: 1.3, laneY: 0.6, past: 1.1, beside: 1.4, alpha: [0.8, 0.2], rate: 6,
+    slam: { say: 'stepOut', color: '#ff8a66', glow: 'rgba(0,0,0,0.9)' },
+    ram: { say: 'clearLane', color: '#ffd23f', glow: 'rgba(0,0,0,0.9)' } },
+  // v108 THE FLOOR'S OWN SHAPE (sim/posts.js; owner: "arcade arena shapes are boring"): what stands in a later
+  // world's floor and BLOCKS — the hero and the bodies are pushed out, a bullet dies on it (cover both ways), a
+  // spawn, a gate or a drop is moved clear. `kind` is its look (render/posts.js), `r` its radius (× a third
+  // number, per post), `at` [fx, fz] fractions of the floor's half sides — symmetric, never on the middle, where
+  // the hero lands; an `orbit` goes round the middle once every `period` s
+  posts: {
+    worlds: {
+      // v111: the driveway's BALL (sim/posts.js) — a light thing: radius `r`, put down at `at` rolling along `dir`,
+      // eased back to `speed` m/s at `ease` /s and never past `max`; it comes back off the rail, the posts and a gate's
+      // beam (a rod `rod` thick) with `bounce` of its speed; something walking into it sends it on at `carry` × the
+      // speed it came on, + `nudge`; a shot dying on it adds `shot` m/s its way; a bounce harder than `thud` is heard
+      // v137 (owner, 2026-11-10, shown footprints / islands / walls / pits: "Mix of A and B, so always rounded. But we
+      // need the pits somewhere as well"; sim/posts.js): `foot` { r, h } stands each post on a round base of the floor's
+      // own material, the base what blocks; `islands` [{ h, at: [[x, z, r]…], props: [[x, z, s, kind?]…] }] are raised
+      // slabs whose outline is the union of their circles, the props standing on them; `pits` { depth, at: [[x, z, r]…] }
+      // are holes nothing walks over and every shot flies over. Islands and pits in metres on the upright floor (turned
+      // for a sideways one), `at` in fractions as before
+      // world 2: two traffic islands — the driveway's own curb round a lawn, a bollard at each end and a shrub between
+      2: { kind: 'bollard', r: 0.6,
+           islands: [{ h: 0.55, at: [[-6.7, -15.2, 1.7], [-6.7, -13.8, 1.7], [-6.7, -12.4, 1.7], [-6.7, -11, 1.7], [-6.7, -9.6, 1.7]],
+                       props: [[-6.7, -14.8, 0.7], [-6.7, -10, 0.7], [-6.7, -12.4, 1.15, 'shrub']] },
+                     { h: 0.55, at: [[6.7, 9.6, 1.7], [6.7, 11, 1.7], [6.7, 12.4, 1.7], [6.7, 13.8, 1.7], [6.7, 15.2, 1.7]],
+                       props: [[6.7, 10, 0.7], [6.7, 14.8, 0.7], [6.7, 12.4, 1.15, 'shrub']] }],
+           ball: { kind: 'ball', r: 1.7, at: [-0.3, -0.2], dir: [0.8, 0.6], speed: 1.6, ease: 0.6, max: 6, bounce: 0.85, rod: 0.3, carry: 1.3, nudge: 0.6, shot: 0.12, thud: 1.2 } },
+      // v110: the sewer's RAMS punch out of its long walls (the pair nearer the middle) by turns: `at` [along, side,
+      // phase] — `along` a fraction of the long half, `side` which wall, `phase` of the beat; every `period` s a ram
+      // shows its face in its slot for `warn` s (`peek` m out of the wall), punches out to `reach` m in `punch` s,
+      // holds `hold` s and goes back in `back` s; at rest it is `hide` m inside the wall
+      // v137: each stub of pipe stands in a round collar of the sewer's own brick
+      3: { kind: 'pipe', r: 0.75, foot: { r: 1.6, h: 0.35 }, at: [[-0.33, -0.62], [0.33, -0.62], [-0.33, 0.62], [0.33, 0.62]],
+           rams: { kind: 'ram', r: 1.1, at: [[0, -1, 0], [0, 1, 0.5]], period: 6.5, warn: 0.9, peek: 0.35, punch: 0.22, hold: 1.3, back: 0.9, reach: 4.2, hide: -0.5 } },
+      // v137: two of its columns on round stepped plinths, and two wells — the cistern open to the water under it
+      4: { kind: 'pillar', r: 1.05, foot: { r: 2.1, h: 0.5 }, at: [[-0.36, -0.42], [0.36, 0.42]],
+           pits: { depth: 2.6, at: [[5.04, -10.92, 2.1], [-5.04, 10.92, 2.1]] } },
+      // v137: two raised decks of riveted plate, rounded at the ends, two drums on each
+      // v145 (owner: "some rectangular but rounded edge"): the decks are RECTANGLES with rounded corners (render/posts.js
+      // rectShape draws the box round the circles); a small circle in each corner fills what the three big ones leave,
+      // so what blocks is what is drawn
+      5: { kind: 'drum', r: 1.2,
+           islands: [{ h: 0.5, at: [[-7, 0.8, 1.9], [-7, 3, 1.9], [-7, 5.2, 1.9], [-8.15, -0.35, 0.75], [-5.85, -0.35, 0.75], [-8.15, 6.35, 0.75], [-5.85, 6.35, 0.75]], props: [[-7, 1.2, 1.15], [-7, 4.8, 1.15]] },
+                     { h: 0.5, at: [[7, -0.8, 1.9], [7, -3, 1.9], [7, -5.2, 1.9], [8.15, 0.35, 0.75], [5.85, 0.35, 0.75], [8.15, -6.35, 0.75], [5.85, -6.35, 0.75]], props: [[7, -1.2, 1.15], [7, -4.8, 1.15]] }] },
+      // v137: two rock islands in the stream, its boulders on them
+      6: { kind: 'boulder', r: 1.0,
+           islands: [{ h: 0.45, at: [[-5, 6.8, 1.8], [-5.3, 9.3, 2.3], [-5, 11.9, 2.1], [-4.6, 14.5, 1.6]], props: [[-5.3, 9.8, 1.0], [-4.7, 13.2, 0.75]] },
+                     { h: 0.45, at: [[5, -6.8, 1.8], [5.3, -9.3, 2.3], [5, -11.9, 2.1], [4.6, -14.5, 1.6]], props: [[5.3, -9.8, 1.0], [4.7, -13.2, 0.75]] }] },
+      // v110: the ice's blocks DRIFT at `speed` m/s along `dirs`, turning back off a line `gap` in from the rail and
+      // glancing off each other
+      // v137: each block rides a round pan of old floe ice, and two holes are cut in the sheet, down to the dark water
+      // under it (the blocks glance off their rims)
+      7: { kind: 'block', r: 0.95, foot: { r: 1.45, h: 0.22 }, at: [[-0.4, -0.55], [0.4, 0.55]], drift: { speed: 1.1, dirs: [[1, 0], [-1, 0]], gap: 1.6 },
+           pits: { depth: 2.2, at: [[-3, 4.5, 2.3], [3, -4.5, 2.3]] } },   // inside the floe (wave 7) wherever it drifts
+      // v137: reef mounds of the deep's rock, the coral growing on them
+      8: { kind: 'coral', r: 1.0,
+           islands: [{ h: 0.4, at: [[-8.2, -10, 1.8], [-6.7, -8.4, 2.2], [-5.3, -6.7, 1.7]], props: [[-7.6, -9.4, 1.05], [-5.6, -7.1, 0.85]] },
+                     { h: 0.4, at: [[8.2, 10, 1.8], [6.7, 8.4, 2.2], [5.3, 6.7, 1.7]], props: [[7.6, 9.4, 1.05], [5.6, 7.1, 0.85]] }] },
+      // v137: each crystal on a round plinth that goes round with it
+      9: { kind: 'crystal', r: 0.95, foot: { r: 1.45, h: 0.28 }, at: [[0.45, 0], [-0.45, 0]], orbit: { period: 22 } },
+    },
+    bulletSplash: 0.4,                       // a bullet dying on a post throws a little of its colour (render)
+    // v137: a shot flies over what is low — an island's slab, a post's foot — and stops on what stands on it: the post
+    // at its own size, an island's props `propR` × their scale across (sim/posts.js hit())
+    over: true, propR: 0.85,
+  },
+  // v106 FORMATIONS (sim/formation.js; owner: "more unique patterns and synergies"): bodies laid out as one unit
+  forms: {
+    // a GIANT's ESCORT: `n` mites (the giant's kind if it can be one, else `kind`) riding an orbit `gap` off its
+    // rim, a turn every `period` s, drawn to their place at `pull` /s up to `maxSpeed`; a mite peels off for good
+    // within `peel` of you, and when the giant dies the riders SCATTER, surging × `mult` for `time` s
+    escort: { n: [4, 6], kind: 'globbo', gap: 0.9, period: 3.2, pull: 6, maxSpeed: 7.5, peel: 4.5, stagger: 0.06, scatter: { time: 3, mult: 1.5 } },
+    // a LINKED PAIR: from world `from`, `chance` a wave, its first two plain bodies made one of `kinds` (else
+    // `kind`), landing `apart` rad round the ring from each other, a goo STRAND between them held `min`–`max`
+    // long by a spring (`spring` /s, at most `give` a step for each end). It hurts within `r` (+ the hero's
+    // hit radius), between the two bodies; a dash through cuts it, and so does either death (`keep` s for the view)
+    pair: { from: 3, chance: 0.35, kinds: ['globbo', 'yela', 'redd', 'bulwark', 'hoppa', 'salma'], kind: 'globbo', apart: 0.6,
+            min: 4, max: 9, spring: 6, give: 0.2, r: 0.2, keep: 0.4,
+            view: { max: 6, segs: 10, w: 0.2, thin: 0.35, y: 0.32, lift: 0.18, amp: 0.12, hz: 5, waves: 6, snap: 10, snapSize: [0.08, 0.16] } },
+  },
+  // 1.x elites and affixes (main.js:9402-9422)
+  variants: {
+    elite: { hp: 2, radius: 1.2 }, elitelite: { hp: 1.5, affixChance: 0.5 }, swiftSpeed: 1.35, boss: { radius: 1.5 },
+    volatileGlow: [0x662200, 0x1a0800], volatileHz: 5,   // the VOLATILE fuse smoulders (1.x enemy.js:2653-2656)
+  },
+
+  // A kill, as 1.x played it (enemy.js destroy/updateDeath, main.js onKill):
+  // chunks and droplets of goo thrown out, a puddle with satellites, a
+  // shockwave through nearby bodies when a big one goes, and the camera shaken.
+  // v154 (Decision 15 Nov 2026, the owner: "No need for any freezes. Big bosses can have elaborate death
+  // animations instead"): a BIG BOSS does not pop the moment it dies. The sim has already taken it, scored it and
+  // cleared its wave — nothing waits and nothing freezes — but its body stays drawn where it fell for `dur` s: it
+  // shudders (`shudder` m, rising), swells (`swell`), flashes white `flash[0]`→`flash[1]` times a second, and CRACKS:
+  // `cracks` lines of light and dark goo run out across the floor from it (`crackLen` × its radius, a step every
+  // `crackEvery` s); goo bursts out of it at each of `pops` (s), with a shake of `shake[0]`; then it goes up in one
+  // burst `final` × its size, with `shake[1]` and its death sound again. Placeholder art (owner's call on the look).
+  // `kinds`: the worlds' bosses and OMEGA; the TWIN PRISMS are a pair of small ones and pop as they did.
+  // REDUCE MOTION keeps the cracks, flashes and bursts and drops the shudder (main.js's shake already honours it)
+  bossDeath: { on: true, kinds: ['curbking', 'maw', 'blister', 'kettle', 'pike', 'berg', 'angler', 'omega'],
+    dur: 2.0, shudder: 0.14, swell: 0.22, flash: [3, 16], whiten: 0.85,
+    cracks: 6, crackLen: 3.4, crackEvery: 0.07, crackLight: { r: 1.6, k: 0.9, life: 0.35 }, crackGoo: { rad: 0.16, vol: 0.05 },
+    pops: [0.35, 0.7, 1.0, 1.25, 1.45, 1.62, 1.76, 1.88], popN: 8, popSize: [0.12, 0.26], popLight: { r: 2.6, k: 1.2, life: 0.3 },
+    final: 1.6, shake: [0.12, 0.7] },
+
+  death: {
+    chunks: [7, 9], chunkSize: 0.22, chunkSpeed: [3, 7], chunkUp: [3, 8],
+    droplets: 4, dropletsBig: 8, dropletsBoss: 14,   // 1.x's extra burst: 4 small, 8 big, 14 a boss (main.js:4499)
+    dropletSize: [0.09, 0.18], dropletSpeed: 2, dropletUp: [2.5, 6.5],
+    chunkLife: 1.4, gravity: 14, floorKeep: 0.35, shrink: 0.3,
+    burstLife: 1.7,                        // v102: a KILL's chunks live this long (more goo to see); 1.x's 1.4 s stays for the species' own pops and a lob's spray
+    // v83 (the owner's third splatter pick): CHUNKS THAT BEHAVE. A strand of
+    // goo trails each chunk out of the burst and snaps as it thins (`strand`:
+    // `w` × the chunk's size wide at the start, thinning to nothing by `max`
+    // m, gone after `life` s or when the chunk lands); a chunk BOUNCES where
+    // it lands (`bounce`: `e` of its fall back up while it fell faster than
+    // `min` m/s, at most `max` times, a squash kick of `squash` × its fall/6
+    // each), jiggles (`wobble`: the squash spring's stiffness and damping a
+    // 60 Hz step; 1.x had 0.32 and 0.8), slides to a stop (`friction` 1/s)
+    // and over its last `shrink` s MELTS into the floor's film: `melt.vol` ×
+    // its drawn volume poured under it as it shrinks (its drawn size is mostly
+    // air; what it leaves is a blob about its own footprint). With SPLATTER
+    // off it fades out as 1.x's did.
+    strand: { w: 0.7, max: 1.5, life: 0.45 }, bounce: { e: 0.32, min: 1.6, max: 2, squash: 0.5 }, wobble: { k: 0.3, damp: 0.86 }, friction: 4,
+    melt: { vol: 0.08 },
+    puddle: 1.5,                           // radius, as a share of the body's
+    satellites: [0.6, 1.5], satelliteSize: [0.4, 0.7],
+    big: 0.75,                             // a body this wide is big: more of everything, and a shockwave
+    shockRadius: 3.5, shockRipple: 0.75, shockSquash: 0.55,
+    heatPerKill: 0.18, heatDecay: 0.35,    // kills in quick succession throw more
+    whiten: 0.4,                           // a dying body glows its colour, this far toward white
+    hitFlash: 1.0,                         // 1.x: emissive #ffffff for the flash (enemy.js:2650-2652)
+    hitFlashJelly: 0.4,                    // 2.0: a jelly body flashes at 0.4, so the dent (blob.dent) reads through it
+    // 2.0's jelly death (render/jelly.js; the owner's melon-jelly reference,
+    // ported from toko-drop-godot Q-052's scripts/jelly_body.gd): a big blob
+    // (`minRadius`, 1.x's own `big`) dies as a soft body of tetrahedra cut in
+    // two by a vertical blade along the line from the hero, the halves pushed
+    // `push` u/s off the blade, wobbling, slumping and melting into the
+    // puddle over `life` s. At most `max` at once; the rest pop as 1.x did.
+    // XPBD: `substeps` a frame, edge `edgeCompliance` (the wobble), volume
+    // held, `damp` 1/s, `friction` on the floor. The dome is the unit sphere
+    // raised blob.domeCut and cut at the floor (the living dome's); `cells` the lattice.
+    jelly: {
+      on: true, minRadius: 0.75, max: 3, life: 1.3, push: 1.6, up: 0.8, shrinkFrom: 0.55,
+      cells: 4, segs: 32, rings: 12, faceRings: 3, faceArc: 24, faceChord: 6,   // the skin, and the clean cut face (rings, arc and floor-chord samples)
+      match: 0.04,   // its set: the pull toward its rest shape, a substep (0 = syrup, and unstable)
+      sliver: 0.25,  // a tet under this share of the mean volume (the cut flattened it) keeps no volume
+      substeps: 6, edgeCompliance: 0.02, volCompliance: 0, damp: 1.6, friction: 0.6, gravity: -9.8,
+    },
+    // a lob's splashdown (1.x main.js:10507-10514): droplets, a puddle, a shake
+    lobSplash: { droplets: 10, dropletSize: [0.09, 0.13], puddle: 1.1, shake: 0.12 },
+  },
+  splats: { capacity: 192, life: 5, opacity: 0.55, spring: 0.55, damp: 0.74, y: 0.01 },
+
+  // 2.0's GOO (render/goo-sim.js, render/goo.js; owner, 2026-10-23: "more
+  // particle splatter and vfx, actually physical modelled vfx"). What a kill,
+  // a hit, a cut and a lob throw is DROPLETS with volume (4/3·π·r³, metres),
+  // and the floor is a thin FILM of goo they land in: what a drop loses to
+  // the floor is what the floor gains, the film spreads it, and it dries to a
+  // stain. It replaces 1.x's droplets and puddles (death.droplets*,
+  // splats); the chunks and the jelly halves stay. `?goo=off` turns it off,
+  // for comparison, and brings 1.x's back.
+  // v144 (owner, 2026-11-11, of the cistern: "the water vfx are too simple and subtle. Could entertain actual water
+  // physics"): THE WATER AS WATER — a wave simulation a world's floor stands in (render/water.js), by the floor's
+  // style. `perMetre` texels a metre (never more than `maxTexels` a side), stepped `hz` a second and at most
+  // `maxSteps` a frame; a wave runs `c` m/s and has lost half its height after `half` s; the level comes back to
+  // rest over `settle` s; a pit takes `sink` of what crosses it a step. `solid`: how much of a post's circle the
+  // water sees. `body`: what a body moving through pushes aside goes in as `dip` m a metre of its radius (to
+  // `rMax`), over `foot` of its radius (the hero's is `hero` m), and it bobs `bob` of its radius at `bobHz`.
+  // `drip`: `rate` drops a second over 100 m² from the vault, each a dent `amp` m deep, `r` m round. `foam`:
+  // thrown-about water whitens between `at` m/s of the surface's own speed and is half gone in `half` s.
+  // `events`: the sim's events that splash — a dent `amp` m deep a metre of the body's radius (to `rMax`),
+  // `size` × its radius round (`r`: the radius of an event that has none)
+  water: {
+    cistern: { perMetre: 8, maxTexels: 448, hz: 60, maxSteps: 3, c: 2.1, half: 1.9, settle: 3, sink: 0.25, solid: 0.92,
+               body: { dip: 0.12, foot: 1.0, hero: 0.6, rMax: 1.6, bob: 0.03, bobHz: 0.7 },
+               drip: { rate: 0.6, r: 0.3, amp: 0.05 },
+               foam: { at: [1.1, 2.6], half: 0.8 },
+               events: { kill: { amp: 0.2, size: 1.3, rMax: 2.2 }, hopLand: { amp: 0.1, size: 1.1 }, land: { amp: 0.1, size: 1.1 }, slam: { amp: 0.09, size: 0.5, rMax: 6 },
+                         dash: { amp: 0.12, size: 1.6, r: 0.55 }, lobLand: { amp: 0.12, size: 1.2, r: 0.5 }, hit: { amp: 0.03, size: 0.7, r: 0.4 },
+                         worldLand: { amp: 0.3, size: 2.2, r: 0.8 } } },
+    // v146: the DEEP's. There is no surface down here: what the simulation gives the deep is where the water was STIRRED
+    // (its `foam`, at a far gentler threshold) — the floor lights the plankton there (worlds.floor.deep.stir). Coarser,
+    // and no drips
+    // v149 (owner on v147's ice: "More snow, sliding on ice trails etc"): the ice keeps a TRAIL, not a wave (water.js
+    // `trail`) — how much of the snow has been swept off each place. A body sweeps the strip it crosses, `foot` × its
+    // radius wide (the hero `hero` m), `rate` a second of the way to bare, in full from `full` m/s and not at all
+    // under `minSpeed`; a block of ice adrift keeps `block` × its radius swept; a burst, a landing, a slam clears a
+    // disc (`events`, `splash` × their depth). It fills in again by half every `refill` s, its edge softened `blur`
+    ice: { perMetre: 8, maxTexels: 448, hz: 30, maxSteps: 2,
+           trail: { rate: 16, full: 4, minSpeed: 0.7, block: 1.05, refill: 13, blur: 0.02, splash: 8 },
+           body: { foot: 0.8, hero: 0.5 },
+           events: { kill: { size: 1.7, amp: 0.12 }, hopLand: { size: 1.2, amp: 0.1 }, land: { size: 1.3, amp: 0.1 }, slam: { size: 1.0, amp: 0.125 },
+                     lobLand: { size: 1.2, amp: 0.1 }, worldLand: { size: 1.5, amp: 0.125 } } },
+    deep: { perMetre: 6, maxTexels: 340, hz: 60, maxSteps: 3, c: 2.2, half: 0.3, settle: 1, sink: 0, solid: 0.9,
+            body: { dip: 0.1, foot: 1.0, hero: 0.6, rMax: 1.6, bob: 0, bobHz: 0.7 },
+            foam: { at: [0.28, 0.95], half: 1.1 },
+            events: { kill: { amp: 0.22, size: 1.3, rMax: 2.2 }, hopLand: { amp: 0.1, size: 1.1 }, land: { amp: 0.1, size: 1.1 }, slam: { amp: 0.1, size: 0.5, rMax: 6 },
+                      dash: { amp: 0.12, size: 1.6, r: 0.55 }, lobLand: { amp: 0.12, size: 1.2, r: 0.5 }, worldLand: { amp: 0.3, size: 2.2, r: 0.8 } } },
+    // v146: the RIVER's (owner: "much more realistic water and effects"). It FLOWS: the simulation is carried along the
+    // floor's long axis at `flow.speed` m/s (the stream's own pace, worlds.floor.river.flow — a test holds them equal),
+    // so what stands in the stream moves through the water; `flow.bank`: the share of the half width that is water
+    // at all (nothing on the dry bank disturbs it), `flow.post` × how hard a rock parts the stream. `drip` here is a
+    // fish rising
+    // (`c` is SLOWER than the stream: the water shoots, as it does down a shallow river — a wave cannot make upstream,
+    // so what stands in it trails a V the way a rock in a current does, where in slower water it would trail nothing)
+    river: { perMetre: 8, maxTexels: 448, hz: 60, maxSteps: 3, c: 0.95, half: 1.1, settle: 3, sink: 0.25, solid: 0.9,
+             flow: { speed: 1.6, bank: 0.74, post: 0.9 },
+             body: { dip: 0.13, foot: 1.0, hero: 0.6, rMax: 1.6, bob: 0.02, bobHz: 0.7 },
+             drip: { rate: 0.22, r: 0.28, amp: 0.05 },
+             foam: { at: [1.0, 2.4], half: 0.7 },
+             events: { kill: { amp: 0.2, size: 1.3, rMax: 2.2 }, hopLand: { amp: 0.1, size: 1.1 }, land: { amp: 0.1, size: 1.1 }, slam: { amp: 0.09, size: 0.5, rMax: 6 },
+                       dash: { amp: 0.12, size: 1.6, r: 0.55 }, lobLand: { amp: 0.12, size: 1.2, r: 0.5 }, hit: { amp: 0.03, size: 0.7, r: 0.4 },
+                       worldLand: { amp: 0.3, size: 2.2, r: 0.8 } } },
+  },
+  goo: {
+    cap: 2400,              // drops alive at once (all of them step in ~0.6 ms in bare node: test/goo.mjs)
+    budget: 320,            // drops one frame may throw: a boss's death cannot stall a frame
+    stampCap: 4096,         // what drops lay into the film between two film steps
+    life: 4, gravity: 14, bodyTop: 3,                         // s; m/s² (1.x's chunk gravity); no body stands taller (m)
+    air: { lin: 0.1, quad: 0.0005, wall: 0.15 },              // drag 1/s, and its quadratic part × speed / radius (≈ 3/8 · Cd · ρair/ρgoo, doubled for a lumpy drop); the rail returns this much
+    size: { min: 0.028, max: 0.11, skew: 1.8 },              // r = exp(lerp(ln min, ln max, u^skew)): mostly fine, a few fat; under a bullet's 0.15
+    sizeSpeed: 0.35,                                          // a drop's speed × (min / r)^this: a fat drop flies slower
+    // on the floor: kinetic friction mu and viscous drag 1/s while it slides;
+    // it sheds `shed` of its volume a metre in a streak `streakWide` × its
+    // width, sits `flat` × its radius high, stops under `stop` m/s or `minR`
+    // m and leaves a last blob `blob` × its radius; an impact leaves `impact`
+    // of it and keeps `keep` of its speed; a stain stretches at most `maxElong`
+    floor: { mu: 0.55, visc: 2.2, shed: 1.6, streakWide: 0.9, flat: 0.45, stop: 0.25, minR: 0.012, blob: 1.6, impact: 0.3, keep: 0.75, maxElong: 4 },
+    // a fast fat drop SPLASHES: past `speed` m/s down and `minR` m, a stain
+    // keeps `keep` of it and the rest flies on as a crown of up to `count`
+    // finer drops, thrown out at `out` × the fall plus `carry` × the travel
+    splash: { speed: 4.5, minR: 0.04, count: 4, perSpeed: 0.35, out: 0.35, carry: 0.4, up: 0.25, keep: 0.4 },
+    // a fast fine one BOUNCES (surface tension wins): a `mark` of it, `e` of its fall back up
+    bounce: { speed: 5, maxR: 0.035, e: 0.25, keep: 0.6, mark: 0.15 },
+    // riding a body: it creeps down the skin at creep + creepR·r² m/s, for at
+    // most `max` s, `proud` × its radius off the skin; off the foot it slides
+    // out at the body's speed × `carry` plus `out` m/s. The hero wears only
+    // fine drops (under `heroMaxR` m) and none mid-dash: he must stay readable
+    ride: { creep: 0.6, creepR: 60, max: 1.6, carry: 0.6, out: 1.2, proud: 0.35, heroMaxR: 0.03 },
+    // the impostor: stretched by `stretch` × its screen speed (at most
+    // `maxStretch`), wrap-lit, with a fresnel rim, a glint and a glow of its own
+    // v128: `sunGlint` the world's sun in a drop (× its glint colour, at Blinn power `sunPow`), `through` its light let
+    // through the side away from it (× the glint's strength: nothing where a world has no glint)
+    drop: { stretch: 0.09, maxStretch: 3.2, gloss: 28, glint: 0.7, diffuse: 0.75, ambient: 0.35, rim: 0.8, glow: 0.18, draw: 1.6,
+            sunGlint: 3.0, sunPow: 140, through: 0.55 },
+    // v128: a burst's CHUNKS (render/actors.js) are jelly: an inner glow in the hue (`core` × the world's), the sun's
+    // glint (`glint` at power `pow`) and its light let `through` on the side away from it, glossier (`roughness`,
+    // `coatRoughness`). Opaque: see-through (three's transmission) read pale pink on chunks this small
+    chunk: { core: 0.1, glint: 2.4, pow: 140, through: 0.6, roughness: 0.1, coatRoughness: 0.08 },
+    // its shadow straight below it: `size` × its radius on the floor, `grow`
+    // × its radius wider a metre up, `alpha` at the floor and 1/(1 + fade·h) above
+    shadow: { size: 1.3, grow: 4, alpha: 0.5, fade: 1.5, y: 0.006 },
+    // THE FILM, `perMetre` texels a metre, stepped `hz` times a second. Depths
+    // in MILLIMETRES (a half float is precise there). Goo deeper than `yield`
+    // runs toward its neighbours (`spread` of the difference a side a step,
+    // ≤ 0.2 for a stable step, at full rate once `ref` mm of it can run);
+    // every wet texel loses `evap` mm/s, and `deposit` of what it loses stays
+    // as the stain (`ring` of it at the film's edge, where a drying film
+    // lays down what it carried: the coffee ring; `ringAt` mm is how dry a
+    // neighbour must be for this to be the edge), which halves every
+    // `dryHalfLife` s. Bodies drag the film at `drag` × their speed over
+    // `foot` × their radius. A stamp is at least `minWid` texels wide.
+    // Nothing reaching the film for `wetFor` s means it has all dried: then
+    // the stain fades a step every `idleEvery` s.
+    film: { perMetre: 16, hz: 30, stampCap: 4096, minWid: 0.8, yield: 6, spread: 0.2, ref: 10, evap: 4, deposit: 0.2, ring: 1.2, ringAt: 0.5, dryHalfLife: 1.5,
+      drag: 0.5, foot: 0.9, wetFor: 12, idleEvery: 0.5 },
+    // how the floor shows it (floor.js): the wet film's contact line (mm),
+    // its absorption depth (mm), how much of its own hue a deep film
+    // scatters back, the slope's bump, which slopes count as curved (m/m),
+    // how strongly the sun lifts the side of a slope facing it, the glint
+    // and the lit rim, the arena light it catches; the stain's contact line
+    // (mm), how strong the thinnest stain is (`dryBase`) and the depth (mm)
+    // over which it comes to `dryAlpha`, how dark and how tinted it dries
+    look: { edge: 0.35, absorb: 6, scatter: 0.22, bump: 4, curve: [0.02, 0.12], relief: 1.4, shine: 50, spec: 0.55, rim: 0.35, lit: 1.0,
+      dryEdge: 0.08, dryBase: 0.05, dryDepth: 2.5, dryAlpha: 0.35, dryDark: 0.7, dryTint: 0.08 },
+    // a body's puddle: `lobes` blobs, `spread` × its radius off the middle, each `size` × its radius by its share
+    puddle: { lobes: 6, spread: 1.0, size: [0.3, 0.7] },
+    // v81 (owner, 2026-10-31: "more physical splatter and jelly like effects"):
+    // GOO UP THE WALLS. For the goo the rail is a wall `h` m tall: a drop that
+    // meets it below that height CLINGS — an impact stain on the wall
+    // (`impact` of it, stretched along the way it came, as on the floor; a
+    // fast fat one throws a crown back off the wall instead) — then it runs
+    // down at the speed a film its size runs (`creep + creepR·r²` m/s, the
+    // law a drop riding a body creeps by, reached at `settle` 1/s), its
+    // sideways slip dying at `slip` 1/s and `keep` of it kept from the
+    // impact, shedding `shed` of its volume a metre as a streak `streakWide`
+    // × its width, until it reaches the foot (and slides on across the
+    // floor, `out` m/s off the wall) or runs dry (under `minR` m: a last blob
+    // `blob` × its radius on the wall). It stands `proud` × its radius off
+    // the wall. Above `h` the rail is what it was: an invisible wall the
+    // drop bounces off. The wall has a FILM of its own (goo.js Film, wall):
+    // the rail unwrapped into one strip, perimetre × `h`, `perMetre` texels a
+    // metre along it and `rows` up it, with the floor's flow turned on its
+    // side (`film`): goo deeper than `yield` mm RUNS DOWN (`run` of the
+    // mobile depth a step into the texel below, at full rate once `ref` mm
+    // can run; the bottom row keeps what reaches it, the bead at the foot)
+    // and creeps sideways (`spread`), evaporates and dries to a stain as the
+    // floor's does. `look` draws it as a decal over whatever the wall is
+    // (goo.js): the hue by depth (`absorb` mm, `scatter`), the contact line
+    // (`edge` mm), the slope lit by the sun (`bump`, `relief`, `rim`, a glint
+    // `shine`/`spec` where it curves) and the stain (`dryAlpha`, `dryTint`).
+    // v84 (the owner's fourth splatter pick): SPRAY AND TRACKS. The sim keeps
+    // a coarse WET MAP of the floor (goo-sim.js: `cell` m cells, the goo
+    // volume each holds and its hue, fed by every stamp and pour, draining at
+    // `tau` s), so a body knows what it stands in without reading the film
+    // back; `wet` = volume × `gain`, clamped to 1. A body moving faster than
+    // `spray.minSpeed` through a cell wetter than `spray.minWet` throws
+    // `spray.rate` × wet × speed/6 drops a second out of its foot, back and to
+    // the sides (`back` rad either side of straight back), at `speed` m/s plus
+    // `carry` × its own, `up` m/s, `size`, at most `perStep` a step, in the
+    // goo's own colour. Its FOOT picks goo up while it stands in a wet cell
+    // (`tracks.pick` m³/s × wet, up to `cap` m³) and lays it down once it is
+    // out and moving faster than `minSpeed`, `lay` of what it carries a metre,
+    // as a streak `wide` × its radius: wet footprints out of a pool, drying
+    // as the floor's goo does. The hero counts mid-dash too.
+    // (`tracks.pickAt` / `layAt`: how wet a cell must be for the foot to take goo on, and how dry for it to lay it down)
+    wet: { cell: 1, tau: 6, gain: 80,
+      spray: { minSpeed: 2.5, minWet: 0.05, rate: 220, back: 1.1, speed: [0.8, 2.2], carry: 0.6, up: [1.0, 3.0], size: { min: 0.016, max: 0.05, skew: 1.7 }, perStep: 10 },
+      tracks: { pick: 3e-3, cap: 1.2e-3, lay: 1.6, wide: 0.45, minSpeed: 0.3, pickAt: 0.1, layAt: 0.05 } },
+    wall: { on: true, h: 1.1, perMetre: 16, rows: 36, impact: 0.3, keep: 0.5, proud: 0.4, creep: 0.45, creepR: 60, settle: 6, slip: 3,
+      shed: 1.6, streakWide: 0.9, minR: 0.012, blob: 1.6, out: 0.8,
+      film: { yield: 4, run: 0.3, spread: 0.06, ref: 10, evap: 4, deposit: 0.2, ring: 1.2, ringAt: 0.5, dryHalfLife: 1.5, stampCap: 2048, minWid: 0.8, hz: 30, wetFor: 12, idleEvery: 0.5 },
+      look: { edge: 0.3, absorb: 6, scatter: 0.9, bump: 4, curve: [0.02, 0.12], relief: 1.2, shine: 50, spec: 0.5, rim: 0.35,
+              dryEdge: 0.08, dryBase: 0.05, dryDepth: 2.5, dryAlpha: 0.3, dryTint: 0.2 } },
+    // what throws goo
+    emit: {
+      // a kill: base + perR × its radius drops (more while kills come fast:
+      // `heat`), `exit` of them thrown on the way the shot or dash went, and
+      // `puddle` × r² m³ poured where it stood, over `puddleR` × its radius
+      kill: { base: 16, perR: 64, heat: 0.5, exit: 0.45, exitCone: 0.7, exitBoost: 1.3, speed: [1.5, 7], up: [2.5, 7], puddle: 0.03, puddleR: 0.8,
+              // v128 (the owner's concept: a SPLASH): a CROWN as the body lets go — `n` + `perR` × r drops thrown evenly
+              // round from its rim (`at` × r out, `y` m up), out at `speed` and up at `up`, so for a moment they stand
+              // as a ring before they fall round the puddle
+              crown: { n: 12, perR: 22, at: 0.85, y: 0.08, speed: [2.4, 3.6], up: [3.2, 4.6], size: { min: 0.045, max: 0.1, skew: 1.2 } } },
+      // a hit: back-spray out of the entry toward the gun, a few out of the far side
+      hit: { count: 5, cone: 0.8, speed: [2, 6], up: [1, 4], size: { min: 0.016, max: 0.04, skew: 1.6 }, through: 1 },
+      lob: { count: 26, speed: [2.5, 6.5], up: [2, 5], puddle: 0.04, puddleR: 0.6 },          // a lob's splashdown
+      shove: { count: 8, cone: 1.0, speed: [1.5, 4], up: [1, 3], inherit: 0.5 },                // the dash shoves a body: it slops forward
+      cut: { count: 16, along: 6, cone: 0.5, speed: [3, 7], up: [1.5, 4], streak: 0.012 },        // the CUT dash: two sheets out of the sides, a streak along the cut
+      hurt: { count: 10 },                                                                         // the hero hit: goo splashed onto him
+    },
+  },
+
+  // 2.0's ARCADE JUICE (render/juice.js; owner, 2026-10-22: the graphics
+  // pass's second step, after the jelly). World-space additive glows in the
+  // colour of what made them, no screen bloom (the owner prefers colour to
+  // bloom). `white` lifts a glow toward white at its hot core; alpha is its
+  // strength. The gels' shots glow harder than yours: they are what you read.
+  juice: {
+    // v104 (owner, 2026-11-02: "No cheap effects like glow"): OFF. A bullet's halo and trail, a hit's sparks,
+    // a kill's flash and ring were additive quads; a bullet now reads by its own shading (`bullets.look`), a
+    // hit and a kill by their goo, and the light they throw is the floor's (render/light.js), as light is
+    on: false,
+    glowCap: 600, streakCap: 760, ringCap: 48, glowPow: 1.3,   // a glow's falloff from its centre (1 = a cone; higher = tighter)
+    bullet: {
+      hero: { halo: 5.0, haloAlpha: 0.42, trail: 0.03, trailMax: 0.9, width: 1.6, trailAlpha: 0.5, white: 0.35 },   // halo/width × the bullet's radius; trail = seconds of flight behind it
+      gel: { halo: 6.5, haloAlpha: 0.7, trail: 0.09, trailMax: 0.8, width: 1.8, trailAlpha: 0.55, white: 0.25 },
+    },
+    spark: { count: 8, max: 256, speed: [6, 13], life: [0.16, 0.3], drag: 6, len: 0.07, width: 0.16, alpha: 1, white: 0.75, y: 0.5, spread: 1.2 },   // a hit: hot streaks sprayed back out of the body, ±spread rad
+    flash: { max: 24, life: 0.14, r: 1.6, y: 0.7, swell: 0.4, alpha: 0.85, white: 0.6 },   // a kill: a hot disc, r and y × the body's radius
+    ring: { max: 32, life: 0.36, from: 0.9, small: 2.2, big: 3.6, boss: 5.0, y: 0.03, alpha: 0.7, white: 0.15, dashFrom: 0.6, dashTo: 3.2 },   // a kill's ring on the floor, from/to × the body's radius; the dash boom's in metres
+  },
+  // 1.x's camera shake (main.js:665-737): trauma adds, decays, and moves the
+  // camera by trauma squared
+  shake: { decay: 2.8, amp: [1.8, 1.2, 1.2], freq: [41, 37, 43], kill: 0.07, killPerRadius: 0.13, hurt: 0.38, bigKill: 0.1 },
+  // v58: one sound at most this many times in `window` s (a pile-up's
+  // rest is not heard), and the limiter on the master only a pile-up reaches
+  // v122: the master 0.5 → 0.8 (+4 dB). A bot's runs rendered with every effect (scripts/music-render.mjs replay)
+  // measured −27 to −29 LUFS, quiet for a phone's speaker, with 6–10 dB of headroom: now −23 to −25, the limiter
+  // holding the loudest moment at −2.3 dBFS true peak (docs/SOUND.md)
+  audio: { master: 0.8, gate: { window: 0.04, land: 3, spawn: 3, kill: 4, hit: 4, lobLand: 3, mothShot: 3, revengeSeed: 2, revengeFizzle: 2, escortScatter: 1, strandCut: 2, ballBounce: 2, slamWarn: 2, slam: 2 },
+    limit: { threshold: -3, ratio: 20, attack: 0.002, release: 0.12 } },
+  // the music (tuning/music.js, v58): a song a world, layered by the heat
+  music: MUSIC,
+  flow: { deathBeat: 1.4 },                 // seconds the last hit holds the screen before the results
+
+  // HARDCADE's corpse fire, as 1.x had it (tuning.js:486-526, main.js:4390-4420):
+  // only the biters (the species with a `revenge` dialect) and bosses bite,
+  // from wave 3, while the floor holds fewer live corpse bullets than the
+  // cap. Slow, in a darker shift of the living colour, from the corpse's
+  // centre the frame it dies. `who: 'all'` makes every corpse bite.
+  revenge: {
+    who: 'biters',
+    density: 1,              // owner: "more or less bullets" — scales every bloom's count (min 1)
+    speedMult: 0.6,
+    // v103 (owner: "Revenge bullets on Hardcade ... needs certain predictability to stay fair"): a corpse
+    // that fires back WARNS first. Its bloom waits `tell` s on the corpse as a SEED, with a line on the floor
+    // for every bullet it will fire (render/actors.js, `view`), then fires along those lines. Every dialect
+    // aims at where you stood when the body died — a RING's first bullet too, where 1.x turned it at random
+    // — and a corpse within `near` m of you cannot bite (a dash kill is point-blank: it fizzles). A VOLATILE
+    // corpse's ring (every mode) warns the same way and aims the same way, but is a bomb: it bites close too.
+    tell: 0.5, near: 2.2,
+    // drawn lighter than the goo the kill throws in the same colour (`lift` toward white), and longer than its burst
+    view: { maxSeeds: 64, maxTicks: 320, seed: [0.24, 0.42], lift: 0.3, blinkFrom: 0.55, blinks: 9, blinkWhite: 0.8,
+            tick: { from: 0.6, len: 2.4, grow: 0.6, w: 0.14, h: 0.02, y: 0.04, lift: 0.55, head: 0.42 } },
+    fromWave: 3,
+    fieldCap: { base: 14, per: 1.2, max: 44 },
+    poolGate: 240,
+    aimed: { count: 3, spread: 0.14 },
+    fan: { count: 5, spread: 0.5 },
+    ring: { small: 4, big: 7, boss: 14, bigRadius: 0.75 },
+    palette: { yellowLo: 0.10, yellowHi: 0.22, poisonHue: 0.285, poisonSatMin: 0.75, poisonL: 0.42,
+               warmHiCut: 0.92, satMul: 1.2, darkL: 0.55, coolL: 0.5, lFloor: 0.30 },
+    scoreMult: 1.5,          // 2.0 keeps HARDCADE's higher score (DIRECTION)
+    // the HARD CAMPAIGN (v49): the same rooms, and EVERY corpse fires back —
+    // a biter in its own dialect, the rest a small ring — from the first
+    // body (a room has no waves to wait for), under a fixed cap. `others`
+    // scales the ring of a body that is not a biter; a corpse within `near`
+    // of you does not fire (a dash kill is point-blank: its ring would land
+    // on you before it could be seen)
+    room: { who: 'all', density: 0.4, others: 0.25, near: 3, cap: 6 },   // a level's own `hard` overrides these
+  },
+};

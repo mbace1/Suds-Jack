@@ -1,0 +1,199 @@
+{
+ "format": 2,
+ "id": "needle",
+ "name": "NEEDLE",
+ "arena": {
+  "shapes": [
+   {
+    "kind": "rect",
+    "hx": 15,
+    "hz": 9
+   }
+  ]
+ },
+ "duration": 40,
+ "goal": {
+  "type": "collect",
+  "orbs": [
+   {
+    "t": 1,
+    "x": -6,
+    "z": -4
+   },
+   {
+    "t": 3.27,
+    "x": 6,
+    "z": 4
+   },
+   {
+    "t": 5.55,
+    "x": -6,
+    "z": 4
+   },
+   {
+    "t": 7.82,
+    "x": 6,
+    "z": -4
+   },
+   {
+    "t": 10.09,
+    "x": -6,
+    "z": 0
+   },
+   {
+    "t": 12.36,
+    "x": 6,
+    "z": 0
+   },
+   {
+    "t": 14.64,
+    "x": -6,
+    "z": -4
+   },
+   {
+    "t": 16.91,
+    "x": 6,
+    "z": 4
+   },
+   {
+    "t": 19.18,
+    "x": -6,
+    "z": 4
+   },
+   {
+    "t": 21.45,
+    "x": 6,
+    "z": -4
+   },
+   {
+    "t": 23.73,
+    "x": -6,
+    "z": 0
+   },
+   {
+    "t": 26,
+    "x": 6,
+    "z": 0
+   },
+   {
+    "t": 28.27,
+    "x": -6,
+    "z": -4
+   },
+   {
+    "t": 30.55,
+    "x": 6,
+    "z": 4
+   },
+   {
+    "t": 32.82,
+    "x": -6,
+    "z": 4
+   },
+   {
+    "t": 35.09,
+    "x": 6,
+    "z": -4
+   }
+  ],
+  "life": 2.27,
+  "need": 12
+ },
+ "plan": {
+  "world": 2,
+  "d": 7,
+  "teaches": "hoppa; orbs that go out",
+  "strategy": [
+   "movement",
+   "position"
+  ]
+ },
+ "spawns": [
+  {
+   "t": 0,
+   "type": "hoppa",
+   "px": 12,
+   "pz": -7
+  },
+  {
+   "t": 0,
+   "type": "hoppa",
+   "px": -12,
+   "pz": 7
+  },
+  {
+   "t": 8.18,
+   "type": "hoppa",
+   "px": 13,
+   "pz": 6
+  },
+  {
+   "t": 8.18,
+   "type": "hoppa",
+   "px": -13,
+   "pz": -6
+  },
+  {
+   "t": 12.73,
+   "type": "hoppa",
+   "px": 0,
+   "pz": 8
+  },
+  {
+   "t": 16.36,
+   "type": "hoppa",
+   "px": 13,
+   "pz": -6
+  },
+  {
+   "t": 16.36,
+   "type": "hoppa",
+   "px": -13,
+   "pz": 6
+  },
+  {
+   "t": 24.55,
+   "type": "hoppa",
+   "px": 13,
+   "pz": 6
+  },
+  {
+   "t": 24.55,
+   "type": "hoppa",
+   "px": -13,
+   "pz": -6
+  },
+  {
+   "t": 29.09,
+   "type": "hoppa",
+   "px": 0,
+   "pz": 8
+  },
+  {
+   "t": 32.73,
+   "type": "hoppa",
+   "px": 13,
+   "pz": -6
+  },
+  {
+   "t": 32.73,
+   "type": "hoppa",
+   "px": -13,
+   "pz": 6
+  }
+ ],
+ "tiers": {
+  "S": 21000,
+  "A": 19000,
+  "B": 14000,
+  "C": 11000,
+  "source": "bot pass (v56 look-ahead bots), 24 seeds a skill: got through sharp 100%, average 92%, rough 25%. score lines: S the sharp median, A the average median, B the average's weaker quarter, C the rough median or the average's weakest tenth (scripts/lines.mjs). v135 (the owner's C-line rule, 2026-11-10): C at the rough bot's lower quartile, 13,000 → 11,000"
+ },
+ "tiersHard": {
+  "S": 32000,
+  "A": 25000,
+  "B": 21000,
+  "C": 16000,
+  "source": "HARD bot pass (v56 look-ahead bots), 24 seeds a skill: got through sharp 100%, average 100%, rough 29%. score lines: S the sharp median, A the average median, B the average's weaker quarter, C the rough median or the average's weakest tenth (scripts/lines.mjs). v135 (the owner's C-line rule, 2026-11-10): C at the rough bot's lower quartile, 19,000 → 16,000"
+ }
+}

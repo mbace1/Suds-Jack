@@ -1,0 +1,311 @@
+{
+ "format": 2,
+ "id": "the-pull",
+ "name": "THE PULL",
+ "arena": {
+  "shapes": [
+   {
+    "kind": "circle",
+    "c": [
+     0,
+     0
+    ],
+    "r": 12
+   }
+  ]
+ },
+ "duration": 30,
+ "goal": {
+  "type": "quota",
+  "kills": 18
+ },
+ "plan": {
+  "world": 3,
+  "d": 2,
+  "teaches": "magna",
+  "strategy": [
+   "position",
+   "aim",
+   "priority"
+  ]
+ },
+ "spawns": [
+  {
+   "t": 0,
+   "type": "MAGNA",
+   "px": 0,
+   "pz": 0
+  },
+  {
+   "t": 0.38,
+   "type": "GLOBBO",
+   "px": 10.4,
+   "pz": 0
+  },
+  {
+   "t": 0.94,
+   "type": "GLOBBO",
+   "px": -7.67,
+   "pz": 7.03
+  },
+  {
+   "t": 1.5,
+   "type": "YELA_CUBE",
+   "px": 0.91,
+   "pz": -10.36
+  },
+  {
+   "t": 2.06,
+   "type": "SPITTOR",
+   "px": 6.33,
+   "pz": 8.25
+  },
+  {
+   "t": 2.62,
+   "type": "GLOBBO",
+   "px": -10.24,
+   "pz": -1.81
+  },
+  {
+   "t": 3.19,
+   "type": "GLOBBO",
+   "px": 8.77,
+   "pz": -5.58
+  },
+  {
+   "t": 3.75,
+   "type": "YELA_CUBE",
+   "px": -2.7,
+   "pz": 10.04
+  },
+  {
+   "t": 4.31,
+   "type": "SPITTOR",
+   "px": -4.79,
+   "pz": -9.23
+  },
+  {
+   "t": 4.88,
+   "type": "GLOBBO",
+   "px": 9.77,
+   "pz": 3.57
+  },
+  {
+   "t": 5.44,
+   "type": "GLOBBO",
+   "px": -9.61,
+   "pz": 3.97
+  },
+  {
+   "t": 6,
+   "type": "YELA_CUBE",
+   "px": 4.41,
+   "pz": -9.42
+  },
+  {
+   "t": 6.56,
+   "type": "SPITTOR",
+   "px": 3.11,
+   "pz": 9.92
+  },
+  {
+   "t": 7.12,
+   "type": "GLOBBO",
+   "px": -9,
+   "pz": -5.21
+  },
+  {
+   "t": 7.69,
+   "type": "GLOBBO",
+   "px": 10.16,
+   "pz": -2.23
+  },
+  {
+   "t": 8.25,
+   "type": "YELA_CUBE",
+   "px": -5.98,
+   "pz": 8.51
+  },
+  {
+   "t": 8.81,
+   "type": "SPITTOR",
+   "px": -1.34,
+   "pz": -10.31
+  },
+  {
+   "t": 9.38,
+   "type": "GLOBBO",
+   "px": 7.95,
+   "pz": 6.7
+  },
+  {
+   "t": 9.94,
+   "type": "GLOBBO",
+   "px": -10.39,
+   "pz": 0.43
+  },
+  {
+   "t": 10.5,
+   "type": "YELA_CUBE",
+   "px": 7.37,
+   "pz": -7.34
+  },
+  {
+   "t": 10.5,
+   "type": "MAGNA",
+   "px": 6,
+   "pz": 6
+  },
+  {
+   "t": 11.06,
+   "type": "SPITTOR",
+   "px": -0.48,
+   "pz": 10.39
+  },
+  {
+   "t": 11.62,
+   "type": "GLOBBO",
+   "px": -6.66,
+   "pz": -7.98
+  },
+  {
+   "t": 12.19,
+   "type": "GLOBBO",
+   "px": 10.31,
+   "pz": 1.39
+  },
+  {
+   "t": 12.75,
+   "type": "YELA_CUBE",
+   "px": -8.54,
+   "pz": 5.94
+  },
+  {
+   "t": 13.31,
+   "type": "SPITTOR",
+   "px": 2.28,
+   "pz": -10.15
+  },
+  {
+   "t": 13.88,
+   "type": "GLOBBO",
+   "px": 5.17,
+   "pz": 9.02
+  },
+  {
+   "t": 14.44,
+   "type": "GLOBBO",
+   "px": -9.91,
+   "pz": -3.16
+  },
+  {
+   "t": 15,
+   "type": "YELA_CUBE",
+   "px": 9.44,
+   "pz": -4.36
+  },
+  {
+   "t": 15.56,
+   "type": "SPITTOR",
+   "px": -4.01,
+   "pz": 9.59
+  },
+  {
+   "t": 16.12,
+   "type": "GLOBBO",
+   "px": -3.52,
+   "pz": -9.79
+  },
+  {
+   "t": 16.69,
+   "type": "GLOBBO",
+   "px": 9.21,
+   "pz": 4.84
+  },
+  {
+   "t": 17.25,
+   "type": "YELA_CUBE",
+   "px": -10.06,
+   "pz": 2.65
+  },
+  {
+   "t": 17.81,
+   "type": "SPITTOR",
+   "px": 5.62,
+   "pz": -8.75
+  },
+  {
+   "t": 18.38,
+   "type": "GLOBBO",
+   "px": 1.76,
+   "pz": 10.25
+  },
+  {
+   "t": 18.94,
+   "type": "GLOBBO",
+   "px": -8.22,
+   "pz": -6.37
+  },
+  {
+   "t": 19.5,
+   "type": "YELA_CUBE",
+   "px": 10.36,
+   "pz": -0.86
+  },
+  {
+   "t": 19.5,
+   "type": "MAGNA",
+   "px": -6,
+   "pz": -6
+  },
+  {
+   "t": 20.06,
+   "type": "SPITTOR",
+   "px": -7.06,
+   "pz": 7.64
+  },
+  {
+   "t": 20.62,
+   "type": "GLOBBO",
+   "px": 0.05,
+   "pz": -10.4
+  },
+  {
+   "t": 21.19,
+   "type": "GLOBBO",
+   "px": 6.99,
+   "pz": 7.7
+  },
+  {
+   "t": 21.75,
+   "type": "YELA_CUBE",
+   "px": -10.36,
+   "pz": -0.96
+  },
+  {
+   "t": 22.31,
+   "type": "SPITTOR",
+   "px": 8.28,
+   "pz": -6.29
+  }
+ ],
+ "score": {
+  "mutators": [
+   "bank"
+  ]
+ },
+ "tiers": {
+  "S": 15000,
+  "A": 9200,
+  "B": 8300,
+  "C": 5000,
+  "source": "bot pass (v56 look-ahead bots), 24 seeds a skill: got through sharp 100%, average 100%, rough 100%. score lines: S the sharp median, A the average median, B the average's weaker quarter, C the rough median or the average's weakest tenth (scripts/lines.mjs). v135 (the owner's C-line rule, 2026-11-10): C at the rough bot's lower quartile, 5,200 → 5,000"
+ },
+ "tiersHard": {
+  "S": 22000,
+  "A": 14000,
+  "B": 12000,
+  "C": 7200,
+  "source": "HARD bot pass (v56 look-ahead bots), 24 seeds a skill: got through sharp 100%, average 100%, rough 58%. score lines: S the sharp median, A the average median, B the average's weaker quarter, C the rough median or the average's weakest tenth (scripts/lines.mjs). v135 (the owner's C-line rule, 2026-11-10): C at the rough bot's lower quartile, 7,900 → 7,200"
+ }
+}

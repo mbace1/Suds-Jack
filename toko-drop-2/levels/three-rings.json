@@ -1,0 +1,466 @@
+{
+ "format": 2,
+ "id": "three-rings",
+ "name": "THREE RINGS",
+ "arena": {
+  "combine": "union",
+  "shapes": [
+   {
+    "kind": "circle",
+    "c": [
+     -11,
+     0
+    ],
+    "r": 7
+   },
+   {
+    "kind": "circle",
+    "c": [
+     0,
+     0
+    ],
+    "r": 7
+   },
+   {
+    "kind": "circle",
+    "c": [
+     11,
+     0
+    ],
+    "r": 7
+   }
+  ]
+ },
+ "duration": 30,
+ "goal": {
+  "type": "survive"
+ },
+ "plan": {
+  "world": 0,
+  "d": 3,
+  "teaches": "shooters first: the one that fires, before the ones that walk",
+  "strategy": [
+   "priority"
+  ]
+ },
+ "spawns": [
+  {
+   "t": 0,
+   "type": "SPITTOR",
+   "px": -15.5,
+   "pz": 2,
+   "intervalMult": 2.6
+  },
+  {
+   "t": 1.03,
+   "type": "GLOBBO",
+   "px": -9,
+   "pz": -2.2
+  },
+  {
+   "t": 1.41,
+   "type": "GLOBBO",
+   "px": -10.2,
+   "pz": 0
+  },
+  {
+   "t": 1.8,
+   "type": "GLOBBO",
+   "px": -9,
+   "pz": 2.2
+  },
+  {
+   "t": 2.23,
+   "type": "SPITTOR",
+   "px": 15.5,
+   "pz": -2,
+   "intervalMult": 2.6
+  },
+  {
+   "t": 3.26,
+   "type": "GLOBBO",
+   "px": 9,
+   "pz": -2.2
+  },
+  {
+   "t": 3.64,
+   "type": "GLOBBO",
+   "px": 10.2,
+   "pz": 0
+  },
+  {
+   "t": 4.03,
+   "type": "GLOBBO",
+   "px": 9,
+   "pz": 2.2
+  },
+  {
+   "t": 4.46,
+   "type": "FANNER",
+   "px": -15.5,
+   "pz": -1,
+   "intervalMult": 3.2
+  },
+  {
+   "t": 5.49,
+   "type": "GLOBBO",
+   "px": -9,
+   "pz": -2.2
+  },
+  {
+   "t": 5.87,
+   "type": "YELA_CUBE",
+   "px": -10.2,
+   "pz": 0
+  },
+  {
+   "t": 6.26,
+   "type": "GLOBBO",
+   "px": -9,
+   "pz": 2.2
+  },
+  {
+   "t": 6.69,
+   "type": "FANNER",
+   "px": 15.5,
+   "pz": 1,
+   "intervalMult": 3.2
+  },
+  {
+   "t": 7.71,
+   "type": "GLOBBO",
+   "px": 9,
+   "pz": -2.2
+  },
+  {
+   "t": 8.1,
+   "type": "YELA_CUBE",
+   "px": 10.2,
+   "pz": 0
+  },
+  {
+   "t": 8.49,
+   "type": "GLOBBO",
+   "px": 9,
+   "pz": 2.2
+  },
+  {
+   "t": 8.91,
+   "type": "SPITTOR",
+   "px": -15.5,
+   "pz": 0,
+   "intervalMult": 2.6
+  },
+  {
+   "t": 9.94,
+   "type": "YELA_CUBE",
+   "px": -9,
+   "pz": -2.2
+  },
+  {
+   "t": 10.33,
+   "type": "GLOBBO",
+   "px": -10.2,
+   "pz": 0
+  },
+  {
+   "t": 10.71,
+   "type": "YELA_CUBE",
+   "px": -9,
+   "pz": 2.2
+  },
+  {
+   "t": 11.31,
+   "type": "FANNER",
+   "px": 15.5,
+   "pz": 0,
+   "intervalMult": 3.2
+  },
+  {
+   "t": 12.34,
+   "type": "GLOBBO",
+   "px": 9,
+   "pz": -3.3
+  },
+  {
+   "t": 12.73,
+   "type": "YELA_CUBE",
+   "px": 10.2,
+   "pz": -1.1
+  },
+  {
+   "t": 13.11,
+   "type": "GLOBBO",
+   "px": 9,
+   "pz": 1.1
+  },
+  {
+   "t": 13.5,
+   "type": "YELA_CUBE",
+   "px": 10.2,
+   "pz": 3.3
+  },
+  {
+   "t": 13.89,
+   "type": "FANNER",
+   "px": -15.5,
+   "pz": 2,
+   "intervalMult": 3.2
+  },
+  {
+   "t": 14.91,
+   "type": "YELA_CUBE",
+   "px": -9,
+   "pz": -3.3
+  },
+  {
+   "t": 15.3,
+   "type": "GLOBBO",
+   "px": -10.2,
+   "pz": -1.1
+  },
+  {
+   "t": 15.69,
+   "type": "YELA_CUBE",
+   "px": -9,
+   "pz": 1.1
+  },
+  {
+   "t": 16.07,
+   "type": "GLOBBO",
+   "px": -10.2,
+   "pz": 3.3
+  },
+  {
+   "t": 16.63,
+   "type": "SPITTOR",
+   "px": 15.5,
+   "pz": -2,
+   "intervalMult": 2.6
+  },
+  {
+   "t": 17.66,
+   "type": "GLOBBO",
+   "px": 9,
+   "pz": -3.3
+  },
+  {
+   "t": 18.04,
+   "type": "YELA_CUBE",
+   "px": 10.2,
+   "pz": -1.1
+  },
+  {
+   "t": 18.43,
+   "type": "GLOBBO",
+   "px": 9,
+   "pz": 1.1
+  },
+  {
+   "t": 18.81,
+   "type": "YELA_CUBE",
+   "px": 10.2,
+   "pz": 3.3
+  },
+  {
+   "t": 19.29,
+   "type": "SPITTOR",
+   "px": -15.5,
+   "pz": -2,
+   "intervalMult": 2.6
+  },
+  {
+   "t": 19.8,
+   "type": "FANNER",
+   "px": 15.5,
+   "pz": 2,
+   "intervalMult": 3.2
+  },
+  {
+   "t": 20.31,
+   "type": "GLOBBO",
+   "px": -9,
+   "pz": -2.2
+  },
+  {
+   "t": 20.7,
+   "type": "YELA_CUBE",
+   "px": -10.2,
+   "pz": 0
+  },
+  {
+   "t": 20.83,
+   "type": "YELA_CUBE",
+   "px": 9,
+   "pz": -2.2
+  },
+  {
+   "t": 21.09,
+   "type": "GLOBBO",
+   "px": -9,
+   "pz": 2.2
+  },
+  {
+   "t": 21.21,
+   "type": "GLOBBO",
+   "px": 10.2,
+   "pz": 0
+  },
+  {
+   "t": 21.6,
+   "type": "YELA_CUBE",
+   "px": 9,
+   "pz": 2.2
+  },
+  {
+   "t": 22.97,
+   "type": "FANNER",
+   "px": -15.5,
+   "pz": 2,
+   "intervalMult": 3.2
+  },
+  {
+   "t": 23.49,
+   "type": "SPITTOR",
+   "px": 15.5,
+   "pz": -2,
+   "intervalMult": 2.6
+  },
+  {
+   "t": 24,
+   "type": "GLOBBO",
+   "px": -9,
+   "pz": -3.3
+  },
+  {
+   "t": 24.39,
+   "type": "YELA_CUBE",
+   "px": -10.2,
+   "pz": -1.1
+  },
+  {
+   "t": 24.51,
+   "type": "YELA_CUBE",
+   "px": 9,
+   "pz": -3.3
+  },
+  {
+   "t": 24.77,
+   "type": "GLOBBO",
+   "px": -9,
+   "pz": 1.1
+  },
+  {
+   "t": 24.9,
+   "type": "GLOBBO",
+   "px": 10.2,
+   "pz": -1.1
+  },
+  {
+   "t": 25.16,
+   "type": "YELA_CUBE",
+   "px": -10.2,
+   "pz": 3.3
+  },
+  {
+   "t": 25.29,
+   "type": "YELA_CUBE",
+   "px": 9,
+   "pz": 1.1
+  },
+  {
+   "t": 25.67,
+   "type": "GLOBBO",
+   "px": 10.2,
+   "pz": 3.3
+  },
+  {
+   "t": 26.23,
+   "type": "FANNER",
+   "px": -15.5,
+   "pz": 0,
+   "intervalMult": 3.2
+  },
+  {
+   "t": 26.57,
+   "type": "FANNER",
+   "px": 15.5,
+   "pz": 0,
+   "intervalMult": 3.2
+  },
+  {
+   "t": 27.26,
+   "type": "GLOBBO",
+   "px": -9,
+   "pz": -4.4
+  },
+  {
+   "t": 27.6,
+   "type": "YELA_CUBE",
+   "px": 9,
+   "pz": -4.4
+  },
+  {
+   "t": 27.64,
+   "type": "YELA_CUBE",
+   "px": -10.2,
+   "pz": -2.2
+  },
+  {
+   "t": 27.99,
+   "type": "GLOBBO",
+   "px": 10.2,
+   "pz": -2.2
+  },
+  {
+   "t": 28.03,
+   "type": "GLOBBO",
+   "px": -9,
+   "pz": 0
+  },
+  {
+   "t": 28.37,
+   "type": "YELA_CUBE",
+   "px": 9,
+   "pz": 0
+  },
+  {
+   "t": 28.41,
+   "type": "YELA_CUBE",
+   "px": -10.2,
+   "pz": 2.2
+  },
+  {
+   "t": 28.76,
+   "type": "GLOBBO",
+   "px": 10.2,
+   "pz": 2.2
+  },
+  {
+   "t": 28.8,
+   "type": "GLOBBO",
+   "px": -9,
+   "pz": 4.4
+  },
+  {
+   "t": 29.14,
+   "type": "YELA_CUBE",
+   "px": 9,
+   "pz": 4.4
+  }
+ ],
+ "tiers": {
+  "S": 42000,
+  "A": 32000,
+  "B": 29000,
+  "C": 15000,
+  "source": "bot pass (v56 look-ahead bots), 24 seeds a skill: got through sharp 100%, average 100%, rough 100%. score lines: S the sharp median, A the average median, B the average's weaker quarter, C the rough median or the average's weakest tenth (scripts/lines.mjs). v135 (the owner's C-line rule, 2026-11-10): C at the rough bot's lower quartile, 20,000 → 15,000"
+ },
+ "tiersHard": {
+  "S": 67000,
+  "A": 47000,
+  "B": 41000,
+  "C": 23000,
+  "source": "HARD bot pass (v56 look-ahead bots), 24 seeds a skill: got through sharp 100%, average 100%, rough 42%. score lines: S the sharp median, A the average median, B the average's weaker quarter, C the rough median or the average's weakest tenth (scripts/lines.mjs)"
+ }
+}

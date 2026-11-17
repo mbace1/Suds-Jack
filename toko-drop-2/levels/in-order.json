@@ -1,0 +1,99 @@
+{
+ "format": 2,
+ "id": "in-order",
+ "name": "ONE BY ONE",
+ "arena": {
+  "shapes": [
+   {
+    "kind": "rect",
+    "hx": 15,
+    "hz": 10
+   }
+  ]
+ },
+ "duration": 30,
+ "goal": {
+  "type": "order"
+ },
+ "plan": {
+  "world": 1,
+  "d": 2,
+  "teaches": "weeva",
+  "strategy": [
+   "priority",
+   "position"
+  ]
+ },
+ "spawns": [
+  {
+   "t": 0,
+   "type": "GLOBBO",
+   "px": -10,
+   "pz": -6,
+   "order": 1
+  },
+  {
+   "t": 0.22,
+   "type": "GLOBBO",
+   "px": 10,
+   "pz": 6,
+   "order": 2
+  },
+  {
+   "t": 0.45,
+   "type": "WEEVA",
+   "px": -10,
+   "pz": 6,
+   "order": 3
+  },
+  {
+   "t": 0.68,
+   "type": "GLOBBO",
+   "px": 10,
+   "pz": -6,
+   "order": 4
+  },
+  {
+   "t": 0.9,
+   "type": "GLOBBO",
+   "px": 0,
+   "pz": -7,
+   "order": 5
+  },
+  {
+   "t": 1.12,
+   "type": "WEEVA",
+   "px": 0,
+   "pz": 7,
+   "order": 6
+  },
+  {
+   "t": 1.35,
+   "type": "GLOBBO",
+   "px": -12,
+   "pz": 0,
+   "order": 7
+  },
+  {
+   "t": 1.58,
+   "type": "GLOBBO",
+   "px": 12,
+   "pz": 0,
+   "order": 8
+  }
+ ],
+ "tiers": {
+  "S": 9700,
+  "A": 8700,
+  "B": 7800,
+  "C": 6900,
+  "source": "bot pass (v56 look-ahead bots), 24 seeds a skill: got through sharp 100%, average 100%, rough 100%. score lines: S the sharp median, A the average median, B the average's weaker quarter, C the rough median or the average's weakest tenth (scripts/lines.mjs). v135 (the owner's C-line rule, 2026-11-10): C at the rough bot's lower quartile, 7,000 → 6,900"
+ },
+ "tiersHard": {
+  "S": 15000,
+  "A": 14000,
+  "B": 13000,
+  "C": 11000,
+  "source": "HARD bot pass (v56 look-ahead bots), 24 seeds a skill: got through sharp 100%, average 100%, rough 88%. score lines: S the sharp median, A the average median, B the average's weaker quarter, C the rough median or the average's weakest tenth (scripts/lines.mjs). v135 (the owner's C-line rule, 2026-11-10): C at the rough bot's lower quartile, 12,000 → 11,000"
+ }
+}
