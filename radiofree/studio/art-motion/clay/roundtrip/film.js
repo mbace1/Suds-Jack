@@ -124,11 +124,11 @@ const ballGeo = new THREE.SphereGeometry(BALL_R, 18, 12);
 const BALLS = CURVES.map(() => { const m = new THREE.InstancedMesh(ballGeo, gold, BASE_N + EXTRA_N); m.castShadow = true; m.frustumCulled = false; S.add(m); return m; });
 const _D = new THREE.Object3D();
 function ballsAt(t) {
-  CURVES.forEach((c, k) => { const L = LEN[k], m = BALLS[k], u0 = (((t * SPEED / L) % 1) + 1) % 1;   // a sub-exposure before 0 s is negative time let n = 0;
+  CURVES.forEach((c, k) => { const L = LEN[k], m = BALLS[k], u0 = (((t * SPEED / L) % 1) + 1) % 1; let n = 0;   // (a sub-exposure before 0 s is negative time)
     for (let i = 0; i < BASE_N; i++) { const u = (u0 + i / BASE_N + k * 0.013) % 1; _D.position.copy(c.getPointAt(u)); _D.rotation.set(u * 400, u * 300, 0); _D.scale.setScalar(1); _D.updateMatrix(); m.setMatrixAt(n++, _D.matrix); }
     // the extra stream is born at the gate: a ball at u (past the gate) passed it (u-gate)·L/SPEED seconds ago
     const ug = U[k].gate;
-    for (let i = 0; i < EXTRA_N; i++) { const u = (u0 + (i + 0.5) / EXTRA_N + 0.004) % 1; const past = ((u - ug) + 1) % 1; if (past > 1 - ug + 0.0001 || u < ug && u > U[k].box) continue;
+    for (let i = 0; i < EXTRA_N; i++) { const u = (u0 + (i + 0.5) / EXTRA_N + 0.004) % 1; if (u < ug) continue; const past = u - ug;   // only from the gate round to the hopper
       const bornAt = t - past * L / SPEED; if (bornAt < EV.multiply) continue; const grow = clamp((t - bornAt) / 0.25);
       _D.position.copy(c.getPointAt(u)); _D.rotation.set(u * 400, u * 300, 0); _D.scale.setScalar(grow); _D.updateMatrix(); m.setMatrixAt(n++, _D.matrix); }
     m.count = n; m.instanceMatrix.needsUpdate = true; }); }
