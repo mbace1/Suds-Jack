@@ -56,7 +56,7 @@ const TW = SIDES.map(({ s, name }) => {
   mesh(new THREE.CylinderGeometry(TOWER_R, TOWER_R, TOWER_H, 48, 1, true), glass, { pos: [0, TOWER_H / 2 + 0.25, 0], parent: G }).userData.noShadow = true;
   for (const [y, r, h] of [[0.12, 0.68, 0.25], [TOWER_H + 0.33, 0.66, 0.16], [TOWER_H * 0.5, 0.6, 0.04], [TOWER_H * 0.25, 0.6, 0.04], [TOWER_H * 0.75, 0.6, 0.04]]) mesh(new THREE.CylinderGeometry(r, r, h, 48), brass, { pos: [0, y, 0], parent: G });
   mesh(new THREE.ConeGeometry(0.4, 0.4, 32, 1, true), brass, { pos: [0, TOWER_H + 0.62, 0], rot: [Math.PI, 0, 0], parent: G });     // the hopper on top
-  mesh(new THREE.BoxGeometry(1.15, 0.36, 0.22), darkBrass, { pos: [0, 0.18, 1.12], parent: G }); const nm = plate(name, 1.05, 0.3); nm.position.set(0, 0.19, 1.235); G.add(nm);   // the name on a plinth in front, outside the helix
+  mesh(new THREE.BoxGeometry(1.15, 0.8, 0.22), darkBrass, { pos: [0, 0.4, 1.12], parent: G }); const nm = plate(name, 1.05, 0.3); nm.position.set(0, 0.62, 1.235); G.add(nm);   // the name on a plinth in front, outside the helix, standing above the return track (at 0.19 the balls rolled across it)
   const inv = plate(UI.investor, 0.8, 0.2, { bg: '#1a1208', ink: '#f2b83a', size: 0.58, font: 'RobotoCondensed' }); inv.position.set(0, 0.98, TOWER_R + 0.07); inv.scale.setScalar(0.001); G.add(inv);
   const sup = plate(UI.supplier, 0.8, 0.2, { bg: '#1a1208', ink: '#7fd8e6', size: 0.58, font: 'RobotoCondensed' }); sup.position.set(0, 1.24, TOWER_R + 0.07); sup.scale.setScalar(0.001); G.add(sup);
   // inside: a server rack (COMPUTE) with lights, and the coins stacking up as the money comes back
@@ -134,10 +134,10 @@ function ballsAt(t) {
     m.count = n; m.instanceMatrix.needsUpdate = true; }); }
 
 // ------------------------------------------------------------------ the camera: one shot that ends where it began
-const CAMP = hermite3([[0, [0, 3.7, 17.0]], [2.6, [-1.1, 5.0, 10.5]], [T.s2 + 0.5, [0.3, 1.5, 6.4]], [T.s3 + 0.8, [1.9, 1.5, 5.4]], [T.s3 + 3.2, [2.7, 4.6, 6.8]],
-  [T.s4 + 1.2, [-1.0, 4.4, 6.9]], [T.s5 + 1.0, [-0.3, 3.8, 13.8]], [DUR, [0, 3.7, 17.0]]]);
-const CAMT = hermite3([[0, [0, 3.15, 0]], [2.6, [-1.3, 4.1, 0.4]], [T.s2 + 0.5, [0, 0.62, 1.75]], [T.s3 + 0.8, [1.95, 1.2, 0.8]], [T.s3 + 3.2, [1.95, 3.9, 0.2]],
-  [T.s4 + 1.2, [-1.95, 3.5, 0]], [T.s5 + 1.0, [0, 3.15, 0]], [DUR, [0, 3.15, 0]]]);
+const CAMP = hermite3([[0, [0, 3.4, 19.0]], [2.6, [-1.1, 5.0, 10.5]], [T.s2 + 0.5, [0.3, 1.5, 6.4]], [T.s3 + 0.8, [1.9, 1.5, 5.4]], [T.s3 + 3.2, [2.7, 4.6, 6.8]],
+  [T.s4 + 1.2, [-1.0, 4.4, 6.9]], [T.s5 + 1.0, [-0.3, 3.5, 15.6]], [DUR, [0, 3.4, 19.0]]]);
+const CAMT = hermite3([[0, [0, 2.7, 0]], [2.6, [-1.3, 4.1, 0.4]], [T.s2 + 0.5, [0, 0.62, 1.75]], [T.s3 + 0.8, [1.95, 1.2, 0.8]], [T.s3 + 3.2, [1.95, 3.9, 0.2]],
+  [T.s4 + 1.2, [-1.95, 3.5, 0]], [T.s5 + 1.0, [0, 2.75, 0]], [DUR, [0, 2.7, 0]]]);
 const cam = new THREE.PerspectiveCamera(38, W / H, 0.1, 400), _t = new THREE.Vector3();
 function poseCam(t) { CAMP(t, cam.position); CAMT(t, _t); const br = 0.02 * Math.sin(t * 0.9); cam.position.y += br; cam.lookAt(_t); cam.updateMatrixWorld(true); }
 
@@ -178,7 +178,7 @@ function frame(t, captions = true, kForce = 0) {
     update(j) { const ts = t + ((j + 0.5) / K - 0.5) * SH; ballsAt(ts); poseCam(ts); } });
   const g = g2d; g.setTransform(1, 0, 0, 1, 0, 0);
   CAP.bug(g);
-  tag(g, UI.disclosure, W / 2, 1790, { size: 28, col: '#ffffff', bg: 'rgba(240,2,127,.86)', a: clamp(t / 0.1) * clamp((2.9 - t) / 0.2) });
+  tag(g, UI.disclosure, W - 92, 106, { size: 26, align: 'right', col: '#ffffff', bg: 'rgba(240,2,127,.86)', a: clamp(t / 0.1) * clamp((4.4 - t) / 0.2) });   // top right, opposite the bug: at the foot it sat under tag1 from 1.2 s
   for (const [k, a0, a1, y] of TAGS) tag(g, UI[k], W / 2, y + 230, { size: 26, a: clamp((t - a0) / 0.3) * clamp((a1 - t) / 0.3) });
   counters(g, t);
   if (captions) CAP.draw(g, P, t, { busy: BUSY || {} });
