@@ -1490,3 +1490,12 @@ Search summaries only; nothing opened. One device each, from STORY-DEVICES.md or
 - **Reactions:** counts are not visible through search.
 - **Pattern note:** a sister case's ruling is the quiet fact that changes how a verdict reads. Fitburg's appeal now
   runs into a Court of Appeal that has already said Finland has jurisdiction.
+
+### Catch-up check, Tue 17 Nov ~23:45 (covers 13–17 Nov; search summaries only; nothing opened)
+- **Jokela (Tuusula):** QTS filed the building-permit application 16 Nov (Tuusula release, ePressi); decision within
+  six months. 10 Nov meeting held, demonstration before it (Keski-Uusimaa). YVA conclusion 19 Oct (ymparisto.fi).
+  [ePressi](https://www.epressi.com/tiedotteet/kaupungit-ja-kunnat/jokelan-datakeskushankkeen-rakentamislupahakemus-on-tullut-tuusulan-kunnan-kasiteltavaksi.html)
+- **Lapinlahti (Alapitkä):** no new appeal report found; a 5 Aug building-inspector permit appears in council papers.
+- **Orpo AI report:** still not found as published.
+- **Fitburg:** no notice of appeal found.
+- **Reactions:** not visible through search; hs.fi refuses the search tool.

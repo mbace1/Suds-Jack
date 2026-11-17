@@ -1715,3 +1715,17 @@ Everything below comes from search summaries. No article was opened.
 - **Pattern note:** deadlines that fall on a Friday (OpenAI's letter, the DRAM hearing) are answered after the
   morning check by design. The useful move is to log what is on record before the deadline, so the evening check
   can tell an answer from silence.
+
+### Catch-up check, Tue 17 Nov ~23:45 (covers 13–17 Nov; search summaries only; nothing opened)
+- **Anthropic IPO:** pricing 18 Nov, Nasdaq "ANT" 19 Nov; $70–78 × 825M unchanged; FT: above-range pricing weighed
+  ($1.5T+); book covered (CNBC, Bloomberg). **Correction:** $111.1B/$114.5B/~$121.3B are the reported Google Cloud
+  compute commitment, not Google's stake. Amazon commitment $110B; Amazon stake $190.4B at end-June, ≤12% cap after
+  note conversion; Alphabet ≥$13.3B invested, post-IPO share blank (all reported, S-1 not opened).
+  [CNBC](https://www.cnbc.com/2026/11/16/anthropic-ipo-date-price-range.html),
+  [Motley Fool](https://www.fool.com/investing/2026/10/29/alphabet-amazon-spacex-microsoft-broadcom-and-amd/),
+  [Yahoo](https://finance.yahoo.com/technology/ai/articles/anthropic-1-518-billion-commitment-165731037.html)
+- **Short Supply:** motion to dismiss DENIED 14 Nov (Judge Noël Wise; answers due 7 Dec).
+  [Tom's Hardware](https://www.tomshardware.com/tech-industry/big-tech/judge-denies-motion-to-dismiss-dram-price-fixing-lawsuit-against-micron-samsung-and-sk-hynix-says-chipmakers-acted-like-hawks-flying-in-formation-finds-evidence-of-dram-collusion-plausible-after-500-percent-price-surge),
+  [VitalLaw](https://www.vitallaw.com/news/antitrust-n-d-cal-dram-supply-restriction-suit-against-samsung-sk-hynix-micron-survives-dismissal/ald0160acb27bba78492eb54b38b710af2a57)
+- **WB No Recourse / House letter:** no OpenAI answer found to the 29 Oct Casar letter (due 13 Nov).
+- **Reactions:** counts not visible through search.

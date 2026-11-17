@@ -1354,3 +1354,34 @@ All facts below come from search summaries; no article was opened.
   Thu 20 Nov, the Howell Township vote (year not shown; unconfirmed).
 - **Could not verify:** anything behind hs.fi; the Air Force's page directly; the S-1 itself (EDGAR not tried);
   reaction counts.
+
+## Catch-up check, Tue 17 Nov ~23:45 (covers 13–17 Nov; the scheduled runs did not fire)
+Search summaries only; nothing opened. The eight runs from Fri 13 Nov 17:16 to Tue 17 Nov 07:16 never fired (the
+scheduled task's last fire was 13 Nov 05:16), so **Give Way had no Tuesday-morning pre-posting check.**
+
+- **The Round Trip (Anthropic IPO): pricing Wed 18 Nov, first trade Thu 19 Nov on Nasdaq as ANT** (CNBC 16 Nov guide,
+  CBS, Bloomberg). Range still $70–78 on 825M shares, up to ~$64.4B raised; no amended range found. The FT (via
+  Bloomberg/BigGo) says underwriters weigh pricing above the range at $1.5T+; CNBC/Bloomberg say the book was covered
+  at launch. A $26B private placement of non-voting Class N shares to strategic investors runs alongside (reported).
+  - **CORRECTION for the pitch:** the $111.1B → $114.5B → ~$121.3B figures are reported as Anthropic's **compute
+    commitment to Google Cloud** (S-1 chart; Motley Fool: Apr 2026–Jul 2033), **not Google's equity stake**. Amazon's
+    commitment is reported at $110B (May 2026–Apr 2036), owed regardless of use. Equity: Amazon invested $13B, stake
+    valued at $190.4B at end-June (reported); $6.2B of notes convert at IPO, capped so Amazon stays at or under 12%.
+    Alphabet has invested at least $13.3B with rights to $20B more; its post-IPO share is left blank in the S-1
+    (reported). Totals of all compute commitments differ by outlet ($518B vs ~$900B). All from reporting of the S-1.
+  - Warren's 27 Oct letter: no public answer found.
+- **Short Supply follow-up: the DRAM suit survives.** Judge Noël Wise (N.D. Cal.) denied the motion to dismiss on
+  **14 Nov** after a 27-minute hearing on 13 Nov (Tom's Hardware, SamMobile, VitalLaw): the collusion allegations
+  are plausible; the "rerun of 2018" argument rejected. Answers due 7 Dec. Samsung, SK Hynix and Micron deny collusion.
+  Case: Garciaguirre v. Samsung Electronics, 5:26-cv-06345. No ruling on the merits.
+- **Jokela: QTS filed its building-permit application on 16 Nov** (Tuusula release via ePressi): 16.7 ha; the
+  municipal building control decides within six months at most. The 10 Nov residents' meeting happened, with a
+  demonstration outside before it (Keski-Uusimaa). The YVA reasoned conclusion was given 19 Oct (ymparisto.fi).
+  Chancellor of Justice complaint: nothing new found.
+- **Lapinlahti:** no report found of appeals at the administrative court in this search (13 Nov's Iisalmen
+  Sanomat/Yle item stands). A building inspector's permit dated 5 Aug 2026 appears in council papers (snippet cut off).
+- **Orpo AI report:** not found as published; the government page names Arto Tenhunen as contact, no date.
+- **Fitburg:** no notice of appeal found; "not final" stands.
+- **OpenAI / House letter (Casar, 29 Oct, due 13 Nov):** no public answer found.
+- **Give Way:** nothing changed before noon (closure 18–25 Nov; exercise 19–27 Nov; main phase round the clock
+  22–24 Nov). **The post itself was not findable by search;** whether it went out is for Grok Bot / POSTED.md.
