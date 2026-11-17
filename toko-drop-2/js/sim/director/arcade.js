@@ -1,0 +1,577 @@
+// arcade.js — ARCADE's director (HARDCADE runs it too): 1.x's classic waves.
+//
+// 1.x v268's getEnemySchedule, spawnWave, the round pump and the round end
+// (main.js:92-389, 7200-7313, 8135-8148, 9318-9437, 11318-11441), on 1.x's
+// own arena. The spec is docs/port-1x/arcade-mode.md §2; every number is in
+// js/tuning/waves.js. Pure JS and seeded: every draw is the run's w.rng, in
+// 1.x's order.
+//
+// A wave: build a schedule (boss entries, then the deliberate shooters, then
+// the mob, re-paced into fronts across the round's clock), lay it out on the
+// 0.85 ellipse, and pump it in as each entry falls due — a front waits while
+// the floor is at its live cap, and pulls in early when the floor is nearly
+// empty. The round ends one of two ways: the floor is CLEARED (500 × wave and
+// a 1.5 s breather), or the clock runs out with bodies standing and the next
+// wave pours in on top of them (a CARRY). A live boss holds the round open.
+//
+// Step order. 1.x checks the round end at the END of a frame, after the
+// kills; 2.0's director steps FIRST. So each step here does the previous
+// step's round end (the arena curtain, the breather, the carry, the clear),
+// then this step's clock, pull-in and pump, and last the death beat that 1.x
+// runs down in its enemy loop — the same sequence 1.x runs, with the seam in
+// a different place. test/director.mjs holds all of it in lockstep with 1.x's
+// own loop source.
+import { TUNING } from '../../tuning.js?v=155';
+import * as worlds from '../worlds.js?v=155';
+import * as challenge from '../challenge.js?v=155';
+import { makeRng } from '../rng.js?v=155';
+import * as bossfight from '../bossfight.js?v=155';
+import * as floorshift from '../floorshift.js?v=155';
+import { phaseSpec } from '../species/bosskit.js?v=155';
+
+const T = TUNING, W = T.waves, TAU = Math.PI * 2;
+
+// ── the wave, as numbers ───────────────────────────────────────────
+
+// 1.x waveKind (main.js:129-136). Wave 0 is a boss, so wave 1 is a breather.
+export function waveKind(wave) {
+  const R = W.rhythm;
+  if (wave % R.bossEvery === 0) return 'boss';
+  if (wave % R.spikeEvery === 0) return 'spike';
+  if (wave >= R.curtainFrom && wave % R.curtainEvery === 0) return 'curtain';
+  if (wave >= R.swarmFrom && wave % R.swarmEvery === 0) return 'swarm';
+  return 'normal';
+}
+
+export const isBreather = (wave) => waveKind(wave) === 'normal' && waveKind(wave - 1) !== 'normal';
+
+// v54, owner 2026-10-27 ("gentler ramp"): in the worlds the bodies press as a
+// wave they are not — a slope under 1 stretches 1.x's 72-wave curve across the
+// nine worlds so the run can be finished. The KIND of wave (boss, swarm, its
+// clock) and who may be drawn stay the real wave's; only how many, how fast
+// and how often they fire follow the pressure. The 1.x oracle has no worlds
+// and presses as written.
+// v59, the curve on purpose (scripts/curve.mjs measures it a world at a time):
+// every world opens on a breather — its first waves press `entry` lower, so the
+// new floor and its rule are learned before the climb — and a world's own
+// `world` offset sets where it sits against its neighbours
+export function pressure(w, wave) {
+  const G = W.gentle;
+  if (!G || !worlds.on(w) || !w.world) return wave;
+  const k = w.mode === 'hardcade' ? G.hard : G.slope, n = wave - (w.world - 1) * W.rhythm.bossEvery;
+  const base = wave <= G.from ? wave : G.from + (wave - G.from) * k;
+  return Math.max(1, base - (G.entry?.[n - 1] ?? 0) + (G.world?.[w.world - 1] ?? 0));
+}
+
+// 1.x waveScaleFor (main.js:92-105): the bodies' speed and fire-clock multipliers
+export function waveScale(wave) {
+  const S = W.scale;
+  const ramp = Math.min(wave, S.knee) - 1, post = Math.max(0, wave - S.knee);
+  const ease = wave < S.speed.easeUntil ? (S.speed.easeUntil - wave) * S.speed.ease : 0;
+  return {
+    speedMult: Math.min(S.speed.base + ramp * S.speed.ramp + post * S.speed.post - ease, S.speed.max),
+    intervalMult: Math.max(S.interval.base - ramp * S.interval.ramp - post * S.interval.post, S.interval.min),
+  };
+}
+
+// 1.x waveBudgetBase (main.js:110-120) and the kind key it is read with
+// (main.js:178-179): a curtain wave budgets as normal
+export function budgetKey(wave) {
+  const k = waveKind(wave);
+  return k === 'boss' || k === 'spike' || k === 'swarm' ? k : isBreather(wave) ? 'breather' : 'normal';
+}
+export function budgetFor(wave, press = wave) {
+  const B = W.budget;
+  const base = B.base + Math.min(press, B.knee) * B.ramp + Math.max(0, press - B.knee) * B.post;
+  let budget = Math.floor(base * B.kind[budgetKey(wave)]);
+  if (press < B.early.until) budget = Math.floor(budget * (B.early.base + B.early.step * (press - 1)));
+  return Math.max(budget, B.min);
+}
+
+// the entry cap (main.js:228-235): list entries, not bodies
+export function entryCap(wave, press = wave) {
+  const C = W.caps;
+  return waveKind(wave) === 'swarm'
+    ? Math.min(C.swarm.max, C.swarm.base + Math.floor(press * C.swarm.per))
+    : Math.min(C.normal.max, C.normal.base + Math.floor(press * C.normal.per));
+}
+// the live floor (main.js:7252-7259)
+export const liveCapFor = (wave, press = wave) => Math.max(W.caps.liveMin, Math.round(entryCap(wave, press) * W.caps.liveMult));
+export const roundLenFor = (wave) => W.round[waveKind(wave)] ?? W.round.normal;
+
+// the shooter plan's seats and spend (main.js:281-286)
+export function shooterPlan(wave, press = wave, room = 1) {
+  const SP = W.shooterPlan, kind = waveKind(wave), curtain = kind === 'curtain';
+  let cap = Math.min(SP.capBase + Math.floor(press / SP.capPerWaves), SP.capMax);
+  if (kind === 'swarm') cap = SP.swarmCap;
+  if (kind === 'boss') cap = Math.min(cap, SP.bossCap);
+  if (curtain) cap += SP.curtainCapBonus;
+  if (room < 1) cap = Math.max(1, Math.round(cap * room));
+  return { cap, budget: Math.floor(budgetFor(wave, press) * room * (curtain ? SP.curtainShare : SP.budgetShare)) };
+}
+
+// the boss wave's headliner (main.js:255-261): the TWIN PRISMS on an even
+// (cycle + seed parity), else OMEGA — so wave 8 is PRISMS on an odd seed. A
+// run in the worlds (`world`, v45) meets that world's own boss instead
+export function headliner(wave, seed, world = 0) {
+  const own = world && W.boss.worlds?.[world - 1];
+  if (own) return W.boss[own] ?? { kind: own, t: [0] };
+  return (Math.floor(wave / W.boss.cycle) + (seed % 2)) % 2 === 0 ? W.boss.prism : W.boss.omega;
+}
+export const escortsFor = (wave) => Math.max(0, Math.min(W.boss.escort.max, Math.floor(wave / W.boss.cycle) - W.boss.escort.cycleOffset));
+
+// ── the schedule (getEnemySchedule, main.js:142-389) ──────────────
+// Returns the wave's sorted entries { kind, t, variant, affix?, count?,
+// shooter?, slot?, boss?, front? } and the numbers that built them. Pure but
+// for `rng`, which it draws from in 1.x's order.
+// `world` (sim/worlds.js): a later world adds its own species to the draw
+// ([key, minWave, cost], TUNING.worlds.list[n].species); world 1 draws as 1.x.
+// `room` (v59): the share of the bodies a smaller floor holds — a world's
+// moving-floor wave (sim/floorshift.js `room`) scales its budget, its caps
+// and its shooters by it; 1 is a whole floor, as 1.x
+export function schedule(wave, rng, seed, world = 1, bossWorld = 0, press = wave, room = 1) {
+  const r = () => rng.next();
+  const pick = (list) => list[Math.floor(r() * list.length)];
+  const kind = waveKind(wave), swarm = kind === 'swarm', curtain = kind === 'curtain', boss = kind === 'boss';
+  const budget = Math.floor(budgetFor(wave, press) * room), cap = Math.max(1, Math.round(entryCap(wave, press) * room)), V = W.variants, SP = W.shooterPlan;
+
+  // each of the world's own as often as `speciesWeight` of 1.x's, so it is the world's
+  const own = T.worlds.list[world - 1], extra = [];
+  for (let i = 0; i < (own?.speciesWeight ?? 1); i++) extra.push(...(own?.species ?? []));
+  const pool = world > 1 ? W.pool.concat(extra) : W.pool;
+  const available = pool.filter(([, min]) => wave >= min);
+  const SHOOT = new Set(W.shooters);
+  const mobPool = available.filter(([k]) => !SHOOT.has(k));
+  const shootPool = available.filter(([k]) => SHOOT.has(k));
+  const VARIANTS = swarm ? V.swarm : V.normal;
+  const swarmPool = mobPool.filter(([, , c]) => c <= V.swarmCostMax);
+  const drawPool = swarm && swarmPool.length ? swarmPool : mobPool.length ? mobPool : available;
+
+  const list = [];
+  let spent = 0;
+
+  // the boss up front, and from the second boss on its WARDEN umbrella
+  // (main.js:250-272). 1.x writes the escorts at t = 2.0 + 1.5k but gives
+  // them no boss flag, so its fronts below re-pace them with the mob (they
+  // are its first entries: front 0, 4.48 s into a boss round) — ported as
+  // the code runs, not as its comment reads.
+  if (boss) {
+    const H = headliner(wave, seed, bossWorld);
+    for (const t of H.t) list.push({ kind: H.kind, t, variant: 'normal', boss: true });
+    spent += W.boss.cost;
+    const E = W.boss.escort;
+    for (let k = 0; k < escortsFor(wave); k++) { list.push({ kind: E.kind, t: 0, variant: 'normal', escort: true }); spent += E.cost; }
+  }
+
+  // the deliberate shooters (main.js:279-297): no variant, spaced in time
+  {
+    const sp = shooterPlan(wave, press, room);
+    let sSpent = 0, k = 0, st = SP.first;
+    while (shootPool.length && k < sp.cap && sSpent < sp.budget) {
+      const [type, , cost] = pick(shootPool);
+      if (sSpent + cost > sp.budget + SP.slack) break;
+      list.push({ kind: type, t: st, variant: 'normal', shooter: true, slot: k });
+      sSpent += cost;
+      st += (curtain ? SP.curtainGap : SP.gap) + r() * SP.gapRand;
+      k++;
+    }
+    spent += sSpent;
+  }
+
+  // the mob (main.js:299-339): stop at the first entry that would overspend
+  while (spent < budget && list.length < cap) {
+    const [type, , cost] = pick(drawPool);
+    const variant = pick(VARIANTS);
+    let entry, entryCost;
+    if (variant === 'elite') {
+      entryCost = Math.ceil(cost * V.eliteCost);
+      entry = { kind: type, t: 0, variant, affix: pick(W.affixes) };
+    } else if (variant === 'elitelite') {
+      entryCost = Math.ceil(cost * V.eliteliteCost);
+      entry = { kind: type, t: 0, variant, affix: r() < T.variants.elitelite.affixChance ? pick(W.affixes) : null };
+    } else if (variant === 'twin') {
+      entryCost = Math.ceil(cost * V.twinCost);
+      entry = { kind: type, t: 0, variant, count: 2 };
+    } else if (variant === 'group') {
+      const cheaper = swarmPool.length ? swarmPool : mobPool;
+      const p = cheaper.length ? pick(cheaper) : [type, 0, cost];
+      const size = V.group.base + Math.floor(r() * V.group.rand);
+      entryCost = p[2] * size;
+      entry = { kind: p[0], t: 0, variant, count: size };
+    } else {
+      entryCost = cost;
+      entry = { kind: type, t: 0, variant: 'normal' };
+    }
+    if (spent + entryCost > budget + W.budget.slack) break;
+    list.push(entry);
+    r();   // 1.x's drip cadence (main.js:337-338): the fronts replace its times, but the draw is spent
+    spent += entryCost;
+  }
+
+  // the fronts (main.js:341-359): only the mob is re-paced; bosses keep
+  // t = 0 and the shooters their own plan
+  const PL = W.pulses, roundLen = roundLenFor(wave);
+  const PK = { count: PL.count, span: PL.span, from: PL.from, ...(PL.byKind[kind] || {}) };
+  const mob = list.filter((e) => !e.boss && !e.shooter);
+  const n = mob.length, cnt = Math.max(1, Math.min(PK.count, n)), per = Math.max(1, Math.ceil(n / cnt));
+  const stag = swarm ? PL.swarmStagger : PL.stagger;
+  let lastK = -1, j = 0;
+  mob.forEach((e, i) => {
+    const k = PL.evenFronts ? Math.floor((i * cnt) / n) : Math.floor(i / per);
+    j = PL.evenFronts ? (k === lastK ? j + 1 : 0) : i % per;
+    lastK = k;
+    e.t = (PK.from + (cnt > 1 ? k / (cnt - 1) : 0) * PK.span) * roundLen + j * stag;
+    e.front = k;
+  });
+
+  list.sort((a, b) => a.t - b.t);
+  if (!list.length) list.push({ kind: W.empty, t: 0, variant: 'normal' });
+  const sp = shooterPlan(wave, press, room);
+  return { wave, press, kind, breather: isBreather(wave), budget, spent, cap, liveCap: Math.round(liveCapFor(wave, press) * room), roundLen,
+           shooterCap: sp.cap, shooterBudget: sp.budget, fronts: cnt, list };
+}
+
+// ── the run ────────────────────────────────────────────────────────
+
+const aliveCount = (w) => { let n = 0; for (const g of w.gels) if (g.alive) n++; return n; };
+
+// placement (spawnWave, main.js:7274-7313): the wave's schedule laid out as
+// a queue of bodies, in list order (the pump only ever looks at its head, so
+// a group's trailing members hold back whatever was listed after them, as in
+// 1.x). Shooters are maximally separated from one seeded angle, the rest go
+// round the circle by list index; a group fans ±0.75 rad, its members 0.12 s
+// apart and pushing in 1.2× faster; a twin's second body lands a seeded
+// offset away. Pure but for `rng`, drawn in 1.x's order.
+export function layout(plan, rng) {
+  const sc = waveScale(plan.press ?? plan.wave), V = W.variants;
+  const list = plan.list, total = list.length;
+  const nShoot = list.reduce((k, e) => k + (e.shooter ? 1 : 0), 0);
+  const shooterBase = rng.next() * TAU;
+  const queue = [];
+  list.forEach((e, i) => {
+    const cnt = e.count || 1, group = cnt >= V.group.min;
+    const base = e.shooter ? shooterBase + e.slot * (TAU / Math.max(1, nShoot)) : (i / total) * TAU;
+    for (let k = 0; k < cnt; k++) {
+      let angle = base, ox = 0, oz = 0;
+      if (group) angle = base + (k / (cnt - 1) - 0.5) * V.group.spread;
+      else if (k > 0) { ox = (rng.next() - 0.5) * V.twinOffset; oz = (rng.next() - 0.5) * V.twinOffset; }
+      queue.push({
+        kind: e.kind, delay: e.t + (group ? k * V.group.stagger : 0), angle, ox, oz,
+        shooter: !!e.shooter, boss: !!e.boss, front: e.front ?? null,
+        speedMult: sc.speedMult * (group ? V.group.speedMult : 1), intervalMult: sc.intervalMult,
+        variant: e.variant, affix: e.affix ?? null,
+      });
+    }
+  });
+  return queue;
+}
+
+// the arena curtain, armed (or not) for this wave (main.js:8135-8148): the
+// arming roll is skipped before wave 6 and on a boss wave, the style's rolls
+// before waves 10 / 8; the time is rolled on every wave, as in 1.x
+export function armCurtain(wave, kind, rng) {
+  const A = W.arenaCurtain;
+  const armed = wave >= A.from && kind !== 'boss' && rng.next() < A.chance;
+  const style = wave >= A.cross.from && rng.next() < A.cross.chance ? 'cross'
+              : wave >= A.diag.from && rng.next() < A.diag.chance ? 'diag' : 'wall';
+  return { armed, style, at: A.at.min + rng.next() * A.at.rand };
+}
+
+// spawnWave (main.js:7200-7313): the next wave. `carry`: the clock ended the
+// round and the survivors stay.
+function startWave(w, d, carry) {
+  d.wave++;
+  w.wave = d.wave;
+  // v118: a DAILY run (w.fixedWaves) draws each wave — its plan, its layout, its curtain, its sizes — from dice of
+  // its own, keyed by the run's seed and the wave, so the waves are the same for everyone who plays the day: on the
+  // run's one stream, every shot a body fired before (and so how the player played) would move them
+  const wr = w.fixedWaves ? (d.wr = waveRng(w, d.wave)) : w.rng;
+  if (w.fixedWaves) w.rngSize = waveRng(w, d.wave, SIZE_SALT);
+  // the world's own boss only in a run that has one (the 1.x oracle's has no w.world)
+  const bossWorld = worlds.on(w) && w.world ? w.world : 0;
+  // a moving-floor wave holds fewer bodies on the smaller floor it leaves (v59, the shift's
+  // `room`); a world's own `room` is a trial knob for scripts/curve.mjs --rooms, unset (1)
+  const shift = floorshift.shiftFor(w, d.wave), own = worlds.on(w) ? T.worlds.list[w.world - 1]?.room ?? 1 : 1;
+  const plan = schedule(d.wave, wr, w.seed, worlds.on(w) ? w.world : 1, bossWorld, pressure(w, d.wave), own * (shift?.room ?? 1));
+  d.kind = plan.kind; d.plan = plan;
+  // v105: a GIANT (size class 5) is a wave's event, from world `giant.from` on: rolled once a wave, never on a
+  // boss wave, from the sizes' own stream (so the waves draw as they did)
+  const GZ = T.sizes.draw.giant, sr = sizeRng(w);
+  d.giantDue = plan.kind !== 'boss' && worlds.on(w) && w.world >= GZ.from && sr.next() < GZ.chance + GZ.perWorld * (w.world - GZ.from);
+  d.roundLen = plan.roundLen; d.waveT = 0; d.frontLandedAt = W.pulses.landedInit;
+  d.liveCap = plan.liveCap; d.childCap = plan.liveCap * W.caps.childMult; d.held = 0;
+  // a carry removes the dead and keeps the living (main.js:7201-7202), so no
+  // death still playing can hold the next clear
+  d.dying = 0; d.present = carry && aliveCount(w) > 0;
+  d.queue = layout(plan, wr);
+  // v105: every plain body's SIZE CLASS, drawn for the whole wave as it is laid out, and the mob THINNED to pay
+  // for its big ones — fewer, bigger bodies, never a full wave with tanks on top
+  if (worlds.on(w)) sizeWave(w, d);
+  Object.assign(d.curtain, armCurtain(d.wave, plan.kind, wr), { warnT: 0, cross: null });
+
+  const B = W.banner[plan.kind] ?? W.banner.normal, K = W.calls;
+  const call = d.wave >= K.from ? (plan.kind === 'curtain' ? 'curtain' : K.archs[(d.wave + w.seed) % K.archs.length]) : null;
+  w.events.push({ type: 'wave', wave: d.wave, label: B.label, kind: plan.kind, color: B.color, dur: B.dur, carry, call });
+  // a boss wave is a fight on the clock (sim/bossfight.js, v42): its headliner's health on screen, over when it is down
+  if (plan.kind === 'boss' && W.bossFight.on) bossfight.start(w, headliner(d.wave, w.seed, bossWorld).kind); else w.fight = null;
+  // a challenge wave (sim/challenge.js, v36): a goal on top of the wave's bodies,
+  // drawn from its own dice so the waves replay as they did without it
+  const trial = challenge.trialFor(d.wave, w.seed, worlds.on(w) ? w.world : 1);
+  if (trial) {
+    if (w.ch?.arcade) challenge.endTrial(w, false);
+    d.trialRng ||= makeRng((w.seed ^ 0x7f4a7c15) >>> 0);
+    challenge.startTrial(w, trial, d.trialRng);
+  }
+  // a world's floor that moves for a wave (sim/floorshift.js, v44); any other wave has it whole
+  if (shift) floorshift.start(w, shift); else floorshift.end(w);
+}
+
+// the round pump (main.js:9318-9437)
+function pump(w, d, dt, api) {
+  const q = d.queue, PL = W.pulses, P = W.placement;
+  // the pull-in: the floor is nearly empty and the next front is not due —
+  // bring that whole front forward, its own stagger kept. Only the head of
+  // the queue is looked at, as in 1.x
+  if (q.length && q[0].front != null) {
+    if (aliveCount(w) <= PL.pullIn && d.waveT >= d.frontLandedAt + PL.pullGap && d.waveT < q[0].delay) {
+      const f = q[0].front;
+      let start = Infinity;
+      for (const s of q) if (s.front === f) start = Math.min(start, s.delay);
+      for (const s of q) if (s.front === f) s.delay = d.waveT + (s.delay - start);
+    }
+  }
+  // the pump: a front body waits while the floor is at its live cap, counted
+  // per body landed (v258: a gate outside the loop is not a gate); shooters,
+  // bosses and anything else off the fronts never wait. It holds the pump,
+  // never the step.
+  let alive = aliveCount(w);
+  while (q.length && d.waveT >= q[0].delay) {
+    if (q[0].front != null && alive >= d.liveCap) { d.held += dt; break; }
+    if (q[0].front != null) d.frontLandedAt = d.waveT;
+    alive++;
+    const s = q.shift();
+    const p = api.ringPoint(w, s.angle, P.ring, P.clearOfHero);
+    const S = T.species[s.kind];
+    const o = { speedMult: s.speedMult, intervalMult: s.intervalMult, variant: s.variant, affix: s.affix,
+                ping: s.shooter || W.ping.includes(s.kind) };
+    if (s.boss) {
+      o.isBoss = true; o.hp = S.bossHp ?? (S.noHpMult ? S.hp : Math.ceil(S.hp * W.boss.hpMult));
+      // in the worlds 1.x's own bosses are fought as long as theirs (v45)
+      if (worlds.on(w) && w.world) o.hp = Math.round(o.hp * (W.boss.worldHp?.[s.kind] ?? 1));
+      // v154: a boss fought in three phases has its own health (tuning/bossphases.js: the fights evened out)
+      const BP = phaseSpec(w, s.kind);
+      if (BP?.hp) o.hp = BP.hp;
+    }
+    // v105: a plain body's SIZE CLASS (TUNING.sizes), drawn when its wave was laid out (sizeWave)
+    else if (s.size) o.size = s.size;
+    // v106: an escort's mite rides the giant that landed before it (sim/formation.js)
+    if (s.moon) o.form = { kind: 'escort', lead: d.giantId ?? -1, slot: s.moon.slot, n: s.moon.n, phase: d.giantPhase ?? 0 };
+    // and "a bit less shooting" (owner): every body the worlds spawn runs its fire clocks this much slower
+    if (worlds.on(w) && !s.boss) o.fireMult = T.sizes.fireMult;
+    const g = api.spawn(w, s.kind, p.x + s.ox, p.z + s.oz, o);
+    if (s.ox || s.oz) api.clamp(w, g);
+    d.present = true;
+    // v106: a giant is the lead its escort rides (its orbit starts where the hero stands from it); a pair's
+    // second end joins the first with a strand
+    if (s.size === 5) { d.giantId = g.id; d.giantPhase = Math.atan2(w.hero.z - g.z, w.hero.x - g.x); }
+    if (s.pair) {
+      if (s.pair.end === 0) d.pairEnd = { id: s.pair.id, g: g.id };
+      else if (d.pairEnd?.id === s.pair.id) { api.link(w, d.pairEnd.g, g.id, s.kind); d.pairEnd = null; }
+    }
+  }
+}
+
+// v105: the sizes' own random stream, so drawing a size never moves the waves' draws
+const SIZE_SALT = 0x6f1d3a27;
+const sizeRng = (w) => (w.rngSize ??= makeRng((w.seed ^ SIZE_SALT) >>> 0));
+// v118: a wave's own dice in a DAILY run, from the run's seed and the wave alone
+const waveRng = (w, wave, salt = 0) => makeRng((Math.imul(((w.seed ^ salt) >>> 0) + 0x632be5ab, 0x9e3779b1) ^ Math.imul(wave + 1, 0x85ebca6b)) >>> 0);
+// A wave's sizes, where a later world's share of HEAVY bodies was: drawn from the sizes' own stream, so the
+// waves themselves draw exactly as they did (world 1 as 1.x's). The world's HEAVY share becomes its brutes and
+// tanks; a mite is only ever a body that does not fire. Then the bill: a class-c body costs `cost[c]` ordinary
+// ones, and `pay` of what the big ones cost over that comes off the wave's LAST ordinary bodies (an elite's
+// worth more; never a shooter, a boss or a sized body), keeping `keep` of its mob — a giant's wave is the giant
+// and a few, not a full wave and a giant (a mite, under one body, pays some of the bill back)
+function sizeWave(w, d) {
+  const Z = T.sizes, C = Z.cost;
+  for (const s of d.queue) {
+    if (s.boss || (s.variant ?? 'normal') !== 'normal') continue;
+    s.size = drawSize(w, d, s.kind);
+  }
+  formWave(w, d);
+  let extra = 0;
+  for (const s of d.queue) if (s.size) extra += (C[s.size] ?? 1) - 1;
+  let owe = extra * Z.pay - 0.5, mob = 0;
+  for (const s of d.queue) if (s.front != null) mob++;
+  const keep = Math.ceil(mob * Z.keep);
+  for (let i = d.queue.length - 1; i >= 0 && owe > 0 && mob > keep; i--) {
+    const s = d.queue[i];
+    if (s.front == null || s.shooter || s.boss || (s.size ?? 2) !== 2 || s.pair) continue;
+    d.queue.splice(i, 1); owe -= Z.worth[s.variant] ?? 1; mob--;
+    d.thinned = (d.thinned ?? 0) + 1;
+  }
+}
+// v106: the wave's FORMATIONS (sim/formation.js), laid out with its sizes and from the sizes' own stream. Every
+// GIANT brings its ESCORT, queued right behind it: `n` mites (its own kind if it can be one) landing round it on
+// the ring it rides. And from world `pair.from`, a wave may carry one LINKED PAIR: its first two plain bodies or
+// brutes, made one kind that walks at you and one size, landing together `apart` round the ring, joined when the
+// second lands
+function formWave(w, d) {
+  const F = T.forms, r = sizeRng(w), q = d.queue;
+  for (let i = 0; i < q.length; i++) {
+    const s = q[i];
+    if (s.size !== 5 || s.moon) continue;
+    const E = F.escort, n = E.n[0] + Math.floor(r.next() * (E.n[1] - E.n[0] + 1));
+    const kind = T.sizes.mites.includes(s.kind) ? s.kind : E.kind, ring = T.species[s.kind].radius * T.sizes.classes[5].r + E.gap;
+    const moons = [];
+    for (let k = 0; k < n; k++) {
+      const a = (k / n) * Math.PI * 2;
+      moons.push({ ...s, kind, size: 1, delay: s.delay + E.stagger * (k + 1), ox: s.ox + Math.cos(a) * ring, oz: s.oz + Math.sin(a) * ring,
+                   shooter: false, variant: 'normal', affix: null, moon: { slot: k, n } });
+    }
+    q.splice(i + 1, 0, ...moons);
+    i += n;
+  }
+  const P = F.pair;
+  if (w.world >= P.from && d.plan.kind !== 'boss' && r.next() < P.chance) {
+    const at = [];
+    for (let i = 0; i < q.length && at.length < 2; i++) { const s = q[i]; if (s.front != null && !s.shooter && !s.boss && (s.size === 2 || s.size === 3)) at.push(i); }
+    if (at.length === 2) {
+      const a = q[at[0]], [b] = q.splice(at[1], 1);
+      const kind = P.kinds.includes(a.kind) ? a.kind : P.kinds.includes(b.kind) ? b.kind : P.kind;
+      const id = (d.pairSeq = (d.pairSeq ?? 0) + 1);
+      a.kind = b.kind = kind; a.size = b.size = Math.max(a.size, b.size); a.pair = { id, end: 0 };
+      Object.assign(b, { delay: a.delay, angle: a.angle + P.apart, ox: 0, oz: 0, front: a.front, pair: { id, end: 1 } });
+      q.splice(at[0] + 1, 0, b);
+    }
+  }
+}
+
+// a body's size class: a giant if the wave has one due and none stands, else the world's weights — world 1 a
+// few mites and brutes, a later world its HEAVY share split into brutes and tanks — and no mite that fires
+function drawSize(w, d, kind) {
+  const Z = T.sizes, D = Z.draw, r = sizeRng(w);
+  if (Z.skip.includes(kind)) return 2;
+  if (d.giantDue && !w.gels.some((g) => g.alive && g.size === 5)) { d.giantDue = false; return 5; }
+  const h = worlds.heavyShare(w), wt = w.world <= 1 ? [...D.first] : [D.mite, Math.max(0, 1 - D.mite - h), h * (1 - D.tank), h * D.tank];
+  if (!Z.mites.includes(kind)) { wt[1] += wt[0]; wt[0] = 0; }
+  let u = r.next() * (wt[0] + wt[1] + wt[2] + wt[3]);
+  for (let c = 0; c < 4; c++) if ((u -= wt[c]) < 0) return c + 1;
+  return 2;
+}
+
+// fireArenaCurtain (main.js:2645-2670): a wall from one side, marching across
+function fireCurtain(w, api, style, forceSide) {
+  const A = W.arenaCurtain, rng = (w.fixedWaves && w.dir?.wr) || w.rng;   // v118: a DAILY wave's curtain on that wave's dice
+  const side = forceSide ?? Math.floor(rng.next() * 4);
+  const horiz = side === 1 || side === 3;            // from a ±z wall
+  const span = horiz ? w.hx : w.hz;
+  const edge = side === 0 ? w.hx : side === 1 ? w.hz : side === 2 ? -w.hx : -w.hz;
+  let dx = side === 0 ? -1 : side === 2 ? 1 : 0, dz = side === 1 ? -1 : side === 3 ? 1 : 0;
+  if (style === 'diag') {
+    const lat = rng.next() < 0.5 ? A.diagLat : -A.diagLat;
+    if (horiz) dx = lat; else dz = lat;
+    const l = Math.hypot(dx, dz); dx /= l; dz /= l;
+  }
+  const G = A.gap, n = Math.floor((span * 2 - 2 * A.inset) / A.spacing);
+  const g1 = G.from + Math.floor(rng.next() * Math.max(1, n - G.trim));
+  let g2 = G.from + Math.floor(rng.next() * Math.max(1, n - G.trim));
+  if (Math.abs(g2 - g1) < G.apart) g2 = ((g1 + Math.floor(n / 2)) % Math.max(1, n - G.wrapTrim)) + G.from;
+  const gaps = new Set();
+  for (let i = 0; i < G.width; i++) { gaps.add(g1 + i); gaps.add(g2 + i); }
+  // slots i = 0..n at −span + inset + i × spacing along the wall: centred
+  // on the middle slot, which is what fire.curtain lays out
+  const mid = -span + A.inset + (n * A.spacing) / 2;
+  api.fire.curtain(w, horiz ? mid : edge, horiz ? edge : mid, horiz ? 1 : 0, horiz ? 0 : 1, dx, dz, n + 1, A.spacing, gaps,
+    { speedMult: A.speedMult, color: A.color, src: 'curtain' });   // named, so the death card can say so (v69)
+  w.events.push({ type: 'curtain', side, style });
+  return side;
+}
+
+// the arena curtain's beat (main.js:11318-11342)
+function curtainStep(w, d, dt, api) {
+  const C = d.curtain, A = W.arenaCurtain;
+  if (C.armed) {
+    if (C.warnT <= 0 && d.waveT >= C.at) {
+      C.warnT = A.warn;
+      w.events.push({ type: 'curtainWarn', style: C.style, t: A.warn });
+    } else if (C.warnT > 0) {
+      C.warnT -= dt;
+      if (C.warnT <= 0) {
+        C.armed = false;
+        const s1 = fireCurtain(w, api, C.style === 'diag' ? 'diag' : 'wall');
+        if (C.style === 'cross') C.cross = { t: A.crossDelay, side: (s1 + 1) % 4 };
+      }
+    }
+  }
+  if (C.cross) {
+    C.cross.t -= dt;
+    if (C.cross.t <= 0) { fireCurtain(w, api, 'wall', C.cross.side); C.cross = null; }
+  }
+}
+
+// the round end (main.js:11356-11441), in 1.x's order
+function roundEnd(w, d, dt, api) {
+  // v109: a world's boss is down and its floor holds a beat before it opens
+  if (d.worldOutT > 0) { if ((d.worldOutT -= dt) <= 0) { d.worldOutT = 0; worlds.begin(w); } return; }
+  curtainStep(w, d, dt, api);
+  // the breather runs out: the next wave rolls in
+  if (d.gapT > 0) { d.gapT -= dt; if (d.gapT <= 0) startWave(w, d, false); }
+  let alive = 0, boss = false;
+  for (const g of w.gels) if (g.alive) { alive++; if (g.isBoss) boss = true; }
+  if (alive) d.present = true;
+  // THE CLOCK: nothing queued, the round's time is up, bodies stand and none
+  // is a boss — they stay, and the next wave pours in around them
+  if (d.gapT <= 0 && !d.queue.length && d.waveT >= d.roundLen && alive && !boss) { startWave(w, d, true); return; }
+  // THE CLEAR: the floor is empty (and the last death has played), nothing is queued
+  if (d.gapT <= 0 && d.present && !alive && d.dying <= 0 && !d.queue.length) {
+    const bonus = W.clear.perWave * d.wave;
+    w.score += bonus;
+    // the core's milestone banner fires on kills and grazes only; 1.x checks
+    // every frame, so a clear that crosses one shows it here
+    while (w.score >= w.nextMilestone) { w.events.push({ type: 'milestone', score: w.nextMilestone }); w.nextMilestone += T.score.milestone; }
+    w.events.push({ type: 'clear', wave: d.wave, bonus, dur: W.clear.banner, color: W.clear.color, flash: W.clear.flash });
+    // a world's boss wave cleared: the WORLD CLEAR beat (v109: `worldClear.hold` s), then the floor opens
+    // (sim/worlds.js), and the breather starts when the droplet has landed in the next world (onWorld)
+    if (worlds.endsWorld(w, d.wave)) {
+      d.present = false; d.worldOutT = W.worldClear.hold;
+      w.events.push({ type: 'worldClear', world: w.world, grade: w.fight?.grade ?? null, dur: W.worldClear.hold });
+    }
+    // the last world's boss: the run is won (v27, owner: "make arcade mode complete")
+    else if (worlds.endsRun(w, d.wave)) { w.won = true; w.over = true; w.events.push({ type: 'won', score: w.score, wave: d.wave }); }
+    else d.gapT = W.clear.breather;
+  }
+}
+
+export default {
+  create() {
+    return {
+      wave: 0, kind: null, plan: null, waveT: 0, roundLen: 0, queue: [], liveCap: 0, childCap: 0,
+      frontLandedAt: W.pulses.landedInit, gapT: 0, dying: 0, present: false, held: 0,
+      curtain: { armed: false, style: 'wall', at: 0, warnT: 0, cross: null },
+    };
+  },
+  step(w, dt, api) {
+    const d = w.dir;
+    // a boss wave on the clock (sim/bossfight.js, v42) is settled FIRST: the
+    // boss going down pops what it brought, so the round end below sees an
+    // empty floor and clears, rather than carrying the adds into the next wave
+    if (w.fight) bossfight.step(w, dt, api);
+    if (!d.wave) startWave(w, d, false);     // startGame → spawnWave (main.js:8833-8834)
+    else roundEnd(w, d, dt, api);
+    d.waveT += dt;                           // main.js:9321
+    pump(w, d, dt, api);
+    if (w.ch?.arcade) challenge.step(w, dt, api);   // a challenge wave's goal (v36)
+    if (w.squeeze) challenge.squeezeStep(w, dt);   // a world's walls closing in for it (v37)
+    if (w.shift) floorshift.step(w, dt);           // a world's floor moving for a wave (v44)
+    // the death beat runs down with the frame's bodies (1.x updateDeath,
+    // enemy.js:2967-2993, called from the enemy loop at main.js:10408), so
+    // the next step's round end sees it as 1.x's end-of-frame check does: a
+    // kill on step K clears on step K + 18, which is 1.x's frame K + 17's end
+    if (d.dying > 0) d.dying -= dt;
+  },
+  // 1.x's clear waits for the dying to finish dying (enemy.js:3006-3007)
+  onKill(w) { w.dir.dying = W.clear.dying; },
+  // the droplet has landed in the next world: the breather, then its first wave
+  onWorld(w) { w.dir.gapT = W.clear.breather; },
+};

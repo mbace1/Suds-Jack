@@ -1,0 +1,240 @@
+{
+ "format": 2,
+ "id": "eddy",
+ "name": "EDDY",
+ "arena": {
+  "shapes": [
+   {
+    "kind": "circle",
+    "c": [
+     0,
+     0
+    ],
+    "r": 11
+   }
+  ]
+ },
+ "duration": 20,
+ "goal": {
+  "type": "hold",
+  "need": 12.5,
+  "zone": {
+   "x": 0,
+   "z": 0,
+   "r": 1.9,
+   "orbit": {
+    "r": 6,
+    "period": 9,
+    "phase": 0
+   }
+  },
+  "drain": 2
+ },
+ "plan": {
+  "world": 1,
+  "d": 2,
+  "teaches": "where you stand",
+  "strategy": [
+   "position",
+   "risk"
+  ]
+ },
+ "spawns": [
+  {
+   "t": 0.83,
+   "type": "GLOBBO",
+   "px": 7.19,
+   "pz": 6.06,
+   "speedMult": 1.15
+  },
+  {
+   "t": 2.08,
+   "type": "YELA_CUBE",
+   "px": -9.39,
+   "pz": 0.39,
+   "speedMult": 1.15
+  },
+  {
+   "t": 3.33,
+   "type": "FANNER",
+   "px": 6.66,
+   "pz": -6.63,
+   "speedMult": 1.15
+  },
+  {
+   "t": 4.58,
+   "type": "SPITTOR",
+   "px": -0.43,
+   "pz": 9.39,
+   "speedMult": 1.15
+  },
+  {
+   "t": 5.83,
+   "type": "GLOBBO",
+   "px": -6.02,
+   "pz": -7.22,
+   "speedMult": 1.15
+  },
+  {
+   "t": 7.08,
+   "type": "YELA_CUBE",
+   "px": 9.32,
+   "pz": 1.25,
+   "speedMult": 1.15
+  },
+  {
+   "t": 8.33,
+   "type": "FANNER",
+   "px": -7.71,
+   "pz": 5.37,
+   "speedMult": 1.15
+  },
+  {
+   "t": 9.58,
+   "type": "SPITTOR",
+   "px": 2.06,
+   "pz": -9.17,
+   "speedMult": 1.15
+  },
+  {
+   "t": 10.83,
+   "type": "GLOBBO",
+   "px": 4.68,
+   "pz": 8.15,
+   "speedMult": 1.15
+  },
+  {
+   "t": 12.08,
+   "type": "YELA_CUBE",
+   "px": -8.96,
+   "pz": -2.85,
+   "speedMult": 1.15
+  },
+  {
+   "t": 13.33,
+   "type": "FANNER",
+   "px": 8.53,
+   "pz": -3.95,
+   "speedMult": 1.15
+  },
+  {
+   "t": 14.58,
+   "type": "SPITTOR",
+   "px": -3.63,
+   "pz": 8.67,
+   "speedMult": 1.15
+  },
+  {
+   "t": 15.83,
+   "type": "GLOBBO",
+   "px": -3.18,
+   "pz": -8.84,
+   "speedMult": 1.15
+  },
+  {
+   "t": 17.08,
+   "type": "YELA_CUBE",
+   "px": 8.32,
+   "pz": 4.37,
+   "speedMult": 1.15
+  },
+  {
+   "t": 18.33,
+   "type": "FANNER",
+   "px": -9.09,
+   "pz": 2.4,
+   "speedMult": 1.15
+  },
+  {
+   "t": 19.58,
+   "type": "SPITTOR",
+   "px": 5.08,
+   "pz": -7.91,
+   "speedMult": 1.15
+  },
+  {
+   "t": 20.83,
+   "type": "GLOBBO",
+   "px": 1.6,
+   "pz": 9.26,
+   "speedMult": 1.15
+  },
+  {
+   "t": 22.08,
+   "type": "YELA_CUBE",
+   "px": -7.43,
+   "pz": -5.75,
+   "speedMult": 1.15
+  },
+  {
+   "t": 23.33,
+   "type": "FANNER",
+   "px": 9.37,
+   "pz": -0.78,
+   "speedMult": 1.15
+  },
+  {
+   "t": 24.58,
+   "type": "SPITTOR",
+   "px": -6.38,
+   "pz": 6.9,
+   "speedMult": 1.15
+  },
+  {
+   "t": 25.83,
+   "type": "GLOBBO",
+   "px": 0.04,
+   "pz": -9.4,
+   "speedMult": 1.15
+  },
+  {
+   "t": 27.08,
+   "type": "YELA_CUBE",
+   "px": 6.32,
+   "pz": 6.96,
+   "speedMult": 1.15
+  },
+  {
+   "t": 28.33,
+   "type": "FANNER",
+   "px": -9.36,
+   "pz": -0.86,
+   "speedMult": 1.15
+  },
+  {
+   "t": 29.58,
+   "type": "SPITTOR",
+   "px": 7.49,
+   "pz": -5.69,
+   "speedMult": 1.15
+  },
+  {
+   "t": 30.83,
+   "type": "GLOBBO",
+   "px": -1.68,
+   "pz": 9.25,
+   "speedMult": 1.15
+  },
+  {
+   "t": 32.08,
+   "type": "YELA_CUBE",
+   "px": -5.01,
+   "pz": -7.95,
+   "speedMult": 1.15
+  }
+ ],
+ "tiers": {
+  "S": 7900,
+  "A": 4900,
+  "B": 4200,
+  "C": 3400,
+  "source": "bot pass (v56 look-ahead bots), 24 seeds a skill: got through sharp 100%, average 100%, rough 88%. score lines: S the sharp median, A the average median, B the average's weaker quarter, C the rough median or the average's weakest tenth (scripts/lines.mjs). v135 (the owner's C-line rule, 2026-11-10): C at the rough bot's lower quartile, 3,500 → 3,400"
+ },
+ "tiersHard": {
+  "S": 14000,
+  "A": 9800,
+  "B": 7900,
+  "C": 5300,
+  "source": "HARD bot pass (v56 look-ahead bots), 24 seeds a skill: got through sharp 96%, average 96%, rough 67%. score lines: S the sharp median, A the average median, B the average's weaker quarter, C the rough median or the average's weakest tenth (scripts/lines.mjs). v135 (the owner's C-line rule, 2026-11-10): C at the rough bot's lower quartile, 5,500 → 5,300"
+ }
+}

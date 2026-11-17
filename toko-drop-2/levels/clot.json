@@ -1,0 +1,322 @@
+{
+ "format": 2,
+ "id": "clot",
+ "name": "CLOT",
+ "arena": {
+  "shapes": [
+   {
+    "kind": "circle",
+    "c": [
+     0,
+     0
+    ],
+    "r": 12
+   }
+  ]
+ },
+ "duration": 60,
+ "goal": {
+  "type": "protect",
+  "heart": {
+   "x": 0,
+   "z": 0,
+   "r": 1.4,
+   "hp": 8
+  }
+ },
+ "plan": {
+  "world": 2,
+  "d": 4,
+  "teaches": "holding a crowd",
+  "strategy": [
+   "risk",
+   "priority"
+  ]
+ },
+ "spawns": [
+  {
+   "t": 0,
+   "type": "GLOBBO",
+   "px": 10.4,
+   "pz": 0
+  },
+  {
+   "t": 1.3,
+   "type": "GLOBBO",
+   "px": -7.67,
+   "pz": 7.03
+  },
+  {
+   "t": 2.6,
+   "type": "YELA_CUBE",
+   "px": 0.91,
+   "pz": -10.36
+  },
+  {
+   "t": 3.9,
+   "type": "REDD_CUBE",
+   "px": 6.33,
+   "pz": 8.25
+  },
+  {
+   "t": 5.2,
+   "type": "GLOBBO",
+   "px": -10.24,
+   "pz": -1.81
+  },
+  {
+   "t": 6.5,
+   "type": "GLOBBO",
+   "px": 8.77,
+   "pz": -5.58
+  },
+  {
+   "t": 7.8,
+   "type": "YELA_CUBE",
+   "px": -2.7,
+   "pz": 10.04
+  },
+  {
+   "t": 9.1,
+   "type": "REDD_CUBE",
+   "px": -4.79,
+   "pz": -9.23
+  },
+  {
+   "t": 10.4,
+   "type": "GLOBBO",
+   "px": 9.77,
+   "pz": 3.57
+  },
+  {
+   "t": 11.7,
+   "type": "GLOBBO",
+   "px": -9.61,
+   "pz": 3.97
+  },
+  {
+   "t": 13,
+   "type": "YELA_CUBE",
+   "px": 4.41,
+   "pz": -9.42
+  },
+  {
+   "t": 14.3,
+   "type": "REDD_CUBE",
+   "px": 3.11,
+   "pz": 9.92
+  },
+  {
+   "t": 15.6,
+   "type": "GLOBBO",
+   "px": -9,
+   "pz": -5.21
+  },
+  {
+   "t": 16.9,
+   "type": "GLOBBO",
+   "px": 10.16,
+   "pz": -2.23
+  },
+  {
+   "t": 18.2,
+   "type": "YELA_CUBE",
+   "px": -5.98,
+   "pz": 8.51
+  },
+  {
+   "t": 19.5,
+   "type": "REDD_CUBE",
+   "px": -1.34,
+   "pz": -10.31
+  },
+  {
+   "t": 20.8,
+   "type": "GLOBBO",
+   "px": 7.95,
+   "pz": 6.7
+  },
+  {
+   "t": 22.1,
+   "type": "GLOBBO",
+   "px": -10.39,
+   "pz": 0.43
+  },
+  {
+   "t": 23.4,
+   "type": "YELA_CUBE",
+   "px": 7.37,
+   "pz": -7.34
+  },
+  {
+   "t": 24.7,
+   "type": "REDD_CUBE",
+   "px": -0.48,
+   "pz": 10.39
+  },
+  {
+   "t": 26,
+   "type": "GLOBBO",
+   "px": -6.66,
+   "pz": -7.98
+  },
+  {
+   "t": 27.3,
+   "type": "GLOBBO",
+   "px": 10.31,
+   "pz": 1.39
+  },
+  {
+   "t": 28.6,
+   "type": "YELA_CUBE",
+   "px": -8.54,
+   "pz": 5.94
+  },
+  {
+   "t": 29.9,
+   "type": "REDD_CUBE",
+   "px": 2.28,
+   "pz": -10.15
+  },
+  {
+   "t": 31.2,
+   "type": "GLOBBO",
+   "px": 5.17,
+   "pz": 9.02
+  },
+  {
+   "t": 32.5,
+   "type": "GLOBBO",
+   "px": -9.91,
+   "pz": -3.16
+  },
+  {
+   "t": 33.8,
+   "type": "YELA_CUBE",
+   "px": 9.44,
+   "pz": -4.36
+  },
+  {
+   "t": 35.1,
+   "type": "REDD_CUBE",
+   "px": -4.01,
+   "pz": 9.59
+  },
+  {
+   "t": 40,
+   "type": "GLOBBO",
+   "px": 10.4,
+   "pz": 0,
+   "speedMult": 1
+  },
+  {
+   "t": 41.3,
+   "type": "GLOBBO",
+   "px": -7.67,
+   "pz": 7.03,
+   "speedMult": 1
+  },
+  {
+   "t": 42.6,
+   "type": "YELA_CUBE",
+   "px": 0.91,
+   "pz": -10.36,
+   "speedMult": 1
+  },
+  {
+   "t": 43.9,
+   "type": "REDD_CUBE",
+   "px": 6.33,
+   "pz": 8.25,
+   "speedMult": 1
+  },
+  {
+   "t": 45.2,
+   "type": "GLOBBO",
+   "px": -10.24,
+   "pz": -1.81,
+   "speedMult": 1
+  },
+  {
+   "t": 46.5,
+   "type": "GLOBBO",
+   "px": 8.77,
+   "pz": -5.58,
+   "speedMult": 1
+  },
+  {
+   "t": 47.8,
+   "type": "YELA_CUBE",
+   "px": -2.7,
+   "pz": 10.04,
+   "speedMult": 1
+  },
+  {
+   "t": 49.1,
+   "type": "REDD_CUBE",
+   "px": -4.79,
+   "pz": -9.23,
+   "speedMult": 1
+  },
+  {
+   "t": 50.4,
+   "type": "GLOBBO",
+   "px": 9.77,
+   "pz": 3.57,
+   "speedMult": 1
+  },
+  {
+   "t": 51.7,
+   "type": "GLOBBO",
+   "px": -9.61,
+   "pz": 3.97,
+   "speedMult": 1
+  },
+  {
+   "t": 53,
+   "type": "YELA_CUBE",
+   "px": 4.41,
+   "pz": -9.42,
+   "speedMult": 1
+  },
+  {
+   "t": 54.3,
+   "type": "REDD_CUBE",
+   "px": 3.11,
+   "pz": 9.92,
+   "speedMult": 1
+  },
+  {
+   "t": 55.6,
+   "type": "GLOBBO",
+   "px": -9,
+   "pz": -5.21,
+   "speedMult": 1
+  },
+  {
+   "t": 56.9,
+   "type": "GLOBBO",
+   "px": 10.16,
+   "pz": -2.23,
+   "speedMult": 1
+  }
+ ],
+ "hard": {
+  "cap": 4,
+  "near": 4
+ },
+ "tiers": {
+  "S": 62000,
+  "A": 56000,
+  "B": 50000,
+  "C": 30000,
+  "source": "bot pass (v56 look-ahead bots), 24 seeds a skill: got through sharp 100%, average 100%, rough 50%. score lines: S the sharp median, A the average median, B the average's weaker quarter, C the rough median or the average's weakest tenth (scripts/lines.mjs). v135 (the owner's C-line rule, 2026-11-10): C at the rough bot's lower quartile, 35,000 → 30,000"
+ },
+ "tiersHard": {
+  "S": 93000,
+  "A": 84000,
+  "B": 76000,
+  "C": 68000,
+  "source": "HARD bot pass (v56 look-ahead bots), 24 seeds a skill: got through sharp 100%, average 96%, rough 4%. score lines: S the sharp median, A the average median, B the average's weaker quarter, C the rough median or the average's weakest tenth (scripts/lines.mjs)"
+ }
+}

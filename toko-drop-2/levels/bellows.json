@@ -1,0 +1,292 @@
+{
+ "format": 2,
+ "id": "bellows",
+ "name": "BELLOWS",
+ "arena": {
+  "shapes": [
+   {
+    "kind": "rect",
+    "hx": 15,
+    "hz": 11
+   }
+  ]
+ },
+ "duration": 40,
+ "goal": {
+  "type": "clear"
+ },
+ "plan": {
+  "world": 5,
+  "d": 7,
+  "teaches": "steama",
+  "strategy": [
+   "priority",
+   "position",
+   "aim"
+  ]
+ },
+ "spawns": [
+  {
+   "t": 0,
+   "type": "steama",
+   "px": -11,
+   "pz": -7
+  },
+  {
+   "t": 0,
+   "type": "steama",
+   "px": 11,
+   "pz": 7
+  },
+  {
+   "t": 0.89,
+   "type": "YELA_CUBE",
+   "px": 13.4,
+   "pz": 0,
+   "speedMult": 1.25
+  },
+  {
+   "t": 1.88,
+   "type": "GLOBBO",
+   "px": -10.26,
+   "pz": 9.4,
+   "speedMult": 1.25
+  },
+  {
+   "t": 2.88,
+   "type": "SPITTOR",
+   "px": 0.82,
+   "pz": -9.4,
+   "speedMult": 1.25
+  },
+  {
+   "t": 3.88,
+   "type": "GLOBBO",
+   "px": 7.21,
+   "pz": 9.4,
+   "speedMult": 1.25
+  },
+  {
+   "t": 4.87,
+   "type": "FANNER",
+   "px": -13.4,
+   "pz": -2.37,
+   "speedMult": 1.25
+  },
+  {
+   "t": 5.87,
+   "type": "YELA_CUBE",
+   "px": 13.4,
+   "pz": -8.52,
+   "speedMult": 1.25
+  },
+  {
+   "t": 6.86,
+   "type": "GLOBBO",
+   "px": -2.53,
+   "pz": 9.4,
+   "speedMult": 1.25
+  },
+  {
+   "t": 7.86,
+   "type": "SPITTOR",
+   "px": -4.88,
+   "pz": -9.4,
+   "speedMult": 1.25
+  },
+  {
+   "t": 8.85,
+   "type": "GLOBBO",
+   "px": 13.4,
+   "pz": 4.89,
+   "speedMult": 1.25
+  },
+  {
+   "t": 9.85,
+   "type": "FANNER",
+   "px": -13.4,
+   "pz": 5.53,
+   "speedMult": 1.25
+  },
+  {
+   "t": 10.67,
+   "type": "steama",
+   "px": 0,
+   "pz": 8
+  },
+  {
+   "t": 10.84,
+   "type": "YELA_CUBE",
+   "px": 4.4,
+   "pz": -9.4,
+   "speedMult": 1.25
+  },
+  {
+   "t": 11.84,
+   "type": "GLOBBO",
+   "px": 2.95,
+   "pz": 9.4,
+   "speedMult": 1.25
+  },
+  {
+   "t": 12.84,
+   "type": "SPITTOR",
+   "px": -13.4,
+   "pz": -7.76,
+   "speedMult": 1.25
+  },
+  {
+   "t": 13.83,
+   "type": "GLOBBO",
+   "px": 13.4,
+   "pz": -2.95,
+   "speedMult": 1.25
+  },
+  {
+   "t": 14.83,
+   "type": "FANNER",
+   "px": -6.61,
+   "pz": 9.4,
+   "speedMult": 1.25
+  },
+  {
+   "t": 15.82,
+   "type": "YELA_CUBE",
+   "px": -1.22,
+   "pz": -9.4,
+   "speedMult": 1.25
+  },
+  {
+   "t": 16.82,
+   "type": "GLOBBO",
+   "px": 11.15,
+   "pz": 9.4,
+   "speedMult": 1.25
+  },
+  {
+   "t": 17.81,
+   "type": "SPITTOR",
+   "px": -13.4,
+   "pz": 0.55,
+   "speedMult": 1.25
+  },
+  {
+   "t": 18.81,
+   "type": "GLOBBO",
+   "px": 9.44,
+   "pz": -9.4,
+   "speedMult": 1.25
+  },
+  {
+   "t": 19.56,
+   "type": "steama",
+   "px": 0,
+   "pz": -8
+  },
+  {
+   "t": 19.8,
+   "type": "FANNER",
+   "px": -0.43,
+   "pz": 9.4,
+   "speedMult": 1.25
+  },
+  {
+   "t": 20.8,
+   "type": "YELA_CUBE",
+   "px": -7.85,
+   "pz": -9.4,
+   "speedMult": 1.25
+  },
+  {
+   "t": 21.8,
+   "type": "GLOBBO",
+   "px": 13.4,
+   "pz": 1.8,
+   "speedMult": 1.25
+  },
+  {
+   "t": 22.79,
+   "type": "SPITTOR",
+   "px": -13.4,
+   "pz": 9.32,
+   "speedMult": 1.25
+  },
+  {
+   "t": 23.79,
+   "type": "GLOBBO",
+   "px": 2.11,
+   "pz": -9.4,
+   "speedMult": 1.25
+  },
+  {
+   "t": 24.78,
+   "type": "FANNER",
+   "px": 5.39,
+   "pz": 9.4,
+   "speedMult": 1.25
+  },
+  {
+   "t": 25.78,
+   "type": "YELA_CUBE",
+   "px": -13.4,
+   "pz": -4.27,
+   "speedMult": 1.25
+  },
+  {
+   "t": 26.77,
+   "type": "GLOBBO",
+   "px": 13.4,
+   "pz": -6.19,
+   "speedMult": 1.25
+  },
+  {
+   "t": 27.77,
+   "type": "SPITTOR",
+   "px": -3.93,
+   "pz": 9.4,
+   "speedMult": 1.25
+  },
+  {
+   "t": 28.76,
+   "type": "GLOBBO",
+   "px": -3.38,
+   "pz": -9.4,
+   "speedMult": 1.25
+  },
+  {
+   "t": 29.76,
+   "type": "FANNER",
+   "px": 13.4,
+   "pz": 7.04,
+   "speedMult": 1.25
+  },
+  {
+   "t": 30.76,
+   "type": "YELA_CUBE",
+   "px": -13.4,
+   "pz": 3.53,
+   "speedMult": 1.25
+  },
+  {
+   "t": 31.75,
+   "type": "GLOBBO",
+   "px": 6.04,
+   "pz": -9.4,
+   "speedMult": 1.25
+  }
+ ],
+ "tiers": {
+  "S": 21000,
+  "A": 9100,
+  "B": 8200,
+  "C": 7400,
+  "source": "bot pass (v56 look-ahead bots), 24 seeds a skill: got through sharp 100%, average 100%, rough 21%. score lines: S the sharp median, A the average median, B the average's weaker quarter, C the rough median or the average's weakest tenth (scripts/lines.mjs)"
+ },
+ "tiersHard": {
+  "S": 29000,
+  "A": 13000,
+  "B": 12000,
+  "C": 9800,
+  "source": "HARD bot pass (v56 look-ahead bots), 24 seeds a skill: got through sharp 100%, average 100%, rough 0%. score lines: S the sharp median, A the average median, B the average's weaker quarter, C the rough median or the average's weakest tenth (scripts/lines.mjs)"
+ }
+}

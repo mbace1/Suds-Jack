@@ -1,0 +1,159 @@
+{
+ "format": 2,
+ "id": "the-sludge",
+ "name": "THE SLUDGE",
+ "arena": {
+  "shapes": [
+   {
+    "kind": "circle",
+    "c": [
+     0,
+     0
+    ],
+    "r": 12
+   }
+  ]
+ },
+ "duration": 60,
+ "goal": {
+  "type": "boss"
+ },
+ "plan": {
+  "world": 1,
+  "d": 3,
+  "teaches": "the boss wave",
+  "strategy": [
+   "priority",
+   "movement"
+  ]
+ },
+ "spawns": [
+  {
+   "t": 0,
+   "type": "sludge",
+   "px": 0,
+   "pz": -6,
+   "boss": true,
+   "hp": 150
+  },
+  {
+   "t": 3,
+   "type": "GLOBBO",
+   "px": 3.77,
+   "pz": 9.69,
+   "speedMult": 1.1
+  },
+  {
+   "t": 6.2,
+   "type": "YELA_CUBE",
+   "px": -9.33,
+   "pz": -4.6,
+   "speedMult": 1.1
+  },
+  {
+   "t": 9.4,
+   "type": "SPITTOR",
+   "px": 9.99,
+   "pz": -2.91,
+   "speedMult": 1.1
+  },
+  {
+   "t": 12.6,
+   "type": "GLOBBO",
+   "px": -5.4,
+   "pz": 8.89,
+   "speedMult": 1.1
+  },
+  {
+   "t": 15.8,
+   "type": "YELA_CUBE",
+   "px": -2.02,
+   "pz": -10.2,
+   "speedMult": 1.1
+  },
+  {
+   "t": 19,
+   "type": "SPITTOR",
+   "px": 8.38,
+   "pz": 6.16,
+   "speedMult": 1.1
+  },
+  {
+   "t": 22.2,
+   "type": "GLOBBO",
+   "px": -10.34,
+   "pz": 1.12,
+   "speedMult": 1.1
+  },
+  {
+   "t": 25.4,
+   "type": "YELA_CUBE",
+   "px": 6.87,
+   "pz": -7.81,
+   "speedMult": 1.1
+  },
+  {
+   "t": 28.6,
+   "type": "SPITTOR",
+   "px": 0.21,
+   "pz": 10.4,
+   "speedMult": 1.1
+  },
+  {
+   "t": 31.8,
+   "type": "GLOBBO",
+   "px": -7.18,
+   "pz": -7.52,
+   "speedMult": 1.1
+  },
+  {
+   "t": 35,
+   "type": "YELA_CUBE",
+   "px": 10.38,
+   "pz": 0.69,
+   "speedMult": 1.1
+  },
+  {
+   "t": 38.2,
+   "type": "SPITTOR",
+   "px": -8.12,
+   "pz": 6.5,
+   "speedMult": 1.1
+  },
+  {
+   "t": 41.4,
+   "type": "GLOBBO",
+   "px": 1.6,
+   "pz": -10.28,
+   "speedMult": 1.1
+  },
+  {
+   "t": 44.6,
+   "type": "YELA_CUBE",
+   "px": 5.76,
+   "pz": 8.66,
+   "speedMult": 1.1
+  },
+  {
+   "t": 47.8,
+   "type": "SPITTOR",
+   "px": -10.1,
+   "pz": -2.49,
+   "speedMult": 1.1
+  }
+ ],
+ "tiers": {
+  "S": 11000,
+  "A": 9900,
+  "B": 8900,
+  "C": 7000,
+  "source": "bot pass (v56 look-ahead bots), 24 seeds a skill: got through sharp 100%, average 100%, rough 96%. score lines: S the sharp median, A the average median, B the average's weaker quarter, C the rough median or the average's weakest tenth (scripts/lines.mjs). v135 (the owner's C-line rule, 2026-11-10): C at the rough bot's lower quartile, 7,800 → 7,000"
+ },
+ "tiersHard": {
+  "S": 17000,
+  "A": 15000,
+  "B": 14000,
+  "C": 11000,
+  "source": "HARD bot pass (v56 look-ahead bots), 24 seeds a skill: got through sharp 100%, average 100%, rough 92%. score lines: S the sharp median, A the average median, B the average's weaker quarter, C the rough median or the average's weakest tenth (scripts/lines.mjs). v135 (the owner's C-line rule, 2026-11-10): C at the rough bot's lower quartile, 12,000 → 11,000"
+ }
+}

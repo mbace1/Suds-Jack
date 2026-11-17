@@ -1,0 +1,571 @@
+{
+ "format": 2,
+ "id": "breath",
+ "name": "BREATH",
+ "arena": {
+  "shapes": [
+   {
+    "kind": "circle",
+    "c": [
+     0,
+     0
+    ],
+    "r": 12,
+    "pulse": {
+     "from": 1,
+     "to": 0.7,
+     "period": 12,
+     "mode": "breathe"
+    }
+   }
+  ]
+ },
+ "duration": 50,
+ "goal": {
+  "type": "survive"
+ },
+ "plan": {
+  "world": 4,
+  "d": 9,
+  "teaches": "warden, bulwark: the shield-bearer first",
+  "strategy": [
+   "priority",
+   "aim",
+   "movement"
+  ]
+ },
+ "spawns": [
+  {
+   "t": 0,
+   "type": "WARDEN",
+   "px": 0.01,
+   "pz": -10
+  },
+  {
+   "t": 0.3,
+   "type": "GLOBBO",
+   "px": -3.33,
+   "pz": -10.06
+  },
+  {
+   "t": 0.45,
+   "type": "GLOBBO",
+   "px": 0.01,
+   "pz": -10.6
+  },
+  {
+   "t": 0.6,
+   "type": "GLOBBO",
+   "px": 3.34,
+   "pz": -10.06
+  },
+  {
+   "t": 1,
+   "type": "GLOBBO",
+   "px": -3.34,
+   "pz": 10.06
+  },
+  {
+   "t": 1.5,
+   "type": "GLOBBO",
+   "px": 5.73,
+   "pz": 8.92
+  },
+  {
+   "t": 4,
+   "type": "GLOBBO",
+   "px": -10.25,
+   "pz": -2.71
+  },
+  {
+   "t": 5,
+   "type": "WARDEN",
+   "px": 10,
+   "pz": 0
+  },
+  {
+   "t": 5.3,
+   "type": "BULWARK",
+   "px": 10.06,
+   "pz": -3.33,
+   "speedMult": 0.7
+  },
+  {
+   "t": 5.45,
+   "type": "GLOBBO",
+   "px": 10.6,
+   "pz": 0
+  },
+  {
+   "t": 5.6,
+   "type": "GLOBBO",
+   "px": 10.06,
+   "pz": 3.33
+  },
+  {
+   "t": 5.7,
+   "type": "BULWARK",
+   "px": -10.06,
+   "pz": 3.33,
+   "speedMult": 0.7
+  },
+  {
+   "t": 6.5,
+   "type": "GLOBBO",
+   "px": 9.39,
+   "pz": -4.93
+  },
+  {
+   "t": 9,
+   "type": "GLOBBO",
+   "px": -3.59,
+   "pz": 9.97
+  },
+  {
+   "t": 9.4,
+   "type": "GLOBBO",
+   "px": 3.59,
+   "pz": -9.97
+  },
+  {
+   "t": 10,
+   "type": "WARDEN",
+   "px": -8.57,
+   "pz": 5.16
+  },
+  {
+   "t": 10.3,
+   "type": "YELA_CUBE",
+   "px": -5.53,
+   "pz": 9.04
+  },
+  {
+   "t": 10.45,
+   "type": "YELA_CUBE",
+   "px": -8.1,
+   "pz": 6.84
+  },
+  {
+   "t": 10.6,
+   "type": "GLOBBO",
+   "px": -9.84,
+   "pz": 3.95
+  },
+  {
+   "t": 10.75,
+   "type": "GLOBBO",
+   "px": -10.58,
+   "pz": 0.65
+  },
+  {
+   "t": 11,
+   "type": "GLOBBO",
+   "px": 9.84,
+   "pz": -3.95
+  },
+  {
+   "t": 11.5,
+   "type": "GLOBBO",
+   "px": -4.09,
+   "pz": -9.78
+  },
+  {
+   "t": 14,
+   "type": "GLOBBO",
+   "px": 9.62,
+   "pz": 4.45
+  },
+  {
+   "t": 15,
+   "type": "WARDEN",
+   "px": 0.01,
+   "pz": 10
+  },
+  {
+   "t": 15.3,
+   "type": "BULWARK",
+   "px": 4.9,
+   "pz": 9.4,
+   "speedMult": 0.7
+  },
+  {
+   "t": 15.4,
+   "type": "WARDEN",
+   "px": -0.01,
+   "pz": -10
+  },
+  {
+   "t": 15.45,
+   "type": "BULWARK",
+   "px": 1.7,
+   "pz": 10.46,
+   "speedMult": 0.7
+  },
+  {
+   "t": 15.6,
+   "type": "SPITTOR",
+   "px": -1.68,
+   "pz": 10.47
+  },
+  {
+   "t": 15.75,
+   "type": "GLOBBO",
+   "px": -4.89,
+   "pz": 9.41
+  },
+  {
+   "t": 16.15,
+   "type": "GLOBBO",
+   "px": 4.89,
+   "pz": -9.41
+  },
+  {
+   "t": 16.5,
+   "type": "GLOBBO",
+   "px": -10.1,
+   "pz": 3.22
+  },
+  {
+   "t": 19,
+   "type": "GLOBBO",
+   "px": 5.28,
+   "pz": -9.19
+  },
+  {
+   "t": 20,
+   "type": "WARDEN",
+   "px": -8.97,
+   "pz": -4.43
+  },
+  {
+   "t": 20.3,
+   "type": "GLOBBO",
+   "px": -9.99,
+   "pz": 3.55
+  },
+  {
+   "t": 20.45,
+   "type": "GLOBBO",
+   "px": -10.6,
+   "pz": 0.23
+  },
+  {
+   "t": 20.6,
+   "type": "GLOBBO",
+   "px": -10.13,
+   "pz": -3.12
+  },
+  {
+   "t": 20.7,
+   "type": "GLOBBO",
+   "px": 9.99,
+   "pz": -3.55
+  },
+  {
+   "t": 20.75,
+   "type": "GLOBBO",
+   "px": -8.64,
+   "pz": -6.15
+  },
+  {
+   "t": 20.9,
+   "type": "GLOBBO",
+   "px": -6.27,
+   "pz": -8.55
+  },
+  {
+   "t": 21.05,
+   "type": "YELA_CUBE",
+   "px": -3.26,
+   "pz": -10.09
+  },
+  {
+   "t": 21.3,
+   "type": "GLOBBO",
+   "px": 6.27,
+   "pz": 8.55
+  },
+  {
+   "t": 21.5,
+   "type": "GLOBBO",
+   "px": 2.32,
+   "pz": 10.34
+  },
+  {
+   "t": 24,
+   "type": "GLOBBO",
+   "px": -8.7,
+   "pz": -6.06
+  },
+  {
+   "t": 25,
+   "type": "WARDEN",
+   "px": 8.25,
+   "pz": -5.65
+  },
+  {
+   "t": 25.3,
+   "type": "BULWARK",
+   "px": 3.44,
+   "pz": -10.03,
+   "speedMult": 0.7
+  },
+  {
+   "t": 25.4,
+   "type": "WARDEN",
+   "px": -8.25,
+   "pz": 5.65
+  },
+  {
+   "t": 25.45,
+   "type": "YELA_CUBE",
+   "px": 6.42,
+   "pz": -8.43
+  },
+  {
+   "t": 25.6,
+   "type": "YELA_CUBE",
+   "px": 8.75,
+   "pz": -5.99
+  },
+  {
+   "t": 25.75,
+   "type": "SPITTOR",
+   "px": 10.19,
+   "pz": -2.93
+  },
+  {
+   "t": 25.9,
+   "type": "GLOBBO",
+   "px": 10.59,
+   "pz": 0.42
+  },
+  {
+   "t": 26.15,
+   "type": "SPITTOR",
+   "px": -10.19,
+   "pz": 2.93
+  },
+  {
+   "t": 26.5,
+   "type": "GLOBBO",
+   "px": 10.51,
+   "pz": -1.41
+  },
+  {
+   "t": 29,
+   "type": "GLOBBO",
+   "px": -6.8,
+   "pz": 8.13
+  },
+  {
+   "t": 30,
+   "type": "WARDEN",
+   "px": -4.16,
+   "pz": 9.09
+  },
+  {
+   "t": 30.3,
+   "type": "BULWARK",
+   "px": 0.54,
+   "pz": 10.59,
+   "speedMult": 0.7
+  },
+  {
+   "t": 30.4,
+   "type": "WARDEN",
+   "px": 4.16,
+   "pz": -9.09
+  },
+  {
+   "t": 30.45,
+   "type": "GLOBBO",
+   "px": -2.82,
+   "pz": 10.22
+  },
+  {
+   "t": 30.5,
+   "type": "WARDEN",
+   "px": 3.62,
+   "pz": -9.32
+  },
+  {
+   "t": 30.6,
+   "type": "GLOBBO",
+   "px": -5.89,
+   "pz": 8.81
+  },
+  {
+   "t": 30.75,
+   "type": "YELA_CUBE",
+   "px": -8.36,
+   "pz": 6.51
+  },
+  {
+   "t": 30.8,
+   "type": "BULWARK",
+   "px": 0.54,
+   "pz": -10.59,
+   "speedMult": 0.7
+  },
+  {
+   "t": 30.95,
+   "type": "GLOBBO",
+   "px": 3.84,
+   "pz": -9.88
+  },
+  {
+   "t": 31,
+   "type": "GLOBBO",
+   "px": 5.89,
+   "pz": -8.81
+  },
+  {
+   "t": 31.1,
+   "type": "GLOBBO",
+   "px": 6.75,
+   "pz": -8.17
+  },
+  {
+   "t": 31.5,
+   "type": "GLOBBO",
+   "px": -0.48,
+   "pz": -10.59
+  },
+  {
+   "t": 31.5,
+   "type": "GLOBBO",
+   "px": -6.75,
+   "pz": 8.17
+  },
+  {
+   "t": 34,
+   "type": "GLOBBO",
+   "px": 7.51,
+   "pz": 7.48
+  },
+  {
+   "t": 36.5,
+   "type": "GLOBBO",
+   "px": -10.59,
+   "pz": -0.44
+  },
+  {
+   "t": 39,
+   "type": "GLOBBO",
+   "px": 8.11,
+   "pz": -6.83
+  },
+  {
+   "t": 39.4,
+   "type": "GLOBBO",
+   "px": -8.11,
+   "pz": 6.83
+  },
+  {
+   "t": 40,
+   "type": "WARDEN",
+   "px": 0.01,
+   "pz": -10,
+   "speedMult": 1
+  },
+  {
+   "t": 40.3,
+   "type": "GLOBBO",
+   "px": -3.33,
+   "pz": -10.06,
+   "speedMult": 1
+  },
+  {
+   "t": 40.45,
+   "type": "GLOBBO",
+   "px": 0.01,
+   "pz": -10.6,
+   "speedMult": 1
+  },
+  {
+   "t": 40.6,
+   "type": "GLOBBO",
+   "px": 3.34,
+   "pz": -10.06,
+   "speedMult": 1
+  },
+  {
+   "t": 41,
+   "type": "GLOBBO",
+   "px": -3.34,
+   "pz": 10.06,
+   "speedMult": 1
+  },
+  {
+   "t": 41.5,
+   "type": "GLOBBO",
+   "px": 5.73,
+   "pz": 8.92,
+   "speedMult": 1
+  },
+  {
+   "t": 44,
+   "type": "GLOBBO",
+   "px": -10.25,
+   "pz": -2.71,
+   "speedMult": 1
+  },
+  {
+   "t": 45,
+   "type": "WARDEN",
+   "px": 10,
+   "pz": 0,
+   "speedMult": 1
+  },
+  {
+   "t": 45.3,
+   "type": "BULWARK",
+   "px": 10.06,
+   "pz": -3.33,
+   "speedMult": 0.7
+  },
+  {
+   "t": 45.45,
+   "type": "GLOBBO",
+   "px": 10.6,
+   "pz": 0,
+   "speedMult": 1
+  },
+  {
+   "t": 45.6,
+   "type": "GLOBBO",
+   "px": 10.06,
+   "pz": 3.33,
+   "speedMult": 1
+  },
+  {
+   "t": 45.7,
+   "type": "BULWARK",
+   "px": -10.06,
+   "pz": 3.33,
+   "speedMult": 0.7
+  },
+  {
+   "t": 46.5,
+   "type": "GLOBBO",
+   "px": 9.39,
+   "pz": -4.93,
+   "speedMult": 1
+  }
+ ],
+ "tiers": {
+  "S": 54000,
+  "A": 37000,
+  "B": 30000,
+  "C": 26000,
+  "source": "bot pass (v56 look-ahead bots), 24 seeds a skill: got through sharp 100%, average 75%, rough 0%. score lines: S the sharp median, A the average median, B the average's weaker quarter, C the rough median or the average's weakest tenth (scripts/lines.mjs)"
+ },
+ "tiersHard": {
+  "S": 83000,
+  "A": 55000,
+  "B": 49000,
+  "C": 43000,
+  "source": "HARD bot pass (v56 look-ahead bots), 24 seeds a skill: got through sharp 100%, average 54%, rough 0%. score lines: S the sharp median, A the average median, B the average's weaker quarter, C the rough median or the average's weakest tenth (scripts/lines.mjs)"
+ }
+}

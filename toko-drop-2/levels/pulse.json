@@ -1,0 +1,281 @@
+{
+ "format": 2,
+ "id": "pulse",
+ "name": "PULSE",
+ "arena": {
+  "shapes": [
+   {
+    "kind": "rect",
+    "hx": 18,
+    "hz": 11,
+    "pulse": {
+     "from": 1,
+     "to": 0.45,
+     "period": 36,
+     "mode": "shrink",
+     "steps": 4
+    }
+   }
+  ]
+ },
+ "duration": 45,
+ "goal": {
+  "type": "survive"
+ },
+ "plan": {
+  "world": 2,
+  "d": 5,
+  "teaches": "a floor that closes in",
+  "strategy": [
+   "position",
+   "aim"
+  ]
+ },
+ "spawns": [
+  {
+   "t": 0,
+   "type": "GLOBBO",
+   "px": 16.4,
+   "pz": 5.07
+  },
+  {
+   "t": 1.15,
+   "type": "YELA_CUBE",
+   "px": -16.4,
+   "pz": 7.75
+  },
+  {
+   "t": 2.3,
+   "type": "REDD_CUBE",
+   "px": 3.84,
+   "pz": -9.4
+  },
+  {
+   "t": 3.45,
+   "type": "GLOBBO",
+   "px": 3.48,
+   "pz": 9.4
+  },
+  {
+   "t": 4.6,
+   "type": "GLOBBO",
+   "px": -16.4,
+   "pz": -8.44
+  },
+  {
+   "t": 5.75,
+   "type": "YELA_CUBE",
+   "px": 16.4,
+   "pz": -4.48
+  },
+  {
+   "t": 6.9,
+   "type": "REDD_CUBE",
+   "px": -5.93,
+   "pz": 9.4
+  },
+  {
+   "t": 8.05,
+   "type": "GLOBBO",
+   "px": -1.7,
+   "pz": -9.4
+  },
+  {
+   "t": 9.2,
+   "type": "GLOBBO",
+   "px": 12.36,
+   "pz": 9.4
+  },
+  {
+   "t": 10.35,
+   "type": "YELA_CUBE",
+   "px": -16.4,
+   "pz": 1.5
+  },
+  {
+   "t": 11.5,
+   "type": "REDD_CUBE",
+   "px": 8.54,
+   "pz": -9.4
+  },
+  {
+   "t": 12.65,
+   "type": "GLOBBO",
+   "px": 0.04,
+   "pz": 9.4
+  },
+  {
+   "t": 13.8,
+   "type": "GLOBBO",
+   "px": -8.68,
+   "pz": -9.4
+  },
+  {
+   "t": 14.95,
+   "type": "YELA_CUBE",
+   "px": 16.4,
+   "pz": 1.37
+  },
+  {
+   "t": 16.1,
+   "type": "REDD_CUBE",
+   "px": -12.16,
+   "pz": 9.4
+  },
+  {
+   "t": 17.25,
+   "type": "GLOBBO",
+   "px": 1.62,
+   "pz": -9.4
+  },
+  {
+   "t": 18.4,
+   "type": "GLOBBO",
+   "px": 6.03,
+   "pz": 9.4
+  },
+  {
+   "t": 19.55,
+   "type": "YELA_CUBE",
+   "px": -16.4,
+   "pz": -4.34
+  },
+  {
+   "t": 20.7,
+   "type": "REDD_CUBE",
+   "px": 16.4,
+   "pz": -8.6
+  },
+  {
+   "t": 21.85,
+   "type": "GLOBBO",
+   "px": -3.39,
+   "pz": 9.4
+  },
+  {
+   "t": 23,
+   "type": "GLOBBO",
+   "px": -3.92,
+   "pz": -9.4
+  },
+  {
+   "t": 24.15,
+   "type": "YELA_CUBE",
+   "px": 16.4,
+   "pz": 7.59
+  },
+  {
+   "t": 25.3,
+   "type": "REDD_CUBE",
+   "px": -16.4,
+   "pz": 5.22
+  },
+  {
+   "t": 26.45,
+   "type": "GLOBBO",
+   "px": 5.4,
+   "pz": -9.4
+  },
+  {
+   "t": 27.6,
+   "type": "GLOBBO",
+   "px": 2.11,
+   "pz": 9.4
+  },
+  {
+   "t": 28.75,
+   "type": "YELA_CUBE",
+   "px": -13.49,
+   "pz": -9.4
+  },
+  {
+   "t": 29.9,
+   "type": "REDD_CUBE",
+   "px": 16.4,
+   "pz": -2.19
+  },
+  {
+   "t": 31.05,
+   "type": "GLOBBO",
+   "px": -7.86,
+   "pz": 9.4
+  },
+  {
+   "t": 32.2,
+   "type": "GLOBBO",
+   "px": -0.43,
+   "pz": -9.4
+  },
+  {
+   "t": 33.35,
+   "type": "YELA_CUBE",
+   "px": 9.43,
+   "pz": 9.4
+  },
+  {
+   "t": 34.5,
+   "type": "REDD_CUBE",
+   "px": -16.4,
+   "pz": -0.69
+  },
+  {
+   "t": 35.65,
+   "type": "GLOBBO",
+   "px": 11.17,
+   "pz": -9.4
+  },
+  {
+   "t": 36.8,
+   "type": "GLOBBO",
+   "px": -1.23,
+   "pz": 9.4
+  },
+  {
+   "t": 37.95,
+   "type": "YELA_CUBE",
+   "px": -6.6,
+   "pz": -9.4
+  },
+  {
+   "t": 39.1,
+   "type": "REDD_CUBE",
+   "px": 16.4,
+   "pz": 3.62
+  },
+  {
+   "t": 40,
+   "type": "GLOBBO",
+   "px": 16.4,
+   "pz": 5.07,
+   "speedMult": 1
+  },
+  {
+   "t": 41.15,
+   "type": "YELA_CUBE",
+   "px": -16.4,
+   "pz": 7.75,
+   "speedMult": 1
+  },
+  {
+   "t": 42.3,
+   "type": "REDD_CUBE",
+   "px": 3.84,
+   "pz": -9.4,
+   "speedMult": 1
+  }
+ ],
+ "tiers": {
+  "S": 43000,
+  "A": 32000,
+  "B": 29000,
+  "C": 20000,
+  "source": "bot pass (v56 look-ahead bots), 24 seeds a skill: got through sharp 100%, average 100%, rough 71%. score lines: S the sharp median, A the average median, B the average's weaker quarter, C the rough median or the average's weakest tenth (scripts/lines.mjs). v135 (the owner's C-line rule, 2026-11-10): C at the rough bot's lower quartile, 24,000 → 20,000"
+ },
+ "tiersHard": {
+  "S": 67000,
+  "A": 51000,
+  "B": 46000,
+  "C": 37000,
+  "source": "HARD bot pass (v56 look-ahead bots), 24 seeds a skill: got through sharp 100%, average 96%, rough 29%. score lines: S the sharp median, A the average median, B the average's weaker quarter, C the rough median or the average's weakest tenth (scripts/lines.mjs)"
+ }
+}

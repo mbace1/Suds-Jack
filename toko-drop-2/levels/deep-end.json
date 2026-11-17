@@ -1,0 +1,444 @@
+{
+ "format": 2,
+ "id": "deep-end",
+ "name": "THE DEEP END",
+ "arena": {
+  "combine": "union",
+  "shapes": [
+   {
+    "kind": "circle",
+    "c": [
+     -12.5,
+     0
+    ],
+    "r": 4.75
+   },
+   {
+    "kind": "rect",
+    "hx": 12,
+    "hz": 1.4
+   },
+   {
+    "kind": "circle",
+    "c": [
+     6,
+     0
+    ],
+    "r": 10
+   }
+  ]
+ },
+ "duration": 75,
+ "goal": {
+  "type": "boss"
+ },
+ "plan": {
+  "world": 3,
+  "d": 8,
+  "teaches": "angler; a boss too big for the channel",
+  "strategy": [
+   "risk",
+   "position",
+   "priority"
+  ]
+ },
+ "spawns": [
+  {
+   "t": 0,
+   "type": "angler",
+   "px": -13.5,
+   "pz": 0,
+   "boss": true,
+   "hp": 150
+  },
+  {
+   "t": 0,
+   "type": "YELA_CUBE",
+   "px": 15,
+   "pz": 0
+  },
+  {
+   "t": 0.5,
+   "type": "GLOBBO",
+   "px": 12,
+   "pz": -6
+  },
+  {
+   "t": 1,
+   "type": "GLOBBO",
+   "px": 12,
+   "pz": 6
+  },
+  {
+   "t": 2.7,
+   "type": "YELA_CUBE",
+   "px": 15,
+   "pz": -2
+  },
+  {
+   "t": 3.2,
+   "type": "GLOBBO",
+   "px": 15,
+   "pz": 2
+  },
+  {
+   "t": 3.7,
+   "type": "YELA_CUBE",
+   "px": 13,
+   "pz": -5.5
+  },
+  {
+   "t": 3.9,
+   "type": "GLOBBO",
+   "px": -11.5,
+   "pz": -2.5
+  },
+  {
+   "t": 11.7,
+   "type": "YELA_CUBE",
+   "px": 13,
+   "pz": 5.5
+  },
+  {
+   "t": 12.2,
+   "type": "GLOBBO",
+   "px": 9,
+   "pz": -8
+  },
+  {
+   "t": 12.7,
+   "type": "YELA_CUBE",
+   "px": 9,
+   "pz": 8
+  },
+  {
+   "t": 12.9,
+   "type": "GLOBBO",
+   "px": -11.5,
+   "pz": 2.5
+  },
+  {
+   "t": 13.2,
+   "type": "GLOBBO",
+   "px": 4,
+   "pz": -7
+  },
+  {
+   "t": 13.5,
+   "type": "GLOBBO",
+   "px": -14.5,
+   "pz": 0
+  },
+  {
+   "t": 20.7,
+   "type": "YELA_CUBE",
+   "px": 4,
+   "pz": 7
+  },
+  {
+   "t": 21.2,
+   "type": "GLOBBO",
+   "px": 15,
+   "pz": -2
+  },
+  {
+   "t": 21.7,
+   "type": "YELA_CUBE",
+   "px": 15,
+   "pz": 2
+  },
+  {
+   "t": 21.9,
+   "type": "GLOBBO",
+   "px": -11.5,
+   "pz": -2.5
+  },
+  {
+   "t": 22.2,
+   "type": "GLOBBO",
+   "px": 13,
+   "pz": -5.5
+  },
+  {
+   "t": 22.5,
+   "type": "GLOBBO",
+   "px": -11.5,
+   "pz": 2.5
+  },
+  {
+   "t": 22.7,
+   "type": "YELA_CUBE",
+   "px": 13,
+   "pz": 5.5
+  },
+  {
+   "t": 23.1,
+   "type": "GLOBBO",
+   "px": -14.5,
+   "pz": 0
+  },
+  {
+   "t": 29.7,
+   "type": "YELA_CUBE",
+   "px": 9,
+   "pz": -8
+  },
+  {
+   "t": 30.2,
+   "type": "GLOBBO",
+   "px": 9,
+   "pz": 8
+  },
+  {
+   "t": 30.7,
+   "type": "YELA_CUBE",
+   "px": 4,
+   "pz": -7
+  },
+  {
+   "t": 30.9,
+   "type": "GLOBBO",
+   "px": -11.5,
+   "pz": -2.5
+  },
+  {
+   "t": 31.2,
+   "type": "GLOBBO",
+   "px": 4,
+   "pz": 7
+  },
+  {
+   "t": 31.5,
+   "type": "GLOBBO",
+   "px": -11.5,
+   "pz": 2.5
+  },
+  {
+   "t": 31.7,
+   "type": "YELA_CUBE",
+   "px": 15,
+   "pz": -2
+  },
+  {
+   "t": 32.1,
+   "type": "GLOBBO",
+   "px": -14.5,
+   "pz": 0
+  },
+  {
+   "t": 38.7,
+   "type": "YELA_CUBE",
+   "px": 15,
+   "pz": 2
+  },
+  {
+   "t": 39.2,
+   "type": "GLOBBO",
+   "px": 13,
+   "pz": -5.5
+  },
+  {
+   "t": 39.7,
+   "type": "YELA_CUBE",
+   "px": 13,
+   "pz": 5.5
+  },
+  {
+   "t": 39.9,
+   "type": "GLOBBO",
+   "px": -11.5,
+   "pz": -2.5
+  },
+  {
+   "t": 40.2,
+   "type": "GLOBBO",
+   "px": 9,
+   "pz": -8
+  },
+  {
+   "t": 40.5,
+   "type": "GLOBBO",
+   "px": -11.5,
+   "pz": 2.5
+  },
+  {
+   "t": 40.7,
+   "type": "YELA_CUBE",
+   "px": 9,
+   "pz": 8
+  },
+  {
+   "t": 41.1,
+   "type": "GLOBBO",
+   "px": -14.5,
+   "pz": 0
+  },
+  {
+   "t": 41.2,
+   "type": "GLOBBO",
+   "px": 4,
+   "pz": -7
+  },
+  {
+   "t": 45,
+   "type": "YELA_CUBE",
+   "px": 15,
+   "pz": 0,
+   "speedMult": 1
+  },
+  {
+   "t": 45.5,
+   "type": "GLOBBO",
+   "px": 12,
+   "pz": -6,
+   "speedMult": 1
+  },
+  {
+   "t": 46,
+   "type": "GLOBBO",
+   "px": 12,
+   "pz": 6,
+   "speedMult": 1
+  },
+  {
+   "t": 47.7,
+   "type": "YELA_CUBE",
+   "px": 15,
+   "pz": -2,
+   "speedMult": 1
+  },
+  {
+   "t": 48.2,
+   "type": "GLOBBO",
+   "px": 15,
+   "pz": 2,
+   "speedMult": 1
+  },
+  {
+   "t": 48.7,
+   "type": "YELA_CUBE",
+   "px": 13,
+   "pz": -5.5,
+   "speedMult": 1
+  },
+  {
+   "t": 48.9,
+   "type": "GLOBBO",
+   "px": -11.5,
+   "pz": -2.5,
+   "speedMult": 1
+  },
+  {
+   "t": 56.7,
+   "type": "YELA_CUBE",
+   "px": 13,
+   "pz": 5.5,
+   "speedMult": 1
+  },
+  {
+   "t": 57.2,
+   "type": "GLOBBO",
+   "px": 9,
+   "pz": -8,
+   "speedMult": 1
+  },
+  {
+   "t": 57.7,
+   "type": "YELA_CUBE",
+   "px": 9,
+   "pz": 8,
+   "speedMult": 1
+  },
+  {
+   "t": 57.9,
+   "type": "GLOBBO",
+   "px": -11.5,
+   "pz": 2.5,
+   "speedMult": 1
+  },
+  {
+   "t": 58.2,
+   "type": "GLOBBO",
+   "px": 4,
+   "pz": -7,
+   "speedMult": 1
+  },
+  {
+   "t": 58.5,
+   "type": "GLOBBO",
+   "px": -14.5,
+   "pz": 0,
+   "speedMult": 1
+  },
+  {
+   "t": 65.7,
+   "type": "YELA_CUBE",
+   "px": 4,
+   "pz": 7,
+   "speedMult": 1
+  },
+  {
+   "t": 66.2,
+   "type": "GLOBBO",
+   "px": 15,
+   "pz": -2,
+   "speedMult": 1
+  },
+  {
+   "t": 66.7,
+   "type": "YELA_CUBE",
+   "px": 15,
+   "pz": 2,
+   "speedMult": 1
+  },
+  {
+   "t": 66.9,
+   "type": "GLOBBO",
+   "px": -11.5,
+   "pz": -2.5,
+   "speedMult": 1
+  },
+  {
+   "t": 67.2,
+   "type": "GLOBBO",
+   "px": 13,
+   "pz": -5.5,
+   "speedMult": 1
+  },
+  {
+   "t": 67.5,
+   "type": "GLOBBO",
+   "px": -11.5,
+   "pz": 2.5,
+   "speedMult": 1
+  },
+  {
+   "t": 67.7,
+   "type": "YELA_CUBE",
+   "px": 13,
+   "pz": 5.5,
+   "speedMult": 1
+  },
+  {
+   "t": 68.1,
+   "type": "GLOBBO",
+   "px": -14.5,
+   "pz": 0,
+   "speedMult": 1
+  }
+ ],
+ "tiers": {
+  "S": 15000,
+  "A": 14000,
+  "B": 13000,
+  "C": 12000,
+  "source": "bot pass (v56 look-ahead bots), 24 seeds a skill: got through sharp 100%, average 96%, rough 21%. score lines: S the sharp median, A the average median, B the average's weaker quarter, C the rough median or the average's weakest tenth (scripts/lines.mjs)"
+ },
+ "tiersHard": {
+  "S": 23000,
+  "A": 21000,
+  "B": 19000,
+  "C": 17000,
+  "source": "HARD bot pass (v56 look-ahead bots), 24 seeds a skill: got through sharp 100%, average 88%, rough 4%. score lines: S the sharp median, A the average median, B the average's weaker quarter, C the rough median or the average's weakest tenth (scripts/lines.mjs)"
+ }
+}

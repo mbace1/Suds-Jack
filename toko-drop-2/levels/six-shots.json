@@ -1,0 +1,125 @@
+{
+ "format": 2,
+ "id": "six-shots",
+ "name": "SIX SHOTS",
+ "arena": {
+  "shapes": [
+   {
+    "kind": "rect",
+    "hx": 15,
+    "hz": 9
+   }
+  ]
+ },
+ "duration": 30,
+ "goal": {
+  "type": "clear"
+ },
+ "plan": {
+  "world": 3,
+  "d": 5,
+  "teaches": "aiming",
+  "strategy": [
+   "aim",
+   "priority",
+   "risk"
+  ]
+ },
+ "spawns": [
+  {
+   "t": 0,
+   "type": "GLOBBO",
+   "px": 5.87,
+   "pz": 7.4
+  },
+  {
+   "t": 1.4,
+   "type": "GLOBBO",
+   "px": -13.4,
+   "pz": -2.14
+  },
+  {
+   "t": 2.8,
+   "type": "YELA_CUBE",
+   "px": 11.21,
+   "pz": -7.4
+  },
+  {
+   "t": 4.2,
+   "type": "GLOBBO",
+   "px": -1.86,
+   "pz": 7.4
+  },
+  {
+   "t": 5.6,
+   "type": "GLOBBO",
+   "px": -4,
+   "pz": -7.4
+  },
+  {
+   "t": 7,
+   "type": "YELA_CUBE",
+   "px": 13.4,
+   "pz": 4.64
+  },
+  {
+   "t": 8.4,
+   "type": "GLOBBO",
+   "px": -13.4,
+   "pz": 5.8
+  },
+  {
+   "t": 9.8,
+   "type": "GLOBBO",
+   "px": 3.31,
+   "pz": -7.4
+  },
+  {
+   "t": 11.2,
+   "type": "YELA_CUBE",
+   "px": 2.46,
+   "pz": 7.4
+  },
+  {
+   "t": 12.6,
+   "type": "GLOBBO",
+   "px": -13.28,
+   "pz": -7.4
+  },
+  {
+   "t": 14,
+   "type": "GLOBBO",
+   "px": 13.4,
+   "pz": -3.18
+  },
+  {
+   "t": 15.4,
+   "type": "YELA_CUBE",
+   "px": -5.02,
+   "pz": 7.4
+  },
+  {
+   "t": 16.8,
+   "type": "GLOBBO",
+   "px": -1.09,
+   "pz": -7.4
+  }
+ ],
+ "mods": {
+  "ammo": 55
+ },
+ "tiers": {
+  "S": 5800,
+  "A": 4100,
+  "B": 3700,
+  "C": 3300,
+  "source": "bot pass (v56 look-ahead bots), 24 seeds a skill: got through sharp 100%, average 100%, rough 75%. score lines: S the sharp median, A the average median, B the average's weaker quarter, C the rough median or the average's weakest tenth (scripts/lines.mjs)"
+ },
+ "tiersHard": {
+  "S": 8600,
+  "A": 6200,
+  "B": 5600,
+  "C": 3900,
+  "source": "HARD bot pass (v56 look-ahead bots), 24 seeds a skill: got through sharp 100%, average 100%, rough 88%. score lines: S the sharp median, A the average median, B the average's weaker quarter, C the rough median or the average's weakest tenth (scripts/lines.mjs). v135 (the owner's C-line rule, 2026-11-10): C at the rough bot's lower quartile, 5,000 → 3,900"
+ }
+}
