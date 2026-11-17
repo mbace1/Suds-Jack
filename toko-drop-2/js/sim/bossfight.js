@@ -10,10 +10,11 @@
 //
 //   w.fight  { kind, t, seen, done, tiers, hp, max, ids, x, z, grade, bonus }
 //   events   bossDown { kind, grade, time, bonus, tiers }
-import { TUNING } from '../tuning.js?v=153';
-import { BOSS_TIERS } from '../tuning/bossfights.js?v=153';
-import * as pickups from './pickups.js?v=153';
-import { endsWorld, endsRun } from './worlds.js?v=153';
+import { TUNING } from '../tuning.js?v=155';
+import { BOSS_TIERS } from '../tuning/bossfights.js?v=155';
+import * as pickups from './pickups.js?v=155';
+import { endsWorld, endsRun } from './worlds.js?v=155';
+import { phaseSpec } from './species/bosskit.js?v=155';
 
 const T = TUNING;
 const ORDER = ['S', 'A', 'B', 'C'];
@@ -25,8 +26,17 @@ export function tiersFor(world, kind) {
   return null;
 }
 
+// v154: a boss fought in phases (tuning/bossphases.js) has had its health moved: its measured lines move by
+// `tiers` (an estimate until scripts/boss-tiers.mjs is run with the phases on)
+function linesFor(w, kind) {
+  const L = tiersFor(w.world ?? 1, kind), k = phaseSpec(w, kind)?.tiers;
+  if (!L || !k) return L;
+  const r = (v) => Math.round(v * k * 10) / 10;
+  return { S: r(L.S), A: r(L.A), B: r(L.B) };
+}
+
 export function start(w, kind) {
-  w.fight = { kind, t: 0, seen: false, done: false, tiers: tiersFor(w.world ?? 1, kind), hp: 0, max: 0, ids: new Map(), x: 0, z: 0 };
+  w.fight = { kind, t: 0, seen: false, done: false, tiers: linesFor(w, kind), hp: 0, max: 0, ids: new Map(), x: 0, z: 0 };
 }
 
 export const gradeOf = (tiers, t) => (!tiers ? 'C' : t <= tiers.S + 1e-9 ? 'S' : t <= tiers.A + 1e-9 ? 'A' : t <= tiers.B + 1e-9 ? 'B' : 'C');

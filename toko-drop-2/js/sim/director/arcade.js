@@ -21,12 +21,13 @@
 // runs down in its enemy loop — the same sequence 1.x runs, with the seam in
 // a different place. test/director.mjs holds all of it in lockstep with 1.x's
 // own loop source.
-import { TUNING } from '../../tuning.js?v=153';
-import * as worlds from '../worlds.js?v=153';
-import * as challenge from '../challenge.js?v=153';
-import { makeRng } from '../rng.js?v=153';
-import * as bossfight from '../bossfight.js?v=153';
-import * as floorshift from '../floorshift.js?v=153';
+import { TUNING } from '../../tuning.js?v=155';
+import * as worlds from '../worlds.js?v=155';
+import * as challenge from '../challenge.js?v=155';
+import { makeRng } from '../rng.js?v=155';
+import * as bossfight from '../bossfight.js?v=155';
+import * as floorshift from '../floorshift.js?v=155';
+import { phaseSpec } from '../species/bosskit.js?v=155';
 
 const T = TUNING, W = T.waves, TAU = Math.PI * 2;
 
@@ -357,6 +358,9 @@ function pump(w, d, dt, api) {
       o.isBoss = true; o.hp = S.bossHp ?? (S.noHpMult ? S.hp : Math.ceil(S.hp * W.boss.hpMult));
       // in the worlds 1.x's own bosses are fought as long as theirs (v45)
       if (worlds.on(w) && w.world) o.hp = Math.round(o.hp * (W.boss.worldHp?.[s.kind] ?? 1));
+      // v154: a boss fought in three phases has its own health (tuning/bossphases.js: the fights evened out)
+      const BP = phaseSpec(w, s.kind);
+      if (BP?.hp) o.hp = BP.hp;
     }
     // v105: a plain body's SIZE CLASS (TUNING.sizes), drawn when its wave was laid out (sizeWave)
     else if (s.size) o.size = s.size;
