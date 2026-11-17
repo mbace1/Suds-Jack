@@ -92,6 +92,18 @@ Classic `toko-drop/` remains the historical / hub v221 lineage. Godot port follo
 - **Locks:** 2.0 is designed and reviewed through the Sakurai principles (§6). Coding agents load the skill, cite the chapter, and bring design questions back to D-sign/Mikael. The mappings in §6 stay **PROPOSAL** until Mikael picks. Pillar 1 (keep the feel) wins on conflict.
 - **Caveat:** the skill is an unofficial AI summary (in Japanese) of Sakurai's videos, not his words.
 
+### Decision 18 Nov 2026 — answers to the Sakurai-lens questions (§6)
+- **Mikael, in his words, question by question:**
+  1. Entering a new world: **"fresh"**, i.e. a breath first, not a continued squeeze. This matches 15 Nov (full health on arrival).
+  2. Hitstop: **"no hitstop"**. This matches 15 Nov ("no need for any freezes"). §6 row 8's hitstop proposal is **rejected**. Big bosses get elaborate deaths instead (v154).
+  3. What a boss is: **"strategic bullet wave, weak spots etc. General boss design."** A boss is a pattern to read with a weak point to find, not an hp wall. It builds on v154's three phases.
+  4. The campaign's first minutes: **"simplest strategy, riding difficult tiers and more complex strategy. The first 3rd should have some finished but not tested."**
+     - Producer's reading, to be confirmed by Mikael: room 1 asks for the simplest strategy. The campaign then climbs in difficulty tiers, each asking for a more complex strategy.
+     - The first third of the rooms are built but not yet playtested.
+  5. World identity versus even difficulty: the question as written **made no sense** to Mikael. It needs re-asking in plain words (see §7).
+- **Drop Zero:** "made by Codex". Its location is still not given.
+- **Locks:** answers 1–3. Answer 4 is a direction pending confirmation of the reading.
+
 ---
 
 ## 6. Sakurai principles (adopted 15 Nov 2026)
@@ -164,5 +176,6 @@ These numbers come from my own simple dodge-and-shoot bot: 16 seeds, ARCADE, run
 
 ## 7. Open questions
 
-1. Where is Drop Zero's project (path, Drive zip, or private machine)?
-2. The five Sakurai-lens questions at the end of §6.
+1. Where is Drop Zero's project? Codex made it (18 Nov); the path, Drive zip or machine is still unknown.
+2. ~~The five Sakurai-lens questions at the end of §6.~~ Answered 18 Nov (§5), except Q5, re-asked here in plain words: should each world's own enemies fill its big swarm waves, so that every world looks and plays differently? Today the big swarms are mostly the same cheap enemies in every world.
+3. Q4, confirm the reading: room 1 = the simplest strategy, then difficulty tiers that each ask for a more complex strategy.

@@ -19,6 +19,19 @@
     Never `--no-verify`.
 -->
 
+## v155 — 2026-11-18
+**A room's RETRY is under the heading, and the result says how far the next grade was**
+- Owner, 2026-11-18, of the Sakurai fast-retry and reward rows (`DESIGN.md` §6 rows 5 and 10): do the fixes that need no decision.
+- **RETRY** (`ui.results`): on a room's result card, AGAIN is RETRY (en / ja リトライ / fi YRITÄ UUDESTAAN) and is the first button, straight under the heading. It used to come after the GOT YOU card, the numbers and the grade lines, which is below the fold on a phone held upright. It was already the focused button; now it is also in reach. A run's card (ARCADE, HARDCADE, DAILY) is unchanged.
+- **The next grade** (`nextGrade` in `ui.js`): the GRADE row reads, for example, `B  ·  +3,200 for A`: the grade above yours and the points it still needed, from the room's own lines (`tiersFor`). Shown only when the points decided the grade. An S shows nothing; so does an F for dying, a hit, the heart or the clock, which says why instead (as before).
+- **Measured, not changed:**
+  - Death to control is the 1.4 s death beat (`TUNING.flow.deathBeat`) plus one tap: RETRY / AGAIN goes straight back into play with no intro and no countdown (since v39). This is inside Sakurai's #116 aim of ≤2 s, so nothing moved.
+  - Spawn safety: in ARCADE and HARDCADE with no input (12 seeds a world, first 4 s), no body lands nearer the hero than 3.4 m, and in worlds 1, 2 and 4–8 none nearer than 7 m. A safe-landing radius (8 m for the first 3 s) was built, measured, and **cut**: it changed nothing, because nothing lands on the hero.
+  - **World 8's first hit** (the 11 Nov playtest's *22 gels on the player at 0:03*) is speed, not placement. Bodies there walk at ×2.3–2.7, so a GLOBBO from 13 m reaches an idle hero in about 1.2 s (first hit 1.1–2.7 s, 12 seeds; world 1: 2.7–5.2 s). This is the opener's pressure, and so an owner question: the 18 Nov answer is that a new world should feel **fresh** (a breath, then the squeeze). It is left for a brief.
+- Cache tokens `?v=154` → `?v=155`; HUD label → `2.0 · v155`
+
+---
+
 ## v154 — 2026-11-15
 **Bosses fight in three phases, each a little longer, and die slowly; WORLD CLEAR moves to a side card; a testers' unlock (?unlock=all, ?room=N)**
 - Owner decisions of 2026-11-15 (producer doc `DESIGN.md`):
@@ -78,7 +91,7 @@
   - The death plays over about 2 s of real frames.
   - WORLD CLEAR shows as the side card during the death, in landscape (960×540), portrait (390×844) and reduced motion (no animation).
   - Not checked on a phone or a real GPU.
-- Cache tokens `?v=153` → `?v=154`; HUD label → `2.0 · v154`
+- Cache tokens `?v=153` → `?v=155`; HUD label → `2.0 · v154`
 
 ---
 
@@ -89,7 +102,7 @@
 - The two places no campaign world wore are in it: NEEDLE is in the sewer (THE VEIN, with the stream down its middle) and the last room, THE CORE, is in the core. All nine arcade worlds are worn somewhere in the campaign.
 - Nothing a room plays by has moved: its rule, its goal, its clock and its grade lines are what they were. Only what it is drawn as.
 - Tests: `test/campaign.mjs` 305 checks (every room's look is an arcade world's; a shape or a moving floor wears the grid and a plain rectangle a place; every world has both; every arcade world is worn somewhere), `test/smoke.mjs` reads the room's own look.
-- Cache tokens `?v=152` → `?v=154`; HUD label → `2.0 · v153`
+- Cache tokens `?v=152` → `?v=155`; HUD label → `2.0 · v153`
 
 ---
 
