@@ -1,0 +1,10 @@
+{
+  "run": 42717115868,
+  "job": 129501967852,
+  "head": "6b8d06f48bf1c971f7f94d5ee6d5a754ae33d4fc",
+  "build": "success",
+  "deployment": "failed",
+  "error_timestamp": "2026-11-09T23:13:49.6104637Z",
+  "reason": "Repeated syncing_files until 600000ms timeout; deployment canceled.",
+  "recovery": "One full rebuild/rerun of this unchanged combined commit to provide a fresh artifact; no code or assertion changes."
+}

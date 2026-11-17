@@ -1,3 +1,4 @@
+import { sdfSkullsEnabled, setSdfSkullsEnabled, setSdfLighting } from './sdf-skull.js?v=3';
 import * as THREE from 'three';
 import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
@@ -5,12 +6,12 @@ import { AfterimagePass } from 'three/addons/postprocessing/AfterimagePass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
-import { InputManager } from './input.js?v=110';
+import { InputManager } from './input.js?v=111';
 import { Player } from './player.js?v=85';
 import { DaggerPool } from './daggers.js?v=85';
 import { GemPool } from './gems.js?v=85';
 import { DebrisPool, LitterField, VoxelSprite, MODELS, setVoxelDetail, getVoxelDetail, setStyleHue, styleTint, setHullMode, getHullMode, voxelOverrides, modelFor, getVoxelStyle, setVoxelStyle, setRosterPalette } from './voxel.js?v=85';
-import { Skull, Wraith, Splitter, MiniSkull, DreadSkull, Husk, Revenant, Brute, Totem, Serpent, Spider, Leviathan, Watcher, Blinker, Egg } from './enemy.js?v=107';
+import { Skull, Wraith, Splitter, MiniSkull, DreadSkull, Husk, Revenant, Brute, Totem, Serpent, Spider, Leviathan, Watcher, Blinker, Egg } from './enemy.js?v=113';
 import { OrbPool } from './bullets.js?v=85';
 import { AudioKit } from './audio.js?v=85';
 import { mulberry32, fnv1a, utcDateStr, mixSeed } from './rng.js?v=85';
@@ -19,10 +20,10 @@ import { HyperEnvironment } from './environment.js?v=85';
 import { Backdrop } from './backdrop.js?v=107';
 import { Walls } from './walls.js?v=85';
 import { MODES, modeById, nextModeId, applyAbilities, abilitiesOf } from './modes.js?v=109';
-import { TruckTrack } from './truck.js?v=107';
+import { TruckTrack } from './truck.js?v=113';
 import { GazeLock } from './gaze.js?v=85';
 import { PhysGibs } from './gibs.js?v=85';
-import { SEASONS, seasonById, nextSeasonId, GEL_MOUND_SAMPLE } from './seasons.js?v=110';
+import { SEASONS, seasonById, nextSeasonId, GEL_MOUND_SAMPLE } from './seasons.js?v=121';
 import { Platforms } from './platforms.js?v=85';
 import { shaleGeometry, shaleMaterial } from './shale.js?v=85';
 import { GooWave } from './goo.js?v=85';
@@ -31,9 +32,13 @@ import { mosaicPalette, mosaicSkin } from './roster.js?v=85';
 import { Skullscape } from './inca.js?v=85';
 import { ARENA_ASSETS, buildFloorPanels } from './meshassets.js?v=107';
 import { preloadMeshEnemies, meshSkinState, setMeshSkins, meshSkinsOn, setRosterSkin } from './mesh-enemies.js?v=107';
-import { openTable } from '../../toko/js/table.js?v=1';   // v48 (theirs): Toko opens over the paused run
+import { Look } from './fx.js?v=1';   // v61 (HD-022): what a fight looks like, per season
+import { FLUID_GLSL_PARS, FLUID_GLSL_MAIN } from './fx-fluid.js?v=1';   // …and the floor's half of the liquid
+import { openTable } from '../../toko/js/table.js?v=6';   // v48 (theirs): Toko opens over the paused run
 
 const ARENA_R = 26;
+const SDF_TEST_REQUESTED = new URLSearchParams(location.search).get('sdfTest') === '1';
+function isSdfTestArena() { return SDF_TEST_REQUESTED && S().id === 'void'; }
 // v41: the season's weapon PROFILE overlays T.weapon — wpn(key) is the
 // profile's value where it has one and the dagger's otherwise. applySeason
 // swaps it; the fire sites ask wpn() and never T.weapon directly for
@@ -74,7 +79,7 @@ const opts = Object.assign(
   // motion=false is the reduced-motion master switch (forces smear/shake/chroma/FOV
   // kicks off without touching the individual toggles); contrast=true brightens
   // orbs + telegraphs and kills the floor's red flush for readability
-  { speed: 1, fov: 90, sens: 1, aim: true, projection: false, smear: false, shake: true, chroma: false, edge: false, gibs: true, music: true, motion: true, contrast: false, perf: 'auto', haptics: true, detail: 'auto', style: 'crimson', look: 'cubes' }, // v38: the cube look is the house look
+  { speed: 1, fov: 90, sens: 1, aim: true, projection: false, smear: false, shake: true, chroma: false, edge: false, gibs: true, music: true, motion: true, contrast: false, perf: 'auto', haptics: true, detail: 'auto', style: 'crimson', look: 'cubes', fx: true }, // v38: the cube look is the house look
   JSON.parse(localStorage.getItem(OPTS_KEY) || '{}'));
 
 // STYLE presets: hue targets for the accent recolor (null = native crimson).
@@ -525,7 +530,17 @@ const floorMat = new THREE.ShaderMaterial({
     uGlint: { value: 0 },
     uGlintCol: { value: new THREE.Color(1, 0.8, 0.4) },
     uSunDirF: { value: new THREE.Vector3(0, 0.12, -1).normalize() },
+    uSdfInlays: { value: 0 },
     uDark: { value: 1 },   // v52: how much of the floor texture's own grain survives
+    // v61 (HD-022): the floor is a fluid (fx-fluid.js) and is lit by what
+    // happens on it. uFluidK.x is 0 wherever there is no liquid (the walls,
+    // VOID, the road), and then none of this runs.
+    uFluid: { value: null },
+    uFluidK: { value: new THREE.Vector4(0, 1, 1 / 256, 1 / (2 * ARENA_R)) },
+    uFluidA: { value: new THREE.Color(1, 1, 1) },
+    uFluidB: { value: new THREE.Color(0, 0, 0) },
+    uLit: { value: [new THREE.Vector4(), new THREE.Vector4(), new THREE.Vector4(), new THREE.Vector4()] },       // x, z, reach, strength
+    uLitCol: { value: [new THREE.Color(), new THREE.Color(), new THREE.Color(), new THREE.Color()] },
   },
   vertexShader: /* glsl */`
     varying vec2 vUv;
@@ -547,10 +562,15 @@ const floorMat = new THREE.ShaderMaterial({
     uniform vec3 uGlintCol;
     uniform vec3 uSunDirF;
     uniform float uDark;
+    uniform float uSdfInlays;
+    uniform vec4 uLit[4];
+    uniform vec3 uLitCol[4];
+    ${FLUID_GLSL_PARS}
     varying vec2 vUv;
     varying vec2 vWorld;
     void main() {
       vec3 tex = texture2D(map, vUv * uRepeat).rgb;
+      vec3 rawTex = tex;
       // v52: the grain between the lines is what read as gravel — a season
       // can press it down (uDark < 1) and keep the lines, which are brighter
       float lum = max(tex.r, max(tex.g, tex.b));
@@ -577,10 +597,19 @@ const floorMat = new THREE.ShaderMaterial({
         float foam = (1.0 - smoothstep(0.0, 1.4, abs(s - w * 0.62))) * ragged;
         col += uTint * foam * foam * uWaveK.y * (uGlow * 0.35 + 0.4);
       }
+      // v61: an explosion, a muzzle or a pool of fire lights the floor it is
+      // on — the floor's own texture, shown for a few frames in that colour
+      vec3 lit = vec3(0.0);
+      for (int i = 0; i < 4; i++) {
+        float lk = max(0.0, 1.0 - length(vWorld - uLit[i].xy) / max(uLit[i].z, 0.01));
+        lit += uLitCol[i] * (lk * lk * uLit[i].w);
+      }
+      col += (rawTex * 5.0 + 0.01) * lit;
+      ${FLUID_GLSL_MAIN}
       if (uCaustic > 0.0) {
         // two sine fields sliding over each other, cubed: the bright threads
         // light draws on the bottom of a pool
-        vec2 p = vUv * uRepeat;
+        vec2 p = vUv * uRepeat + fluidG * 16.0;   // v61: a ripple bends them
         float a = sin(p.x * 2.1 + uTime * 0.9) * sin(p.y * 1.7 - uTime * 0.7);
         float b = sin((p.x + p.y) * 1.3 + uTime * 0.5) * sin((p.x - p.y) * 1.9 - uTime * 0.6);
         float ca = pow(max(0.0, a * 0.55 + b * 0.45), 3.0);
@@ -589,10 +618,22 @@ const floorMat = new THREE.ShaderMaterial({
       if (uGlint > 0.0) {
         vec3 P = vec3(vWorld.x, 0.0, vWorld.y);
         vec3 V = normalize(P - cameraPosition);
-        vec3 R = reflect(V, vec3(0.0, 1.0, 0.0));
+        vec3 R = reflect(V, fluidN);   // v61: the sun's path breaks on the ripples
         float g = max(dot(R, uSunDirF), 0.0);
         float rip = 0.55 + 0.45 * sin(vWorld.x * 2.7 + uTime * 1.3) * sin(vWorld.y * 3.3 - uTime * 1.7);
         col += uGlintCol * (pow(g, 90.0) * 2.4 + pow(g, 9.0) * 0.35) * rip * uGlint;
+      }
+      if (uSdfInlays > .5) {
+        // Signed distances to broken annular grooves; a material engraving,
+        // not new collision or an illuminated grid over the playfield.
+        float radius=length(vWorld), angle=atan(vWorld.y,vWorld.x);
+        float groove=min(abs(radius-7.6),abs(radius-15.2))-.055;
+        groove=max(groove,(.28-abs(sin(angle*3.0)))*.24);
+        float width=max(fwidth(groove),.012);
+        float cut=1.0-smoothstep(-width,width,groove);
+        float bevel=1.0-smoothstep(0.0,.055,abs(groove));
+        col*=1.0-cut*.65;
+        col+=uTint*bevel*.035*(.7+uPulse*.3);
       }
       col = mix(col, col * uAccent, clamp(uRed, 0.0, 1.0));       // hurt flush
       gl_FragColor = vec4(col, 1.0);
@@ -853,6 +894,12 @@ function updateShadows() {
   shadows.instanceMatrix.needsUpdate = true;
 }
 
+// v61 (HD-022): THE LOOK — particles (and, from fx-fluid.js, the floor) fed
+// by the events below. The season declares it (`fx` in seasons.js); VOID has
+// none and stays the control. opts.fx is the pause menu's switch.
+const look = new Look(scene, ARENA_R);
+look.bindFloor(floorMat.uniforms);   // the walls are a clone made earlier: no liquid on them
+
 // Impact sparks (dagger hits) + shockwave rings (heavy kills). The spark is an
 // authored 8px software sprite rather than a clean translucent WebGL square.
 const sparks = [];
@@ -905,6 +952,7 @@ function spawnShockwave(pos) {
   scene.add(m);
   m.position.set(pos.x, 0.05, pos.z);
   sparks.push({ m, t: 0.45, max: 0.45, big: true, ring: true });
+  look.shock(pos);   // v61
   // the ring isn't just a decal — it blasts the surrounding gib field outward
   debris.shove(pos.x, 0.4, pos.z, 7, 11);
   litter.shove(debris, pos.x, 0.4, pos.z, 7, 9); // bones leap back into the air
@@ -1079,6 +1127,7 @@ function applyRenderScale() {
   renderer.setSize(window.innerWidth, window.innerHeight);
   composer.setSize(window.innerWidth, window.innerHeight);
   edgePass.uniforms.uPx.value.set(1 / (window.innerWidth * pr), 1 / (window.innerHeight * pr));
+  look.setView(window.innerWidth * pr, window.innerHeight * pr);
 }
 
 function resize() {
@@ -1216,6 +1265,8 @@ let stylePeakIdx = 0;  // best tier reached this run (for the death recap)
 let comboCount = 0;
 let comboTimer = 0;
 let nextTotemAt = 0;
+let runMixed = false;   // v62: the season was changed under a live run — it clears nothing
+let crestsCleared = 0, crestArmed = false, crestStruck = false, lastStandSaid = 0;   // v62 (HD-023)
 let waveStrikes = 0;   // v48: how many times the sea has hit the body this run
 let nextLevAt = 0;
 let nextThornAt = 0;
@@ -1282,6 +1333,8 @@ function S() { return seasonById(season); }
  *  buildSeasonArena, off the run's own rng. */
 function applySeason() {
   const sn = S();
+  setSdfLighting(sn.sky.sunDir || [-.5,.8,1], sn.sky.horizon || [.8,.08,.02]);
+  floorMat.uniforms.uSdfInlays.value=sdfSkullsEnabled?1:0;
   skyMat.uniforms.uVoid.value.setRGB(...sn.sky.void);
   skyMat.uniforms.uBand.value = sn.sky.band;
   skyMat.uniforms.uStars.value = sn.sky.stars;
@@ -1330,6 +1383,16 @@ function applySeason() {
   WP = T.weapons?.[sn.weapon] ?? {};
   daggers.setShape(WP.shape ?? null, WP.color ?? null);
   audio.fireTone = WP.fireTone ?? 1;
+  applyLook();
+}
+
+/** v61: the season's look, on the floor the arena actually has. Called by
+ *  applySeason and again by resetRun, which is where the road replaces the disc. */
+function applyLook() {
+  const sn = S();
+  look.setSeason(sn.fx ?? null, sn.fog, M().arena === 'track' ? truck.fallY() : 0, M().arena !== 'track', sn.sky.sunDir ?? null);
+  // the old 80 motes are the same air drawn twice once a season has its own
+  dust.visible = !(look.active && sn.fx?.ambient);
 }
 
 /** The rock and the slabs, seeded from the run's rng so a DAILY arena is
@@ -1475,6 +1538,7 @@ async function boardReport(date, m, t) {
 
 /** Menu extra: today's global best for the selected mode (daily view only). */
 async function menuBoardLine() {
+  if(isSdfTestArena()) return;
   if (!BOARD_ENDPOINT || runKind !== 'daily') return;
   try {
     const res = await fetch(`${BOARD_ENDPOINT}?date=${todayStr()}&mode=${M().id}&season=${S().id}`);
@@ -1520,8 +1584,19 @@ function previewSeason(id) {
   }
 }
 
+// Both title and pause season choices must leave the pinned test page.
+// Mutating its season in place would retain ?mode=hyper, and make hiKey()
+// select a normal best while this test run is still active.
+function leaveSdfTestArenaForSeason(id) {
+  if (!isSdfTestArena()) return false;
+  if (!seasonById(id).hidden) localStorage.setItem(SEASON_KEY, seasonById(id).id);
+  location.href = './';
+  return true;
+}
+
 function selectSeason(id) {
   if (state !== 'menu') return;
+  if (leaveSdfTestArenaForSeason(id)) return;
   previewSeason(id);
   showMenu();
 }
@@ -1572,25 +1647,29 @@ function menuKeysLine() {
   }
   if (input.gamepad) {
     return [`<b>A</b> jump${jumps}`, gun ? '<b>hold RT</b> fire' : 'look at a skull to fire', ab.dash ? '<b>B</b> dash' : '',
-      ab.reap ? '<b>X</b> reap' : ''].filter(Boolean).join(' &middot; ') + '<br><b>&#9664; &#9654;</b> season &middot; <b>A</b> start';
+      ab.reap ? '<b>X</b> reap' : ''].filter(Boolean).join(' &middot; ') + '<br><b>&#9664; &#9654;</b> season &middot; <b>&#9650; &#9660;</b> render &middot; <b>A</b> start';
   }
   return ['WASD move', gun ? '<b>hold click</b> fire' : 'look at a skull to fire', `<b>Space</b> jump${jumps}`,
     ab.dash ? '<b>Shift</b> dash' : '', ab.reap ? '<b>R</b> reap' : ''].filter(Boolean).join(' &middot; ')
-    + '<br><b>&larr; &rarr;</b> season &middot; <b>ENTER</b> start &middot; <b>ESC</b> options';
+    + '<br><b>&larr; &rarr;</b> season &middot; <b>R</b> render &middot; <b>ENTER</b> start &middot; <b>ESC</b> options';
 }
 
 /** The best to beat, labelled with the MODE it is filed under: seasons 1
  *  and 2 both play HYPER and share its best, so a per-season label would lie. */
 function bestLine() {
+  if(isSdfTestArena()) return 'TEST ARENA · separate records · no daily board';
   const m = M().name;
   if (runKind === 'daily') {
     const dayBest = parseFloat(localStorage.getItem(dailyKey(todayStr(), M().id)) || '0');
     return `DAILY ${todayStr()} &middot; ${dayBest > 0 ? `today's best ${dayBest.toFixed(1)}s` : 'no time today yet'}`;
   }
+  const c = clearOf(S().id, M().id);
+  if (c) return `${m} &middot; CLEARED${c.n > 1 ? ` &times;${c.n}` : ''} &middot; best clear ${c.kills} kills`;
   return hiScore > 0 ? `${m} &middot; best ${hiScore.toFixed(1)}s` : `${m} &middot; no best yet`;
 }
 
 function showMenu() {
+  floorMat.uniforms.uSdfInlays.value=sdfSkullsEnabled?1:0;
   setRunFrame(false);
   // a link to a hidden season (the gate's VOID) is kept; a saved one is not
   if (menuBuilt !== season) previewSeason(season);
@@ -1604,23 +1683,48 @@ function showMenu() {
     `<div class="mn" style="--acc:${card.accent}">
        <header class="mn-head">
          <h1 class="mn-mark">HYPER DAGGER</h1>
-         <p class="mn-sub">survive &middot; time is the score</p>
+         <p class="mn-sub">${isSdfTestArena() ? 'SDF TEST ARENA · WATCHER + TOTEM' : 'survive &middot; time is the score'}</p>
+         ${isSdfTestArena() ? '<a class="mn-test" data-sdf-arena href="./">LEAVE THE TEST ARENA</a>'
+           : sdfSkullsEnabled ? '<a class="mn-test" data-sdf-arena href="./?skull=sdf&season=void&mode=hyper&sdfTest=1">TEST ARENA &middot; WATCHER + TOTEM</a>' : ''}
        </header>
        <section class="mn-foot">
          <div class="mn-seasons" role="tablist" aria-label="season">
            ${menuSeasons().map((s, i) =>
-             `<button class="mn-season${s.id === season ? ' on' : ''}" data-season="${s.id}" role="tab" aria-selected="${s.id === season}" style="--sacc:${s.card.accent}"><span class="mn-n">SEASON ${i + 1}</span><span class="mn-t">${s.card.title}</span></button>`).join('')}
+             `<button class="mn-season${s.id === season ? ' on' : ''}" data-season="${s.id}" role="tab" aria-selected="${s.id === season}" style="--sacc:${s.card.accent}"><span class="mn-n">SEASON ${i + 1}</span><span class="mn-t">${s.card.title}${seasonCleared(s.id) ? '<i class="mn-star" title="cleared" aria-label="cleared"> &#9733;</i>' : ''}</span></button>`).join('')}
          </div>
          <div class="mn-card" role="tabpanel">
            <p class="mn-tag">${card.tag}</p>
            ${card.rules.length ? `<ul class="mn-rules">${card.rules.map(r => `<li>${r}</li>`).join('')}</ul>` : ''}
            <p class="mn-best"><span id="menuBoard"></span>${bestLine()}</p>
          </div>
+         <div class="mn-render" role="group" aria-label="Enemy renderer">
+           <span class="mn-render-l">RENDER &middot; v60</span>
+           <button data-renderer="classic" aria-pressed="${!sdfSkullsEnabled}" title="The voxel enemies the game ships with">CLASSIC</button>
+           <button data-renderer="sdf" aria-pressed="${sdfSkullsEnabled}" title="The skull family, the Watcher and the Totem raymarched as signed distance fields, with carved wounds; the rest keep their art">SDF</button>
+         </div>
          <button id="startBtn" class="mn-start">START</button>
          <p class="mn-keys">${menuKeysLine()}</p>
        </section>
      </div>`;
   menuBoardLine();
+  const arenaLink=elMsg.querySelector('[data-sdf-arena]');
+  if(arenaLink){
+    arenaLink.addEventListener('pointerdown',e=>e.stopPropagation());
+    // Touch can deliver pointerup and touchend before the new page loads.
+    let opening=false;
+    const open=e=>{e.preventDefault();e.stopPropagation();if(opening)return;opening=true;location.href=arenaLink.href;};
+    arenaLink.addEventListener('pointerup',open);
+    arenaLink.addEventListener('touchend',open,{passive:false});
+  }
+  // The renderer is picked the way a season is: one press, on the menu,
+  // saved, and never a start. The bodies built from then on wear it.
+  for (const b of elMsg.querySelectorAll('[data-renderer]')) {
+    b.addEventListener('pointerdown', e => {
+      e.stopPropagation();
+      setSdfSkullsEnabled(b.dataset.renderer === 'sdf');
+      showMenu();
+    });
+  }
   for (const b of elMsg.querySelectorAll('button.mn-season')) {
     b.addEventListener('pointerdown', e => {
       e.stopPropagation();
@@ -1630,7 +1734,7 @@ function showMenu() {
   }
   document.getElementById('startBtn').addEventListener('pointerdown', e => {
     e.stopPropagation();
-    if (e.pointerType === 'touch') input.swallowTouchAt(e.clientX, e.clientY);   // HD-003: its lift is not a jump
+    if (e.pointerType === 'touch') input.swallowTouchAt(e.clientX, e.clientY, e.timeStamp);   // HD-003: its lift is not a jump
     menuStart(e);
   });
 }
@@ -1639,8 +1743,10 @@ function showMenu() {
 window.addEventListener('keydown', e => {
   if (state === 'tips' && !e.repeat && (e.code === 'Enter' || e.code === 'Space')) { e.preventDefault(); startGame(); lockPointer(input.touchMode ? null : { pointerType: 'mouse' }); return; }
   if (state !== 'menu' || e.repeat || !elMsg.classList.contains('menu')) return;
+  if(e.target.closest?.('[data-sdf-arena]') && (e.code==='Enter'||e.code==='Space')) {e.preventDefault();location.href=e.target.closest('[data-sdf-arena]').href;return;}
   const list = menuSeasons();
-  if (e.code === 'ArrowLeft' || e.code === 'KeyA') stepSeason(-1);
+  if (e.code === 'KeyR') { e.preventDefault(); setSdfSkullsEnabled(!sdfSkullsEnabled); showMenu(); }
+  else if (e.code === 'ArrowLeft' || e.code === 'KeyA') stepSeason(-1);
   else if (e.code === 'ArrowRight' || e.code === 'KeyD') stepSeason(1);
   else if (/^Digit[1-9]$/.test(e.code) && list[+e.code.slice(5) - 1]) selectSeason(list[+e.code.slice(5) - 1].id);
   else if (e.code === 'Enter' || e.code === 'Space') { e.preventDefault(); menuStart(input.touchMode ? null : { pointerType: 'mouse' }); }
@@ -1665,7 +1771,28 @@ function showTips() {
      <p class="go">click / tap / press &#10005; to descend</p>`;
 }
 
-function hiKey() { return M().hiKey ?? 'hyperDaggerHiNone'; }
+// v62: EMBER and INCA are both HYPER and shared one best. A season past the
+// first files its own; EMBER (and the classic modes) keep the key they had.
+function hiKey() {
+  if (isSdfTestArena()) return `hyperDaggerSdfTest:${M().id}`;
+  const k = M().hiKey ?? 'hyperDaggerHiNone';
+  return S().id === 'inca' ? `${k}:inca` : k;
+}
+
+// v62 A CLEAR IS RANKED BY KILLS. Every finished run is `end` seconds, so the
+// clock cannot rank them; among clears, more kills is the better run.
+const CLEARS_KEY = 'hyperDaggerClears';
+function readClears() { try { return JSON.parse(localStorage.getItem(CLEARS_KEY) || '{}') || {}; } catch { return {}; } }
+function clearOf(seasonId, modeId) { return readClears()[`${seasonId}:${modeId}`] ?? null; }
+function seasonCleared(seasonId) { const c = readClears(); return Object.keys(c).some(k => k.startsWith(seasonId + ':')); }
+function recordClear() {
+  const all = readClears(), key = `${S().id}:${M().id}`;
+  const prev = all[key] ?? null;
+  const best = !prev || kills > prev.kills;
+  all[key] = { n: (prev?.n ?? 0) + 1, kills: best ? kills : prev.kills };
+  try { localStorage.setItem(CLEARS_KEY, JSON.stringify(all)); } catch {}
+  return { prev, best, n: all[key].n };
+}
 
 /** Time tiers. Below A is a fail for ranking. S is the aspirational ceiling. */
 function timeTier(t) {
@@ -1678,7 +1805,7 @@ function timeTier(t) {
 
 
 // last-10 run history (all modes together), most recent first
-const HISTORY_KEY = 'hyperDaggerHistory';
+const HISTORY_KEY = SDF_TEST_REQUESTED ? 'hyperDaggerSdfTestHistory' : 'hyperDaggerHistory';
 
 function pushRunHistory(entry) {
   let hist = [];
@@ -1692,7 +1819,7 @@ function pushRunHistory(entry) {
 // Run telemetry (toko-drop's hit-log pattern): one record per death, capped
 // at 40 runs, powering __hd.debug.report() so balance tuning works from data
 // instead of guesses. Local only — nothing leaves the browser.
-const RUNLOG_KEY = 'hyperDaggerRunLog';
+const RUNLOG_KEY = SDF_TEST_REQUESTED ? 'hyperDaggerSdfTestLog' : 'hyperDaggerRunLog';
 
 function pushRunLog(timedOut, complete = false) {
   let log = [];
@@ -1764,6 +1891,7 @@ function showDeath(timedOut, complete = false) {
     localStorage.setItem(hiKey(), String(hiScore));
   }
 
+  const clear = complete && !isSdfTestArena() && !runMixed ? recordClear() : null;
   const causeLine = complete ? `the season is over — ${S().menu ?? S().name} survived`
     : timedOut
     ? 'the clock ran out'
@@ -1789,11 +1917,13 @@ function showDeath(timedOut, complete = false) {
     `<h1 class="dead">${complete ? 'RUN COMPLETE' : timedOut ? 'TIME OUT' : 'DEVOURED'}</h1>
      <p class="big">${t}s &middot; <span class="tier">${timeTier(runT)}</span> &middot; ${S().menu ?? S().name} &middot; ${M().name}${runKindLive === 'daily' ? ' · DAILY' : ''}</p>
      <p>${kills} kills &middot; ${gemCount} gems</p>
+     ${clear ? `<p class="seal">${S().menu ?? S().name} CLEARED &middot; ${kills} kills &middot; ${clear.best ? (clear.prev ? 'BEST CLEAR' : 'FIRST CLEAR') : `best clear ${clear.prev.kills} kills`}</p>` : ''}
      <p class="cause">${causeLine} &middot; daggers LV${weaponLv}${peakRank}</p>
      ${breakdown ? `<p class="breakdown">${breakdown}</p>` : ''}
      ${pulseLine}
      ${recapParts().length ? `<p class="breakdown">${recapParts().join(' &middot; ')}</p>` : ''}
      ${runKindLive === 'daily' ? dailyLines
+    : clear ? ''   // v62: every clear is 300.0 s — the seal above carries what was new about this one
     : `<p>${best ? 'NEW BEST' : `best ${hiScore.toFixed(1)}s`}</p>`}
      ${historyLine ? `<p class="history">recent: ${historyLine}</p>` : ''}
      <button id="shareBtn" class="opt">COPY RUN</button>
@@ -1831,7 +1961,7 @@ function clearEnemies() {
 
 function resetRun() {
   runDate = todayStr();
-  runKindLive = runKind;
+  runKindLive = isSdfTestArena() ? 'free' : runKind;
   if (runKindLive === 'daily') {
     runSeed = fnv1a(runDate + ':' + M().id);
     rng.next = mulberry32(runSeed);
@@ -1847,6 +1977,8 @@ function resetRun() {
   wallsFelled = 0;
   ebbN = 0; ebbSteps = false; rubbleStands = 0; runComplete = false;
   finale = null; finaleDone = false; finalePressure = 1;
+  waveIdx = 0; lastAnnouncedWave = -1; actsOpened = 0;   // v62: a second run used to open in the last act
+  crestsCleared = 0; crestArmed = false; crestStruck = false; lastStandSaid = 0; runMixed = false;
   litter.reset();
   gems.reset();
   orbs.reset();
@@ -1916,6 +2048,11 @@ function resetRun() {
   if (onTrack) truck.reset(player); else truck.clear();
   if (M().arena === 'court') walls.court(16, 12, 5); else walls.clear();
   buildSeasonArena(); // the season's rock and slabs, after the court's walls
+  applyLook();        // v61: the look, on this run's floor (the road is three units down)
+  if (isSdfTestArena()) {
+    enemies.push(new Watcher(scene, new THREE.Vector3(0,2.2,-8), ARENA_R-1));
+    enemies.push(new Totem(scene, new THREE.Vector3(8,0,-10), 3.4));
+  }
 }
 
 function goFullscreen() {
@@ -2036,7 +2173,7 @@ window.addEventListener('pointerdown', e => {
   audio.ensure();
   const isMouse = e.pointerType === 'mouse';
   // HD-003: a finger that taps to start, retry or resume is UI — its lift is not a jump
-  if (e.pointerType === 'touch' && (state === 'menu' || state === 'tips' || state === 'dead' || (state === 'playing' && paused))) input.swallowTouchAt(e.clientX, e.clientY);
+  if (e.pointerType === 'touch' && (state === 'menu' || state === 'tips' || state === 'dead' || (state === 'playing' && paused))) input.swallowTouchAt(e.clientX, e.clientY, e.timeStamp);
   if (state === 'menu') {
     // HD-019: a tap on the empty menu is not a start — START is (menuStart)
   } else if (state === 'tips') {
@@ -2171,6 +2308,12 @@ function applyOpts() {
   // Keep rear awareness inside the optional spherical view only.
   threatPass.enabled = false;
   bloom.enabled = tier.bloom;
+  // v61: the look scales with the tier (bursts thin out, the air empties at
+  // the floor tier) and the pause menu can switch it off whole
+  look.setTier(perfTier);
+  look.setOn(opts.fx !== false);
+  look.setCalm(!opts.motion);   // MOTION REDUCED: no flashes, no floor lights
+  dust.visible = !(look.active && S().fx?.ambient);
   debris.softCap = tier.debrisCap;
   debris.gibTarget = tier.gibs;
   // LOW tier turns the bone-yard off; settled gibs fall back to expiring
@@ -2245,7 +2388,8 @@ function showPause() {
      ${optRow('VIEW', 'projection', [true, false], v => v ? 'SPHERE' : 'NORMAL')}
      ${optRow('SENS', 'sens', [0.7, 1, 1.3, 1.6], v => ({ 0.7: 'LOW', 1: 'MED', 1.3: 'HIGH', 1.6: 'MAX' })[v])}
      ${optRow('AIM', 'aim', [true, false], v => v ? 'ASSIST ON' : 'ASSIST OFF')}
-     ${optRow('FX', 'smear', [true, false], v => v ? 'SMEAR ON' : 'SMEAR OFF')}
+     ${optRow('FX', 'fx', [true, false], v => v ? 'EFFECTS ON' : 'EFFECTS OFF')}
+     ${optRow('', 'smear', [true, false], v => v ? 'SMEAR ON' : 'SMEAR OFF')}
      ${optRow('', 'shake', [true, false], v => v ? 'SHAKE ON' : 'SHAKE OFF')}
      ${optRow('', 'chroma', [true, false], v => v ? 'CHROMA ON' : 'CHROMA OFF')}
      ${optRow('', 'edge', [true, false], v => v ? 'EDGE ON' : 'EDGE OFF')}
@@ -2271,10 +2415,12 @@ function showPause() {
   for (const b of elMsg.querySelectorAll('button.season')) {
     b.addEventListener('pointerdown', e => {
       e.stopPropagation();
+      if (leaveSdfTestArenaForSeason(b.dataset.season)) return;
       // the mode in force BEFORE the switch: M() reads the season once
       // _seasonChosen is set, so read after, "before" is already the
       // destination and a HAUL <-> EMBER switch never restarted (#619 review)
       const before = M().id;
+      if (state === 'playing' && seasonById(b.dataset.season).id !== season) runMixed = true;   // v62: a run across two seasons is neither's clear (reset by a restart)
       season = seasonById(b.dataset.season).id;
       _seasonChosen = true;
       localStorage.setItem(SEASON_KEY, season);
@@ -2331,6 +2477,7 @@ function telegraph(pos, colorRGB, delay, fn) {
   );
   beam.position.set(pos.x, 13, pos.z);
   scene.add(beam);
+  look.telegraph(pos, colorRGB, delay);   // v61: motes climbing the beam
   pending.push({ t: delay, total: delay, beam, fn });
 }
 
@@ -2752,11 +2899,15 @@ function pressureCeiling() {
 }
 
 function runPulse(n) {
-  const kind = pulseKind(n);
+  // v62: the act leans an ordinary pulse — a `skulls` act is bodies, a
+  // `heavies` act is the big ones. The rhythm's own heavy/spike/swarm stand.
+  const act = currentWave();
+  const rhythm = pulseKind(n);
+  const kind = rhythm !== 'normal' ? rhythm : act?.kind === 'skulls' ? 'swarm' : act?.kind === 'heavies' ? 'spike' : 'normal';
   // daily runs seed a FRESH stream per pulse index, so pulse N's pick
   // sequence is comparable across players regardless of when it fires
   const draw = runKindLive === 'daily' ? mulberry32(mixSeed(runSeed, n)) : Math.random;
-  let budget = pulseBudget(n, kind);
+  let budget = pulseBudget(n, rhythm) * (act?.density ?? 1);
   let stagger = 0;
   const picks = [];
   // DEBUT GUARANTEE: the earliest-unlocked type the player hasn't met yet
@@ -2858,67 +3009,39 @@ let nextSkullAt = 0;   // v48: season 2's own clock
 // random — the crowned, the splitter and the dread join as the run goes on —
 // on a cadence that tightens from `base` to `floor`, under `cap`.
 
-// Season wave pacing — peaks and valleys so later stages still have breathing room
+// v62 (HD-023) THE ACTS. A season's `waves` table used to BE the director: it
+// returned before the tuned one ran and spawned about one skull per breathing
+// gap, off Math.random per frame. Under a clock that drains a second a second
+// that could not be survived past half a minute (a bot that kills every body
+// the instant it exists was dead at 31 s), and none of the roster ever came.
+// The table STEERS now: `density` multiplies the tuned budget or cadence,
+// `kind` leans the picks, `gap` is a real valley when the act opens, and the
+// act is named on screen. Everything it touches draws from the run's own dice.
 let waveIdx = 0;
-let waveGapUntil = 0;
 let lastAnnouncedWave = -1;
+let actsOpened = 0;
 function currentWave() {
   const waves = S().waves;
   if (!waves || !waves.length) return null;
   while (waveIdx + 1 < waves.length && gameTime >= waves[waveIdx + 1].t) waveIdx++;
   if (waveIdx !== lastAnnouncedWave && state === 'playing') {
     lastAnnouncedWave = waveIdx;
+    actsOpened++;
     const w = waves[waveIdx];
-    slowmo = Math.max(slowmo, 0.35);
-    trauma = Math.max(trauma, 0.12);
-    if (w.kind === 'finale') toast('FINALE', 1600);
-    else if (waveIdx > 0) toast(w.kind.toUpperCase(), 900);
+    if (waveIdx > 0) {
+      slowmo = Math.max(slowmo, 0.35);
+      trauma = Math.max(trauma, 0.12);
+      // the valley: nothing new arrives for `gap` seconds
+      if (w.gap) { nextPulseAt = Math.max(nextPulseAt, gameTime + w.gap); nextSkullAt = Math.max(nextSkullAt, gameTime + w.gap); }
+    }
+    // the finale announces itself (startFinale), under its own name
+    // act one opens under the goal card (HD-010), which already says what the season is
+    if (w.name && w.kind !== 'finale' && waveIdx > 0) toast(w.name, 1500);
   }
   return waves[waveIdx];
 }
-function waveDirector() {
-  const w = currentWave();
-  if (!w) return false;
-  if (gameTime < waveGapUntil) return true; // breathing
-  const density = w.density || 1;
-  const season = S();
-
-  // S3: no enemies from behind — only spawn in the forward half
-  const aheadOnly = !!season.noRear;
-
-  if (season.id === 'inca') {
-    // S2: prefer spawning in the trough (away from the crest)
-    const crestPhase = goo._dist ? (goo._dist % (goo.period || 10)) : 0;
-    const inTrough = crestPhase > 3 && crestPhase < (goo.period || 10) - 2;
-    if (inTrough && Math.random() < density * 0.12) skullDirector();
-  } else if (aheadOnly) {
-    // S3: strict forward cone relative to camera
-    if (Math.random() < density * 0.06) {
-      const fwd = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
-      let at = ringSpot(16).clone();
-      let toSpot = at.clone().sub(player.feet).normalize();
-      let tries = 0;
-      while (toSpot.dot(fwd) < 0.35 && tries < 6) {
-        at = ringSpot(16).clone();
-        toSpot = at.clone().sub(player.feet).normalize();
-        tries++;
-      }
-      if (toSpot.dot(fwd) < 0.2) at.add(fwd.clone().multiplyScalar(18));
-      at.y = 1.2;
-      telegraph(at, [1.8, 0.9, 0.3], 0.6, () => enemies.push(new Skull(scene, at, 0.35)));
-    }
-  } else {
-    // S1 and others: classic mix
-    if (Math.random() < density * 0.12) {
-      const at = ringSpot(10).clone(); at.y = 1.2;
-      const r = rng.next();
-      const mk = r < 0.2 ? () => new Brute(scene, at) : () => new Skull(scene, at, Math.min(1.5, gameTime * 0.01));
-      telegraph(at, [1.6, 0.3, 0.2], 0.6, () => enemies.push(mk()));
-    }
-  }
-  if (Math.random() < 0.08) waveGapUntil = gameTime + (w.gap || 6);
-  return true;
-}
+/** How hard the act leans on the tuned director: 1 is as tuned. */
+function actDensity() { return currentWave()?.density ?? 1; }
 function skullDirector() {
   const sp = S().spawns;
   if (gameTime < nextSkullAt || enemyCount('skull') >= (sp.cap ?? 28)) return;
@@ -2931,7 +3054,7 @@ function skullDirector() {
   else                         mk = () => new Skull(scene, at, Math.min(2.0, t * 0.012));
   audio.spawn();
   telegraph(at, [1.6, 1.4, 0.3], 0.55, () => enemies.push(mk()));
-  nextSkullAt = gameTime + Math.max(sp.floor, sp.base - gameTime * sp.slope) / finalePressure;   // v53: tighter after the finale
+  nextSkullAt = gameTime + Math.max(sp.floor, sp.base - gameTime * sp.slope) / finalePressure / actDensity();   // v62: the act leans on it   // v53: tighter after the finale
 }
 function director(dt) {
   if (directorFrozen) { updatePending(dt); return; } // telegraphs still resolve
@@ -2939,7 +3062,7 @@ function director(dt) {
   if (dir === 'none') { updatePending(dt); return; } // the track/bench is the pressure
   if (dir === 'ddSpawnset') { ddDirector(); return; }
   updatePending(dt);
-  if (waveDirector()) return;
+  currentWave();   // v62: the act opens (and is named) here; it no longer spawns
   if (S().spawns?.only === 'skulls') { skullDirector(); return; }
   if (gameTime >= nextTotemAt && totemCount() < TOTEM_CAP) {
     const interval = Math.max(1.7, 3.4 - gameTime * 0.02);
@@ -3007,6 +3130,7 @@ function director(dt) {
 }
 
 // ---------------------------------------------------------------- weapon
+const _lookAt = new THREE.Vector3(), _lookFwd = new THREE.Vector3();   // v61: scratch for the look's event positions
 function levelForGems(n) {
   return n >= LEVEL_GEMS[3] ? 3 : n >= LEVEL_GEMS[2] ? 2 : 1;
 }
@@ -3016,6 +3140,7 @@ function setWeaponLevel(lv) {
   weaponLv = lv;
   applyGauntlet(lv);
   audio.levelup();
+  look.gem(_lookAt.copy(camera.position).addScaledVector(_lookFwd.set(0, 0, -1).applyQuaternion(camera.quaternion), 2.2), true);   // v61: a level is a burst
   toast(lv === 4 ? 'LEVEL 4 — THE CRIMSON HAND'
     : lv === 3 ? 'LEVEL 3 — RMB HOMING' : `DAGGERS LEVEL ${lv}`);
   trauma = Math.max(trauma, lv === 4 ? 0.5 : 0.3);
@@ -3025,6 +3150,9 @@ function onGemsCollected(n) {
   const before = gemCount;
   gemCount += n;
   audio.gem();
+  _lookAt.copy(camera.position).addScaledVector(_lookFwd.set(0, 0, -1).applyQuaternion(camera.quaternion), 1.1);
+  _lookAt.y -= 0.35;
+  look.gem(_lookAt);   // v61: it goes into the hand
   addStyle(n); // hoarding gems mid-fight keeps the meter warm
   const lv = levelForGems(gemCount);
   if (weaponLv < 3) {
@@ -3194,6 +3322,7 @@ function fireDagger(spread, speed, homing, damage = 1) {
   _c.setFromMatrixColumn(camera.matrixWorld, 1); // camera up
   _p0.addScaledVector(_c, HAND_MUZZLE[1] + (Math.random() - 0.5) * wpn('originJitter'));
   daggers.fire(_p0, _hitDir, speed, homing, damage);
+  look.muzzle(_p0, _hitDir);   // v61
 }
 
 /** v53 COVER THAT DIES: wear a pile; at zero it comes down as rubble — physical
@@ -3210,6 +3339,7 @@ const _col = new THREE.Color();
 // kind is a small clock. `finalePressure` tightens the season's own director
 // after; `finaleDone` keeps it to once a run.
 let finale = null, finaleDone = false, finalePressure = 1;
+function haulSkullMul() { return actDensity() * (finaleDone ? (S().finale?.after?.skulls ?? 1) : 1); }
 function startFinale() {
   const f = S().finale;
   if (!f || finale || finaleDone) return;
@@ -3226,13 +3356,22 @@ function endFinale() {
   const f = finale.cfg;
   finale = null; finaleDone = true;
   finalePressure = f.after?.pressure ?? 1;
-  if (f.kind === 'pileup' && truck.active) { truck.active.cfg.speed *= f.resume ?? 1; truck.active.cfg.skullMul = f.after?.skulls ?? 1; }
+  if (f.kind === 'pileup' && truck.active) { truck.active.cfg.speed *= f.resume ?? 1; truck.active.cfg.skullMul = haulSkullMul(); }   // v62: the act's lean times the finale's
   if (f.kind === 'drain') { goo.drain = 0; applySeasonFloorTerms(1); }
+}
+function crestCleared() {
+  crestsCleared++;
+  const pay = S().crestPays ?? 0;
+  if (!pay || M().lethality !== 'clock') return;
+  lifeT = Math.min(HYPER_CAP, lifeT + pay);
+  toast(`CREST CLEARED &middot; +${pay}s`, 800);
+  audio.gem?.();
 }
 function applySeasonFloorTerms(k) {
   const sn = S();
   floorMat.uniforms.uCaustic.value = (sn.floor.caustic ?? 0) * k;
   floorMat.uniforms.uGlint.value = (sn.floor.glint ?? 0) * k;
+  look.fluid.floorK.y = (sn.fx?.fluid?.strength ?? 1) * k;   // v61: a drained sea does not ripple
 }
 function updateFinale(dt) {
   if (!finale) return;
@@ -3333,15 +3472,20 @@ function killEnemy(e, dir) {
   addStyle(STYLE_GAIN[e.type] ?? 3);
   if (M().lethality === 'clock') lifeT = Math.min(HYPER_CAP, lifeT + e.score); // kills buy time
   e.center(_c);
+  // v61: `dir` is usually _hitDir itself, which the gib impulse below scales in
+  // place (×5, twice). The look wants the direction, not the impulse.
+  _lookFwd.copy(dir).normalize();
   let deathVox = e.deathVoxels?.() ?? e.sprite.worldVoxels();
   physGibs.on = gibsOn();
   if (physGibs.on) deathVox = physGibs.burst(deathVox, e.sprite.size, _hitDir.copy(dir).multiplyScalar(5));   // the chunks stack; the rest is spray
   debris.burst(deathVox, e.sprite.size,
     _hitDir.copy(dir).multiplyScalar(5), e.type === 'skull' ? 1 : 1.4);
   audio.gib(e.type !== 'skull');
+  const heavyKill = e.type === 'brute' || e.type === 'dread' || e.type === 'leviathan' || !!e.isHead;
+  look.kill(_c, _lookFwd, e.radius, heavyKill, !!e.sdfRoot);   // v61: the season's death (an SDF body also dies as a liquid)
   // heavy kills stamp a shockwave ring into the floor, warp the frame, and
   // freeze time for a beat (~50ms at 12% speed) so the impact lands
-  if (e.type === 'brute' || e.type === 'dread' || e.type === 'leviathan' || e.isHead) {
+  if (heavyKill) {
     spawnShockwave(_c);
     triggerRipple(e.type === 'leviathan' ? 1 : 0.7);
     hitStop = 0.05;
@@ -3455,6 +3599,7 @@ function launchMissile(shot) {
   _hitDir.addScaledVector(_c, 0.45).normalize();
   const g = S().gaze;
   daggers.fire(_p0, _hitDir, shot.speed, false, g.damage ?? 1, { target: shot.target, turn: shot.turn, life: g.life ?? 2.6 });
+  look.muzzle(_p0, _hitDir, true);   // v61: a launch is a flash and the smoke it leaves
   hand.flash(0.3 + 0.5 * shot.k);
   audio.fire();
 }
@@ -3498,6 +3643,7 @@ function updateCombat(dt) {
   } else fireByHand(dt, w);
 
   daggers.update(dt, enemies);
+  look.trails(daggers.active, dt);   // v61: what a projectile leaves in the air
 
   // dagger → enemy (segment vs sphere so fast daggers can't tunnel)
   for (let i = daggers.active.length - 1; i >= 0; i--) {
@@ -3508,6 +3654,7 @@ function updateCombat(dt) {
       const w = walls.blocks(d.prev, d.m.position);
       if (w) {
         spawnSpark(d.m.position, false);
+        look.clink(d.m.position);
         if (w.maxHp) wearWall(w, d.damage ?? 1, d.m.position);   // v53: a nail chips the pile
         daggers.recycle(i);
         continue;
@@ -3515,6 +3662,7 @@ function updateCombat(dt) {
     }
     if (S().rubbleFloor && physGibs.gibs.length && physGibs.blocks(d.prev, d.m.position)) {   // v54: the heap is cover
       spawnSpark(d.m.position, false);
+      look.clink(d.m.position);
       daggers.recycle(i);
       continue;
     }
@@ -3523,6 +3671,7 @@ function updateCombat(dt) {
       if (slab) {
         platforms.flinch(slab); // v46: a gel mound flinches at a nail (a shale slab does not)
         spawnSpark(d.m.position, false);
+        look.clink(d.m.position);
         daggers.recycle(i);
         continue;
       }
@@ -3532,6 +3681,7 @@ function updateCombat(dt) {
     if (goo.cfg && d.prev.y > 0.05 && d.m.position.y <= goo.heightAt(d.m.position.x, d.m.position.z) + 0.05
       && Math.hypot(d.m.position.x, d.m.position.z) < ARENA_R) {
       goo.hit(d.m.position.x, d.m.position.z, 0.5);
+      look.drop(d.m.position.x, d.m.position.z, 1.4);   // v61: a nail goes into the sea
       goo.spray(d.m.position.x, d.m.position.y + 0.3, d.m.position.z, (Math.random() - 0.5), (Math.random() - 0.5));
     }
     for (let j = 0; j < enemies.length; j++) {
@@ -3553,10 +3703,11 @@ function updateCombat(dt) {
         }
       }
       e.maxHp ??= e.hp;
-      e.hit(d.damage ?? 1, _hitDir);
+      e.hit(d.damage ?? 1, _hitDir, d.m.position);
       // enemies may name their own hit voice (husk plating swallows daggers)
       audio[e.hitSound && audio[e.hitSound] ? e.hitSound : 'hit']();
       spawnSpark(d.m.position, e.hp <= 0);
+      look.hit(d.m.position, _hitDir, e.hp <= 0);   // v61
       // chip real voxels out of the model near the impact — bullet holes.
       // Sized so an enemy is ~85% eroded by its final hit.
       if (e.hp > 0 && e.sprite.chip) {
@@ -3662,6 +3813,7 @@ function playerStruck(sx, sz, killerType, killer = null) {
   // HYPERDEMON rules: a hit costs time, shoves you clear, grants i-frames
   triggerRipple(0.5);
   buzz(1, 1, 160);
+  look.struck(_lookAt.set(sx, camera.position.y, sz).lerp(camera.position, 0.6));   // v61
   lifeT -= HYPER_HIT_COST;
   mercyT = 1.2;
   trauma = 1;
@@ -3778,6 +3930,18 @@ function step(dt) {
   if (goo.cfg?.hurts && state === 'playing' && goo.strikes(player)) {
     // playerStruck says whether it LANDED (mercy frames swallow the rest)
     if (playerStruck(player.feet.x - goo.dirX * 2, player.feet.z - goo.dirZ * 2, 'wave') || mercyT >= 1.19) waveStrikes++;
+    crestStruck = true;
+  }
+  // v62 THE SEA PAYS: a crest that passed under a body it did not touch buys
+  // time. The sea was only ever a cost, and in the sea-led acts there are few
+  // skulls to buy seconds from — clearing it is the season's verb.
+  if (goo.cfg?.hurts && state === 'playing') {
+    const over = goo.heightAt(player.feet.x, player.feet.z) >= (goo.cfg.hurtFrom ?? 0.35);
+    if (over) crestArmed = true;
+    else if (crestArmed) {
+      if (!crestStruck) crestCleared();
+      crestArmed = false; crestStruck = false;
+    }
   }
   // v46: the body landing on the sea (or the flat water) splashes it — a
   // ring spreading from the feet, harder from higher
@@ -3787,11 +3951,15 @@ function step(dt) {
   }
   if (walls.walls.length) walls.resolve(player);
   if (platforms.count) platforms.resolve(player); // their sides are walls too
+  // v61: a landing is seen — dust, sparks or a splash, harder from higher
+  if (_vyBefore < -4 && player.vy >= -0.01 && player.feet.y <= (player.floorY ?? 0) + 0.02)
+    look.land(player.feet.x, player.feet.y, player.feet.z, -_vyBefore);
   if (player.justDashed) {
     player.justDashed = false;
     audio.dash();
     trauma = Math.max(trauma, 0.15);
     fx.dash++;
+    look.dash(player.feet, player.dashDir.x, player.dashDir.z);
   }
   // dashing wades through the carnage — a moving sweep, dt-scaled so the kick
   // is the same at any frame rate, biased along the dash so gibs get shoved
@@ -3806,6 +3974,7 @@ function step(dt) {
     player.justJumped = false;
     audio.jump();
     spawnJumpPuff(player.feet.x, player.feet.y, player.feet.z);
+    look.jump(player.feet.x, player.feet.y, player.feet.z);
   }
   if (player.justBunnyHopped) {
     player.justBunnyHopped = false;
@@ -3816,6 +3985,8 @@ function step(dt) {
   const reapPressed = input.consumeReap();
   if (player.abilities?.reap && reapPressed) tryReap();
   if (M().arena === 'track') {
+    // v62: TRUCK has no director, so the season's acts lean on the convoy's own skull rate
+    if (S().mode === 'truck' && truck.active?.cfg) truck.active.cfg.skullMul = haulSkullMul();
     truck.update(dt, player, gameTime, enemies, walls); // the course lays walls beside its wide gaps
     // the floor leaving is the whole game — falling off it is the death
     if (player.feet.y < truck.fallY() && state === 'playing' && !invulnerable) {
@@ -3907,6 +4078,10 @@ function step(dt) {
   separateSkulls();
   updateShadows();
   updateSparks(dt);
+  // v61: the feet leave a wake, the crest throws spray and drags a trough
+  if (player.feet.y <= (player.floorY ?? 0) + 0.02 && player.platform == null) look.walk(player.feet.x, player.feet.z, player.horizontalSpeed * dt);
+  if (goo.cfg && goo.head != null) look.crest(goo.dirX, goo.dirZ, goo.head, goo.cfg.amp ?? 1, ARENA_R, dt);
+  look.update(dt, camera, renderer);   // v61: on the run's clock, so a hit-stop holds the sparks too
   updateFlyby(dt);
   updateThorns(dt);
   orbs.update(dt, ARENA_R + 6);
@@ -3934,6 +4109,13 @@ function step(dt) {
   updateEbb();
   // v54 A RUN THAT ENDS: the season is over at `end` seconds
   if (S().end && state === 'playing' && gameTime >= S().end) { completeRun(); return; }
+  // v62: the run ends on a beat, not on a cut
+  if (S().end && state === 'playing') {
+    const left = S().end - gameTime;
+    if (left <= 30 && lastStandSaid === 0) { lastStandSaid = 31; toast('LAST STAND', 1800); audio.stinger?.(); }
+    const n = Math.ceil(left);
+    if (n <= 10 && n >= 1 && lastStandSaid !== n) { lastStandSaid = n; toast(String(n), 650); }
+  }
   // style meter bleeds when you stop scoring — faster at higher ranks so the
   // top tiers stay fleeting and demand a continuous chain
   // provisional v4.1 soften (was 6 + 0.05v): S-rank was bleeding out between
@@ -4070,6 +4252,7 @@ function gamepadMenu() {
     // HD-019: the main menu is one choice and one button — left/right is the
     // season, A or START plays it; up, down and B have nothing to move
     gfocus = -1;
+    if (ui.up || ui.down) { setSdfSkullsEnabled(!sdfSkullsEnabled); showMenu(); }
     if (ui.left) stepSeason(-1);
     else if (ui.right) stepSeason(1);
     if (ui.a || ui.start) menuStart(null);
@@ -4136,6 +4319,7 @@ function animate() {
   floorMat.uniforms.uTime.value += dt;
   gelMat.userData.gel.uTime.value += dt;
   if (goo.cfg) floorMat.uniforms.uWave.value.set(goo.dirX, goo.dirZ, goo.head ?? -999, goo.cfg.width);   // v48: the floor reads the crest
+  look.wave(goo.dirX, goo.dirZ, goo.head ?? -999, goo.cfg?.width ?? 1, !!goo.cfg && goo.head != null);   // v61: and so does the field
   dust.rotation.y += dt * 0.012;
   if (state === 'playing' && !paused) {
     // heavy-kill hit-stop: a beat at 12% speed so the impact registers
@@ -4151,6 +4335,7 @@ function animate() {
     physGibs.update(eff);
     daggers.update(eff);
     updateSparks(eff); // in-flight sparks/shockwaves finish out in slow-mo
+    look.update(eff, camera, renderer);   // v61: the menu's air moves, and a death's sparks finish falling
     // killer-focus swing (shortest-path yaw so it never spins the long way)
     if (deathCam && state === 'dead') {
       deathCam.t -= dt;
@@ -4266,6 +4451,7 @@ window.__hd = {
     truckObj() { return truck.active ?? truck; },   // v51: the convoy (or the classic road), for the gate
     triggerFinale() { startFinale(); return !!finale; },   // v53
     getGoal() { return { goal: goalLine(), clock: clockLine(), shown: elGoal.classList.contains('show'), ms: GOAL_MS }; },   // HD-010
+    getActs() { const w = currentWave(); return { idx: waveIdx, name: w?.name ?? null, kind: w?.kind ?? null, density: actDensity(), opened: actsOpened, crests: crestsCleared, armed: crestArmed, clears: readClears(), hiKey: hiKey(), lastStand: lastStandSaid, mixed: runMixed, struck: crestStruck, crest: goo.cfg ? { h: +goo.heightAt(player.feet.x, player.feet.z).toFixed(3), s: +goo._s(player.feet.x, player.feet.z).toFixed(2), speed: goo.speed, width: goo.cfg.width, hurtFrom: goo.cfg.hurtFrom ?? 0.35 } : null, skullMul: truck.active?.cfg?.skullMul ?? null, nextPulseAt, nextSkullAt }; },   // v62
     getRun() { return { ebbN, ebbSteps, rubbleStands: +rubbleStands.toFixed(2), complete: runComplete, end: S().end ?? null, state, recap: recapParts() }; },   // v54
     completeRun() { completeRun(); return runComplete; },
     getFinale() { return { active: !!finale, kind: finale?.kind ?? null, t: +(finale?.t ?? 0).toFixed(2), phase: finale?.phase ?? 0, rocks: finale?.rocks ?? 0, wrecked: finale?.wrecked ?? 0, done: finaleDone, pressure: finalePressure, drain: +goo.drain.toFixed(2), declared: S().finale ?? null }; },
@@ -4468,6 +4654,7 @@ window.__hd = {
     getFx() { return { smear: afterimage.enabled, chroma: chromaPass.enabled, edge: edgePass.enabled, sphere: spherePass.enabled, threat: threatPass.enabled, rearSignal: threatPass.uniforms.uRear.value, edgeAmt: edgePass.uniforms.uAmt.value, damp: afterimage.uniforms['damp'].value, gridGlow: floorMat.uniforms.uGlow.value, fov: camera.fov, uRed: floorMat.uniforms.uRed.value, bloomStrength: bloom.strength }; },
     getProjection() { return { enabled: spherePass.enabled, worldCaptures: sphereWorldCaptures, threatCaptures: sphereThreatCaptures, worldSize: sphereWorldTarget.width, threatSize: sphereThreatTarget.width }; },
     getEnvironment() { return environment.getState(); },
+    getSeasonLook() { return look.getState(); },   // v61 (HD-022): what the season's look has done so far (getLook is the cube/smooth one)
     getVfx() { return { shadows: shadows.count, sparks: sparks.length, speedOn: speedPass.enabled, rippleT, rippleOn: ripplePass.enabled, ember: skyMat.uniforms.uEmber.value }; },
     /** Everything that could leak over a long run: pool occupancy, scene graph
      *  size, and GPU resource counts. A survival game lives or dies on the
@@ -4536,6 +4723,7 @@ window.__hd = {
     setPerfTier(t) { setPerfTier(t); },
     perfTuning,
     pulseInfo(n) { const k = pulseKind(n ?? pulseN); return { kind: k, budget: pulseBudget(n ?? pulseN, k) }; },
+    getSdfState() { return { enabled:sdfSkullsEnabled, inlays:floorMat.uniforms.uSdfInlays.value }; },
     getState() { return { mode: M().id, lifeT, gameTime, mercyT, state, weaponLv, gemCount, homingAmmo }; },
     getSchedule() {
       return {

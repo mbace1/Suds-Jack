@@ -1,11 +1,11 @@
 // Toko Move v2.12.2 — concurrent courier jobs expose live tradeoffs without naming a correct answer.
-import {CARGO,DELIVERY_TARGET} from './deliveries.js?v=27';
+import {CARGO,DELIVERY_TARGET} from './deliveries.js?v=28';
 import {badge,inMinutes,about,cargoGlyph,minutes} from './ui.js?v=2';
 import {regularAt,standingOf,standingPips} from './regulars.js?v=4';
 import {parcelHtml,bagHtml,colourOf,unitsOf} from './parcels.js?v=1';
 import {planEstimate,nextDeparture,layerFor} from './timetable.js?v=2';
-const esc=s=>String(s??'').replace(/[&<>\"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[c]||c));
-const nodeName=(tm,id)=>tm.city?.nodes?.find(n=>n.id===id)?.name||id;
+const esc=s=>String(s??'').replace(/[&<>\"]/g,c=>({'&':'&','<':'<','>':'>','\"':'"'}[c]||c));
+const nodeName=(tm,id)=>tm.city?.nameOverride?.(id)||tm.city?.nodes?.find(n=>n.id===id)?.name||id;   // v2.71: a sealed stop reads SEALED (sealed.js)
 // layerFor and nearestPathIndex used to be declared here as well. The local
 // nearestPathIndex did not scale longitude by cos(lat), so it measured a stop
 // as about twice as far north-south as east-west — a third copy of a function
@@ -64,8 +64,9 @@ function offerButton(tm,offer,info,label='TAKE JOB'){const seen=new Set(),live=(
  const pips=reg?(()=>{const p=standingPips(st);return `<span class="pips" title="you have delivered here before">${'<i class="on"></i>'.repeat(p.filled)}${'<i></i>'.repeat(p.total-p.filled)}</span>`;})():'';
  const hand=offer.handoff&&tm.flow.clock.tick<=offer.bonusUntil,left=hand?Math.max(1,Math.ceil((offer.bonusUntil-tm.flow.clock.tick)/10)):0;
  const claimed=tm.rival?.pressure?.(offer.id),rivalLeft=claimed!=null?Math.max(0,Math.ceil(claimed/10)):null;
- const who=`${esc(nodeName(tm,offer.stops[1]))}${pips}`;
- const sub=via;
+ // v2.71: THE SEALED PARCEL (sealed.js) — no stop and no regulars' pips, only the family to ride
+ const who=offer.sealed?`✉ SEALED`:`${esc(nodeName(tm,offer.stops[1]))}${pips}`;
+ const sub=offer.sealed?`ride the ${esc(offer.sealed.family)}`:via;
  // A PARCEL THAT WILL NOT FIT IS NOT AN OFFER. The bag went from a count to a
  // space in v2.43, and the first build still listed every drop and every second
  // job at full strength and then refused the tap with "the bag is full" — which
@@ -110,5 +111,8 @@ export function mountJobBoard(tm){let last='',lastHtml='';const render=()=>{cons
  // or not a character had moved. A tap that lands between two replacements
  // lands on nothing; CI caught it first (a click resolved to a row that was
  // gone by the time it was pressed), a thumb would have caught it next.
- const html=`<div><h2>DISPATCH · ${esc(nodeName(tm,ch.location))}</h2>${ch.index?'':'<p class="hint">Pick a job. The badge is the tram that takes you.</p>'}${rows.map(({offer,info})=>offerButton(tm,offer,info)).join('')}</div>`;
- if(html===lastHtml&&slot.innerHTML)return;lastHtml=html;slot.innerHTML=html;tm.paintSheet?.();sheet.querySelectorAll('.jobOffer:not([disabled])').forEach(btn=>btn.onclick=()=>{const r=ch.acceptOffer(btn.dataset.id);if(r?.error)sheet.insertAdjacentHTML('beforeend',`<p class="hint">${esc(r.error)}</p>`);last='';lastHtml='';render();});};setInterval(render,300);render();}
+ const firstHint=ch.index?'':'<p class="hint firstHint">Tap a job below. Then tap the lit tram to board.</p>';
+ const html=`<div><h2>DISPATCH · ${esc(nodeName(tm,ch.location))}</h2>${firstHint}${rows.map(({offer,info})=>offerButton(tm,offer,info)).join('')}</div>`;
+ if(html===lastHtml&&slot.innerHTML)return;lastHtml=html;slot.innerHTML=html;tm.paintSheet?.();
+ if(!ch.index){const first=slot.querySelector('.jobOffer:not([disabled])');if(first)first.classList.add('primary');}
+ sheet.querySelectorAll('.jobOffer:not([disabled])').forEach(btn=>btn.onclick=()=>{const r=ch.acceptOffer(btn.dataset.id);if(r?.error)sheet.insertAdjacentHTML('beforeend',`<p class="hint">${esc(r.error)}</p>`);last='';lastHtml='';render();});};setInterval(render,300);render();}

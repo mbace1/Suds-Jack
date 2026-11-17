@@ -1,0 +1,17 @@
+{
+  "approved_release_head": "458ce6822280d0d6ad0eed0b6ad60cd14d44ccab",
+  "actual_target_head": "3f40cc410e9287379eb73c767f210653f49ed36a",
+  "unchanged_critical_modules": [
+    "hyperdagger/js/main.js",
+    "hyperdagger/js/input.js",
+    "hyperdagger/js/enemy.js",
+    "hyperdagger/js/sdf-skull.js",
+    "hyperdagger/sw.js",
+    "toko/js/chat.js",
+    "toko/js/table.js",
+    "toko/js/signature.js",
+    "toko-live/main.js"
+  ],
+  "index_only_delta": "production hub shell232->233",
+  "pages_run": 42727139262
+}

@@ -1,0 +1,8 @@
+  ok   the worker takes control
+  ok   the precache is populated (30+ files)
+  ok   the game boots with the network gone
+  ok   a run starts offline
+  ok   only the arcade shell is allowed to miss
+  ok   zero page errors offline
+
+6 passed, 0 failed

@@ -45,8 +45,15 @@ server.listen(0, '127.0.0.1', async () => {
     // the way in, from the ordinary title card
     await page.goto(`${base}/toko-move/?shift=3`, { waitUntil: 'load' });
     await page.waitForFunction(() => window.__tm?.rival && !document.getElementById('play').disabled, null, { timeout: 30000 });
+    // v2.73: LIVE waits behind the ladder with the daily and the week — shut
+    // for a new player, offered once NIGHT is cleared
+    const shut = await page.evaluate(() => document.getElementById('liveLink').hidden);
+    ok('a new player is not offered LIVE before the ladder is cleared', shut);
+    await page.evaluate(() => localStorage.setItem('tokoMoveRuns', JSON.stringify({ easy: { done: true }, medium: { done: true }, hard: { done: true }, night: { done: true } })));
+    await page.goto(`${base}/toko-move/?shift=3`, { waitUntil: 'load' });
+    await page.waitForFunction(() => window.__tm?.rival && !document.getElementById('play').disabled, null, { timeout: 30000 });
     const link = await page.evaluate(() => { const a = document.getElementById('liveLink'); return { hidden: a.hidden, href: a.getAttribute('href'), text: a.textContent }; });
-    ok(`the title card offers LIVE (${link.text})`, !link.hidden && link.href === '?live');
+    ok(`after NIGHT, the title card offers LIVE (${link.text})`, !link.hidden && link.href === '?live');
 
     await page.goto(`${base}/toko-move/?live`, { waitUntil: 'load' });
     await page.waitForFunction(() => window.__tm?.rival && !document.getElementById('play').disabled, null, { timeout: 30000 });

@@ -1,0 +1,11 @@
+{
+  "source_guard_merge": "f8353e757e8114f4bcb6a343a739839efa19764d",
+  "source_shared_receipt_merge": "a2862c818b202ec8c61112b5b65701ee37629e10",
+  "tested_head": "d73328a988830e7cefe069406900393fd90d6434",
+  "runtime_sha256": {
+    "hyperdagger/js/main.js": "24cd23829b9b98bf5ae147f52fdd3e6243f89b219b8ce8adb234046644b22d48",
+    "hyperdagger/index.html": "0b83e70ba1370d9119f422213a0070ca0aacb8d9f478ffc82ba4357ba04e0d9f",
+    "hyperdagger/sw.js": "00c1311fad653bfbd6d82262a9b5bc94588483a5cc7f81b8aaba5861b0b30325"
+  },
+  "note": "Release receipt changes only documentation/evidence; these runtime bytes equal reviewed guard merge."
+}

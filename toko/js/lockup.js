@@ -11,7 +11,7 @@
 
 import { TOKO, TYPE, VOICE, SHEET } from './palette.js';
 import { fillMaster, masterBounds, drawMasterBadge } from './master.js';
-import { drawWord, widthOf, M as WM } from './wordmark.js';
+import { drawWord, widthOf, drawBlock, LOGO, M as WM } from './wordmark.js';
 
 // Nothing is substituted any more — the letterforms are ours and are drawn.
 // Kept as an export because the board still asks.
@@ -23,9 +23,23 @@ function font(size) {
 
 // ── the logotype ─────────────────────────────────────────────────────────
 
-// Three lines, flush left, stacked tight. Returns the block's measured size.
+// Three lines, stacked tight. Returns the block's measured size.
+//
+// The three lines are the OWNER'S BLOCK (wordmark.js LOGO, traced from their
+// original): Toko set larger, Midori and Games under it, all three flush on
+// both sides. It stands as tall as three lines of `size` at the old leading,
+// so every caller keeps its layout. The original carries no ™, so neither does
+// the block unless asked (`tm: true`).
 export function drawLogotype(ctx, x, y, size, opts = {}) {
-  const { color = TOKO.INK, lines = VOICE.lines, tm = true, align = 'left' } = opts;
+  const { color = TOKO.INK, lines = VOICE.lines, align = 'left' } = opts;
+  if (lines.length === VOICE.lines.length && lines.every((l, i) => l === VOICE.lines[i])) {
+    const h = size * (1 + 2 * 1.06), w = LOGO.w * h / LOGO.h;
+    const bx = align === 'center' ? x - w / 2 : x;
+    drawBlock(ctx, bx, y, h, color);
+    if (opts.tm) drawWord(ctx, 'TM', bx + w + size * 0.07, y + h - size * 0.62, size * 0.30, color);
+    return { w, h };
+  }
+  const tm = opts.tm ?? false;   // the original has no ™
   // The drawn glyphs fill 0..cap exactly, so `size` IS the cap height and the
   // leading has to clear 1.0. TYPE.lineHeight is 0.92 because it was written
   // for a font, whose em box is taller than its caps — used here it laps the

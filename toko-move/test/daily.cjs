@@ -27,7 +27,9 @@ server.listen(0, '127.0.0.1', async () => {
   const errs = [];
   const fresh = async () => { const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
     const page = await ctx.newPage(); page.on('pageerror', e => errs.push(String(e).slice(0, 140))); return { ctx, page }; };
-  const boot = async (page, q = '') => { await page.goto(`${base}/toko-move/${q}`, { waitUntil: 'load' });
+  // v2.73: the bare address is the ladder; the daily is ?daily (v3.6: the real-time
+  // daily is ?daily&classic — the bare ?daily is the journey's, held by play.cjs)
+  const boot = async (page, q = '?daily&classic') => { await page.goto(`${base}/toko-move/${q}`, { waitUntil: 'load' });
     await page.waitForFunction(() => window.__tm?.rival && window.__tm?.challenge?.offers?.length, null, { timeout: 30000 }); };
   // Run the day out without playing: the shift still ends, and ending is what is under test.
   const runOut = page => page.evaluate(() => { document.getElementById('play').click(); window.__tm.flow.runTicks(window.__tm.flow.clock.ticksPerDay + 50); });
@@ -39,7 +41,7 @@ server.listen(0, '127.0.0.1', async () => {
       offers: window.__tm.challenge.offers.map(o => `${o.stops[1]}:${o.cargo}`).join(','),
       card: document.getElementById('shiftNo')?.textContent || '' }));
     const a = await read(A.page), b = await read(B.page);
-    ok(`no parameter is today's daily (${a.card})`, a.info.kind === 'daily' && /^DAILY \d+ · \d+ \w{3}/.test(a.card));
+    ok(`?daily is today's daily (${a.card})`, a.info.kind === 'daily' && /^DAILY \d+ · \d+ \w{3}/.test(a.card));
     ok('two strangers get the same shift today', a.info.seed === b.info.seed && a.day === b.day);
     ok(`and the same jobs on the board (${a.offers.slice(0, 50)}…)`, a.offers === b.offers && a.offers.length > 0);
     await B.ctx.close();

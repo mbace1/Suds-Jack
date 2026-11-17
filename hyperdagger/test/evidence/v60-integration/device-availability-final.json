@@ -1,0 +1,11 @@
+{
+  "checked_utc": "2026-11-10T00:02:52.826973+00:00",
+  "drm_devices": [],
+  "nvidia_devices": [],
+  "adb": null,
+  "available_browser": "Chromium 156.0.8078.79, ANGLE/SwiftShader in correctness runs",
+  "physical_iPad": "unavailable",
+  "physical_Android": "unavailable",
+  "physical_desktop_GPU": "unavailable in this environment",
+  "hardware_60fps_desktop_30fps_tablet_targets": "unverified"
+}

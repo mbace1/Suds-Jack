@@ -9,7 +9,8 @@
 // What it does, and why each step:
 //   · copies the files GIT TRACKS under toko-move/ and flow-core/ — never the
 //     working tree, so a test's output or a scratch file cannot reach a store;
-//   · leaves out tests, tools, scripts, the store kit and every .md (design
+//   · leaves out tests, tools, scripts, the store kit, the art pack (art/ is
+//     source material, 57 MB of plates and stills) and every .md (design
 //     notes are not the product; VERSIONS.md is the changelog on the page);
 //   · keeps the two folders SIDE BY SIDE (toko-move/ beside flow-core/), so
 //     every import path the arcade build uses still resolves unchanged — no
@@ -40,12 +41,16 @@ const OUT = resolve(positional[0] || join(ROOT, 'toko-move-itch.zip'));
 const PAGE = arg('--page', '');
 const DIR = arg('--dir') ? resolve(arg('--dir')) : mkdtempSync(join(tmpdir(), 'toko-itch-'));
 
-const SKIP = [/(^|\/)test\//, /(^|\/)tools\//, /(^|\/)scripts\//, /(^|\/)store\//, /\.md$/i];
+export const SHARED = ['toko/js/master.js'];
+const SKIP = [/(^|\/)art\//, /(^|\/)test\//, /(^|\/)tools\//, /(^|\/)scripts\//, /(^|\/)store\//, /\.md$/i];
 export function packaged(path) { return !SKIP.some(r => r.test(path)); }
 
 export function buildPackage({ dir = DIR, page = PAGE } = {}) {
   rmSync(dir, { recursive: true, force: true }); mkdirSync(dir, { recursive: true });
-  const tracked = execFileSync('git', ['ls-files', 'toko-move', 'flow-core'], { cwd: ROOT, encoding: 'utf8' }).split('\n').filter(Boolean);
+  // Besides the game and its engine, the few shared files the game imports from
+  // elsewhere in the repo, kept at the same relative place so no import is
+  // rewritten (v2.68: the event cards draw Toko's traced face, toko/js/master.js).
+  const tracked = execFileSync('git', ['ls-files', 'toko-move', 'flow-core', ...SHARED], { cwd: ROOT, encoding: 'utf8' }).split('\n').filter(Boolean);
   const files = tracked.filter(f => packaged(f.replace(/^[^/]+\//, '')) && existsSync(join(ROOT, f)));
   for (const f of files) { mkdirSync(dirname(join(dir, f)), { recursive: true }); copyFileSync(join(ROOT, f), join(dir, f)); }
 

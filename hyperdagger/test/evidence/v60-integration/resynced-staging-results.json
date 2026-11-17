@@ -1,0 +1,20 @@
+[
+  {
+    "gate": "resynced-loop",
+    "code": 0,
+    "seconds": 38.3,
+    "staging_head": "5b1cef839135f28c2ab74805c0c639bc28a07801"
+  },
+  {
+    "gate": "resynced-offline",
+    "code": 0,
+    "seconds": 3.6,
+    "staging_head": "5b1cef839135f28c2ab74805c0c639bc28a07801"
+  },
+  {
+    "gate": "resynced-upgrade",
+    "code": 0,
+    "seconds": 7.5,
+    "staging_head": "5b1cef839135f28c2ab74805c0c639bc28a07801"
+  }
+]

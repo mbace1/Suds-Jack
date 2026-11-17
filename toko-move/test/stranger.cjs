@@ -32,9 +32,17 @@ const server = http.createServer((req, res) => {
 let pass = 0, fail = 0;
 const ok = (name, cond, extra = '') => { if (cond) { pass++; console.log(`  ok   ${name}`); } else { fail++; console.log(`  FAIL ${name}${extra ? ' — ' + extra : ''}`); } };
 
-// The default address (today's daily — what a stranger actually gets) and two
-// fixed shifts, so the gate does not depend on what day it is run.
-const RUNS = ['', '?shift=1', '?shift=2'];
+// The real-time ladder (EASY on a fresh shift — since v3.0 behind ?classic;
+// the bare address is the card journey, which test/play.cjs plays) and two
+// fixed classic shifts.
+// (v3.28) The ladder's shift is PINNED. It was a fresh random shift each run, and
+// EASY deals one event card a shift: on about one shift in four a stranger who
+// only taps finishes before it comes up (pinned EASY shifts 1, 3, 4 meet it,
+// shift 2 does not), so the check below failed a full gate run one time in
+// three with nothing wrong. A pinned EASY shift still catches what the check is
+// for (v2.72: a card waiting to be walked to blocked every card behind it).
+const LADDER = '?classic&run=easy&shift=1';
+const RUNS = [LADDER, '?shift=1', '?shift=2'];
 const FIRST_DELIVERY_MAX_MIN = 20; // game minutes from START SHIFT
 
 server.listen(0, '127.0.0.1', async () => {
@@ -48,7 +56,7 @@ server.listen(0, '127.0.0.1', async () => {
       await page.goto(`${base}/toko-move/${q}`, { waitUntil: 'load' });
       await page.waitForFunction(() => window.__tm?.flow && !document.getElementById('play').disabled, null, { timeout: 30000 });
       await page.evaluate(() => window.__tm.flow.clock.setPaused(true));
-      const label = q || '(today)';
+      const label = q === LADDER ? '(the ladder)' : q;
       let start = null, firstDelivery = null, taps = 0, lies = [], selfExits = [], phases = new Set(), end = null;
       let held = 0;  // see below: waiting for the panel to show what the game says is there
       for (let i = 0; i < 6000; i++) {
@@ -91,6 +99,9 @@ server.listen(0, '127.0.0.1', async () => {
       const tpm = await page.evaluate(() => { const c = window.__tm.flow.clock, sh = window.__tm.shift; return c && sh ? c.ticksPerDay / (sh.hours * 60) : 40; });
       const mins = firstDelivery == null ? null : firstDelivery / tpm;
       ok(`${label}: a stranger reaches the board, a catch and a get-off by tapping only (${[...phases].join(' ')})`, ['jobs', 'catch', 'getoff'].every(p => phases.has(p)));
+      // v2.72: a card waiting to be walked to used to block every card behind
+      // it, so someone who only taps CATCH never met one; a stranger meets a card
+      ok(`${label}: a stranger who never walks still meets an event card`, phases.has('event'));
       ok(`${label}: first delivery ${mins == null ? 'never' : `${mins.toFixed(1)} game min`} after taking a job (≤ ${FIRST_DELIVERY_MAX_MIN})`, mins != null && mins <= FIRST_DELIVERY_MAX_MIN);
       ok(`${label}: the shift ends by tapping what lights (${end ? `${end.title}, ${end.index}/${end.target}` : 'never ended'}, ${taps} taps)`, !!end && end.index >= 1);
       ok(`${label}: the catch hint never says "nothing to catch" over a lit CATCH`, !lies.length, lies.slice(0, 2).join(' | '));

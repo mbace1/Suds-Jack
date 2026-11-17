@@ -1,0 +1,222 @@
+  ok   it boots with no errors
+  ok   WebGL actually painted
+  ok   a click on START starts the run
+  ok   the active frame is the clock and the kill counter
+  ok   shell controls retreat during the fight
+  ok   the four-dagger hand sits bottom-centre
+  ok   v25 starts without spectacle overlays
+  ok   v25 bloom is restrained
+  ok   v28 renders a deliberately coarse software raster
+  ok   the coarse buffer is enlarged with hard pixels
+  ok   the soot floor is a tiny unfiltered texture
+  ok   the weapon carries aim without a HUD crosshair
+  ok   TUNING drives the game
+  ok   the burst never out-DPSes the stream
+  ok   shotgun daggers outrun the stream
+  ok   PURE uses the fixed 3-second opening and removes dash
+  ok   a squid emits the DD-shaped 9+1 skull wave
+  ok   basic skulls carry a separately animated jaw
+  ok   gems attract only while idle and shotgun pressure repels them
+  ok   forward + strafe is materially faster than a straight run
+  ok   movement carries velocity, then ground friction settles it
+  ok   a buffered landing hop preserves and boosts speed
+  ok   the old free second jump is gone
+  ok   downward bursts produce an authored double dagger jump
+  ok   skulls beat straight speed but leave a turning window
+  ok   hits use an 8px unfiltered software sprite
+  ok   moving alone no longer fires
+  ok   a short primary press jumps and does not fire
+  ok   a short press does not kick a shotgun into the claw
+  ok   the stream keeps a short press window before it fires
+  ok   a HOLD starts quickly and forms a dense stream
+  ok   a short press leaves no projectiles; the hold still streams
+  ok   releasing a long hold is not a burst
+  ok   a short pad trigger jumps and does not fire
+  ok   a touch tap does not shotgun and does not dagger-jump
+  ok   walking does not start the touch stream
+  ok   holding the right stick fires
+  ok   70 gems unlock LV3 and later gems become homing ammo
+  ok   a short RMB does not dump the homing bank
+  ok   holding RMB streams the bank as ten-damage homing daggers
+  ok   banking 150 homing daggers unlocks the final hand
+  ok   assist slows only near a centred target
+  ok   assist + ramp stay inert without a pad
+  ok   REAP refuses a bare floor, free
+  ok   REAP consumes the pile and damages
+  ok   REAP cooldown blocks a second cast
+  ok   chipping the bridge severs one island
+  ok   style rises and bleeds
+  ok   neon edge pass on by default at T0
+  ok   EDGE OFF and the low tier both shed it
+  ok   the grid stays below the bloom threshold
+  ok   smear deepens mid-dash, settles back
+  ok   the skull is a sculpt now (≥300 source voxels)
+  ok   the basic skull owns a wider threatening horn silhouette (~2.38)
+  ok   AO bake gives bone real shading (banded)
+  ok   the firing hand is a broad four-tip claw
+  ok   the original ash-and-bone claw is restored
+  ok   daggers carry the ember-orange weapon colour
+  ok   the grid is subdued (glow 0.9, edge option 0.15)
+  ok   v22 roster sculpts exceed 1,000 source voxels
+  ok   every upgraded enemy is volumetric
+  ok   the arena background is one horizon line
+  ok   rear overlays remain absent by default
+  ok   v23 spherical projection captures world and threats
+  ok   projection option and low tier shed cube captures
+  ok   the serpent swoops vertically (Y spread > 2.5)
+  ok   the cube look is the default alive-look
+  ok   LOOK SMOOTH still builds a skin that hides the cubes
+  ok   a chip tears and re-forms the skin
+  ok   spawn/kill cycles do not leak geometry
+  ok   the scene graph returns to baseline
+  ok   debug.die() reaches the death screen
+  ok   one click restarts within 2s
+  ok   the full shell returns off-run and retreats again on restart
+  ok   the registry declares at least the three named experiments
+  ok   every mode declares a hi-score key or explicitly none
+  ok   every mode declares an arena, an edge, a director and a lethality
+  ok   pure: boots into its own mode
+  ok   pure: the body is the one the mode declared
+  ok   pure: there is a floor under it
+  ok   pure: survives a minute of its own director
+  ok   hyper: boots into its own mode
+  ok   hyper: the body is the one the mode declared
+  ok   hyper: there is a floor under it
+  ok   hyper: survives a minute of its own director
+  ok   truck: boots into its own mode
+  ok   truck: the body is the one the mode declared
+  ok   truck: there is a floor under it
+  ok   truck: the track keeps building ahead
+  ok   truck: the course lays a wall beside a widened gap
+  ok   truck: wall run is on for the course
+  ok   move: boots into its own mode
+  ok   move: the body is the one the mode declared
+  ok   move: there is a floor under it
+  ok   move: the court has its four walls
+  ok   move: the court's walls are not destructible — v53's hit points are the shale piles' only
+  ok   move: a wall stops the body and reports its normal
+  ok   move: survives on the court
+  ok   move: wall run is on and engages
+  ok   move: a wall run holds height instead of climbing off the wall or sinking to the floor
+  ok   move: a jump press mid-run kicks off along the wall's normal
+  ok   move: a second jump fires in the air
+  ok   END RUN leaves a run for the season menu
+  ok   and the seasons are there to pick from when you land
+  ok   the season registry is a list, and the page knows which one it is on
+  ok   void: the control is the bare disc with daggers
+  ok   void: no ground under the monuments, and the pre-season fog
+  ok   ember: COVER THAT DIES — every pile has hit points, worn past half it leans, at zero it collapses into a heap of shale
+  ok   ember: THE RUBBLE IS THE LEVEL — a heap at rest is ground you stand on, and cover a shot stops on
+  ok   ember: it boots into its own season and says so
+  ok   ember: dark rock stands in the arena — five piles, none of them tall
+  ok   ember: the slabs are LOW mostly — the squared draw puts the median low
+  ok   ember: the Devil Daggers dagger — small fast blades in a wide fan, from a bare hand
+  ok   ember: the fog leans to the ember and a ground stands under the monuments
+  ok   ember: the sky carries a star field the control has not
+  ok   ember: a slab drifts while it stands
+  ok   ember: a standing slab IS the floor
+  ok   ember: a body standing on one is carried by it
+  ok   ember: a slab side is a wall you cannot walk through
+  ok   ember: rock stops a nail, open air does not
+  ok   ember: rock is cover — the same orb dies on a pile and lives without it
+  ok   ember: a body cannot stand inside rock — it is pushed clear
+  ok   ember: a gem lands ON a slab, not through it
+  ok   ember: THE FINALE — at 180 s the rockfall fires and rock falls
+  ok   ember: a rock that lands on you is a hit
+  ok   ember: the rockfall ends, the fallen rock stays as heaps, and the run goes on harder
+  ok   inca: season 2 is BUILT (v44) and still names what is open
+  ok   inca: a body built here wears the mosaic — green leads, the eyes still burn
+  ok   void: the same body is bone
+  ok   inca: nothing stands in the sea — no slabs, no rock; the wave is the arena (only the ebb's low steps, under the crest)
+  ok   inca: the wave HURTS, and it is sized to a jump — the crest at the ripple's peak sits under the apex
+  ok   inca: season 2 spawns only skulls, by declaration — and in practice: seconds of its director, and every body is a skull
+  ok   the menus: the intro offers SEASON 1, 2 and 3 and nothing about VOID or MODE
+  ok   the menus: the pause menu carries the seasons, RUN and the regular options — the MODE is the season's now (v50)
+  ok   inca: the wave can be JUMPED — one good jump clears it, and the double jump clears it easily
+  ok   seasons 1 and 2 pick their scheme: HYPER rules, dash on, and a double jump
+  ok   void declares none: the control keeps the saved mode (PURE — one jump, no dash)
+  ok   touch: a tap on the RIGHT stick jumps (v29–v49 it fired a shotgun burst)
+  ok   haul: a v57 TRUCK best (time plus load, 305 s) is not offered as the best to beat (v58)
+  ok   season choice: ?season=haul with HYPER saved still runs the TRUCK scheme on the convoy
+  ok   haul: a crate at the spawn point is not a hole — a no-input run stays on the deck for 5 s of slow frames (season 3 / free roll)
+  ok   haul: a fall to the road is named on the death screen, never "something"
+  ok   haul: CARGO — trailers carry crates, welded to the deck, and a welded crate rides its truck
+  ok   haul: a hard brake slides the load
+  ok   haul: THE FOLD — a folded truck swings its trailer out and crawls (the pile-up's crash)
+  ok   haul: the look never locks a cab, and the cab takes nothing — missiles are for skulls (v58)
+  ok   haul: THE FINALE — at 180 s the pile-up: every truck ahead folds and stops dead
+  ok   haul: past the pile-up the convoy runs faster and the skulls come thicker
+  ok   haul: season 3 is the TRUCK scheme with a double jump and dash
+  ok   haul: the trucks DRIVE on their own
+  ok   haul: the hand is the missile pod, and the missiles are missile-shaped (v52)
+  ok   haul: a truck carries the body standing on it
+  ok   haul: in the air you keep the speed of the truck you left — momentum, not a conveyor
+  ok   haul: there is no gun — holding the trigger launches nothing
+  ok   haul: a body out of range is not locked
+  ok   haul: a look held on a close skull launches homing missiles, and they kill it
+  ok   haul: a longer look sends faster, tighter-turning missiles
+  ok   haul: the load is not the score — standing in a loose crate and two spills leave the clock at the run time (v58)
+  ok   haul: standing in a loose crate does not set it back — no save happens at all (v58)
+  ok   haul: the clock says TIME SURVIVED and the recap says nothing about crates (v58)
+  ok   inca: a wave of voxels crosses the arena, and a run opens mid-sea
+  ok   inca: the wave TRAVELS — the crest moves at the speed it declares
+  ok   inca: the crest rises to the height the season declares
+  ok   inca: a strike on flat water raises a ring that spreads, then fades to nothing
+  ok   gel: a body landing on a mound squashes it, and it springs back to rest (the sample mound)
+  ok   inca: every gel piece is a ROUNDED box, not a cube
+  ok   inca: the sea SEIZES where it breaks and stays liquid where it does not
+  ok   gel: stand still on a mound and you SINK; run and it holds you up (the sample mound — no season stands one now)
+  ok   inca: the same blow squashes a THICKENING gel less than a Newtonian one
+  ok   ember: a shale slab is rock — it has no spring
+  ok   inca: the wave STRIKES a body standing in its path, and it costs time
+  ok   inca: a body that JUMPS clears it — feet above the crest are not struck
+  ok   inca: the floor reads the wave — a shadow under its body and a foam line at its foot
+  ok   inca: the floor has caustics, the sky a gradient and a sun, and the gel clock runs (v52: the haze went with the grey)
+  ok   inca: the lip SHEDS — cubes spray off the break
+  ok   inca: a skullscape stands on the horizon — giant skulls sunk in the ground, terraces behind
+  ok   inca: the horizon skulls stand FAR out, in a fan round the sun — not looming at the rim
+  ok   inca: a golden-hour sky — a gradient, a sun DISC ringed in stepped bands, and its path on the water
+  ok   void: none of the tech-art terms leak into the control
+  ok   the gibs: a kill leaves a heap of bone that stays — chunks that stack, and sleep where they land
+  ok   inca: THE TIDE — by 150 s the waves are closer and faster, and the wave is still jumped at full tide, with no gaps in the crest
+  ok   inca: the crest CARRIES the bone — a heap moves with the wave and is set down a few units on, not swept off the disc
+  ok   inca: THE EBB — at 45 s the sea pulls back, low steps rise UNDER the crest, and the water comes back
+  ok   inca: THE FINALE — at 180 s the sea drains: the water goes to nothing and the sun's path with it
+  ok   inca: stone steps rise out of the temple floor, every one tall enough to stand clear of the crest
+  ok   inca: the sea comes back and the run goes on harder — the steps stay
+  ok   every season ENDS at 300 s — RUN COMPLETE, and the recap says what the run did
+  ok   the hands: VOID keeps the claw, season 1 the bare dagger hand, season 2 the jade club — none of them wobbling
+  ok   the projectiles: season 2 throws obsidian shards, not season 1's nails
+  ok   ember and void have no wave — the sea is season 2's
+  ok   every backdrop piece the manifest names is placed
+  ok   every backdrop piece sits outside the play disc
+  ok   the floor wears the manifest texture
+  ok   the v26 horizon line is still the environment underneath
+  ok   every kind the manifest names took its slot
+  ok   the skull kept its hinge through the swap
+  ok   a spawned skull holds the voxelized asset, not the sculpt
+  ok   voxelized enemies wear no hull (cubes are the point)
+  ok   a voxelized body wears its mesh as the alive-skin
+  ok   a skin never lands on a body that was not cut from it
+  ok   past 22% of the lattice the skin sheds and the cube body shows
+  ok   face tone and value banding are on
+  ok   no voxelized body exceeds the lattice cap
+  ok   every voxelized kind carries a coarse twin for the perf floor
+  ok   at the ladder floor a spawn holds the coarse twin
+  ok   a run of slow frames moves the governor off tier 0
+  ok   the mesh-skin loader actually runs at boot
+  ok   every declared skin loaded
+  ok   the manifest is present and parses
+  ok   the worker precaches the manifest but not the art it names
+  ok   the game never requests a file that is not in the tree
+  ok   ASK TOKO seats him at the table
+  ok   the run is paused underneath him
+  ok   he is standing in this game
+  ok   and opens knowing the clock
+  ok   a note here has the same transport as one on the floor
+  ok   Esc leaves the table and keeps the pause
+  ok   the death screen carries ASK TOKO
+  ok   and he would open on the death line
+  ok   still zero page errors at the end
+
+220 passed, 0 failed

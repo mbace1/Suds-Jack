@@ -1,5 +1,10 @@
 # Toko — the master artwork and the owner's colour references
 
+**The original lockup** (owner, 2026-11-09, from their Drive as `logo_tokomidari.png`):
+`logo-original.png`, 2048 × 1024, transparent — the face on a magenta disc and the
+three-line *Toko Midori Games*. Its lettering is traced into `../js/wordmark.js`
+(`LOGO`) by `../tools/trace-logotype.py`; the face stays the master trace below.
+
 The face as the owner drew it, 700 × 700. These files are the canon (`../BRAND.md` §2c);
 `../js/master.js` is traced from the yellow pair (`../tools/trace-master.cjs`).
 

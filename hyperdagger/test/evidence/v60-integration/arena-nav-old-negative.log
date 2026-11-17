@@ -1,0 +1,7 @@
+arena navigation request 1
+page.waitForURL: net::ERR_ABORTED; maybe frame was detached?
+=========================== logs ===========================
+waiting for navigation until "load"
+============================================================
+    at /workspace/hyper-arena-nav/hyperdagger/test/sdf-exit.cjs:32:24
+arena navigation request 2

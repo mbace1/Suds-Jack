@@ -1,0 +1,14 @@
+[
+  {
+    "gate": "publication-loop",
+    "code": 0,
+    "seconds": 38.2,
+    "staging_head": "14c298e813e1e1ca0672d3d309fcc3ea49476b3c"
+  },
+  {
+    "gate": "publication-offline",
+    "code": 0,
+    "seconds": 4.1,
+    "staging_head": "14c298e813e1e1ca0672d3d309fcc3ea49476b3c"
+  }
+]

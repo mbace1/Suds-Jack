@@ -1,0 +1,22 @@
+{
+  "status": "approved",
+  "primary_reference_pack": "../sunny-open-backgrounds",
+  "reference_pack_approved_scenes": [
+    "tram",
+    "bench"
+  ],
+  "reference_pack_approval": "pt139u",
+  "approved_image_pixels_modified": false,
+  "approved_scenes": [
+    "metro",
+    "kiosk",
+    "cyclist",
+    "doorway"
+  ],
+  "approved_formats": [
+    "169",
+    "916"
+  ],
+  "approval_date": "2026-11-07",
+  "approval_text": "Perfect all approved"
+}

@@ -23,64 +23,133 @@ real phone; the page must never sell a mode nobody has played.
 | Pricing | owner's call |
 | Uploads | the M2 zip, "This file will be played in the browser" |
 | Embed | **405 × 720** (portrait, the game's own 9:16), fullscreen button **on**, "Mobile friendly" **on**, orientation **portrait**, automatically start on page load **off** |
-| Genre | Simulation |
-| Tags | `transport`, `trains`, `trams`, `helsinki`, `city`, `strategy`, `puzzle`, `real-time`, `mobile`, `minimalist` |
+| Genre | Card Game |
+| Tags | `roguelike`, `card-game`, `turn-based`, `trams`, `helsinki`, `narrative`, `funny`, `mobile`, `minimalist`, `transport` |
 | Content | no mature content (the spin-off *Toko Move: Piritori* is a separate project with its own rating) |
 | Languages | English, Finnish (a Finnish browser starts in Finnish; the title card switches) |
-| Inputs | mouse, touchscreen (sound is synthesised in the page; the ♪ in the HUD mutes it) |
+| Inputs | mouse, touchscreen, keyboard (1, 2, 3 choose; sound is synthesised in the page; the ♪ top-right mutes it) |
 
 ## Short description (one line)
 
-Catch moving trams on Helsinki's real network and get the parcel there on time.
+A courier's shift in Helsinki, one card at a time: which tram, which way, who to help, and what to risk.
 
 ## Description
 
-**Toko Move** is a courier game on the real Helsinki tram and metro network.
+**Toko Move** is a courier game set in Helsinki, played one card at a time.
+Each card shows you where you stand and offers three choices, each with its
+price in time: two ordinary, and a third that is sometimes special (a taxi
+straight to the drop, an express job) and now and then very special (a cargo
+bike's lift, joining the choir on the tram). Pick, and the clock moves only
+when you choose. A tram ride plays out inside the car, stop by stop.
 
-Every line, every stop and every timetable path comes from HSL's own data — the
-trams on the map are where the trams go. Pick a job, read the board, and catch
-the tram that is actually coming: change at the right stop, walk the last
-street when walking is faster, and get the parcel there before it is late.
+The trams run on HSL's real network. Every line and every stop is real, so
+when you ride the 4 to Katajanokka, that's where the 4 goes.
 
-- **A shift is three deliveries.** Fragile parcels ride only trams; hot food
-  goes cold; express pays for speed. Every plan the board offers is a real
-  route, and the clock is always running.
-- **A week has rent.** Five shifts, Monday to Friday, and the rent is due on
-  Friday. What you take between shifts — a bigger bag, a better contract, a
-  courier app — changes how you work the city.
-- **The city happens to you.** Rain, fog and the first snow; a stroller and
-  three bags at the tram steps; a regular who tips; another courier, Vesa,
-  racing you for the job you are still thinking about.
-- **A new shift every day.** The daily shift is the same city day, the same
-  jobs and the same rival for everyone — share your result.
+- **Act 1: Helsinki.** Four runs, each opened by the one before. **Easy** is
+  a first shift, three plain parcels and a quiet city. **Medium** is a real
+  morning. **Hard** is the rush with one tram line halted. **Night** starts
+  at 23:00, and something is off about the trams. Every attempt is a fresh
+  shift: between jobs you pick a perk, and too many late drops lose it.
+- **The Long Shift.** An endless run, open after Easy: jobs keep coming
+  until three late drops or ten o'clock end it, and every clock is a little
+  shorter than the last. Stars at 5, 10 and 15 jobs.
+- **No two shifts the same.** Every shift draws its day (the Helsinki
+  Festival, payday, a heatwave, the first snow, a full moon), the part of
+  the city its drops lean to, and a special perk with a price of its own
+  (*Hustle*: better fees, shorter clocks).
+- **Thirty thousand strangers.** Most of the people you meet are put
+  together from parts: somebody (a man walking three dachshunds, a bride on
+  her way to the church), what they want (a ring dropped at the stop, the
+  crossword's last word) and the day around it, each with three ways to
+  answer.
+- **Missions.** Six errands across real places, each on the city map, a
+  different version every time you run it. And one errand a day, the same
+  for everyone.
+- **The city happens to you.** Some mornings a march on Mannerheimintie
+  halts the trams along it; find another way, wait, or take a taxi.
+- **Choices with stakes.** Run for the tram on a red light? The button says
+  *maybe*. Euros, not points: a job pays its fee, an on-time streak raises
+  it, late halves it, and every risk can move it either way.
+- **Sell the parcel.** A student collecting for vappu, a dentist in a hurry,
+  a woman in a long coat who knows your name. Selling pays now, and the
+  buyer always says what was inside. Delivered, the stamp tells you.
+- **Weather.** Snow makes walks slow and fills the trams. Rain goes for
+  anything made of paper. Fog comes in off the sea at night.
+- **Six trams, from the newest to the museum tram.** They all ride the same,
+  but they look different, inside and out. The museum tram is rare.
+- **The city remembers.** The granny you walked across Mannerheimintie
+  saves you a seat later. Dispatch has a story that runs from shift to
+  shift. The regulars tip. The other courier races you for a job, and from
+  your fourth shift a parcel arrives with no address at all.
+- **A daily, and a week.** After Night: the same shift for everyone each
+  day (your first finish stands, so share it), and five shifts with the rent
+  due on Friday.
 
 Made in Helsinki by Toko Midori Games.
 
 ### Lyhyesti (fi)
 
-Kuriiripeli oikealla Helsingin raitiovaunu- ja metroverkolla: valitse keikka,
-nappaa saapuva vuoro, vaihda oikealla pysäkillä, kävele kun se on nopeampaa —
-ja toimita ajoissa. Viiden vuoron viikko, vuokra perjantaina, ja joka päivä
-uusi päivän vuoro.
+Lähettipeli Helsingissä, kortti kerrallaan: mikä ratikka, mihin suuntaan,
+ketä autat ja mitä uskallat. Kello liikkuu vain, kun valitset. Neljä tasoa
+(helppo, keskitaso, vaikea ja yö), joista jokainen aukeaa edellisen
+jälkeen. Riskit lukevat napissa sanoin, paketin voi myydä ja ostaja kertoo,
+mitä siinä oli. Joka valinnassa on kolme vaihtoehtoa, ja kolmas on joskus
+erikoinen: taksi, pikakeikka tai tavarapyöräkyyti. Kuusi tehtävää kartalla
+ja päivän asia, sama kaikille. Pitkä vuoro on loputon: keikkoja tulee,
+kunnes kolme myöhästymistä tai kello kymmenen päättää sen. Jokainen vuoro
+arpoo päivänsä, alueensa ja erikoisetunsa, ja kohtaamiset kootaan osista,
+kymmeniätuhansia erilaisia. Lumi, sade, mielenosoitus Mannerheimintiellä,
+kuusi ratikkamallia uusimmasta museoratikkaan, ja kaupunki muistaa sinut.
+Lopuksi päivän vuoro ja viikko, jonka vuokra erääntyy perjantaina.
 
 ## Controls
 
-Tap (or click) a job to take it · tap a lit tram — on the map or in the
-panel — to board it · GET OFF when it lights · walk to the next stop when it
-beats waiting. STOP / ROUTE / CITY change the zoom; pinch and drag on a phone.
+Tap a choice. Each button shows its price in time and, when it is a risk,
+its odds in a word (*usually*, *maybe*, *long shot*). Tap the scene to hurry
+a hop or a stamp. MAP, in the corner, opens the whole board. ♪ mutes. On a
+desktop, click works the same, the keys 1, 2 and 3 choose, M opens and
+closes the map, the arrow keys walk the title's and the end card's buttons
+(1 presses the lit one), and Space or Enter hurries.
 
 ## Media
 
-- **Trailer:** the Crown Bridges film, made from the real game —
-  `FFMPEG=/path/to/ffmpeg NODE_PATH=$(npm root -g) node toko-move/tools/film.cjs toko-move-crown-bridges.mp4`
-  (1080 × 1920, H.264; upload to YouTube and paste the link, or attach).
-- **Cover image and screenshots:** all from the real game, the store build,
-  on a phone —
-  `NODE_PATH=$(npm root -g) node toko-move/tools/stills.cjs out/`
-  writes `cover.png` (630 × 500, plus `cover@2x.png`) — tram 12 crossing the
-  water to Kruunuvuori under the name — and six 1080 × 1920 stills:
-  `01-dispatch`, `02-catch`, `03-crown-bridge`, `04-event`, `05-week`,
-  `06-daily`. Upload the cover and any five; `03` and `05` say the most.
+- **Cover image and screenshots** come from the real game: the store build,
+  on a phone, every screen reached by tapping. Run
+  `NODE_PATH=$(npm root -g) node toko-move/tools/stills3.cjs out/`
+  - `cover.png` (630 × 500, plus `cover@2x.png`): the Kauppatori stop as
+    the game draws it, with an old tram, the SkyWheel and the courier, and
+    the name on paper.
+  - Twelve 1080 × 1920 stills:
+    - `00-title` (the four runs as a new player meets them)
+    - `01-dispatch`
+    - `02-risk` (a choice with its odds)
+    - `03-museum-tram`
+    - `04-board`
+    - `05-delivered` (what was inside)
+    - `06-race`
+    - `07-sealed`
+    - `08-night` (the tram with no number)
+    - `09-easy-complete`
+    - `10-daily`
+    - `11-week-rent`
+
+  Upload the cover and any five. `01`, `02`, `03`, `05` and `08` say the most.
+- **Trailer:** `tools/film3.cjs` films the journey from the store build,
+  with the game's own sound. It runs about 47 s: the title, a first delivery
+  whole, the museum tram, the night's tram with no number, the other courier
+  and the lady from Mannerheimintie, then the end card.
+  - `toko-move-trailer.mp4` is 1080×1920, for phones (Shorts, Reels,
+    TikTok, and the page itself).
+  - `--landscape` gives 1920×1080, for YouTube. itch's trailer slot takes a
+    YouTube or Vimeo link, so upload the landscape cut there and paste the
+    link.
+  - `--url=<the itch page>` puts the store's address on the end card once it
+    exists. Until then it reads `mbace1.github.io/Suds-Jack/toko-move`.
+
+  ```
+  FFMPEG=ffmpeg NODE_PATH=$(npm root -g) node toko-move/tools/film3.cjs toko-move-trailer.mp4
+  FFMPEG=ffmpeg NODE_PATH=$(npm root -g) node toko-move/tools/film3.cjs toko-move-trailer-169.mp4 --landscape
+  ```
 
 ## Credits (must appear on the page)
 

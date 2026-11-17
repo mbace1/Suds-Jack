@@ -1,0 +1,15 @@
+{
+  "checked_utc": "2026-11-10T00:16:52.972631+00:00",
+  "overall": {
+    "indicator": "none",
+    "description": "All Systems Operational"
+  },
+  "pages": [
+    {
+      "name": "Pages",
+      "status": "operational",
+      "updated_at": "2026-11-09T18:43:24.510Z"
+    }
+  ],
+  "incidents": []
+}

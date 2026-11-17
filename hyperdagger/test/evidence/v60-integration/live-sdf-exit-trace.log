@@ -1,0 +1,8 @@
+NAV https://mbace1.github.io/Suds-Jack/hyperdagger/?assets=0
+page.waitForURL: net::ERR_ABORTED; maybe frame was detached?
+=========================== logs ===========================
+waiting for navigation until "load"
+============================================================
+    at /workspace/hyper-v60-evidence/deployment-sdf-exit-trace.cjs:37:24
+REQUEST FAILED https://mbace1.github.io/Suds-Jack/hyperdagger/?skull=sdf&season=void&mode=hyper&sdfTest=1 net::ERR_ABORTED
+REQUEST FAILED https://mbace1.github.io/Suds-Jack/hyperdagger/?skull=sdf&season=void&mode=hyper&sdfTest=1 net::ERR_ABORTED

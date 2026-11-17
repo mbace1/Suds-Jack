@@ -148,6 +148,10 @@ s.listen(0, '127.0.0.1', async () => {
         return { state: d.getState().state, rise: +peak.toFixed(2), sticks: [inp.left.active, inp.right.active] };
       });
       ok('D. touch: a finger on START and one on empty space start one run with no jump and no stick held', r.state === 'playing' && r.rise < 0.2 && !r.sticks[0] && !r.sticks[1], JSON.stringify(r));
+      const jumpBefore = await q.evaluate(() => window.__hd.debug.feedback().jump);
+      await q.touchscreen.tap(650, 250);
+      const laterJump = await q.waitForFunction(n => window.__hd.debug.feedback().jump > n, jumpBefore, { timeout: 15000 }).then(() => true, () => false);
+      ok('D. touch: a later deliberate tap still jumps (only the START batch is drained)', laterJump);
       await ctx.close();
     }
     // E. a stick drifting past the menu threshold, held through a pause: no focus walk; B on the main menu does nothing

@@ -220,7 +220,7 @@ export class LiveNetwork{
   for(const {it,box,metro,L,W,ang} of badges){const{v,q,selected}=it,on=lit?.has(v.id);
    if(on){const pulse=0.5+0.5*Math.sin(now/180);ctx.strokeStyle=`rgba(226,104,60,${(0.55+0.45*pulse).toFixed(2)})`;ctx.lineWidth=(2+2*pulse)*dpr;ctx.beginPath();ctx.arc(q.x,q.y,(L/2+6*dpr)+pulse*3*dpr,0,Math.PI*2);ctx.stroke();}
    ctx.save();ctx.translate(q.x,q.y);ctx.rotate(ang);
-   const cars=metro?3:2,gap=1.4*dpr,cl=(L-gap*(cars-1))/cars;ctx.fillStyle=v.layer.colour;ctx.strokeStyle=selected?'#17242b':'#fffdf7';ctx.lineWidth=(selected?3:1.6)*dpr;
+   const cars=metro?3:2,gap=1.4*dpr,cl=(L-gap*(cars-1))/cars;ctx.fillStyle=opts?.halted?.(v.layer)?'#b8c2c6':v.layer.colour;/* v2.69: a held line's vehicles go grey with it (art bible) */ctx.strokeStyle=selected?'#17242b':'#fffdf7';ctx.lineWidth=(selected?3:1.6)*dpr;
    for(let k=0;k<cars;k++){const x0=-L/2+k*(cl+gap),front=k===cars-1;ctx.beginPath();
     // the leading car has the round nose; the rest are boxes on the same rail
     if(front)ctx.roundRect(x0,-W/2,cl,W,[2*dpr,W/2,W/2,2*dpr]);else ctx.roundRect(x0,-W/2,cl,W,2*dpr);ctx.fill();ctx.stroke();}

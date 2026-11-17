@@ -120,6 +120,13 @@ export class InputManager {
     this.touchMode = true;
     const now = performance.now();
     for (const t of e.changedTouches) {
+      // One native multi-touch batch can target START and empty space. Its
+      // pointerdowns run before touchstart; START has already changed state
+      // when the second finger arrives. Drain that batch, not later presses.
+      if (typeof e.timeStamp === 'number' && e.timeStamp === this._uiTouchStamp) {
+        this._touchMap.set(t.identifier, 'ui');
+        continue;
+      }
       const sw = this._swallow;
       if (sw && now - sw.t < 500 && Math.abs(t.clientX - sw.x) < 2 && Math.abs(t.clientY - sw.y) < 2) {
         this._swallow = null;
@@ -173,7 +180,7 @@ export class InputManager {
   /** HD-003: the same, for a finger whose touchstart has not arrived yet —
    *  the browser sends pointerdown (which starts the run) BEFORE touchstart.
    *  The next touch to begin at this point, promptly, is that finger: UI. */
-  swallowTouchAt(x, y) { this._swallow = { x, y, t: performance.now() }; }
+  swallowTouchAt(x, y, stamp) { this._swallow = { x, y, t: performance.now() }; this._uiTouchStamp = stamp; }
 
   _touchEnd(e) {
     const now = performance.now();

@@ -5,12 +5,16 @@ on:
     paths:
       - 'toko-live/**'
       - 'toko/js/**'
+      - 'toko/test/**'
+      - 'scripts/hd-shell.mjs'
       - 'hub/**'
       - '.github/workflows/toko-live.yml'
   pull_request:
     paths:
       - 'toko-live/**'
       - 'toko/js/**'
+      - 'toko/test/**'
+      - 'scripts/hd-shell.mjs'
       - 'hub/**'
       - '.github/workflows/toko-live.yml'
 
@@ -31,6 +35,12 @@ jobs:
         run: |
           npm install --no-save playwright@1.56.1
           npx playwright install --with-deps chromium
+      - name: inherited dialogue tokens are precached
+        run: node toko/test/idle-precache.cjs
+      - name: activity defers asides, silence still gets one
+        run: node toko/test/idle-activity.cjs
+        env:
+          NODE_PATH: ${{ github.workspace }}/node_modules
       - name: real Toko Live entry and chat loop
         run: node toko-live/test/runtime.cjs
         env:

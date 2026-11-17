@@ -1,5 +1,27 @@
 # Toko Assistant — patch notes
 
+## 2026-11-09 — idle means silence, including host replies
+
+- Reset the counter’s 24-second idle wait on real text input and on transcript
+  lines added by a host such as Toko Live. An aside no longer interrupts a
+  typed conversation; true silence still produces the existing limited asides.
+  Disconnect the activity observer when the counter is destroyed.
+- Regression gate covers typing across the old deadline, host-owned replies,
+  subsequent silence, closing and destruction. The old counter fails it.
+- Shared module URLs: chat 26, table 6, signature 10. Update their direct
+  importers and worker graphs, preserving each file’s newline convention.
+  Toko Live main 22 and Hyper main/worker registration 111 (only import URLs
+  changed); no game mechanics or brand/game release labels change. Root
+  cache v283, Hyper cache v81; shared-counter cache suffix toko26 for Radio
+  Free/Toko Drop. Source precaches regenerated. This prerequisite is separate
+  from Hyper Dagger’s v60 feature PR #628.
+  Production already used Toko Live main URL 21 and hub cache 282; choose
+  22/283 to advance both lineages instead of reusing a deployed URL.
+- Hyper’s precache walker now carries a module’s URL token into built
+  dialogue/language imports. The old walker cached untokened substitutes,
+  leaving a first offline counter opening dependent on an earlier online
+  conversation. A standalone fixture checks the inherited URLs.
+
 ## 2026-09-24 — the canon, and the master artwork
 
 - **The owner's master artwork is in the repo** (`master/`, white on yellow and
@@ -172,3 +194,21 @@
 - Shared local news inbox API for Toko and later Helsinki Free Radio use.
 - First hidden DOS layer: `DIR`, `WHOAMI`, `MEMORY`, `TYPE MANIFESTO.TXT`, `NATURE.EXE`, and `MIRROR.EXE`.
 - `MIRROR.EXE` is the first rare full-screen fourth-wall event.
+
+## 2026-11-09 — reviewed rollout and delivery status
+
+- Shared-counter prerequisite #635 merged at `f421a84b5` after passing CI
+  and clean final-head review. Old-code and disconnected-observer controls
+  both fail the new regression; typing, delayed host replies and subsequent
+  silence pass with the fix. No assertions were relaxed.
+- Hyper v60 #628 merged at `fe9a50b73`. Its scoped publication `14c298e81`
+  preserves the independent Toko Move/Piritori releases and the live Toko
+  layers; it uses chat 26, table 6, signature 10 and Toko Live main 22.
+- The older Radio Free note to leave a brand-kit URL alone is documented
+  as a narrow shared-dependency exception in its AGENTS.md. Native Radio
+  Free VERSION/V/leaf modules stay 73; no art, wire or language data changes.
+- Pages build succeeded but file syncing timed out. A same-job retry was
+  superseded by downstream Toko Drop 2 v131 (`6b8d06f48`), which contains
+  the approved publication. Delivery was pending at 23:10 UTC; this is not a claim
+  that the public hub has v60 yet. Full source/staging and first-offline
+  counter-use checks pass; physical-device performance is unmeasured.

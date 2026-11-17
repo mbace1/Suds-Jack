@@ -1,0 +1,11 @@
+{
+  "physical_iPad": "unavailable",
+  "physical_Android": "unavailable",
+  "physical_desktop_GPU": "unavailable",
+  "gpu_nodes": [],
+  "adb_available": false,
+  "software_browser": "Chromium 156 / ANGLE SwiftShader",
+  "hardware_p95_frame_ms": null,
+  "hardware_game_time_real_time_ratio": null,
+  "hardware_targets_verified": false
+}

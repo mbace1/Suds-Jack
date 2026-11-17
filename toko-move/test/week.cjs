@@ -45,12 +45,16 @@ server.listen(0, '127.0.0.1', async () => {
     ok('a pinned shift takes it: the bag holds 6, a drop of 100 pays 150', pk.cap === 6 && pk.drop === 150, JSON.stringify(pk));
 
     // ── in from the daily ────────────────────────────────────────────────
-    await boot('');
+    // v2.73: the week is NIGHT's reward (the ladder first), so a player who
+    // reaches it has cleared the runs; the daily is ?daily
+    await boot('?daily&classic');
+    await page.evaluate(() => localStorage.setItem('tokoMoveRuns', JSON.stringify({ easy: { done: true }, medium: { done: true }, hard: { done: true }, night: { done: true } })));
+    await boot('?daily&classic');
     await page.evaluate(() => localStorage.setItem('tokoMoveRegulars', JSON.stringify({ kiosk: 5, bakery: 4 })));
     const link = await page.locator('#weekLink');
     ok('the daily\'s title card offers the week', await link.isVisible() && /WEEK/.test(await link.textContent()), await link.textContent());
     await link.tap(); await ready();
-    ok('and it leads to ?week', /\?week$/.test(page.url()), page.url());
+    ok('and it leads to ?week, still the real-time game', /\?week&classic$/.test(page.url()), page.url());
     const mon = await page.evaluate(() => ({ play: document.getElementById('play').textContent, no: document.getElementById('shiftNo').innerText,
       kind: window.__tm.shiftInfo.kind, standing: window.__tm.challenge.standing, link: document.getElementById('weekLink').hidden }));
     ok(`Monday is named on the button (${mon.play})`, mon.kind === 'week' && mon.play === 'START MONDAY');
@@ -74,7 +78,7 @@ server.listen(0, '127.0.0.1', async () => {
     ok("the challenge's standing lands in the week's save and never in the browser's", wrote.week.kiosk === 1 && wrote.global === JSON.stringify({ kiosk: 5, bakery: 4 }), JSON.stringify(wrote));
 
     // ── a night left without a pick ──────────────────────────────────────
-    await page.goto(`${base}/toko-move/?week`, { waitUntil: 'load' });
+    await page.goto(`${base}/toko-move/?week&classic`, { waitUntil: 'load' });
     await page.waitForFunction(() => window.__tm?.rival && document.querySelectorAll('#shiftNo .kitOffer').length, null, { timeout: 30000 });
     const held = await page.evaluate(() => ({ play: document.getElementById('play').textContent, off: document.getElementById('play').disabled, n: document.querySelectorAll('#shiftNo .kitOffer').length }));
     ok('closing the card without picking: the title offers the same three and holds the shift', held.off && held.play === 'TAKE ONE FIRST' && held.n === 3, JSON.stringify(held));
@@ -90,7 +94,7 @@ server.listen(0, '127.0.0.1', async () => {
     await page.tap('#play'); await page.evaluate(() => window.__tm.flow.runTicks(300));
     await page.evaluate(() => { const ch = window.__tm.challenge; ch.score += 730; ch.results.push('ok'); window.__tm.flow.runTicks(1); });   // as if a delivery landed
     w = await save(); ok('a shift in progress is written as it goes', w.started === 1 && w.live?.score >= 730, JSON.stringify(w.live));
-    await boot('?week');
+    await boot('?week&classic');
     w = await save();
     const wed = await page.evaluate(() => ({ play: document.getElementById('play').textContent, no: document.getElementById('shiftNo').innerText, seed: window.__tm.shiftSeed }));
     ok('reloading mid-shift clocks out: Tuesday is closed with what it had banked', w.day === 2 && w.shifts[1].left === true && w.shifts[1].euros >= 73, JSON.stringify(w.shifts[1]));
@@ -98,7 +102,7 @@ server.listen(0, '127.0.0.1', async () => {
     ok('the title says so before the next shift starts', /tuesday was left mid-shift/.test(wed.no), wed.no.replace(/\n/g, ' / '));
     await page.locator('#shiftNo .kitOffer').first().tap(); await ready();
     ok('with the night picked, Wednesday can start', (await page.locator('#play').textContent()) === 'START WEDNESDAY');
-    await boot('?week'); w = await save();
+    await boot('?week&classic'); w = await save();
     ok('opening the page without starting does not burn a day', w.day === 2 && w.kit.length === 2);
 
     // ── to Friday ────────────────────────────────────────────────────────

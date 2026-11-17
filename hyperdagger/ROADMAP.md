@@ -1,8 +1,84 @@
-# Hyper Dagger Roadmap
+# Hyper Dagger — v60 integration and SDF track
 
-Version bumps are tied to milestones. Each milestone is a shippable slice of the total experience (play, UI, feedback, scoring).
+## Current state — 10 November 2026
 
-## v55 — Menu & Scoring Contract (current)
+- Source v60 is merged at `fe9a50b73` (#628), preserving #626 ancestry; separate prerequisites #634 and #635 are merged and reviewed.
+- Public hub: v60 at production `6b8d06f48`, verified by all 14 selected hashes, all six real encounter loops and offline 6/0. Pages run 42717115868 attempt 2 succeeded. Live arena navigation exposed a duplicate touch-release event; HD-021 closes that final integration finding before a new conversion starts.
+- All 21 final local gates and required CI passed, including smoke 220/0, SDF play 35/0, all six season/renderer encounter loops, input/focus, pause/retry, records and offline. The latest-main prospective tree and production staging also passed.
+- Runtime: main/registration 118, input 111, cache v88, 70 generated entries. Separate preview remains build 3; retain it until retirement is explicitly agreed. Navigation follow-up #638 is merged at `f8353e757`: main/registration 119, cache v89. All 21 final gates and CI pass, including the unchanged Inca bone-carry assertion. Publication `458ce6822` is included in production head `3f40cc410` (Toko Drop 2 v132 preserved). Pages delivery is blocked: run 42727139262 built successfully but both deployment attempts timed out. Public index/main/worker hashes still match the earlier v60 (118/v88), not the guard. New conversion work stays on hold until the fix is verified live.
+- Classic remains the default. Physical-device performance is unmeasured.
+- Completed runs tie at 300.0 seconds. This is an open scoring design decision, not authorization to change the score.
+
+The existing game remains the comparison baseline. The SDF preview is a
+hybrid renderer: only listed enemies are converted; the arena, convoy,
+weapons and physical debris still use the existing geometry.
+
+## Build 2 — historical preview slice
+- Classic / SDF Preview choice on the real title menu, saved between visits.
+- Mouse/touch buttons; R or gamepad up/down changes renderer; START plays.
+- Regular, crowned Wraith, cleft Splitter, small hornless Mini and crowned
+  Dread have distinct SDF profiles and keep their gameplay values.
+- Season palette supplies the SDF bone/eye tint. Detailed Inca mosaic pattern
+  matching is a later art pass, not claimed complete here.
+- `sdf-preview.html` compares profiles and 12/40-body swarms.
+- Separate `/hyperdagger-sdf/` online preview; the current cabinet remains at
+  `/hyperdagger/`. The preview does not register a service worker, so it
+  cannot delete the current cabinet's offline caches.
+
+## Build 3 — implemented experimental slice
+- Seven SDF enemy profiles, including the orbital Watcher and open-shell Totem.
+- Six bounded trajectory cuts per enemy; dark cut edges and hit flash.
+- Charge/spawn signals drive the Watcher iris and Totem core.
+- Season-direction lighting in world space and analytic SDF floor engravings.
+- Gameplay health, radii, firing/spawning, scoring and voxel deaths retained.
+- Dedicated Watcher/Totem encounter via the existing VOID director, with
+  separate test records; standard season wave tables are unchanged.
+
+Owner's latest "Go ahead" authorizes this preview expansion while physical
+GPU measurements remain open; it does not approve SDF as the default.
+
+## Next — hardware budget and combat readability
+- Measure full gameplay on physical iPad, Android phone and desktop GPU:
+  close skull, 12-body pack, late-wave swarm, every season and cube projection.
+- Target 60 fps desktop / 30 fps tablet over a 60-second run; record p95 frame
+  time, game/real-time ratio and browser/GPU. These are exit targets, not results.
+- Compare target size, crown recognition, damage flash and occlusion in motion.
+- Review wound visibility across six-hit bodies and glancing impacts; expand
+  from the current six recent through-cuts only within a measured GPU budget.
+- Add SDF-specific distance/step budgets and a return-to-Classic recovery if
+  measurements miss the budget. No automatic quality claim from SwiftShader.
+
+## Build 4 — after v60 integration: one articulated enemy
+1. Watcher: implemented in build 3; validate on physical devices.
+2. Totem: implemented in build 3; validate on physical devices.
+3. Inspect spider and serpent, then choose ONE articulated conversion. Retain segment hitboxes, attack timing, silhouette and death behavior; complete its encounter and performance validation before starting the other.
+4. Heavy/boss silhouettes only after all preceding conversions are tested.
+
+Each conversion must pass the real menu → play → encounter → kill/death → retry
+loop, keep its distinct silhouette and timing, and stay within the hardware
+budget before another enemy starts. Existing voxel fallback remains available.
+
+## Build 5 — environment and coherent lighting
+- Build 3 adds material-only SDF floor inlays. Next convert a small patch
+  of genuine 3D arena detail; preserve floor/edge collisions.
+- Match SDF lighting to each season and its imported geometry; compare shadow,
+  depth, fog, projection and postprocessing with the current build.
+- Only consider a fullscreen raymarch after measured GPU evidence supports it.
+  A hybrid renderer is an acceptable final architecture.
+
+## Rollout gates
+Opt-in v60: green integrated game/repository gates, visual review, reviewed merge and Mikael’s explicit merge approval, then publish and verify the main hub route. Physical-device results must be reported as unavailable when unavailable.
+
+Making SDF the default additionally requires a physical-device pass at the budgets above and an owner decision. Update cabinet text/version to describe the build actually shipped.
+A preview release does not certify 95% near-parity.
+
+---
+
+# Earlier milestone plan — historical
+
+These v55–v58 targets predate v59 and are retained as planning history, not current completion claims. `VERSIONS.md` records shipped behavior; `QUEUE.md` holds outstanding work.
+
+## v55 — Menu & Scoring Contract (historical target)
 - Explicit season + mode selection on the title screen
 - Mode override sticks; seasons remain primary
 - Personal best and daily best visible
@@ -19,7 +95,7 @@ Version bumps are tied to milestones. Each milestone is a shippable slice of the
 - Brief slowmo + toast on wave transitions
 - Board script accepts season
 
-## v57 — Polished Total Experience (near complete)
+## v57 — Polished Total Experience (historical target)
 - Consistent recap across death and complete
 - Stronger heavy telegraphs and hit confirmation
 - Menu and death screen visual polish

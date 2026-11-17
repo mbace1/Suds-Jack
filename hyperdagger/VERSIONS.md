@@ -1,4 +1,257 @@
-## v59 — in progress
+## v62 — in progress
+**Three seasons that can be finished, and a finish that counts (HD-023)**
+
+Mikael, 11 Nov 2026: *"Plan and execute to ship 3 seasons feature complete.
+Act as Game design and art direction"*.
+
+Looked at first: the back half of each season on a contact sheet, and a bot
+that kills every body the instant it exists and is never touched — the ceiling
+of what a clock season allows. **It was dead at 31.0 s in EMBER with one kill,
+and at 30.0 s in INCA with none.** The menu says "survive to 5:00".
+
+The cause is one function. The season wave table (12 Oct) was written as the
+director: it returned before the tuned HYPER one ran, and spawned about one
+skull per breathing gap. The clock drains a second a second and a skull pays
+one. Its `kind` chose a toast and nothing else, so no watcher, husk, spider,
+blinker, serpent, dread, totem, thorn or leviathan ever appeared in a season.
+It rolled `Math.random` per frame, so pressure followed the frame rate and a
+daily seed seeded nothing. `waveIdx` was never reset, so a second run opened
+in the last act. HAUL's table was read by nothing at all.
+
+What changed, and each is a design decision:
+
+- **An act steers the tuned director; it does not replace it.** An act is
+  `{t, kind, name, density, gap}`. `density` multiplies the tuned budget (EMBER),
+  the skull cadence (INCA) or the convoy's skull rate (HAUL); 1 is as tuned.
+  `kind` leans an ordinary pulse (`skulls` → swarm, `heavies` → spike) and
+  leaves the rhythm's own heavy/spike/swarm alone. `gap` is a real valley when
+  the act opens. The act is named on screen: THE SWARM, THE PARADE, THE
+  HEAVIES, THE SQUEEZE, THE HOST; THE SEA, THE DROWNED, HIGH WATER, UNDERTOW,
+  SPRING TIDE; THE CONVOY, LOCK ON, OPEN ROAD, HEADWIND. The finale keeps its
+  own name.
+- **INCA: the sea pays.** A crest that passes under a body it did not touch
+  buys 2 s. The sea was only a cost. Its skull cadence is 1.0 s → 0.6 s (was
+  2.6 → 0.9, which no clock survives).
+- **A clear is ranked by kills.** The clock is still the score and a finished
+  run is still 300.0 s. Among clears, more kills is better: saved per season
+  and mode (`hyperDaggerClears`), sealed on the end screen (FIRST CLEAR / BEST
+  CLEAR / best clear N kills), shown on the menu, and starred on the season's
+  tab.
+- **The run ends on a beat**: LAST STAND at thirty seconds to go, and the last
+  ten are counted.
+- **INCA files its own best** (`…:inca`). It shared EMBER's, both being HYPER.
+  EMBER keeps the key it had, so no best is lost; INCA starts clean, because
+  what was in the shared key cannot be told apart.
+
+Measured, same bot, after: EMBER reaches 300.0 s (531 kills, the clock at its
+cap); INCA reaches 300.0 s (702 kills, the clock at its cap, no crest jumped).
+That is a ceiling, not a difficulty: the bot is never touched and never misses.
+
+Gates: `test/acts.mjs` (bare node, 24: the tables' shape, and that INCA's
+cadence alone can carry the clock) and `test/seasons.cjs` (browser, 48: acts open
+and are named, bodies arrive unasked, EMBER's roster is more than skulls, the
+crest is cleared with a real Space press and pays 2 s, a crest that hits pays
+nothing, LAST STAND, the count, the clear saved and shown, a second run opens
+in act one).
+
+Not done, and not claimed: nobody has played this at speed. The numbers say a
+season CAN be finished; whether it is the right difficulty is a playtest. The
+pause menu still has the v48 look. HAUL's skulls still roll `Math.random`.
+
+## v61 — in progress
+**The look: particles, a fluid floor and light, a different one per season (HD-022)**
+
+Mikael, 10 Nov 2026: *"Plan and execute the most visually impressive version
+of the game. Utilizing SDF and other systems that aren't that demanding but
+can be tweaked for impressive visuals. Including expert particle effects and
+fluids. Remember, seasons have slightly different styles and looks"*.
+
+Read off screenshots of v60: a kill was grey cubes on a black floor, a shot
+was invisible, and nothing in the frame was liquid or lit by what happened in
+it. Three cheap systems change that. Each is a module, each is declared per
+season (`fx` in `seasons.js`), and none of them touches a rule, a hitbox, a
+timer or the score.
+
+- **Particles** (`js/fx-particles.js`). A particle is its birth record: the
+  vertex shader flies it (gravity, drag, one floor bounce, drift), so nothing
+  is simulated on the CPU and thousands cost two draw calls. Hard pixels and an
+  ordered-dither fade, because the image is a coarse software raster. The air
+  (embers, pollen, road dust) is emitted once and wrapped round the camera in
+  the shader.
+- **The floor is a fluid** (`js/fx-fluid.js`). A 256² ping-pong field over the
+  disc, read by the floor shader.
+  - EMBER: a kill spills a molten pool that runs, stops with an edge, crusts
+    from the rim inward into cracked plates, and long after sinks away.
+  - INCA: the sea rings. Steps, landings, nails, kills and the wave all dent
+    it, and the sun's path and the caustics bend through the rings.
+  - HAUL has no floor to pool on, so it has none.
+- **Light from events.** A kill, a shot and a shockwave light the floor round
+  them for a few frames.
+- **RENDER · SDF only** (`js/sdf-ichor.js`): an SDF body also dies as a
+  raymarched liquid — a core and six lobes in a smooth union that loosens as
+  they fly. Six pooled, 0.7 s each. CLASSIC keeps its voxel deaths and gets
+  everything above.
+
+Per season (`js/fx.js` holds the recipes): **EMBER** is fire in the dark
+(sparks that bounce, embers off the pools, smoke lit from below); **INCA** is
+water and light (beads of the sea, gold dust, spray off the crest); **HAUL**
+is speed and smoke (a missile is a flame and its smoke, a kill a fireball,
+and everything thrown rides the convoy while the smoke is left behind).
+
+- **Scaled and switchable.** The perf tiers thin the bursts; the lowest tier
+  empties the air and draws a plain floor. The pause menu has EFFECTS ON / OFF.
+  MOTION REDUCED keeps the bursts and drops the flashes and floor lights.
+- **Its own dice.** The look never calls `Math.random` or the run's rng, so a
+  seeded run plays the same with it on or off (the gate reads the source).
+- **VOID has no look** and stays the control.
+
+New gate `test/fx-look.cjs`: each season has its own style, a real shot, hit
+and kill fire it, EMBER's floor takes a pool and INCA's a ring, the same
+frozen frame with the look off is a different picture, OFF is off, the lowest
+tier thins it, and kills do not grow the scene.
+
+Found on the way: my capture tool read the wrong options key, so its first
+frames were at the lowest quality tier. And the first magma was a white lake
+that hid everything standing in it; it is half the volume now and white-hot
+for under a second.
+
+Tokens: `main.js` 120, `seasons.js` 120, `sw.js` 120, worker cache
+`hyperdagger-v90`; new `fx.js`, `fx-particles.js`, `fx-fluid.js` and
+`sdf-ichor.js` at 1. 74 precache entries.
+
+Not measured: frame times on a real phone, tablet or GPU.
+
+## v60 — 2026-11-09
+Integration follow-up (source merged 9 November; delivery blocked 10 November): the test-arena chip ignores the second
+release event from one touch gesture. A delayed-navigation regression fails
+on the old handler (two requests and ERR_ABORTED) and retains all three
+season exits and normal/daily record-isolation assertions. Main/worker
+registration advance to 119 and worker cache v89; gameplay is unchanged.
+The earlier v60 (118/v88) is live; this maintenance guard is merged but
+not live after Pages delivery timed out. See the final release receipt.
+**SDF on the live menu: RENDER · CLASSIC | SDF (HD-020)**
+
+Mikael, 22 Oct 2026: *"Can you make an SDF toggle in the main menu?"*, then
+*"It should also work"*. Codex's SDF builds 1–3 (the three entries below,
+#626) raymarch the skull family, and since build 3 the Watcher and the Totem,
+as signed distance fields with carved wounds, behind a Classic / SDF Preview
+pair on the menu, but only on the separate `/hyperdagger-sdf/` preview. On a
+phone held sideways that pair and its two-line note pushed START off the
+bottom of the screen. This takes that work to the live game:
+
+- **One row, not two plus a note.** RENDER, then CLASSIC and SDF as the two
+  halves of one segmented switch, 44 px tall, in the season's colour. It sits
+  between the rules card and START, and START fits all three views (desktop,
+  phone upright, phone on its side). The controls line names the keys: R on a
+  keyboard, ▲▼ on a pad. (The label was SKULLS until build 3 made the Watcher
+  and the Totem SDF too.)
+- **Build 3's test arena is a chip in the header** (TEST ARENA · WATCHER +
+  TOTEM, shown while SDF is on), where the panel has room, rather than a
+  44 px row above START that broke the sideways fit again.
+- **Picked the way a season is.** One press on the menu, saved
+  (`hyperDaggerRenderer`), never a start. The bodies built from then on wear
+  it. CLASSIC is the default, so the game nobody switched is the game it was:
+  build 3's floor inlays and SDF lighting are off under CLASSIC.
+- **It works in play, and a gate says so** (`test/sdf-play.cjs`, through the
+  real menu by touch, in all three seasons):
+  - the skulls the season's own director spawns are SDF skulls, never skinned;
+  - skull, splitter and dread come up as their own profiles with their own
+    health;
+  - an SDF skull in front of the eye is drawn;
+  - a kill throws its voxels and releases the shader, and a splitter splits
+    into SDF minis;
+  - in season 3 the look locks an SDF skull and the missiles kill it;
+  - END RUN, CLASSIC, START gives voxel skulls again.
+- With the Meshy skins loaded (the real page, not `?assets=0`), a CLASSIC
+  skull wears its skin and an SDF skull never does. The skins are attached
+  lazily and skip a body that already has an SDF one.
+
+Integration refresh: current main is preserved, the v59 landing record is
+reconciled, and the compact renderer row carries a visible v60 marker even
+in phone landscape. The short-screen row gaps also keep Inca’s longer card
+and START wholly inside 844×390 with SDF selected, without shrinking touch
+targets. A separate `sdf-loop.cjs` acceptance gate covers the Hub
+entry, both renderers, actual weapon kills, simulation-driven death and tap
+retry; it also checks loaded Meshy skins against the SDF safeguard.
+
+The test arena’s pause-menu season choices now use the same full exit as
+the title tabs. This drops the HYPER URL pin before a normal season starts
+and prevents a test run from changing the normal best-score key.
+
+Multi-touch START now drains every contact from the initiating native
+event batch, preventing its second finger from becoming a jump. Later
+events keep the ordinary touch grammar.
+
+Tokens: `main.js` 118 and `sw.js` 118, worker cache `hyperdagger-v88`;
+`input.js` 111. Shared counter: chat 26, table 6, signature 10; generated
+precache has 70 entries with inherited dialogue/language tokens.
+The original #628 used 114 / v84 after reconciling the two different 113 /
+v83 builds. `enemy.js`, `truck.js` and `convoy.js` remain at build 3's 113,
+and `sdf-skull.js` at 3; their bytes are unchanged by this integration.
+
+## SDF build 3 — carved damage, living machinery and floor inlays
+- Shots cut actual through-holes along their trajectories. Six recent cuts
+  are stored per enemy; dark rims and hit flash make wounds readable. The
+  cap replaces oldest cuts and avoids unbounded shader work.
+- Watcher: an orbital bone ring and recessed iris. Its existing 0.7-second
+  warning brightens/swells the iris before the same aimed three-orb volley.
+- Totem: a dark open helical shell around a breathing core. Existing spawn
+  timers drive its pulse; HP, rings, spawning, hit radius and scoring persist.
+- Skull family remains converted. SDF normals now light in world space from
+  the season's sun direction, with its horizon supplying the lower fill.
+- The arena gains broken annular engravings from 2D signed-distance fields.
+  These are material grooves on the existing floor, not raymarched terrain
+  or new collision. Classic mode disables them.
+- The menu/gallery include a TEST WATCHER + TOTEM arena: the legacy VOID
+  director begins with both enemies, with separate best/history/run-log keys
+  and no daily board. The three standard seasons retain their wave tables.
+- Gallery includes Watcher/Totem and a CARVE WOUND control. Start menu labels
+  SDF BUILD 3. The separate preview remains online-only.
+
+This is an authorized expansion of the experimental renderer; physical GPU
+and iPad frame budgets still gate default rollout. It does not claim that
+the whole scene is SDF, that physics uses SDFs, or that visual parity is 95%.
+Tokens: enemy/main/truck/convoy 113, SDF module 3; source worker 83.
+
+## SDF build 2 — experimental menu build
+**Classic or SDF, chosen before START.** The saved renderer choice is available
+through mouse/touch buttons, R, or gamepad up/down. The three seasons and their
+controls remain the same. A URL `?skull=sdf` explicitly opens the SDF preview;
+`?skull=classic` returns to the baseline. Making a menu choice removes the URL
+override so reload agrees with the selection.
+
+The conversion now covers the skull family: regular, crowned Wraith, cleft
+Splitter, small hornless Mini and crowned Dread. Each keeps its own health,
+radius, speed, scoring and death/split behavior. Season palettes tint the bone
+and eyes. SDF wounds currently flash; visual bullet-hole erosion remains a
+later step. The gallery cycles all five profiles.
+
+The separate `/hyperdagger-sdf/` preview is online-only and registers no worker.
+The current cabinet and its offline caches are preserved. Detailed physical
+GPU/iPad performance is still unverified. Expansion gates and targets are in
+`ROADMAP.md`; this release does not claim full SDF conversion or 95% parity.
+
+Tokens: enemy/main/truck/convoy 112, SDF module 2; source worker 82.
+
+## SDF skull pilot — review build after v59
+**One enemy, two rendering paths.** Open `?skull=sdf` to raymarch the regular
+chaser's skull inside a bounded proxy. Default play and the rest of the roster
+keep their existing visuals. `sdf-preview.html` compares the current voxel skull
+and the SDF skull, with rotation and 12/40-enemy swarm views.
+
+- Sculpted cranium, tapered horns, carved eye/nose cavities, individual teeth,
+  ember eyes and a lower jaw driven by the existing bite animation.
+- Surface depth is written for geometry occlusion. Each camera gets its own
+  local ray origin, including the game's cube-camera passes.
+- Same one-hit health, radius, movement, scoring and voxel death debris.
+  The SDF proxy does not participate in gameplay raycasts; enemy death disposes
+  the per-enemy shader material. Derived skulls keep their own identities.
+- Opt-in experiment, not a full renderer migration or a parity certification.
+  The shading is a local bone/ember rig, not a new physically lit arena pipeline.
+- Module tokens: changed enemy/main/truck/convoy imports at 111; new SDF module
+  at 1; worker cache 81 and generated precache (71 entries).
+
+## v59 — 2026-10-19
 **The menu is the season (HD-019)**
 
 Mikael, 18 Oct 2026: *"Redesign menu. Make it look very different and nicer.

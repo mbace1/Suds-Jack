@@ -18,6 +18,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 const REFS = [/(?:src|href)="([^"]+)"/g, /from\s*'([^']+)'/g, /import\(\s*'([^']+)'/g];
+// The counter builds dialogue/language imports from its own URL query.
+const BUILT = /import\(\s*'([^']+)'\s*\+/g;
 const tokenOf = ref => ref.match(/\?v=\d+/)?.[0] ?? '';
 
 const args = process.argv.slice(2);
@@ -54,11 +56,13 @@ const seen = new Set();
 // Files are addressed from the repo root while walking and written out
 // relative to the game, which is the only form the worker can use.
 const visit = (file, token) => {
-  if (seen.has(file)) return;
-  seen.add(file);
+  const key = file + token;
+  if (seen.has(key)) return;
+  seen.add(key);
   const src = read(file);
   if (src == null) return;
   const dir = path.posix.dirname(file);
+  const built = new Set([...src.matchAll(BUILT)].map(m => m[1]));
   for (const re of REFS) {
     for (const m of src.matchAll(re)) {
       let raw = m[1];
@@ -83,7 +87,7 @@ const visit = (file, token) => {
       // The signature is the opposite case and stays: it is drawn INTO this
       // game, so without it the corner is empty on a plane.
       if (at.startsWith('hub/')) continue;
-      const t = tokenOf(raw);
+      const t = tokenOf(raw) || (built.has(m[1]) ? token : '');
       out.add(path.posix.relative(GAME, at) + t);
       visit(at, t);
     }
