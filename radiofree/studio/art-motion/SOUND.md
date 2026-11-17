@@ -335,7 +335,7 @@ all used the same few house parts: `stems.bed()` (the A-minor groove at 112 BPM)
 | **cabin** (`cabin.py`) | a car at night from the driver's seat: road stories, anything a sat-nav or a dashboard tells | engine and tires on snow that follow the speed, a sat-nav's glass chimes, the hazard relay's tick-tock as the click track with a marimba vamp answering it (90 BPM, E minor landing on C), a jet pass bent by Doppler, a dashboard rattle, snow against the glass | a glass blip + a marimba note; every caption is announced by the sat-nav's chime | **yes: Give Way** |
 | toy town | the 3D road: data centers, roads, sites (Cut First's world) | glockenspiel, woodblock, toy-engine putter, a level-crossing bell | a glock note | to build |
 | office | the room kit: emails, NDAs, HR (We Are Aware) | keyboard and mouse, fluorescent hum, a printer, an email whoosh | a keyboard key | to build |
-| marble run | the machine kit: circular money (The Round Trip) | wooden clacks, marble rolls, xylophone runs, coin chimes | a xylophone note | to build |
+| **marble run** (`marble.py`) | the machine kit: circular money (The Round Trip) | wooden clacks, marble rolls, a xylophone loop with pizzicato bass (120 BPM, D lydian), coins landing, a split-flap sign, a relay | a xylophone note | **yes: The Round Trip 3D** |
 | courtroom | rulings, hearings (Short Supply, On the Label's sequel) | a dry piano, a gavel, room tone, a paper shuffle | a gavel tap | to build |
 | outdoors | found objects, nature, photo films (Found in Pasila) | wind, birds by season, a distant tram, footsteps on gravel | a twig snap | to build |
 | hardware store | products and labels (On the Label's world) | a tape gun, a stapler, a shop's PA chime, a price-gun click | a price-gun click | to build |

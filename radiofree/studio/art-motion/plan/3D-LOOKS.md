@@ -22,7 +22,7 @@ itself.
 |---|---|---|---|
 | **road** (`looks/cars`) | a toy road with traffic, a crossing and site gates | Cut First, Unmarked Boxes, Right of Way | in use |
 | **room** | a diorama interior with a cut-away wall, a desk, a screen, a window onto the outside, and paper | We Are Aware (Google · Muhos emails) | stills next |
-| **machine** | a marble run or Rube Goldberg track; money and things as rolling balls through gates and loops | The Round Trip (Anthropic IPO, circular money) | stills next, film on hold until the price range |
+| **machine** | a marble run or Rube Goldberg track; money and things as rolling balls through gates and loops | The Round Trip (Anthropic IPO, circular money) | built 18 Nov (`clay/roundtrip/`): glass towers, a clear-tube run, brass gate, gold |
 | **map** | a 3D relief map as a tabletop, with pins, rivers and towns rising out of it | a follow-up to Five Pins; any "where" story | idea |
 | **creature** | animals and the robot (`looks/robot`) as characters in a habitat | Right of Way's squirrel already; the robot's first story is to be found | partly |
 | **court** | a toy courtroom with bench, gavel and docket boxes | Short Supply's 13 Nov hearing follow-up | idea |

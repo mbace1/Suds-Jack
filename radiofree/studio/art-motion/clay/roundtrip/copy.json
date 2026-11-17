@@ -1,0 +1,132 @@
+{
+  "film": "the-round-trip",
+  "cut": "3D v1 (18 Nov, en only). Owner, Tue 17 Nov: 'Do 1 and yes and yes' (build The Round Trip; the disclosure line MADE WITH ANTHROPIC'S TOOLS approved; figures attributed to the outlets that reported the filing, since the S-1 cannot be opened from the build machine). Device: a CLOSED LOOP in one unbroken shot of a 3D marble run, with a TICKER of money in against money owed back. The last frame is the first frame.",
+  "series": "rfh",
+  "captionSize": "big",
+  "argument": "Google and Amazon invested in Anthropic, and its IPO filing commits it to buy at least $231B of their computing, owed even if unused: the money comes back.",
+  "langs": [
+    "en"
+  ],
+  "native_read": {
+    "en": true
+  },
+  "syntax": "'/' breaks a line, [word] is the pop word",
+  "disclosure": "The film is about Anthropic and was made with Anthropic's tools. On screen: MADE WITH ANTHROPIC'S TOOLS on the hook; in the post copy: 'Made with Anthropic's tools.' Wording approved by the owner, 17 Nov.",
+  "captions": [
+    {
+      "id": "invested",
+      "role": "setup",
+      "at": "s1+0.6",
+      "until": "s2-0.25",
+      "hold": "s2",
+      "text": {
+        "en": "Google and / Amazon [invested] / in Anthropic."
+      },
+      "source": "As reported from the S-1: Amazon invested $13B (stake valued at $190.4B at end-June; notes convert at the IPO, capped at 12%); Alphabet invested at least $13.3B, with rights to more; Alphabet's post-IPO share is blank in the filing. CNBC 16 Nov; Motley Fool 29 Oct; Yahoo Finance. The S-1 itself was not opened (EDGAR is blocked from the build machine). Search summaries, 17 Nov."
+    },
+    {
+      "id": "ipo",
+      "role": "evidence",
+      "at": "s2+0.4",
+      "until": "s3-0.25",
+      "hold": "s3",
+      "text": {
+        "en": "Its IPO: / [$70–78] a share."
+      },
+      "source": "The filed range, $70–78 for 825M shares, Nasdaq ticker ANT, pricing expected 18 Nov and first trade 19 Nov (CNBC 16 Nov, Bloomberg, CBS). REPLACE with the final price once it is reported; the FT reported bankers weighing a price above the range."
+    },
+    {
+      "id": "computing",
+      "role": "evidence",
+      "at": "s3+0.4",
+      "until": "s4-0.25",
+      "hold": "s4",
+      "text": {
+        "en": "It must buy / their computing: / [$121.3B] and $110B."
+      },
+      "source": "Minimum compute commitments as reported from the filings: Google Cloud about $121.3B (Apr 2026–Jul 2033), per Amendment No. 1 of 2 Nov (ppc.land, Motley Fool 3 Nov, FourWeekMBA); it was $111.1B in the confidential draft (Reuters 29 Sep) and $114.5B in the public S-1 (26 Oct). Amazon (AWS) $110B (through Apr 2036). Not read from the filing itself."
+    },
+    {
+      "id": "unused",
+      "role": "evidence",
+      "at": "s4+0.4",
+      "until": "s5-0.25",
+      "hold": "s5",
+      "text": {
+        "en": "Owed even if / it goes [unused]."
+      },
+      "source": "Reuters, 29 Sep, on the confidential prospectus: about 80% of the commitments are payable regardless of actual use; reporting on the public S-1 (ppc.land) says the Google and Amazon commitments are payable regardless of usage, a shortfall paid as the difference, subject to contractual adjustments. As reported, not read from the filing."
+    },
+    {
+      "id": "back",
+      "role": "punchline",
+      "at": "s5+0.5",
+      "until": "end-0.3",
+      "hold": "end",
+      "text": {
+        "en": "Their money / comes [back]."
+      },
+      "source": "The station's line, true as stated of the structure: the investors are also the suppliers paid, and the minimum commitments (~$231B) exceed the reported investments (~$26.3B). No claim that the same dollars return, and no wrongdoing is claimed."
+    }
+  ],
+  "ui": {
+    "disclosure": {
+      "en": "MADE WITH ANTHROPIC'S TOOLS"
+    },
+    "tag1": {
+      "en": "INVESTED, PER S-1 AS REPORTED: GOOGLE ≥ $13.3B · AMAZON $13B"
+    },
+    "tag2": {
+      "en": "NASDAQ: ANT · 825M SHARES · PRICING 18 NOV"
+    },
+    "tag3": {
+      "en": "MINIMUMS: GOOGLE CLOUD TO 2033 · AWS TO 2036"
+    },
+    "tag4": {
+      "en": "PAYABLE REGARDLESS OF USE, AS REPORTED"
+    },
+    "tag5": {
+      "en": "S-1 AND S-1/A AS REPORTED BY CNBC, REUTERS, MOTLEY FOOL"
+    },
+    "inLabel": {
+      "en": "INVESTED IN"
+    },
+    "inValue": {
+      "en": "≥ $26.3B"
+    },
+    "backLabel": {
+      "en": "OWED BACK"
+    },
+    "backValue": {
+      "en": "~ $231B"
+    },
+    "price": {
+      "en": "$70–78"
+    },
+    "google": {
+      "en": "GOOGLE"
+    },
+    "amazon": {
+      "en": "AMAZON"
+    },
+    "anthropic": {
+      "en": "ANTHROPIC"
+    },
+    "investor": {
+      "en": "INVESTOR"
+    },
+    "supplier": {
+      "en": "SUPPLIER"
+    },
+    "ipo": {
+      "en": "IPO"
+    },
+    "compute": {
+      "en": "COMPUTE"
+    }
+  },
+  "props": "No logos: every company is named in plain type on its tower or box. The towers, the box and the marble run are invented props, not depictions of any real building or product. The gold balls are money in general; their counts are not to scale (the counters carry the reported figures). No people, no faces.",
+  "post": {
+    "en": "Google and Amazon invested in Anthropic. Its IPO filing commits it to buy at least $121.3B of computing from Google and $110B from Amazon, owed even if unused (as reported). Their money comes back. Made with Anthropic's tools."
+  }
+}
