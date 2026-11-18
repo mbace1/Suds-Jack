@@ -30,9 +30,11 @@ Design and review Toko Drop 2.0 using the sakurai skill (`.claude/skills/sakurai
 
       npm i --prefix /tmp/esb esbuild@0.24.2
       NODE_PATH=/tmp/esb/node_modules node toko-drop-2/tools/itch-html.cjs
-      # → toko-drop-2/tokodropv<N>.html   (do not commit it)
+      # → toko-drop-2/tokodropv<N>.html
 
   It rewrites two lines in the bundle only, never in the game's own files. main.js's level `fetch` reads the room from the page instead. record.js's version read from its `?v=` URL becomes the number itself. If either line changes shape, the tool stops and says so instead of building a broken file.
+- **Where it lives:** move the file into `itch/` and commit it, replacing the previous version's `.html` (only the current one is kept). `itch/` is the kit: the `.html`, `cover.png` and `screenshots/`, with a README. It goes to `gh-pages`, then back to `main`, like any change here, so the producer (and anyone) finds it at `toko-drop-2/itch/` in the repo or at https://mbace1.github.io/Suds-Jack/toko-drop-2/itch/. The game never loads anything from `itch/`.
+- **Screenshots:** the 2.0 source's `scripts/itch-shots.mjs` (in the bundle) renders them from an itch zip: the nine worlds mid-fight, the campaign grid and a boss room, 1920 × 1080. In a sandbox with no GPU add `webgl&` to its three page URLs, or every picture comes out blank. Save them as JPEG (quality 88) in `itch/screenshots/`.
 - **Before handing it over:** put the file alone in an empty folder, serve that folder and open the page. Check three things:
   - it makes no request besides the page itself
   - the HUD reads `2.0 · v<N>`
