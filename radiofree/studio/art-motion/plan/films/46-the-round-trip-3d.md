@@ -44,3 +44,30 @@ tag2 to PRICED 18 NOV, re-render (~1 h) and file. Then the post for first trade,
 - `films/18-11-Coxon15-The-Round-Trip.en.srt`; `previews/18-11-RFH-Round-Trip-en.mp4` (14 MB); `qa/round-trip/` (85 pass, 0 warn, 0 fail).
 - Fixed after the first build: the disclosure moved top right (0.1–4.4 s; tag1 had covered it); the name plates stand above the return track; the closing shot pulled back (camera z 19, target y 2.7, still a closed loop); the sign-off join fades in AFTER the limiter (alimiter passed its first ~20 ms, −0.7 dBTP).
 - To do on the price: `captions.ipo`, `ui.price`, `ui.tag2` → "PRICED 18 NOV"; re-render (~1 h), rebuild, re-file under the same names.
+
+
+## Socials copy (RFH; English, US spelling)
+
+Approved for posting now (owner, Wed 18 Nov: "Round trip approved for posting now"), the preview build with the filed range ($70–78, "PRICING 18 NOV"), which is accurate on the day it goes out. The body is `copy.json` post.en; only the hashtags and the YouTube title are added. The final-price re-render is dropped.
+
+**Instagram** (Reel; the loop master `films/18-11-Coxon15-The-Round-Trip-loop.mp4`, Original aspect, uncropped; 263 characters):
+
+```
+Google and Amazon invested in Anthropic. Its IPO filing commits it to buy at least $121.3B of computing from Google and $110B from Amazon, owed even if unused (as reported). Their money comes back. Made with Anthropic's tools.
+
+#Anthropic #IPO #AI #Google #Amazon
+```
+
+**X** (`films/18-11-Coxon15-The-Round-Trip.mp4`, with the sign-off; 242 of 280 characters):
+
+```
+Google and Amazon invested in Anthropic. Its IPO filing commits it to buy at least $121.3B of computing from Google and $110B from Amazon, owed even if unused (as reported). Their money comes back. Made with Anthropic's tools. #Anthropic #IPO
+```
+
+**YouTube Short** (`films/18-11-Coxon15-The-Round-Trip.mp4`; Public; not made for kids):
+- Title (31 characters): `The Round Trip: Anthropic's IPO`
+- Description: the Instagram caption above, as is.
+
+**If someone asks for sources** (a reply, not part of the post): Anthropic's S-1 and Amendment No. 1 (2 Nov), as reported by CNBC, Reuters and the Motley Fool (the $121.3B Google Cloud and $110B AWS minimums, payable regardless of use; Alphabet ≥ $13.3B and Amazon $13B invested; Nasdaq ANT, 825M shares at $70–78).
+
+No pin. No links in the post. The on-screen disclosure (MADE WITH ANTHROPIC'S TOOLS, top right, 0.1–4.4 s) and the post's last sentence both stay.
