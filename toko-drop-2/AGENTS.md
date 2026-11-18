@@ -24,14 +24,22 @@ Design and review Toko Drop 2.0 using the sakurai skill (`.claude/skills/sakurai
 
 ## The itch.io upload
 
-- **Name:** `tokodropv<N>.zip`, where `<N>` is the version: `tokodropv155.zip`, then `tokodropv156.zip` and so on. This is the owner's naming, 18 Nov 2026. Only the number changes.
-- **Contents:** `index.html` at the top level of the zip, not inside a folder, plus `js/`, `vendor/` and `levels/`. Leave out docs, tests and the `.md` files. itch refuses a zip whose `index.html` sits inside a folder.
-- **Building it** from `toko-drop-2/`:
+- **What to make:** ONE file, `tokodropv<N>.html`, where `<N>` is the version: `tokodropv155.html`, then `tokodropv156.html` and so on. Only the number changes. Owner, 18 Nov 2026: "Just .html for now". v155 went up this way and "It works well". Do not make a zip unless the owner asks.
+- **What it is:** the whole game in one page. It contains `js/` bundled, three.js, and every `levels/*.json`, so itch needs no other file.
+- **Building it:** run `tools/itch-html.cjs`. It needs esbuild, which is not vendored, so install it somewhere scratch:
 
-      N=$(grep -m1 -oE '^## v[0-9]+' VERSIONS.md | tr -dc '0-9')
-      rm -f tokodropv$N.zip
-      zip -q -X -D tokodropv$N.zip index.html
-      zip -q -r -X -D tokodropv$N.zip js vendor levels
+      npm i --prefix /tmp/esb esbuild@0.24.2
+      NODE_PATH=/tmp/esb/node_modules node toko-drop-2/tools/itch-html.cjs
+      # → toko-drop-2/tokodropv<N>.html   (do not commit it)
 
-- **Before handing it over:** run `unzip -Z1 tokodropv$N.zip | head -1`. It must print `index.html`. Do not commit the zip.
-- itch settings (owner, 18 Nov): HTML, played in the browser, free with donations ("$0 or donate"), release status In development. See DESIGN.md §5.
+  It rewrites two lines in the bundle only, never in the game's own files. main.js's level `fetch` reads the room from the page instead. record.js's version read from its `?v=` URL becomes the number itself. If either line changes shape, the tool stops and says so instead of building a broken file.
+- **Before handing it over:** put the file alone in an empty folder, serve that folder and open the page. Check three things:
+  - it makes no request besides the page itself
+  - the HUD reads `2.0 · v<N>`
+  - a campaign room starts: `__toko.room(Object.keys(__TOKO_LEVELS)[0])`
+  
+  In a sandbox with no GPU the screen stays black (WebGPU `createBuffer` errors). The file and the zip both do that there, so judge it by those three checks, not by the picture.
+- **Upload settings** (owner, 18 Nov): HTML, "This file will be played in the browser", 960 × 540, Mobile friendly on, Fullscreen button on, free with donations ("$0 or donate"), release status In development. See DESIGN.md §5.
+- **The zip, if it is ever asked for again:** name it `tokodropv<N>.zip`. Put `index.html` first, at the top level and not in a folder; itch refuses the zip otherwise. Add `js/`, `vendor/` and `levels/`:
+
+      zip -q -X -D tokodropv$N.zip index.html && zip -q -r -X -D tokodropv$N.zip js vendor levels
