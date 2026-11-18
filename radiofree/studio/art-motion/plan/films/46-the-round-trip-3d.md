@@ -48,7 +48,7 @@ tag2 to PRICED 18 NOV, re-render (~1 h) and file. Then the post for first trade,
 
 ## Socials copy (RFH; English, US spelling)
 
-Approved for posting now (owner, Wed 18 Nov: "Round trip approved for posting now"), the preview build with the filed range ($70–78, "PRICING 18 NOV"), which is accurate on the day it goes out. The body is `copy.json` post.en; only the hashtags and the YouTube title are added. The final-price re-render is dropped.
+Approved for posting now (owner, Wed 18 Nov 14:50 Europe/Helsinki: "Round trip should be approved for posting"), the preview build with the filed range ($70–78, "PRICING 18 NOV"), which is accurate on the day it goes out. The body is `copy.json` post.en; only the hashtags and the YouTube title are added. The final-price re-render is dropped.
 
 **Instagram** (Reel; the loop master `films/18-11-Coxon15-The-Round-Trip-loop.mp4`, Original aspect, uncropped; 263 characters):
 
