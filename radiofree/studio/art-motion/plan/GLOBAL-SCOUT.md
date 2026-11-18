@@ -1759,3 +1759,31 @@ Everything below comes from search summaries. No article was opened.
 - **Reactions:** counts not visible through search.
 - **Pattern note:** a local "yes" gets nationalised into a referendum on data centres, and the mayor ends up arguing
   about the headline rather than the NDA he signed.
+
+### Check Wed 18 Nov 17:16 (evening; search summaries only; nothing opened)
+- **Anthropic IPO: still NOT PRICED at 17:16 Helsinki.** Range $70–78, 825M Class A shares, Nasdaq "ANT"; pricing
+  expected the evening of 18 Nov US time, first trade Thu 19 Nov ([CNBC guide, 16 Nov](https://www.cnbc.com/2026/11/16/anthropic-ipo-date-price-range.html);
+  [CNBC, 10 Nov](https://www.cnbc.com/2026/11/10/anthropic-sets-price-range-of-70-to-78-in-upcoming-ipo.html)). CNBC (sources)
+  says pricing above the range is likely: an expectation, not a price. Our film (posted 15:25–15:31 today) shows the
+  filed range and "PRICING 18 NOV", which is accurate as posted.
+- **NEW: Tucker County / Davis, West Virginia (data centre, state pre-emption).** A 10,000-acre gas-powered data
+  centre by Fundamental Data near the tourist town of Davis; state law (HB 2014) bars localities from noise, light and
+  zoning rules on data centres; the Davis Town Council passed a resolution against it; the WV DEP approved the air
+  permit (litigation pending; DEP declines comment). **Attributed claim:** a Fundamental Data engineer, Ted McGavran,
+  said at a Belmont, NC council meeting (6 Jul) "we're the guys that wrote the bill"; **denied** by Gov. Morrisey's
+  office ("fabricating this story"), by the bill's sponsor, Speaker Roger Hanshaw (who is also the company's lawyer,
+  reported), and by Fundamental Data ("did not draft… Mr. McGavran is not authorized to speak"). Gray TV syndicated
+  piece [Davis v. Goliath, 13 Nov](https://www.valleynewslive.com/2026/11/13/davis-v-goliath-small-town-fight-against-big-data/);
+  [NC Newsline](https://ncnewsline.com/?p=193624); [WV Highlands Conservancy](https://www.wvhighlands.org/article/it-will-destroy-this-place-tucker-county-residents-fight-for-future-against-proposed-data-center/).
+  Not verified: the bill's text and the hot-mic recording itself. Pitch value: a town that may not legislate.
+- **Harwood follow-up (the midterm count):** Futurism says 41 anti-data-centre measures in 10 states, all approved
+  but Harwood's; Stateline the same ("only one, in North Dakota"); Fast Company's early count was 38 of 41 with three
+  unreported; Ballotpedia counted 47 data-centre measures overall (via the Gray piece). Counts differ by outlet; the
+  county's official Harwood tally is still not checked. [Futurism](https://futurism.com/artificial-intelligence/voters-midterm-elections-data-center-ballot-america),
+  [Stateline, 4 Nov](https://stateline.org/2026/11/04/v..), [Route Fifty](https://www.route-fifty.com/artificial-intelligence/2026/11/voters-reject-data-centers-local-ballot-initiatives/417033/).
+- **Other NDA towns (older, context only):** Salem, OR council voted in July to explore banning data-centre NDAs;
+  Columbiana, AL ex-mayor signed a DigiPowerX NDA without council (WBHM published it); the new mayor pledges no NDA.
+- **Whistleblowers:** nothing dated after the morning check. OpenAI's answer to the House Democrats' 29 Oct letter
+  (due 13 Nov): still none found. AI Whistleblower Protection Act: not enacted.
+- **Reactions:** no new official responses on Warren's 27 Oct letter, the Pentagon lab contracts or the DRAM suit
+  (answers due 7 Dec). Comment counts not visible to search.

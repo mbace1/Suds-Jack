@@ -1401,3 +1401,21 @@ scheduled task's last fire was 13 Nov 05:16), so **Give Way had no Tuesday-morni
 - **Due:** tonight (US), the Anthropic pricing; Thu 19 Nov, first trade, and Protective Fence 26 begins; Thu 20 Nov,
   the Howell Township vote (unconfirmed); 7 Dec, DRAM answers due.
 - **Could not verify:** hs.fi; the S-1 itself; reaction counts; whether Give Way posted.
+
+## Check Wed 18 Nov 17:16 (evening; search summaries only)
+- **(a) The Round Trip: POSTED** 18 Nov ~15:25–15:31 Helsinki on IG, X and YouTube (POSTED.md lines 99–101 and the
+  POSTED row in the scheduled table, links recorded by Grok Bot). It went out before pricing, so "PRICING 18 NOV" and
+  the $70–78 range were accurate when posted.
+- **(b) Anthropic IPO: NOT PRICED as of 17:16 Helsinki** (CNBC guide 16 Nov: prices the evening of 18 Nov, trades
+  19 Nov; range $70–78, 825M shares unchanged; CNBC sources: likely above the range). **When the price is reported**
+  (tonight US time), suggest Grok Bot add a pinned reply on all three posts, e.g. "Update: priced at $NN a share on
+  18 Nov (as reported by <outlet>)". Do not re-cut the posted film. Nothing to post from here.
+- **(c) Give Way: NOT yet posted**; POSTED.md now schedules it for **Wed 18 Nov 19:00 Helsinki** (owner, 18 Nov:
+  "Post Give Way around 19:00 tonight"). Its facts still hold: Highway 9 closed 18–25 Nov, Protective Fence 26 from
+  19 Nov; nothing found contradicting Finland's F-35s sitting it out.
+- **Films now wrong:** none found.
+- **New candidates:** Tucker County / Davis, WV (state law bars the town from regulating a 10,000-acre data centre;
+  the "we wrote the bill" claim is attributed and denied by the governor, the sponsor and the company) — GLOBAL-SCOUT.
+  Harwood count firmed up (40 of 41 per Futurism/Stateline; outlets differ).
+- **Due:** tonight (US), the Anthropic price; Thu 19 Nov, first trade and Protective Fence 26 begins; 7 Dec, DRAM answers.
+- **Could not verify:** hs.fi; the IS Supo article's date; the Harwood official tally; comment counts.

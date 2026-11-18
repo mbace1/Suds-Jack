@@ -1512,3 +1512,15 @@ Search summaries only; nothing opened. One device each, from STORY-DEVICES.md or
   running to 25 Nov; nothing found that moves the dates. [Siilinjärvi](https://siilinjarvi.fi/?p=16082)
 - **Jokela, Lapinlahti, Muhos, Hamina, Fitburg, Orpo AI report:** nothing new found since the 17 Nov catch-up.
 - **Reactions:** not visible through search.
+
+### Check Wed 18 Nov 17:16 (evening; search summaries only; nothing opened; hs.fi refuses the search tool)
+- **No new HS item found for 16–18 Nov.** The only HS data-centre reference found is old (30 Apr: a 200 MW centre
+  planned in Helsinki, via dp.ru).
+- **Secondary (IS, undated in results): "Datakeskukset vyöryvät Suomeen – Supo näkee turvallisuusuhkia"**, seen only
+  via [Verkkouutiset](https://www.verkkouutiset.fi/a/is-datakeskukset-vyoryvat-suomeen-supo-nakee-turvallisuusuhkia/):
+  dozens of centres being built; Supo's concern that authoritarian states could dodge sanctions by renting compute
+  here. Matches Supo's June remarks to Yle (Kivimäki). Date and IS text not verified; not new unless dated this week.
+- **Municipal NDAs in Finland:** none reported in this search. Muhos (Tuike Finland, €26M land-use agreement; no final
+  investment decision) and the MTV "verkosto" piece are already logged.
+- **Reactions (Trade Secret/Hamina, Count the Trees/Muhos, Jokela, Lapinlahti):** nothing new found since the morning.
+  Comment counts not visible to search.
