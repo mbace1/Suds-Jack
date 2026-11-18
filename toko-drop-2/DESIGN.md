@@ -47,6 +47,8 @@ HARD / HEAT / rooms / bosses already exist in 2.0 VERSIONS — treat as SHIPPED 
 
 ### 3.2 Drop Zero (Codex) — LOCKED-NOT-BUILT as a located tree
 
+**18 Nov 2026: not attached to 2.0.** Mikael: "drop Zero is not attached to this project, it's just a test." Nothing here needs finding; the rest of this section is kept as the record.
+
 **Role (**Decision 10 Nov 2026**):** lab for a **great HD visual style pushed to its limits** (may or may not become cel shading or other looks), plus **physics**, **enemy division**, and **tech exploration**.
 
 **Status:** codebase **not found** on disk / Pages (branch name `codex/toko-drop-zero-court` is behind main with no unique files). Authority for Zero cannot deepen until Mikael points at a path or zip.
@@ -61,7 +63,7 @@ Classic `toko-drop/` remains the historical / hub v221 lineage. Godot port follo
 
 | Design | Build | Gap |
 |---|---|---|
-| Zero as HD visual/physics lab | Tree not located | **Find Zero** |
+| Zero as HD visual/physics lab | Tree not located | None: Zero is a test, not attached to 2.0 (18 Nov) |
 | Campaign challenges as portable Arcade strategies | Campaign rooms + mutators exist; "strategy export to Arcade" not named as a system | Design + plumbing |
 | Joint merge process | No producer checklist yet | Process |
 | Arcade = deliberate enemy/wave curriculum | Wave directors exist; "history of gaming" curriculum still open in roadmap | Content design |
@@ -103,6 +105,28 @@ Classic `toko-drop/` remains the historical / hub v221 lineage. Godot port follo
   5. World identity versus even difficulty: the question as written **made no sense** to Mikael. It needs re-asking in plain words (see §7).
 - **Drop Zero:** "made by Codex". Its location is still not given.
 - **Locks:** answers 1–3. Answer 4 is a direction pending confirmation of the reading.
+
+### Decision 18 Nov 2026 (later) — bosses either way; played on a phone; ship checklist
+- **Mikael:** "Bosses can be one or the other." "I have played it on a phone." "Write the ship checklist into DESIGN.md."
+- **Mikael, later the same day:** "I'm doing the html publish for donations." 2.0 goes on itch.io as an HTML game, free with donations, starting at v155.
+- **Locks:**
+  - A boss is **either** a puzzle (a pattern to read, a weak point to find) **or** an endurance wall (outlast it). Each boss is designed as one or the other, on purpose, and its kind is written down. This widens answer 3 above, which asked for the puzzle shape only.
+  - The owner has played 2.0 on a phone. Which phone, which build and what he found are not recorded yet.
+
+### Decision 18 Nov 2026 (evening) — the §7 questions answered
+- **Mikael, question by question:**
+  1. Swarms: "let's look into world specific enemies, but otherwise there are tons of enemies anyway to use in waves."
+  2. The campaign climb: "that's the general direction yes, start pretty easily and then add challenge and strategies. Fun twists and slightly easier bits every once in a while, rollercoaster of difficulty."
+  3. The phone: "I have only tested on Pixel 10 pro." Could he reach ROOMS and OPTIONS on a result card held sideways: "I think so."
+  4. itch release status: "in development."
+  5. Drop Zero: "drop Zero is not attached to this project, it's just a test."
+- **Locks:**
+  - World-specific enemies are worth a look: a world's own species can take a bigger share of its swarm waves. The rest of the roster stays in the waves; this is a direction to explore, not a rule that every swarm is the world's own.
+  - The campaign starts easy and adds challenge and strategy as it goes, with fun twists and easier stretches along the way: a roller coaster, not a ramp. This confirms answer 4 of the earlier 18 Nov entry and matches the 11 Nov roller-coaster decision.
+  - The only phone tested is a Pixel 10 Pro (Android). No iPhone yet.
+  - itch.io release status: **In development**.
+  - Drop Zero is not part of 2.0 (§3.2).
+  - §8 is the ship checklist. The percentage to shipping is counted off it, not judged.
 
 ---
 
@@ -176,6 +200,66 @@ These numbers come from my own simple dodge-and-shoot bot: 16 seeds, ARCADE, run
 
 ## 7. Open questions
 
-1. Where is Drop Zero's project? Codex made it (18 Nov); the path, Drive zip or machine is still unknown.
-2. ~~The five Sakurai-lens questions at the end of §6.~~ Answered 18 Nov (§5), except Q5, re-asked here in plain words: should each world's own enemies fill its big swarm waves, so that every world looks and plays differently? Today the big swarms are mostly the same cheap enemies in every world.
-3. Q4, confirm the reading: room 1 = the simplest strategy, then difficulty tiers that each ask for a more complex strategy.
+1. ~~Where is Drop Zero's project?~~ Not needed: Zero is a test, not attached to 2.0 (18 Nov evening).
+2. ~~The five Sakurai-lens questions at the end of §6, and Q5 re-asked in plain words.~~ All answered 18 Nov (§5). On swarms: look into world-specific enemies; the rest of the roster stays in the waves.
+3. ~~Q4, confirm the reading.~~ Confirmed 18 Nov: start easy, add challenge and strategy, with twists and easier stretches along the way.
+4. ~~What does "shipped" mean for 2.0?~~ Answered 18 Nov: an HTML (play-in-browser) release on itch.io, free with donations, published from v155. Release status: **In development**.
+5. ~~Which phone?~~ A Pixel 10 Pro (18 Nov). No iPhone yet.
+
+No questions from 18 Nov are open.
+
+---
+
+## 8. Ship checklist (18 Nov 2026)
+
+**How to read it.** `[x]` is done, with its evidence. `[ ]` is open. The percentage to shipping is the share of boxes ticked. Ticking a box needs the evidence named on its line: a version, a playtest note or an owner answer. An agent may not tick a design box on its own judgment. Rows tagged **PROPOSAL** are the producer's suggestion until Mikael confirms them; he may cut or add rows.
+
+**Count at v155: 17 of 36 (about 47%).** Most of the remaining boxes are decisions and playtests, not code.
+
+### A. The target (owner)
+- [x] Where 2.0 is released: **itch.io, as an HTML game played in the browser** (owner, 18 Nov).
+- [x] Free or paid: **free, with donations** (owner, 18 Nov). The first upload is v155 (`toko-drop-2-v155-itch.zip`).
+- [ ] Which devices it must run on: phone (iOS / Android), desktop browser, gamepad.
+
+### B. Content (SHIPPED)
+- [x] ARCADE, HARDCADE and DAILY (VERSIONS).
+- [x] A 36-room CAMPAIGN graded S to F, and HARD PAIN (VERSIONS).
+- [x] Nine worlds, each ending on a named boss (v109).
+- [x] Multi-phase bosses in ARCADE and HARDCADE, with big-boss deaths and the WORLD CLEAR side card (v154).
+- [x] English, Finnish and Japanese (`ui.js`).
+- [x] Touch, keyboard and mouse, and gamepad controls.
+- [x] REDUCE MOTION, in-game and from the device setting (v151, v154).
+- [x] Fast retry: death to control within 2 s, RETRY first on a room's result card (v155).
+- [x] The next grade on the result card (v155).
+- [x] A testers' unlock: `?unlock=all` and `?room=N`, which write no saves (v154).
+
+### C. Design (from the 18 Nov answers)
+- [ ] Every boss is named as a **puzzle** or an **endurance wall**, and plays as its kind (decision above). Boss rooms in the campaign follow the same call.
+- [ ] Boss grade lines re-measured with `scripts/boss-tiers.mjs` after v154 (Boss phases: the lines are still estimates).
+- [ ] Room 1 asks for the simplest strategy, and the campaign climbs in tiers that ask for more complex ones, with fun twists and easier stretches along the way: a roller coaster (owner, 18 Nov).
+- [ ] A new world opens **fresh**: a breath, then the squeeze. World 8's first hit at about 1 s is answered (v155 measured it).
+- [ ] Worlds 7–9 keep rising instead of pressing like world 6 (§6 row 4).
+- [ ] World-specific enemies looked into: a world's own species take a bigger share of its swarm waves, with the rest of the roster still in them (owner, 18 Nov).
+- [ ] Survive-for-score rooms say one goal, not a clock and a points line (§6 rows 1 and 6). **PROPOSAL**
+
+### D. Playtests (people, not bots)
+- [ ] The first third of the campaign (rooms 1–12) played by a human, and its notes acted on.
+- [ ] The whole campaign played through once by a human.
+- [ ] ARCADE played to world 9 by a human.
+- [ ] HARDCADE and HARD PAIN played by a human. **PROPOSAL**
+
+### E. Devices
+- [x] Played on a phone by the owner: a Pixel 10 Pro (18 Nov).
+- [ ] Played on at least one iPhone and one Android phone, in both orientations, at the release version. Android so far: a Pixel 10 Pro.
+- [ ] Holds a playable frame rate on those phones through a late-world swarm and a boss death. The target number is Mikael's to set. **PROPOSAL**
+- [x] The result card's lower buttons (ROOMS, OPTIONS) can be reached on a phone held sideways: the owner thinks so on a Pixel 10 Pro (18 Nov). An emulator check at v155 had them below the bottom of the screen, so look again on an iPhone.
+- [ ] A desktop browser without WebGPU gets a fallback or a clear message. **PROPOSAL**
+
+### F. Release
+- [x] The playable build is live at `toko-drop-2/` on `gh-pages` (v155).
+- [x] `main` carries the whole tree (#650).
+- [x] An itch.io kit exists: screenshots, clips, a cover and a zip (at v151).
+- [ ] The itch kit re-shot at the release version.
+- [ ] The source lives in its own repository, `mbace1/toko-drop`, rather than as a bundle.
+- [ ] The release version is tagged, with `VERSIONS.md`, the HUD label and `hub/versions.json` agreeing.
+- [ ] The store or release page text is final, in the languages the target needs.
