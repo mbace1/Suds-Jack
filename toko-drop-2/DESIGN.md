@@ -218,7 +218,7 @@ No questions from 18 Nov are open.
 
 ### A. The target (owner)
 - [x] Where 2.0 is released: **itch.io, as an HTML game played in the browser** (owner, 18 Nov).
-- [x] Free or paid: **free, with donations** (owner, 18 Nov). The first upload is v155 (`toko-drop-2-v155-itch.zip`).
+- [x] Free or paid: **free, with donations** (owner, 18 Nov). The first upload is v155 (`tokodropv155.zip`; the naming is in AGENTS.md).
 - [ ] Which devices it must run on: phone (iOS / Android), desktop browser, gamepad.
 
 ### B. Content (SHIPPED)
