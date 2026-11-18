@@ -1729,3 +1729,33 @@ Everything below comes from search summaries. No article was opened.
   [VitalLaw](https://www.vitallaw.com/news/antitrust-n-d-cal-dram-supply-restriction-suit-against-samsung-sk-hynix-micron-survives-dismissal/ald0160acb27bba78492eb54b38b710af2a57)
 - **WB No Recourse / House letter:** no OpenAI answer found to the 29 Oct Casar letter (due 13 Nov).
 - **Reactions:** counts not visible through search.
+
+### Check Wed 18 Nov 07:16 (morning; search summaries only; nothing opened)
+- **Anthropic IPO: NOT YET PRICED** at this check (pricing due this evening, US time; first trade Thu 19 Nov, Nasdaq
+  Global Select, "ANT"). Range still $70–78 × 825M; no amended range or share count found. FT (via Bloomberg,
+  Finimize): bankers expect to price above the range ($1.5T+). Pre-pricing previews talk of a book ~7× covered and
+  guidance at or above the top (expectation, not fact). Nothing found that changes the $121.3B Google / $110B Amazon
+  compute commitments or the ≥$13.3B / $13B investments.
+  [Motley Fool, 17 Nov](https://www.fool.com/investing/2026/11/17/should-you-buy-anthropic-stock-at-its-ipo-here-s-what-history-says/),
+  [StockTitan live page](https://www.stocktitan.net/articles/anthropic-ipo-live-ant-first-trading-day-2026),
+  [Finimize](https://finimize.com/content/anthropics-bankers-weigh-pricing-its-ipo-above-range),
+  [StockAnalysis](https://stockanalysis.com/news/anthropic-ipo-multiple-times-oversubscribed/)
+- **NEW: Harwood, North Dakota (data-centre NDA town).** On 3 Nov voters rejected 325–105 a charter amendment that
+  would have forced independent reviews and hearings for big industrial projects. It was reported as the one "yes"
+  among 40-plus local data-centre ballot measures; Mayor Blake Hankey disputes the "voted for data centres" framing.
+  **Both Harwood's mayor and Fargo's mayor (Tim Mahoney) signed NDAs with Applied Digital** over the $3B, 160-acre
+  campus (Valley News Live). A candidate for state Agriculture Commissioner proposed banning officials from signing
+  data-centre NDAs. Hankey projects ~$1.65M/yr property tax. Candidate for the NDA-towns strand; check the vote total
+  against the county canvass before any pitch.
+  [Valley News Live, 12 Nov](https://www.valleynewslive.com/2026/11/12/harwood-bucks-national-trend-data-center-votes/),
+  [Newsweek](https://newsweek.com/north-dakota-town-bucks-trend-by-voting-in-favor-of-data-centers-12683248),
+  [Bond Buyer](https://www.bondbuyer.com/articles/one-american-town-out-of-dozens-voted-yes-to-data-centers)
+- **Short Supply (DRAM):** no news after the 14 Nov denial. TrendForce (11 Nov) forecasts Q4 PC DRAM contract prices
+  +13–18% q/q (slower) and Korean makers cutting 2027 PC DRAM output 20–40% (reported forecast).
+- **Circular deals / Nvidia:** no November results found yet; nothing new beyond the August commentary on file.
+- **Military AI:** no new contract found; Project Meridian still traced only to a single blog (Metir AI), unverified.
+- **Whistleblowers / House letter:** still no public OpenAI answer to the 29 Oct Casar letter (due 13 Nov). No new
+  testimony found. AI Whistleblower Protection Act: still pending.
+- **Reactions:** counts not visible through search.
+- **Pattern note:** a local "yes" gets nationalised into a referendum on data centres, and the mayor ends up arguing
+  about the headline rather than the NDA he signed.

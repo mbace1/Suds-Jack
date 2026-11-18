@@ -1385,3 +1385,19 @@ scheduled task's last fire was 13 Nov 05:16), so **Give Way had no Tuesday-morni
 - **OpenAI / House letter (Casar, 29 Oct, due 13 Nov):** no public answer found.
 - **Give Way:** nothing changed before noon (closure 18–25 Nov; exercise 19–27 Nov; main phase round the clock
   22–24 Nov). **The post itself was not findable by search;** whether it went out is for Grok Bot / POSTED.md.
+
+## Check Wed 18 Nov 07:16 (morning; search summaries only)
+- **The Round Trip (Anthropic IPO): NOT PRICED YET at 07:16 Helsinki.** Pricing tonight US time; first trade Thu 19 Nov
+  on Nasdaq as ANT. Unchanged in all reporting found: $70–78 range, 825M shares (Motley Fool 17 Nov; StockAnalysis;
+  Decrypt). FT via Bloomberg/Finimize: pricing above the range expected (not a price). Compute commitments ~$121.3B
+  Google / $110B Amazon and investments ≥$13.3B Alphabet / $13B Amazon: no new figure found (17 Nov sources stand:
+  CNBC, Motley Fool, Yahoo). **Film action:** swap the price into `captions.ipo`, `ui.price`, `ui.tag2` ("PRICED 18 NOV")
+  only once a final price is reported by a named outlet; the preview build (filed range) is done and committed.
+- **Give Way: POSTED.md still shows only the scheduled row (Tue 17 Nov 12:00); no "posted" entry.** Whether it went
+  out is for Grok Bot to record. The dates it depends on still hold (Siilinjärvi notice: Vt 9 closed to 25 Nov).
+- **Films now wrong:** none found. Short Supply's line holds (the suit survived dismissal on 14 Nov; no merits ruling).
+- **New candidates:** Harwood, ND, where the mayors of Harwood and Fargo signed data-centre NDAs, and the town's 3 Nov
+  "yes" became national news (GLOBAL-SCOUT); HE 282/2026, Finland's coming data-centre register (HS-SCOUT, secondary).
+- **Due:** tonight (US), the Anthropic pricing; Thu 19 Nov, first trade, and Protective Fence 26 begins; Thu 20 Nov,
+  the Howell Township vote (unconfirmed); 7 Dec, DRAM answers due.
+- **Could not verify:** hs.fi; the S-1 itself; reaction counts; whether Give Way posted.

@@ -1499,3 +1499,16 @@ Search summaries only; nothing opened. One device each, from STORY-DEVICES.md or
 - **Orpo AI report:** still not found as published.
 - **Fitburg:** no notice of appeal found.
 - **Reactions:** not visible through search; hs.fi refuses the search tool.
+
+### Check Wed 18 Nov 07:16 (morning; search summaries only; nothing opened; hs.fi refuses the search tool)
+- **NEW (secondary, Edilex/valtioneuvosto): HE 282/2026, the data-centre register bill.** The government proposes a
+  register of data centres operating or planned in Finland (uses, ownership, electricity use, grid effects), in force
+  1 Apr 2027 if passed; notification threshold as in the EU directive. Context for any Muhos/Hamina/Jokela follow-up:
+  until then there is no national list. [Edilex](https://www.edilex.fi/he/20260282),
+  [Valtioneuvosto](https://valtioneuvosto.fi/-/talouspoliittinen-ministerivaliokunta-linjasi-datakeskusten-tuen-ja-rekisteroinnin-valmistelusta)
+- **HS:** no new investigation surfaced for 16–18 Nov through search.
+- **Give Way (Highway 9 / Jännevirta):** Siilinjärvi's notice still describes the Hornet use of the Jännevirta
+  alternate landing site and the Vt 9 closure (Toivalantie/Joensuuntie junction to east of the bridge, plus Mt 562)
+  running to 25 Nov; nothing found that moves the dates. [Siilinjärvi](https://siilinjarvi.fi/?p=16082)
+- **Jokela, Lapinlahti, Muhos, Hamina, Fitburg, Orpo AI report:** nothing new found since the 17 Nov catch-up.
+- **Reactions:** not visible through search.
