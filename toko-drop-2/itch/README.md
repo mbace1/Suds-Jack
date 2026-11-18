@@ -15,3 +15,5 @@ Only the current version's `.html` is kept here. When a new version ships, its f
 The screenshots read `webgl2` in the corner because they were rendered in a container without WebGPU. The game looks the same either way.
 
 Live copy of this folder: https://mbace1.github.io/Suds-Jack/toko-drop-2/itch/
+
+Work in progress on the next version, for review only (not uploaded, not live in the game): `../review/`.
