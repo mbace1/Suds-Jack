@@ -132,6 +132,8 @@ Classic `toko-drop/` remains the historical / hub v221 lineage. Godot port follo
 - **Locks (built on the work branch, not shipped):**
   - The pause menu is PAUSED · RESUME · RESTART · SETTINGS · QUIT. There is no enemy card on it; the result screen keeps its GOT YOU card. RESTART is the result screen's AGAIN for an abandoned run: the run is recorded as quit, then the same mode starts again.
   - SETTINGS (renamed from OPTIONS, and the title's MENU button) is 1.x's settings page plus music, language and the two thumb controls: 8 switches. RECORDS appears there only from the title. Every other switch moved to a DEVELOPER block shown only with `?dev`. Nothing was removed.
+  - The announcer (owner: "The robo voice is ok, could be a lot better. The issue is what he says, those are from the Smash tv mode"). Its lines are rewritten for 2.0: gel and splats, the world you land on by name, the boss by name. None of SMASH TV's game show is left (studio, contestant, prizes, money, the mop). The robot voice stays.
+  - The owner's recorded shout ("TOKO DROP — START SHOOTING!", 1.x's v121) plays on arriving at the title, as in 1.x, with its own INTRO VOICE switch in SETTINGS (on by default) at the announcer's volume. It is carried in the code (`js/introvoice.js`), so the single-file itch build has it too.
   - v156 ships once the menus, the announcer (the owner's recorded voice) and the controls are all fixed.
 
 ### Decision 18 Nov 2026 (night) — the itch upload is one .html file

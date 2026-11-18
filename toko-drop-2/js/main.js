@@ -418,7 +418,7 @@ const tests = () => {
   const hp = store.num('toko2.gelHp'), d = store.str('toko2.dash'), by = store.str('toko2.dashBy');
   return { dash: DASHES.includes(d) ? d : 'pass', hp: HP_STEPS.includes(hp) ? hp : 1, by: DASH_BY.includes(by) ? by : 'lift' };
 };
-const showTitle = (keep = false) => { nav++; ui.title(bests(), sound.on, input.source, tests(), keep); };
+const showTitle = (keep = false) => { nav++; ui.title(bests(), sound.on, input.source, tests(), keep); if (!keep) titleIntro(); };
 // a switch flipped: redraw the menu it is on (OPTIONS, or the title). v125: by the screen that IS up (ui.screen) —
 // `inOptions` was a back-target being set, true on the rooms' grid and through a whole room, so an answer that came
 // late (the play record's share sheet) could draw the title over a paused run
@@ -540,9 +540,19 @@ music.setVolume(store.str('toko2.music') !== '' ? Math.max(0, Math.min(1, Number
 const announcer = new Announcer();
 announcer.on = store.str('toko2.announcer') === 'on';
 announcer.volume = store.str('toko2.annVolume') !== '' ? Number(store.str('toko2.annVolume')) : 1;
+announcer.introOn = store.str('toko2.introVoice') !== 'off';   // v156: INTRO VOICE, on unless turned off (1.x v122)
+// v156: the owner's recorded shout, once each time the title is arrived at (1.x playTitleIntro, main.js:6122). Before
+// any gesture the browser blocks it, so a block lets the next tap or key try again; a run's start lets it play next visit
+let titleVoice = false;
+const titleIntro = () => {
+  if (titleVoice) return;
+  titleVoice = true;
+  const p = announcer.intro(sound.volume);
+  if (p?.catch) p.catch(() => { titleVoice = false; });
+};
 // a gesture wakes the sound — every one, not the first only (v125): a phone stops the context (a call, the screen
 // locked), and with the listeners spent nothing woke it again; unlock() is nothing when it is running
-addEventListener('pointerdown', () => sound.unlock());
+addEventListener('pointerdown', () => { sound.unlock(); if (state === 'menu' && ui.screen === 'title') titleIntro(); });
 addEventListener('keydown', () => sound.unlock());
 
 const ui = new UI({
@@ -572,6 +582,7 @@ const ui = new UI({
   onSound: () => { sound.setVolume(sound.volume > 0 ? 0 : 1); store.set('toko2.volume', sound.volume); refreshMenu(); },
   onVolume: () => { sound.setVolume(next(VOLUMES, sound.volume)); store.set('toko2.volume', sound.volume); sound.unlock(); sound.event?.({ type: 'pickup', kind: 'score' }); refreshMenu(); },
   onMusic: () => { music.setVolume(next(VOLUMES, music.volume)); store.set('toko2.music', music.volume); sound.unlock(); refreshMenu(); },
+  onIntroVoice: () => { announcer.introOn = !announcer.introOn; store.set('toko2.introVoice', announcer.introOn ? 'on' : 'off'); if (announcer.introOn) { titleVoice = false; titleIntro(); } else announcer.stopIntro(); refreshMenu(); },   // v156
   onAnnouncer: () => { announcer.on = !announcer.on; store.set('toko2.announcer', announcer.on ? 'on' : 'off'); if (announcer.on) announcer.say('start'); else announcer.stop(); refreshMenu(); },
   onAnnVolume: () => { announcer.volume = next(VOLUMES.slice(1), announcer.volume); store.set('toko2.annVolume', announcer.volume); announcer.last = -1e9; announcer.say('clear'); refreshMenu(); },
   onMotion: () => { store.set('toko2.motion', reduceMotion() ? 'off' : 'on'); if (reduceMotion()) trauma = 0; tellCalm(); refreshMenu(); },
@@ -593,7 +604,7 @@ const ui = new UI({
   onTitle: (keep) => (world?.room ? toMenu() : showTitle(keep)),
   onCampaign: () => showCampaign(),
   onRoom: (id) => startRoom(id),
-  optionsState: () => ({ sound: sound.on, volume: sound.volume, music: music.volume, announcer: announcer.on, annVolume: announcer.volume, reduceMotion: reduceMotion(), test: tests(),
+  optionsState: () => ({ sound: sound.on, volume: sound.volume, music: music.volume, announcer: announcer.on, introVoice: announcer.introOn, annVolume: announcer.volume, reduceMotion: reduceMotion(), test: tests(),
     hand: handLeft() ? 'left' : 'right', stick: stickSize(), dead: deadSize(), autoQ: autoQ(), qShare: quality.share,   // v86
     ...((list) => ({ records: list.length, frames: record.lastFrames(list) }))(record.read(store)), recordSaid }),
   onRecord: () => shareRecord(),
@@ -767,6 +778,7 @@ function start(m, { intro: asked = false, room = null, resume = null, daily: wan
   if (mode === 'campaign' && !room) room = lastRoom;
   if (mode === 'campaign' && !room) { showCampaign(); return; }
   lastRoom = room;
+  titleVoice = false; announcer.stopIntro();   // v156
   useArena(screenArena());
   const test = tests();
   // toko2.gateUsed: this browser has dashed a gate, so the DASH THROUGH! tag
@@ -1040,7 +1052,7 @@ function squeezeFrame() {
 // what the announcer calls, off the sim's events (1.x main.js:2607-11424)
 function announce(e) {
   if (!announcer.on) return;
-  if (e.type === 'wave') announcer.say(e.kind === 'boss' ? 'boss' : 'wave', e.wave);
+  if (e.type === 'wave') announcer.say(e.kind === 'boss' ? 'boss' : 'wave', e.kind === 'boss' ? world?.world : e.wave);   // v156: a boss is named by its world
   else if (e.type === 'clear') announcer.say('clear');
   else if (e.type === 'hurt' && e.lives > 0) announcer.say('ouch');
   else if (e.type === 'over') announcer.say('gameover');
@@ -1052,9 +1064,9 @@ function announce(e) {
   else if (e.type === 'potLost') ui.banner(`${t('potLost')} −${e.n.toLocaleString('en-US')}`, 1.1);
   else if (e.type === 'pickup') announcer.say(e.kind === 'score' ? 'money' : e.kind === 'scoremult' ? 'mult' : 'prize');
   else if (e.type === 'bounty') announcer.say('bounty');
-  else if (e.type === 'bountyPaid') announcer.say('money');
+  else if (e.type === 'bountyPaid') announcer.say('paid');
   else if (e.type === 'phase') announcer.say('phase');
-  else if (e.type === 'worldLand') announcer.say('world');
+  else if (e.type === 'worldLand') announcer.say('world', e.world);   // v156: the floor by name
 }
 
 function onEvent(e) {
