@@ -127,6 +127,13 @@ Classic `toko-drop/` remains the historical / hub v221 lineage. Godot port follo
   - itch.io release status: **In development**.
   - Drop Zero is not part of 2.0 (§3.2).
 
+### Decision 18 Nov 2026 (night) — the pause menu is for players; v156 waits for the rest
+- **Mikael:** the pause menu "is insanely cluttered and not for the public". "Pause menu needs a restart if you want to abandon run but no enemy card. Please think logical here and you can always check what 1.x has done." "No need to ship 156 untill all are fixed." Also: "the controls aren't as good as 1.x", the start menu is "a bit" messy, and the announcer is "ancient" with "no voice announce that I recorded".
+- **Locks (built on the work branch, not shipped):**
+  - The pause menu is PAUSED · RESUME · RESTART · SETTINGS · QUIT. There is no enemy card on it; the result screen keeps its GOT YOU card. RESTART is the result screen's AGAIN for an abandoned run: the run is recorded as quit, then the same mode starts again.
+  - SETTINGS (renamed from OPTIONS, and the title's MENU button) is 1.x's settings page plus music, language and the two thumb controls: 8 switches. RECORDS appears there only from the title. Every other switch moved to a DEVELOPER block shown only with `?dev`. Nothing was removed.
+  - v156 ships once the menus, the announcer (the owner's recorded voice) and the controls are all fixed.
+
 ### Decision 18 Nov 2026 (night) — the itch upload is one .html file
 - **Mikael:** "Just .html for now." Then, after uploading v155 to itch: "It works well."
 - **Locks:** the itch upload is a single file, `tokodropv<N>.html`, built by `tools/itch-html.cjs` (AGENTS.md, "The itch.io upload"). No zip unless he asks. v155 is live on itch this way and plays.

@@ -183,7 +183,7 @@ const flow = machine('flow', {
     menu: ['intro', 'play'],                  // ARCADE / CONTINUE / DAILY (with the film, or not); a room's START
     intro: ['play', 'menu'],                  // the film ends or is skipped; left for the title
     play: ['paused', 'dying', 'menu', 'over'],   // a pause, a death, a quit; `over` only by __toko.finish() (no death beat)
-    paused: ['play', 'menu'],                 // RESUME; QUIT
+    paused: ['play', 'menu', 'intro'],        // RESUME; QUIT; v156 RESTART (into play, or the film when it is asked for)
     dying: ['over', 'menu'],                  // the death beat ends; left
     over: ['menu', 'intro', 'play'],          // MENU / ROOMS; AGAIN (a room's straight, a DAILY's straight)
   },
@@ -565,6 +565,10 @@ const ui = new UI({
   onDaily: () => start(hardOn() ? 'hardcade' : 'arcade', { intro: true, daily: true }),
   onShare: (text) => handOver(text, 'Toko Drop 2.0 · daily', 'toko-drop-daily.txt'),
   onMenu: () => { recordQuit(); toMenu(); },
+  // v156: the pause's RESTART is the result screen's AGAIN, for a run abandoned: recorded as quit, then the same
+  // mode from the same start (a campaign room again, a DAILY the day again; a fresh ARCADE lets a kept run go, as AGAIN's does)
+  onRestart: () => { if (state !== 'paused') return; recordQuit(); start(mode, { room: lastRoom, daily: !!daily }); },
+  dev: () => params.has('dev'),   // v156: SETTINGS shows its DEVELOPER block
   onSound: () => { sound.setVolume(sound.volume > 0 ? 0 : 1); store.set('toko2.volume', sound.volume); refreshMenu(); },
   onVolume: () => { sound.setVolume(next(VOLUMES, sound.volume)); store.set('toko2.volume', sound.volume); sound.unlock(); sound.event?.({ type: 'pickup', kind: 'score' }); refreshMenu(); },
   onMusic: () => { music.setVolume(next(VOLUMES, music.volume)); store.set('toko2.music', music.volume); sound.unlock(); refreshMenu(); },
@@ -954,7 +958,7 @@ function killer(by) {
   const how = by.startsWith('revenge:') ? 'shot' : by.startsWith('strand:') ? 'strand' : by.startsWith('slam:') ? 'slam' : false, k = how ? by.slice(by.indexOf(':') + 1) : by;
   return T.species[k] ? { kind: k, name: T.species[k].name, revenge: how } : { kind: null, name: t(`by_${k}`), revenge: false };
 }
-function pause() { if (state !== 'play') return; setState('paused', 'pause'); const K = killer(world?.killedBy); ui.pause(K.kind, K.revenge); }
+function pause() { if (state !== 'play') return; setState('paused', 'pause'); ui.pause(); }   // v156: no card on the pause
 function resume() { if (state !== 'paused') return; setState('play', 'resume'); ui.hide(); sound.unlock(); }   // v125: and the sound, if the phone stopped it meanwhile
 // hidden: the run pauses. v125: hidden during the intro film, the run is started and paused at once — the film is
 // timed off the wall clock and came back as a live, unpaused run; back, the sound is woken if the phone stopped it
