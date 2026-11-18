@@ -36,3 +36,11 @@ tag2 to PRICED 18 NOV, re-render (~1 h) and file. Then the post for first trade,
 ## Post (en, draft)
 > Google and Amazon invested in Anthropic. Its IPO filing commits it to buy at least $121.3B of computing from Google
 > and $110B from Amazon, owed even if unused (as reported). Their money comes back. Made with Anthropic's tools.
+
+## Preview build (18 Nov, filed range $70–78)
+
+- `films/18-11-Coxon15-The-Round-Trip.mp4`: the film with the sign-off, 24.0 s, 36 MB, −14.4 LUFS / −3.7 dBTP (X and YouTube);
+- `films/18-11-Coxon15-The-Round-Trip-loop.mp4`: without the sign-off, 21.0 s, 35 MB (the Instagram loop master);
+- `films/18-11-Coxon15-The-Round-Trip.en.srt`; `previews/18-11-RFH-Round-Trip-en.mp4` (14 MB); `qa/round-trip/` (85 pass, 0 warn, 0 fail).
+- Fixed after the first build: the disclosure moved top right (0.1–4.4 s; tag1 had covered it); the name plates stand above the return track; the closing shot pulled back (camera z 19, target y 2.7, still a closed loop); the sign-off join fades in AFTER the limiter (alimiter passed its first ~20 ms, −0.7 dBTP).
+- To do on the price: `captions.ipo`, `ui.price`, `ui.tag2` → "PRICED 18 NOV"; re-render (~1 h), rebuild, re-file under the same names.
