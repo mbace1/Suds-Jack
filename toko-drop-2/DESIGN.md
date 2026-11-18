@@ -106,6 +106,7 @@ Classic `toko-drop/` remains the historical / hub v221 lineage. Godot port follo
 
 ### Decision 18 Nov 2026 (later) — bosses either way; played on a phone; ship checklist
 - **Mikael:** "Bosses can be one or the other." "I have played it on a phone." "Write the ship checklist into DESIGN.md."
+- **Mikael, later the same day:** "I'm doing the html publish for donations." 2.0 goes on itch.io as an HTML game, free with donations, starting at v155.
 - **Locks:**
   - A boss is **either** a puzzle (a pattern to read, a weak point to find) **or** an endurance wall (outlast it). Each boss is designed as one or the other, on purpose, and its kind is written down. This widens answer 3 above, which asked for the puzzle shape only.
   - The owner has played 2.0 on a phone. Which phone, which build and what he found are not recorded yet.
@@ -186,7 +187,7 @@ These numbers come from my own simple dodge-and-shoot bot: 16 seeds, ARCADE, run
 1. Where is Drop Zero's project? Codex made it (18 Nov); the path, Drive zip or machine is still unknown.
 2. ~~The five Sakurai-lens questions at the end of §6.~~ Answered 18 Nov (§5), except Q5, re-asked here in plain words: should each world's own enemies fill its big swarm waves, so that every world looks and plays differently? Today the big swarms are mostly the same cheap enemies in every world.
 3. Q4, confirm the reading: room 1 = the simplest strategy, then difficulty tiers that each ask for a more complex strategy.
-4. What does "shipped" mean for 2.0: where it is released (itch.io, the public arcade, a store), free or paid, and by when? §8's first block waits on this.
+4. ~~What does "shipped" mean for 2.0?~~ Answered 18 Nov: an HTML (play-in-browser) release on itch.io, free with donations, published from v155. Still open: whether it goes up as a finished release or as In development.
 5. Which phone(s) has 2.0 been played on, at which version, and what was wrong on it?
 
 ---
@@ -195,11 +196,11 @@ These numbers come from my own simple dodge-and-shoot bot: 16 seeds, ARCADE, run
 
 **How to read it.** `[x]` is done, with its evidence. `[ ]` is open. The percentage to shipping is the share of boxes ticked. Ticking a box needs the evidence named on its line: a version, a playtest note or an owner answer. An agent may not tick a design box on its own judgment. Rows tagged **PROPOSAL** are the producer's suggestion until Mikael confirms them; he may cut or add rows.
 
-**Count at v155: 14 of 36 (about 39%).** Most of the remaining boxes are decisions and playtests, not code.
+**Count at v155: 16 of 36 (about 44%).** Most of the remaining boxes are decisions and playtests, not code.
 
 ### A. The target (owner)
-- [ ] Where 2.0 is released: itch.io, the public arcade, a store (§7 Q4).
-- [ ] Free or paid, and a date or a "when it's ready" call.
+- [x] Where 2.0 is released: **itch.io, as an HTML game played in the browser** (owner, 18 Nov).
+- [x] Free or paid: **free, with donations** (owner, 18 Nov). The first upload is v155 (`toko-drop-2-v155-itch.zip`).
 - [ ] Which devices it must run on: phone (iOS / Android), desktop browser, gamepad.
 
 ### B. Content (SHIPPED)
