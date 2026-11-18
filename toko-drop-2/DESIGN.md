@@ -126,6 +126,10 @@ Classic `toko-drop/` remains the historical / hub v221 lineage. Godot port follo
   - The only phone tested is a Pixel 10 Pro (Android). No iPhone yet.
   - itch.io release status: **In development**.
   - Drop Zero is not part of 2.0 (§3.2).
+
+### Decision 18 Nov 2026 (night) — the itch upload is one .html file
+- **Mikael:** "Just .html for now." Then, after uploading v155 to itch: "It works well."
+- **Locks:** the itch upload is a single file, `tokodropv<N>.html`, built by `tools/itch-html.cjs` (AGENTS.md, "The itch.io upload"). No zip unless he asks. v155 is live on itch this way and plays.
   - §8 is the ship checklist. The percentage to shipping is counted off it, not judged.
 
 ---
@@ -218,7 +222,7 @@ No questions from 18 Nov are open.
 
 ### A. The target (owner)
 - [x] Where 2.0 is released: **itch.io, as an HTML game played in the browser** (owner, 18 Nov).
-- [x] Free or paid: **free, with donations** (owner, 18 Nov). The first upload is v155 (`tokodropv155.zip`; the naming is in AGENTS.md).
+- [x] Free or paid: **free, with donations** (owner, 18 Nov). The first upload is v155, as one file (`tokodropv155.html`; how to build it is in AGENTS.md).
 - [ ] Which devices it must run on: phone (iOS / Android), desktop browser, gamepad.
 
 ### B. Content (SHIPPED)
