@@ -36,3 +36,19 @@ The full render failed the pre-flight width gate (four lines 846–917 px agains
 "Towns set rules / for noise, light / and [zoning]." · "In West Virginia, / certified / data centers / are [exempt]." ·
 "The developer’s / engineer: / “we were the guys / that basically / [wrote] the bill.”" ·
 "The developer and / the governor’s / office: [it didn’t]." Widest line now 786 px. Full re-render.
+
+## Build (19 Nov)
+`films/19-11-Coxon16-Who-Wrote-the-Bill.mp4` (26.5 s with the sign-off, −14.9 LUFS, −2.5 dBTP), `-loop.mp4` (23.5 s, −14.4 LUFS),
+`.en.srt`, preview `previews/19-11-RFH-Who-Wrote-the-Bill-en.mp4`, QA in `qa/who-wrote-the-bill/` (101 pass, 1 warn: the message is 36 words).
+Sound fixes on the way: a carriage-release click on the sheet swap (the `ret` cue moved with the longer captions); typekey onset
+softened (0.3 → 1.5 ms) and the clack band capped at 5.2 kHz — one fast run of keys had made the 256k AAC encode overshoot +2.9 dB.
+
+## Socials copy (draft — NOT approved; awaiting the owner)
+**Instagram** (Reel, the loop master):
+```
+West Virginia's HB 2014 exempts state-certified data centers from towns' noise, lighting and zoning rules. A Fundamental Data engineer said "we were the guys that basically wrote the bill." The company and the governor's office say it didn't. So who wrote the town's rules?
+
+#WestVirginia #DataCenters #AI #TuckerCounty
+```
+**X** (with the sign-off; 273 of 280 characters, so no hashtags): the body above alone.
+**YouTube Shorts** title: `Who Wrote the Bill? West Virginia's data center law | Radio Free Helsinki`; description = the body + hashtags.

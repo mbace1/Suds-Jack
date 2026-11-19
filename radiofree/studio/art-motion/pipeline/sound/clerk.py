@@ -40,7 +40,7 @@ def typekey(k=0, vel=1.0):
     ring = np.sin(2 * np.pi * (3100 + 400 * g.random()) * t) * np.exp(-t * 60) * 0.12        # the typebar
     esc = np.zeros(len(t)); a = int(0.045 * SR); e = _noise(0.012, g, 3000, 9000) * np.exp(-tv(0.012) * 400) * 0.4
     esc[a:a + len(e)] += e                                                                       # the carriage steps on
-    return _fade(_norm(clack + body + ring + esc, 0.8) * vel, 0.0003, 0.03)
+    return _fade(_norm(clack + body + ring + esc, 0.8) * vel, 0.0015, 0.03)
 
 
 def space(k=0):
