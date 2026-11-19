@@ -22,6 +22,20 @@ Design and review Toko Drop 2.0 using the sakurai skill (`.claude/skills/sakurai
 - Console helpers: `__toko.unlock`, `__toko.sandbox` (what the sandbox kept), `__toko.room(id)`, `__toko.bossWave()`.
 
 
+## Tests and scripts (in the repo from v156)
+
+Until v156 the gates lived only in the 2.0 source bundle; they are in `test/` and `scripts/` now, at the game's tokens. Run everything from `toko-drop-2/`:
+
+    bash scripts/smoke.sh                                   # the gate before every commit (bare node + the browser)
+    node test/<name>.mjs                                    # one bare-node suite: sim, hero, species, campaign, bossphases, follow…
+    NODE_PATH=$(npm root -g) node test/smoke.mjs --quick --gl   # the browser smoke alone; --gl in a sandbox with no GPU
+
+- **`--gl`** runs every scenario on WebGL 2. Without a GPU, WebGPU fails and the browser smoke reports a black screen for every scenario. The browser smoke takes 20–40 minutes under SwiftShader; run it in the background.
+- **Tokens:** a test imports `../js/x.js?v=N` at the game's own token. A test on an old token loads a second copy of the module, and two copies of a module do not share state: v156 found five suites failing for that reason alone. `scripts/bump-version.sh <N>` moves `test/` and `scripts/` with the game; `scripts/check-tokens.mjs` skips `itch/` (minified) and `tools/`.
+- **The 1.x oracle:** `test/director.mjs` and `test/pickups.mjs` compare against 1.x's own source at `../toko-drop` (set `TOKO_1X` to use another tree). Without it they say "skipped" and still pass.
+- **Boss phases:** `test/lib/boss.mjs` turns `BOSS_PHASES` off, because the species specs test the v153 single rage. `test/bossphases.mjs` tests the phases themselves.
+- `scripts/pre-commit` is written for 2.0 as a repo of its own (it reads paths from the root and compares with `origin/main`). Do not install it in Suds-Jack; it belongs to the planned `mbace1/toko-drop` source repo.
+
 ## The itch.io upload
 
 - **What to make:** ONE file, `tokodropv<N>.html`, where `<N>` is the version: `tokodropv155.html`, then `tokodropv156.html` and so on. Only the number changes. Owner, 18 Nov 2026: "Just .html for now". v155 went up this way and "It works well". Do not make a zip unless the owner asks.
@@ -34,9 +48,8 @@ Design and review Toko Drop 2.0 using the sakurai skill (`.claude/skills/sakurai
 
   It rewrites two lines in the bundle only, never in the game's own files. main.js's level `fetch` reads the room from the page instead. record.js's version read from its `?v=` URL becomes the number itself. If either line changes shape, the tool stops and says so instead of building a broken file.
 - **Where it lives:** move the file into `itch/` and commit it, replacing the previous version's `.html` (only the current one is kept). `itch/` is the kit: the `.html`, `cover.png` and `screenshots/`, with a README. It goes to `gh-pages`, then back to `main`, like any change here, so the producer (and anyone) finds it at `toko-drop-2/itch/` in the repo or at https://mbace1.github.io/Suds-Jack/toko-drop-2/itch/. The game never loads anything from `itch/`.
-- **Screenshots:** the 2.0 source's `scripts/itch-shots.mjs` (in the bundle) renders them from an itch zip: the nine worlds mid-fight, the campaign grid and a boss room, 1920 × 1080. In a sandbox with no GPU add `webgl&` to its three page URLs, or every picture comes out blank. Save them as JPEG (quality 88) in `itch/screenshots/`.
-- **The GIF:** the 2.0 source's `scripts/itch-clips.mjs --only nine-worlds --gif 16` films the nine worlds with the game's own bot and makes `nine-worlds.gif`. As with the screenshots, add `webgl&` to its page URL in a sandbox with no GPU. The ice world's seed (1007) lands on a CHALLENGE MISSED banner, so use 1017 for world 7. Make the small copy with ffmpeg at 8 fps, 360 px and 96 colours. Both go in `itch/gif/` every release.
-- **The source's `scripts/check-tokens.mjs` reads `itch/*.html` too** and flags its minified code as bare imports (two false problems). Run it on a copy without `itch/`.
+- **Screenshots:** `scripts/itch-shots.mjs <zip> <outdir>` renders them from an itch zip: the nine worlds mid-fight, the campaign grid and a boss room, 1920 × 1080. In a sandbox with no GPU pass `--gl`, or every picture comes out blank. Save them as JPEG (quality 88) in `itch/screenshots/`.
+- **The GIF:** `scripts/itch-clips.mjs <outdir> --only nine-worlds --gif 16` films the nine worlds with the game's own bot and makes `nine-worlds.gif`. As with the screenshots, pass `--gl` in a sandbox with no GPU. World 7 films on seed 1017 (1007 lands on a CHALLENGE MISSED banner). Make the small copy with ffmpeg at 8 fps, 360 px and 96 colours. Both go in `itch/gif/` every release.
 - **Before handing it over:** put the file alone in an empty folder, serve that folder and open the page. Check three things:
   - it makes no request besides the page itself
   - the HUD reads `2.0 · v<N>`
