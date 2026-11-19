@@ -32,7 +32,7 @@ const EV = { pin1: LAND[0], pin2: LAND[1], pin3: LAND[2], pin4: LAND[3], pin5: L
 const S = new THREE.Scene(), FOGC = C3('#07090c'); S.fog = new THREE.Fog(FOGC, 0.04, 3.0002); S.background = FOGC;   // the kit's fog: near = density
 S.environment = new THREE.PMREMGenerator(renderer).fromScene(new RoomEnvironment(), 0.04).texture; S.environmentIntensity = 0.22;
 S.add(new THREE.HemisphereLight('#5a6878', '#0c0d10', 0.4));
-const key = new THREE.SpotLight('#e4eeff', 28, 14, 0.6, 0.65, 1.4); key.position.set(-0.6, 4.6, 0.8); key.target.position.set(0.3, 0, 0); S.add(key, key.target);
+const key = new THREE.SpotLight('#e4eeff', 17, 14, 0.6, 0.65, 1.4); key.position.set(-0.6, 4.6, 0.8); key.target.position.set(0.3, 0, 0); S.add(key, key.target);
 shadowed(key, 2048, 1, 10, { bias: -0.0004, normalBias: 0.02 });
 const warm = new THREE.SpotLight('#ffbf80', 9, 10, 0.5, 0.8, 1.5); warm.position.set(2.6, 2.2, 2.6); warm.target.position.set(0.6, 0.2, 0); S.add(warm, warm.target);
 { const brushed = canvasTex(512, 512, (g) => { const im = g.createImageData(512, 512); for (let y = 0; y < 512; y++) for (let x = 0; x < 512; x++) { const v = 0.5 + (hash2(x, y >> 3) - 0.5) * 0.18 + fbm(x / 80, y / 80, 3) * 0.12; im.data.set([lerp(70, 120, v), lerp(76, 126, v), lerp(84, 134, v), 255], (y * 512 + x) * 4); } g.putImageData(im, 0, 0); });
@@ -45,10 +45,10 @@ const toMap = (lon, lat) => [(lon - LON0) * KX * SC, -(lat - LAT0) * SC];       
 const MWm = 1.75, MHm = 3.15, MC = canvasOf(1200, 2160, (g, w, h) => {
   const px = ([lon, lat]) => { const [x, z] = toMap(lon, lat); return [(x / MWm + 0.5) * w, (z / MHm + 0.5) * h]; };
   const rings = (list, how) => { for (const r of list) { g.beginPath(); r.forEach((p, i) => { const [x, y] = px(p); i ? g.lineTo(x, y) : g.moveTo(x, y); }); if (how === 'fill') { g.closePath(); g.fill(); } else g.stroke(); } };
-  g.fillStyle = '#c9d3d6'; g.fillRect(0, 0, w, h);                                       // the sea, a cold grey-blue
-  g.fillStyle = '#ece4cf'; rings(GEO.land, 'fill');
-  g.fillStyle = '#bccbd0'; rings(GEO.lakes, 'fill');
-  g.strokeStyle = '#7e8c90'; g.lineWidth = 1.6; rings(GEO.land, 'stroke');
+  g.fillStyle = '#9fb2ba'; g.fillRect(0, 0, w, h);                                       // the sea, a cold grey-blue
+  g.fillStyle = '#e6d8b4'; rings(GEO.land, 'fill');
+  g.fillStyle = '#9fb2ba'; rings(GEO.lakes, 'fill');
+  g.strokeStyle = '#4f5d62'; g.lineWidth = 2.4; rings(GEO.land, 'stroke');
   g.setLineDash([10, 7]); g.strokeStyle = '#8a5a52'; g.lineWidth = 2.2; rings(GEO.borders, 'stroke'); g.setLineDash([]);
   g.strokeStyle = 'rgba(60,70,74,.18)'; g.lineWidth = 1; for (let lon = 18; lon <= 34; lon += 2) { g.beginPath(); for (let lat = 58; lat <= 71; lat += 0.5) { const [x, y] = px([lon, lat]); lat === 58 ? g.moveTo(x, y) : g.lineTo(x, y); } g.stroke(); }
   for (let lat = 59; lat <= 71; lat += 1) { g.beginPath(); const [a, y] = px([16, lat]), [b] = px([34, lat]); g.moveTo(a, y); g.lineTo(b, y); g.stroke(); }
@@ -63,7 +63,7 @@ MAP.receiveShadow = true;
 const pinXZ = PINS.map(([, lon, lat]) => { const [x, z] = toMap(lon, lat); return [x - 0.35, z]; });
 // the holes left behind (drawn into a second copy of the map, swapped in when the pins have gone)
 { const g = holesC.getContext('2d'); PINS.forEach(([, lon, lat]) => { const [x, z] = toMap(lon, lat), u = (x / MWm + 0.5) * 1200, v = (z / MHm + 0.5) * 2160;
-  g.fillStyle = 'rgba(20,18,16,.85)'; g.beginPath(); g.arc(u, v, 5, 0, 7); g.fill(); g.strokeStyle = 'rgba(60,50,40,.35)'; g.lineWidth = 3; g.beginPath(); g.arc(u, v, 11, 0, 7); g.stroke(); }); }
+  g.fillStyle = 'rgba(20,18,16,.85)'; g.beginPath(); g.arc(u, v, 13, 0, 7); g.fill(); g.strokeStyle = 'rgba(60,50,40,.5)'; g.lineWidth = 5; g.beginPath(); g.arc(u, v, 26, 0, 7); g.stroke(); }); }
 
 // the pins: a brass needle, a red head, a paper flag with the place
 const PIN = PINS.map(([k], i) => {
@@ -71,7 +71,7 @@ const PIN = PINS.map(([k], i) => {
   mesh(new THREE.CylinderGeometry(0.004, 0.0015, 0.16, 8), std('#c9a24a', { metalness: 0.9, roughness: 0.3 }), { pos: [0, 0.08, 0], parent: grp });
   mesh(new THREE.SphereGeometry(0.03, 20, 14), std('#c22a30', { roughness: 0.28 }), { pos: [0, 0.17, 0], parent: grp });
   const lab = canvasTex(520, 120, (g) => { g.fillStyle = '#f5f0e2'; g.fillRect(0, 0, 520, 120); g.strokeStyle = '#2a2a2a'; g.lineWidth = 4; g.strokeRect(2, 2, 516, 116); g.fillStyle = '#1b1916'; g.font = '60px "Anton-400"'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(UI[k], 260, 64); });
-  const flag = mesh(new THREE.PlaneGeometry(0.42, 0.097), std('#ffffff', { map: lab, roughness: 0.85, side: THREE.DoubleSide }), { pos: [0.23, 0.14, 0], rot: [-0.55, 0, 0], parent: grp });
+  const flag = mesh(new THREE.PlaneGeometry(0.42, 0.097), std('#ffffff', { map: lab, roughness: 0.85, side: THREE.DoubleSide }), { pos: [k === 'p2' ? -0.27 : 0.27, 0.14, 0], rot: [-0.55, 0, 0], parent: grp });
   flag.castShadow = true; grp.userData.flag = flag; return grp; });
 
 // ------------------------------------------------------------------ the register: a steel card drawer, its lid, its slot
@@ -100,10 +100,10 @@ SHEET.castShadow = true; DR.position.set(1.18, 0, 0.35); DR.rotation.y = -0.18;
 castAll(S);
 
 // ------------------------------------------------------------------ the camera
-const CAMP = hermite3([[0, [-0.25, 3.7, 2.15]], [T.s2 - 0.3, [-0.2, 3.35, 1.9]], [T.s2 + 1.0, [0.45, 3.25, 2.35]], [T.s3 - 0.3, [0.6, 3.1, 2.35]],
-  [T.s3 + 0.8, [1.15, 1.55, 1.75]], [T.s4 - 0.3, [1.2, 1.45, 1.65]], [T.s4 + 0.9, [1.32, 0.62, 1.55]], [T.s5 - 0.3, [1.3, 0.6, 1.45]], [T.s5 + 1.3, [-0.2, 3.35, 1.95]], [DUR, [-0.25, 3.7, 2.15]]]);
-const CAMT = hermite3([[0, [-0.32, 0, -0.1]], [T.s2 - 0.3, [-0.3, 0, -0.05]], [T.s2 + 1.0, [0.35, 0, 0.1]], [T.s3 - 0.3, [0.45, 0, 0.15]],
-  [T.s3 + 0.8, [1.15, 0.3, 0.25]], [T.s4 - 0.3, [1.15, 0.3, 0.3]], [T.s4 + 0.9, [1.25, 0.25, 0.7]], [T.s5 - 0.3, [1.25, 0.25, 0.7]], [T.s5 + 1.3, [-0.3, 0, -0.05]], [DUR, [-0.32, 0, -0.1]]]);
+const CAMP = hermite3([[0, [-0.16, 3.7, 2.75]], [T.s2 - 0.3, [-0.12, 3.4, 2.55]], [T.s2 + 1.0, [0.95, 3.5, 2.8]], [T.s3 - 0.3, [1.0, 3.35, 2.8]],
+  [T.s3 + 0.8, [1.2, 2.3, 2.65]], [T.s4 - 0.3, [1.22, 2.2, 2.55]], [T.s4 + 0.9, [1.02, 1.85, 1.7]], [T.s5 - 0.3, [1.02, 1.8, 1.66]], [T.s5 + 1.3, [-0.12, 3.4, 2.6]], [DUR, [-0.16, 3.7, 2.75]]]);
+const CAMT = hermite3([[0, [-0.22, 0, 0.3]], [T.s2 - 0.3, [-0.2, 0, 0.35]], [T.s2 + 1.0, [0.9, 0, 0.4]], [T.s3 - 0.3, [0.95, 0, 0.4]],
+  [T.s3 + 0.8, [1.15, 0.3, 0.3]], [T.s4 - 0.3, [1.15, 0.3, 0.35]], [T.s4 + 0.9, [1.0, 0.05, 0.92]], [T.s5 - 0.3, [1.0, 0.05, 0.92]], [T.s5 + 1.3, [-0.2, 0, 0.35]], [DUR, [-0.22, 0, 0.3]]]);
 const cam = new THREE.PerspectiveCamera(40, W / H, 0.05, 60), _t = new THREE.Vector3();
 function poseCam(t) { CAMP(t, cam.position); CAMT(t, _t); cam.position.y += 0.006 * Math.sin(t * 0.9); cam.lookAt(_t); cam.updateMatrixWorld(true); }
 

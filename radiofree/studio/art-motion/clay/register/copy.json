@@ -19,7 +19,7 @@
       "until": "s2-0.25",
       "hold": "s2",
       "text": {
-        "en": "Finland will [list] / its data centers."
+        "en": "Finland plans / to [list] its / data centers."
       },
       "source": "HE 282/2026 vp, government bill on a data center register, submitted 29 Oct 2026 (TEM/valtioneuvosto release; Dawn.fi 30 Oct). Reported (search summaries of the TEM/valtioneuvosto release and the bill page, 19 Nov); the bill text itself not yet read: UNCHECKED."
     },
@@ -63,7 +63,7 @@
       "until": "end-0.3",
       "hold": "end",
       "text": {
-        "en": "The list is for them. / The [summary], for you."
+        "en": "The list / is for them. / The [summary], / for you."
       },
       "source": "The station's line on the bill's own split between the register (authorities) and the summary (public). No claim about what the register will contain beyond the reported fields."
     }

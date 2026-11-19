@@ -18,3 +18,12 @@ A paper map of Finland on a corkboard. Hands pin our stories one by one, each pi
 
 ## Before building (blocked here)
 The bill text: the secrecy/publicity section, the summary's frequency and first date, the threshold sentence, HVK's role; the TEM release date and wording.
+
+## Stills (19 Nov) — previews/19-11-RFH-Not-Yet-Listed-stills.jpg
+Evening check (19 Nov): the register is still only government bill HE 282/2026 (no committee report or plenary vote found), so
+caption 1 now says "Finland plans / to [list] its / data centers." (was "will list"); the s2 tag already says "IF PASSED".
+Last caption re-broken to fit 800 px: "The list / is for them. / The [summary], / for you."
+Picture fixes from the first stills: map darker sea and coastline (key light 28 → 17), southern pins (Jokela, Hamina) lifted
+clear of the tag bar, Jokela's flag to the left of its pin, flags clear of the pin heads, drawer and lid framed whole,
+the summary shot near top-down so the sheet and the drawer label both read, pin holes larger.
+Open: the 0.5 MW threshold rests on one report; one source says the summaries are quarterly.
