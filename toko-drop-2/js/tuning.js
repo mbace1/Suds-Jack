@@ -842,7 +842,10 @@ export const TUNING = {
     // a world bigger than the screen (sim/worlds.js): the camera follows the
     // hero, easing over `tau` s, and at a side shows `edge` m past the floor
     // (the curb, the lawn) — no further
-    follow: { tau: 0.22, edge: 2.5 },
+    // v156 (owner, 19 Nov: the controls are "not responsive enough"): 1.x's camera stood still over the whole arena;
+    // 2.0's (v104's zoom) eases after the hero, and at tau 0.22 s a start or a turn slid the hero across the screen
+    // before the view caught up, which reads as lag. 0.1 s keeps the view with the hero without the drag
+    follow: { tau: 0.1, edge: 2.5 },
     // v104 (owner, 2026-11-02: "We need a slight zoom in"): in play the camera fits this share of the run's
     // arena, not all of it, and follows the hero over the rest (main.js viewBox), as it does over a bigger world
     zoom: 0.88,
