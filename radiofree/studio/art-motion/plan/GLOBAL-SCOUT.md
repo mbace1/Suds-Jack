@@ -1818,3 +1818,10 @@ Everything below comes from search summaries. No article was opened.
 - **Military AI / whistleblowers / DRAM:** nothing dated after the 18 Nov evening check. OpenAI's answer to the House
   letter: still none found. DRAM answers due 7 Dec.
 - **Reactions:** comment counts not visible to search.
+
+## Check Thu 19 Nov 17:16 (evening; PARTIAL: the search tool hit its usage limit after one query, resets 16:10 UTC)
+- **Anthropic (ANT):** the one query that ran returned only pre-listing coverage: listing on the Nasdaq Global Select
+  Market on Thu 19 Nov; up to 316M Class A shares may be sold by insiders on day one (pre-IPO reporting). **First-day
+  open/close: not found.** The $83 pricing (CNBC, 18 Nov) stands; no correction to it seen.
+- **Not run this check:** Tucker County / Fundamental Data / HB 2014 (film A), OpenAI's answer to the 29 Oct House
+  letter (film C), NDA towns, military AI, GPU/DRAM, whistleblowers. Carry over to the 20 Nov 07:16 check.

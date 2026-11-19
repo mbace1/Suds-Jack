@@ -1531,3 +1531,7 @@ Search summaries only; nothing opened. One device each, from STORY-DEVICES.md or
 - **Jokela, Muhos, Hamina, Lapinlahti:** nothing new since 18 Nov found (Tuusula's 16 Nov permit filing stands; Muhos
   LVV suspension and police preliminary probe already logged).
 - **Reactions (Trade Secret/Hamina, Count the Trees/Muhos):** nothing new; comment counts not visible to search.
+
+## Check Thu 19 Nov 17:16 (evening; NOT RUN: search tool usage limit hit, resets 16:10 UTC)
+- No Finnish sweep this check: HS, Yle, secondaries, the data-centre register (Huoltovarmuuskeskus, ≥0.5 MW,
+  1 Apr 2027 — film B), Jokela, Muhos, Hamina, Lapinlahti reactions. Carry over to 20 Nov 07:16.

@@ -1437,3 +1437,11 @@ scheduled task's last fire was 13 Nov 05:16), so **Give Way had no Tuesday-morni
 - **Films now wrong:** none.
 - **Due:** today, ANT first trade and Protective Fence 26 begins; 7 Dec, DRAM answers.
 - **Could not verify:** hs.fi; HB 2014's enrolled text; Fundamental Data's response; comment counts.
+
+## Check Thu 19 Nov 17:16 (evening; PARTIAL: the search tool hit its usage limit, resets 16:10 UTC)
+- **Anthropic IPO:** $83 pricing (CNBC 18 Nov) unchallenged; first-day trade figures not found. The pinned-reply draft
+  for The Round Trip still stands and still waits for Mikael's OK.
+- **Films in progress:** A "Who Wrote the Bill?" re-rendering (captions v1.2, fit fix); B "Not Yet Listed" scene
+  written, stills next; C "Due 13 Nov" plan only. **No new facts checked for A, B or C this round** (search down).
+- **Films now wrong:** none known; not re-verified this check.
+- **Carry over to 20 Nov 07:16:** full global + Finnish sweeps, A/B/C fact checks, ANT first-day close.
