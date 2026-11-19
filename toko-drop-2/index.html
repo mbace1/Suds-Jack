@@ -168,6 +168,16 @@
     #menu .item.go .label { font-size: 22px; letter-spacing: .3em; }
     #menu .item.focus { outline: 2px solid var(--gold); outline-offset: 2px; border-color: var(--gold); }
     #menu .item.focus .label { color: var(--gold); }
+    /* v156: SETTINGS as a list (owner, 19 Nov: "a neat list of toggles or options"): name left, value right, a hairline
+       between rows, small headings for the groups. Still buttons, so the focus ring and the pad walk them */
+    #menu .list { text-align: left; margin: 0 0 10px; }
+    #menu .list .group { margin: 14px 12px 2px; font-size: 11px; letter-spacing: .3em; color: var(--dim); }
+    #menu .list .group:first-child { margin-top: 2px; }
+    #menu .item.setting { display: flex; justify-content: space-between; align-items: center; gap: 12px; min-height: 48px; margin: 0; padding: 0 12px;
+      border: 0; border-bottom: 1px solid rgba(255,255,255,.12); text-align: left; }
+    #menu .item.setting .label { font-size: 14px; letter-spacing: .14em; }
+    #menu .item.setting .val { font-size: 14px; letter-spacing: .1em; font-weight: 700; color: var(--gold); white-space: nowrap; }
+    #menu .item.setting.focus { outline-offset: -2px; }
     #menu .item.off { opacity: .45; cursor: default; }
     #menu .row { display: flex; gap: 8px; }
     #menu .row .item { flex: 1 1 0; min-width: 0; }
