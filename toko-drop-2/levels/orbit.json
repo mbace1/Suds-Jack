@@ -1043,6 +1043,6 @@
   "A": 140000,
   "B": 130000,
   "C": 120000,
-  "source": "HARD bot pass (v56 look-ahead bots), 24 seeds a skill: got through sharp 71%, average 46%, rough 0%. score lines: S the sharp median, A the average median, B the average's weaker quarter, C the rough median or the average's weakest tenth (scripts/lines.mjs)"
+  "source": "HARD bot pass (v56 look-ahead bots; v157: sideways and upright, each line the lower), 24 seeds a skill an orientation: got through sharp 88%, average 46%, rough 0%. score lines: S the sharp median, A the average median, B the average's weaker quarter, C the rough median or the average's weakest tenth (scripts/lines.mjs)"
  }
 }
