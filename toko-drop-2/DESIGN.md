@@ -158,6 +158,17 @@ Classic `toko-drop/` remains the historical / hub v221 lineage. Godot port follo
   - Whether the campaign's boss rooms (PACK ICE, BOIL OVER, THE DEEP END) follow the same call. They are as they were in v157.
   - The windows (CURB KING dazed after landing; PIKE lining up or stunned; ANGLER telling or resting) and the endurance holds (30–44 s) are first cuts, measured with bots only.
 
+### Decision 19 Nov 2026 (later) — room 1 eased by fairer spawns; two games, landscape and portrait
+- **Mikael**, after playing FIRST LIGHT (campaign room 1): "it was quite challenging as I could not be[at] it even for the lowest tier. I like the challenge but we might want to bring it down a little bit. The biggest impact on this would be how the enemies spawn. They shouldn't spawn too close and also could avoid the direction of movement slightly."
+- **Mikael:** "At some point we also have to reconcile that we are making 2 games, landscape and portrait. Both need to be tested equally and steam will get landscape and mobiles likely both."
+- **Locks:**
+  - Campaign bodies arrive **fair** (v157, `sim/fairspawn.js`, `TUNING.fairSpawn`, `?fair=off` to compare). A body never arrives within 5 u of the hero, nor (while the hero moves) in a 35° cone ahead of it out to 9 u. Its authored point is kept when fair. Otherwise it moves to the nearest fair mirror or turn of that point, so the room keeps its shape and its count and timing. A boss is left where its room puts it. Sakurai §2 (#211: never put the player into danger they could not see coming).
+    - Measured with a roaming hero (a loop near the walls, 30 seeds): in FIRST LIGHT 14% of bodies had arrived within 5 u and 9% ahead; with the rule, 0.2% and 0.7%. Hits fell from 0.8 a run to 0, and the score rose from 50k to 54k (the C line is 44k). Across all 36 rooms, close arrivals drop in all but the four whose close bodies come from splits and broods.
+  - **Two games, tested equally.** Landscape is a game and portrait is a game. Steam gets landscape; phones likely get both. Every test that runs one runs the other. From v157 the browser smoke walks the same menus, pause, settings and campaign upright as sideways, in `--quick` too, and `scripts/room-tiers.mjs --portrait` plays every room turned.
+- **Still open for Mikael:**
+  - Whether ARCADE gets the same fair-spawn rule. Its bodies come in on the arena's edge at 1.x's ring with no keep-out; v157 leaves that as 1.x had it.
+  - Whether FIRST LIGHT's score lines should also come down. They are the bots' (C is the rough bot's median, 44k), and a person scores below the rough bot. The spawn rule eases the room without moving the lines.
+
 ## 6. Sakurai principles (adopted 15 Nov 2026)
 
 **Source:** [kociden/sakurai-skill](https://github.com/kociden/sakurai-skill). It's an unofficial, fan-made AI summary of Masahiro Sakurai's YouTube series *桜井政博のゲーム作るには* and **not Sakurai's own words**. Agents load it as `.claude/skills/sakurai` (see `toko-drop-2/AGENTS.md`). Citations below use the skill's chapter (§) and video numbers (#NNN).
@@ -244,7 +255,7 @@ No questions from 18 Nov are open.
 
 **How to read it.** `[x]` is done, with its evidence. `[ ]` is open. The percentage to shipping is the share of boxes ticked. Ticking a box needs the evidence named on its line: a version, a playtest note or an owner answer. An agent may not tick a design box on its own judgment. Rows tagged **PROPOSAL** are the producer's suggestion until Mikael confirms them; he may cut or add rows.
 
-**Count at v157: 19 of 37 (about 51%).** Most of the remaining boxes are decisions and playtests, not code. (v155: 17 of 36.)
+**Count at v157: 19 of 39 (about 49%).** Most of the remaining boxes are decisions and playtests, not code. (v155: 17 of 36; v157 added the campaign boss rooms, landscape-and-portrait parity and a Steam build as rows.)
 
 ### A. The target (owner)
 - [x] Where 2.0 is released: **itch.io, as an HTML game played in the browser** (owner, 18 Nov).
@@ -274,7 +285,7 @@ No questions from 18 Nov are open.
 - [ ] Survive-for-score rooms say one goal, not a clock and a points line (§6 rows 1 and 6). **PROPOSAL**
 
 ### D. Playtests (people, not bots)
-- [ ] The first third of the campaign (rooms 1–12) played by a human, and its notes acted on.
+- [ ] The first third of the campaign (rooms 1–12) played by a human, and its notes acted on. Room 1 played by Mikael 19 Nov: too hard to make even C; fairer spawns in v157 (not yet played).
 - [ ] The whole campaign played through once by a human.
 - [ ] ARCADE played to world 9 by a human.
 - [ ] HARDCADE and HARD PAIN played by a human. **PROPOSAL**
@@ -282,6 +293,8 @@ No questions from 18 Nov are open.
 ### E. Devices
 - [x] Played on a phone by the owner: a Pixel 10 Pro (18 Nov).
 - [ ] Played on at least one iPhone and one Android phone, in both orientations, at the release version. Android so far: a Pixel 10 Pro.
+- [ ] **Landscape and portrait tested equally** (owner, 19 Nov: "2 games"; Steam is landscape, phones likely both). The browser smoke walks both (v157), the room pass plays both (`--portrait`, v157), and a person plays both orientations before a release.
+- [ ] A landscape build for Steam (desktop, keyboard and pad first). **PROPOSAL**: the format is Mikael's to set.
 - [ ] Holds a playable frame rate on those phones through a late-world swarm and a boss death. The target number is Mikael's to set. **PROPOSAL**
 - [x] The result card's lower buttons (ROOMS, OPTIONS) can be reached on a phone held sideways: the owner thinks so on a Pixel 10 Pro (18 Nov). An emulator check at v155 had them below the bottom of the screen, so look again on an iPhone.
 - [ ] A desktop browser without WebGPU gets a fallback or a clear message. **PROPOSAL**

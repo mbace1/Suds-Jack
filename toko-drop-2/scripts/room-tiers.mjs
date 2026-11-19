@@ -12,6 +12,7 @@
 //   node scripts/room-tiers.mjs --write         write the tiers into levels/*.json
 //   node scripts/room-tiers.mjs --hard          the HARD campaign: every corpse fires back (`tiersHard`)
 //   node scripts/room-tiers.mjs --part 2/4      the second quarter of the rooms (one process a core)
+//   node scripts/room-tiers.mjs --portrait      every room turned, as a phone held upright plays it (report only)
 //
 // It plays at three SKILLS — sharp, average, rough: players who look ahead and
 // differ in the human part (v56, scripts/bot.mjs: how fast they take a new
@@ -33,13 +34,17 @@ const SEEDS = +opt('--seeds', 24), ONLY = opt('--room', null), WRITE = args.incl
 const [PART, PARTS] = (opt('--part', '1/1')).split('/').map(Number);
 // --hard: the HARD campaign (v49) — every corpse fires back — and its lines go in `tiersHard`
 const HARD = args.includes('--hard'), KEY = HARD ? 'tiersHard' : 'tiers';
+// --portrait (v157, owner: "we are making 2 games, landscape and portrait. Both need to be tested equally"): every
+// room played TURNED, as a phone held upright plays it — a report beside the sideways one, never written
+const TURN = args.includes('--portrait');
+if (TURN && WRITE) { console.log('--portrait reports only: the lines are one per room, measured sideways'); process.exit(2); }
 // the difficulty bands a room is held to: scripts/lines.mjs
 const dt = T.sim.dt, H = T.hero;
 const levelPath = (id) => new URL(`../levels/${id}.json`, import.meta.url);
 const level = (id) => JSON.parse(readFileSync(levelPath(id), 'utf8'));
 
 function play(L, seed, K) {
-  const R = { id: L.id, world: L.plan.world, level: L, hard: HARD };
+  const R = { id: L.id, world: L.plan.world, level: L, hard: HARD, turn: TURN };
   const w = createWorld({ seed, mode: 'campaign', room: R });
   const mem = { quarry: null, lineup: null, seen: new WeakMap(), rnd: prng(seed * 31 + 7) };
   if (L.goal?.kind) mem.quarry = T.campaign.kinds[L.goal.kind] ?? L.goal.kind;

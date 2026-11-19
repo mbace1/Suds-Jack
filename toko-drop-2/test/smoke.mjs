@@ -13,7 +13,7 @@
 //               offers an adapter (headless Chromium does, via SwiftShader).
 //               The arrow keys and Enter walk the title and flip its DASH
 //               switch, and SURVIVAL, off the title for now, still runs
-//   portrait    a phone held upright from boot: 1.x's tall arena
+//   portrait    a phone held upright from boot: 1.x's tall arena, and (v157) the same menu walk as landscape
 //   rotate      the landscape boot, then the phone turned to portrait mid-run
 //               (the arena must NOT change shape: 1.x picks it per run)
 //   ipad        an iPad sideways, and `ipad-portrait` upright, which also runs
@@ -36,7 +36,7 @@
 // throw drops and leave goo in the floor's film where it died, read back off
 // the film itself — and in the ?goo=off control, none of either, and 1.x's
 // puddles instead, so the reading cannot pass on a build that draws no goo.
-// `--quick` runs landscape and webgl2 only. `--gl` runs every scenario on WebGL 2 (a sandbox with no WebGPU).
+// `--quick` runs landscape and portrait (both with the whole menu walk: two games, tested equally, v157) and webgl2. `--gl` runs every scenario on WebGL 2 (a sandbox with no WebGPU).
 // and fails on: a page error or console.error, a failed or 4xx/5xx request,
 // a module requested without a ?v= token, the fault box showing, the loop not
 // advancing, the HUD label disagreeing with VERSIONS.md, the arena not wholly
@@ -1422,10 +1422,12 @@ async function drive(cdp, base) {
 
   console.log(`· smoke ${base}  (expect "${LABEL}", screenshots → ${OUT})`);
   await scenario('landscape', { orientation: 'landscape', menu: true, worldsTest: true });
+  // v157 (owner, 19 Nov: "we are making 2 games, landscape and portrait. Both need to be tested equally"): the phone
+  // upright from boot walks the SAME menus, pause, settings and campaign as the phone sideways, in --quick too
+  await scenario('portrait', { orientation: 'portrait', menu: true, worldsTest: true });
   if (gpuAdapter === false) console.log('  · this browser offers no WebGPU adapter: only the WebGL 2 path is exercised');
   else if (gpuAdapter === null) console.log('  · WebGPU adapter not probed (landscape never became ready)');
   if (!QUICK) {
-    await scenario('portrait', { orientation: 'portrait' });
     await scenario('rotate', { orientation: 'landscape', rotate: true });
     await scenario('ipad', { device: 'ipad', orientation: 'landscape' });
     // also the goo's control: 1.x's droplets and puddles, and no film (?goo=off)

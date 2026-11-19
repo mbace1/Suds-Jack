@@ -20,7 +20,7 @@
 -->
 
 ## v157 — 2026-11-19
-**Bosses by turns: an ENDURANCE boss you outlast, then a STRATEGIC boss you read, and the grade lines measured**
+**Bosses by turns (an ENDURANCE boss you outlast, then a STRATEGIC boss you read), fair spawns in the campaign, and portrait tested as fully as landscape**
 - Owner, 19 Nov, answering "should a boss be a puzzle or an endurance wall?": "make first boss endurance, second strategic, and so on". Worlds 1, 3, 5, 7 and 9 end on an endurance boss (TWIN PRISMS, MAW, KETTLE, BERG, OMEGA), worlds 2, 4, 6 and 8 on a strategic one (CURB KING, BLISTER, PIKE, ANGLER). `tuning/bosskinds.js`; ARCADE and HARDCADE, as the phases are; the campaign's boss rooms are as they were. `?bosskinds=off` is the v156 bosses, for an A/B on the phone.
 - **ENDURANCE** (`sim/bossfight.js clock()`): the fight is a clock (`hold`: 30, 34, 38, 36 and 44 s). The boss's health bar IS the clock and runs out on its own; then the boss breaks (its whole death). Hits on it take time off, at most 30% of the hold, so you shorten the wall but cannot skip it. The phases come on the clock (stages 1 : 1.15 : 1.3). **Graded on the hits you took** in the fight: S none, A one, B two. The HUD reads `MAW · S · HOLD OUT 23s`.
   - The TWIN PRISMS break one body at a time, so one shatters halfway and the other rages on alone, as in 1.x.
@@ -33,6 +33,11 @@
 - **The boss intro card says which kind**: `BOSS · WORLD 6 · THE RIVER · FIND THE OPENING`, or `OUTLAST IT`.
 - **The grade lines are measured** (`scripts/boss-tiers.mjs --write`, 12 seeds, phases and kinds on), so v154's `tiers` estimate is gone from `bossphases.js`. Every fight is 21–35 s for the bots (v154: 26–36).
   - Hits the bots take in the endurance fights: sharp 0.3–0.8 (S), average 1.2–3.5, rough 4–7.
+- **Campaign bodies arrive fair** (owner, 19 Nov, after FIRST LIGHT beat him at every tier: "They shouldn't spawn too close and also could avoid the direction of movement slightly"). `sim/fairspawn.js`, `TUNING.fairSpawn`; `?fair=off` is v156.
+  - A body never arrives within 5 u of the hero, nor, while it moves, in a 35° cone ahead of it out to 9 u.
+  - A fair authored point is kept. An unfair one moves to its nearest fair mirror or turn round the room's middle, so the room keeps its shape, count and timing. A boss is placed as its room says.
+  - A roaming hero in FIRST LIGHT (a loop near the walls, 30 seeds): bodies arriving within 5 u 14% → 0.2%, ahead 9% → 0.7%, hits 0.8 → 0 a run, score 50k → 54k. Upright, the same.
+- **Two games, tested equally** (owner, 19 Nov: "we are making 2 games, landscape and portrait"). The browser smoke's `portrait` scenario walks the same menus, pause, settings and campaign as `landscape`, and runs in `--quick` too. `scripts/room-tiers.mjs --portrait` plays every room turned (a report only).
 - Tests: new `test/bosskinds.mjs` (51 checks). `test/lib/boss.mjs` and `test/bossfight.mjs` hold the kinds off, as they hold the phases off: they test each species' own fight.
 - Cache tokens `?v=156` → `?v=157`; HUD label → `2.0 · v157`
 

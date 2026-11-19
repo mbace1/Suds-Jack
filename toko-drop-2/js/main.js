@@ -50,6 +50,8 @@ if (params.get('bossphases') === 'off') BOSS_PHASES.on = false;
 else if (params.get('bossphases') === 'all') BOSS_PHASES.campaign = true;
 // v157: every boss ENDURANCE or STRATEGIC, by turns (tuning/bosskinds.js) — ?bosskinds=off is the v156 bosses
 if (params.get('bosskinds') === 'off') BOSS_KINDS.on = false;
+// v157: campaign bodies arrive clear of the hero and off its heading (sim/fairspawn.js) — ?fair=off is v156
+if (params.get('fair') === 'off') T.fairSpawn.on = false;
 const stage = document.getElementById('stage');
 
 // three reports its own failures (a shader that will not compile on this GPU,

@@ -12,6 +12,7 @@
 // and w.over, as a death does. What the room ASKS — its goal and its mods —
 // is sim/challenge.js (CAMPAIGN_PLAN.md); `fail` is a room whose clock ran
 // out on a goal it did not meet. Every number is TUNING.campaign.
+import { fairPoint } from '../fairspawn.js?v=157';
 import { TUNING } from '../../tuning.js?v=157';
 import * as challenge from '../challenge.js?v=157';
 import * as heat from '../heat.js?v=157';
@@ -89,7 +90,9 @@ export default {
       const o = { speedMult: s.speedMult, intervalMult: s.intervalMult, variant: s.elite ? 'elite' : 'normal' };
       if (s.boss) { o.isBoss = true; const S = T.species[s.kind]; o.hp = S.bossHp ?? (S.noHpMult ? S.hp : Math.ceil(S.hp * T.waves.boss.hpMult)); }
       if (s.hp) o.hp = s.hp;   // a room's own number for a body (a boss sized for the room)
-      const g = api.spawn(w, s.kind, s.x, s.z, o);
+      // v157: not on top of the hero, nor just ahead of where it is going (sim/fairspawn.js); a boss as its room put it
+      const p = s.boss ? s : fairPoint(w, s.x, s.z);
+      const g = api.spawn(w, s.kind, p.x, p.z, o);
       api.clamp(w, g);
       challenge.onSpawn(w, g, s);
     }
