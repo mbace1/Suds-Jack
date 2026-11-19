@@ -1391,7 +1391,8 @@ async function drive(cdp, base) {
       const a = await flip(), b = await flip();
       if (a.label !== 'GELS · CLASSIC' || a.gels !== 'classic' || a.stored !== 'classic' || /gels=/.test(a.url) || a.ver.endsWith(' · sdf')) fail(`the GELS switch did not flip SDF → CLASSIC: ${JSON.stringify(a)}`);
       if (b.label !== 'GELS · SDF' || b.gels !== 'sdf' || b.stored !== 'sdf' || !b.ver.endsWith(' · sdf')) fail(`the GELS switch did not flip CLASSIC → SDF: ${JSON.stringify(b)}`);
-      await send('Page.navigate', { url: base });
+      // v156: GELS is a developer row, so the reload keeps ?dev (and ?webgl under --gl)
+      await send('Page.navigate', { url: `${base}?${GL ? 'webgl&' : ''}dev` });
       let back = false;
       for (const end = Date.now() + BOOT_TIMEOUT; !back && Date.now() < end; ) { back = await evaluate('!!(window.__toko && window.__toko.ready)').catch(() => false); if (!back) await sleep(250); }
       if (back) await evaluate(openOpts);
