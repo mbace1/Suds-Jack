@@ -50,7 +50,7 @@ for (const r of rooms()) {
     }
     const tag = `${r.id}${turn ? ' (turned)' : ''}`;
     check(`${tag}: every authored body is a 2.0 species`, known === roomBodies(L), `${known} of ${roomBodies(L)}`);
-    check(`${tag}: ends with a grade`, !!end && ['S', 'A', 'B', 'C', 'F'].includes(end.grade), JSON.stringify(end));
+    check(`${tag}: ends with a grade`, !!end && ['S', 'A', 'B', 'C', 'D', 'F'].includes(end.grade), JSON.stringify(end));
     if (!end) continue;
     // a room graded on a share or on hits lasts its clock (an invincible hero cannot die in it; a heart can)
     const timed = metricOf(R).name === 'time', heart = ['protect', 'escort'].includes(goalOf(R).type);
@@ -83,7 +83,7 @@ for (const r of rooms()) {
 {
   const L = { ...level('undertow'), tiers: { S: 9000, A: 7000, B: 5000, C: 3000 } }, room = { goal: 'survive' };
   check('a score at or past a line takes its grade', grade(room, L, { outcome: 'clear', score: 9000 }) === 'S' && grade(room, L, { outcome: 'clear', score: 7400 }) === 'A' && grade(room, L, { outcome: 'clear', score: 5000 }) === 'B' && grade(room, L, { outcome: 'clear', score: 3000 }) === 'C');
-  check('through the room but under C is F', grade(room, L, { outcome: 'clear', score: 2999 }) === 'F');
+  check('through the room but under C is D (v157: F is not getting through)', grade(room, L, { outcome: 'clear', score: 2999 }) === 'D');
   check('dead is F, whatever the score', grade(room, L, { outcome: 'dead', score: 99999 }) === 'F');
   const N = { ...level('undertow'), tiers: undefined, tiersHard: undefined }, R2 = T.campaign.scoreRate, D = N.duration;
   check('a room with no lines yet grades at TUNING.campaign.scoreRate a second of its clock', JSON.stringify(tiersFor(room, N)) === JSON.stringify({ S: D * R2.S, A: D * R2.A, B: D * R2.B, C: D * R2.C }));

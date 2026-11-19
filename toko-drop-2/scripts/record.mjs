@@ -37,7 +37,7 @@ const since = +opt('--since', 0), all = rec.runs.filter((e) => (e.v ?? 0) >= sin
 
 // the six skilled bots' mean, each world walked in (docs/CURVE.md, v59): the share of runs into a world that get through it
 const BOTS = [99, 92, 87, 79, 71, 63, 59, 55, 34];
-const PER = T.waves.rhythm.bossEvery, ORDER = ['S', 'A', 'B', 'C', 'F'];
+const PER = T.waves.rhythm.bossEvery, ORDER = ['S', 'A', 'B', 'C', 'D', 'F'];   // v157: D, a clear under C
 const count = (xs, f) => { const o = {}; for (const x of xs) { const k = f(x); o[k] = (o[k] || 0) + 1; } return o; };
 const list = (o) => Object.entries(o).sort((a, b) => b[1] - a[1]).map(([k, n]) => `${k} ${n}`).join(', ');
 const median = (xs) => { const s = [...xs].sort((a, b) => a - b); return s.length ? s[s.length >> 1] : null; };
@@ -63,7 +63,7 @@ if (tried.length) {
     if (!done.length) { console.log(`  ${name.padEnd(22)} left from the pause menu ${quit}×, never played to its end`); continue; }
     const best = done.reduce((b, e) => (ORDER.indexOf(e.g) < ORDER.indexOf(b) ? e.g : b), 'F'), first = done[0];
     const clears = done.filter((e) => e.o === 'clear'), scores = clears.map((e) => e.s);
-    const where = (s) => ORDER.find((x) => x !== 'F' && lines[x] != null && s >= lines[x]) ?? 'F';
+    const where = (s) => ORDER.find((x) => x !== 'F' && lines[x] != null && s >= lines[x]) ?? 'D';   // a clear: D at least (v157)
     console.log(`  ${name.padEnd(22)} ${String(done.length).padStart(2)} tries  first ${first.g}  best ${best}  through ${clears.length}/${done.length}${quit ? `  (+${quit} left)` : ''}` +
       `  score median ${scores.length ? `${k(median(scores))} (${where(median(scores))})` : '–'} best ${scores.length ? k(Math.max(...scores)) : '–'}` +
       `   lines ${['S', 'A', 'B', 'C'].map((x) => k(lines[x] ?? 0)).join(' / ')}`);

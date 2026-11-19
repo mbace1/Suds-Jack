@@ -38,7 +38,8 @@ const killAll = (w, pred = () => true) => { for (const g of w.gels.slice()) if (
   const w = room({ duration: 2, spawns: [{ t: 0, type: 'GLOBBO', px: 8, pz: 0 }] });
   const e = run(w);
   check('survive: the clock ends it, a clear', e?.outcome === 'clear' && Math.abs(e.time - 2) < 0.11, JSON.stringify(e));
-  check('survive (v51): through the clock with no score is under its C line: F', e?.grade === 'F' && e.why === 'score', JSON.stringify(e));
+  // v157 (owner: "F likely for first 2 or so tries, the D and C"): through the room under C is a D, not an F
+  check('survive (v157): through the clock with no score is under its C line: D', e?.grade === 'D' && e.why == null, JSON.stringify(e));
 }
 // ── QUOTA with tiers: graded on the time against them ──
 {
@@ -187,7 +188,7 @@ const killAll = (w, pred = () => true) => { for (const g of w.gels.slice()) if (
   const w = room({ duration: 5, tiers: { S: 400, A: 300, B: 200, C: 100 }, spawns: [{ t: 0, type: 'GLOBBO', px: 8, pz: 0 }] });
   step(w, IDLE);
   const a = onCourse(w); w.score = 250; const b = onCourse(w); w.score = 450; const c = onCourse(w);
-  check('on course: F with C 100 to find, then B with A 50 to find, then S', a.grade === 'F' && a.next === 'C' && a.need === 100 && b.grade === 'B' && b.next === 'A' && b.need === 50 && c.grade === 'S' && c.next == null, JSON.stringify([a, b, c]));
+  check('on course (v157): D with C 100 to find, then B with A 50 to find, then S', a.grade === 'D' && a.next === 'C' && a.need === 100 && b.grade === 'B' && b.next === 'A' && b.need === 50 && c.grade === 'S' && c.next == null, JSON.stringify([a, b, c]));
   w.score = 50; w.pot = 60;
   check('on course: BANK\'s pot counts toward the line', onCourse(w).grade === 'C');
   const e1 = run(room({ duration: 1, goal: { type: 'quota', kills: 3 } }));
@@ -199,7 +200,7 @@ const killAll = (w, pred = () => true) => { for (const g of w.gels.slice()) if (
 {
   const room0 = { goal: 'survive' }, L = { duration: 30, spawns: [{ t: 0, type: 'GLOBBO' }], goal: { type: 'clear' }, tiers: { S: 1000, A: 700, B: 400, C: 200 } };
   const g = (score) => grade(room0, L, { outcome: 'clear', kills: 1, hits: 0, time: 9, score });
-  check('score lines (v51): at S is S, then A, B, C, and under C an F', g(1000) === 'S' && g(800) === 'A' && g(400) === 'B' && g(250) === 'C' && g(199) === 'F');
+  check('score lines (v157): at S is S, then A, B, C, and through under C a D', g(1000) === 'S' && g(800) === 'A' && g(400) === 'B' && g(250) === 'C' && g(199) === 'D');
   check('anything but a clear is F', grade(room0, L, { outcome: 'fail', kills: 1, time: 5, score: 5000 }) === 'F');
 }
 
