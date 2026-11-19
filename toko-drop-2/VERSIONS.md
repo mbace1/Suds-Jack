@@ -19,6 +19,23 @@
     Never `--no-verify`.
 -->
 
+## v156 — 2026-11-19
+**A player's pause menu and settings list, a start menu in one style, sticks that follow the thumb, and the owner's recorded intro**
+- Owner, 18–19 Nov: the pause menu "is insanely cluttered and not for the public"; "Pause menu needs a restart if you want to abandon run but no enemy card"; "Should be neat list of toggles or options"; the controls are "not responsive enough ... shooting at 16 sub directions instead of closer to 360 degrees"; the start menu is "a bit" messy; "there is no voice announce that I recorded"; "No announcer needed for now".
+- **The pause menu** (`ui.pause`): PAUSED · RESUME · RESTART · SETTINGS · QUIT. The enemy card is gone from it; the result screen keeps its GOT YOU card.
+  - RESTART (`main.js onRestart`) is the result screen's AGAIN for an abandoned run: recorded as quit, then the same mode, start world, room or day again. The flow table declares paused → intro for it.
+- **SETTINGS** (was OPTIONS, and the title's MENU) is a list: a row per setting, its name left and its value right (`ui._setting`), under SOUND (volume, music, intro voice), CONTROLS (move with left or right thumb, stick size: were HAND and STICK) and GENERAL (reduce motion, language). RECORDS is a row only from the title.
+  - The other 14 switches (the test, look and quality switches, the announcer, the play record, STICK FOLLOW) are a DEVELOPER block shown only with `?dev`. Nothing removed; a stored choice still applies.
+- **The start menu** is one family: ARCADE, CAMPAIGN, DAILY (and CONTINUE) are the same full-width boxes with one short line each; HARD and START AT (was FROM WORLD) are rows under ARCADE; SETTINGS is a row last. The owner's order (v89) is kept. Sideways it is two columns, and the logo is 158 px there, so neither scrolls.
+- **The touch sticks follow the thumb** (`TUNING.input.follow`, `followAim` 45 px). Nothing rounded the aim; 1.x's stick (ported as-is) kept its centre where the thumb landed, so a thumb 100 px out turned the aim only 18° for a 30 px circle (59° now). `?dev` STICK FOLLOW turns it off to compare.
+- **The camera trails the hero less**: `TUNING.camera.follow.tau` 0.22 → 0.1 s (a walking hero ran 1.26 m ahead of the view; 0.55 m now).
+- **The owner's recorded intro** ("TOKO DROP — START SHOOTING!", 1.x's v121) plays on arriving at the title, once a visit, retried on the first tap if blocked; its own INTRO VOICE switch, on by default (1.x v122). Carried as a data URI (`js/introvoice.js`) so the single-file itch build has it.
+- **No announcer for now**: the commentary voice is off for players whatever was saved; `?dev` keeps its switch. Its lines were rewritten for 2.0 (gel, the world by name, the boss by name), with SMASH TV's game show gone, for when it comes back.
+- Strings in en, ja and fi for everything new.
+- Cache tokens `?v=155` → `?v=156`; HUD label → `2.0 · v156`
+
+---
+
 ## v155 — 2026-11-18
 **A room's RETRY is under the heading, and the result says how far the next grade was**
 - Owner, 2026-11-18, of the Sakurai fast-retry and reward rows (`DESIGN.md` §6 rows 5 and 10): do the fixes that need no decision.
