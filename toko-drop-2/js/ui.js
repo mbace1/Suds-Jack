@@ -544,8 +544,6 @@ export class UI {
       el('p', 'group', t('grpSound')),
       this._setting(t('volume'), pct(o.volume), () => this.h.onVolume?.()),
       this._setting(t('music'), pct(o.music), () => this.h.onMusic?.()),
-      this._setting(t('setAnn'), onOff(o.announcer), () => this.h.onAnnouncer?.()),
-      this._setting(t('annVol'), pct(o.annVolume), () => this.h.onAnnVolume?.()),
       this._setting(t('setIntro'), onOff(o.introVoice !== false), () => this.h.onIntroVoice?.()),
       el('p', 'group', t('grpControls')),
       this._setting(t('setHand'), t(o.hand === 'left' ? 'handL' : 'handR'), () => this.h.onHand?.()),
@@ -576,6 +574,9 @@ export class UI {
       tests,
       this._pair(this._button(`${t('gels')} · ${t(g)}`, t(`${g}Sub`), () => this.h.onGels?.()),
         this._button(`${t('worlds')} · ${t(wl)}`, t(`${wl}Sub`), () => this.h.onWorlds?.())),
+      // v156 (owner, 19 Nov: "No announcer needed for now"): the commentary voice is off for players; here to try it
+      this._pair(this._setting(t('setAnn'), t(o.announcer ? 'on' : 'off'), () => this.h.onAnnouncer?.()),
+        this._setting(t('annVol'), `${Math.round((o.annVolume ?? 1) * 100)}%`, () => this.h.onAnnVolume?.())),
       this._pair(this._button(`${t('style')} · ${t(st)}`, t(`${st}Sub`), () => this.h.onStyle?.()),
         this._button(`${t('lens')} · ${t(ln)}`, t(`${ln}Sub`), () => this.h.onLens?.())),
       this._pair(this._button(this.h.goo?.() === false ? t('gooOff') : t('gooOn'), null, () => this.h.onGoo?.()),

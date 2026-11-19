@@ -539,7 +539,9 @@ const music = new Music();
 music.setVolume(store.str('toko2.music') !== '' ? Math.max(0, Math.min(1, Number(store.str('toko2.music')))) : 1);
 // the announcer (1.x v109): off until OPTIONS turns it on, with its own volume
 const announcer = new Announcer();
-announcer.on = store.str('toko2.announcer') === 'on';
+// v156 (owner, 19 Nov: "No announcer needed for now"): the commentary voice is off for players, whatever was saved;
+// ?dev's ANNOUNCER switch can still turn it on to try it. The owner's recorded INTRO VOICE is a separate switch and stays
+announcer.on = params.has('dev') && store.str('toko2.announcer') === 'on';
 announcer.volume = store.str('toko2.annVolume') !== '' ? Number(store.str('toko2.annVolume')) : 1;
 announcer.introOn = store.str('toko2.introVoice') !== 'off';   // v156: INTRO VOICE, on unless turned off (1.x v122)
 // v156: the owner's recorded shout, once each time the title is arrived at (1.x playTitleIntro, main.js:6122). Before

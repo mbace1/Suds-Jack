@@ -138,6 +138,7 @@ Classic `toko-drop/` remains the historical / hub v221 lineage. Godot port follo
   - The camera trails the hero less: `TUNING.camera.follow.tau` 0.22 → 0.1 s. 1.x's camera stood still; 2.0's (v104's zoom) eases after the hero, and a walking hero ran 1.26 m ahead of the view (more than its own body) before it caught up. Now 0.55 m. **PROPOSAL until the owner has felt it.**
   - SETTINGS' HAND is MOVE WITH (LEFT THUMB / RIGHT THUMB) and STICK is STICK SIZE (owner, 19 Nov: "Hand, stick?", then "Ok" to the names).
   - The start menu (owner: "a bit" messy) is one family: ARCADE, CAMPAIGN, DAILY (and CONTINUE) are the same full-width boxes with one short line each; HARD and START AT (was FROM WORLD) are rows under ARCADE like SETTINGS' (name left, switch or value right); SETTINGS is a row last. The order is the owner's (v89): ARCADE, HARD, CAMPAIGN. A phone held sideways keeps two columns, both fitting without a scroll.
+  - No announcer for now (owner, 19 Nov: "No announcer needed for now"). The commentary voice is off for every player, whatever was saved, and its two rows are out of SETTINGS; `?dev` keeps the switch to try it, and its new lines stay in the code. The owner's recorded INTRO VOICE stays, with its own row.
   - v156 ships once the menus, the announcer (the owner's recorded voice) and the controls are all fixed.
 
 ### Decision 18 Nov 2026 (night) — the itch upload is one .html file
