@@ -39,7 +39,7 @@ def sheet(lines, until, tag):
         for i in range(n):
             t = a + (b - a) * i / max(1, n); k += 1
             if (k * 7) % 11 == 3: s.fx(space(k), t, 0.12, 0.05, wet=0.12, name=f'{tag}: the space bar')
-            else: s.fx(typekey(k, 0.75 + 0.25 * ((k * 5) % 3) / 2), t, 0.2, 0.05 + 0.04 * ((k % 3) - 1), wet=0.12, name=f'{tag}: a key')
+            else: s.fx(typekey(k, 0.75 + 0.25 * ((k * 5) % 3) / 2), t, 0.14, 0.05 + 0.04 * ((k % 3) - 1), wet=0.12, name=f'{tag}: a key')
         if n >= 18: s.fx(ding(), b + 0.02, 0.07, 0.2, wet=0.3, name=f'{tag}: the margin bell')
 sheet(EV['lines1'], T['ret'], 'the ordinance')
 sheet(EV['lines2'], 0, 'the bill')
@@ -51,6 +51,7 @@ for i in range(1, 6):
 s.fx(pin(1), T['pin'], 0.3, -0.1, wet=0.2, name='a push pin: the recorded line goes up')
 s.fx(stapler(), T['staple1'], 0.32, 0.2, wet=0.2, name="the stapler: the company's denial")
 s.fx(stapler(), T['staple2'], 0.3, 0.25, wet=0.2, name="the stapler: the governor's office")
+s.fx(space(97), T['ret'], 0.2, 0.0, wet=0.12, name='the carriage release: the old sheet comes out')
 s.fx(paper_slide(0.5, 8), T['ret'] - 0.1, 0.14, 0.0, wet=0.15, name='the old sheet out, a new one in')
 s.fx(platen_whoosh(0.12, 4), T['ret'] + 0.32, 0.18, 0.0, wet=0.15, name='the platen takes the new sheet')
 

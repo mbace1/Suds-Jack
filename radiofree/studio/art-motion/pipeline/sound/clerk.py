@@ -35,7 +35,7 @@ class Clerk:
 
 def typekey(k=0, vel=1.0):
     t = tv(0.16); g = _g('typekey', k)
-    clack = _noise(0.16, g, 1400, 7500) * np.exp(-t * 170) * (0.85 + 0.3 * g.random())
+    clack = _noise(0.16, g, 1400, 5200) * np.exp(-t * 170) * (0.85 + 0.3 * g.random())
     body = np.sin(2 * np.pi * (165 + 25 * g.random()) * t) * np.exp(-t * 55) * 0.55          # the platen's thunk
     ring = np.sin(2 * np.pi * (3100 + 400 * g.random()) * t) * np.exp(-t * 60) * 0.12        # the typebar
     esc = np.zeros(len(t)); a = int(0.045 * SR); e = _noise(0.012, g, 3000, 9000) * np.exp(-tv(0.012) * 400) * 0.4
