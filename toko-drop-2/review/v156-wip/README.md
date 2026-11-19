@@ -11,8 +11,12 @@ This is for review, for the owner and the producer. **It is not a release.** The
 **The pause menu** is PAUSED · RESUME · RESTART · SETTINGS · QUIT. The enemy card is gone from it. The death screen still has its "got you" card.
 - RESTART abandons the run and starts the same one again: the same mode and start world, the same campaign room, or the same day's waves for DAILY. It works like AGAIN on the result screen, and records the run as quit.
 
-**SETTINGS** (was OPTIONS, and the title's MENU button) has 9 switches: VOLUME, MUSIC, ANNOUNCER, INTRO VOICE, ANNOUNCER VOL., REDUCE MOTION, LEFT/RIGHT-HANDED, STICK, LANGUAGE. RECORDS appears only from the title.
+**SETTINGS** (was OPTIONS, and the title's MENU button) is a list: one row per setting, the name on the left and the value on the right, under three headings.
+- SOUND: volume, music, announcer, announcer volume, intro voice. CONTROLS: hand, stick. GENERAL: reduce motion, language.
+- RECORDS appears only from the title.
 - The other 12 (DASH, DASH BY, GEL HP, GELS, WORLDS, STYLE, LENS, SPLATTER, DEAD ZONE, AUTO QUALITY, PLAY RECORD) show only with `?dev` in the address. Nothing was removed.
+
+**The touch sticks follow your thumb.** The owner reported aiming as unresponsive, with "16 sub directions instead of closer to 360 degrees". Nothing in the code rounds the aim. The cause was the stick's centre staying where the thumb first landed: with the thumb 100 px out, circling it 30 px covered only 18° of aim. Now the centre is dragged behind the thumb, and the same circle covers 59°. With `?dev`, the STICK FOLLOW switch turns it off to compare with 1.x.
 
 **The announcer** keeps the robot voice, with new lines; SMASH TV's game show (studio, contestant, prizes, money, the mop) is gone.
 - The owner's recorded shout ("TOKO DROP — START SHOOTING!", from 1.x) plays on arriving at the title, as in 1.x. It has its own INTRO VOICE switch, on by default.
@@ -48,6 +52,6 @@ This is for review, for the owner and the producer. **It is not a release.** The
 
 ## Still to do before v156
 
-- **Controls** feel worse than 1.x. The movement numbers are identical to 1.x's, so the cause is elsewhere. Waiting on the owner: sluggish, slippery, aiming or the dash?
+- **Controls:** the following stick needs the owner's feel on the Pixel. If it still isn't responsive enough, frame rate and input lag come next.
 - **The start menu** is "a bit" messy. Waiting on what bothers him.
 - Optionally, a better robot voice: pick the best voice the phone has instead of the default.
