@@ -1787,3 +1787,34 @@ Everything below comes from search summaries. No article was opened.
   (due 13 Nov): still none found. AI Whistleblower Protection Act: not enacted.
 - **Reactions:** no new official responses on Warren's 27 Oct letter, the Pentagon lab contracts or the DRAM suit
   (answers due 7 Dec). Comment counts not visible to search.
+
+## Check Thu 19 Nov 07:16 (morning; search summaries only)
+- **Anthropic IPO priced at $83 a share** (above the $70–78 range), set Wed 18 Nov after the US close; ~$81.3B raised,
+  reported as the largest IPO on record; first trade Thu 19 Nov on Nasdaq as ANT (CNBC 18 Nov; Quartz; StockAnalysis;
+  Crypto Briefing). Valuation reported ~$1.5T fully diluted (~$1.08T on shares outstanding); 6–7× oversubscribed
+  (reported). First-day trading: not yet (US market not open at 07:16 Helsinki). Company announcement / 424(b) not seen.
+- **Tucker County / Davis, WV — the facts firmed up (pitched film "Who Wrote the Bill?"):**
+  - The bill is **HB 2014, the Power Generation and Consumption Act (2025)**, signed by Gov. Morrisey on **30 Apr 2025**
+    in Point Pleasant (governor.wv.gov; West Virginia Watch 30 Apr 2025; WVVA). It creates certified microgrid districts
+    (data centres eligible when >70% of the power goes to them), exempts them from PSC rate/certificate jurisdiction,
+    and splits the property tax 50% income-tax fund / 30% host county / 10% all counties / 5% grant fund.
+  - **Preemption:** per WBOY (as quoted in search), counties and municipalities may not enact rules, laws or ordinances
+    that "limit, in any way, the creation of" certified microgrid districts or data centre projects. **Noise and light
+    are NOT named in any summary found** — the pitch's "noise, light, zoning" is the reporters' framing of the effect;
+    verify against the enrolled text before a caption names them.
+  - **The claim:** Ted McGavran, an engineer/developer with Fundamental Data, on a recording reported as a "hot mic" in
+    July: "Up in West Virginia, we're the guys that wrote the bill and got it through the Legislature" (KPTV/Gray TV
+    13 Nov "Davis V. Goliath"; Country Roads substack headline: "We Were the Guys That Basically Wrote the Bill").
+  - **The sponsor:** House Speaker **Roger Hanshaw**, reported (Gray TV) to also serve as Fundamental Data's lawyer —
+    one source in this search; confirm before it goes on screen.
+  - **Denials:** Hanshaw's spokesperson Ann Ali: Fundamental Data did not take part in writing any version of the bill,
+    in amending it, or in early microgrid discussions (Gray TV, 13 Nov). Gov. Morrisey's office disputed the account
+    of how HB 2014 became law (Gray TV; exact wording not retrieved). **Company response: not found** in this search.
+  - Context: Davis Town Council voted 5–0 to oppose the complex; Tucker United appealed a regulators' ruling favoring
+    Fundamental Data (Country Roads; dates to check).
+- **Harwood, ND:** Business Insider (via search) quotes the mayor defending the NDA ("Had I not, that data center would
+  almost certainly be in the city of Fargo right now"). Count of local measures still differs: 40 of 41 (Valley News
+  Live/Futurism) vs 46 (KPTV). Official Cass County tally still unchecked.
+- **Military AI / whistleblowers / DRAM:** nothing dated after the 18 Nov evening check. OpenAI's answer to the House
+  letter: still none found. DRAM answers due 7 Dec.
+- **Reactions:** comment counts not visible to search.

@@ -1419,3 +1419,21 @@ scheduled task's last fire was 13 Nov 05:16), so **Give Way had no Tuesday-morni
   Harwood count firmed up (40 of 41 per Futurism/Stateline; outlets differ).
 - **Due:** tonight (US), the Anthropic price; Thu 19 Nov, first trade and Protective Fence 26 begins; 7 Dec, DRAM answers.
 - **Could not verify:** hs.fi; the IS Supo article's date; the Harwood official tally; comment counts.
+
+## Check Thu 19 Nov 07:16 (morning; search summaries only)
+- **(a) Anthropic IPO PRICED at $83** (above $70–78), Wed 18 Nov after the US close; ~$81.3B raised; trading Thu 19 Nov
+  as ANT (CNBC 18 Nov; Quartz; StockAnalysis). First-day trade: not yet at 07:16 Helsinki. **The Round Trip is posted**
+  (18 Nov 15:25–15:31) with the filed range, accurate when posted. **Draft pinned reply for Grok Bot (all three posts;
+  do not re-cut the film):** "Update: Anthropic priced its IPO at $83 a share on 18 Nov, above the $70–78 range in this
+  film, as reported by CNBC." (Mikael approves before it is posted.)
+- **(b) Give Way: POSTED** 18 Nov 19:13–19:17 Helsinki on IG, X and YouTube (POSTED.md, links recorded by Grok Bot).
+  Protective Fence 26 starts today; nothing found contradicting the film.
+- **(c) Tucker County, "Who Wrote the Bill?" — see GLOBAL-SCOUT 19 Nov.** Bill HB 2014 (signed 30 Apr 2025). Claim:
+  Ted McGavran (Fundamental Data), July recording (Gray TV 13 Nov). Sponsor: Speaker Roger Hanshaw, reported as the
+  company's lawyer (one source). Denials: Hanshaw's spokesperson Ann Ali (Gray TV); the governor's office (wording not
+  retrieved). **Company denial not found** — the pitch said the company denies it; treat as unconfirmed. **Noise/light
+  are not named** in the summaries found; the preemption quoted is "limit, in any way, the creation of" microgrid
+  districts/data centres. Before building: pull the enrolled HB 2014 text (wvlegislature.gov) and the Gray TV piece.
+- **Films now wrong:** none.
+- **Due:** today, ANT first trade and Protective Fence 26 begins; 7 Dec, DRAM answers.
+- **Could not verify:** hs.fi; HB 2014's enrolled text; Fundamental Data's response; comment counts.

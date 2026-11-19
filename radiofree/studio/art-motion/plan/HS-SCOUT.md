@@ -1524,3 +1524,10 @@ Search summaries only; nothing opened. One device each, from STORY-DEVICES.md or
   investment decision) and the MTV "verkosto" piece are already logged.
 - **Reactions (Trade Secret/Hamina, Count the Trees/Muhos, Jokela, Lapinlahti):** nothing new found since the morning.
   Comment counts not visible to search.
+
+## Check Thu 19 Nov 07:16 (morning; search summaries only)
+- **HS:** no new hs.fi items surfaced (search does not reach hs.fi; only an April 2026 HS-attributed Loviisa 200 MW item
+  via dp.ru, already old).
+- **Jokela, Muhos, Hamina, Lapinlahti:** nothing new since 18 Nov found (Tuusula's 16 Nov permit filing stands; Muhos
+  LVV suspension and police preliminary probe already logged).
+- **Reactions (Trade Secret/Hamina, Count the Trees/Muhos):** nothing new; comment counts not visible to search.
