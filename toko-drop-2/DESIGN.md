@@ -148,6 +148,16 @@ Classic `toko-drop/` remains the historical / hub v221 lineage. Godot port follo
 
 ---
 
+### Decision 19 Nov 2026 — bosses take turns: endurance, then strategic
+- **Mikael**, asked whether a boss is a puzzle or an endurance wall: "make first boss endurance, second strategic, and so on".
+- **Locks:** world 1's boss is an endurance boss, world 2's strategic, and so on. Endurance: TWIN PRISMS (1), MAW (3), KETTLE (5), BERG (7), OMEGA (9). Strategic: CURB KING (2), BLISTER (4), PIKE (6), ANGLER (8). This settles answer 3 of 18 Nov ("strategic bullet wave, weak spots") and the later "one or the other": both kinds, by turns. Sakurai §2 (#105, alternate the problems with the walls) and §1 (#009, squeeze then release).
+- **What each kind means** (producer's reading, built in v157 behind `?bosskinds=off`; the details are **PROPOSAL** until Mikael has played them):
+  - **Endurance:** a clock you outlast. The boss's bar is the clock and empties on its own; hitting it takes time off, but at most 30%. Graded on the hits you took (S none, A one, B two).
+  - **Strategic:** armoured except in a window its own pattern opens (the ring under it is magenta when open, slate when shut). Graded on time.
+- **Still open for Mikael:**
+  - Whether the campaign's boss rooms (PACK ICE, BOIL OVER, THE DEEP END) follow the same call. They are as they were in v157.
+  - The windows (CURB KING dazed after landing; PIKE lining up or stunned; ANGLER telling or resting) and the endurance holds (30–44 s) are first cuts, measured with bots only.
+
 ## 6. Sakurai principles (adopted 15 Nov 2026)
 
 **Source:** [kociden/sakurai-skill](https://github.com/kociden/sakurai-skill). It's an unofficial, fan-made AI summary of Masahiro Sakurai's YouTube series *桜井政博のゲーム作るには* and **not Sakurai's own words**. Agents load it as `.claude/skills/sakurai` (see `toko-drop-2/AGENTS.md`). Citations below use the skill's chapter (§) and video numbers (#NNN).
@@ -180,6 +190,8 @@ Classic `toko-drop/` remains the historical / hub v221 lineage. Godot port follo
 ---
 
 ## Boss phases (PROPOSAL, implemented in PR)
+
+**v157: every boss also has a KIND** (Decision 19 Nov 2026, `tuning/bosskinds.js`): endurance in odd worlds, strategic in even ones. An endurance boss's phases come on its clock (stages 1 : 1.15 : 1.3 of the hold), and its health no longer holds at a line. A strategic boss's phases still read its health, which falls only in its windows. PIKE (28 hp) and ANGLER (36 hp) have their own health for that reason. The grade lines below are re-measured with the phases and kinds on (v157), so the `tiers` estimate is gone. The table below is v154's and predates the kinds.
 
 Per **Decision 15 Nov 2026: Bosses are multi-wave fights**. Implemented in v154 (`toko-drop-2/js/tuning/bossphases.js`, `sim/species/bosskit.js`). It applies in ARCADE and HARDCADE. Campaign boss rooms (PACK ICE, BOIL OVER, THE DEEP END) keep v153 behaviour unless `?bossphases=all` is set. `?bossphases=off` restores v153 for A/B.
 
@@ -232,7 +244,7 @@ No questions from 18 Nov are open.
 
 **How to read it.** `[x]` is done, with its evidence. `[ ]` is open. The percentage to shipping is the share of boxes ticked. Ticking a box needs the evidence named on its line: a version, a playtest note or an owner answer. An agent may not tick a design box on its own judgment. Rows tagged **PROPOSAL** are the producer's suggestion until Mikael confirms them; he may cut or add rows.
 
-**Count at v155: 17 of 36 (about 47%).** Most of the remaining boxes are decisions and playtests, not code.
+**Count at v157: 19 of 37 (about 51%).** Most of the remaining boxes are decisions and playtests, not code. (v155: 17 of 36.)
 
 ### A. The target (owner)
 - [x] Where 2.0 is released: **itch.io, as an HTML game played in the browser** (owner, 18 Nov).
@@ -252,8 +264,9 @@ No questions from 18 Nov are open.
 - [x] A testers' unlock: `?unlock=all` and `?room=N`, which write no saves (v154).
 
 ### C. Design (from the 18 Nov answers)
-- [ ] Every boss is named as a **puzzle** or an **endurance wall**, and plays as its kind (decision above). Boss rooms in the campaign follow the same call.
-- [ ] Boss grade lines re-measured with `scripts/boss-tiers.mjs` after v154 (Boss phases: the lines are still estimates).
+- [x] Every boss is named as a **puzzle** (strategic) or an **endurance wall**, and plays as its kind, in ARCADE and HARDCADE: endurance first, then strategic, by turns (owner, 19 Nov; v157).
+- [ ] The campaign's boss rooms follow the same call (owner to confirm; v157 leaves them as they were).
+- [x] Boss grade lines re-measured with `scripts/boss-tiers.mjs` with the phases and kinds on (v157).
 - [ ] Room 1 asks for the simplest strategy, and the campaign climbs in tiers that ask for more complex ones, with fun twists and easier stretches along the way: a roller coaster (owner, 18 Nov).
 - [ ] A new world opens **fresh**: a breath, then the squeeze. World 8's first hit at about 1 s is answered (v155 measured it).
 - [ ] Worlds 7–9 keep rising instead of pressing like world 6 (§6 row 4).

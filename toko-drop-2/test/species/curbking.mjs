@@ -3,7 +3,7 @@
 // squats, marks its landing, leaps out of reach, lands there with a ring;
 // raging, it hops twice in a row, its ring doubled, and shakes HOPPA loose.
 import { checker, arena, common } from '../lib/boss.mjs';
-import BEH from '../../js/sim/species/curbking.js?v=156';
+import BEH from '../../js/sim/species/curbking.js?v=157';
 const K = 'curbking', { check, done } = checker(K);
 const { S } = common(K, 2, { check });
 {

@@ -3,11 +3,11 @@
 // every goal ends its room the way it says, every mod takes away what it says,
 // a moving floor moves and holds what stands on it, and the grade reads the
 // room's own number against its tiers.
-import { createWorld, step, api } from '../js/sim/world.js?v=156';
-import { TUNING as T } from '../js/tuning.js?v=156';
-import { grade, onCourse } from '../js/sim/director/campaign.js?v=156';
-import { levelShape, levelEnvelope } from '../js/sim/shape.js?v=156';
-import * as fire from '../js/sim/fire.js?v=156';
+import { createWorld, step, api } from '../js/sim/world.js?v=157';
+import { TUNING as T } from '../js/tuning.js?v=157';
+import { grade, onCourse } from '../js/sim/director/campaign.js?v=157';
+import { levelShape, levelEnvelope } from '../js/sim/shape.js?v=157';
+import * as fire from '../js/sim/fire.js?v=157';
 
 let failed = 0, passed = 0;
 const check = (c, ok, d = '') => { if (ok) { passed++; return; } failed++; console.log(`  ✗ ${c}${d ? ` — ${d}` : ''}`); };

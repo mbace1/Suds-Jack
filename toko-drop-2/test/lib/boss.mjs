@@ -4,15 +4,19 @@
 // them answers the same way (seeded, its look, its world's boss wave, the
 // rage at half health).
 import { readFileSync } from 'node:fs';
-import { createWorld, step, api } from '../../js/sim/world.js?v=156';
-import { TUNING as T } from '../../js/tuning.js?v=156';
-import { LOOKS } from '../../js/render/looks/index.js?v=156';
-import { BOSS_PHASES } from '../../js/tuning/bossphases.js?v=156';
+import { createWorld, step, api } from '../../js/sim/world.js?v=157';
+import { TUNING as T } from '../../js/tuning.js?v=157';
+import { LOOKS } from '../../js/render/looks/index.js?v=157';
+import { BOSS_PHASES } from '../../js/tuning/bossphases.js?v=157';
+import { BOSS_KINDS } from '../../js/tuning/bosskinds.js?v=157';
 
 // v156: since v154 a world boss in ARCADE fights in three phases (tuning/bossphases.js), and its old single rage at half
 // health is what ?bossphases=off gives back. These specs hold each boss's own pattern and that v153 rage, so they run
 // with the phases off; test/bossphases.mjs holds the phases themselves
 BOSS_PHASES.on = false;
+// v157: and the kinds off (endurance clocks, strategic armour): these specs are each species' own fight; the kinds
+// have their own test (test/bosskinds.mjs)
+BOSS_KINDS.on = false;
 
 export const dt = T.sim.dt;
 export const IDLE = { mx: 0, mz: 0, ax: 1, az: 0, aim: false, fire: false, dash: false };

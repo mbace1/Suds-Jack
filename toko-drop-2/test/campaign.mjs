@@ -6,12 +6,12 @@
 //
 //   node test/campaign.mjs
 import { readFileSync } from 'node:fs';
-import { createWorld, step, api } from '../js/sim/world.js?v=156';
-import { TUNING as T } from '../js/tuning.js?v=156';
-import { grade, rooms, isOpen, roomBodies, tiersFor } from '../js/sim/director/campaign.js?v=156';
-import { speciesOf, goalOf, metricOf } from '../js/sim/challenge.js?v=156';
-import * as heatMod from '../js/sim/heat.js?v=156';
-import { Arena, levelShape, rectShape, circleShape, unionShape, intersectShape } from '../js/sim/shape.js?v=156';
+import { createWorld, step, api } from '../js/sim/world.js?v=157';
+import { TUNING as T } from '../js/tuning.js?v=157';
+import { grade, rooms, isOpen, roomBodies, tiersFor } from '../js/sim/director/campaign.js?v=157';
+import { speciesOf, goalOf, metricOf } from '../js/sim/challenge.js?v=157';
+import * as heatMod from '../js/sim/heat.js?v=157';
+import { Arena, levelShape, rectShape, circleShape, unionShape, intersectShape } from '../js/sim/shape.js?v=157';
 
 let failed = 0, passed = 0;
 const check = (claim, ok, detail = '') => { if (ok) { passed++; return; } failed++; console.log(`  ✗ ${claim}${detail ? ` — ${detail}` : ''}`); };

@@ -7,8 +7,8 @@
 // through stubbed DOM events and a stubbed pad.
 //
 // Usage: node test/hero.mjs           (exit 1 on any failure)
-import { createWorld, step, api } from '../js/sim/world.js?v=156';
-import { TUNING as T } from '../js/tuning.js?v=156';
+import { createWorld, step, api } from '../js/sim/world.js?v=157';
+import { TUNING as T } from '../js/tuning.js?v=157';
 
 let failed = 0, passed = 0;
 const check = (claim, ok, detail = '') => {
@@ -134,7 +134,7 @@ check('1/60 s steps, so 1.x\'s per-frame counts port as they are', near(dt, 1 / 
 // ── the FLICK dash (v18; owner, 2026-10-23): a flick's length is the
 // distance, its speed the speed, its direction the way it goes ──────
 {
-  const { dashPlan } = await import('../js/sim/hero.js?v=156');
+  const { dashPlan } = await import('../js/sim/hero.js?v=157');
   const F = H.flick, flick = (sL, sV, dx = 0, dz = -1) => ({ kind: 'flick', sL, sV, dx, dz });
   const lo = dashPlan(flick(0, 0)), hi = dashPlan(flick(1, 1));
   check('the lightest flick is 1.x\'s dash, 4.77 u at 26 u/s in 11 steps (v91); the longest 11 u', near(lo.d, 26 * 11 / 60) && near(lo.v, 26) && lo.steps === 11 && near(hi.d, F.d[1]) && F.d[1] > 2 * 26 * 11 / 60, `${lo.d} @ ${lo.v} in ${lo.steps} … ${hi.d}`);
@@ -206,7 +206,7 @@ check('1/60 s steps, so 1.x\'s per-frame counts port as they are', near(dt, 1 / 
   check('a walk-in touch is the same reach: what would hurt is what is cut', H.dashKill.reach === T.gel.contactRadius && H.dashKill.reach === H.radius);
 
   // a species' own hitTest decides touching (a long body along its length)
-  const { BEHAVIOUR } = await import('../js/sim/species/index.js?v=156');
+  const { BEHAVIOUR } = await import('../js/sim/species/index.js?v=157');
   const hadHit = BEHAVIOUR.globbo.hitTest, hadKill = BEHAVIOUR.globbo.onKill;
   const ht = W(); ht.hero.dashLevel = 1;
   const far = api.spawn(ht, 'globbo', 15, 8), on = api.spawn(ht, 'globbo', x1, 0);
@@ -270,7 +270,7 @@ check('1/60 s steps, so 1.x\'s per-frame counts port as they are', near(dt, 1 / 
 
 // ── the pods (player.js:404-465, main.js:2058-2091) ─────────────────
 {
-  const { equipWeapon } = await import('../js/sim/hero.js?v=156');
+  const { equipWeapon } = await import('../js/sim/hero.js?v=157');
   const FIRE = { ...IDLE, ax: 1, az: 0, aim: true, fire: true };
   // 1.x's own recurrence (player.js:261, 387-397, 400, 465): the period is
   // ASSIGNED on the trigger and ticked once a frame, each owed round's timer
@@ -341,7 +341,7 @@ check('1/60 s steps, so 1.x\'s per-frame counts port as they are', near(dt, 1 / 
   check('a dead hero cannot be hit again', !api.hurt(w, 'globbo') && w.hero.lives === 0);
   const s = W(); s.hero.invinc = 3;
   check('the invincibility pickup\'s timer is i-frames too', !api.hurt(s, 'globbo') && s.hero.lives === 3);
-  const { grantInvincibility, grantRapid } = await import('../js/sim/hero.js?v=156');
+  const { grantInvincibility, grantRapid } = await import('../js/sim/hero.js?v=157');
   const gi = W(); grantInvincibility(gi); check('the invincibility pickup gives 3.0 s (main.js:11249)', gi.hero.invinc === 3);
   gi.hero.invinc = 2; grantInvincibility(gi, 1); check('a pickup takes the LONGER timer, never adds (player.js:177)', gi.hero.invinc === 2);
   grantRapid(gi); check('the fire-rate pickup gives 8.0 s (main.js:11268)', gi.hero.rapid === 8);
@@ -387,7 +387,7 @@ check('1/60 s steps, so 1.x\'s per-frame counts port as they are', near(dt, 1 / 
   globalThis.innerWidth = 1000; globalThis.innerHeight = 500;
   let pads = [];
   Object.defineProperty(globalThis, 'navigator', { value: { getGamepads: () => pads }, configurable: true });
-  const { Input } = await import('../js/input.js?v=156');
+  const { Input } = await import('../js/input.js?v=157');
   const fire = (on, type, e) => (on[type] || []).forEach((f) => f({ preventDefault() {}, target: null, repeat: false, ...e }));
   let clock = 1000;   // the events' own timeStamps, ms (flick.js reads those, never the wall clock)
   const touch = (type, id, x, y, dt = 16) => fire(tgt.l, type, { timeStamp: (clock += dt), changedTouches: [{ identifier: id, clientX: x, clientY: y }] });
@@ -574,7 +574,7 @@ check('1/60 s steps, so 1.x\'s per-frame counts port as they are', near(dt, 1 / 
   const sh = mz.events.find((e) => e.type === 'shot');
   check('the muzzle is 0.85 out along the shot', sh && near(sh.x, 0) && near(sh.z, -0.85) && !sh.round);
   // a BURST's owed round leaves from where the hero is NOW (player.js:391-393)
-  const { equipWeapon: eqw } = await import('../js/sim/hero.js?v=156');
+  const { equipWeapon: eqw } = await import('../js/sim/hero.js?v=157');
   const bw = W(); eqw(bw, 'burst');
   run(bw, 4, { ...IDLE, mz: 1, ax: 1, az: 0, aim: true, fire: true });
   const zs = heroShots(bw).map((b) => b.z).sort((a, b) => a - b);
