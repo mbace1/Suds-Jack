@@ -21,3 +21,12 @@ A town-hall typewriter, one ordinance at a time: NOISE · LIGHTING · VIEWSHED �
 - The enrolled PDF and current code text: exact list and subsection letter.
 - The recording or the full Country Roads / WV Watch / Gray texts: McGavran's exact words.
 - The company's and governor's statements verbatim; Hanshaw's NPR email.
+
+## v1.1 (19 Nov): quotes checked, message made plain (owner: "Check quotes and make the message clear")
+- **Captions now tell the story in order:** Towns write the rules for noise, light and zoning. / West Virginia's law: certified data centers are exempt. / A company engineer: "we were the guys that basically wrote the bill." / The company and the governor's office: it didn't. / So who wrote the town's rules? The stamp says EXEMPT (was PREEMPTED).
+- **Quote check (search results across several outlets; primary pages still blocked from the build machine):**
+  - §5B-2-21b(d)(1), word for word in two independent results (datacenterdata.com; the 2026 enrolled HB 5168 text): "County or municipal zoning, horticultural, noise, viewshed, lighting, development, or land use ordinances, restrictions, limitations, or approvals". Certified projects only.
+  - McGavran: four outlets share "we were the guys that/who basically wrote the bill … and got it through the legislature in 2024 and early '25" (Country Roads transcript, WV Watch, WVHC, Parsons Advocate). Gray TV's "we're the guys that wrote the bill" is the outlier and is dropped. "that" (Country Roads) vs "who" (WV Watch) still differs: the film uses Country Roads and credits it.
+  - Company (spokesperson Andrea Khoury): "did not draft, write or play any role in drafting HB 2014". Governor's office (spokesperson Lars Dalseide): "the Governor's bill", drafting "deliberately limited to the Governor's office". Consistent across WV Watch, Country Roads, WVHC.
+  - Gray TV's "hot mic" framing dropped: it was a public council meeting.
+- **Still open:** the Belmont recording itself, for the that/who word; the company-statement comma. Both are inside the attributed quotes and do not change the message.
