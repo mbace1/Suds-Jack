@@ -169,6 +169,15 @@ Classic `toko-drop/` remains the historical / hub v221 lineage. Godot port follo
   - Whether ARCADE gets the same fair-spawn rule. Its bodies come in on the arena's edge at 1.x's ring with no keep-out; v157 leaves that as 1.x had it.
   - Whether FIRST LIGHT's score lines should also come down. They are the bots' (C is the rough bot's median, 44k), and a person scores below the rough bot. The spawn rule eases the room without moving the lines.
 
+### Decision 19 Nov 2026 (evening) — the grades are a climb: F, D, C, B, A, S
+- **Mikael:** "S- tier should be possible in all campaign levels. F likely for first 2 or so tries, the D and C.. only after really great runs should get B, A, and really practice gets you an S. Sometimes proper strategy should earn you A or S a bit more easily. This is a way to teach strategies." Asked whether similar games use a D: they do. Devil May Cry, osu! and Sugary Spire all put D at the bottom of a clear, and Sonic Adventure 2 goes down to E. Then: "Go ahead, fix it all. Also there is a fail state."
+- **Locks (v157):**
+  - **F is the fail state**: a run that did not get through (dying, the clock, the heart, a hit in a no-hits room). The room card still says why.
+  - **D is getting through**: a clear under the C line, where it used to be an F (this replaces 27 Oct's "F is a small but still challenging score"). A D opens the next room.
+  - C, B, A and S stay on the bots' lines: C the rough bot's median, B the average bot's weaker quarter, A the average bot's median, S the sharp bot's median. For a person, B and A are great runs and S is practice.
+  - Every room's S is checked reachable: the sharp bot gets through every room and its median is the S line (scripts/room-tiers.mjs, both orientations).
+- **Still open (PROPOSAL):** "proper strategy should earn you A or S a bit more easily". Each room names what it teaches (`plan.teaches`, `plan.strategy`). A room could pay a bonus when it is played its way, for example killing in order in IN ORDER, or dashing the gates in GATE RUN. Which rooms, and how much, is Mikael's call.
+
 ## 6. Sakurai principles (adopted 15 Nov 2026)
 
 **Source:** [kociden/sakurai-skill](https://github.com/kociden/sakurai-skill). It's an unofficial, fan-made AI summary of Masahiro Sakurai's YouTube series *桜井政博のゲーム作るには* and **not Sakurai's own words**. Agents load it as `.claude/skills/sakurai` (see `toko-drop-2/AGENTS.md`). Citations below use the skill's chapter (§) and video numbers (#NNN).

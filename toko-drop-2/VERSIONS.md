@@ -37,6 +37,9 @@
   - A body never arrives within 5 u of the hero, nor, while it moves, in a 35° cone ahead of it out to 9 u.
   - A fair authored point is kept. An unfair one moves to its nearest fair mirror or turn round the room's middle, so the room keeps its shape, count and timing. A boss is placed as its room says.
   - A roaming hero in FIRST LIGHT (a loop near the walls, 30 seeds): bodies arriving within 5 u 14% → 0.2%, ahead 9% → 0.7%, hits 0.8 → 0 a run, score 50k → 54k. Upright, the same.
+- **The grades are a climb: F, D, C, B, A, S** (owner, 19 Nov: "F likely for first 2 or so tries, the D and C.. only after really great runs should get B, A, and really practice gets you an S"; "there is a fail state").
+  - A clear under C is now **D** (it was F) and opens the next room. **F** is the fail state: not getting through.
+  - The room card lists S, A, B, C, then D ("through the room") and F ("dying, or the clock"). The campaign's end tallies D too. Colour `#c9a27a`.
 - **Two games, tested equally** (owner, 19 Nov: "we are making 2 games, landscape and portrait"). The browser smoke's `portrait` scenario walks the same menus, pause, settings and campaign as `landscape`, and runs in `--quick` too. `scripts/room-tiers.mjs --portrait` plays every room turned (a report only).
 - Tests: new `test/bosskinds.mjs` (51 checks). `test/lib/boss.mjs` and `test/bossfight.mjs` hold the kinds off, as they hold the phases off: they test each species' own fight.
 - Cache tokens `?v=156` → `?v=157`; HUD label → `2.0 · v157`
