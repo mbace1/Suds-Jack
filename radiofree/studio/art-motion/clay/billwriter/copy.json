@@ -1,0 +1,173 @@
+{
+  "film": "who-wrote-the-bill",
+  "cut": "3D v1 stills (19 Nov, en only). Owner, 19 Nov: 'Top3' then 'Go ahead with stills for A'. Device: the town's rulebook — a town clerk's typewriter types ordinance headings and each is stamped PREEMPTED (W. Va. Code §5B-2-21b, from HB 2014); the corkboard behind carries the recorded line and the two denials; the last sheet is the bill itself, ending DRAFTED BY: ____.",
+  "series": "rfh",
+  "captionSize": "big",
+  "argument": "West Virginia's HB 2014 stops towns from applying their own noise, lighting, viewshed and zoning rules to certified data centers; a Fundamental Data engineer was recorded saying 'we're the guys that wrote the bill', which the company and the governor's office deny.",
+  "langs": [
+    "en"
+  ],
+  "native_read": {
+    "en": true
+  },
+  "syntax": "'/' breaks a line, [word] is the pop word",
+  "captions": [
+    {
+      "id": "rules",
+      "role": "setup",
+      "at": "s1+0.6",
+      "until": "s2-0.25",
+      "hold": "s2",
+      "text": {
+        "en": "A town can write / its own [rules]."
+      },
+      "source": "General: West Virginia municipalities adopt ordinances (noise, lighting, zoning). The paper in the typewriter is a blank generic ordinance, 'TOWN OF ____', not a document of Davis: Davis passed a resolution, not an ordinance."
+    },
+    {
+      "id": "preempted",
+      "role": "evidence",
+      "at": "s2+0.4",
+      "until": "s3-0.25",
+      "hold": "s3",
+      "text": {
+        "en": "Not for data centers: / [preempted] by state law."
+      },
+      "source": "HB 2014 (2025), Power Generation and Consumption Act, signed 30 Apr 2025 (governor's release; WV MetroNews 1 May 2025); §5B-2-21b: certified microgrid districts and certified high impact data centers 'may not be subject to … County or municipal zoning, horticultural, noise, viewshed, lighting, development, or land use ordinances' (WVCBP, datacenterdata.com). UNCHECKED: from search snippets of the named page, 19 Nov; read the page (or recording) before air."
+    },
+    {
+      "id": "wrote",
+      "role": "evidence",
+      "at": "s3+0.4",
+      "until": "s4-0.25",
+      "hold": "s4",
+      "text": {
+        "en": "Recorded: “we’re the / guys that [wrote] / the bill.”"
+      },
+      "source": "Ted McGavran, described as a Fundamental Data engineer, at a Belmont, N.C. City Council meeting, 6 Jul 2026, as reported by Gray TV (13 Nov 2026) and Country Roads News (21 Jul 2026, headline 'basically wrote'). UNCHECKED: from search snippets of the named page, 19 Nov; read the page (or recording) before air."
+    },
+    {
+      "id": "denied",
+      "role": "evidence",
+      "at": "s4+0.4",
+      "until": "s5-0.25",
+      "hold": "s5",
+      "text": {
+        "en": "The company and the / governor’s office: [denied]."
+      },
+      "source": "Fundamental Data: 'did not draft, write or play any role in drafting HB 2014' (WVHC, WV Watch, Jul 2026). Governor's office (Lars Dalseide, Jul 2026): 'HB 2014 was the Governor's bill, and the drafting was deliberately limited to the Governor's office.' Morrisey denied it (Gray TV, 13 Nov). UNCHECKED: from search snippets of the named page, 19 Nov; read the page (or recording) before air."
+    },
+    {
+      "id": "who",
+      "role": "punchline",
+      "at": "s5+0.5",
+      "until": "end-0.3",
+      "hold": "end",
+      "text": {
+        "en": "So who [wrote] / the rules?"
+      },
+      "source": "The station's question. No claim about who drafted the bill: the claim and both denials are on screen."
+    }
+  ],
+  "ui": {
+    "tag1": {
+      "en": "DAVIS, W. VA. · A DATA CENTER CAMPUS PLANNED ABOUT A MILE AWAY (REPORTED)"
+    },
+    "tag2": {
+      "en": "HB 2014 (2025) · W. VA. CODE §5B-2-21b · SIGNED 30 APR 2025"
+    },
+    "tag3": {
+      "en": "TED McGAVRAN, FUNDAMENTAL DATA · BELMONT, N.C. CITY COUNCIL, 6 JUL 2026"
+    },
+    "tag4": {
+      "en": "THE HOUSE SPEAKER'S LAW FIRM REPRESENTS THE COMPANY IN ITS AIR-PERMIT APPEAL"
+    },
+    "tag5": {
+      "en": "NO CERTIFICATION APPLICATION FILED YET, PER THE STATE DATA ECONOMY OFFICE"
+    },
+    "town": {
+      "en": "TOWN OF ______________, W. VA."
+    },
+    "ordNo": {
+      "en": "ORDINANCE NO. ____"
+    },
+    "ordOn": {
+      "en": "AN ORDINANCE ON:"
+    },
+    "h1": {
+      "en": "§1  NOISE"
+    },
+    "h2": {
+      "en": "§2  LIGHTING"
+    },
+    "h3": {
+      "en": "§3  VIEWSHED"
+    },
+    "h4": {
+      "en": "§4  ZONING"
+    },
+    "h5": {
+      "en": "§5  LAND USE"
+    },
+    "stamp": {
+      "en": "PREEMPTED"
+    },
+    "stampSub": {
+      "en": "W. VA. CODE §5B-2-21b · HB 2014"
+    },
+    "b1": {
+      "en": "ENROLLED"
+    },
+    "b2": {
+      "en": "COMMITTEE SUBSTITUTE"
+    },
+    "b3": {
+      "en": "FOR H. B. 2014"
+    },
+    "b4": {
+      "en": "POWER GENERATION AND"
+    },
+    "b5": {
+      "en": "CONSUMPTION ACT"
+    },
+    "b6": {
+      "en": "DRAFTED BY: "
+    },
+    "qHead": {
+      "en": "RECORDED · BELMONT, N.C. CITY COUNCIL · 6 JUL 2026"
+    },
+    "quote": {
+      "en": "“Up in West Virginia, we’re the guys that wrote the bill and got it through the Legislature.”"
+    },
+    "qWho": {
+      "en": "— TED McGAVRAN, FUNDAMENTAL DATA (AS REPORTED BY GRAY TV)"
+    },
+    "d1Who": {
+      "en": "FUNDAMENTAL DATA:"
+    },
+    "d1": {
+      "en": "“did not draft, write or play any role in drafting HB 2014”"
+    },
+    "d2Who": {
+      "en": "GOVERNOR'S OFFICE:"
+    },
+    "d2": {
+      "en": "“HB 2014 was the Governor's bill”"
+    },
+    "resTown": {
+      "en": "TOWN OF DAVIS"
+    },
+    "res": {
+      "en": "RESOLUTION OPPOSING THE DATA CENTER"
+    },
+    "resVote": {
+      "en": "VOTE: 5–0"
+    },
+    "plate": {
+      "en": "TOWN CLERK"
+    }
+  },
+  "props": "No logos, no people, no faces. The typewriter, desk and corkboard are invented props. The ordinance is a generic blank (TOWN OF ____), not a Davis document. Quotes on the cards carry their speaker and outlet.",
+  "post": {
+    "en": "West Virginia's HB 2014 stops towns from applying their own noise, lighting and zoning rules to certified data centers. A Fundamental Data engineer was recorded saying \"we're the guys that wrote the bill.\" The company and the governor's office deny it. So who wrote the rules?"
+  }
+}
