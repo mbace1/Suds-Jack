@@ -168,6 +168,16 @@
     #menu .item.go .label { font-size: 22px; letter-spacing: .3em; }
     #menu .item.focus { outline: 2px solid var(--gold); outline-offset: 2px; border-color: var(--gold); }
     #menu .item.focus .label { color: var(--gold); }
+    /* v156: SETTINGS as a list (owner, 19 Nov: "a neat list of toggles or options"): name left, value right, a hairline
+       between rows, small headings for the groups. Still buttons, so the focus ring and the pad walk them */
+    #menu .list { text-align: left; margin: 0 0 10px; }
+    #menu .list .group { margin: 14px 12px 2px; font-size: 11px; letter-spacing: .3em; color: var(--dim); }
+    #menu .list .group:first-child { margin-top: 2px; }
+    #menu .item.setting { display: flex; justify-content: space-between; align-items: center; gap: 12px; min-height: 48px; margin: 0; padding: 0 12px;
+      border: 0; border-bottom: 1px solid rgba(255,255,255,.12); text-align: left; }
+    #menu .item.setting .label { font-size: 14px; letter-spacing: .14em; }
+    #menu .item.setting .val { font-size: 14px; letter-spacing: .1em; font-weight: 700; color: var(--gold); white-space: nowrap; }
+    #menu .item.setting.focus { outline-offset: -2px; }
     #menu .item.off { opacity: .45; cursor: default; }
     #menu .row { display: flex; gap: 8px; }
     #menu .row .item { flex: 1 1 0; min-width: 0; }
@@ -177,8 +187,17 @@
     #menu .stack { display: flex; flex-direction: column; align-items: stretch; gap: 0; }
     #menu .stack .item.big { min-height: 84px; padding: 14px 16px; margin: 6px 0; }
     #menu .stack .item.big .label { font-size: 19px; letter-spacing: .16em; white-space: nowrap; }
-    #menu .stack .item.hard { display: flex; flex-direction: row; align-items: center; justify-content: center; gap: 14px; min-height: 44px; margin: 2px auto; padding: 6px 18px; width: max-content; min-width: 160px; text-align: center; }
-    #menu .stack .item.hard .label { font-size: 12px; letter-spacing: .24em; }
+    /* v156: the title is one family — the modes full-width boxes with one short line, HARD and START AT rows like
+       SETTINGS' (name left, switch or value right), SETTINGS a row last; a phone held sideways keeps two columns */
+    #menu .item.mode .sub { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    #menu .side .item.mode { min-height: 64px; padding: 10px 16px; margin: 6px 0; }
+    #menu .side .item.big { min-height: 84px; padding: 14px 16px; margin: 6px 0; }
+    #menu .side .item.big .label { font-size: 19px; letter-spacing: .16em; white-space: nowrap; }
+    #menu .side .item.mode .label { font-size: 17px; letter-spacing: .16em; }
+    #menu .item.mode.daily .label { color: var(--amber); }
+    #menu .list.mods { margin: 0 0 2px; }
+    #menu .side .list { margin: 6px 0 0; }
+    #menu .item.setting.hard .switch { flex: none; }
     #menu .item.small { display: block; width: auto; min-width: 140px; min-height: 44px; margin: 4px auto 0; padding: 8px 22px; text-align: center; }
     #menu .item.small .label { font-size: 13px; letter-spacing: .24em; }
     /* v80: CONTINUE, a kept run's door under the start row: between the big buttons and MENU in weight */
@@ -207,10 +226,10 @@
     #menu .item.focus .switch:not(.on) .knob { background: var(--gold); }
     /* HARD on: the title goes red (HARDCADE, HARD PAIN) */
     #menu.hardmode .logo { filter: drop-shadow(0 0 14px rgba(255,80,60,.75)) drop-shadow(0 2px 10px rgba(0,0,0,.55)); }
-    #menu.hardmode .stack .item.big { border-color: rgba(255,106,90,.6); background: linear-gradient(180deg, rgba(255,70,50,.10), rgba(255,70,50,.02)); box-shadow: inset 0 0 18px rgba(255,70,50,.12); }
-    #menu.hardmode .stack .item.big .label { color: #ff8070; }
-    #menu.hardmode .stack .item.big.focus { border-color: var(--gold); }
-    #menu.hardmode .stack .item.big.focus .label { color: var(--gold); }
+    #menu.hardmode .item.big { border-color: rgba(255,106,90,.6); background: linear-gradient(180deg, rgba(255,70,50,.10), rgba(255,70,50,.02)); box-shadow: inset 0 0 18px rgba(255,70,50,.12); }
+    #menu.hardmode .item.big .label { color: #ff8070; }
+    #menu.hardmode .item.big.focus { border-color: var(--gold); }
+    #menu.hardmode .item.big.focus .label { color: var(--gold); }
     /* a HARD PAIN room's card */
     #menu .hardtag { margin: 0 0 2px; font-size: 11px; letter-spacing: .4em; font-weight: 800; color: #ff6a5a; }
     #menu h2.card.hard { color: #ff8070; }
@@ -223,14 +242,17 @@
       #menu > .logo, #menu > .hint, #menu > h2, #menu > .mode, #menu > .stats, #menu > .world, #menu > .played, #menu > .gelcard, #menu > .grid, #menu > .route-wrap, #menu > .goal, #menu > canvas.chart, #menu > .teaches, #menu > .skills, #menu > .tiers, #menu > .best, #menu > .hardtag { grid-column: 1 / -1; }
       /* v89: on a phone held sideways the stack takes the left column and CONTINUE, FROM WORLD and MENU the right, so nothing scrolls */
       #menu > .stack { grid-column: 1; grid-row: 2 / span 4; }
+      #menu > .side { grid-column: 2; grid-row: 2 / span 4; align-self: start; }
+      #menu .side .item.mode { min-height: 52px; padding: 7px 14px; margin: 4px 0; }
+      #menu .side .item.big { min-height: 64px; padding: 10px 14px; margin: 4px 0; }
+      #menu .item.setting { min-height: 44px; }
       #menu > .item.small, #menu > .item.cont { grid-column: 2; justify-self: stretch; width: auto; min-width: 0; margin: 4px 0 0; }
       #menu > .item.cont { padding-top: 7px; padding-bottom: 7px; }   /* v118: CONTINUE, FROM WORLD, DAILY and MENU fit the column without a scroll */
       #menu > .item.small { align-self: start; }
       #menu > .hint { grid-row: 6; }
       #menu .stack .item.big { min-height: 64px; padding: 10px 14px; margin: 4px 0; }
       #menu .stack .item.big .label { font-size: 19px; letter-spacing: .18em; }
-      #menu .stack .item.hard { margin: 1px auto; }
-      #menu .logo { width: min(29vw, 176px); margin: 0 auto 0; }
+      #menu .logo { width: min(29vw, 158px); margin: 0 auto 0; }   /* v156: 176 → 158, so the tidied title fits a phone held sideways */
       #menu .item { margin: 4px 0; }
       #menu .hint { margin-top: 4px; }
       /* the campaign's six rows fit a phone held sideways without scrolling */
@@ -294,7 +316,7 @@
   <div id="card" hidden><div class="t"></div><div class="s"></div><div class="n"></div></div>
   <div id="vignette" aria-hidden="true"></div>
   <div id="menu" class="menu" hidden></div>
-  <div id="ver">2.0 · v155<span id="backend"></span></div>
+  <div id="ver">2.0 · v156<span id="backend"></span></div>
   <pre id="fault" hidden></pre>
   <script>
     // A failure must be visible on the phone: there is no console there.
@@ -414,6 +436,6 @@
       document.head.appendChild(shell);
     }
   </script>
-  <script type="module" src="js/main.js?v=155"></script>
+  <script type="module" src="js/main.js?v=156"></script>
 </body>
 </html>
