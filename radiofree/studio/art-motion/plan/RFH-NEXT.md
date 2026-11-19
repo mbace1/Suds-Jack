@@ -1438,10 +1438,17 @@ scheduled task's last fire was 13 Nov 05:16), so **Give Way had no Tuesday-morni
 - **Due:** today, ANT first trade and Protective Fence 26 begins; 7 Dec, DRAM answers.
 - **Could not verify:** hs.fi; HB 2014's enrolled text; Fundamental Data's response; comment counts.
 
-## Check Thu 19 Nov 17:16 (evening; PARTIAL: the search tool hit its usage limit, resets 16:10 UTC)
-- **Anthropic IPO:** $83 pricing (CNBC 18 Nov) unchallenged; first-day trade figures not found. The pinned-reply draft
-  for The Round Trip still stands and still waits for Mikael's OK.
-- **Films in progress:** A "Who Wrote the Bill?" re-rendering (captions v1.2, fit fix); B "Not Yet Listed" scene
-  written, stills next; C "Due 13 Nov" plan only. **No new facts checked for A, B or C this round** (search down).
-- **Films now wrong:** none known; not re-verified this check.
-- **Carry over to 20 Nov 07:16:** full global + Finnish sweeps, A/B/C fact checks, ANT first-day close.
+## Check Thu 19 Nov 17:16 (evening; search summaries only)
+- **Anthropic IPO:** $83 (CNBC 18 Nov) stands; ANT first-day close not yet available (US close 23:00 Helsinki). The
+  Round Trip pinned-reply draft still waits for Mikael's OK.
+- **A "Who Wrote the Bill?" (built, preview sent): no fact it depends on has changed.** The company's denial is now
+  also in Country Roads ("Fundamental Data Distances Itself…"); McGavran's line matches NC Newsline; no certification
+  filing found. Nothing to fix.
+- **B "Not Yet Listed": FIX BEFORE STILLS.** The register is still a **bill** (HE 282/2026, target 1 Apr 2027), not
+  law: "Finland will list its data centers" states a forecast as fact. Suggest "Finland plans to list…" or a tag
+  "GOVERNMENT BILL HE 282/2026 · NOT YET PASSED". Summaries reported as quarterly — check the "You get a summary"
+  tag wording. 0.5 MW still thinly sourced.
+- **C "Due 13 Nov":** still no OpenAI reply found; the premise holds.
+- **Posted films now wrong:** none found.
+- **Due:** tonight, ANT first-day close; 7 Dec, DRAM answers.
+

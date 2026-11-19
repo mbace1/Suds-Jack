@@ -1532,6 +1532,15 @@ Search summaries only; nothing opened. One device each, from STORY-DEVICES.md or
   LVV suspension and police preliminary probe already logged).
 - **Reactions (Trade Secret/Hamina, Count the Trees/Muhos):** nothing new; comment counts not visible to search.
 
-## Check Thu 19 Nov 17:16 (evening; NOT RUN: search tool usage limit hit, resets 16:10 UTC)
-- No Finnish sweep this check: HS, Yle, secondaries, the data-centre register (Huoltovarmuuskeskus, ≥0.5 MW,
-  1 Apr 2027 — film B), Jokela, Muhos, Hamina, Lapinlahti reactions. Carry over to 20 Nov 07:16.
+## Check Thu 19 Nov 17:16 (evening; search summaries only; hs.fi refuses the search tool)
+- **HS:** no new item found. **Secondaries:** nothing dated November surfaced for data centres (latest: Statistics
+  Finland's September building-permit release naming Seinäjoki, Kouvola and Akaa; Valorem/Savonlinna 21 Sep; already
+  context only).
+- **The data-centre register (film B "Not Yet Listed") — CHECK BEFORE STILLS:** it is **government bill HE 282/2026**
+  (laki datakeskusrekisteristä), target entry into force **1.4.2027**; operators notify **Huoltovarmuuskeskus**, which
+  keeps the register and publishes a public summary (one summary says **quarterly**). **No committee report or plenary
+  decision found** — the bill is not yet law. The ≥0.5 MW threshold is still sourced to one (Russian-language) report
+  plus the bill PDF unopened. [edilex HE 282/2026](https://www.edilex.fi/he/20260282), [Mondaq](https://www.mondaq.com/technology/1843818/finland-proposes-a-new-data-centre-register-draft-legislation-open-for-comments)
+- **Jokela, Muhos, Hamina, Lapinlahti:** nothing new found.
+- **Reactions (Trade Secret/Hamina, Count the Trees/Muhos):** nothing new; comment counts not visible to search.
+

@@ -1819,9 +1819,30 @@ Everything below comes from search summaries. No article was opened.
   letter: still none found. DRAM answers due 7 Dec.
 - **Reactions:** comment counts not visible to search.
 
-## Check Thu 19 Nov 17:16 (evening; PARTIAL: the search tool hit its usage limit after one query, resets 16:10 UTC)
-- **Anthropic (ANT):** the one query that ran returned only pre-listing coverage: listing on the Nasdaq Global Select
-  Market on Thu 19 Nov; up to 316M Class A shares may be sold by insiders on day one (pre-IPO reporting). **First-day
-  open/close: not found.** The $83 pricing (CNBC, 18 Nov) stands; no correction to it seen.
-- **Not run this check:** Tucker County / Fundamental Data / HB 2014 (film A), OpenAI's answer to the 29 Oct House
-  letter (film C), NDA towns, military AI, GPU/DRAM, whistleblowers. Carry over to the 20 Nov 07:16 check.
+## Check Thu 19 Nov 17:16 (evening; search summaries only; run after a search usage limit lifted at 16:10 UTC)
+- **Anthropic (ANT):** listed on the Nasdaq Global Select Market today; **first-day open/close not yet in search** (US
+  close is 23:00 Helsinki). The $83 pricing (CNBC 18 Nov) stands; nothing contradicts it. Pre-IPO reporting: up to 316M
+  Class A shares may be sold by insiders on day one. [StockTitan live page](https://www.stocktitan.net/articles/anthropic-ipo-live-ant-first-trading-day-2026)
+- **Tucker County / Fundamental Data (film A "Who Wrote the Bill?") — nothing moves the film:**
+  - Country Roads: "Fundamental Data Distances Itself From Engineer's Comments About Legislation" — a company
+    spokesperson: it "did not draft, write, or play any role in drafting HB 2014"; the governor's office says drafting was
+    limited to the governor's office. Matches the film's denial cards. [Country Roads](https://countryroads.substack.com/p/fundamental-data-distances-itself)
+  - NC Newsline: "Fundamental Data worker says company wrote WV data center law, urges project guardrails in own town"
+    (McGavran at Belmont, N.C.) — consistent with the film's QUOTE card. [NC Newsline](https://ncnewsline.com/?p=193624)
+  - HB 2014's preemption as quoted again: counties/municipalities may not enact rules that "limit, in any way, the
+    creation of … and operation of any certified microgrid district or certified high impact data center project".
+  - Context (not in the film): Senate President Randy Smith told residents there will be "a lot of changes" to HB 2014
+    (Country Roads); opponents plan reform pushes for the 2027 session (WV Highlands Conservancy, July update); a
+    Commerce letter said it found no Tucker County property owned by Fundamental Data or affiliates (via search).
+  - Certification status: no new filing found; the film's "no certification application filed yet" tag still stands
+    as of this search (not re-verified at the state office).
+- **OpenAI / the 29 Oct House letter (film C "Due 13 Nov"):** still **no reply found**, six days past the deadline.
+  Coverage re-confirms 20 signers, Rep. Greg Casar leading, 11 sets of questions, the researchers Korbak, Balesni and
+  Wang, and OpenAI's public line that they were fired for breaking its rules on sensitive information, not for raising
+  safety concerns. [Nextgov](https://nextgov.com/artificial-intelligence/2026/10/democrats-press-openai-over-safety-researcher-firings-security-incidents/416954),
+  [TNW](https://thenextweb.com/news/openai-whistleblowers-house-democrats-casar-letter)
+- **NDA towns:** nothing dated November beyond what is logged. **Military AI:** nothing new dated 18–19 Nov (one
+  newsletter dated 14 Nov lists Pentagon awards to Anthropic, Scale AI, Shield AI and Anduril, no dates — unverified).
+  **DRAM/GPU:** nothing new; DRAM answers due 7 Dec. **Whistleblower Act:** not enacted.
+- **Reactions:** no new official responses found; comment counts not visible to search.
+
