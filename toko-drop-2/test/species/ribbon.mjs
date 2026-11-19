@@ -6,10 +6,10 @@
 // independent model of 1.x's `_arcSteer` and `_updateRibbon` — and its look
 // against a real three.
 import { readFileSync } from 'node:fs';
-import { createWorld, step, api } from '../../js/sim/world.js?v=156';
-import { TUNING as T } from '../../js/tuning.js?v=156';
-import behaviour from '../../js/sim/species/ribbon.js?v=156';
-import look from '../../js/render/looks/ribbon.js?v=156';
+import { createWorld, step, api } from '../../js/sim/world.js?v=157';
+import { TUNING as T } from '../../js/tuning.js?v=157';
+import behaviour from '../../js/sim/species/ribbon.js?v=157';
+import look from '../../js/render/looks/ribbon.js?v=157';
 import * as THREE from '../../vendor/three/three.webgpu.js?v=r186';
 
 let failed = 0, passed = 0;

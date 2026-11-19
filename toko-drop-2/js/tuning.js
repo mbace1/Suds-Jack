@@ -7,10 +7,10 @@
 // things that work"). The arena is 1.x's, so every 1.x number ports as it is
 // instead of through a rescale. Axes: x across the screen (right +), y up,
 // z toward the bottom of the screen. The arena is centred on the origin.
-import { SPECIES } from './tuning/species/index.js?v=156';
-import WAVES from './tuning/waves.js?v=156';
-import PICKUPS from './tuning/pickups.js?v=156';
-import MUSIC from './tuning/music.js?v=156';
+import { SPECIES } from './tuning/species/index.js?v=157';
+import WAVES from './tuning/waves.js?v=157';
+import PICKUPS from './tuning/pickups.js?v=157';
+import MUSIC from './tuning/music.js?v=157';
 
 export const TUNING = {
   render: {
@@ -1350,6 +1350,12 @@ export const TUNING = {
   //   quota    — put down `kills` bodies; the room ends the moment you do
   //   flawless — one hit ends the room
   // `name` is 1.x's depth look the world played in (its rule comes later).
+  // v157 (owner, 19 Nov, after room 1: "They shouldn't spawn too close and also could avoid the direction of
+  // movement slightly"): where a campaign body arrives (sim/fairspawn.js). `clear` u from the hero at least; while
+  // the hero moves faster than `moving` u/s, not inside `ahead.cone` rad either side of its heading out to
+  // `ahead.range` u. An unfair point moves to its nearest fair mirror or turn. `on: false` is v156 (?fair=off)
+  fairSpawn: { on: true, clear: 5, moving: 1.5, ahead: { cone: 0.6, range: 9 } },
+
   campaign: {
     worlds: [
       // `base` / `gridHi` are the floor's own colours (sRGB 0..1, 1.x verbatim), `rule` the one mechanic (TUNING.campaign.rules)

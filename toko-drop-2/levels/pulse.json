@@ -265,17 +265,17 @@
   }
  ],
  "tiers": {
-  "S": 43000,
-  "A": 32000,
-  "B": 29000,
-  "C": 20000,
-  "source": "bot pass (v56 look-ahead bots), 24 seeds a skill: got through sharp 100%, average 100%, rough 71%. score lines: S the sharp median, A the average median, B the average's weaker quarter, C the rough median or the average's weakest tenth (scripts/lines.mjs). v135 (the owner's C-line rule, 2026-11-10): C at the rough bot's lower quartile, 24,000 → 20,000"
+  "S": 47000,
+  "A": 33000,
+  "B": 30000,
+  "C": 23000,
+  "source": "bot pass (v56 look-ahead bots; v157: sideways and upright, each line the lower), 24 seeds a skill an orientation: got through sharp 100%, average 96%, rough 58%. score lines: S the sharp median, A the average median, B the average's weaker quarter, C the rough median or the average's weakest tenth (scripts/lines.mjs)"
  },
  "tiersHard": {
-  "S": 67000,
-  "A": 51000,
-  "B": 46000,
-  "C": 37000,
-  "source": "HARD bot pass (v56 look-ahead bots), 24 seeds a skill: got through sharp 100%, average 96%, rough 29%. score lines: S the sharp median, A the average median, B the average's weaker quarter, C the rough median or the average's weakest tenth (scripts/lines.mjs)"
+  "S": 66000,
+  "A": 47000,
+  "B": 42000,
+  "C": 38000,
+  "source": "HARD bot pass (v56 look-ahead bots; v157: sideways and upright, each line the lower), 24 seeds a skill an orientation: got through sharp 100%, average 88%, rough 4%. score lines: S the sharp median, A the average median, B the average's weaker quarter, C the rough median or the average's weakest tenth (scripts/lines.mjs)"
  }
 }

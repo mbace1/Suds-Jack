@@ -12,23 +12,26 @@
 // and w.over, as a death does. What the room ASKS — its goal and its mods —
 // is sim/challenge.js (CAMPAIGN_PLAN.md); `fail` is a room whose clock ran
 // out on a goal it did not meet. Every number is TUNING.campaign.
-import { TUNING } from '../../tuning.js?v=156';
-import * as challenge from '../challenge.js?v=156';
-import * as heat from '../heat.js?v=156';
+import { fairPoint } from '../fairspawn.js?v=157';
+import { TUNING } from '../../tuning.js?v=157';
+import * as challenge from '../challenge.js?v=157';
+import * as heat from '../heat.js?v=157';
 
-const T = TUNING, C = T.campaign, ORDER = ['F', 'C', 'B', 'A', 'S'];
+const T = TUNING, C = T.campaign, ORDER = ['F', 'D', 'C', 'B', 'A', 'S'];   // v157: D, a clear under C
 
 // the bodies a room offers (pickups are not bodies)
 export const roomBodies = (level) => level.spawns.filter((s) => s.kind !== 'pickup').length;
 
 // the grade (v51): a room is graded on its SCORE. Anything but a clear is F
 // (dying, the heart, the orbs, the clock on a goal); a clear is graded
-// against the room's score lines — under C is still an F (owner, 2026-10-27:
-// "F is a small but still challenging score").
+// against the room's score lines. v157 (owner, 19 Nov: "F likely for first 2 or so tries, the D and C.. only after
+// really great runs should get B, A, and really practice gets you an S"): a clear under C is a D, where it was an F
+// (2026-10-27's "F is a small but still challenging score"), so F is the tries that did not get through, D is
+// getting through, and the lines above it are the climb.
 export function grade(room, level, result) {
   if (result.outcome !== 'clear') return 'F';
   const L = tiersFor(room, level), s = result.score ?? 0;
-  return s >= L.S ? 'S' : s >= L.A ? 'A' : s >= L.B ? 'B' : s >= L.C ? 'C' : 'F';
+  return s >= L.S ? 'S' : s >= L.A ? 'A' : s >= L.B ? 'B' : s >= L.C ? 'C' : 'D';
 }
 
 // the lines a room is graded against, in points (the room card shows them):
@@ -46,8 +49,9 @@ export function onCourse(w) {
   const R = w.room;
   if (!R || !w.dir) return null;
   const H = tiersFor(R, R.level), s = w.score + (w.pot || 0);
-  const at = ['S', 'A', 'B', 'C'].find((g) => s >= H[g]) ?? 'F';
-  const up = { F: 'C', C: 'B', B: 'A', A: 'S' }[at];
+  // (under C a run still going is on course for a D: through the room is a D, v157)
+  const at = ['S', 'A', 'B', 'C'].find((g) => s >= H[g]) ?? 'D';
+  const up = { D: 'C', C: 'B', B: 'A', A: 'S' }[at];
   return { grade: at, next: up ?? null, need: up ? H[up] - s : 0 };
 }
 
@@ -89,7 +93,9 @@ export default {
       const o = { speedMult: s.speedMult, intervalMult: s.intervalMult, variant: s.elite ? 'elite' : 'normal' };
       if (s.boss) { o.isBoss = true; const S = T.species[s.kind]; o.hp = S.bossHp ?? (S.noHpMult ? S.hp : Math.ceil(S.hp * T.waves.boss.hpMult)); }
       if (s.hp) o.hp = s.hp;   // a room's own number for a body (a boss sized for the room)
-      const g = api.spawn(w, s.kind, s.x, s.z, o);
+      // v157: not on top of the hero, nor just ahead of where it is going (sim/fairspawn.js); a boss as its room put it
+      const p = s.boss ? s : fairPoint(w, s.x, s.z);
+      const g = api.spawn(w, s.kind, p.x, p.z, o);
       api.clamp(w, g);
       challenge.onSpawn(w, g, s);
     }
@@ -118,7 +124,6 @@ export function end(w, outcome) {
   result.value = w.score;
   result.why = outcome === 'clear' ? null : w.ch?.why ?? (outcome === 'fail' ? 'clock' : 'died');
   const g = grade(R, R.level, result);
-  if (outcome === 'clear' && g === 'F') result.why = 'score';   // through the room, under its C line
   w.roomResult = { id: R.id, grade: g, ...result };
   w.events.push({ type: 'roomEnd', id: R.id, grade: g, ...result });
   w.over = true;

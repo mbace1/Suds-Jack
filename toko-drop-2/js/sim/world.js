@@ -14,24 +14,25 @@
 // moves, then everything is tested, against post-move positions.
 //
 // Modes: 'arcade', 'hardcade' (corpses fire back) and 'survival'.
-import { TUNING } from '../tuning.js?v=156';
-import { press, pressReset } from './press.js?v=156';
-import { makeRng } from './rng.js?v=156';
-import { BEHAVIOUR } from './species/index.js?v=156';
-import { DIRECTORS } from './director/index.js?v=156';
-import * as fire from './fire.js?v=156';
-import { makeHero, heroStep, applyPull, hurtHero, invincible } from './hero.js?v=156';
-import { swarmForces, resolveCrowd } from './crowd.js?v=156';
-import { revengeColor } from './color.js?v=156';
-import * as pickups from './pickups.js?v=156';
-import * as worlds from './worlds.js?v=156';
-import * as reshape from './reshape.js?v=156';
-import { Arena, levelShape, levelMoves, levelEnvelope, KIND } from './shape.js?v=156';
-import * as rules from './rules.js?v=156';
-import * as heat from './heat.js?v=156';
-import * as formation from './formation.js?v=156';
-import * as posts from './posts.js?v=156';
-import * as slam from './slam.js?v=156';
+import { TUNING } from '../tuning.js?v=157';
+import { press, pressReset } from './press.js?v=157';
+import { makeRng } from './rng.js?v=157';
+import { BEHAVIOUR } from './species/index.js?v=157';
+import { armoured } from './species/bosskit.js?v=157';
+import { DIRECTORS } from './director/index.js?v=157';
+import * as fire from './fire.js?v=157';
+import { makeHero, heroStep, applyPull, hurtHero, invincible } from './hero.js?v=157';
+import { swarmForces, resolveCrowd } from './crowd.js?v=157';
+import { revengeColor } from './color.js?v=157';
+import * as pickups from './pickups.js?v=157';
+import * as worlds from './worlds.js?v=157';
+import * as reshape from './reshape.js?v=157';
+import { Arena, levelShape, levelMoves, levelEnvelope, KIND } from './shape.js?v=157';
+import * as rules from './rules.js?v=157';
+import * as heat from './heat.js?v=157';
+import * as formation from './formation.js?v=157';
+import * as posts from './posts.js?v=157';
+import * as slam from './slam.js?v=157';
 
 const T = TUNING;
 
@@ -281,6 +282,8 @@ function gelStep(w, g, dt) {
   g.vx = g.vz = 0;
   // v106: a body riding a formation (an escort's mite) is moved by it, not by its species
   if (!(g.form && formation.ride(w, g, dt, api))) BEHAVIOUR[g.kind].step(w, g, dt, api);
+  // v157: a STRATEGIC boss says whether it is open, for its ring (render/looks/bossaura.js); null for any other
+  if (g.isBoss) g.s.armour = BEHAVIOUR[g.kind].open ? armoured(w, g, BEHAVIOUR[g.kind]) : null;
   if (!g.alive) return;
   if (g.size === 5) slam.step(w, g, dt, api);   // v112: a giant's own attack (sim/slam.js)
   const fr = Math.exp(-T.gel.knockFriction * dt);
@@ -496,6 +499,8 @@ function heroBulletsHit(w) {
       if (res === 'pass') continue;
       b.dead = true;
       if (res === 'block' || g.shield) { w.events.push({ type: 'block', x: b.x, z: b.z, id: g.id, by: res === 'block' ? 'plate' : 'aura' }); break; }
+      // v157: a STRATEGIC boss outside its window (tuning/bosskinds.js): the shot clinks off
+      if (armoured(w, g, B)) { w.events.push({ type: 'block', x: b.x, z: b.z, id: g.id, by: 'armour' }); break; }
       g.hp -= T.bullets.heroDamage;
       g.flash = T.gel.flash;
       g.sqV += T.gel.sq.hit;

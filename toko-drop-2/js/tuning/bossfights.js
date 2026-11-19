@@ -4,5 +4,5 @@
 // boss down. S is the sharp bot's median, A the average bot's, B the rough
 // bot's, as the campaign's rooms are (scripts/room-tiers.mjs), with the same
 // floor between the steps. Do not edit by hand: run the pass.
-// 10 seeds a cell, 2026-10-28.
-export const BOSS_TIERS = { "1": { "prism": { "S": 10, "A": 12, "B": 17.8 } }, "2": { "curbking": { "S": 30.3, "A": 38, "B": 41 } }, "3": { "maw": { "S": 15.3, "A": 17.6, "B": 19.7 } }, "4": { "blister": { "S": 17.7, "A": 19.7, "B": 21.7 } }, "5": { "kettle": { "S": 28.3, "A": 31.1, "B": 33.9 } }, "6": { "pike": { "S": 19.6, "A": 21.6, "B": 23.6 } }, "7": { "berg": { "S": 22.7, "A": 28.7, "B": 31 } }, "8": { "angler": { "S": 25.1, "A": 27.6, "B": 31.3 } }, "9": { "omega": { "S": 30.1, "A": 33.1, "B": 36.1 } } };
+// 12 seeds a cell, 2026-11-19.
+export const BOSS_TIERS = { "1": { "prism": { "S": 20.7, "A": 22.8, "B": 24.9 } }, "2": { "curbking": { "S": 29.1, "A": 32, "B": 34.9 } }, "3": { "maw": { "S": 23.8, "A": 26.2, "B": 28.6 } }, "4": { "blister": { "S": 24.7, "A": 27.2, "B": 29.7 } }, "5": { "kettle": { "S": 28.9, "A": 31.8, "B": 34.7 } }, "6": { "pike": { "S": 29.3, "A": 32.2, "B": 35.1 } }, "7": { "berg": { "S": 25.4, "A": 27.9, "B": 30.4 } }, "8": { "angler": { "S": 29.6, "A": 33.8, "B": 36.8 } }, "9": { "omega": { "S": 31.1, "A": 34.2, "B": 37.3 } } };

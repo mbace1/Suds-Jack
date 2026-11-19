@@ -5,12 +5,12 @@
 // stages as seams, a quota's line, a floor's size as it moves, and the clock
 // speeding up. And the ROUTE: every room's difficulty as one line, each
 // room a dot in the colour of the grade you have paid on it.
-import { TUNING } from './tuning.js?v=156';
-import { speciesOf, goalOf, modsOf } from './sim/challenge.js?v=156';
-import { levelShape } from './sim/shape.js?v=156';
+import { TUNING } from './tuning.js?v=157';
+import { speciesOf, goalOf, modsOf } from './sim/challenge.js?v=157';
+import { levelShape } from './sim/shape.js?v=157';
 
 const T = TUNING;
-export const GRADE_COLORS = { S: '#ffdd44', A: '#66ffcc', B: '#88ccff', C: '#bbbbdd', F: '#ff6655' };
+export const GRADE_COLORS = { S: '#ffdd44', A: '#66ffcc', B: '#88ccff', C: '#bbbbdd', D: '#c9a27a', F: '#ff6655' };   // v157: D, through under C
 const hex = (n) => `#${(n >>> 0).toString(16).padStart(6, '0')}`;
 
 function canvas(w, h) {

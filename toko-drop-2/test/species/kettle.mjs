@@ -3,7 +3,7 @@
 // pressure, vents jets that turn and steam where it stands, and every second
 // vent stalls red-hot, when a shot does double.
 import { checker, arena, common } from '../lib/boss.mjs';
-import BEH from '../../js/sim/species/kettle.js?v=156';
+import BEH from '../../js/sim/species/kettle.js?v=157';
 const K = 'kettle', { check, done } = checker(K);
 const { S } = common(K, 5, { check });
 {
