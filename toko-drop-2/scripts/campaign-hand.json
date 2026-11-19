@@ -1,0 +1,5122 @@
+[
+ {
+  "format": 2,
+  "id": "first-light",
+  "name": "FIRST LIGHT",
+  "arena": {
+   "shapes": [
+    {
+     "kind": "rect",
+     "hx": 14,
+     "hz": 8
+    }
+   ]
+  },
+  "duration": 30,
+  "goal": {
+   "type": "survive"
+  },
+  "plan": {
+   "world": 0,
+   "d": 1,
+   "teaches": "wave 1: the next front does not wait",
+   "strategy": [
+    "aim"
+   ]
+  },
+  "spawns": [
+   {
+    "t": 0,
+    "type": "GLOBBO",
+    "px": 12.4,
+    "pz": -3.56
+   },
+   {
+    "t": 0.12,
+    "type": "GLOBBO",
+    "px": 12.4,
+    "pz": 0
+   },
+   {
+    "t": 0.24,
+    "type": "GLOBBO",
+    "px": 12.4,
+    "pz": 3.56
+   },
+   {
+    "t": 0.4,
+    "type": "GLOBBO",
+    "px": -12.4,
+    "pz": 3.56
+   },
+   {
+    "t": 0.52,
+    "type": "GLOBBO",
+    "px": -12.4,
+    "pz": 0
+   },
+   {
+    "t": 0.64,
+    "type": "GLOBBO",
+    "px": -12.4,
+    "pz": -3.56
+   },
+   {
+    "t": 1.2,
+    "type": "GLOBBO",
+    "px": -5.18,
+    "pz": 6.4
+   },
+   {
+    "t": 1.32,
+    "type": "GLOBBO",
+    "px": -9.14,
+    "pz": 6.4
+   },
+   {
+    "t": 2.45,
+    "type": "GLOBBO",
+    "px": -0.45,
+    "pz": -6.4
+   },
+   {
+    "t": 2.57,
+    "type": "GLOBBO",
+    "px": 1.36,
+    "pz": -6.4
+   },
+   {
+    "t": 3.7,
+    "type": "GLOBBO",
+    "px": 6.86,
+    "pz": 6.4
+   },
+   {
+    "t": 3.82,
+    "type": "GLOBBO",
+    "px": 3.85,
+    "pz": 6.4
+   },
+   {
+    "t": 4.95,
+    "type": "GLOBBO",
+    "px": -12.4,
+    "pz": 0
+   },
+   {
+    "t": 5.07,
+    "type": "GLOBBO",
+    "px": -12.4,
+    "pz": -3.56
+   },
+   {
+    "t": 6.2,
+    "type": "GLOBBO",
+    "px": 5.18,
+    "pz": -6.4
+   },
+   {
+    "t": 6.32,
+    "type": "GLOBBO",
+    "px": 9.14,
+    "pz": -6.4
+   },
+   {
+    "t": 6.44,
+    "type": "GLOBBO",
+    "px": 12.4,
+    "pz": -4.27
+   },
+   {
+    "t": 7.45,
+    "type": "GLOBBO",
+    "px": 0.45,
+    "pz": 6.4
+   },
+   {
+    "t": 7.57,
+    "type": "GLOBBO",
+    "px": -1.36,
+    "pz": 6.4
+   },
+   {
+    "t": 7.69,
+    "type": "GLOBBO",
+    "px": -3.4,
+    "pz": 6.4
+   },
+   {
+    "t": 8.7,
+    "type": "GLOBBO",
+    "px": -6.86,
+    "pz": -6.4
+   },
+   {
+    "t": 8.82,
+    "type": "GLOBBO",
+    "px": -3.85,
+    "pz": -6.4
+   },
+   {
+    "t": 8.94,
+    "type": "GLOBBO",
+    "px": -1.71,
+    "pz": -6.4
+   },
+   {
+    "t": 9.95,
+    "type": "GLOBBO",
+    "px": 12.4,
+    "pz": 0
+   },
+   {
+    "t": 10.07,
+    "type": "GLOBBO",
+    "px": 12.4,
+    "pz": 3.56
+   },
+   {
+    "t": 10.19,
+    "type": "GLOBBO",
+    "px": 10.24,
+    "pz": 6.4
+   },
+   {
+    "t": 11.2,
+    "type": "GLOBBO",
+    "px": -6.86,
+    "pz": 6.4
+   },
+   {
+    "t": 11.32,
+    "type": "YELA_CUBE",
+    "px": -12.4,
+    "pz": 6.32
+   },
+   {
+    "t": 11.44,
+    "type": "GLOBBO",
+    "px": -12.4,
+    "pz": 2.41
+   },
+   {
+    "t": 12.45,
+    "type": "GLOBBO",
+    "px": -0.45,
+    "pz": -6.4
+   },
+   {
+    "t": 12.57,
+    "type": "GLOBBO",
+    "px": 1.36,
+    "pz": -6.4
+   },
+   {
+    "t": 12.69,
+    "type": "GLOBBO",
+    "px": 3.4,
+    "pz": -6.4
+   },
+   {
+    "t": 12.81,
+    "type": "GLOBBO",
+    "px": 6.18,
+    "pz": -6.4
+   },
+   {
+    "t": 13.7,
+    "type": "GLOBBO",
+    "px": 6.86,
+    "pz": 6.4
+   },
+   {
+    "t": 13.82,
+    "type": "GLOBBO",
+    "px": 3.85,
+    "pz": 6.4
+   },
+   {
+    "t": 13.94,
+    "type": "YELA_CUBE",
+    "px": 1.71,
+    "pz": 6.4
+   },
+   {
+    "t": 14.06,
+    "type": "GLOBBO",
+    "px": -0.11,
+    "pz": 6.4
+   },
+   {
+    "t": 14.95,
+    "type": "GLOBBO",
+    "px": -12.4,
+    "pz": 0
+   },
+   {
+    "t": 15.07,
+    "type": "GLOBBO",
+    "px": -12.4,
+    "pz": -3.56
+   },
+   {
+    "t": 15.19,
+    "type": "GLOBBO",
+    "px": -10.24,
+    "pz": -6.4
+   },
+   {
+    "t": 15.31,
+    "type": "GLOBBO",
+    "px": -5.76,
+    "pz": -6.4
+   },
+   {
+    "t": 16.2,
+    "type": "GLOBBO",
+    "px": 6.86,
+    "pz": -6.4
+   },
+   {
+    "t": 16.32,
+    "type": "GLOBBO",
+    "px": 12.4,
+    "pz": -6.32
+   },
+   {
+    "t": 16.44,
+    "type": "YELA_CUBE",
+    "px": 12.4,
+    "pz": -2.41
+   },
+   {
+    "t": 16.56,
+    "type": "GLOBBO",
+    "px": 12.4,
+    "pz": 1.08
+   },
+   {
+    "t": 17.45,
+    "type": "GLOBBO",
+    "px": -0.45,
+    "pz": 6.4
+   },
+   {
+    "t": 17.57,
+    "type": "GLOBBO",
+    "px": -2.33,
+    "pz": 6.4
+   },
+   {
+    "t": 17.69,
+    "type": "GLOBBO",
+    "px": -4.65,
+    "pz": 6.4
+   },
+   {
+    "t": 17.81,
+    "type": "GLOBBO",
+    "px": -8.19,
+    "pz": 6.4
+   },
+   {
+    "t": 18.7,
+    "type": "GLOBBO",
+    "px": -5.18,
+    "pz": -6.4
+   },
+   {
+    "t": 18.82,
+    "type": "GLOBBO",
+    "px": -2.72,
+    "pz": -6.4
+   },
+   {
+    "t": 18.94,
+    "type": "YELA_CUBE",
+    "px": -0.79,
+    "pz": -6.4
+   },
+   {
+    "t": 19.06,
+    "type": "GLOBBO",
+    "px": 1.01,
+    "pz": -6.4
+   },
+   {
+    "t": 19.95,
+    "type": "GLOBBO",
+    "px": 12.4,
+    "pz": 1.74
+   },
+   {
+    "t": 20.07,
+    "type": "GLOBBO",
+    "px": 12.4,
+    "pz": 5.52
+   },
+   {
+    "t": 20.19,
+    "type": "GLOBBO",
+    "px": 7.63,
+    "pz": 6.4
+   },
+   {
+    "t": 20.31,
+    "type": "GLOBBO",
+    "px": 4.32,
+    "pz": 6.4
+   },
+   {
+    "t": 21.2,
+    "type": "GLOBBO",
+    "px": -9.14,
+    "pz": 6.4
+   },
+   {
+    "t": 21.32,
+    "type": "GLOBBO",
+    "px": -12.4,
+    "pz": 4.27
+   },
+   {
+    "t": 21.44,
+    "type": "YELA_CUBE",
+    "px": -12.4,
+    "pz": 0.65
+   },
+   {
+    "t": 21.56,
+    "type": "GLOBBO",
+    "px": -12.4,
+    "pz": -2.86
+   },
+   {
+    "t": 23,
+    "type": "GLOBBO",
+    "px": 12.4,
+    "pz": 0
+   },
+   {
+    "t": 23,
+    "type": "GLOBBO",
+    "px": 0,
+    "pz": 6.4
+   },
+   {
+    "t": 23,
+    "type": "GLOBBO",
+    "px": -12.4,
+    "pz": 0
+   },
+   {
+    "t": 23,
+    "type": "GLOBBO",
+    "px": 0,
+    "pz": -6.4
+   },
+   {
+    "t": 23.1,
+    "type": "GLOBBO",
+    "px": 6.4,
+    "pz": 6.4
+   },
+   {
+    "t": 23.1,
+    "type": "GLOBBO",
+    "px": -6.4,
+    "pz": 6.4
+   },
+   {
+    "t": 23.1,
+    "type": "GLOBBO",
+    "px": -6.4,
+    "pz": -6.4
+   },
+   {
+    "t": 23.1,
+    "type": "GLOBBO",
+    "px": 6.4,
+    "pz": -6.4
+   },
+   {
+    "t": 24.5,
+    "type": "YELA_CUBE",
+    "px": 12.4,
+    "pz": 5.01
+   },
+   {
+    "t": 24.5,
+    "type": "GLOBBO",
+    "px": -2.59,
+    "pz": 6.4
+   },
+   {
+    "t": 24.5,
+    "type": "GLOBBO",
+    "px": -12.4,
+    "pz": -5.01
+   },
+   {
+    "t": 24.5,
+    "type": "GLOBBO",
+    "px": 2.59,
+    "pz": -6.4
+   },
+   {
+    "t": 24.6,
+    "type": "YELA_CUBE",
+    "px": 2.72,
+    "pz": 6.4
+   },
+   {
+    "t": 24.6,
+    "type": "GLOBBO",
+    "px": -12.4,
+    "pz": 5.26
+   },
+   {
+    "t": 24.6,
+    "type": "GLOBBO",
+    "px": -2.72,
+    "pz": -6.4
+   },
+   {
+    "t": 24.6,
+    "type": "GLOBBO",
+    "px": 12.4,
+    "pz": -5.26
+   },
+   {
+    "t": 26,
+    "type": "GLOBBO",
+    "px": 6.4,
+    "pz": 6.4
+   },
+   {
+    "t": 26,
+    "type": "GLOBBO",
+    "px": -12.4,
+    "pz": 3.32
+   },
+   {
+    "t": 26,
+    "type": "GLOBBO",
+    "px": 1.71,
+    "pz": -6.4
+   },
+   {
+    "t": 26.1,
+    "type": "GLOBBO",
+    "px": -1.71,
+    "pz": 6.4
+   },
+   {
+    "t": 26.1,
+    "type": "GLOBBO",
+    "px": -6.4,
+    "pz": -6.4
+   },
+   {
+    "t": 26.1,
+    "type": "GLOBBO",
+    "px": 12.4,
+    "pz": -3.32
+   },
+   {
+    "t": 27.4,
+    "type": "GLOBBO",
+    "px": 0,
+    "pz": 6.4
+   },
+   {
+    "t": 27.4,
+    "type": "GLOBBO",
+    "px": 0,
+    "pz": -6.4
+   },
+   {
+    "t": 27.5,
+    "type": "GLOBBO",
+    "px": -12.4,
+    "pz": 0
+   },
+   {
+    "t": 27.5,
+    "type": "GLOBBO",
+    "px": 12.4,
+    "pz": 0
+   }
+  ],
+  "hard": {
+   "cap": 12,
+   "others": 0.5
+  }
+ },
+ {
+  "format": 2,
+  "id": "three-rings",
+  "name": "THREE RINGS",
+  "arena": {
+   "combine": "union",
+   "shapes": [
+    {
+     "kind": "circle",
+     "c": [
+      -11,
+      0
+     ],
+     "r": 7
+    },
+    {
+     "kind": "circle",
+     "c": [
+      0,
+      0
+     ],
+     "r": 7
+    },
+    {
+     "kind": "circle",
+     "c": [
+      11,
+      0
+     ],
+     "r": 7
+    }
+   ]
+  },
+  "duration": 35,
+  "goal": {
+   "type": "survive"
+  },
+  "plan": {
+   "world": 0,
+   "d": 3,
+   "teaches": "shooters first: the one that fires, before the ones that walk",
+   "strategy": [
+    "priority"
+   ]
+  },
+  "spawns": [
+   {
+    "t": 0,
+    "type": "SPITTOR",
+    "px": -15.5,
+    "pz": 2,
+    "intervalMult": 2.6
+   },
+   {
+    "t": 1.2,
+    "type": "GLOBBO",
+    "px": -9,
+    "pz": -2.2
+   },
+   {
+    "t": 1.65,
+    "type": "GLOBBO",
+    "px": -10.2,
+    "pz": 0
+   },
+   {
+    "t": 2.1,
+    "type": "GLOBBO",
+    "px": -9,
+    "pz": 2.2
+   },
+   {
+    "t": 2.6,
+    "type": "SPITTOR",
+    "px": 15.5,
+    "pz": -2,
+    "intervalMult": 2.6
+   },
+   {
+    "t": 3.8,
+    "type": "GLOBBO",
+    "px": 9,
+    "pz": -2.2
+   },
+   {
+    "t": 4.25,
+    "type": "GLOBBO",
+    "px": 10.2,
+    "pz": 0
+   },
+   {
+    "t": 4.7,
+    "type": "GLOBBO",
+    "px": 9,
+    "pz": 2.2
+   },
+   {
+    "t": 5.2,
+    "type": "FANNER",
+    "px": -15.5,
+    "pz": -1,
+    "intervalMult": 3.2
+   },
+   {
+    "t": 6.4,
+    "type": "GLOBBO",
+    "px": -9,
+    "pz": -2.2
+   },
+   {
+    "t": 6.85,
+    "type": "YELA_CUBE",
+    "px": -10.2,
+    "pz": 0
+   },
+   {
+    "t": 7.3,
+    "type": "GLOBBO",
+    "px": -9,
+    "pz": 2.2
+   },
+   {
+    "t": 7.8,
+    "type": "FANNER",
+    "px": 15.5,
+    "pz": 1,
+    "intervalMult": 3.2
+   },
+   {
+    "t": 9,
+    "type": "GLOBBO",
+    "px": 9,
+    "pz": -2.2
+   },
+   {
+    "t": 9.45,
+    "type": "YELA_CUBE",
+    "px": 10.2,
+    "pz": 0
+   },
+   {
+    "t": 9.9,
+    "type": "GLOBBO",
+    "px": 9,
+    "pz": 2.2
+   },
+   {
+    "t": 10.4,
+    "type": "SPITTOR",
+    "px": -15.5,
+    "pz": 0,
+    "intervalMult": 2.6
+   },
+   {
+    "t": 11.6,
+    "type": "YELA_CUBE",
+    "px": -9,
+    "pz": -2.2
+   },
+   {
+    "t": 12.05,
+    "type": "GLOBBO",
+    "px": -10.2,
+    "pz": 0
+   },
+   {
+    "t": 12.5,
+    "type": "YELA_CUBE",
+    "px": -9,
+    "pz": 2.2
+   },
+   {
+    "t": 13.2,
+    "type": "FANNER",
+    "px": 15.5,
+    "pz": 0,
+    "intervalMult": 3.2
+   },
+   {
+    "t": 14.4,
+    "type": "GLOBBO",
+    "px": 9,
+    "pz": -3.3
+   },
+   {
+    "t": 14.85,
+    "type": "YELA_CUBE",
+    "px": 10.2,
+    "pz": -1.1
+   },
+   {
+    "t": 15.3,
+    "type": "GLOBBO",
+    "px": 9,
+    "pz": 1.1
+   },
+   {
+    "t": 15.75,
+    "type": "YELA_CUBE",
+    "px": 10.2,
+    "pz": 3.3
+   },
+   {
+    "t": 16.2,
+    "type": "FANNER",
+    "px": -15.5,
+    "pz": 2,
+    "intervalMult": 3.2
+   },
+   {
+    "t": 17.4,
+    "type": "YELA_CUBE",
+    "px": -9,
+    "pz": -3.3
+   },
+   {
+    "t": 17.85,
+    "type": "GLOBBO",
+    "px": -10.2,
+    "pz": -1.1
+   },
+   {
+    "t": 18.3,
+    "type": "YELA_CUBE",
+    "px": -9,
+    "pz": 1.1
+   },
+   {
+    "t": 18.75,
+    "type": "GLOBBO",
+    "px": -10.2,
+    "pz": 3.3
+   },
+   {
+    "t": 19.4,
+    "type": "SPITTOR",
+    "px": 15.5,
+    "pz": -2,
+    "intervalMult": 2.6
+   },
+   {
+    "t": 20.6,
+    "type": "GLOBBO",
+    "px": 9,
+    "pz": -3.3
+   },
+   {
+    "t": 21.05,
+    "type": "YELA_CUBE",
+    "px": 10.2,
+    "pz": -1.1
+   },
+   {
+    "t": 21.5,
+    "type": "GLOBBO",
+    "px": 9,
+    "pz": 1.1
+   },
+   {
+    "t": 21.95,
+    "type": "YELA_CUBE",
+    "px": 10.2,
+    "pz": 3.3
+   },
+   {
+    "t": 22.5,
+    "type": "SPITTOR",
+    "px": -15.5,
+    "pz": -2,
+    "intervalMult": 2.6
+   },
+   {
+    "t": 23.1,
+    "type": "FANNER",
+    "px": 15.5,
+    "pz": 2,
+    "intervalMult": 3.2
+   },
+   {
+    "t": 23.7,
+    "type": "GLOBBO",
+    "px": -9,
+    "pz": -2.2
+   },
+   {
+    "t": 24.15,
+    "type": "YELA_CUBE",
+    "px": -10.2,
+    "pz": 0
+   },
+   {
+    "t": 24.3,
+    "type": "YELA_CUBE",
+    "px": 9,
+    "pz": -2.2
+   },
+   {
+    "t": 24.6,
+    "type": "GLOBBO",
+    "px": -9,
+    "pz": 2.2
+   },
+   {
+    "t": 24.75,
+    "type": "GLOBBO",
+    "px": 10.2,
+    "pz": 0
+   },
+   {
+    "t": 25.2,
+    "type": "YELA_CUBE",
+    "px": 9,
+    "pz": 2.2
+   },
+   {
+    "t": 26.8,
+    "type": "FANNER",
+    "px": -15.5,
+    "pz": 2,
+    "intervalMult": 3.2
+   },
+   {
+    "t": 27.4,
+    "type": "SPITTOR",
+    "px": 15.5,
+    "pz": -2,
+    "intervalMult": 2.6
+   },
+   {
+    "t": 28,
+    "type": "GLOBBO",
+    "px": -9,
+    "pz": -3.3
+   },
+   {
+    "t": 28.45,
+    "type": "YELA_CUBE",
+    "px": -10.2,
+    "pz": -1.1
+   },
+   {
+    "t": 28.6,
+    "type": "YELA_CUBE",
+    "px": 9,
+    "pz": -3.3
+   },
+   {
+    "t": 28.9,
+    "type": "GLOBBO",
+    "px": -9,
+    "pz": 1.1
+   },
+   {
+    "t": 29.05,
+    "type": "GLOBBO",
+    "px": 10.2,
+    "pz": -1.1
+   },
+   {
+    "t": 29.35,
+    "type": "YELA_CUBE",
+    "px": -10.2,
+    "pz": 3.3
+   },
+   {
+    "t": 29.5,
+    "type": "YELA_CUBE",
+    "px": 9,
+    "pz": 1.1
+   },
+   {
+    "t": 29.95,
+    "type": "GLOBBO",
+    "px": 10.2,
+    "pz": 3.3
+   },
+   {
+    "t": 30.6,
+    "type": "FANNER",
+    "px": -15.5,
+    "pz": 0,
+    "intervalMult": 3.2
+   },
+   {
+    "t": 31,
+    "type": "FANNER",
+    "px": 15.5,
+    "pz": 0,
+    "intervalMult": 3.2
+   },
+   {
+    "t": 31.8,
+    "type": "GLOBBO",
+    "px": -9,
+    "pz": -4.4
+   },
+   {
+    "t": 32.2,
+    "type": "YELA_CUBE",
+    "px": 9,
+    "pz": -4.4
+   },
+   {
+    "t": 32.25,
+    "type": "YELA_CUBE",
+    "px": -10.2,
+    "pz": -2.2
+   },
+   {
+    "t": 32.65,
+    "type": "GLOBBO",
+    "px": 10.2,
+    "pz": -2.2
+   },
+   {
+    "t": 32.7,
+    "type": "GLOBBO",
+    "px": -9,
+    "pz": 0
+   },
+   {
+    "t": 33.1,
+    "type": "YELA_CUBE",
+    "px": 9,
+    "pz": 0
+   },
+   {
+    "t": 33.15,
+    "type": "YELA_CUBE",
+    "px": -10.2,
+    "pz": 2.2
+   },
+   {
+    "t": 33.55,
+    "type": "GLOBBO",
+    "px": 10.2,
+    "pz": 2.2
+   },
+   {
+    "t": 33.6,
+    "type": "GLOBBO",
+    "px": -9,
+    "pz": 4.4
+   },
+   {
+    "t": 34,
+    "type": "YELA_CUBE",
+    "px": 9,
+    "pz": 4.4
+   }
+  ]
+ },
+ {
+  "format": 2,
+  "id": "high-ground",
+  "name": "HIGH GROUND",
+  "arena": {
+   "shapes": [
+    {
+     "kind": "rect",
+     "hx": 15,
+     "hz": 9
+    }
+   ]
+  },
+  "duration": 45,
+  "goal": {
+   "type": "hills",
+   "zones": [
+    {
+     "x": -8,
+     "z": -3,
+     "r": 2.2
+    },
+    {
+     "x": 8,
+     "z": 3,
+     "r": 2.1
+    },
+    {
+     "x": 0,
+     "z": 0,
+     "r": 2,
+     "orbit": {
+      "r": 6,
+      "period": 14,
+      "phase": 2.6
+     }
+    },
+    {
+     "x": 0,
+     "z": 0,
+     "r": 1.9,
+     "orbit": {
+      "r": 6,
+      "period": 10,
+      "phase": 0
+     }
+    },
+    {
+     "x": 0,
+     "z": 0,
+     "r": 1.8,
+     "orbit": {
+      "r": 5,
+      "period": 7.5,
+      "phase": 3.14
+     }
+    }
+   ],
+   "need": 4.2,
+   "drain": 3
+  },
+  "plan": {
+   "world": 0,
+   "d": 2,
+   "teaches": "where to stand",
+   "strategy": [
+    "position"
+   ]
+  },
+  "spawns": [
+   {
+    "t": 0,
+    "type": "GLOBBO",
+    "px": -14.2,
+    "pz": -5.17
+   },
+   {
+    "t": 0.5,
+    "type": "GLOBBO",
+    "px": -14.2,
+    "pz": -3.02
+   },
+   {
+    "t": 0.5,
+    "type": "GLOBBO",
+    "px": 14.2,
+    "pz": 7.55
+   },
+   {
+    "t": 1,
+    "type": "GLOBBO",
+    "px": -14.2,
+    "pz": -0.99
+   },
+   {
+    "t": 1,
+    "type": "GLOBBO",
+    "px": 14.2,
+    "pz": 7.55
+   },
+   {
+    "t": 3,
+    "type": "YELA_CUBE",
+    "px": 14.2,
+    "pz": 4.61,
+    "elite": true
+   },
+   {
+    "t": 3.4,
+    "type": "GLOBBO",
+    "px": 14.2,
+    "pz": 2.5
+   },
+   {
+    "t": 3.8,
+    "type": "YELA_CUBE",
+    "px": 14.2,
+    "pz": 2.5,
+    "elite": true
+   },
+   {
+    "t": 4.2,
+    "type": "GLOBBO",
+    "px": 14.2,
+    "pz": 4.61
+   },
+   {
+    "t": 5.5,
+    "type": "GLOBBO",
+    "px": -3.82,
+    "pz": 8.2
+   },
+   {
+    "t": 5.9,
+    "type": "GLOBBO",
+    "px": 0,
+    "pz": 8.2
+   },
+   {
+    "t": 6.3,
+    "type": "GLOBBO",
+    "px": 3.82,
+    "pz": 8.2
+   },
+   {
+    "t": 6.5,
+    "type": "GLOBBO",
+    "px": 3.82,
+    "pz": -8.2
+   },
+   {
+    "t": 6.9,
+    "type": "GLOBBO",
+    "px": 0,
+    "pz": -8.2
+   },
+   {
+    "t": 7.3,
+    "type": "GLOBBO",
+    "px": -3.82,
+    "pz": -8.2
+   },
+   {
+    "t": 9,
+    "type": "YELA_CUBE",
+    "px": -14.2,
+    "pz": 3.54,
+    "elite": true
+   },
+   {
+    "t": 9.4,
+    "type": "GLOBBO",
+    "px": -14.2,
+    "pz": 6.03
+   },
+   {
+    "t": 9.8,
+    "type": "YELA_CUBE",
+    "px": -14.2,
+    "pz": 5.17
+   },
+   {
+    "t": 10.2,
+    "type": "YELA_CUBE",
+    "px": -14.2,
+    "pz": 4.34,
+    "elite": true
+   },
+   {
+    "t": 10.6,
+    "type": "GLOBBO",
+    "px": -14.2,
+    "pz": 6.93
+   },
+   {
+    "t": 12,
+    "type": "GLOBBO",
+    "px": -3.82,
+    "pz": 8.2
+   },
+   {
+    "t": 12.4,
+    "type": "YELA_CUBE",
+    "px": 1.2,
+    "pz": 8.2
+   },
+   {
+    "t": 12.5,
+    "type": "GLOBBO",
+    "px": 3.82,
+    "pz": -8.2
+   },
+   {
+    "t": 12.8,
+    "type": "GLOBBO",
+    "px": 1.2,
+    "pz": 8.2
+   },
+   {
+    "t": 12.9,
+    "type": "GLOBBO",
+    "px": 0,
+    "pz": -8.2
+   },
+   {
+    "t": 13.2,
+    "type": "YELA_CUBE",
+    "px": -3.82,
+    "pz": 8.2
+   },
+   {
+    "t": 13.3,
+    "type": "GLOBBO",
+    "px": -3.82,
+    "pz": -8.2
+   },
+   {
+    "t": 15,
+    "type": "YELA_CUBE",
+    "px": 14.2,
+    "pz": -3.54,
+    "elite": true
+   },
+   {
+    "t": 15.4,
+    "type": "GLOBBO",
+    "px": 14.2,
+    "pz": -6.2
+   },
+   {
+    "t": 15.8,
+    "type": "YELA_CUBE",
+    "px": 14.2,
+    "pz": -4.83
+   },
+   {
+    "t": 16.2,
+    "type": "YELA_CUBE",
+    "px": 14.2,
+    "pz": -4.83,
+    "elite": true
+   },
+   {
+    "t": 16.6,
+    "type": "GLOBBO",
+    "px": 14.2,
+    "pz": -6.2
+   },
+   {
+    "t": 17,
+    "type": "YELA_CUBE",
+    "px": 14.2,
+    "pz": -3.54
+   },
+   {
+    "t": 18,
+    "type": "GLOBBO",
+    "px": 3.82,
+    "pz": -8.2
+   },
+   {
+    "t": 18.4,
+    "type": "YELA_CUBE",
+    "px": -1.2,
+    "pz": -8.2
+   },
+   {
+    "t": 18.5,
+    "type": "GLOBBO",
+    "px": -3.82,
+    "pz": 8.2
+   },
+   {
+    "t": 18.8,
+    "type": "GLOBBO",
+    "px": -1.2,
+    "pz": -8.2
+   },
+   {
+    "t": 18.9,
+    "type": "GLOBBO",
+    "px": 0,
+    "pz": 8.2
+   },
+   {
+    "t": 19.2,
+    "type": "YELA_CUBE",
+    "px": 3.82,
+    "pz": -8.2
+   },
+   {
+    "t": 19.3,
+    "type": "GLOBBO",
+    "px": 3.82,
+    "pz": 8.2
+   },
+   {
+    "t": 21,
+    "type": "GLOBBO",
+    "px": 14.2,
+    "pz": 1.49
+   },
+   {
+    "t": 21,
+    "type": "GLOBBO",
+    "px": -0.86,
+    "pz": 8.2
+   },
+   {
+    "t": 21,
+    "type": "GLOBBO",
+    "px": -14.2,
+    "pz": -1.49
+   },
+   {
+    "t": 21,
+    "type": "GLOBBO",
+    "px": 0.86,
+    "pz": -8.2
+   },
+   {
+    "t": 21.4,
+    "type": "YELA_CUBE",
+    "px": 14.2,
+    "pz": 0,
+    "elite": true
+   },
+   {
+    "t": 21.4,
+    "type": "YELA_CUBE",
+    "px": 0,
+    "pz": 8.2,
+    "elite": true
+   },
+   {
+    "t": 21.4,
+    "type": "YELA_CUBE",
+    "px": -14.2,
+    "pz": 0,
+    "elite": true
+   },
+   {
+    "t": 21.4,
+    "type": "YELA_CUBE",
+    "px": 0,
+    "pz": -8.2,
+    "elite": true
+   },
+   {
+    "t": 21.8,
+    "type": "GLOBBO",
+    "px": 14.2,
+    "pz": -1.49
+   },
+   {
+    "t": 21.8,
+    "type": "GLOBBO",
+    "px": 0.86,
+    "pz": 8.2
+   },
+   {
+    "t": 21.8,
+    "type": "GLOBBO",
+    "px": -14.2,
+    "pz": 1.49
+   },
+   {
+    "t": 21.8,
+    "type": "GLOBBO",
+    "px": -0.86,
+    "pz": -8.2
+   },
+   {
+    "t": 25,
+    "type": "GLOBBO",
+    "px": 5.74,
+    "pz": 8.2
+   },
+   {
+    "t": 25.35,
+    "type": "YELA_CUBE",
+    "px": 10.13,
+    "pz": 8.2
+   },
+   {
+    "t": 25.5,
+    "type": "GLOBBO",
+    "px": -5.74,
+    "pz": -8.2
+   },
+   {
+    "t": 25.7,
+    "type": "GLOBBO",
+    "px": 7.65,
+    "pz": 8.2
+   },
+   {
+    "t": 25.85,
+    "type": "YELA_CUBE",
+    "px": -10.13,
+    "pz": -8.2
+   },
+   {
+    "t": 26.05,
+    "type": "YELA_CUBE",
+    "px": 7.65,
+    "pz": 8.2
+   },
+   {
+    "t": 26.2,
+    "type": "GLOBBO",
+    "px": -7.65,
+    "pz": -8.2
+   },
+   {
+    "t": 26.4,
+    "type": "GLOBBO",
+    "px": 10.13,
+    "pz": 8.2
+   },
+   {
+    "t": 26.55,
+    "type": "YELA_CUBE",
+    "px": -7.65,
+    "pz": -8.2
+   },
+   {
+    "t": 26.75,
+    "type": "YELA_CUBE",
+    "px": 5.74,
+    "pz": 8.2
+   },
+   {
+    "t": 26.9,
+    "type": "GLOBBO",
+    "px": -10.13,
+    "pz": -8.2
+   },
+   {
+    "t": 27.25,
+    "type": "YELA_CUBE",
+    "px": -5.74,
+    "pz": -8.2
+   },
+   {
+    "t": 29,
+    "type": "GLOBBO",
+    "px": -11.71,
+    "pz": 8.2
+   },
+   {
+    "t": 29.35,
+    "type": "YELA_CUBE",
+    "px": -6.64,
+    "pz": 8.2,
+    "elite": true
+   },
+   {
+    "t": 29.5,
+    "type": "GLOBBO",
+    "px": 11.71,
+    "pz": -8.2
+   },
+   {
+    "t": 29.7,
+    "type": "YELA_CUBE",
+    "px": -8.79,
+    "pz": 8.2
+   },
+   {
+    "t": 29.85,
+    "type": "YELA_CUBE",
+    "px": 6.64,
+    "pz": -8.2,
+    "elite": true
+   },
+   {
+    "t": 30.05,
+    "type": "GLOBBO",
+    "px": -8.79,
+    "pz": 8.2
+   },
+   {
+    "t": 30.2,
+    "type": "YELA_CUBE",
+    "px": 8.79,
+    "pz": -8.2
+   },
+   {
+    "t": 30.4,
+    "type": "YELA_CUBE",
+    "px": -6.64,
+    "pz": 8.2,
+    "elite": true
+   },
+   {
+    "t": 30.55,
+    "type": "GLOBBO",
+    "px": 8.79,
+    "pz": -8.2
+   },
+   {
+    "t": 30.75,
+    "type": "YELA_CUBE",
+    "px": -11.71,
+    "pz": 8.2
+   },
+   {
+    "t": 30.9,
+    "type": "YELA_CUBE",
+    "px": 6.64,
+    "pz": -8.2,
+    "elite": true
+   },
+   {
+    "t": 31.25,
+    "type": "YELA_CUBE",
+    "px": 11.71,
+    "pz": -8.2
+   },
+   {
+    "t": 33,
+    "type": "GLOBBO",
+    "px": 14.2,
+    "pz": 2.5
+   },
+   {
+    "t": 33.35,
+    "type": "YELA_CUBE",
+    "px": 14.2,
+    "pz": -1.49
+   },
+   {
+    "t": 33.5,
+    "type": "GLOBBO",
+    "px": -14.2,
+    "pz": -2.5
+   },
+   {
+    "t": 33.7,
+    "type": "GLOBBO",
+    "px": 14.2,
+    "pz": 0.5
+   },
+   {
+    "t": 33.85,
+    "type": "YELA_CUBE",
+    "px": -14.2,
+    "pz": 1.49
+   },
+   {
+    "t": 34.05,
+    "type": "YELA_CUBE",
+    "px": 14.2,
+    "pz": 0.5
+   },
+   {
+    "t": 34.2,
+    "type": "GLOBBO",
+    "px": -14.2,
+    "pz": -0.5
+   },
+   {
+    "t": 34.4,
+    "type": "GLOBBO",
+    "px": 14.2,
+    "pz": -1.49
+   },
+   {
+    "t": 34.55,
+    "type": "YELA_CUBE",
+    "px": -14.2,
+    "pz": -0.5
+   },
+   {
+    "t": 34.75,
+    "type": "YELA_CUBE",
+    "px": 14.2,
+    "pz": 2.5
+   },
+   {
+    "t": 34.9,
+    "type": "GLOBBO",
+    "px": -14.2,
+    "pz": 1.49
+   },
+   {
+    "t": 35.25,
+    "type": "YELA_CUBE",
+    "px": -14.2,
+    "pz": -2.5
+   },
+   {
+    "t": 37,
+    "type": "GLOBBO",
+    "px": -1.45,
+    "pz": 8.2
+   },
+   {
+    "t": 37.35,
+    "type": "YELA_CUBE",
+    "px": 0.86,
+    "pz": 8.2,
+    "elite": true
+   },
+   {
+    "t": 37.5,
+    "type": "GLOBBO",
+    "px": 1.45,
+    "pz": -8.2
+   },
+   {
+    "t": 37.7,
+    "type": "YELA_CUBE",
+    "px": -0.29,
+    "pz": 8.2
+   },
+   {
+    "t": 37.85,
+    "type": "YELA_CUBE",
+    "px": -0.86,
+    "pz": -8.2,
+    "elite": true
+   },
+   {
+    "t": 38.05,
+    "type": "GLOBBO",
+    "px": -0.29,
+    "pz": 8.2
+   },
+   {
+    "t": 38.2,
+    "type": "YELA_CUBE",
+    "px": 0.29,
+    "pz": -8.2
+   },
+   {
+    "t": 38.4,
+    "type": "YELA_CUBE",
+    "px": 0.86,
+    "pz": 8.2,
+    "elite": true
+   },
+   {
+    "t": 38.55,
+    "type": "GLOBBO",
+    "px": 0.29,
+    "pz": -8.2
+   },
+   {
+    "t": 38.75,
+    "type": "YELA_CUBE",
+    "px": -1.45,
+    "pz": 8.2
+   },
+   {
+    "t": 38.9,
+    "type": "YELA_CUBE",
+    "px": -0.86,
+    "pz": -8.2,
+    "elite": true
+   },
+   {
+    "t": 39.25,
+    "type": "YELA_CUBE",
+    "px": 1.45,
+    "pz": -8.2
+   }
+  ]
+ },
+ {
+  "format": 2,
+  "id": "first-swarm",
+  "name": "THE POUR",
+  "arena": {
+   "shapes": [
+    {
+     "kind": "rect",
+     "hx": 16,
+     "hz": 9.5
+    }
+   ]
+  },
+  "duration": 40,
+  "goal": {
+   "type": "survive"
+  },
+  "plan": {
+   "world": 0,
+   "d": 4,
+   "teaches": "the swarm wave",
+   "strategy": [
+    "aim"
+   ]
+  },
+  "spawns": [
+   {
+    "t": 0,
+    "type": "GLOBBO",
+    "px": 14.6,
+    "pz": -5.2
+   },
+   {
+    "t": 0.2,
+    "type": "GLOBBO",
+    "px": 14.6,
+    "pz": -3.6
+   },
+   {
+    "t": 0.4,
+    "type": "GLOBBO",
+    "px": 14.6,
+    "pz": -2
+   },
+   {
+    "t": 0.6,
+    "type": "GLOBBO",
+    "px": 14.6,
+    "pz": -0.4
+   },
+   {
+    "t": 0.8,
+    "type": "GLOBBO",
+    "px": 14.6,
+    "pz": 1.2
+   },
+   {
+    "t": 1.8,
+    "type": "GLOBBO",
+    "px": -14.6,
+    "pz": -1.2
+   },
+   {
+    "t": 2,
+    "type": "GLOBBO",
+    "px": -14.6,
+    "pz": 0.4
+   },
+   {
+    "t": 2.2,
+    "type": "GLOBBO",
+    "px": -14.6,
+    "pz": 2
+   },
+   {
+    "t": 2.4,
+    "type": "GLOBBO",
+    "px": -14.6,
+    "pz": 3.6
+   },
+   {
+    "t": 2.6,
+    "type": "GLOBBO",
+    "px": -14.6,
+    "pz": 5.2
+   },
+   {
+    "t": 3.6,
+    "type": "GLOBBO",
+    "px": -1,
+    "pz": -8.1
+   },
+   {
+    "t": 3.8,
+    "type": "GLOBBO",
+    "px": 0.6,
+    "pz": -8.1
+   },
+   {
+    "t": 4,
+    "type": "GLOBBO",
+    "px": 2.2,
+    "pz": -8.1
+   },
+   {
+    "t": 4.2,
+    "type": "GLOBBO",
+    "px": 3.8,
+    "pz": -8.1
+   },
+   {
+    "t": 4.4,
+    "type": "GLOBBO",
+    "px": 5.4,
+    "pz": -8.1
+   },
+   {
+    "t": 4.6,
+    "type": "GLOBBO",
+    "px": 7,
+    "pz": -8.1
+   },
+   {
+    "t": 5.4,
+    "type": "GLOBBO",
+    "px": -7,
+    "pz": 8.1
+   },
+   {
+    "t": 5.6,
+    "type": "GLOBBO",
+    "px": -5.4,
+    "pz": 8.1
+   },
+   {
+    "t": 5.8,
+    "type": "GLOBBO",
+    "px": -3.8,
+    "pz": 8.1
+   },
+   {
+    "t": 6,
+    "type": "GLOBBO",
+    "px": -2.2,
+    "pz": 8.1
+   },
+   {
+    "t": 6.2,
+    "type": "GLOBBO",
+    "px": -0.6,
+    "pz": 8.1
+   },
+   {
+    "t": 6.4,
+    "type": "GLOBBO",
+    "px": 1,
+    "pz": 8.1
+   },
+   {
+    "t": 7.2,
+    "type": "GLOBBO",
+    "px": 14.6,
+    "pz": -2
+   },
+   {
+    "t": 7.4,
+    "type": "GLOBBO",
+    "px": 14.6,
+    "pz": -0.4
+   },
+   {
+    "t": 7.6,
+    "type": "YELA_CUBE",
+    "px": 14.6,
+    "pz": 1.2
+   },
+   {
+    "t": 7.8,
+    "type": "GLOBBO",
+    "px": 14.6,
+    "pz": 2.8
+   },
+   {
+    "t": 8,
+    "type": "GLOBBO",
+    "px": 14.6,
+    "pz": 4.4
+   },
+   {
+    "t": 8.2,
+    "type": "YELA_CUBE",
+    "px": 14.6,
+    "pz": 6
+   },
+   {
+    "t": 9,
+    "type": "GLOBBO",
+    "px": -14.6,
+    "pz": -6
+   },
+   {
+    "t": 9.2,
+    "type": "GLOBBO",
+    "px": -14.6,
+    "pz": -4.4
+   },
+   {
+    "t": 9.4,
+    "type": "YELA_CUBE",
+    "px": -14.6,
+    "pz": -2.8
+   },
+   {
+    "t": 9.6,
+    "type": "GLOBBO",
+    "px": -14.6,
+    "pz": -1.2
+   },
+   {
+    "t": 9.8,
+    "type": "GLOBBO",
+    "px": -14.6,
+    "pz": 0.4
+   },
+   {
+    "t": 10,
+    "type": "YELA_CUBE",
+    "px": -14.6,
+    "pz": 2
+   },
+   {
+    "t": 11,
+    "type": "FANNER",
+    "px": 0,
+    "pz": -8.1,
+    "intervalMult": 1.6
+   },
+   {
+    "t": 11,
+    "type": "GLOBBO",
+    "px": -1,
+    "pz": 8.1,
+    "speedMult": 1.1
+   },
+   {
+    "t": 11.14,
+    "type": "YELA_CUBE",
+    "px": 0.6,
+    "pz": 8.1,
+    "speedMult": 1.1
+   },
+   {
+    "t": 11.28,
+    "type": "GLOBBO",
+    "px": 2.2,
+    "pz": 8.1,
+    "speedMult": 1.1
+   },
+   {
+    "t": 11.42,
+    "type": "YELA_CUBE",
+    "px": 3.8,
+    "pz": 8.1,
+    "speedMult": 1.1
+   },
+   {
+    "t": 11.56,
+    "type": "GLOBBO",
+    "px": 5.4,
+    "pz": 8.1,
+    "speedMult": 1.1
+   },
+   {
+    "t": 11.7,
+    "type": "YELA_CUBE",
+    "px": 7,
+    "pz": 8.1,
+    "speedMult": 1.1
+   },
+   {
+    "t": 13.2,
+    "type": "GLOBBO",
+    "px": 14.6,
+    "pz": -2,
+    "speedMult": 1.1
+   },
+   {
+    "t": 13.34,
+    "type": "GLOBBO",
+    "px": 14.6,
+    "pz": -0.4,
+    "speedMult": 1.1
+   },
+   {
+    "t": 13.48,
+    "type": "YELA_CUBE",
+    "px": 14.6,
+    "pz": 1.2,
+    "speedMult": 1.1
+   },
+   {
+    "t": 13.62,
+    "type": "GLOBBO",
+    "px": 14.6,
+    "pz": 2.8,
+    "speedMult": 1.1
+   },
+   {
+    "t": 13.76,
+    "type": "GLOBBO",
+    "px": 14.6,
+    "pz": 4.4,
+    "speedMult": 1.1
+   },
+   {
+    "t": 13.9,
+    "type": "YELA_CUBE",
+    "px": 14.6,
+    "pz": 6,
+    "speedMult": 1.1
+   },
+   {
+    "t": 15.4,
+    "type": "GLOBBO",
+    "px": -14.6,
+    "pz": -5.8,
+    "speedMult": 1.1
+   },
+   {
+    "t": 15.54,
+    "type": "YELA_CUBE",
+    "px": -14.6,
+    "pz": -4.2,
+    "speedMult": 1.1
+   },
+   {
+    "t": 15.68,
+    "type": "GLOBBO",
+    "px": -14.6,
+    "pz": -2.6,
+    "speedMult": 1.1
+   },
+   {
+    "t": 15.82,
+    "type": "YELA_CUBE",
+    "px": -14.6,
+    "pz": -1,
+    "speedMult": 1.1
+   },
+   {
+    "t": 15.96,
+    "type": "GLOBBO",
+    "px": -14.6,
+    "pz": 0.6,
+    "speedMult": 1.1
+   },
+   {
+    "t": 16.1,
+    "type": "YELA_CUBE",
+    "px": -14.6,
+    "pz": 2.2,
+    "speedMult": 1.1
+   },
+   {
+    "t": 16.24,
+    "type": "GLOBBO",
+    "px": -14.6,
+    "pz": 3.8,
+    "speedMult": 1.1
+   },
+   {
+    "t": 17.6,
+    "type": "GLOBBO",
+    "px": -9.8,
+    "pz": -8.1,
+    "speedMult": 1.1
+   },
+   {
+    "t": 17.74,
+    "type": "GLOBBO",
+    "px": -8.2,
+    "pz": -8.1,
+    "speedMult": 1.1
+   },
+   {
+    "t": 17.88,
+    "type": "YELA_CUBE",
+    "px": -6.6,
+    "pz": -8.1,
+    "speedMult": 1.1
+   },
+   {
+    "t": 18.02,
+    "type": "GLOBBO",
+    "px": -5,
+    "pz": -8.1,
+    "speedMult": 1.1
+   },
+   {
+    "t": 18.16,
+    "type": "GLOBBO",
+    "px": -3.4,
+    "pz": -8.1,
+    "speedMult": 1.1
+   },
+   {
+    "t": 18.3,
+    "type": "YELA_CUBE",
+    "px": -1.8,
+    "pz": -8.1,
+    "speedMult": 1.1
+   },
+   {
+    "t": 18.44,
+    "type": "GLOBBO",
+    "px": -0.2,
+    "pz": -8.1,
+    "speedMult": 1.1
+   },
+   {
+    "t": 19.8,
+    "type": "GLOBBO",
+    "px": 14.6,
+    "pz": -6.8,
+    "speedMult": 1.1
+   },
+   {
+    "t": 19.94,
+    "type": "reddmini",
+    "px": 14.6,
+    "pz": -5.2,
+    "speedMult": 1.1
+   },
+   {
+    "t": 20.08,
+    "type": "GLOBBO",
+    "px": 14.6,
+    "pz": -3.6,
+    "speedMult": 1.1
+   },
+   {
+    "t": 20.22,
+    "type": "reddmini",
+    "px": 14.6,
+    "pz": -2,
+    "speedMult": 1.1
+   },
+   {
+    "t": 20.36,
+    "type": "GLOBBO",
+    "px": 14.6,
+    "pz": -0.4,
+    "speedMult": 1.1
+   },
+   {
+    "t": 20.5,
+    "type": "reddmini",
+    "px": 14.6,
+    "pz": 1.2,
+    "speedMult": 1.1
+   },
+   {
+    "t": 20.64,
+    "type": "GLOBBO",
+    "px": 14.6,
+    "pz": 2.8,
+    "speedMult": 1.1
+   },
+   {
+    "t": 22,
+    "type": "GLOBBO",
+    "px": -2.8,
+    "pz": 8.1,
+    "speedMult": 1.1
+   },
+   {
+    "t": 22.14,
+    "type": "YELA_CUBE",
+    "px": -1.2,
+    "pz": 8.1,
+    "speedMult": 1.1
+   },
+   {
+    "t": 22.28,
+    "type": "reddmini",
+    "px": 0.4,
+    "pz": 8.1,
+    "speedMult": 1.1
+   },
+   {
+    "t": 22.42,
+    "type": "GLOBBO",
+    "px": 2,
+    "pz": 8.1,
+    "speedMult": 1.1
+   },
+   {
+    "t": 22.56,
+    "type": "YELA_CUBE",
+    "px": 3.6,
+    "pz": 8.1,
+    "speedMult": 1.1
+   },
+   {
+    "t": 22.7,
+    "type": "reddmini",
+    "px": 5.2,
+    "pz": 8.1,
+    "speedMult": 1.1
+   },
+   {
+    "t": 22.84,
+    "type": "GLOBBO",
+    "px": 6.8,
+    "pz": 8.1,
+    "speedMult": 1.1
+   },
+   {
+    "t": 24.2,
+    "type": "GLOBBO",
+    "px": -14.6,
+    "pz": -4.8,
+    "speedMult": 1.1
+   },
+   {
+    "t": 24.34,
+    "type": "YELA_CUBE",
+    "px": -14.6,
+    "pz": -3.2,
+    "speedMult": 1.1
+   },
+   {
+    "t": 24.48,
+    "type": "reddmini",
+    "px": -14.6,
+    "pz": -1.6,
+    "speedMult": 1.1
+   },
+   {
+    "t": 24.62,
+    "type": "GLOBBO",
+    "px": -14.6,
+    "pz": 0,
+    "speedMult": 1.1
+   },
+   {
+    "t": 24.76,
+    "type": "YELA_CUBE",
+    "px": -14.6,
+    "pz": 1.6,
+    "speedMult": 1.1
+   },
+   {
+    "t": 24.9,
+    "type": "reddmini",
+    "px": -14.6,
+    "pz": 3.2,
+    "speedMult": 1.1
+   },
+   {
+    "t": 25.04,
+    "type": "GLOBBO",
+    "px": -14.6,
+    "pz": 4.8,
+    "speedMult": 1.1
+   },
+   {
+    "t": 26,
+    "type": "GLOBBO",
+    "px": 14.6,
+    "pz": -3,
+    "speedMult": 1.2
+   },
+   {
+    "t": 26,
+    "type": "GLOBBO",
+    "px": -14.6,
+    "pz": -5,
+    "speedMult": 1.2
+   },
+   {
+    "t": 26.14,
+    "type": "reddmini",
+    "px": 14.6,
+    "pz": -1.4,
+    "speedMult": 1.2
+   },
+   {
+    "t": 26.14,
+    "type": "reddmini",
+    "px": -14.6,
+    "pz": -3.4,
+    "speedMult": 1.2
+   },
+   {
+    "t": 26.28,
+    "type": "GLOBBO",
+    "px": 14.6,
+    "pz": 0.2,
+    "speedMult": 1.2
+   },
+   {
+    "t": 26.28,
+    "type": "GLOBBO",
+    "px": -14.6,
+    "pz": -1.8,
+    "speedMult": 1.2
+   },
+   {
+    "t": 26.42,
+    "type": "reddmini",
+    "px": 14.6,
+    "pz": 1.8,
+    "speedMult": 1.2
+   },
+   {
+    "t": 26.42,
+    "type": "reddmini",
+    "px": -14.6,
+    "pz": -0.2,
+    "speedMult": 1.2
+   },
+   {
+    "t": 26.56,
+    "type": "GLOBBO",
+    "px": 14.6,
+    "pz": 3.4,
+    "speedMult": 1.2
+   },
+   {
+    "t": 26.56,
+    "type": "GLOBBO",
+    "px": -14.6,
+    "pz": 1.4,
+    "speedMult": 1.2
+   },
+   {
+    "t": 26.7,
+    "type": "reddmini",
+    "px": 14.6,
+    "pz": 5,
+    "speedMult": 1.2
+   },
+   {
+    "t": 26.7,
+    "type": "reddmini",
+    "px": -14.6,
+    "pz": 3,
+    "speedMult": 1.2
+   },
+   {
+    "t": 29,
+    "type": "GLOBBO",
+    "px": -4,
+    "pz": -8.1,
+    "speedMult": 1.2
+   },
+   {
+    "t": 29,
+    "type": "GLOBBO",
+    "px": -4,
+    "pz": 8.1,
+    "speedMult": 1.2
+   },
+   {
+    "t": 29.14,
+    "type": "YELA_CUBE",
+    "px": -2.4,
+    "pz": -8.1,
+    "speedMult": 1.2
+   },
+   {
+    "t": 29.14,
+    "type": "YELA_CUBE",
+    "px": -2.4,
+    "pz": 8.1,
+    "speedMult": 1.2
+   },
+   {
+    "t": 29.28,
+    "type": "reddmini",
+    "px": -0.8,
+    "pz": -8.1,
+    "speedMult": 1.2
+   },
+   {
+    "t": 29.28,
+    "type": "reddmini",
+    "px": -0.8,
+    "pz": 8.1,
+    "speedMult": 1.2
+   },
+   {
+    "t": 29.42,
+    "type": "GLOBBO",
+    "px": 0.8,
+    "pz": -8.1,
+    "speedMult": 1.2
+   },
+   {
+    "t": 29.42,
+    "type": "GLOBBO",
+    "px": 0.8,
+    "pz": 8.1,
+    "speedMult": 1.2
+   },
+   {
+    "t": 29.56,
+    "type": "YELA_CUBE",
+    "px": 2.4,
+    "pz": -8.1,
+    "speedMult": 1.2
+   },
+   {
+    "t": 29.56,
+    "type": "YELA_CUBE",
+    "px": 2.4,
+    "pz": 8.1,
+    "speedMult": 1.2
+   },
+   {
+    "t": 29.7,
+    "type": "reddmini",
+    "px": 4,
+    "pz": -8.1,
+    "speedMult": 1.2
+   },
+   {
+    "t": 29.7,
+    "type": "reddmini",
+    "px": 4,
+    "pz": 8.1,
+    "speedMult": 1.2
+   },
+   {
+    "t": 32,
+    "type": "reddmini",
+    "px": 14.6,
+    "pz": -6,
+    "speedMult": 1.2
+   },
+   {
+    "t": 32,
+    "type": "reddmini",
+    "px": -14.6,
+    "pz": -2,
+    "speedMult": 1.2
+   },
+   {
+    "t": 32.14,
+    "type": "GLOBBO",
+    "px": 14.6,
+    "pz": -4.4,
+    "speedMult": 1.2
+   },
+   {
+    "t": 32.14,
+    "type": "GLOBBO",
+    "px": -14.6,
+    "pz": -0.4,
+    "speedMult": 1.2
+   },
+   {
+    "t": 32.28,
+    "type": "reddmini",
+    "px": 14.6,
+    "pz": -2.8,
+    "speedMult": 1.2
+   },
+   {
+    "t": 32.28,
+    "type": "reddmini",
+    "px": -14.6,
+    "pz": 1.2,
+    "speedMult": 1.2
+   },
+   {
+    "t": 32.42,
+    "type": "GLOBBO",
+    "px": 14.6,
+    "pz": -1.2,
+    "speedMult": 1.2
+   },
+   {
+    "t": 32.42,
+    "type": "GLOBBO",
+    "px": -14.6,
+    "pz": 2.8,
+    "speedMult": 1.2
+   },
+   {
+    "t": 32.56,
+    "type": "reddmini",
+    "px": 14.6,
+    "pz": 0.4,
+    "speedMult": 1.2
+   },
+   {
+    "t": 32.56,
+    "type": "reddmini",
+    "px": -14.6,
+    "pz": 4.4,
+    "speedMult": 1.2
+   },
+   {
+    "t": 32.7,
+    "type": "GLOBBO",
+    "px": 14.6,
+    "pz": 2,
+    "speedMult": 1.2
+   },
+   {
+    "t": 32.7,
+    "type": "GLOBBO",
+    "px": -14.6,
+    "pz": 6,
+    "speedMult": 1.2
+   },
+   {
+    "t": 35.5,
+    "type": "reddmini",
+    "px": 14.6,
+    "pz": -2.4,
+    "speedMult": 1.2
+   },
+   {
+    "t": 35.5,
+    "type": "reddmini",
+    "px": -14.6,
+    "pz": -2.4,
+    "speedMult": 1.2
+   },
+   {
+    "t": 35.5,
+    "type": "GLOBBO",
+    "px": -4.8,
+    "pz": -8.1,
+    "speedMult": 1.2
+   },
+   {
+    "t": 35.5,
+    "type": "GLOBBO",
+    "px": -4.8,
+    "pz": 8.1,
+    "speedMult": 1.2
+   },
+   {
+    "t": 35.64,
+    "type": "reddmini",
+    "px": 14.6,
+    "pz": -0.8,
+    "speedMult": 1.2
+   },
+   {
+    "t": 35.64,
+    "type": "reddmini",
+    "px": -14.6,
+    "pz": -0.8,
+    "speedMult": 1.2
+   },
+   {
+    "t": 35.64,
+    "type": "GLOBBO",
+    "px": -2.4,
+    "pz": -8.1,
+    "speedMult": 1.2
+   },
+   {
+    "t": 35.64,
+    "type": "GLOBBO",
+    "px": -2.4,
+    "pz": 8.1,
+    "speedMult": 1.2
+   },
+   {
+    "t": 35.78,
+    "type": "reddmini",
+    "px": 14.6,
+    "pz": 0.8,
+    "speedMult": 1.2
+   },
+   {
+    "t": 35.78,
+    "type": "reddmini",
+    "px": -14.6,
+    "pz": 0.8,
+    "speedMult": 1.2
+   },
+   {
+    "t": 35.78,
+    "type": "GLOBBO",
+    "px": 0,
+    "pz": -8.1,
+    "speedMult": 1.2
+   },
+   {
+    "t": 35.78,
+    "type": "GLOBBO",
+    "px": 0,
+    "pz": 8.1,
+    "speedMult": 1.2
+   },
+   {
+    "t": 35.92,
+    "type": "reddmini",
+    "px": 14.6,
+    "pz": 2.4,
+    "speedMult": 1.2
+   },
+   {
+    "t": 35.92,
+    "type": "reddmini",
+    "px": -14.6,
+    "pz": 2.4,
+    "speedMult": 1.2
+   },
+   {
+    "t": 35.92,
+    "type": "GLOBBO",
+    "px": 2.4,
+    "pz": -8.1,
+    "speedMult": 1.2
+   },
+   {
+    "t": 35.92,
+    "type": "GLOBBO",
+    "px": 2.4,
+    "pz": 8.1,
+    "speedMult": 1.2
+   },
+   {
+    "t": 36.06,
+    "type": "GLOBBO",
+    "px": 4.8,
+    "pz": -8.1,
+    "speedMult": 1.2
+   },
+   {
+    "t": 36.06,
+    "type": "GLOBBO",
+    "px": 4.8,
+    "pz": 8.1,
+    "speedMult": 1.2
+   },
+   {
+    "t": 37.5,
+    "type": "GLOBBO",
+    "px": 14.6,
+    "pz": -2.4,
+    "speedMult": 1.2
+   },
+   {
+    "t": 37.5,
+    "type": "GLOBBO",
+    "px": -14.6,
+    "pz": -2.4,
+    "speedMult": 1.2
+   },
+   {
+    "t": 37.64,
+    "type": "GLOBBO",
+    "px": 14.6,
+    "pz": 0,
+    "speedMult": 1.2
+   },
+   {
+    "t": 37.64,
+    "type": "GLOBBO",
+    "px": -14.6,
+    "pz": 0,
+    "speedMult": 1.2
+   },
+   {
+    "t": 37.78,
+    "type": "GLOBBO",
+    "px": 14.6,
+    "pz": 2.4,
+    "speedMult": 1.2
+   },
+   {
+    "t": 37.78,
+    "type": "GLOBBO",
+    "px": -14.6,
+    "pz": 2.4,
+    "speedMult": 1.2
+   }
+  ]
+ },
+ {
+  "format": 2,
+  "id": "slug-run",
+  "name": "THE BRAID",
+  "arena": {
+   "shapes": [
+    {
+     "kind": "rect",
+     "hx": 17,
+     "hz": 10
+    }
+   ]
+  },
+  "duration": 40,
+  "goal": {
+   "type": "survive"
+  },
+  "plan": {
+   "world": 1,
+   "d": 5,
+   "teaches": "slug, ribbon: route round long bodies",
+   "strategy": [
+    "movement",
+    "risk"
+   ]
+  },
+  "spawns": [
+   {
+    "t": 0,
+    "type": "RIBBON",
+    "px": -15,
+    "pz": 6,
+    "speedMult": 1.3
+   },
+   {
+    "t": 0,
+    "type": "RIBBON",
+    "px": 15,
+    "pz": -2,
+    "speedMult": 1.3
+   },
+   {
+    "t": 1.5,
+    "type": "SLUG",
+    "px": 15,
+    "pz": 7,
+    "speedMult": 1.3
+   },
+   {
+    "t": 3,
+    "type": "RIBBON",
+    "px": -15,
+    "pz": -3,
+    "speedMult": 1.3
+   },
+   {
+    "t": 4.5,
+    "type": "SLUG",
+    "px": -15,
+    "pz": 7,
+    "speedMult": 1.3
+   },
+   {
+    "t": 6,
+    "type": "RIBBON",
+    "px": 15,
+    "pz": 4,
+    "speedMult": 1.3
+   },
+   {
+    "t": 7,
+    "type": "SPITTOR",
+    "px": 0,
+    "pz": -8.5,
+    "intervalMult": 1.8
+   },
+   {
+    "t": 8,
+    "type": "RIBBON",
+    "px": -15,
+    "pz": 0,
+    "speedMult": 1.3
+   },
+   {
+    "t": 9,
+    "type": "SLUG",
+    "px": 15,
+    "pz": -6,
+    "speedMult": 1.3
+   },
+   {
+    "t": 11,
+    "type": "RIBBON",
+    "px": 15,
+    "pz": 7,
+    "speedMult": 1.3
+   },
+   {
+    "t": 11,
+    "type": "RIBBON",
+    "px": -15,
+    "pz": 4,
+    "speedMult": 1.3
+   },
+   {
+    "t": 12.5,
+    "type": "SLUG",
+    "px": -15,
+    "pz": -6,
+    "speedMult": 1.3
+   },
+   {
+    "t": 14,
+    "type": "RIBBON",
+    "px": 15,
+    "pz": 0,
+    "speedMult": 1.3
+   },
+   {
+    "t": 15,
+    "type": "SPITTOR",
+    "px": 0,
+    "pz": 8.5,
+    "intervalMult": 1.8
+   },
+   {
+    "t": 16,
+    "type": "SLUG",
+    "px": 15,
+    "pz": 7,
+    "speedMult": 1.3
+   },
+   {
+    "t": 17.5,
+    "type": "RIBBON",
+    "px": -15,
+    "pz": 6,
+    "speedMult": 1.3
+   },
+   {
+    "t": 19,
+    "type": "RIBBON",
+    "px": 15,
+    "pz": -2,
+    "speedMult": 1.3
+   },
+   {
+    "t": 19,
+    "type": "SLUG",
+    "px": -15,
+    "pz": -6,
+    "speedMult": 1.3
+   },
+   {
+    "t": 22,
+    "type": "RIBBON",
+    "px": -15,
+    "pz": 6,
+    "speedMult": 1.4
+   },
+   {
+    "t": 22,
+    "type": "RIBBON",
+    "px": 15,
+    "pz": -2,
+    "speedMult": 1.4
+   },
+   {
+    "t": 23,
+    "type": "SLUG",
+    "px": -15,
+    "pz": -6,
+    "speedMult": 1.35
+   },
+   {
+    "t": 23,
+    "type": "SLUG",
+    "px": 15,
+    "pz": 6,
+    "speedMult": 1.35
+   },
+   {
+    "t": 24,
+    "type": "SPITTOR",
+    "px": 15,
+    "pz": -8,
+    "intervalMult": 2
+   },
+   {
+    "t": 26,
+    "type": "RIBBON",
+    "px": -15,
+    "pz": 0,
+    "speedMult": 1.4
+   },
+   {
+    "t": 26,
+    "type": "RIBBON",
+    "px": 15,
+    "pz": 4,
+    "speedMult": 1.4
+   },
+   {
+    "t": 27,
+    "type": "SLUG",
+    "px": -15,
+    "pz": 7,
+    "speedMult": 1.35
+   },
+   {
+    "t": 28,
+    "type": "SLUG",
+    "px": 15,
+    "pz": -6,
+    "speedMult": 1.35
+   },
+   {
+    "t": 29,
+    "type": "SPITTOR",
+    "px": -15,
+    "pz": -8,
+    "intervalMult": 2
+   },
+   {
+    "t": 30,
+    "type": "RIBBON",
+    "px": -15,
+    "pz": 3,
+    "speedMult": 1.4
+   },
+   {
+    "t": 30,
+    "type": "RIBBON",
+    "px": 15,
+    "pz": 3,
+    "speedMult": 1.4
+   },
+   {
+    "t": 31.5,
+    "type": "SLUG",
+    "px": 0,
+    "pz": 8.5,
+    "speedMult": 1.35
+   },
+   {
+    "t": 33,
+    "type": "SLUG",
+    "px": 0,
+    "pz": -8.5,
+    "speedMult": 1.35
+   },
+   {
+    "t": 34,
+    "type": "RIBBON",
+    "px": -15,
+    "pz": -4,
+    "speedMult": 1.4
+   },
+   {
+    "t": 34,
+    "type": "RIBBON",
+    "px": 15,
+    "pz": 6,
+    "speedMult": 1.4
+   }
+  ]
+ },
+ {
+  "format": 2,
+  "id": "flotsam",
+  "name": "FLOTSAM",
+  "arena": {
+   "shapes": [
+    {
+     "kind": "circle",
+     "c": [
+      0,
+      0
+     ],
+     "r": 11.0
+    }
+   ]
+  },
+  "duration": 44,
+  "goal": {
+   "type": "escort",
+   "heart": {
+    "x": 0.0,
+    "z": -8.5,
+    "r": 1.3,
+    "hp": 10
+   },
+   "path": [
+    [
+     -3.25,
+     -7.85
+    ],
+    [
+     -6.01,
+     -6.01
+    ],
+    [
+     -7.85,
+     -3.25
+    ],
+    [
+     -8.5,
+     -0.0
+    ],
+    [
+     -7.85,
+     3.25
+    ],
+    [
+     -6.01,
+     6.01
+    ],
+    [
+     -3.25,
+     7.85
+    ],
+    [
+     -0.0,
+     8.5
+    ],
+    [
+     3.25,
+     7.85
+    ],
+    [
+     6.01,
+     6.01
+    ],
+    [
+     7.85,
+     3.25
+    ],
+    [
+     8.5,
+     0.0
+    ],
+    [
+     7.85,
+     -3.25
+    ],
+    [
+     6.01,
+     -6.01
+    ],
+    [
+     3.25,
+     -7.85
+    ],
+    [
+     0.0,
+     -8.5
+    ]
+   ],
+   "speed": 1.4
+  },
+  "plan": {
+   "world": 1,
+   "d": 4,
+   "teaches": "sink a raft before it fires",
+   "strategy": [
+    "priority",
+    "aim"
+   ]
+  },
+  "spawns": [
+   {
+    "t": 0.0,
+    "type": "PYRA",
+    "px": -8.23,
+    "pz": 4.75,
+    "intervalMult": 1.2
+   },
+   {
+    "t": 0.3,
+    "type": "PYRA",
+    "px": 3.25,
+    "pz": 8.93,
+    "intervalMult": 1.2
+   },
+   {
+    "t": 3.5,
+    "type": "PYRA",
+    "px": 0.13,
+    "pz": 2.5,
+    "intervalMult": 1.2
+   },
+   {
+    "t": 3.8,
+    "type": "PYRA",
+    "px": -0.13,
+    "pz": -2.5,
+    "intervalMult": 1.2
+   },
+   {
+    "t": 4.1,
+    "type": "PYRA",
+    "px": 9.49,
+    "pz": -0.5,
+    "intervalMult": 1.2
+   },
+   {
+    "t": 7.0,
+    "type": "PYRA",
+    "px": -2.43,
+    "pz": 1.77,
+    "intervalMult": 1.2
+   },
+   {
+    "t": 7.3,
+    "type": "PYRA",
+    "px": 2.74,
+    "pz": 1.22,
+    "intervalMult": 1.2
+   },
+   {
+    "t": 7.6,
+    "type": "PYRA",
+    "px": -0.32,
+    "pz": -2.98,
+    "intervalMult": 1.2
+   },
+   {
+    "t": 10.5,
+    "type": "PYRA",
+    "px": -1.97,
+    "pz": 0.32,
+    "intervalMult": 1.2
+   },
+   {
+    "t": 10.8,
+    "type": "PYRA",
+    "px": 1.97,
+    "pz": -0.32,
+    "intervalMult": 1.2
+   },
+   {
+    "t": 11.1,
+    "type": "PYRA",
+    "px": 8.15,
+    "pz": 4.88,
+    "intervalMult": 1.2
+   },
+   {
+    "t": 11.4,
+    "type": "PYRA",
+    "px": 6.22,
+    "pz": -7.18,
+    "intervalMult": 1.2
+   },
+   {
+    "t": 14.0,
+    "type": "PYRA",
+    "px": 2.01,
+    "pz": 2.23,
+    "intervalMult": 1.2
+   },
+   {
+    "t": 14.3,
+    "type": "PYRA",
+    "px": 0.92,
+    "pz": -2.86,
+    "intervalMult": 1.2
+   },
+   {
+    "t": 14.6,
+    "type": "PYRA",
+    "px": -2.93,
+    "pz": 0.63,
+    "intervalMult": 1.2
+   },
+   {
+    "t": 17.5,
+    "type": "PYRA",
+    "px": 1.51,
+    "pz": 2.59,
+    "intervalMult": 1.2
+   },
+   {
+    "t": 17.8,
+    "type": "PYRA",
+    "px": 2.59,
+    "pz": -1.51,
+    "intervalMult": 1.2
+   },
+   {
+    "t": 18.1,
+    "type": "PYRA",
+    "px": -1.51,
+    "pz": -2.59,
+    "intervalMult": 1.2
+   },
+   {
+    "t": 18.4,
+    "type": "PYRA",
+    "px": -2.59,
+    "pz": 1.51,
+    "intervalMult": 1.2
+   },
+   {
+    "t": 21.5,
+    "type": "PYRA",
+    "px": -0.0,
+    "pz": -0.0,
+    "intervalMult": 0.7,
+    "elite": true
+   },
+   {
+    "t": 21.8,
+    "type": "PYRA",
+    "px": 3.22,
+    "pz": -1.36,
+    "intervalMult": 1.2
+   },
+   {
+    "t": 22.1,
+    "type": "PYRA",
+    "px": -3.22,
+    "pz": 1.36,
+    "intervalMult": 1.2
+   },
+   {
+    "t": 25.0,
+    "type": "PYRA",
+    "px": 2.48,
+    "pz": 1.68,
+    "intervalMult": 1.2
+   },
+   {
+    "t": 25.3,
+    "type": "PYRA",
+    "px": 1.68,
+    "pz": -2.48,
+    "intervalMult": 1.2
+   },
+   {
+    "t": 25.6,
+    "type": "PYRA",
+    "px": -2.48,
+    "pz": -1.68,
+    "intervalMult": 1.2
+   },
+   {
+    "t": 25.9,
+    "type": "PYRA",
+    "px": -1.68,
+    "pz": 2.48,
+    "intervalMult": 1.2
+   },
+   {
+    "t": 28.5,
+    "type": "PYRA",
+    "px": -4.6,
+    "pz": -8.31,
+    "intervalMult": 1.2
+   },
+   {
+    "t": 28.8,
+    "type": "PYRA",
+    "px": -9.5,
+    "pz": -0.17,
+    "intervalMult": 1.2
+   },
+   {
+    "t": 29.1,
+    "type": "PYRA",
+    "px": -4.9,
+    "pz": 8.14,
+    "intervalMult": 1.2
+   },
+   {
+    "t": 32.0,
+    "type": "PYRA",
+    "px": -0.09,
+    "pz": -2.5,
+    "intervalMult": 1.2
+   },
+   {
+    "t": 32.3,
+    "type": "PYRA",
+    "px": -2.12,
+    "pz": 1.32,
+    "intervalMult": 1.2
+   },
+   {
+    "t": 32.6,
+    "type": "PYRA",
+    "px": 2.21,
+    "pz": 1.17,
+    "intervalMult": 1.2
+   }
+  ],
+  "hard": {
+   "cap": 2
+  }
+ },
+ {
+  "format": 2,
+  "id": "needle",
+  "name": "NEEDLE",
+  "arena": {
+   "shapes": [
+    {
+     "kind": "rect",
+     "hx": 15,
+     "hz": 9
+    }
+   ]
+  },
+  "duration": 44,
+  "goal": {
+   "type": "collect",
+   "orbs": [
+    {
+     "t": 1.1,
+     "x": -6,
+     "z": -4
+    },
+    {
+     "t": 3.6,
+     "x": 6,
+     "z": 4
+    },
+    {
+     "t": 6.1,
+     "x": -6,
+     "z": 4
+    },
+    {
+     "t": 8.6,
+     "x": 6,
+     "z": -4
+    },
+    {
+     "t": 11.1,
+     "x": -6,
+     "z": 0
+    },
+    {
+     "t": 13.6,
+     "x": 6,
+     "z": 0
+    },
+    {
+     "t": 16.1,
+     "x": -6,
+     "z": -4
+    },
+    {
+     "t": 18.6,
+     "x": 6,
+     "z": 4
+    },
+    {
+     "t": 21.1,
+     "x": -6,
+     "z": 4
+    },
+    {
+     "t": 23.6,
+     "x": 6,
+     "z": -4
+    },
+    {
+     "t": 26.1,
+     "x": -6,
+     "z": 0
+    },
+    {
+     "t": 28.6,
+     "x": 6,
+     "z": 0
+    },
+    {
+     "t": 31.1,
+     "x": -6,
+     "z": -4
+    },
+    {
+     "t": 33.6,
+     "x": 6,
+     "z": 4
+    },
+    {
+     "t": 36.1,
+     "x": -6,
+     "z": 4
+    },
+    {
+     "t": 38.6,
+     "x": 6,
+     "z": -4
+    }
+   ],
+   "life": 2.5,
+   "need": 12
+  },
+  "plan": {
+   "world": 2,
+   "d": 7,
+   "teaches": "hoppa; orbs that go out",
+   "strategy": [
+    "movement",
+    "position"
+   ]
+  },
+  "spawns": [
+   {
+    "t": 0,
+    "type": "hoppa",
+    "px": 12,
+    "pz": -7
+   },
+   {
+    "t": 0,
+    "type": "hoppa",
+    "px": -12,
+    "pz": 7
+   },
+   {
+    "t": 9,
+    "type": "hoppa",
+    "px": 13,
+    "pz": 6
+   },
+   {
+    "t": 9,
+    "type": "hoppa",
+    "px": -13,
+    "pz": -6
+   },
+   {
+    "t": 14,
+    "type": "hoppa",
+    "px": 0,
+    "pz": 8
+   },
+   {
+    "t": 18,
+    "type": "hoppa",
+    "px": 13,
+    "pz": -6
+   },
+   {
+    "t": 18,
+    "type": "hoppa",
+    "px": -13,
+    "pz": 6
+   },
+   {
+    "t": 27,
+    "type": "hoppa",
+    "px": 13,
+    "pz": 6
+   },
+   {
+    "t": 27,
+    "type": "hoppa",
+    "px": -13,
+    "pz": -6
+   },
+   {
+    "t": 32,
+    "type": "hoppa",
+    "px": 0,
+    "pz": 8
+   },
+   {
+    "t": 36,
+    "type": "hoppa",
+    "px": 13,
+    "pz": -6
+   },
+   {
+    "t": 36,
+    "type": "hoppa",
+    "px": -13,
+    "pz": 6
+   }
+  ]
+ },
+ {
+  "format": 2,
+  "id": "bubble-bath",
+  "name": "BUBBLE BATH",
+  "arena": {
+   "combine": "union",
+   "shapes": [
+    {
+     "kind": "rect",
+     "hx": 11,
+     "hz": 7
+    },
+    {
+     "kind": "circle",
+     "c": [
+      -11,
+      0
+     ],
+     "r": 7
+    },
+    {
+     "kind": "circle",
+     "c": [
+      11,
+      0
+     ],
+     "r": 7
+    }
+   ]
+  },
+  "duration": 35,
+  "goal": {
+   "type": "survive"
+  },
+  "plan": {
+   "world": 4,
+   "d": 10,
+   "teaches": "bubbla; the slick floor",
+   "strategy": [
+    "aim",
+    "movement",
+    "priority"
+   ]
+  },
+  "spawns": [
+   {
+    "t": 0,
+    "type": "bubbla",
+    "px": 15,
+    "pz": 2
+   },
+   {
+    "t": 0.4,
+    "type": "bubbla",
+    "px": -15,
+    "pz": -2
+   },
+   {
+    "t": 3,
+    "type": "bubbla",
+    "px": 15,
+    "pz": -2
+   },
+   {
+    "t": 3.4,
+    "type": "bubbla",
+    "px": -15,
+    "pz": 2
+   },
+   {
+    "t": 6,
+    "type": "bubbla",
+    "px": 15,
+    "pz": 2
+   },
+   {
+    "t": 6.4,
+    "type": "bubbla",
+    "px": -15,
+    "pz": -2
+   },
+   {
+    "t": 8.5,
+    "type": "SPITTOR",
+    "px": 16.5,
+    "pz": 0
+   },
+   {
+    "t": 9.5,
+    "type": "bubbla",
+    "px": 15,
+    "pz": -2
+   },
+   {
+    "t": 9.9,
+    "type": "bubbla",
+    "px": -15,
+    "pz": 2
+   },
+   {
+    "t": 12,
+    "type": "bubbla",
+    "px": 15,
+    "pz": 2
+   },
+   {
+    "t": 12.4,
+    "type": "bubbla",
+    "px": -15,
+    "pz": -2
+   },
+   {
+    "t": 12.5,
+    "type": "SPITTOR",
+    "px": -16.5,
+    "pz": 0
+   },
+   {
+    "t": 14.5,
+    "type": "bubbla",
+    "px": 15,
+    "pz": -2
+   },
+   {
+    "t": 14.9,
+    "type": "bubbla",
+    "px": -15,
+    "pz": 2
+   },
+   {
+    "t": 17,
+    "type": "bubbla",
+    "px": 15,
+    "pz": 2
+   },
+   {
+    "t": 17,
+    "type": "SPITTOR",
+    "px": 16.5,
+    "pz": 4
+   },
+   {
+    "t": 17.4,
+    "type": "bubbla",
+    "px": -15,
+    "pz": -2
+   },
+   {
+    "t": 19.5,
+    "type": "bubbla",
+    "px": 15,
+    "pz": -2
+   },
+   {
+    "t": 19.9,
+    "type": "bubbla",
+    "px": -15,
+    "pz": 2
+   },
+   {
+    "t": 22,
+    "type": "bubbla",
+    "px": 15,
+    "pz": -3
+   },
+   {
+    "t": 22.3,
+    "type": "bubbla",
+    "px": 15,
+    "pz": 3
+   },
+   {
+    "t": 22.4,
+    "type": "bubbla",
+    "px": -15,
+    "pz": -3
+   },
+   {
+    "t": 22.7,
+    "type": "bubbla",
+    "px": -15,
+    "pz": 3
+   },
+   {
+    "t": 24,
+    "type": "SPITTOR",
+    "px": 16.5,
+    "pz": -4,
+    "intervalMult": 1.2
+   },
+   {
+    "t": 24,
+    "type": "SPITTOR",
+    "px": -16.5,
+    "pz": 4,
+    "intervalMult": 1.2
+   },
+   {
+    "t": 25.5,
+    "type": "bubbla",
+    "px": 15,
+    "pz": -3
+   },
+   {
+    "t": 25.8,
+    "type": "bubbla",
+    "px": 15,
+    "pz": 3
+   },
+   {
+    "t": 25.9,
+    "type": "bubbla",
+    "px": -15,
+    "pz": -3
+   },
+   {
+    "t": 26.2,
+    "type": "bubbla",
+    "px": -15,
+    "pz": 3
+   },
+   {
+    "t": 29,
+    "type": "bubbla",
+    "px": 15,
+    "pz": -3
+   },
+   {
+    "t": 29.3,
+    "type": "bubbla",
+    "px": 15,
+    "pz": 3
+   },
+   {
+    "t": 29.4,
+    "type": "bubbla",
+    "px": -15,
+    "pz": -3
+   },
+   {
+    "t": 29.7,
+    "type": "bubbla",
+    "px": -15,
+    "pz": 3
+   }
+  ]
+ },
+ {
+  "format": 2,
+  "id": "breath",
+  "name": "BREATH",
+  "arena": {
+   "shapes": [
+    {
+     "kind": "circle",
+     "c": [
+      0,
+      0
+     ],
+     "r": 12,
+     "pulse": {
+      "from": 1,
+      "to": 0.7,
+      "period": 12,
+      "mode": "breathe"
+     }
+    }
+   ]
+  },
+  "duration": 40,
+  "goal": {
+   "type": "survive"
+  },
+  "plan": {
+   "world": 4,
+   "d": 9,
+   "teaches": "warden, bulwark: the shield-bearer first",
+   "strategy": [
+    "priority",
+    "aim",
+    "movement"
+   ]
+  },
+  "spawns": [
+   {
+    "t": 0,
+    "type": "WARDEN",
+    "px": 0.01,
+    "pz": -10.0
+   },
+   {
+    "t": 0.3,
+    "type": "GLOBBO",
+    "px": -3.33,
+    "pz": -10.06
+   },
+   {
+    "t": 0.45,
+    "type": "GLOBBO",
+    "px": 0.01,
+    "pz": -10.6
+   },
+   {
+    "t": 0.6,
+    "type": "GLOBBO",
+    "px": 3.34,
+    "pz": -10.06
+   },
+   {
+    "t": 1.5,
+    "type": "GLOBBO",
+    "px": 5.73,
+    "pz": 8.92
+   },
+   {
+    "t": 4.0,
+    "type": "GLOBBO",
+    "px": -10.25,
+    "pz": -2.71
+   },
+   {
+    "t": 5,
+    "type": "WARDEN",
+    "px": 10.0,
+    "pz": 0.0
+   },
+   {
+    "t": 5.3,
+    "type": "BULWARK",
+    "px": 10.06,
+    "pz": -3.33,
+    "speedMult": 0.7
+   },
+   {
+    "t": 5.45,
+    "type": "GLOBBO",
+    "px": 10.6,
+    "pz": 0.0
+   },
+   {
+    "t": 5.6,
+    "type": "GLOBBO",
+    "px": 10.06,
+    "pz": 3.33
+   },
+   {
+    "t": 6.5,
+    "type": "GLOBBO",
+    "px": 9.39,
+    "pz": -4.93
+   },
+   {
+    "t": 9.0,
+    "type": "GLOBBO",
+    "px": -3.59,
+    "pz": 9.97
+   },
+   {
+    "t": 10,
+    "type": "WARDEN",
+    "px": -8.57,
+    "pz": 5.16
+   },
+   {
+    "t": 10.3,
+    "type": "YELA_CUBE",
+    "px": -5.53,
+    "pz": 9.04
+   },
+   {
+    "t": 10.45,
+    "type": "YELA_CUBE",
+    "px": -8.1,
+    "pz": 6.84
+   },
+   {
+    "t": 10.6,
+    "type": "GLOBBO",
+    "px": -9.84,
+    "pz": 3.95
+   },
+   {
+    "t": 10.75,
+    "type": "GLOBBO",
+    "px": -10.58,
+    "pz": 0.65
+   },
+   {
+    "t": 11.5,
+    "type": "GLOBBO",
+    "px": -4.09,
+    "pz": -9.78
+   },
+   {
+    "t": 14.0,
+    "type": "GLOBBO",
+    "px": 9.62,
+    "pz": 4.45
+   },
+   {
+    "t": 15,
+    "type": "WARDEN",
+    "px": 0.01,
+    "pz": 10.0
+   },
+   {
+    "t": 15.3,
+    "type": "BULWARK",
+    "px": 4.9,
+    "pz": 9.4,
+    "speedMult": 0.7
+   },
+   {
+    "t": 15.45,
+    "type": "BULWARK",
+    "px": 1.7,
+    "pz": 10.46,
+    "speedMult": 0.7
+   },
+   {
+    "t": 15.6,
+    "type": "SPITTOR",
+    "px": -1.68,
+    "pz": 10.47
+   },
+   {
+    "t": 15.75,
+    "type": "GLOBBO",
+    "px": -4.89,
+    "pz": 9.41
+   },
+   {
+    "t": 16.5,
+    "type": "GLOBBO",
+    "px": -10.1,
+    "pz": 3.22
+   },
+   {
+    "t": 19.0,
+    "type": "GLOBBO",
+    "px": 5.28,
+    "pz": -9.19
+   },
+   {
+    "t": 20,
+    "type": "WARDEN",
+    "px": -8.97,
+    "pz": -4.43
+   },
+   {
+    "t": 20.3,
+    "type": "GLOBBO",
+    "px": -9.99,
+    "pz": 3.55
+   },
+   {
+    "t": 20.45,
+    "type": "GLOBBO",
+    "px": -10.6,
+    "pz": 0.23
+   },
+   {
+    "t": 20.6,
+    "type": "GLOBBO",
+    "px": -10.13,
+    "pz": -3.12
+   },
+   {
+    "t": 20.75,
+    "type": "GLOBBO",
+    "px": -8.64,
+    "pz": -6.15
+   },
+   {
+    "t": 20.9,
+    "type": "GLOBBO",
+    "px": -6.27,
+    "pz": -8.55
+   },
+   {
+    "t": 21.05,
+    "type": "YELA_CUBE",
+    "px": -3.26,
+    "pz": -10.09
+   },
+   {
+    "t": 21.5,
+    "type": "GLOBBO",
+    "px": 2.32,
+    "pz": 10.34
+   },
+   {
+    "t": 24.0,
+    "type": "GLOBBO",
+    "px": -8.7,
+    "pz": -6.06
+   },
+   {
+    "t": 25,
+    "type": "WARDEN",
+    "px": 8.25,
+    "pz": -5.65
+   },
+   {
+    "t": 25.3,
+    "type": "BULWARK",
+    "px": 3.44,
+    "pz": -10.03,
+    "speedMult": 0.7
+   },
+   {
+    "t": 25.45,
+    "type": "YELA_CUBE",
+    "px": 6.42,
+    "pz": -8.43
+   },
+   {
+    "t": 25.6,
+    "type": "YELA_CUBE",
+    "px": 8.75,
+    "pz": -5.99
+   },
+   {
+    "t": 25.75,
+    "type": "SPITTOR",
+    "px": 10.19,
+    "pz": -2.93
+   },
+   {
+    "t": 25.9,
+    "type": "GLOBBO",
+    "px": 10.59,
+    "pz": 0.42
+   },
+   {
+    "t": 26.5,
+    "type": "GLOBBO",
+    "px": 10.51,
+    "pz": -1.41
+   },
+   {
+    "t": 29.0,
+    "type": "GLOBBO",
+    "px": -6.8,
+    "pz": 8.13
+   },
+   {
+    "t": 30,
+    "type": "WARDEN",
+    "px": -4.16,
+    "pz": 9.09
+   },
+   {
+    "t": 30.3,
+    "type": "BULWARK",
+    "px": 0.54,
+    "pz": 10.59,
+    "speedMult": 0.7
+   },
+   {
+    "t": 30.45,
+    "type": "GLOBBO",
+    "px": -2.82,
+    "pz": 10.22
+   },
+   {
+    "t": 30.5,
+    "type": "WARDEN",
+    "px": 3.62,
+    "pz": -9.32
+   },
+   {
+    "t": 30.6,
+    "type": "GLOBBO",
+    "px": -5.89,
+    "pz": 8.81
+   },
+   {
+    "t": 30.75,
+    "type": "YELA_CUBE",
+    "px": -8.36,
+    "pz": 6.51
+   },
+   {
+    "t": 30.8,
+    "type": "BULWARK",
+    "px": 0.54,
+    "pz": -10.59,
+    "speedMult": 0.7
+   },
+   {
+    "t": 30.95,
+    "type": "GLOBBO",
+    "px": 3.84,
+    "pz": -9.88
+   },
+   {
+    "t": 31.1,
+    "type": "GLOBBO",
+    "px": 6.75,
+    "pz": -8.17
+   },
+   {
+    "t": 31.5,
+    "type": "GLOBBO",
+    "px": -0.48,
+    "pz": -10.59
+   },
+   {
+    "t": 34.0,
+    "type": "GLOBBO",
+    "px": 7.51,
+    "pz": 7.48
+   },
+   {
+    "t": 36.5,
+    "type": "GLOBBO",
+    "px": -10.59,
+    "pz": -0.44
+   },
+   {
+    "t": 39.0,
+    "type": "GLOBBO",
+    "px": 8.11,
+    "pz": -6.83
+   }
+  ]
+ },
+ {
+  "format": 2,
+  "id": "deep-end",
+  "name": "THE DEEP END",
+  "arena": {
+   "combine": "union",
+   "shapes": [
+    {
+     "kind": "circle",
+     "c": [
+      -12.5,
+      0
+     ],
+     "r": 4.75
+    },
+    {
+     "kind": "rect",
+     "hx": 12,
+     "hz": 1.4
+    },
+    {
+     "kind": "circle",
+     "c": [
+      6,
+      0
+     ],
+     "r": 10
+    }
+   ]
+  },
+  "duration": 45,
+  "goal": {
+   "type": "boss"
+  },
+  "plan": {
+   "world": 3,
+   "d": 8,
+   "teaches": "angler; a boss too big for the channel",
+   "strategy": [
+    "risk",
+    "position",
+    "priority"
+   ]
+  },
+  "spawns": [
+   {
+    "t": 0,
+    "type": "angler",
+    "px": -13.5,
+    "pz": 0,
+    "boss": true,
+    "hp": 150
+   },
+   {
+    "t": 0,
+    "type": "YELA_CUBE",
+    "px": 15,
+    "pz": 0
+   },
+   {
+    "t": 0.5,
+    "type": "GLOBBO",
+    "px": 12,
+    "pz": -6
+   },
+   {
+    "t": 1,
+    "type": "GLOBBO",
+    "px": 12,
+    "pz": 6
+   },
+   {
+    "t": 2.7,
+    "type": "YELA_CUBE",
+    "px": 15,
+    "pz": -2
+   },
+   {
+    "t": 3.2,
+    "type": "GLOBBO",
+    "px": 15,
+    "pz": 2
+   },
+   {
+    "t": 3.7,
+    "type": "YELA_CUBE",
+    "px": 13,
+    "pz": -5.5
+   },
+   {
+    "t": 3.9,
+    "type": "GLOBBO",
+    "px": -11.5,
+    "pz": -2.5
+   },
+   {
+    "t": 11.7,
+    "type": "YELA_CUBE",
+    "px": 13,
+    "pz": 5.5
+   },
+   {
+    "t": 12.2,
+    "type": "GLOBBO",
+    "px": 9,
+    "pz": -8
+   },
+   {
+    "t": 12.7,
+    "type": "YELA_CUBE",
+    "px": 9,
+    "pz": 8
+   },
+   {
+    "t": 12.9,
+    "type": "GLOBBO",
+    "px": -11.5,
+    "pz": 2.5
+   },
+   {
+    "t": 13.2,
+    "type": "GLOBBO",
+    "px": 4,
+    "pz": -7
+   },
+   {
+    "t": 13.5,
+    "type": "GLOBBO",
+    "px": -14.5,
+    "pz": 0
+   },
+   {
+    "t": 20.7,
+    "type": "YELA_CUBE",
+    "px": 4,
+    "pz": 7
+   },
+   {
+    "t": 21.2,
+    "type": "GLOBBO",
+    "px": 15,
+    "pz": -2
+   },
+   {
+    "t": 21.7,
+    "type": "YELA_CUBE",
+    "px": 15,
+    "pz": 2
+   },
+   {
+    "t": 21.9,
+    "type": "GLOBBO",
+    "px": -11.5,
+    "pz": -2.5
+   },
+   {
+    "t": 22.2,
+    "type": "GLOBBO",
+    "px": 13,
+    "pz": -5.5
+   },
+   {
+    "t": 22.5,
+    "type": "GLOBBO",
+    "px": -11.5,
+    "pz": 2.5
+   },
+   {
+    "t": 22.7,
+    "type": "YELA_CUBE",
+    "px": 13,
+    "pz": 5.5
+   },
+   {
+    "t": 23.1,
+    "type": "GLOBBO",
+    "px": -14.5,
+    "pz": 0
+   },
+   {
+    "t": 29.7,
+    "type": "YELA_CUBE",
+    "px": 9,
+    "pz": -8
+   },
+   {
+    "t": 30.2,
+    "type": "GLOBBO",
+    "px": 9,
+    "pz": 8
+   },
+   {
+    "t": 30.7,
+    "type": "YELA_CUBE",
+    "px": 4,
+    "pz": -7
+   },
+   {
+    "t": 30.9,
+    "type": "GLOBBO",
+    "px": -11.5,
+    "pz": -2.5
+   },
+   {
+    "t": 31.2,
+    "type": "GLOBBO",
+    "px": 4,
+    "pz": 7
+   },
+   {
+    "t": 31.5,
+    "type": "GLOBBO",
+    "px": -11.5,
+    "pz": 2.5
+   },
+   {
+    "t": 31.7,
+    "type": "YELA_CUBE",
+    "px": 15,
+    "pz": -2
+   },
+   {
+    "t": 32.1,
+    "type": "GLOBBO",
+    "px": -14.5,
+    "pz": 0
+   },
+   {
+    "t": 38.7,
+    "type": "YELA_CUBE",
+    "px": 15,
+    "pz": 2
+   },
+   {
+    "t": 39.2,
+    "type": "GLOBBO",
+    "px": 13,
+    "pz": -5.5
+   },
+   {
+    "t": 39.7,
+    "type": "YELA_CUBE",
+    "px": 13,
+    "pz": 5.5
+   },
+   {
+    "t": 39.9,
+    "type": "GLOBBO",
+    "px": -11.5,
+    "pz": -2.5
+   },
+   {
+    "t": 40.2,
+    "type": "GLOBBO",
+    "px": 9,
+    "pz": -8
+   },
+   {
+    "t": 40.5,
+    "type": "GLOBBO",
+    "px": -11.5,
+    "pz": 2.5
+   },
+   {
+    "t": 40.7,
+    "type": "YELA_CUBE",
+    "px": 9,
+    "pz": 8
+   },
+   {
+    "t": 41.1,
+    "type": "GLOBBO",
+    "px": -14.5,
+    "pz": 0
+   },
+   {
+    "t": 41.2,
+    "type": "GLOBBO",
+    "px": 4,
+    "pz": -7
+   }
+  ]
+ },
+ {
+  "format": 2,
+  "id": "pack-ice",
+  "name": "PACK ICE",
+  "arena": {
+   "shapes": [
+    {
+     "kind": "rect",
+     "hx": 17,
+     "hz": 10
+    }
+   ]
+  },
+  "duration": 40,
+  "goal": {
+   "type": "boss"
+  },
+  "plan": {
+   "world": 4,
+   "d": 7,
+   "teaches": "berg; between its lines",
+   "strategy": [
+    "movement",
+    "priority",
+    "position"
+   ]
+  },
+  "spawns": [
+   {
+    "t": 0.0,
+    "type": "YELA_CUBE",
+    "px": 15.0,
+    "pz": 8
+   },
+   {
+    "t": 0.35,
+    "type": "YELA_CUBE",
+    "px": -15.0,
+    "pz": 8
+   },
+   {
+    "t": 3,
+    "type": "berg",
+    "px": -15.5,
+    "pz": -9,
+    "boss": true,
+    "hp": 65
+   },
+   {
+    "t": 3.0,
+    "type": "YELA_CUBE",
+    "px": -15.0,
+    "pz": 8
+   },
+   {
+    "t": 3.35,
+    "type": "YELA_CUBE",
+    "px": 15.0,
+    "pz": -8
+   },
+   {
+    "t": 5.5,
+    "type": "YELA_CUBE",
+    "px": 15.0,
+    "pz": -8
+   },
+   {
+    "t": 5.85,
+    "type": "YELA_CUBE",
+    "px": -15.0,
+    "pz": -8
+   },
+   {
+    "t": 6.2,
+    "type": "YELA_CUBE",
+    "px": 15.0,
+    "pz": 8
+   },
+   {
+    "t": 8.0,
+    "type": "YELA_CUBE",
+    "px": -15.0,
+    "pz": -8
+   },
+   {
+    "t": 8.35,
+    "type": "YELA_CUBE",
+    "px": 15.0,
+    "pz": 8
+   },
+   {
+    "t": 8.7,
+    "type": "YELA_CUBE",
+    "px": -15.0,
+    "pz": 8
+   },
+   {
+    "t": 10.5,
+    "type": "REDD_CUBE",
+    "px": 15.0,
+    "pz": 8
+   },
+   {
+    "t": 10.85,
+    "type": "YELA_CUBE",
+    "px": -15.0,
+    "pz": 8
+   },
+   {
+    "t": 11.2,
+    "type": "YELA_CUBE",
+    "px": 15.0,
+    "pz": -8
+   },
+   {
+    "t": 13.0,
+    "type": "YELA_CUBE",
+    "px": -15.0,
+    "pz": 8
+   },
+   {
+    "t": 13.35,
+    "type": "YELA_CUBE",
+    "px": 15.0,
+    "pz": -8
+   },
+   {
+    "t": 13.7,
+    "type": "YELA_CUBE",
+    "px": -15.0,
+    "pz": -8
+   },
+   {
+    "t": 14.05,
+    "type": "YELA_CUBE",
+    "px": 15.0,
+    "pz": 8
+   },
+   {
+    "t": 15.5,
+    "type": "REDD_CUBE",
+    "px": 15.0,
+    "pz": -8
+   },
+   {
+    "t": 15.85,
+    "type": "YELA_CUBE",
+    "px": -15.0,
+    "pz": -8
+   },
+   {
+    "t": 16.2,
+    "type": "YELA_CUBE",
+    "px": 15.0,
+    "pz": 8
+   },
+   {
+    "t": 16.55,
+    "type": "YELA_CUBE",
+    "px": -15.0,
+    "pz": 8
+   },
+   {
+    "t": 18.0,
+    "type": "YELA_CUBE",
+    "px": -15.0,
+    "pz": -8
+   },
+   {
+    "t": 18.35,
+    "type": "YELA_CUBE",
+    "px": 15.0,
+    "pz": 8
+   },
+   {
+    "t": 18.7,
+    "type": "REDD_CUBE",
+    "px": -15.0,
+    "pz": 8
+   },
+   {
+    "t": 19.05,
+    "type": "YELA_CUBE",
+    "px": 15.0,
+    "pz": -8
+   },
+   {
+    "t": 20.5,
+    "type": "YELA_CUBE",
+    "px": 15.0,
+    "pz": 8
+   },
+   {
+    "t": 20.85,
+    "type": "YELA_CUBE",
+    "px": -15.0,
+    "pz": 8
+   },
+   {
+    "t": 21.2,
+    "type": "YELA_CUBE",
+    "px": 15.0,
+    "pz": -8
+   },
+   {
+    "t": 21.55,
+    "type": "REDD_CUBE",
+    "px": -15.0,
+    "pz": -8
+   },
+   {
+    "t": 23.0,
+    "type": "YELA_CUBE",
+    "px": -15.0,
+    "pz": 8
+   },
+   {
+    "t": 23.35,
+    "type": "YELA_CUBE",
+    "px": 15.0,
+    "pz": -8
+   },
+   {
+    "t": 23.7,
+    "type": "YELA_CUBE",
+    "px": -15.0,
+    "pz": -8
+   },
+   {
+    "t": 24.05,
+    "type": "YELA_CUBE",
+    "px": 15.0,
+    "pz": 8
+   },
+   {
+    "t": 25.5,
+    "type": "REDD_CUBE",
+    "px": 15.0,
+    "pz": -8
+   },
+   {
+    "t": 25.85,
+    "type": "YELA_CUBE",
+    "px": -15.0,
+    "pz": -8
+   },
+   {
+    "t": 26.2,
+    "type": "YELA_CUBE",
+    "px": 15.0,
+    "pz": 8
+   },
+   {
+    "t": 26.55,
+    "type": "YELA_CUBE",
+    "px": -15.0,
+    "pz": 8
+   },
+   {
+    "t": 28.0,
+    "type": "YELA_CUBE",
+    "px": -15.0,
+    "pz": -8
+   },
+   {
+    "t": 28.35,
+    "type": "YELA_CUBE",
+    "px": 15.0,
+    "pz": 8
+   },
+   {
+    "t": 28.7,
+    "type": "YELA_CUBE",
+    "px": -15.0,
+    "pz": 8
+   },
+   {
+    "t": 29.05,
+    "type": "REDD_CUBE",
+    "px": 15.0,
+    "pz": -8
+   }
+  ]
+ },
+ {
+  "format": 2,
+  "id": "boil-over",
+  "name": "BOIL OVER",
+  "arena": {
+   "shapes": [
+    {
+     "kind": "circle",
+     "c": [
+      0,
+      0
+     ],
+     "r": 12
+    }
+   ]
+  },
+  "duration": 45,
+  "goal": {
+   "type": "boss"
+  },
+  "plan": {
+   "world": 5,
+   "d": 9,
+   "teaches": "kettle; the red-hot stall",
+   "strategy": [
+    "priority",
+    "risk",
+    "position",
+    "aim"
+   ]
+  },
+  "spawns": [
+   {
+    "t": 0.6,
+    "type": "GLOBBO",
+    "px": 9.58,
+    "pz": 4.05
+   },
+   {
+    "t": 0.9,
+    "type": "GLOBBO",
+    "px": -9.58,
+    "pz": -4.05
+   },
+   {
+    "t": 2.0,
+    "type": "GLOBBO",
+    "px": -9.8,
+    "pz": 3.48
+   },
+   {
+    "t": 2.3,
+    "type": "GLOBBO",
+    "px": 9.8,
+    "pz": -3.48
+   },
+   {
+    "t": 3,
+    "type": "kettle",
+    "px": 0,
+    "pz": -9.5,
+    "boss": true,
+    "hp": 125
+   },
+   {
+    "t": 4.4,
+    "type": "GLOBBO",
+    "px": 4.87,
+    "pz": -9.19
+   },
+   {
+    "t": 4.7,
+    "type": "steama",
+    "px": -4.87,
+    "pz": 9.19
+   },
+   {
+    "t": 5.8,
+    "type": "GLOBBO",
+    "px": 2.61,
+    "pz": 10.07
+   },
+   {
+    "t": 6.1,
+    "type": "GLOBBO",
+    "px": -2.61,
+    "pz": -10.07
+   },
+   {
+    "t": 7.9,
+    "type": "GLOBBO",
+    "px": -8.73,
+    "pz": -5.66
+   },
+   {
+    "t": 8.2,
+    "type": "GLOBBO",
+    "px": 5.66,
+    "pz": -8.73
+   },
+   {
+    "t": 8.5,
+    "type": "GLOBBO",
+    "px": 8.73,
+    "pz": 5.66
+   },
+   {
+    "t": 8.8,
+    "type": "GLOBBO",
+    "px": -5.66,
+    "pz": 8.73
+   },
+   {
+    "t": 10.4,
+    "type": "GLOBBO",
+    "px": 10.26,
+    "pz": -1.72
+   },
+   {
+    "t": 10.7,
+    "type": "GLOBBO",
+    "px": -10.26,
+    "pz": 1.72
+   },
+   {
+    "t": 11.8,
+    "type": "GLOBBO",
+    "px": -6.4,
+    "pz": 8.2
+   },
+   {
+    "t": 12.1,
+    "type": "steama",
+    "px": 6.4,
+    "pz": -8.2
+   },
+   {
+    "t": 14.4,
+    "type": "GLOBBO",
+    "px": -0.82,
+    "pz": -10.37
+   },
+   {
+    "t": 14.7,
+    "type": "GLOBBO",
+    "px": 9.61,
+    "pz": -3.98
+   },
+   {
+    "t": 15.0,
+    "type": "steama",
+    "px": 6.76,
+    "pz": 7.91
+   },
+   {
+    "t": 15.3,
+    "type": "GLOBBO",
+    "px": -5.43,
+    "pz": 8.87
+   },
+   {
+    "t": 15.6,
+    "type": "GLOBBO",
+    "px": -10.11,
+    "pz": -2.43
+   },
+   {
+    "t": 17.0,
+    "type": "GLOBBO",
+    "px": 7.61,
+    "pz": 7.09
+   },
+   {
+    "t": 17.3,
+    "type": "GLOBBO",
+    "px": -9.95,
+    "pz": 3.04
+   },
+   {
+    "t": 17.6,
+    "type": "GLOBBO",
+    "px": 2.34,
+    "pz": -10.13
+   },
+   {
+    "t": 20.9,
+    "type": "GLOBBO",
+    "px": -10.4,
+    "pz": -0.09
+   },
+   {
+    "t": 21.2,
+    "type": "GLOBBO",
+    "px": -5.12,
+    "pz": -9.05
+   },
+   {
+    "t": 21.5,
+    "type": "steama",
+    "px": 5.28,
+    "pz": -8.96
+   },
+   {
+    "t": 21.8,
+    "type": "GLOBBO",
+    "px": 10.4,
+    "pz": 0.09
+   },
+   {
+    "t": 22.1,
+    "type": "GLOBBO",
+    "px": 5.12,
+    "pz": 9.05
+   },
+   {
+    "t": 22.4,
+    "type": "steama",
+    "px": -5.28,
+    "pz": 8.96
+   },
+   {
+    "t": 23.4,
+    "type": "GLOBBO",
+    "px": 7.73,
+    "pz": -6.96
+   },
+   {
+    "t": 23.7,
+    "type": "GLOBBO",
+    "px": 2.16,
+    "pz": 10.17
+   },
+   {
+    "t": 24.0,
+    "type": "GLOBBO",
+    "px": -9.89,
+    "pz": -3.22
+   },
+   {
+    "t": 25.0,
+    "type": "GLOBBO",
+    "px": -1.0,
+    "pz": 10.35
+   },
+   {
+    "t": 25.3,
+    "type": "GLOBBO",
+    "px": 1.0,
+    "pz": -10.35
+   },
+   {
+    "t": 27.4,
+    "type": "GLOBBO",
+    "px": -6.25,
+    "pz": -8.31
+   },
+   {
+    "t": 27.7,
+    "type": "GLOBBO",
+    "px": 2.6,
+    "pz": -10.07
+   },
+   {
+    "t": 28.0,
+    "type": "steama",
+    "px": 9.49,
+    "pz": -4.25
+   },
+   {
+    "t": 28.3,
+    "type": "GLOBBO",
+    "px": 9.24,
+    "pz": 4.77
+   },
+   {
+    "t": 28.6,
+    "type": "GLOBBO",
+    "px": 2.03,
+    "pz": 10.2
+   },
+   {
+    "t": 28.9,
+    "type": "steama",
+    "px": -6.71,
+    "pz": 7.95
+   },
+   {
+    "t": 29.2,
+    "type": "GLOBBO",
+    "px": -10.4,
+    "pz": -0.29
+   },
+   {
+    "t": 29.9,
+    "type": "GLOBBO",
+    "px": 10.22,
+    "pz": 1.9
+   },
+   {
+    "t": 30.2,
+    "type": "GLOBBO",
+    "px": -6.76,
+    "pz": 7.9
+   },
+   {
+    "t": 30.5,
+    "type": "GLOBBO",
+    "px": -3.46,
+    "pz": -9.81
+   },
+   {
+    "t": 31.5,
+    "type": "GLOBBO",
+    "px": -8.83,
+    "pz": 5.5
+   },
+   {
+    "t": 31.8,
+    "type": "GLOBBO",
+    "px": 8.83,
+    "pz": -5.5
+   },
+   {
+    "t": 33.9,
+    "type": "GLOBBO",
+    "px": 2.79,
+    "pz": -10.02
+   },
+   {
+    "t": 34.2,
+    "type": "GLOBBO",
+    "px": 9.57,
+    "pz": -4.06
+   },
+   {
+    "t": 34.5,
+    "type": "steama",
+    "px": 9.15,
+    "pz": 4.95
+   },
+   {
+    "t": 34.8,
+    "type": "GLOBBO",
+    "px": 1.83,
+    "pz": 10.24
+   },
+   {
+    "t": 35.1,
+    "type": "GLOBBO",
+    "px": -6.86,
+    "pz": 7.82
+   },
+   {
+    "t": 35.4,
+    "type": "steama",
+    "px": -10.39,
+    "pz": -0.49
+   },
+   {
+    "t": 35.7,
+    "type": "GLOBBO",
+    "px": -6.09,
+    "pz": -8.43
+   },
+   {
+    "t": 36.4,
+    "type": "GLOBBO",
+    "px": 4.71,
+    "pz": 9.27
+   },
+   {
+    "t": 36.7,
+    "type": "GLOBBO",
+    "px": -10.39,
+    "pz": -0.56
+   },
+   {
+    "t": 37.0,
+    "type": "GLOBBO",
+    "px": 5.68,
+    "pz": -8.71
+   },
+   {
+    "t": 38.0,
+    "type": "GLOBBO",
+    "px": -9.74,
+    "pz": -3.66
+   },
+   {
+    "t": 38.3,
+    "type": "GLOBBO",
+    "px": 9.74,
+    "pz": 3.66
+   },
+   {
+    "t": 40.4,
+    "type": "GLOBBO",
+    "px": 9.65,
+    "pz": -3.88
+   },
+   {
+    "t": 40.7,
+    "type": "GLOBBO",
+    "px": 9.05,
+    "pz": 5.13
+   },
+   {
+    "t": 41.0,
+    "type": "steama",
+    "px": 1.64,
+    "pz": 10.27
+   },
+   {
+    "t": 41.3,
+    "type": "GLOBBO",
+    "px": -7.01,
+    "pz": 7.68
+   },
+   {
+    "t": 41.6,
+    "type": "GLOBBO",
+    "px": -10.38,
+    "pz": -0.69
+   },
+   {
+    "t": 41.9,
+    "type": "steama",
+    "px": -5.93,
+    "pz": -8.54
+   },
+   {
+    "t": 42.2,
+    "type": "GLOBBO",
+    "px": 2.98,
+    "pz": -9.96
+   },
+   {
+    "t": 42.9,
+    "type": "GLOBBO",
+    "px": -4.49,
+    "pz": 9.38
+   },
+   {
+    "t": 43.2,
+    "type": "GLOBBO",
+    "px": -5.87,
+    "pz": -8.58
+   },
+   {
+    "t": 43.5,
+    "type": "GLOBBO",
+    "px": 10.37,
+    "pz": -0.8
+   }
+  ]
+ }
+]

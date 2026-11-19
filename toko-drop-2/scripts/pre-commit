@@ -1,0 +1,110 @@
+#!/usr/bin/env bash
+# Pre-commit hook — the version-log discipline, enforced.
+#
+# Install once per clone (and again whenever this file changes):
+#   cp scripts/pre-commit .git/hooks/pre-commit && chmod +x .git/hooks/pre-commit
+# Never bypass it with --no-verify.
+#
+# Everything is checked against the COMMIT BEING MADE (a snapshot of the
+# index), never the working tree: a fix made on disk but not staged must not
+# let a broken commit through.
+#
+# A commit that touches game files must:
+#   1. pass scripts/check-syntax.sh and scripts/check-tokens.mjs,
+#   2. change VERSIONS.md,
+#   3. leave a well-formed top entry (## vN — YYYY-MM-DD, then a bold title)
+#      and no unfilled bump stub (TODO) anywhere in the log,
+#   4. carry a version NEWER than the one already on origin/main: main is what
+#      Pages serves, so changed bytes under a released ?v=N would sit stale in
+#      phones' caches. (Unreleased local commits may share a number, which is
+#      how M0's five parts all shipped as v1.)
+#   5. at a multiple of 10, have the previous decade rolled into the Archive.
+# Game files are everything except docs (*.md), scripts/, test/, .github/,
+# spec/ and art-ref/ (reference art: never shipped) — anything that ships behaviour to the page. Tooling commits
+# still have to parse.
+cd "$(git rev-parse --show-toplevel)" || exit 1
+
+refuse() {
+  echo ""
+  printf '  %s\n' "$@"
+  echo ""
+  exit 1
+}
+
+# What this commit changes, against its parent. On `git commit --amend`, HEAD
+# is the commit being replaced, so the parent is HEAD^. Git does not tell a
+# hook it is amending; the command line of the git process running it does.
+EMPTY_TREE=$(git hash-object -t tree /dev/null)
+if ! git rev-parse -q --verify HEAD >/dev/null; then
+  BASE=$EMPTY_TREE                                        # the first commit
+elif ps -o args= -p "$PPID" 2>/dev/null | grep -qE -- '(^|[[:space:]])--amend([[:space:]]|$)'; then
+  BASE=$(git rev-parse -q --verify 'HEAD^' || echo "$EMPTY_TREE")
+else
+  BASE=HEAD
+fi
+STAGED=$(git diff --cached --name-only "$BASE")
+
+GAME_CHANGED=$(printf '%s\n' "$STAGED" \
+  | grep -v -E '^$|\.md$' \
+  | grep -v -E '^(scripts|test|\.github|spec|art-ref)/' \
+  | grep -v -E '^(\.gitignore|\.gitattributes|LICENSE)$')
+CODE_CHANGED=$(printf '%s\n' "$STAGED" | grep -E '\.(m?js|html)$')
+if [ -z "$GAME_CHANGED" ] && [ -z "$CODE_CHANGED" ]; then
+  exit 0  # docs only
+fi
+
+# The commit as it will be: every tracked file, as staged.
+SNAP=$(mktemp -d)
+trap 'rm -rf "$SNAP"' EXIT
+git checkout-index -a --prefix="$SNAP/"
+
+(cd "$SNAP" && scripts/check-syntax.sh) || exit 1
+if [ -z "$GAME_CHANGED" ]; then
+  exit 0  # tooling only: it has to parse, it owes no version entry
+fi
+(cd "$SNAP" && node scripts/check-tokens.mjs) || exit 1
+
+if ! printf '%s\n' "$STAGED" | grep -q '^VERSIONS\.md$'; then
+  refuse "VERSIONS.md not updated." \
+         "Game files are staged but VERSIONS.md has no changes." \
+         "Add a ## vN entry (scripts/bump-version.sh <N>) and: git add VERSIONS.md"
+fi
+
+VERS=$(git show :VERSIONS.md 2>/dev/null)
+# The top entry, from its header to the line before the next ## heading.
+TOP=$(printf '%s\n' "$VERS" | awk '/^## v[0-9]/{n++} n==1 && /^## /&&!/^## v[0-9]/{exit} n==2{exit} n==1{print}')
+HEADER=$(printf '%s\n' "$TOP" | head -1)
+TITLE=$(printf '%s\n' "$TOP" | sed -n '2,$p' | grep -v '^[[:space:]]*$' | head -1)
+if ! printf '%s' "$HEADER" | grep -qE '^## v[0-9]+ — [0-9]{4}-[0-9]{2}-[0-9]{2}$'; then
+  refuse "VERSIONS.md: the top entry header must read '## vN — YYYY-MM-DD'." \
+         "It reads: $HEADER"
+fi
+if ! printf '%s' "$TITLE" | grep -qE '^\*\*.+\*\*'; then
+  refuse "VERSIONS.md: the line under '$HEADER' must be a bold one-line title (**...**)."
+fi
+# The stub's own markers, anywhere in the log — prose may say "TODO".
+if printf '%s\n' "$VERS" | grep -qE '^\*\*TODO: one-line title\*\*$|^- TODO$'; then
+  refuse "VERSIONS.md still holds an unfilled bump stub (TODO)." \
+         "Fill it in, then git add VERSIONS.md and commit again."
+fi
+
+LATEST_V=$(printf '%s' "$HEADER" | grep -oE 'v[0-9]+' | grep -oE '[0-9]+')
+RELEASED=$(git show origin/main:VERSIONS.md 2>/dev/null | grep -m1 -oE '^## v[0-9]+' | grep -oE '[0-9]+')
+if [ -n "$RELEASED" ] && [ "$LATEST_V" -le "$RELEASED" ]; then
+  refuse "v$LATEST_V is already released: origin/main is at v$RELEASED." \
+         "Game files changed, so they need a new number, or phones keep the old bytes" \
+         "under the old ?v= token: scripts/bump-version.sh $(( RELEASED + 1 ))"
+fi
+
+# A multiple of 10 rolls the previous decade into the Archive, one line each.
+if [ $(( LATEST_V % 10 )) -eq 0 ]; then
+  ACTIVE_V=$(printf '%s\n' "$VERS" | grep -c '^## v[0-9]' || true)
+  if [ "$ACTIVE_V" -gt 1 ]; then
+    FROM=$(( LATEST_V - 10 )); [ "$FROM" -lt 1 ] && FROM=1
+    refuse "v$LATEST_V is a multiple of 10 — time to archive." \
+           "Roll v${FROM}–v$(( LATEST_V - 1 )) into the Archive section of VERSIONS.md," \
+           "one line per version, then git add VERSIONS.md and commit again."
+  fi
+fi
+
+exit 0
