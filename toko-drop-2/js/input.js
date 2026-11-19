@@ -55,6 +55,7 @@ export class Input {
     // v86 (OPTIONS): the stick's size and the dead zones, and LEFT-HANDED, which
     // swaps the halves — a touch on the left half aims, one on the right moves
     this.stickRadius = I.stickRadius; this.aimDead = I.aimDeadzone; this.padDead = I.padDeadzone; this.swap = false;
+    this.follow = I.follow;   // v156: the sticks' centres follow the thumb (main.js sets it from ?dev's STICK FOLLOW)
     this._dash = false;          // edges, consumed by read()
     this._pause = false;
     this._space = false;         // Space went down during play, so its release is a dash
@@ -130,6 +131,12 @@ export class Input {
         if (!s) continue;
         if (kind === 'move') {
           s.dx = t.clientX - s.ox; s.dy = t.clientY - s.oy;
+          // v156: FOLLOW (TUNING.input.follow): past its limit the stick's centre is dragged along behind the thumb.
+          // `left` is always the move stick (a LEFT-HANDED swap only changes which half of the screen it starts on)
+          if (this.follow) {
+            const d = Math.hypot(s.dx, s.dy), lim = s === this.left ? this.stickRadius : Math.max(this.aimDead + 1, I.followAim);
+            if (d > lim) { const k = 1 - lim / d; s.ox += s.dx * k; s.oy += s.dy * k; s.dx = t.clientX - s.ox; s.dy = t.clientY - s.oy; }
+          }
           s.wander = Math.max(s.wander, Math.hypot(s.dx, s.dy));
           s.hist.push({ x: t.clientX, y: t.clientY, t: e.timeStamp });
           // the touchdown and the last 2 × strokeMs are all a flick can need

@@ -161,6 +161,7 @@ function applyControls() {
   input.swap = handLeft(); input.stickRadius = C.stick[stickSize()];
   input.aimDead = C.dead[deadSize()]; input.padDead = C.padDead * (C.dead[deadSize()] / C.dead.normal);
   input.dashBy = tests().by;   // v124: LIFT (1.x) or FLICK
+  input.follow = store.str('toko2.follow') !== 'off';   // v156: the sticks follow the thumb unless ?dev turned it off
 }
 
 // ── the arena: 1.x's size for the screen's shape, chosen at each run start
@@ -582,6 +583,7 @@ const ui = new UI({
   onSound: () => { sound.setVolume(sound.volume > 0 ? 0 : 1); store.set('toko2.volume', sound.volume); refreshMenu(); },
   onVolume: () => { sound.setVolume(next(VOLUMES, sound.volume)); store.set('toko2.volume', sound.volume); sound.unlock(); sound.event?.({ type: 'pickup', kind: 'score' }); refreshMenu(); },
   onMusic: () => { music.setVolume(next(VOLUMES, music.volume)); store.set('toko2.music', music.volume); sound.unlock(); refreshMenu(); },
+  onFollow: () => { store.set('toko2.follow', input.follow ? 'off' : 'on'); applyControls(); refreshMenu(); },   // v156: ?dev's STICK FOLLOW
   onIntroVoice: () => { announcer.introOn = !announcer.introOn; store.set('toko2.introVoice', announcer.introOn ? 'on' : 'off'); if (announcer.introOn) { titleVoice = false; titleIntro(); } else announcer.stopIntro(); refreshMenu(); },   // v156
   onAnnouncer: () => { announcer.on = !announcer.on; store.set('toko2.announcer', announcer.on ? 'on' : 'off'); if (announcer.on) announcer.say('start'); else announcer.stop(); refreshMenu(); },
   onAnnVolume: () => { announcer.volume = next(VOLUMES.slice(1), announcer.volume); store.set('toko2.annVolume', announcer.volume); announcer.last = -1e9; announcer.say('clear'); refreshMenu(); },
@@ -604,7 +606,7 @@ const ui = new UI({
   onTitle: (keep) => (world?.room ? toMenu() : showTitle(keep)),
   onCampaign: () => showCampaign(),
   onRoom: (id) => startRoom(id),
-  optionsState: () => ({ sound: sound.on, volume: sound.volume, music: music.volume, announcer: announcer.on, introVoice: announcer.introOn, annVolume: announcer.volume, reduceMotion: reduceMotion(), test: tests(),
+  optionsState: () => ({ sound: sound.on, volume: sound.volume, music: music.volume, announcer: announcer.on, introVoice: announcer.introOn, follow: input.follow, annVolume: announcer.volume, reduceMotion: reduceMotion(), test: tests(),
     hand: handLeft() ? 'left' : 'right', stick: stickSize(), dead: deadSize(), autoQ: autoQ(), qShare: quality.share,   // v86
     ...((list) => ({ records: list.length, frames: record.lastFrames(list) }))(record.read(store)), recordSaid }),
   onRecord: () => shareRecord(),

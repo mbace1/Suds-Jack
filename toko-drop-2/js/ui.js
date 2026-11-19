@@ -560,6 +560,8 @@ export class UI {
         this._button(`${t('lens')} · ${t(ln)}`, t(`${ln}Sub`), () => this.h.onLens?.())),
       this._pair(this._button(this.h.goo?.() === false ? t('gooOff') : t('gooOn'), null, () => this.h.onGoo?.()),
         this._button(`${t('dead')} · ${sz(o.dead ?? 'normal')}`, t('deadH'), () => this.h.onDead?.())),
+      // v156: the sticks' centres following the thumb (TUNING.input.follow), OFF for 1.x's fixed centre, to compare
+      this._pair(this._button(`STICK FOLLOW · ${o.follow === false ? 'OFF' : 'ON'}`, o.follow === false ? "1.x's: the centre stays where the thumb landed" : 'the centre trails the thumb: the full 360°', () => this.h.onFollow?.())),
       this._pair(this._button(o.autoQ === false ? t('autoOff') : t('autoOn'), t('autoH').replace('{q}', `${Math.round((o.autoQ === false ? 1 : o.qShare ?? 1) * 100)}%`), () => this.h.onAutoQ?.())),
       this._pair(rec),
       el('p', 'hint', `${t('dash')} · ${t('gelHp')}: ${t('nextRun')}`),
