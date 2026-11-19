@@ -148,6 +148,36 @@ Classic `toko-drop/` remains the historical / hub v221 lineage. Godot port follo
 
 ---
 
+### Decision 19 Nov 2026 — bosses take turns: endurance, then strategic
+- **Mikael**, asked whether a boss is a puzzle or an endurance wall: "make first boss endurance, second strategic, and so on".
+- **Locks:** world 1's boss is an endurance boss, world 2's strategic, and so on. Endurance: TWIN PRISMS (1), MAW (3), KETTLE (5), BERG (7), OMEGA (9). Strategic: CURB KING (2), BLISTER (4), PIKE (6), ANGLER (8). This settles answer 3 of 18 Nov ("strategic bullet wave, weak spots") and the later "one or the other": both kinds, by turns. Sakurai §2 (#105, alternate the problems with the walls) and §1 (#009, squeeze then release).
+- **What each kind means** (producer's reading, built in v157 behind `?bosskinds=off`; the details are **PROPOSAL** until Mikael has played them):
+  - **Endurance:** a clock you outlast. The boss's bar is the clock and empties on its own; hitting it takes time off, but at most 30%. Graded on the hits you took (S none, A one, B two).
+  - **Strategic:** armoured except in a window its own pattern opens (the ring under it is magenta when open, slate when shut). Graded on time.
+- **Still open for Mikael:**
+  - Whether the campaign's boss rooms (PACK ICE, BOIL OVER, THE DEEP END) follow the same call. They are as they were in v157.
+  - The windows (CURB KING dazed after landing; PIKE lining up or stunned; ANGLER telling or resting) and the endurance holds (30–44 s) are first cuts, measured with bots only.
+
+### Decision 19 Nov 2026 (later) — room 1 eased by fairer spawns; two games, landscape and portrait
+- **Mikael**, after playing FIRST LIGHT (campaign room 1): "it was quite challenging as I could not be[at] it even for the lowest tier. I like the challenge but we might want to bring it down a little bit. The biggest impact on this would be how the enemies spawn. They shouldn't spawn too close and also could avoid the direction of movement slightly."
+- **Mikael:** "At some point we also have to reconcile that we are making 2 games, landscape and portrait. Both need to be tested equally and steam will get landscape and mobiles likely both."
+- **Locks:**
+  - Campaign bodies arrive **fair** (v157, `sim/fairspawn.js`, `TUNING.fairSpawn`, `?fair=off` to compare). A body never arrives within 5 u of the hero, nor (while the hero moves) in a 35° cone ahead of it out to 9 u. Its authored point is kept when fair. Otherwise it moves to the nearest fair mirror or turn of that point, so the room keeps its shape and its count and timing. A boss is left where its room puts it. Sakurai §2 (#211: never put the player into danger they could not see coming).
+    - Measured with a roaming hero (a loop near the walls, 30 seeds): in FIRST LIGHT 14% of bodies had arrived within 5 u and 9% ahead; with the rule, 0.2% and 0.7%. Hits fell from 0.8 a run to 0, and the score rose from 50k to 54k (the C line is 44k). Across all 36 rooms, close arrivals drop in all but the four whose close bodies come from splits and broods.
+  - **Two games, tested equally.** Landscape is a game and portrait is a game. Steam gets landscape; phones likely get both. Every test that runs one runs the other. From v157 the browser smoke walks the same menus, pause, settings and campaign upright as sideways, in `--quick` too, and `scripts/room-tiers.mjs --portrait` plays every room turned.
+- **Still open for Mikael:**
+  - Whether ARCADE gets the same fair-spawn rule. Its bodies come in on the arena's edge at 1.x's ring with no keep-out; v157 leaves that as 1.x had it.
+  - Whether FIRST LIGHT's score lines should also come down. They are the bots' (C is the rough bot's median, 44k), and a person scores below the rough bot. The spawn rule eases the room without moving the lines.
+
+### Decision 19 Nov 2026 (evening) — the grades are a climb: F, D, C, B, A, S
+- **Mikael:** "S- tier should be possible in all campaign levels. F likely for first 2 or so tries, the D and C.. only after really great runs should get B, A, and really practice gets you an S. Sometimes proper strategy should earn you A or S a bit more easily. This is a way to teach strategies." Asked whether similar games use a D: they do. Devil May Cry, osu! and Sugary Spire all put D at the bottom of a clear, and Sonic Adventure 2 goes down to E. Then: "Go ahead, fix it all. Also there is a fail state."
+- **Locks (v157):**
+  - **F is the fail state**: a run that did not get through (dying, the clock, the heart, a hit in a no-hits room). The room card still says why.
+  - **D is getting through**: a clear under the C line, where it used to be an F (this replaces 27 Oct's "F is a small but still challenging score"). A D opens the next room.
+  - C, B, A and S stay on the bots' lines: C the rough bot's median, B the average bot's weaker quarter, A the average bot's median, S the sharp bot's median. For a person, B and A are great runs and S is practice.
+  - Every room's S is checked reachable: the sharp bot gets through every room and its median is the S line (scripts/room-tiers.mjs, both orientations).
+- **Still open (PROPOSAL):** "proper strategy should earn you A or S a bit more easily". Each room names what it teaches (`plan.teaches`, `plan.strategy`). A room could pay a bonus when it is played its way, for example killing in order in IN ORDER, or dashing the gates in GATE RUN. Which rooms, and how much, is Mikael's call.
+
 ## 6. Sakurai principles (adopted 15 Nov 2026)
 
 **Source:** [kociden/sakurai-skill](https://github.com/kociden/sakurai-skill). It's an unofficial, fan-made AI summary of Masahiro Sakurai's YouTube series *桜井政博のゲーム作るには* and **not Sakurai's own words**. Agents load it as `.claude/skills/sakurai` (see `toko-drop-2/AGENTS.md`). Citations below use the skill's chapter (§) and video numbers (#NNN).
@@ -180,6 +210,8 @@ Classic `toko-drop/` remains the historical / hub v221 lineage. Godot port follo
 ---
 
 ## Boss phases (PROPOSAL, implemented in PR)
+
+**v157: every boss also has a KIND** (Decision 19 Nov 2026, `tuning/bosskinds.js`): endurance in odd worlds, strategic in even ones. An endurance boss's phases come on its clock (stages 1 : 1.15 : 1.3 of the hold), and its health no longer holds at a line. A strategic boss's phases still read its health, which falls only in its windows. PIKE (28 hp) and ANGLER (36 hp) have their own health for that reason. The grade lines below are re-measured with the phases and kinds on (v157), so the `tiers` estimate is gone. The table below is v154's and predates the kinds.
 
 Per **Decision 15 Nov 2026: Bosses are multi-wave fights**. Implemented in v154 (`toko-drop-2/js/tuning/bossphases.js`, `sim/species/bosskit.js`). It applies in ARCADE and HARDCADE. Campaign boss rooms (PACK ICE, BOIL OVER, THE DEEP END) keep v153 behaviour unless `?bossphases=all` is set. `?bossphases=off` restores v153 for A/B.
 
@@ -232,7 +264,7 @@ No questions from 18 Nov are open.
 
 **How to read it.** `[x]` is done, with its evidence. `[ ]` is open. The percentage to shipping is the share of boxes ticked. Ticking a box needs the evidence named on its line: a version, a playtest note or an owner answer. An agent may not tick a design box on its own judgment. Rows tagged **PROPOSAL** are the producer's suggestion until Mikael confirms them; he may cut or add rows.
 
-**Count at v155: 17 of 36 (about 47%).** Most of the remaining boxes are decisions and playtests, not code.
+**Count at v157: 19 of 39 (about 49%).** Most of the remaining boxes are decisions and playtests, not code. (v155: 17 of 36; v157 added the campaign boss rooms, landscape-and-portrait parity and a Steam build as rows.)
 
 ### A. The target (owner)
 - [x] Where 2.0 is released: **itch.io, as an HTML game played in the browser** (owner, 18 Nov).
@@ -252,8 +284,9 @@ No questions from 18 Nov are open.
 - [x] A testers' unlock: `?unlock=all` and `?room=N`, which write no saves (v154).
 
 ### C. Design (from the 18 Nov answers)
-- [ ] Every boss is named as a **puzzle** or an **endurance wall**, and plays as its kind (decision above). Boss rooms in the campaign follow the same call.
-- [ ] Boss grade lines re-measured with `scripts/boss-tiers.mjs` after v154 (Boss phases: the lines are still estimates).
+- [x] Every boss is named as a **puzzle** (strategic) or an **endurance wall**, and plays as its kind, in ARCADE and HARDCADE: endurance first, then strategic, by turns (owner, 19 Nov; v157).
+- [ ] The campaign's boss rooms follow the same call (owner to confirm; v157 leaves them as they were).
+- [x] Boss grade lines re-measured with `scripts/boss-tiers.mjs` with the phases and kinds on (v157).
 - [ ] Room 1 asks for the simplest strategy, and the campaign climbs in tiers that ask for more complex ones, with fun twists and easier stretches along the way: a roller coaster (owner, 18 Nov).
 - [ ] A new world opens **fresh**: a breath, then the squeeze. World 8's first hit at about 1 s is answered (v155 measured it).
 - [ ] Worlds 7–9 keep rising instead of pressing like world 6 (§6 row 4).
@@ -261,7 +294,7 @@ No questions from 18 Nov are open.
 - [ ] Survive-for-score rooms say one goal, not a clock and a points line (§6 rows 1 and 6). **PROPOSAL**
 
 ### D. Playtests (people, not bots)
-- [ ] The first third of the campaign (rooms 1–12) played by a human, and its notes acted on.
+- [ ] The first third of the campaign (rooms 1–12) played by a human, and its notes acted on. Room 1 played by Mikael 19 Nov: too hard to make even C; fairer spawns in v157 (not yet played).
 - [ ] The whole campaign played through once by a human.
 - [ ] ARCADE played to world 9 by a human.
 - [ ] HARDCADE and HARD PAIN played by a human. **PROPOSAL**
@@ -269,6 +302,8 @@ No questions from 18 Nov are open.
 ### E. Devices
 - [x] Played on a phone by the owner: a Pixel 10 Pro (18 Nov).
 - [ ] Played on at least one iPhone and one Android phone, in both orientations, at the release version. Android so far: a Pixel 10 Pro.
+- [ ] **Landscape and portrait tested equally** (owner, 19 Nov: "2 games"; Steam is landscape, phones likely both). The browser smoke walks both (v157), the room pass plays both (`--portrait`, v157), and a person plays both orientations before a release.
+- [ ] A landscape build for Steam (desktop, keyboard and pad first). **PROPOSAL**: the format is Mikael's to set.
 - [ ] Holds a playable frame rate on those phones through a late-world swarm and a boss death. The target number is Mikael's to set. **PROPOSAL**
 - [x] The result card's lower buttons (ROOMS, OPTIONS) can be reached on a phone held sideways: the owner thinks so on a Pixel 10 Pro (18 Nov). An emulator check at v155 had them below the bottom of the screen, so look again on an iPhone.
 - [ ] A desktop browser without WebGPU gets a fallback or a clear message. **PROPOSAL**

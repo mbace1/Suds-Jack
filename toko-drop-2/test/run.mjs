@@ -4,10 +4,10 @@
 // is the game's grace and not the INVINCIBLE pickup's timer (its ★ chip stays dark); `heroState` reads the dash and
 // the guard; and nothing after the director's decision changes a decided run — a run won, a room's end written.
 import { readFileSync } from 'node:fs';
-import { createWorld, step, api, runPhase } from '../js/sim/world.js?v=156';
-import { heroState, hurtHero } from '../js/sim/hero.js?v=156';
-import { rooms } from '../js/sim/director/campaign.js?v=156';
-import { TUNING as T } from '../js/tuning.js?v=156';
+import { createWorld, step, api, runPhase } from '../js/sim/world.js?v=157';
+import { heroState, hurtHero } from '../js/sim/hero.js?v=157';
+import { rooms } from '../js/sim/director/campaign.js?v=157';
+import { TUNING as T } from '../js/tuning.js?v=157';
 
 let failed = 0, passed = 0;
 const check = (c, ok, d = '') => { if (ok) { passed++; return; } failed++; console.log(`  ✗ ${c}${d ? ` — ${d}` : ''}`); };

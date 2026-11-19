@@ -12,6 +12,8 @@
 //   node scripts/room-tiers.mjs --write         write the tiers into levels/*.json
 //   node scripts/room-tiers.mjs --hard          the HARD campaign: every corpse fires back (`tiersHard`)
 //   node scripts/room-tiers.mjs --part 2/4      the second quarter of the rooms (one process a core)
+//   node scripts/room-tiers.mjs --portrait      every room turned, as a phone held upright plays it (report only)
+//   node scripts/room-tiers.mjs --both --write  both orientations, each line the lower of the two (v157)
 //
 // It plays at three SKILLS — sharp, average, rough: players who look ahead and
 // differ in the human part (v56, scripts/bot.mjs: how fast they take a new
@@ -22,9 +24,9 @@
 // does not get through). A room the average bot gets through less than half
 // the time is reported, not tiered — that is a room to fix, not to grade.
 import { readFileSync, writeFileSync } from 'node:fs';
-import { createWorld, step } from '../js/sim/world.js?v=156';
-import { TUNING as T } from '../js/tuning.js?v=156';
-import { rooms, roomBodies } from '../js/sim/director/campaign.js?v=156';
+import { createWorld, step } from '../js/sim/world.js?v=157';
+import { TUNING as T } from '../js/tuning.js?v=157';
+import { rooms, roomBodies } from '../js/sim/director/campaign.js?v=157';
 import { SKILLS, LINE_SKILLS, prng, think } from './bot.mjs';
 import { scoreLines, BANDS, bandOf } from './lines.mjs';
 
@@ -33,13 +35,20 @@ const SEEDS = +opt('--seeds', 24), ONLY = opt('--room', null), WRITE = args.incl
 const [PART, PARTS] = (opt('--part', '1/1')).split('/').map(Number);
 // --hard: the HARD campaign (v49) — every corpse fires back — and its lines go in `tiersHard`
 const HARD = args.includes('--hard'), KEY = HARD ? 'tiersHard' : 'tiers';
+// --portrait (v157, owner: "we are making 2 games, landscape and portrait. Both need to be tested equally"): every
+// room played TURNED, as a phone held upright plays it — a report beside the sideways one, never written
+const TURN = args.includes('--portrait');
+if (TURN && WRITE) { console.log('--portrait reports only: write with --both'); process.exit(2); }
+// --both (v157: "S should be possible in all campaign levels", in both games): every seed played sideways AND turned;
+// each line is the LOWER of the two orientations' lines, so a grade reachable one way is reachable the other way
+const BOTH = args.includes('--both');
 // the difficulty bands a room is held to: scripts/lines.mjs
 const dt = T.sim.dt, H = T.hero;
 const levelPath = (id) => new URL(`../levels/${id}.json`, import.meta.url);
 const level = (id) => JSON.parse(readFileSync(levelPath(id), 'utf8'));
 
-function play(L, seed, K) {
-  const R = { id: L.id, world: L.plan.world, level: L, hard: HARD };
+function play(L, seed, K, turn = TURN) {
+  const R = { id: L.id, world: L.plan.world, level: L, hard: HARD, turn };
   const w = createWorld({ seed, mode: 'campaign', room: R });
   const mem = { quarry: null, lineup: null, seen: new WeakMap(), rnd: prng(seed * 31 + 7) };
   if (L.goal?.kind) mem.quarry = T.campaign.kinds[L.goal.kind] ?? L.goal.kind;
@@ -63,16 +72,30 @@ for (const [ri, r] of rooms().entries()) {
   if (ONLY && r.id !== ONLY) continue;
   if (ri % PARTS !== PART - 1) continue;
   const L = level(r.id);
-  const by = {};
-  for (const [name, K] of LINE_SKILLS.map((k) => [k, SKILLS[k]])) {
-    const runs = Array.from({ length: SEEDS }, (_, i) => play(L, 101 + i * 7, K));
-    const ok = runs.filter((e) => e.outcome === 'clear');
-    by[name] = { pass: ok.length / runs.length, vs: ok.map((e) => e.score), outs: runs.reduce((o, e) => ((o[e.outcome] = (o[e.outcome] || 0) + 1), o), {}), why: runs.filter((e) => e.outcome !== 'clear').map((e) => `${e.outcome}${e.by ? ':' + e.by : ''}@${e.t}`) };
+  const measure = (turn) => {
+    const by = {};
+    for (const [name, K] of LINE_SKILLS.map((k) => [k, SKILLS[k]])) {
+      const runs = Array.from({ length: SEEDS }, (_, i) => play(L, 101 + i * 7, K, turn));
+      const ok = runs.filter((e) => e.outcome === 'clear');
+      by[name] = { pass: ok.length / runs.length, vs: ok.map((e) => e.score), outs: runs.reduce((o, e) => ((o[e.outcome] = (o[e.outcome] || 0) + 1), o), {}), why: runs.filter((e) => e.outcome !== 'clear').map((e) => `${e.outcome}${e.by ? ':' + e.by : ''}@${e.t}`) };
+    }
+    // v51: a room is graded on its SCORE; the lines come from scripts/lines.mjs.
+    // HARD (v49) is the mode you choose to be hard in: a room the average bot
+    // rarely gets through is the point, not a fault, so it is tiered anyway
+    const tiers = (by.average.pass >= 0.5 || HARD) ? scoreLines({ sharp: by.sharp.vs, average: by.average.vs, rough: by.rough.vs }, { seeds: SEEDS }) : null;
+    return { by, tiers };
+  };
+  let { by, tiers } = measure(TURN);
+  if (BOTH) {
+    const up = measure(true);
+    // the pass rates read the worse orientation (a room is in its band only if both are); each line the lower one
+    for (const k of Object.keys(by)) if (up.by[k].pass < by[k].pass) by[k] = up.by[k];
+    if (tiers && up.tiers) {
+      const lo = { S: Math.min(tiers.S, up.tiers.S), A: Math.min(tiers.A, up.tiers.A), B: Math.min(tiers.B, up.tiers.B), C: Math.min(tiers.C, up.tiers.C) };
+      for (const [hi, l] of [['S', 'A'], ['A', 'B'], ['B', 'C']]) if (lo[l] >= lo[hi]) lo[l] = Math.round(lo[hi] * 0.9);
+      tiers = lo;
+    } else tiers = tiers ?? up.tiers;
   }
-  // v51: a room is graded on its SCORE; the lines come from scripts/lines.mjs.
-  // HARD (v49) is the mode you choose to be hard in: a room the average bot
-  // rarely gets through is the point, not a fault, so it is tiered anyway
-  const tiers = (by.average.pass >= 0.5 || HARD) ? scoreLines({ sharp: by.sharp.vs, average: by.average.vs, rough: by.rough.vs }, { seeds: SEEDS }) : null;
   const k = (v) => (v == null ? '    -' : (v >= 1000 ? `${(v / 1000).toFixed(1)}k` : String(v)).padStart(6));
   const passes = ['sharp', 'average', 'rough'].map((k) => String(Math.round(by[k].pass * 100)).padStart(3)).join('/');
   console.log(`${r.id.padEnd(13)} ${(L.goal.type + (L.goal.metric ? '/' + L.goal.metric : '')).padEnd(13)} ${String(L.plan.d).padStart(2)}  ${String(L.duration).padStart(3)}s   ${passes}%          ${k(med(by.sharp.vs))} ${k(med(by.average.vs))} ${k(med(by.rough.vs))}        ${tiers ? `${tiers.S} / ${tiers.A} / ${tiers.B} / ${tiers.C}` : `NOT TIERED avg ${JSON.stringify(by.average.outs)}`}`);
@@ -85,7 +108,7 @@ for (const [ri, r] of rooms().entries()) {
   report.push({ id: r.id, d: L.plan.d, by, tiers, off });
   if (WRITE && tiers) {
     const src = JSON.parse(readFileSync(levelPath(r.id), 'utf8'));
-    src[KEY] = { ...tiers, source: `${HARD ? 'HARD ' : ''}bot pass (v56 look-ahead bots), ${SEEDS} seeds a skill: got through sharp ${Math.round(by.sharp.pass * 100)}%, average ${Math.round(by.average.pass * 100)}%, rough ${Math.round(by.rough.pass * 100)}%. score lines: S the sharp median, A the average median, B the average's weaker quarter, C the rough median or the average's weakest tenth (scripts/lines.mjs)` };
+    src[KEY] = { ...tiers, source: `${HARD ? 'HARD ' : ''}bot pass (v56 look-ahead bots${BOTH ? '; v157: sideways and upright, each line the lower' : ''}), ${SEEDS} seeds a skill${BOTH ? ' an orientation' : ''}: got through sharp ${Math.round(by.sharp.pass * 100)}%, average ${Math.round(by.average.pass * 100)}%, rough ${Math.round(by.rough.pass * 100)}%. score lines: S the sharp median, A the average median, B the average's weaker quarter, C the rough median or the average's weakest tenth (scripts/lines.mjs)` };
     writeFileSync(levelPath(r.id), JSON.stringify(src, null, 1) + '\n');
   }
 }

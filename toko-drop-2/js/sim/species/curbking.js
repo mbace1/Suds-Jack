@@ -12,9 +12,9 @@
 //           it squats again at once for a second hop, then rests; the ring
 //           comes doubled; every `brood.every`th landing shakes HOPPA loose
 // Numbers: js/tuning/species/curbking.js. Seeded: w.rng only.
-import { steerTo } from './base.js?v=156';
-import { rage, range, inside } from './bosskit.js?v=156';
-import { TUNING } from '../../tuning.js?v=156';
+import { steerTo } from './base.js?v=157';
+import { rage, range, inside } from './bosskit.js?v=157';
+import { TUNING } from '../../tuning.js?v=157';
 
 function squat(w, g, S, crouch) {
   const s = g.s, h = w.hero;
@@ -32,7 +32,7 @@ export default {
   init(w, g, api) {
     const S = api.S(g), s = g.s;
     s.state = 'rest'; s.t = range(w, S.firstRest); s.y = 0; s.crouch = S.crouch;
-    s.fx = g.x; s.fz = g.z; s.tx = g.x; s.tz = g.z; s.turn = 0; s.landings = 0; s.second = false;
+    s.fx = g.x; s.fz = g.z; s.tx = g.x; s.tz = g.z; s.turn = 0; s.landings = 0; s.second = false; s.dazeT = 0;
     s.enraged = false;
   },
 
@@ -42,7 +42,8 @@ export default {
     s.t -= dt;
     g.anchored = true;                        // a king is not shoved about by the crowd
     if (s.state === 'rest') {
-      steerTo(g, h.x, h.z, api.speed(g));
+      // v157: dazed after a landing (a STRATEGIC boss, tuning/bosskinds.js) it sits where it came down, open
+      if (s.dazeT > 0) { s.dazeT -= dt; g.vx = g.vz = 0; } else steerTo(g, h.x, h.z, api.speed(g));
       g.tell = 0;
       if (s.t <= 0) squat(w, g, S, mad ? R.crouch : S.crouch);
     } else if (s.state === 'crouch') {
@@ -60,6 +61,9 @@ export default {
     }
   },
 
+  // v157, a STRATEGIC boss (tuning/bosskinds.js): open while it squats and while it sits dazed after a landing
+  open(w, g) { return g.s.state === 'crouch' || g.s.dazeT > 0; },
+
   // in the air it is over your head
   hitTest(w, g, x, z, r) { return g.s.y < air(g) && Math.hypot(g.x - x, g.z - z) < r + g.r; },
   touches(w, g) { const h = w.hero; return g.s.y < air(g) && Math.hypot(g.x - h.x, g.z - h.z) < g.r + 0.5; },
@@ -69,7 +73,7 @@ const air = (g) => TUNING.species[g.kind].airborne;
 
 function land(w, g, S, api, mad) {
   const s = g.s, R = S.rage;
-  s.y = 0; s.landings++;
+  s.y = 0; s.landings++; s.dazeT = S.daze ?? 0;
   g.sqV += S.landSquash;
   s.turn ^= 1;
   const a = api.fire.aimAngle(w, g.x, g.z) + s.turn * Math.PI / S.ring.count, opts = { color: S.bulletColor, src: g.kind };

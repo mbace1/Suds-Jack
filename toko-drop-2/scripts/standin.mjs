@@ -11,10 +11,10 @@
 //   node scripts/standin.mjs [out=dist/standin-record.txt] [--quick]
 import { writeFileSync, mkdirSync, readFileSync } from 'node:fs';
 import { dirname } from 'node:path';
-import { createWorld, step } from '../js/sim/world.js?v=156';
-import { TUNING as T } from '../js/tuning.js?v=156';
-import { rooms } from '../js/sim/director/campaign.js?v=156';
-import { entryFor, pack } from '../js/record.js?v=156';
+import { createWorld, step } from '../js/sim/world.js?v=157';
+import { TUNING as T } from '../js/tuning.js?v=157';
+import { rooms } from '../js/sim/director/campaign.js?v=157';
+import { entryFor, pack } from '../js/record.js?v=157';
 import { SKILLS, prng, think } from './bot.mjs';
 
 const args = process.argv.slice(2), OUT = args.find((a) => !a.startsWith('--')) ?? 'dist/standin-record.txt', QUICK = args.includes('--quick');

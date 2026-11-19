@@ -3,7 +3,7 @@
 // takes your shots and pops on the last; only then can the gel be hurt, and
 // only until the bubble grows back. Its blown bubbles burst into rings.
 import { checker, arena, common } from '../lib/boss.mjs';
-import BEH from '../../js/sim/species/blister.js?v=156';
+import BEH from '../../js/sim/species/blister.js?v=157';
 const K = 'blister', { check, done } = checker(K);
 const { S } = common(K, 4, { check });
 {

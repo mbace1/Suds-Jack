@@ -2,9 +2,9 @@
 // skata.mjs — SKATA (THE ICE SHEET), in bare node: a puck that never stops,
 // faster off every wall, lining up on you every few bounces.
 import { readFileSync } from 'node:fs';
-import { createWorld, step, api } from '../../js/sim/world.js?v=156';
-import { TUNING as T } from '../../js/tuning.js?v=156';
-import behaviour from '../../js/sim/species/skata.js?v=156';
+import { createWorld, step, api } from '../../js/sim/world.js?v=157';
+import { TUNING as T } from '../../js/tuning.js?v=157';
+import behaviour from '../../js/sim/species/skata.js?v=157';
 let failed = 0, passed = 0;
 const check = (c, ok, d = '') => { if (ok) { passed++; return; } failed++; console.log(`  ✗ ${c}${d ? ` — ${d}` : ''}`); };
 const S = T.species.skata, dt = T.sim.dt, IDLE = { mx: 0, mz: 0, ax: 1, az: 0, aim: false, fire: false, dash: false };

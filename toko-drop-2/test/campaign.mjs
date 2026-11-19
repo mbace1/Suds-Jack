@@ -6,12 +6,12 @@
 //
 //   node test/campaign.mjs
 import { readFileSync } from 'node:fs';
-import { createWorld, step, api } from '../js/sim/world.js?v=156';
-import { TUNING as T } from '../js/tuning.js?v=156';
-import { grade, rooms, isOpen, roomBodies, tiersFor } from '../js/sim/director/campaign.js?v=156';
-import { speciesOf, goalOf, metricOf } from '../js/sim/challenge.js?v=156';
-import * as heatMod from '../js/sim/heat.js?v=156';
-import { Arena, levelShape, rectShape, circleShape, unionShape, intersectShape } from '../js/sim/shape.js?v=156';
+import { createWorld, step, api } from '../js/sim/world.js?v=157';
+import { TUNING as T } from '../js/tuning.js?v=157';
+import { grade, rooms, isOpen, roomBodies, tiersFor } from '../js/sim/director/campaign.js?v=157';
+import { speciesOf, goalOf, metricOf } from '../js/sim/challenge.js?v=157';
+import * as heatMod from '../js/sim/heat.js?v=157';
+import { Arena, levelShape, rectShape, circleShape, unionShape, intersectShape } from '../js/sim/shape.js?v=157';
 
 let failed = 0, passed = 0;
 const check = (claim, ok, detail = '') => { if (ok) { passed++; return; } failed++; console.log(`  ✗ ${claim}${detail ? ` — ${detail}` : ''}`); };
@@ -50,7 +50,7 @@ for (const r of rooms()) {
     }
     const tag = `${r.id}${turn ? ' (turned)' : ''}`;
     check(`${tag}: every authored body is a 2.0 species`, known === roomBodies(L), `${known} of ${roomBodies(L)}`);
-    check(`${tag}: ends with a grade`, !!end && ['S', 'A', 'B', 'C', 'F'].includes(end.grade), JSON.stringify(end));
+    check(`${tag}: ends with a grade`, !!end && ['S', 'A', 'B', 'C', 'D', 'F'].includes(end.grade), JSON.stringify(end));
     if (!end) continue;
     // a room graded on a share or on hits lasts its clock (an invincible hero cannot die in it; a heart can)
     const timed = metricOf(R).name === 'time', heart = ['protect', 'escort'].includes(goalOf(R).type);
@@ -83,7 +83,7 @@ for (const r of rooms()) {
 {
   const L = { ...level('undertow'), tiers: { S: 9000, A: 7000, B: 5000, C: 3000 } }, room = { goal: 'survive' };
   check('a score at or past a line takes its grade', grade(room, L, { outcome: 'clear', score: 9000 }) === 'S' && grade(room, L, { outcome: 'clear', score: 7400 }) === 'A' && grade(room, L, { outcome: 'clear', score: 5000 }) === 'B' && grade(room, L, { outcome: 'clear', score: 3000 }) === 'C');
-  check('through the room but under C is F', grade(room, L, { outcome: 'clear', score: 2999 }) === 'F');
+  check('through the room but under C is D (v157: F is not getting through)', grade(room, L, { outcome: 'clear', score: 2999 }) === 'D');
   check('dead is F, whatever the score', grade(room, L, { outcome: 'dead', score: 99999 }) === 'F');
   const N = { ...level('undertow'), tiers: undefined, tiersHard: undefined }, R2 = T.campaign.scoreRate, D = N.duration;
   check('a room with no lines yet grades at TUNING.campaign.scoreRate a second of its clock', JSON.stringify(tiersFor(room, N)) === JSON.stringify({ S: D * R2.S, A: D * R2.A, B: D * R2.B, C: D * R2.C }));

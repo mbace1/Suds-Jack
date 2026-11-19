@@ -7,10 +7,10 @@
 // it also tumbles on the diagonals (owner: the YELA sketch's "diagonal
 // movement"), which 1.x's never did: those checks say so where they are.
 import { readFileSync } from 'node:fs';
-import { createWorld, step, api } from '../../js/sim/world.js?v=156';
-import { TUNING as T } from '../../js/tuning.js?v=156';
-import behaviour from '../../js/sim/species/yela.js?v=156';
-import look, { lay } from '../../js/render/looks/yela.js?v=156';
+import { createWorld, step, api } from '../../js/sim/world.js?v=157';
+import { TUNING as T } from '../../js/tuning.js?v=157';
+import behaviour from '../../js/sim/species/yela.js?v=157';
+import look, { lay } from '../../js/render/looks/yela.js?v=157';
 import * as THREE from '../../vendor/three/three.webgpu.js?v=r186';
 
 let failed = 0, passed = 0;

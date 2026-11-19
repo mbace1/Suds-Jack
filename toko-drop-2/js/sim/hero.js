@@ -21,11 +21,12 @@
 // (dashPlan). 1.x fires only
 // while the aim is valid AND the trigger is held: a touch or pad aim stick is
 // both at once, a mouse aims all the time and fires only while held.
-import { TUNING } from '../tuning.js?v=156';
-import * as heat from './heat.js?v=156';
-import { BEHAVIOUR } from './species/index.js?v=156';   // read at run time only (a species' hitTest)
-import { slip } from './rules.js?v=156';   // THE FOAM's slick floor
-import * as posts from './posts.js?v=156';
+import { TUNING } from '../tuning.js?v=157';
+import * as heat from './heat.js?v=157';
+import { BEHAVIOUR } from './species/index.js?v=157';   // read at run time only (a species' hitTest)
+import { armoured } from './species/bosskit.js?v=157';   // v157: a STRATEGIC boss outside its window
+import { slip } from './rules.js?v=157';   // THE FOAM's slick floor
+import * as posts from './posts.js?v=157';
 
 const T = TUNING, H = T.hero, L = T.heroLook;
 
@@ -195,6 +196,8 @@ export function heroStep(w, input, dt, api) {
       // v105: a TANK or a GIANT (size class 4-5, TUNING.sizes) is not killed outright either: it takes the pass
       const tank = T.sizes.classes[g.size]?.dashHits;
       if (!g.isBoss && !tank && h.dashLevel >= 1) { api.kill(w, g, 'dash'); continue; }
+      // v157: a STRATEGIC boss outside its window takes nothing from the pass (tuning/bosskinds.js)
+      if (armoured(w, g, B)) { w.events.push({ type: 'block', x: g.x, z: g.z, id: g.id, by: 'armour' }); continue; }
       // a boss takes it as one of the hero's hits (a CUT, as its hits): the
       // flash, the squash, and the hit event (the ripple from the side the
       // hero came through, the sound) that world.js heroBulletsHit sends for a bullet
@@ -261,7 +264,7 @@ function shove(w, h, api) {
     g.shovedBy = h.dashId;
     g.sqV += P.squash;
     w.events.push({ type: 'shove', x: g.x, z: g.z, id: g.id, kind: g.kind });
-    if (h.dashLevel >= 1) {
+    if (h.dashLevel >= 1 && !armoured(w, g, BEHAVIOUR[g.kind])) {
       g.hp -= P.hurt; g.flash = T.gel.flash; g.sqV += T.gel.sq.hit;
       w.events.push({ type: 'hit', x: h.x, z: h.z, id: g.id, kind: g.kind });
       if (g.hp <= 0) api.kill(w, g, 'dash');

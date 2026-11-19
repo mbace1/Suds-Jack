@@ -11,10 +11,10 @@
 // rage) and for the spec's fix to the volley rhythm (arcade-mode.md §5.4).
 import { readFileSync } from 'node:fs';
 import * as THREE from '../../vendor/three/three.webgpu.js?v=r186';
-import { createWorld, step, api } from '../../js/sim/world.js?v=156';
-import { TUNING as T } from '../../js/tuning.js?v=156';
-import { headliner } from '../../js/sim/director/arcade.js?v=156';
-import look from '../../js/render/looks/prism.js?v=156';
+import { createWorld, step, api } from '../../js/sim/world.js?v=157';
+import { TUNING as T } from '../../js/tuning.js?v=157';
+import { headliner } from '../../js/sim/director/arcade.js?v=157';
+import look from '../../js/render/looks/prism.js?v=157';
 
 let failed = 0, passed = 0;
 const check = (claim, ok, detail = '') => {

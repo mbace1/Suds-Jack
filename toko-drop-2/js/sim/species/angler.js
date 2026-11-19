@@ -9,10 +9,14 @@
 //
 //   CREEP → (near the light) TELL → BITE → REST → CREEP
 // Numbers: js/tuning/species/angler.js. Seeded: w.rng only.
-import { steerTo } from './base.js?v=156';
-import { rage, range, toHero, inside } from './bosskit.js?v=156';
+import { steerTo } from './base.js?v=157';
+import { rage, range, toHero, inside } from './bosskit.js?v=157';
 
 export default {
+  // v157, a STRATEGIC boss (tuning/bosskinds.js): open while it tells its bite (you are in front of it: the risk next
+  // to the return, Sakurai §1) and while it rests after one — come close to the light, slip the bite, punish
+  open(w, g) { return g.s.state === 'tell' || g.s.state === 'rest'; },
+
   init(w, g, api) {
     const S = api.S(g), s = g.s;
     s.state = 'creep'; s.t = 0.8; s.lx = g.x; s.lz = g.z; s.dx = 0; s.dz = 1; s.called = false;

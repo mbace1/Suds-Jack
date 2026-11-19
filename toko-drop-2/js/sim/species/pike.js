@@ -10,7 +10,7 @@
 //
 //   CIRCLE → AIM → CHARGE → (STUN at a wall) → CIRCLE
 // Numbers: js/tuning/species/pike.js. Seeded: w.rng only.
-import { rage, range, toHero } from './bosskit.js?v=156';
+import { rage, range, toHero } from './bosskit.js?v=157';
 
 // the far end of the lane from (x, z) along (dx, dz): where it meets a wall
 function laneEnd(w, x, z, dx, dz, m) {
@@ -29,6 +29,10 @@ function lineUp(w, g, S, aim) {
 }
 
 export default {
+  // v157, a STRATEGIC boss (tuning/bosskinds.js): open while it lines up (shooting it then means standing in its
+  // lane: the risk next to the return, Sakurai §1) and while it is stunned — bait the charge into a wall
+  open(w, g) { return g.s.state === 'aim' || g.s.state === 'stun'; },
+
   init(w, g, api) {
     const S = api.S(g), s = g.s;
     s.state = 'circle'; s.t = range(w, S.circle.time); s.sign = w.rng.next() < 0.5 ? 1 : -1;
