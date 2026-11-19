@@ -1,0 +1,128 @@
+{
+  "film": "not-yet-listed",
+  "cut": "3D v1 stills (19 Nov, en only). Owner, 19 Nov: 'Top3', 'Go ahead with stills for A, later B'. Device: the archive table. Our own pins go into a map of Finland, each one a data-center project the press has reported; the state's register arrives as a steel card drawer, takes the pins in as cards, shuts under NOT PUBLIC, and slides out one sheet: the summary.",
+  "series": "rfh",
+  "captionSize": "big",
+  "argument": "Finland's bill HE 282/2026 would make data centers of 0.5 MW or more register from April 2027; the register would be a non-public picture for the authorities, and the public would get a summary.",
+  "langs": [
+    "en"
+  ],
+  "native_read": {
+    "en": true
+  },
+  "syntax": "'/' breaks a line, [word] is the pop word",
+  "captions": [
+    {
+      "id": "list",
+      "role": "setup",
+      "at": "s1+0.6",
+      "until": "s2-0.25",
+      "hold": "s2",
+      "text": {
+        "en": "Finland will [list] / its data centers."
+      },
+      "source": "HE 282/2026 vp, government bill on a data center register, submitted 29 Oct 2026 (TEM/valtioneuvosto release; Dawn.fi 30 Oct). Reported (search summaries of the TEM/valtioneuvosto release and the bill page, 19 Nov); the bill text itself not yet read: UNCHECKED."
+    },
+    {
+      "id": "mw",
+      "role": "evidence",
+      "at": "s2+0.4",
+      "until": "s3-0.25",
+      "hold": "s3",
+      "text": {
+        "en": "Every one over / half a megawatt, / from [April 2027]."
+      },
+      "source": "Notification duty for installed IT power of at least 0.5 MW, smaller ones voluntary; in force 1 Apr 2027 if passed. Reported (search summaries of the TEM/valtioneuvosto release and the bill page, 19 Nov); the bill text itself not yet read: UNCHECKED."
+    },
+    {
+      "id": "secret",
+      "role": "evidence",
+      "at": "s3+0.4",
+      "until": "s4-0.25",
+      "hold": "s4",
+      "text": {
+        "en": "The list itself: / [not public]."
+      },
+      "source": "The register is kept by the National Emergency Supply Agency (Huoltovarmuuskeskus) as a non-public situational picture for the authorities. Reported (search summaries of the TEM/valtioneuvosto release and the bill page, 19 Nov); the bill text itself not yet read: UNCHECKED."
+    },
+    {
+      "id": "summary",
+      "role": "evidence",
+      "at": "s4+0.4",
+      "until": "s5-0.25",
+      "hold": "s5",
+      "text": {
+        "en": "You get / a [summary]."
+      },
+      "source": "The agency would publish a regular summary of the industry's and regions' development, the first by 30 Sep 2027 (reportedly quarterly). Reported (search summaries of the TEM/valtioneuvosto release and the bill page, 19 Nov); the bill text itself not yet read: UNCHECKED."
+    },
+    {
+      "id": "you",
+      "role": "punchline",
+      "at": "s5+0.5",
+      "until": "end-0.3",
+      "hold": "end",
+      "text": {
+        "en": "The list is for them. / The [summary], for you."
+      },
+      "source": "The station's line on the bill's own split between the register (authorities) and the summary (public). No claim about what the register will contain beyond the reported fields."
+    }
+  ],
+  "ui": {
+    "tag1": {
+      "en": "OUR PINS: DATA CENTER PROJECTS REPORTED BY YLE, KALEVA, KESKI-UUSIMAA, IISALMEN SANOMAT"
+    },
+    "tag2": {
+      "en": "BILL HE 282/2026 · IN FORCE 1 APR 2027 IF PASSED · 0.5 MW OF IT POWER OR MORE"
+    },
+    "tag3": {
+      "en": "KEPT BY THE NATIONAL EMERGENCY SUPPLY AGENCY AS A NON-PUBLIC PICTURE (REPORTED)"
+    },
+    "tag4": {
+      "en": "THE FIRST PUBLIC SUMMARY DUE BY 30 SEP 2027 (REPORTED)"
+    },
+    "tag5": {
+      "en": "THE REGISTER IS NOT A PERMIT: NO POWER TO INSPECT OR STOP A PROJECT (REPORTED)"
+    },
+    "p1": {
+      "en": "HAMINA · GOOGLE"
+    },
+    "p2": {
+      "en": "JOKELA · QTS"
+    },
+    "p3": {
+      "en": "LAPINLAHTI · 2 PROJECTS"
+    },
+    "p4": {
+      "en": "KAJAANI · LUMI-AI"
+    },
+    "p5": {
+      "en": "MUHOS · GOOGLE"
+    },
+    "drawer": {
+      "en": "DATA CENTER REGISTER"
+    },
+    "drawerSub": {
+      "en": "≥ 0.5 MW · FROM 1 APR 2027"
+    },
+    "seal": {
+      "en": "NOT PUBLIC"
+    },
+    "sumHead": {
+      "en": "SUMMARY"
+    },
+    "sumSub": {
+      "en": "FIRST ONE BY 30 SEP 2027"
+    },
+    "sumBy": {
+      "en": "BY REGION"
+    },
+    "map": {
+      "en": "FINLAND"
+    }
+  },
+  "props": "Map: Natural Earth 10m (public domain), via ../iceye/geo.json. No logos, no people. The drawer and the summary sheet are invented props; the summary's bars carry no numbers (no summary exists yet). Pin labels name the place and the company or project as reported.",
+  "post": {
+    "en": "Finland's bill HE 282/2026: from April 2027, every data center of 0.5 MW or more must register. The register itself would not be public; the public would get a summary, the first by Sep 2027 (as reported). The list is for them. The summary, for you."
+  }
+}
