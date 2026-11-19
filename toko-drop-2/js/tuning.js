@@ -7,10 +7,10 @@
 // things that work"). The arena is 1.x's, so every 1.x number ports as it is
 // instead of through a rescale. Axes: x across the screen (right +), y up,
 // z toward the bottom of the screen. The arena is centred on the origin.
-import { SPECIES } from './tuning/species/index.js?v=155';
-import WAVES from './tuning/waves.js?v=155';
-import PICKUPS from './tuning/pickups.js?v=155';
-import MUSIC from './tuning/music.js?v=155';
+import { SPECIES } from './tuning/species/index.js?v=156';
+import WAVES from './tuning/waves.js?v=156';
+import PICKUPS from './tuning/pickups.js?v=156';
+import MUSIC from './tuning/music.js?v=156';
 
 export const TUNING = {
   render: {
@@ -842,7 +842,10 @@ export const TUNING = {
     // a world bigger than the screen (sim/worlds.js): the camera follows the
     // hero, easing over `tau` s, and at a side shows `edge` m past the floor
     // (the curb, the lawn) — no further
-    follow: { tau: 0.22, edge: 2.5 },
+    // v156 (owner, 19 Nov: the controls are "not responsive enough"): 1.x's camera stood still over the whole arena;
+    // 2.0's (v104's zoom) eases after the hero, and at tau 0.22 s a start or a turn slid the hero across the screen
+    // before the view caught up, which reads as lag. 0.1 s keeps the view with the hero without the drag
+    follow: { tau: 0.1, edge: 2.5 },
     // v104 (owner, 2026-11-02: "We need a slight zoom in"): in play the camera fits this share of the run's
     // arena, not all of it, and follows the hero over the rest (main.js viewBox), as it does over a bigger world
     zoom: 0.88,
@@ -1077,6 +1080,16 @@ export const TUNING = {
   input: {
     stickRadius: 60,        // px of thumb travel for a full stick (1.x STICK_RADIUS)
     aimDeadzone: 15,        // px before the aim stick aims and fires (1.x AIM_DEADZONE)
+    // v156 (owner, 19 Nov: "not responsive enough, not enough directions of shooting ... shooting at 16 sub directions
+    // instead of closer to 360 degrees"). Nothing rounds the aim — stick, sim and bullets all keep the full angle —
+    // but 1.x's touch stick (input.js:84-96, ported as-is) kept its centre where the thumb landed, with no limit on how
+    // far the thumb went from it, and aims along centre → thumb: 10 px of thumb turns the aim ~38° at 15 px out and
+    // ~6° at 100 px, so a drifting thumb gets coarse and sticky. FOLLOW drags each stick's centre behind the thumb
+    // once it is further out than `followAim` (the aim stick) or the stick's own radius (the move stick), so the thumb
+    // is never far from it: small moves turn the aim through all 360°, and a reversal is immediate. ?dev can turn it
+    // off (toko2.follow) to compare with 1.x's on the phone.
+    follow: true,
+    followAim: 45,          // px: the aim stick's centre trails the thumb at this distance (past aimDeadzone, so it fires)
     padDeadzone: 0.2,       // 1.x GP_DEADZONE
     pauseStripHeight: 56,   // the top-centre pause strip on touch (1.x)
     pauseStripHalfWidth: 40,

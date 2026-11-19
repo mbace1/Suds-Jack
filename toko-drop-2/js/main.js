@@ -7,38 +7,38 @@
 // The rules live in sim/ and run on a fixed step; this file feeds them input,
 // hands their events to the view and the sound, and draws in between steps.
 import * as THREE from 'three/webgpu';
-import { TUNING } from './tuning.js?v=155';
-import { BOSS_PHASES } from './tuning/bossphases.js?v=155';
-import { buildFloor } from './render/floor.js?v=155';
-import { fitCamera, screenToWorld, screenDown } from './render/view.js?v=155';
-import * as worldsSim from './sim/worlds.js?v=155';
-import { shapeAt as shiftShape } from './sim/floorshift.js?v=155';
-import * as reshapeSim from './sim/reshape.js?v=155';
-import { Scenery } from './render/scenery.js?v=155';
-import { DRIFT, CALM } from './render/kit.js?v=155';
-import { Transit } from './render/transit.js?v=155';
-import { Splats } from './render/splats.js?v=155';
-import { Actors } from './render/actors.js?v=155';
-import { GEL_TIME, GEL_SUN, GEL_GLINT, GEL_CORE } from './render/gel.js?v=155';
-import { studioEnvironment, skyEnvironment } from './render/env.js?v=155';
-import { Specimen } from './render/specimen.js?v=155';
-import { createWorld, step, api as simApi, runPhase } from './sim/world.js?v=155';
-import { heroState } from './sim/hero.js?v=155';
-import { stage as stagePk } from './sim/pickups.js?v=155';
-import { Input } from './input.js?v=155';
-import { UI, t, timeText, LANGS, getLang, setLang, goalText, bossName } from './ui.js?v=155';
-import { Announcer } from './announcer.js?v=155';
-import { rooms as campaignRooms, isOpen as roomOpen, better as betterGrade } from './sim/director/campaign.js?v=155';
-import { levelShape, slots as regionSlots } from './sim/shape.js?v=155';
-import { Sound } from './audio.js?v=155';
-import { Music, worldWant, cueFor, renderMusicWav } from './music.js?v=155';
-import { Intro, CUES as INTRO } from './intro/intro.js?v=155';
-import { scheduleIntroSfx, renderIntroSfxWav } from './intro/sfx.js?v=155';
-import { Readout } from './readout.js?v=155';
-import { Meter, device, Quality } from './meter.js?v=155';
-import * as record from './record.js?v=155';
-import { dailySeed } from './sim/rng.js?v=155';
-import { machine } from './fsm.js?v=155';
+import { TUNING } from './tuning.js?v=156';
+import { BOSS_PHASES } from './tuning/bossphases.js?v=156';
+import { buildFloor } from './render/floor.js?v=156';
+import { fitCamera, screenToWorld, screenDown } from './render/view.js?v=156';
+import * as worldsSim from './sim/worlds.js?v=156';
+import { shapeAt as shiftShape } from './sim/floorshift.js?v=156';
+import * as reshapeSim from './sim/reshape.js?v=156';
+import { Scenery } from './render/scenery.js?v=156';
+import { DRIFT, CALM } from './render/kit.js?v=156';
+import { Transit } from './render/transit.js?v=156';
+import { Splats } from './render/splats.js?v=156';
+import { Actors } from './render/actors.js?v=156';
+import { GEL_TIME, GEL_SUN, GEL_GLINT, GEL_CORE } from './render/gel.js?v=156';
+import { studioEnvironment, skyEnvironment } from './render/env.js?v=156';
+import { Specimen } from './render/specimen.js?v=156';
+import { createWorld, step, api as simApi, runPhase } from './sim/world.js?v=156';
+import { heroState } from './sim/hero.js?v=156';
+import { stage as stagePk } from './sim/pickups.js?v=156';
+import { Input } from './input.js?v=156';
+import { UI, t, timeText, LANGS, getLang, setLang, goalText, bossName } from './ui.js?v=156';
+import { Announcer } from './announcer.js?v=156';
+import { rooms as campaignRooms, isOpen as roomOpen, better as betterGrade } from './sim/director/campaign.js?v=156';
+import { levelShape, slots as regionSlots } from './sim/shape.js?v=156';
+import { Sound } from './audio.js?v=156';
+import { Music, worldWant, cueFor, renderMusicWav } from './music.js?v=156';
+import { Intro, CUES as INTRO } from './intro/intro.js?v=156';
+import { scheduleIntroSfx, renderIntroSfxWav } from './intro/sfx.js?v=156';
+import { Readout } from './readout.js?v=156';
+import { Meter, device, Quality } from './meter.js?v=156';
+import * as record from './record.js?v=156';
+import { dailySeed } from './sim/rng.js?v=156';
+import { machine } from './fsm.js?v=156';
 
 const T = TUNING;
 const params = new URLSearchParams(location.search);
@@ -161,6 +161,7 @@ function applyControls() {
   input.swap = handLeft(); input.stickRadius = C.stick[stickSize()];
   input.aimDead = C.dead[deadSize()]; input.padDead = C.padDead * (C.dead[deadSize()] / C.dead.normal);
   input.dashBy = tests().by;   // v124: LIFT (1.x) or FLICK
+  input.follow = store.str('toko2.follow') !== 'off';   // v156: the sticks follow the thumb unless ?dev turned it off
 }
 
 // ── the arena: 1.x's size for the screen's shape, chosen at each run start
@@ -183,7 +184,7 @@ const flow = machine('flow', {
     menu: ['intro', 'play'],                  // ARCADE / CONTINUE / DAILY (with the film, or not); a room's START
     intro: ['play', 'menu'],                  // the film ends or is skipped; left for the title
     play: ['paused', 'dying', 'menu', 'over'],   // a pause, a death, a quit; `over` only by __toko.finish() (no death beat)
-    paused: ['play', 'menu'],                 // RESUME; QUIT
+    paused: ['play', 'menu', 'intro'],        // RESUME; QUIT; v156 RESTART (into play, or the film when it is asked for)
     dying: ['over', 'menu'],                  // the death beat ends; left
     over: ['menu', 'intro', 'play'],          // MENU / ROOMS; AGAIN (a room's straight, a DAILY's straight)
   },
@@ -418,7 +419,7 @@ const tests = () => {
   const hp = store.num('toko2.gelHp'), d = store.str('toko2.dash'), by = store.str('toko2.dashBy');
   return { dash: DASHES.includes(d) ? d : 'pass', hp: HP_STEPS.includes(hp) ? hp : 1, by: DASH_BY.includes(by) ? by : 'lift' };
 };
-const showTitle = (keep = false) => { nav++; ui.title(bests(), sound.on, input.source, tests(), keep); };
+const showTitle = (keep = false) => { nav++; ui.title(bests(), sound.on, input.source, tests(), keep); if (!keep) titleIntro(); };
 // a switch flipped: redraw the menu it is on (OPTIONS, or the title). v125: by the screen that IS up (ui.screen) —
 // `inOptions` was a back-target being set, true on the rooms' grid and through a whole room, so an answer that came
 // late (the play record's share sheet) could draw the title over a paused run
@@ -538,11 +539,23 @@ const music = new Music();
 music.setVolume(store.str('toko2.music') !== '' ? Math.max(0, Math.min(1, Number(store.str('toko2.music')))) : 1);
 // the announcer (1.x v109): off until OPTIONS turns it on, with its own volume
 const announcer = new Announcer();
-announcer.on = store.str('toko2.announcer') === 'on';
+// v156 (owner, 19 Nov: "No announcer needed for now"): the commentary voice is off for players, whatever was saved;
+// ?dev's ANNOUNCER switch can still turn it on to try it. The owner's recorded INTRO VOICE is a separate switch and stays
+announcer.on = params.has('dev') && store.str('toko2.announcer') === 'on';
 announcer.volume = store.str('toko2.annVolume') !== '' ? Number(store.str('toko2.annVolume')) : 1;
+announcer.introOn = store.str('toko2.introVoice') !== 'off';   // v156: INTRO VOICE, on unless turned off (1.x v122)
+// v156: the owner's recorded shout, once each time the title is arrived at (1.x playTitleIntro, main.js:6122). Before
+// any gesture the browser blocks it, so a block lets the next tap or key try again; a run's start lets it play next visit
+let titleVoice = false;
+const titleIntro = () => {
+  if (titleVoice) return;
+  titleVoice = true;
+  const p = announcer.intro(sound.volume);
+  if (p?.catch) p.catch(() => { titleVoice = false; });
+};
 // a gesture wakes the sound — every one, not the first only (v125): a phone stops the context (a call, the screen
 // locked), and with the listeners spent nothing woke it again; unlock() is nothing when it is running
-addEventListener('pointerdown', () => sound.unlock());
+addEventListener('pointerdown', () => { sound.unlock(); if (state === 'menu' && ui.screen === 'title') titleIntro(); });
 addEventListener('keydown', () => sound.unlock());
 
 const ui = new UI({
@@ -565,9 +578,15 @@ const ui = new UI({
   onDaily: () => start(hardOn() ? 'hardcade' : 'arcade', { intro: true, daily: true }),
   onShare: (text) => handOver(text, 'Toko Drop 2.0 · daily', 'toko-drop-daily.txt'),
   onMenu: () => { recordQuit(); toMenu(); },
+  // v156: the pause's RESTART is the result screen's AGAIN, for a run abandoned: recorded as quit, then the same
+  // mode from the same start (a campaign room again, a DAILY the day again; a fresh ARCADE lets a kept run go, as AGAIN's does)
+  onRestart: () => { if (state !== 'paused') return; recordQuit(); start(mode, { room: lastRoom, daily: !!daily }); },
+  dev: () => params.has('dev'),   // v156: SETTINGS shows its DEVELOPER block
   onSound: () => { sound.setVolume(sound.volume > 0 ? 0 : 1); store.set('toko2.volume', sound.volume); refreshMenu(); },
   onVolume: () => { sound.setVolume(next(VOLUMES, sound.volume)); store.set('toko2.volume', sound.volume); sound.unlock(); sound.event?.({ type: 'pickup', kind: 'score' }); refreshMenu(); },
   onMusic: () => { music.setVolume(next(VOLUMES, music.volume)); store.set('toko2.music', music.volume); sound.unlock(); refreshMenu(); },
+  onFollow: () => { store.set('toko2.follow', input.follow ? 'off' : 'on'); applyControls(); refreshMenu(); },   // v156: ?dev's STICK FOLLOW
+  onIntroVoice: () => { announcer.introOn = !announcer.introOn; store.set('toko2.introVoice', announcer.introOn ? 'on' : 'off'); if (announcer.introOn) { titleVoice = false; titleIntro(); } else announcer.stopIntro(); refreshMenu(); },   // v156
   onAnnouncer: () => { announcer.on = !announcer.on; store.set('toko2.announcer', announcer.on ? 'on' : 'off'); if (announcer.on) announcer.say('start'); else announcer.stop(); refreshMenu(); },
   onAnnVolume: () => { announcer.volume = next(VOLUMES.slice(1), announcer.volume); store.set('toko2.annVolume', announcer.volume); announcer.last = -1e9; announcer.say('clear'); refreshMenu(); },
   onMotion: () => { store.set('toko2.motion', reduceMotion() ? 'off' : 'on'); if (reduceMotion()) trauma = 0; tellCalm(); refreshMenu(); },
@@ -589,7 +608,7 @@ const ui = new UI({
   onTitle: (keep) => (world?.room ? toMenu() : showTitle(keep)),
   onCampaign: () => showCampaign(),
   onRoom: (id) => startRoom(id),
-  optionsState: () => ({ sound: sound.on, volume: sound.volume, music: music.volume, announcer: announcer.on, annVolume: announcer.volume, reduceMotion: reduceMotion(), test: tests(),
+  optionsState: () => ({ sound: sound.on, volume: sound.volume, music: music.volume, announcer: announcer.on, introVoice: announcer.introOn, follow: input.follow, annVolume: announcer.volume, reduceMotion: reduceMotion(), test: tests(),
     hand: handLeft() ? 'left' : 'right', stick: stickSize(), dead: deadSize(), autoQ: autoQ(), qShare: quality.share,   // v86
     ...((list) => ({ records: list.length, frames: record.lastFrames(list) }))(record.read(store)), recordSaid }),
   onRecord: () => shareRecord(),
@@ -611,9 +630,9 @@ const specimen = new Specimen(T, actors, scene.environment);
 // menu). It takes effect at run start; the menu also redraws the world left
 // behind the title in the new style. The HUD label says ' · sdf' while on.
 const GELS = ['classic', 'sdf'];
-import { STYLES } from './render/style.js?v=155';
-import { Lens } from './render/lens.js?v=155';
-import { setSceneSun } from './render/sun.js?v=155';
+import { STYLES } from './render/style.js?v=156';
+import { Lens } from './render/lens.js?v=156';
+import { setSceneSun } from './render/sun.js?v=156';
 let urlGels = GELS.includes(params.get('gels')) ? params.get('gels') : null;
 const gels = () => urlGels ?? (GELS.includes(store.str('toko2.gels')) ? store.str('toko2.gels') : 'classic');
 // The LENS switch (render/lens.js, v94): NONE or TILT-SHIFT, localStorage toko2.lens; ?lens=tilt|none for a link
@@ -763,6 +782,7 @@ function start(m, { intro: asked = false, room = null, resume = null, daily: wan
   if (mode === 'campaign' && !room) room = lastRoom;
   if (mode === 'campaign' && !room) { showCampaign(); return; }
   lastRoom = room;
+  titleVoice = false; announcer.stopIntro();   // v156
   useArena(screenArena());
   const test = tests();
   // toko2.gateUsed: this browser has dashed a gate, so the DASH THROUGH! tag
@@ -824,7 +844,7 @@ let lastRoom = null;   // AGAIN replays it
 const levels = new Map();
 async function loadLevel(id) {
   // v125: a load that failed is forgotten, so the room's START asks again (it was kept as a failure: START did nothing until a reload)
-  if (!levels.has(id)) levels.set(id, fetch(new URL(`../levels/${id}.json?v=155`, import.meta.url)).then((r) => { if (!r.ok) throw new Error(`levels/${id}.json ${r.status}`); return r.json(); }).catch((e) => { levels.delete(id); throw e; }));
+  if (!levels.has(id)) levels.set(id, fetch(new URL(`../levels/${id}.json?v=156`, import.meta.url)).then((r) => { if (!r.ok) throw new Error(`levels/${id}.json ${r.status}`); return r.json(); }).catch((e) => { levels.delete(id); throw e; }));
   return levels.get(id);
 }
 // the list the room screen draws: worlds, their rooms, open or not, best grades
@@ -954,7 +974,7 @@ function killer(by) {
   const how = by.startsWith('revenge:') ? 'shot' : by.startsWith('strand:') ? 'strand' : by.startsWith('slam:') ? 'slam' : false, k = how ? by.slice(by.indexOf(':') + 1) : by;
   return T.species[k] ? { kind: k, name: T.species[k].name, revenge: how } : { kind: null, name: t(`by_${k}`), revenge: false };
 }
-function pause() { if (state !== 'play') return; setState('paused', 'pause'); const K = killer(world?.killedBy); ui.pause(K.kind, K.revenge); }
+function pause() { if (state !== 'play') return; setState('paused', 'pause'); ui.pause(); }   // v156: no card on the pause
 function resume() { if (state !== 'paused') return; setState('play', 'resume'); ui.hide(); sound.unlock(); }   // v125: and the sound, if the phone stopped it meanwhile
 // hidden: the run pauses. v125: hidden during the intro film, the run is started and paused at once — the film is
 // timed off the wall clock and came back as a live, unpaused run; back, the sound is woken if the phone stopped it
@@ -1036,7 +1056,7 @@ function squeezeFrame() {
 // what the announcer calls, off the sim's events (1.x main.js:2607-11424)
 function announce(e) {
   if (!announcer.on) return;
-  if (e.type === 'wave') announcer.say(e.kind === 'boss' ? 'boss' : 'wave', e.wave);
+  if (e.type === 'wave') announcer.say(e.kind === 'boss' ? 'boss' : 'wave', e.kind === 'boss' ? world?.world : e.wave);   // v156: a boss is named by its world
   else if (e.type === 'clear') announcer.say('clear');
   else if (e.type === 'hurt' && e.lives > 0) announcer.say('ouch');
   else if (e.type === 'over') announcer.say('gameover');
@@ -1048,9 +1068,9 @@ function announce(e) {
   else if (e.type === 'potLost') ui.banner(`${t('potLost')} −${e.n.toLocaleString('en-US')}`, 1.1);
   else if (e.type === 'pickup') announcer.say(e.kind === 'score' ? 'money' : e.kind === 'scoremult' ? 'mult' : 'prize');
   else if (e.type === 'bounty') announcer.say('bounty');
-  else if (e.type === 'bountyPaid') announcer.say('money');
+  else if (e.type === 'bountyPaid') announcer.say('paid');
   else if (e.type === 'phase') announcer.say('phase');
-  else if (e.type === 'worldLand') announcer.say('world');
+  else if (e.type === 'worldLand') announcer.say('world', e.world);   // v156: the floor by name
 }
 
 function onEvent(e) {
