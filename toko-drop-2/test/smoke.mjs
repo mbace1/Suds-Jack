@@ -13,7 +13,7 @@
 //               offers an adapter (headless Chromium does, via SwiftShader).
 //               The arrow keys and Enter walk the title and flip its DASH
 //               switch, and SURVIVAL, off the title for now, still runs
-//   portrait    a phone held upright from boot: 1.x's tall arena
+//   portrait    a phone held upright from boot: 1.x's tall arena, and (v157) the same menu walk as landscape
 //   rotate      the landscape boot, then the phone turned to portrait mid-run
 //               (the arena must NOT change shape: 1.x picks it per run)
 //   ipad        an iPad sideways, and `ipad-portrait` upright, which also runs
@@ -36,7 +36,7 @@
 // throw drops and leave goo in the floor's film where it died, read back off
 // the film itself — and in the ?goo=off control, none of either, and 1.x's
 // puddles instead, so the reading cannot pass on a build that draws no goo.
-// `--quick` runs landscape and webgl2 only. `--gl` runs every scenario on WebGL 2 (a sandbox with no WebGPU).
+// `--quick` runs landscape and portrait (both with the whole menu walk: two games, tested equally, v157) and webgl2. `--gl` runs every scenario on WebGL 2 (a sandbox with no WebGPU).
 // and fails on: a page error or console.error, a failed or 4xx/5xx request,
 // a module requested without a ?v= token, the fault box showing, the loop not
 // advancing, the HUD label disagreeing with VERSIONS.md, the arena not wholly
@@ -55,7 +55,7 @@ import { join, dirname, extname, normalize, sep } from 'node:path';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { inflateSync } from 'node:zlib';
-import { TUNING } from '../js/tuning.js?v=156';
+import { TUNING } from '../js/tuning.js?v=157';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const PREFIX = '/toko-drop/';
@@ -1067,7 +1067,7 @@ async function drive(cdp, base) {
         const r = { h2: document.querySelector('#menu h2')?.textContent, preview: [...document.querySelectorAll('#menu p')].some((p) => /^PREVIEW/.test(p.textContent)),
           tally: document.querySelectorAll('#menu .tiers .tt').length, total: document.querySelector('#menu .best')?.textContent, same: localStorage.getItem('toko2.campaign') === before };
         t.toMenu(); await new Promise((r) => setTimeout(r, 150)); t.showcase(['globbo'], { heroZ: 0.5 }); return r; })()`);
-      if (!(end.h2 === 'CAMPAIGN CLEAR' && end.preview && end.tally === 4 && /[1-9]/.test(end.total ?? '') && end.same)) fail(`?ending does not preview the campaign's end, or it saved progress (${JSON.stringify(end)})`);
+      if (!(end.h2 === 'CAMPAIGN CLEAR' && end.preview && end.tally === 5 && /[1-9]/.test(end.total ?? '') && end.same)) fail(`?ending does not preview the campaign's end, or it saved progress (${JSON.stringify(end)})`);
       // v84: spray and tracks — the hero runs through the pool the kill left: drops
       // thrown out of his foot, and tracks laid once he is out of it
       if (!gooOff) {
@@ -1334,7 +1334,7 @@ async function drive(cdp, base) {
         const after = await evaluate(`({ state: __toko.state, fault: document.getElementById('fault')?.hidden ? null : document.getElementById('fault')?.textContent?.slice(0, 300), vis: document.visibilityState, frames: __toko.frames - ${fWait}, played: document.querySelector('#menu .played')?.textContent, saved: JSON.parse(localStorage.getItem('toko2.campaign') || '{}')['${QID}'] })`);
         if (camp.tiles !== ORDER.length || camp.open.join() !== ORDER.slice(0, Q + 1).join() || !camp.route) fail(`the grid is not ${ORDER.length} tiles with the rooms up to ${QID} open (${JSON.stringify(camp)})`);
         if (camp.focus !== QID || camp.right !== QRIGHT || camp.down !== QDOWN) fail(`the grid does not start on the next room or the pad does not walk it in 2-D (${camp.focus} → ${camp.right} → ${camp.down}; want ${QID} → ${QRIGHT} → ${QDOWN})`);
-        if (camp.card?.title !== QLV.name || camp.card.tiers !== 5 || !camp.card.chart || camp.card.state !== 'menu' || !camp.card.start) fail(`a tile does not open its card with its chart, five grade lines and START in focus (${JSON.stringify(camp.card)})`);
+        if (camp.card?.title !== QLV.name || camp.card.tiers !== 6 || !camp.card.chart || camp.card.state !== 'menu' || !camp.card.start) fail(`a tile does not open its card with its chart, six grade lines (S A B C, v157's D, F) and START in focus (${JSON.stringify(camp.card)})`);
         if (camp.state !== 'play' || camp.mode !== 'campaign' || !camp.region || !camp.rail) fail(`${QLV.name} did not start as a shaped room (${JSON.stringify(camp)})`);
         // v73: a room wears its world's look, the arcade world its rule comes from: that floor and the set round it.
         // v153: or the look it names itself (`rooms[].look`) — the grid, for a floor that is a shape or moves
@@ -1374,7 +1374,7 @@ async function drive(cdp, base) {
           [...document.querySelectorAll('#menu .item')].find((b) => b.querySelector('.label')?.textContent === 'ROOMS')?.click();
           for (let i = 0; i < 40 && !document.querySelector('#menu .grid .tile'); i++) await new Promise((r) => setTimeout(r, 100));
           r.stally = document.querySelector('#menu h2 .stally')?.textContent ?? null; return r; })()`);
-        if (done.title !== 'CAMPAIGN CLEAR' || done.tally !== 4 || !/S \d+\/36/.test(done.stally ?? '')) fail(`clearing the last room does not show CAMPAIGN CLEAR with its tally, then the grid with its S count (${JSON.stringify(done)})`);
+        if (done.title !== 'CAMPAIGN CLEAR' || done.tally !== 5 || !/S \d+\/36/.test(done.stally ?? '')) fail(`clearing the last room does not show CAMPAIGN CLEAR with its tally, then the grid with its S count (${JSON.stringify(done)})`);
         info.campaign = cend.res ? `${cend.res.grade} ${cend.res.kills}k` : '-';
         await evaluate(`localStorage.removeItem('toko2.campaign'); __toko.toMenu()`);
       }
@@ -1422,10 +1422,12 @@ async function drive(cdp, base) {
 
   console.log(`· smoke ${base}  (expect "${LABEL}", screenshots → ${OUT})`);
   await scenario('landscape', { orientation: 'landscape', menu: true, worldsTest: true });
+  // v157 (owner, 19 Nov: "we are making 2 games, landscape and portrait. Both need to be tested equally"): the phone
+  // upright from boot walks the SAME menus, pause, settings and campaign as the phone sideways, in --quick too
+  await scenario('portrait', { orientation: 'portrait', menu: true, worldsTest: true });
   if (gpuAdapter === false) console.log('  · this browser offers no WebGPU adapter: only the WebGL 2 path is exercised');
   else if (gpuAdapter === null) console.log('  · WebGPU adapter not probed (landscape never became ready)');
   if (!QUICK) {
-    await scenario('portrait', { orientation: 'portrait' });
     await scenario('rotate', { orientation: 'landscape', rotate: true });
     await scenario('ipad', { device: 'ipad', orientation: 'landscape' });
     // also the goo's control: 1.x's droplets and puddles, and no film (?goo=off)

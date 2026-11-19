@@ -6,8 +6,8 @@
 globalThis.innerWidth = 1000; globalThis.innerHeight = 500;
 globalThis.addEventListener ??= () => {};
 Object.defineProperty(globalThis, 'navigator', { value: { getGamepads: () => [] }, configurable: true });
-const { Input } = await import('../js/input.js?v=156');
-const { TUNING: T } = await import('../js/tuning.js?v=156');
+const { Input } = await import('../js/input.js?v=157');
+const { TUNING: T } = await import('../js/tuning.js?v=157');
 
 let failed = 0, passed = 0;
 const check = (claim, ok, detail = '') => { if (ok) passed++; else { failed++; console.log(`  ✗ ${claim}${detail ? ` — ${detail}` : ''}`); } };

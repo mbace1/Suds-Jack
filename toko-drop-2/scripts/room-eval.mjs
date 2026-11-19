@@ -15,9 +15,9 @@
 //
 //   node scripts/room-eval.mjs <room-id | path/to/level.json> [--seeds 16] [--json out.json] [--why] [--hard]
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
-import { createWorld, step } from '../js/sim/world.js?v=156';
-import { TUNING as T } from '../js/tuning.js?v=156';
-import { roomBodies } from '../js/sim/director/campaign.js?v=156';
+import { createWorld, step } from '../js/sim/world.js?v=157';
+import { TUNING as T } from '../js/tuning.js?v=157';
+import { roomBodies } from '../js/sim/director/campaign.js?v=157';
 import { SKILLS, LINE_SKILLS, prng, think } from './bot.mjs';
 import { scoreLines, gradeOf as lineGrade, BANDS } from './lines.mjs';
 

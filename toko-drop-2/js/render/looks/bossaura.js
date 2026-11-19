@@ -20,7 +20,13 @@ export function auraUpdate(v, g, time, y = 0) {
   if (!v.auraIn) { v.root.add(v.auraRing); v.auraIn = true; }
   v.auraRing.visible = !!g.isBoss;
   if (!g.isBoss) return;
-  const mad = !!g.s.enraged;
+  const mad = !!g.s.enraged, arm = g.s.armour;
+  // v157, a STRATEGIC boss (tuning/bosskinds.js): slate and still while it is armoured, magenta and wide while it
+  // is OPEN — the window read off the floor, not a glow on the body (owner, v104: "No cheap effects like glow")
+  // (dark slate shut, saturated magenta open: white on the light floors read as grey, Sakurai §7 — a mark has to read
+  // on a light floor and a dark one)
+  if (arm === true) { v.auraMat.opacity = 0.7; v.auraMat.color.setHex(mad ? 0x4a2a2a : 0x2c3440); v.auraRing.scale.setScalar(g.r * 1.55); v.auraRing.position.y = 0.04 - y; return; }
+  if (arm === false) { v.auraMat.opacity = 0.85 + 0.15 * Math.sin(time * 24); v.auraMat.color.setHex(0xff2d9a); v.auraRing.scale.setScalar(g.r * (2.0 + 0.1 * Math.sin(time * 24))); v.auraRing.position.y = 0.04 - y; return; }
   v.auraMat.opacity = 0.45 + 0.3 * Math.sin(time * 5);
   v.auraMat.color.setHex(mad ? 0xff2200 : 0xffcc33);
   const k = mad ? 1.15 + 0.1 * Math.sin(time * 20) : 1;

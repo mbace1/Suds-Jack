@@ -9,11 +9,11 @@
 // fans leave on and the angles they leave at must match 1.x's frame for frame.
 import { readFileSync } from 'node:fs';
 import * as THREE from '../../vendor/three/three.webgpu.js?v=r186';
-import { createWorld, step, api } from '../../js/sim/world.js?v=156';
-import { TUNING as T } from '../../js/tuning.js?v=156';
-import { waveScale } from '../../js/sim/director/arcade.js?v=156';
-import behaviour, { holeCount } from '../../js/sim/species/pyra.js?v=156';
-import look from '../../js/render/looks/pyra.js?v=156';
+import { createWorld, step, api } from '../../js/sim/world.js?v=157';
+import { TUNING as T } from '../../js/tuning.js?v=157';
+import { waveScale } from '../../js/sim/director/arcade.js?v=157';
+import behaviour, { holeCount } from '../../js/sim/species/pyra.js?v=157';
+import look from '../../js/render/looks/pyra.js?v=157';
 
 let failed = 0, passed = 0;
 const check = (claim, ok, detail = '') => {

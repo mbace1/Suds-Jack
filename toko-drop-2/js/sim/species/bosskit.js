@@ -10,8 +10,32 @@
 // instead (phases() below); `rage()` still answers "is it raging", so each
 // boss's own code reads as it did. The phase's numbers come in through
 // api.S(g) (sim/world.js), which hands a phased boss its own merged tuning.
-import { TUNING } from '../../tuning.js?v=156';
-import { BOSS_PHASES } from '../../tuning/bossphases.js?v=156';
+import { TUNING } from '../../tuning.js?v=157';
+import { BOSS_PHASES } from '../../tuning/bossphases.js?v=157';
+import { BOSS_KINDS } from '../../tuning/bosskinds.js?v=157';
+
+// v157 (tuning/bosskinds.js): which kind this boss fights as here — 'endure', 'read', or null (as v156 fought
+// it). The same modes as the phases; the campaign's rooms only with `campaign`
+export function kindOf(w, kind) {
+  const K = BOSS_KINDS, k = K.kind[kind];
+  if (!K.on || !k) return null;
+  if (w.mode === 'campaign' ? !K.campaign : !K.modes.includes(w.mode)) return null;
+  return k;
+}
+
+// a READ boss outside its window: its own open() says when it is not (a boss with no open() is never armoured
+// here: BLISTER's shell does the job itself)
+export function armoured(w, g, B) {
+  if (!g.isBoss || !B?.open) return false;
+  const k = g.s.kindK !== undefined ? g.s.kindK : (g.s.kindK = kindOf(w, g.kind));
+  return k === 'read' && !B.open(w, g);
+}
+
+// the species' tuning for this boss as its kind fights: a READ boss's `set` laid over it
+function baseOf(w, g) {
+  const k = kindOf(w, g.kind), set = k === 'read' ? BOSS_KINDS.read[g.kind]?.set : null;
+  return set ? overlay(TUNING.species[g.kind], set) : TUNING.species[g.kind];
+}
 
 // the phases this boss fights in, or null (the v153 rage): only a boss, only in
 // the modes the switch names (and the campaign's rooms only with `campaign`)
@@ -37,7 +61,7 @@ export function overlay(a, b) {
 function enter(w, g, B, i, api) {
   const s = g.s, ph = B.phases[i], P = BOSS_PHASES;
   s.phase = i; s.since = w.time;
-  let S = TUNING.species[g.kind];
+  let S = baseOf(w, g);
   for (let k = 1; k <= i; k++) S = overlay(S, B.phases[k].set);
   s.phS = S;
   const pace = ph.pace ?? s.pace ?? 1;
@@ -61,18 +85,20 @@ function enter(w, g, B, i, api) {
 function phases(w, g, B, api) {
   const s = g.s;
   if (s.phase == null) {
-    s.phase = 0; s.pace = 1; s.since = w.time; s.phS = TUNING.species[g.kind];
+    s.phase = 0; s.pace = 1; s.since = w.time; s.phS = baseOf(w, g);
     s.wave = { speed: g.speedMult, interval: g.intervalMult };
   }
   // a phase is not skipped: until it has lasted its `min` (else minPhase) s, the health holds just over the next one's line (a whole point over: on the line counts as crossed)
-  const next = B.phases[s.phase + 1];
-  if (next && w.time - s.since < (B.phases[s.phase].min ?? BOSS_PHASES.minPhase)) g.hp = Math.max(g.hp, Math.floor(g.maxHp * next.at) + 1);
+  // (v157: an ENDURE boss's health is the clock, sim/bossfight.js: nothing holds it, and its phases come on time)
+  const next = B.phases[s.phase + 1], held = kindOf(w, g.kind) !== 'endure';
+  const at = (i) => (held ? B.phases[i].at : BOSS_KINDS.endure.lines[i - 1] ?? B.phases[i].at);
+  if (held && next && w.time - s.since < (B.phases[s.phase].min ?? BOSS_PHASES.minPhase)) g.hp = Math.max(g.hp, Math.floor(g.maxHp * next.at) + 1);
   // one phase per step: a big hit that crosses two lines enters the next one,
   // whose own hold then lifts the health back to the line after it
-  if (next && (g.hp <= g.maxHp * next.at || (next.after != null && w.time - s.since >= next.after))) {
+  if (next && (g.hp <= g.maxHp * at(s.phase + 1) || (next.after != null && w.time - s.since >= next.after))) {
     enter(w, g, B, s.phase + 1, api);
     const after = B.phases[s.phase + 1];
-    if (after) g.hp = Math.max(g.hp, Math.floor(g.maxHp * after.at) + 1);
+    if (after && held) g.hp = Math.max(g.hp, Math.floor(g.maxHp * after.at) + 1);
   }
   return !!B.phases[s.phase].rage;
 }

@@ -4,11 +4,11 @@
 //
 // Usage: node test/record.mjs           (exit 1 on any failure)
 import { readFileSync } from 'node:fs';
-import { createWorld, step } from '../js/sim/world.js?v=156';
-import { TUNING as T } from '../js/tuning.js?v=156';
-import { rooms } from '../js/sim/director/campaign.js?v=156';
-import * as record from '../js/record.js?v=156';
-import { Meter, device, Quality } from '../js/meter.js?v=156';
+import { createWorld, step } from '../js/sim/world.js?v=157';
+import { TUNING as T } from '../js/tuning.js?v=157';
+import { rooms } from '../js/sim/director/campaign.js?v=157';
+import * as record from '../js/record.js?v=157';
+import { Meter, device, Quality } from '../js/meter.js?v=157';
 
 let failed = 0, passed = 0;
 const check = (c, ok, d = '') => { if (ok) { passed++; return; } failed++; console.log(`  ✗ ${c}${d ? ` — ${d}` : ''}`); };
