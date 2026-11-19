@@ -30,3 +30,9 @@ A town-hall typewriter, one ordinance at a time: NOISE · LIGHTING · VIEWSHED �
   - Company (spokesperson Andrea Khoury): "did not draft, write or play any role in drafting HB 2014". Governor's office (spokesperson Lars Dalseide): "the Governor's bill", drafting "deliberately limited to the Governor's office". Consistent across WV Watch, Country Roads, WVHC.
   - Gray TV's "hot mic" framing dropped: it was a public council meeting.
 - **Still open:** the Belmont recording itself, for the that/who word; the company-statement comma. Both are inside the attributed quotes and do not change the message.
+
+## v1.2 captions (19 Nov) — fit
+The full render failed the pre-flight width gate (four lines 846–917 px against 800). Re-broken, same meaning:
+"Towns set rules / for noise, light / and [zoning]." · "In West Virginia, / certified / data centers / are [exempt]." ·
+"The developer’s / engineer: / “we were the guys / that basically / [wrote] the bill.”" ·
+"The developer and / the governor’s / office: [it didn’t]." Widest line now 786 px. Full re-render.

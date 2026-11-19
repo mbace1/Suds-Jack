@@ -19,7 +19,7 @@
       "until": "s2-0.25",
       "hold": "s2",
       "text": {
-        "en": "Towns write the rules / for noise, light / and [zoning]."
+        "en": "Towns set rules / for noise, light / and [zoning]."
       },
       "source": "General: West Virginia municipalities adopt ordinances on these subjects. The paper in the typewriter is a blank generic ordinance (TOWN OF ____), not a Davis document: Davis passed a resolution, not an ordinance."
     },
@@ -30,7 +30,7 @@
       "until": "s3-0.25",
       "hold": "s3",
       "text": {
-        "en": "West Virginia’s law: / certified data centers / are [exempt]."
+        "en": "In West Virginia, / certified / data centers / are [exempt]."
       },
       "source": "W. Va. Code §5B-2-21b(d)(1), from HB 2014 (2025; signed 30 Apr 2025): certified microgrid districts and certified high impact data centers 'may not be subject to' 'County or municipal zoning, horticultural, noise, viewshed, lighting, development, or land use ordinances, restrictions, limitations, or approvals'. Applies to state-certified projects only; uncertified data centers stay under local rules. Same wording in the 2026 enrolled HB 5168. Cross-checked 19 Nov across search results from several outlets; the primary page could not be opened from the build machine."
     },
@@ -41,7 +41,7 @@
       "until": "s4-0.25",
       "hold": "s4",
       "text": {
-        "en": "A company engineer: / “we were the guys / that basically [wrote] / the bill.”"
+        "en": "The developer’s / engineer: / “we were the guys / that basically / [wrote] the bill.”"
       },
       "source": "Ted McGavran, a Fundamental Data engineer, at the Belmont, N.C. City Council, 6 Jul 2026. Country Roads News transcript (21 Jul 2026): 'We were the guys that basically wrote the bill and got it through the legislature in 2024 and early '25.' The same core phrase in WV Watch (22 Jul; 'who' for 'that'), WVHC and the Parsons Advocate. Gray TV (13 Nov) prints a different version ('we're the guys that wrote the bill'); not used. Cross-checked 19 Nov across search results from several outlets; the primary page could not be opened from the build machine."
     },
@@ -52,7 +52,7 @@
       "until": "s5-0.25",
       "hold": "s5",
       "text": {
-        "en": "The company and / the governor’s office: / [it didn’t]."
+        "en": "The developer and / the governor’s / office: [it didn’t]."
       },
       "source": "Fundamental Data (spokesperson Andrea Khoury): it 'did not draft, write or play any role in drafting HB 2014'; McGavran spoke for himself. Governor's office (spokesperson Lars Dalseide): HB 2014 was 'the Governor's bill', its drafting 'deliberately limited to the Governor's office' (WV Watch 22 Jul 2026; Country Roads; WVHC). Cross-checked 19 Nov across search results from several outlets; the primary page could not be opened from the build machine."
     },
