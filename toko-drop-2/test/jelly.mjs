@@ -4,8 +4,8 @@
 // the blade, and the halves' skins stay pinned and finite.
 //
 // Usage: node test/jelly.mjs           (exit 1 on any failure)
-import { JellyBody, template } from '../js/render/jelly.js?v=157';
-import { TUNING as T } from '../js/tuning.js?v=157';
+import { JellyBody, template } from '../js/render/jelly.js?v=158';
+import { TUNING as T } from '../js/tuning.js?v=158';
 
 let failed = 0, passed = 0;
 const check = (claim, ok, detail = '') => { if (ok) { passed++; return; } failed++; console.log(`  ✗ ${claim}${detail ? ` — ${detail}` : ''}`); };

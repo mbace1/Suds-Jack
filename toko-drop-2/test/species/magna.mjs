@@ -9,10 +9,10 @@
 // the core's; they are checked here only as dashes that break the hold.
 import { readFileSync } from 'node:fs';
 import * as THREE from '../../vendor/three/three.webgpu.js?v=r186';
-import { createWorld, step, api } from '../../js/sim/world.js?v=157';
-import { TUNING as T } from '../../js/tuning.js?v=157';
-import behaviour from '../../js/sim/species/magna.js?v=157';
-import look from '../../js/render/looks/magna.js?v=157';
+import { createWorld, step, api } from '../../js/sim/world.js?v=158';
+import { TUNING as T } from '../../js/tuning.js?v=158';
+import behaviour from '../../js/sim/species/magna.js?v=158';
+import look from '../../js/render/looks/magna.js?v=158';
 
 let failed = 0, passed = 0;
 const check = (claim, ok, detail = '') => {
