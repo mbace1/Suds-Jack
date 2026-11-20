@@ -74,3 +74,12 @@ Story in order, same device (the clerk's office, the typewriter, the corkboard):
 - s5 the stake — the bill sheet, DRAFTED BY: blank. Caption: "If it’s certified, / the town’s no / [won’t count]."
   Accuracy: no certification application filed yet (state data economy office), so the ending is conditional; tag5 says so.
 Post copy to be rewritten to the same order.
+
+## v2 stills (20 Nov) — previews/20-11-RFH-Who-Wrote-the-Bill-v2-stills.jpg
+Built as planned, with two accuracy changes: "Who wrote it?" closes caption 2 (caption 3 is the quote alone, verbatim);
+the ending says what the law does — "If it’s certified, / the town / gets [no say]." — not "won't count" (Davis passed a
+resolution, a statement of position, not a permit decision). Open AND loop point: the Davis card, held, a slow push.
+Stamp now DOESN’T APPLY (auto-fitted). Post rewritten in story order (276 chars):
+"Davis, W. Va. voted 5–0 against a data center. A state law, HB 2014, says certified data centers don't follow towns'
+noise, lighting or zoning rules. A company engineer said "we were the guys that basically wrote the bill." The company
+and the governor's office say it didn't."

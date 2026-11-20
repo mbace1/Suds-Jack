@@ -1,6 +1,6 @@
 {
   "film": "who-wrote-the-bill",
-  "cut": "3D v1 stills (19 Nov, en only). Owner, 19 Nov: 'Top3' then 'Go ahead with stills for A'. Device: the town's rulebook — a town clerk's typewriter types ordinance headings and each is stamped PREEMPTED (W. Va. Code §5B-2-21b, from HB 2014); the corkboard behind carries the recorded line and the two denials; the last sheet is the bill itself, ending DRAFTED BY: ____. v1.1 (19 Nov, owner: 'Check quotes and make the message clear'): captions rewritten to one plain line of story each; the stamp says EXEMPT; McGavran quoted from the Country Roads transcript, the version four outlets share.",
+  "cut": "3D v1 stills (19 Nov, en only). Owner, 19 Nov: 'Top3' then 'Go ahead with stills for A'. Device: the town's rulebook — a town clerk's typewriter types ordinance headings and each is stamped PREEMPTED (W. Va. Code §5B-2-21b, from HB 2014); the corkboard behind carries the recorded line and the two denials; the last sheet is the bill itself, ending DRAFTED BY: ____. v1.1 (19 Nov, owner: 'Check quotes and make the message clear'): captions rewritten to one plain line of story each; the stamp says EXEMPT; McGavran quoted from the Country Roads transcript, the version four outlets share. v2 (20 Nov, owner: 'The message was unclear… Is it against data centers?'): rebuilt in story order — the town's 5–0 no first and last, the law in plain words (stamp DOESN’T APPLY), the claim, the denials, and the stake: if certified, the town gets no say.",
   "series": "rfh",
   "captionSize": "big",
   "argument": "West Virginia's law exempts state-certified data centers from towns' own noise, lighting and zoning rules; a Fundamental Data engineer said the company 'basically wrote the bill'; the company and the governor's office say it did not.",
@@ -19,9 +19,9 @@
       "until": "s2-0.25",
       "hold": "s2",
       "text": {
-        "en": "Towns set rules / for noise, light / and [zoning]."
+        "en": "A town voted 5–0 / [against] / a data center."
       },
-      "source": "General: West Virginia municipalities adopt ordinances on these subjects. The paper in the typewriter is a blank generic ordinance (TOWN OF ____), not a Davis document: Davis passed a resolution, not an ordinance."
+      "source": "Town of Davis, W. Va.: council resolution opposing the planned data center, passed 5–0 (the card on the board, shown big). A resolution states the town's position; it is not a permit decision."
     },
     {
       "id": "preempted",
@@ -30,7 +30,7 @@
       "until": "s3-0.25",
       "hold": "s3",
       "text": {
-        "en": "In West Virginia, / certified / data centers / are [exempt]."
+        "en": "A state law says / the town’s rules / [don’t apply]. / Who wrote it?"
       },
       "source": "W. Va. Code §5B-2-21b(d)(1), from HB 2014 (2025; signed 30 Apr 2025): certified microgrid districts and certified high impact data centers 'may not be subject to' 'County or municipal zoning, horticultural, noise, viewshed, lighting, development, or land use ordinances, restrictions, limitations, or approvals'. Applies to state-certified projects only; uncertified data centers stay under local rules. Same wording in the 2026 enrolled HB 5168. Cross-checked 19 Nov across search results from several outlets; the primary page could not be opened from the build machine."
     },
@@ -63,9 +63,9 @@
       "until": "end-0.3",
       "hold": "end",
       "text": {
-        "en": "So who wrote / the town’s [rules]?"
+        "en": "If it’s certified, / the town / gets [no say]."
       },
-      "source": "The station's question. No claim about who drafted the bill: the claim and both denials are on screen."
+      "source": "W. Va. Code §5B-2-21b(d)(1): a certified high impact data center 'may not be subject to' municipal zoning, noise, lighting, development or land use ordinances or approvals. Conditional on purpose: no certification application filed yet (state data economy office; tag5)."
     }
   ],
   "ui": {
@@ -109,7 +109,7 @@
       "en": "§5  LAND USE"
     },
     "stamp": {
-      "en": "EXEMPT"
+      "en": "DOESN’T APPLY"
     },
     "stampSub": {
       "en": "CERTIFIED DATA CENTERS · W. VA. CODE §5B-2-21b(d)"
@@ -168,6 +168,6 @@
   },
   "props": "No logos, no people, no faces. The typewriter, desk and corkboard are invented props. The ordinance is a generic blank (TOWN OF ____), not a Davis document. Quotes on the cards carry their speaker and outlet.",
   "post": {
-    "en": "West Virginia's HB 2014 exempts state-certified data centers from towns' noise, lighting and zoning rules. A Fundamental Data engineer said \"we were the guys that basically wrote the bill.\" The company and the governor's office say it didn't. So who wrote the town's rules?"
+    "en": "Davis, W. Va. voted 5–0 against a data center. A state law, HB 2014, says certified data centers don't follow towns' noise, lighting or zoning rules. A company engineer said \"we were the guys that basically wrote the bill.\" The company and the governor's office say it didn't."
   }
 }

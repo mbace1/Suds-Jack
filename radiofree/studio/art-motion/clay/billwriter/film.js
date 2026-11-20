@@ -84,7 +84,7 @@ paper.rotation.x = -PA; paper.position.set(0, PLATEN.y + 0.06 + 0.45 * Math.cos(
 const LINE_Y = 830, LH = 60, MX = 70;
 const stampC = STAMPS.map((s, i) => { const R = rng(17 + i * 7); return { rot: (R() - 0.5) * 0.22, dx: (i % 2 ? -60 : 30) + (R() - 0.5) * 30, c: canvasOf(330, 120, (g) => {
   g.strokeStyle = RED; g.fillStyle = RED; g.lineWidth = 7; g.strokeRect(6, 6, 318, 108); g.lineWidth = 2; g.strokeRect(15, 15, 300, 90);
-  g.font = '62px "Anton-400"'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(UI.stamp, 165, 52); g.font = '700 17px RobotoCondensed'; g.fillText(UI.stampSub, 165, 92);
+  g.textAlign = 'center'; g.textBaseline = 'middle'; { let fs = 62; do { g.font = `${fs}px "Anton-400"`; fs -= 2; } while (g.measureText(UI.stamp).width > 290 && fs > 30); } g.fillText(UI.stamp, 165, 52); g.font = '700 17px RobotoCondensed'; g.fillText(UI.stampSub, 165, 92);
   g.globalCompositeOperation = 'destination-out'; for (let k = 0; k < 900; k++) { const x = R() * 330, y = R() * 120, r = R() * 2.4 + 0.3; g.globalAlpha = 0.5 + R() * 0.5; g.beginPath(); g.arc(x, y, r, 0, 7); g.fill(); } }) }; });
 const typed = (line, t) => { const [s, a, b] = line; if (t <= a) return ''; if (t >= b) return s; return s.slice(0, Math.floor(s.length * (t - a) / Math.max(0.01, b - a))); };
 let paperKey = '';
@@ -154,10 +154,10 @@ for (const [x, y, r] of [[0.66, -0.55, 0.08], [-0.05, -0.56, -0.06]]) card(0.36,
 castAll(S); paper.castShadow = false;
 
 // ------------------------------------------------------------------ the camera: one move, the last frame is the first
-const CAMP = hermite3([[0, [0.22, 1.6, 3.0]], [T.s2 - 0.2, [0.14, 1.12, 1.95]], [T.s2 + 0.8, [-0.02, 1.04, 1.36]], [T.s3 - 0.4, [0.04, 1.0, 1.26]],
-  [T.s3 + 1.0, [-0.36, 1.92, 0.25]], [T.s4 - 0.5, [-0.3, 1.92, 0.05]], [T.s4 + 1.0, [0.5, 1.82, 0.25]], [T.s5 - 0.4, [0.42, 1.78, 0.45]], [T.s5 + 1.4, [0.12, 1.42, 2.4]], [DUR, [0.22, 1.6, 3.0]]]);
-const CAMT = hermite3([[0, [0, 1.02, -0.7]], [T.s2 - 0.2, [0, 0.98, -0.35]], [T.s2 + 0.8, [0.03, 0.97, -0.34]], [T.s3 - 0.4, [0.05, 0.95, -0.34]],
-  [T.s3 + 1.0, [-0.42, 1.92, -2.65]], [T.s4 - 0.5, [-0.38, 1.9, -2.65]], [T.s4 + 1.0, [0.6, 1.8, -2.65]], [T.s5 - 0.4, [0.55, 1.76, -2.65]], [T.s5 + 1.4, [0, 1.02, -0.6]], [DUR, [0, 1.02, -0.7]]]);
+const CAMP = hermite3([[0, [-0.68, 1.36, -0.75]], [T.s2 - 1.0, [-0.68, 1.36, -0.72]], [T.s2 - 0.2, [0.14, 1.12, 1.95]], [T.s2 + 0.8, [-0.02, 1.04, 1.36]], [T.s3 - 0.4, [0.04, 1.0, 1.26]],
+  [T.s3 + 1.0, [-0.36, 1.92, 0.25]], [T.s4 - 0.5, [-0.3, 1.92, 0.05]], [T.s4 + 1.0, [0.5, 1.82, 0.25]], [T.s5 - 0.4, [0.42, 1.78, 0.45]], [T.s5 + 1.4, [0.04, 1.08, 1.5]], [T.s5 + 2.9, [0.04, 1.06, 1.4]], [DUR, [-0.68, 1.36, -0.75]]]);
+const CAMT = hermite3([[0, [-0.68, 1.3, -2.65]], [T.s2 - 1.0, [-0.68, 1.3, -2.65]], [T.s2 - 0.2, [0, 0.98, -0.35]], [T.s2 + 0.8, [0.03, 0.97, -0.34]], [T.s3 - 0.4, [0.05, 0.95, -0.34]],
+  [T.s3 + 1.0, [-0.42, 1.92, -2.65]], [T.s4 - 0.5, [-0.38, 1.9, -2.65]], [T.s4 + 1.0, [0.6, 1.8, -2.65]], [T.s5 - 0.4, [0.55, 1.76, -2.65]], [T.s5 + 1.4, [0.03, 0.97, -0.34]], [T.s5 + 2.9, [0.03, 0.97, -0.34]], [DUR, [-0.68, 1.3, -2.65]]]);
 const cam = new THREE.PerspectiveCamera(46, W / H, 0.05, 60), _t = new THREE.Vector3();
 function poseCam(t) { CAMP(t, cam.position); CAMT(t, _t); cam.position.y += 0.006 * Math.sin(t * 0.9); cam.lookAt(_t); cam.updateMatrixWorld(true); }
 
