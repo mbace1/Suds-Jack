@@ -103,3 +103,13 @@ quote card carries, under his verbatim words, "THE BILL HE MEANT: W. VA. HB 2014
 link is the reporting's and the company's own (its denial names HB 2014); tag2 "HB 2014, SIGNED 30 APR 2025 · NOW W. VA.
 CODE §5B-2-21b(d) · CERTIFIED PROJECTS ONLY". The s3 camera sits higher so the six-line caption clears the card.
 Stills: previews/20-11-RFH-Who-Wrote-the-Bill-v4-stills.jpg
+
+## v5 (20 Nov) — owner: "From the company building it.. building the data centers? Always when you say 'it', think about if it's super clear what you are referring to"
+Rule for this film and the house: no "it", "they" or "the company" without a named referent on screen. Fundamental Data is
+named in caption 1 and by name thereafter:
+1 "A town voted 5–0 / [against] / a data center / by Fundamental / Data."
+2 "West Virginia’s / HB 2014 (2025): / town rules / [don’t apply] to / certified / data centers."
+3 "Who wrote / HB 2014? / A Fundamental / Data engineer: / [his company did]."
+4 "Fundamental / Data and the / governor’s office / [deny] the claim."
+5 "The town said no. / If the data center / is certified, / the town / gets [no say]."
+Runs 26 s (reading time). Post (276 chars) rewritten with the name. Stills: previews/20-11-RFH-Who-Wrote-the-Bill-v5-stills.jpg
