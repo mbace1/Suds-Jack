@@ -176,7 +176,19 @@ Classic `toko-drop/` remains the historical / hub v221 lineage. Godot port follo
   - **D is getting through**: a clear under the C line, where it used to be an F (this replaces 27 Oct's "F is a small but still challenging score"). A D opens the next room.
   - C, B, A and S stay on the bots' lines: C the rough bot's median, B the average bot's weaker quarter, A the average bot's median, S the sharp bot's median. For a person, B and A are great runs and S is practice.
   - Every room's S is checked reachable: the sharp bot gets through every room and its median is the S line (scripts/room-tiers.mjs, both orientations).
-- **Still open (PROPOSAL):** "proper strategy should earn you A or S a bit more easily". Each room names what it teaches (`plan.teaches`, `plan.strategy`). A room could pay a bonus when it is played its way, for example killing in order in IN ORDER, or dashing the gates in GATE RUN. Which rooms, and how much, is Mikael's call.
+- **Answered 20 Nov (below):** "proper strategy should earn you A or S a bit more easily". Each room names what it teaches (`plan.teaches`, `plan.strategy`). A room could pay a bonus when it is played its way, for example killing in order in IN ORDER, or dashing the gates in GATE RUN. Which rooms, and how much, is Mikael's call. No bonus: the room itself pays its strategy.
+
+### Decision 20 Nov 2026 — arcade spawns, the strategy pays by itself, Steam is the landscape game
+- **Mikael**, on the open questions of 19 Nov:
+  - 2, should ARCADE get the fair spawns too: **"yes"**.
+  - 1, whether the campaign's boss rooms copy the arcade bosses: asked to check first. Three use an arcade boss's behaviour (BOIL OVER: KETTLE, PACK ICE: BERG, THE DEEP END: ANGLER), each in its own arena, at its own health, in its own swarm. Two are bosses of their own (THE SLUDGE: SLUDGE CUBE, SIREN: SIREN). All five fight v153's single rage. Which kind each takes is still Mikael's call.
+  - 3, a strategy bonus: **"by default a strategy followed is optimizing in a way that may otherwise not happen."**
+  - 4, Steam: **"steam landscape is the exact same as all landscape versions and can use m/kb or controller."**
+- **Locks:**
+  - ARCADE, HARDCADE and DAILY bodies arrive fair, like the campaign's (v158). Measured with the human-like bots (`scripts/curve.mjs`) it is neutral to slightly better.
+  - **The first boss eased back** (v158, found measuring the spawns). As an endurance boss at 30 s, the TWIN PRISMS took world 1 from 100% cleared to 67% for the average bot, so its hold is 20 s now (96%).
+  - **No strategy bonus.** Following a room's strategy is itself the way to optimise its score: a room is built so that playing it its way scores what playing it otherwise cannot. This is a rule for designing rooms, not a mechanic. A room whose S line can be reached as well without its strategy is a room to look at. Sakurai §1 (#191: risk and return close together) and §4 (#244: the tutorial lives inside the real game).
+  - **Steam is the landscape game, unchanged.** There is no separate Steam build or Steam-only feature. It plays with mouse and keyboard or a controller, as every landscape version does (both SHIPPED).
 
 ## 6. Sakurai principles (adopted 15 Nov 2026)
 
@@ -264,7 +276,7 @@ No questions from 18 Nov are open.
 
 **How to read it.** `[x]` is done, with its evidence. `[ ]` is open. The percentage to shipping is the share of boxes ticked. Ticking a box needs the evidence named on its line: a version, a playtest note or an owner answer. An agent may not tick a design box on its own judgment. Rows tagged **PROPOSAL** are the producer's suggestion until Mikael confirms them; he may cut or add rows.
 
-**Count at v157: 19 of 39 (about 49%).** Most of the remaining boxes are decisions and playtests, not code. (v155: 17 of 36; v157 added the campaign boss rooms, landscape-and-portrait parity and a Steam build as rows.)
+**Count at v158: 19 of 40 (about 48%).** Most of the remaining boxes are decisions and playtests, not code. (v155: 17 of 36; v157 added the campaign boss rooms, landscape-and-portrait parity and a Steam build as rows.)
 
 ### A. The target (owner)
 - [x] Where 2.0 is released: **itch.io, as an HTML game played in the browser** (owner, 18 Nov).
@@ -303,7 +315,8 @@ No questions from 18 Nov are open.
 - [x] Played on a phone by the owner: a Pixel 10 Pro (18 Nov).
 - [ ] Played on at least one iPhone and one Android phone, in both orientations, at the release version. Android so far: a Pixel 10 Pro.
 - [ ] **Landscape and portrait tested equally** (owner, 19 Nov: "2 games"; Steam is landscape, phones likely both). The browser smoke walks both (v157), the room pass plays both (`--portrait`, v157), and a person plays both orientations before a release.
-- [ ] A landscape build for Steam (desktop, keyboard and pad first). **PROPOSAL**: the format is Mikael's to set.
+- [ ] Steam: the landscape game, exactly as every landscape version (owner, 20 Nov), played with mouse and keyboard and with a controller before a Steam release. No separate build.
+- [ ] Every campaign room's strategy is how it scores best (owner, 20 Nov: "a strategy followed is optimizing"): a room whose S line is reached as well without its strategy is reworked. A bot that plays each room against its own `plan.strategy` is the instrument; it does not exist yet. **PROPOSAL** (the instrument).
 - [ ] Holds a playable frame rate on those phones through a late-world swarm and a boss death. The target number is Mikael's to set. **PROPOSAL**
 - [x] The result card's lower buttons (ROOMS, OPTIONS) can be reached on a phone held sideways: the owner thinks so on a Pixel 10 Pro (18 Nov). An emulator check at v155 had them below the bottom of the screen, so look again on an iPhone.
 - [ ] A desktop browser without WebGPU gets a fallback or a clear message. **PROPOSAL**

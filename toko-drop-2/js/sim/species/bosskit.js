@@ -10,9 +10,9 @@
 // instead (phases() below); `rage()` still answers "is it raging", so each
 // boss's own code reads as it did. The phase's numbers come in through
 // api.S(g) (sim/world.js), which hands a phased boss its own merged tuning.
-import { TUNING } from '../../tuning.js?v=157';
-import { BOSS_PHASES } from '../../tuning/bossphases.js?v=157';
-import { BOSS_KINDS } from '../../tuning/bosskinds.js?v=157';
+import { TUNING } from '../../tuning.js?v=158';
+import { BOSS_PHASES } from '../../tuning/bossphases.js?v=158';
+import { BOSS_KINDS } from '../../tuning/bosskinds.js?v=158';
 
 // v157 (tuning/bosskinds.js): which kind this boss fights as here — 'endure', 'read', or null (as v156 fought
 // it). The same modes as the phases; the campaign's rooms only with `campaign`

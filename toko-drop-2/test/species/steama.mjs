@@ -2,8 +2,8 @@
 // steama.mjs — STEAMA (THE BOILER ROOM), in bare node: it swells, then vents
 // a scalding cloud and a ring.
 import { readFileSync } from 'node:fs';
-import { createWorld, step, api } from '../../js/sim/world.js?v=157';
-import { TUNING as T } from '../../js/tuning.js?v=157';
+import { createWorld, step, api } from '../../js/sim/world.js?v=158';
+import { TUNING as T } from '../../js/tuning.js?v=158';
 let failed = 0, passed = 0;
 const check = (c, ok, d = '') => { if (ok) { passed++; return; } failed++; console.log(`  ✗ ${c}${d ? ` — ${d}` : ''}`); };
 const S = T.species.steama, dt = T.sim.dt, IDLE = { mx: 0, mz: 0, ax: 1, az: 0, aim: false, fire: false, dash: false };

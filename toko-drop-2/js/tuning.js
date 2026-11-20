@@ -7,10 +7,10 @@
 // things that work"). The arena is 1.x's, so every 1.x number ports as it is
 // instead of through a rescale. Axes: x across the screen (right +), y up,
 // z toward the bottom of the screen. The arena is centred on the origin.
-import { SPECIES } from './tuning/species/index.js?v=157';
-import WAVES from './tuning/waves.js?v=157';
-import PICKUPS from './tuning/pickups.js?v=157';
-import MUSIC from './tuning/music.js?v=157';
+import { SPECIES } from './tuning/species/index.js?v=158';
+import WAVES from './tuning/waves.js?v=158';
+import PICKUPS from './tuning/pickups.js?v=158';
+import MUSIC from './tuning/music.js?v=158';
 
 export const TUNING = {
   render: {
@@ -1354,7 +1354,10 @@ export const TUNING = {
   // movement slightly"): where a campaign body arrives (sim/fairspawn.js). `clear` u from the hero at least; while
   // the hero moves faster than `moving` u/s, not inside `ahead.cone` rad either side of its heading out to
   // `ahead.range` u. An unfair point moves to its nearest fair mirror or turn. `on: false` is v156 (?fair=off)
-  fairSpawn: { on: true, clear: 5, moving: 1.5, ahead: { cone: 0.6, range: 9 } },
+  // v158 (owner, 20 Nov: "2 yes"): ARCADE (and HARDCADE, DAILY: the arcade director) too, moving a body along 1.x's
+  // ring rather than across the room; `arcade: false` is v157's arcade, which had no keep-out (1.x's)
+  // `bunch`: a moved body keeps `r` u from any body younger than `t` s
+  fairSpawn: { on: true, arcade: true, clear: 5, moving: 1.5, ahead: { cone: 0.6, range: 9 }, bunch: { t: 1, r: 2.5 } },
 
   campaign: {
     worlds: [

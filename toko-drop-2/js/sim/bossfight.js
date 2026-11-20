@@ -11,12 +11,12 @@
 //   w.fight  { kind, t, seen, done, tiers, hp, max, ids, x, z, grade, bonus }
 //            v157, an ENDURANCE boss: + { endure, hold, left, dealt, prev, hits0, hits } and tiers are HITS
 //   events   bossDown { kind, grade, time, bonus, tiers }
-import { TUNING } from '../tuning.js?v=157';
-import { BOSS_TIERS } from '../tuning/bossfights.js?v=157';
-import * as pickups from './pickups.js?v=157';
-import { endsWorld, endsRun } from './worlds.js?v=157';
-import { kindOf } from './species/bosskit.js?v=157';
-import { BOSS_KINDS } from '../tuning/bosskinds.js?v=157';
+import { TUNING } from '../tuning.js?v=158';
+import { BOSS_TIERS } from '../tuning/bossfights.js?v=158';
+import * as pickups from './pickups.js?v=158';
+import { endsWorld, endsRun } from './worlds.js?v=158';
+import { kindOf } from './species/bosskit.js?v=158';
+import { BOSS_KINDS } from '../tuning/bosskinds.js?v=158';
 
 const T = TUNING;
 const ORDER = ['S', 'A', 'B', 'C'];

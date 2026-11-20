@@ -5,9 +5,9 @@
 // stream (an ordinary run) how they played moves the waves after the first.
 //
 //   node test/daily.mjs
-import { createWorld, step, api } from '../js/sim/world.js?v=157';
-import { TUNING as T } from '../js/tuning.js?v=157';
-import { dailySeed } from '../js/sim/rng.js?v=157';
+import { createWorld, step, api } from '../js/sim/world.js?v=158';
+import { TUNING as T } from '../js/tuning.js?v=158';
+import { dailySeed } from '../js/sim/rng.js?v=158';
 
 let failed = 0, passed = 0;
 const check = (claim, ok, detail = '') => {

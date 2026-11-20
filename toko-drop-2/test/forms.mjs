@@ -3,9 +3,9 @@
 // touch, a dash cuts it and a death snaps it; the director lays both out, and world 1 has neither.
 //
 //   node test/forms.mjs
-import { createWorld, step, api } from '../js/sim/world.js?v=157';
-import { TUNING as T } from '../js/tuning.js?v=157';
-import * as formation from '../js/sim/formation.js?v=157';
+import { createWorld, step, api } from '../js/sim/world.js?v=158';
+import { TUNING as T } from '../js/tuning.js?v=158';
+import * as formation from '../js/sim/formation.js?v=158';
 
 let failed = 0, passed = 0;
 const check = (claim, ok, detail = '') => {

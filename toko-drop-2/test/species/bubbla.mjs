@@ -2,9 +2,9 @@
 // bubbla.mjs — BUBBLA (THE CISTERN), in bare node: its bubble takes the
 // shots and pops on the last; only then is the gel hurt; it bolts, and mends.
 import { readFileSync } from 'node:fs';
-import { createWorld, step, api } from '../../js/sim/world.js?v=157';
-import { TUNING as T } from '../../js/tuning.js?v=157';
-import behaviour from '../../js/sim/species/bubbla.js?v=157';
+import { createWorld, step, api } from '../../js/sim/world.js?v=158';
+import { TUNING as T } from '../../js/tuning.js?v=158';
+import behaviour from '../../js/sim/species/bubbla.js?v=158';
 let failed = 0, passed = 0;
 const check = (c, ok, d = '') => { if (ok) { passed++; return; } failed++; console.log(`  ✗ ${c}${d ? ` — ${d}` : ''}`); };
 const S = T.species.bubbla, dt = T.sim.dt, IDLE = { mx: 0, mz: 0, ax: 1, az: 0, aim: false, fire: false, dash: false };

@@ -8,11 +8,11 @@
 //
 // Usage: node test/pickups.mjs           (exit 1 on any failure)
 import { existsSync, readFileSync } from 'node:fs';
-import { createWorld, step, api } from '../js/sim/world.js?v=157';
-import { TUNING as T } from '../js/tuning.js?v=157';
-import * as PK from '../js/sim/pickups.js?v=157';
-import { invincible } from '../js/sim/hero.js?v=157';
-import { waveKind } from '../js/sim/director/arcade.js?v=157';
+import { createWorld, step, api } from '../js/sim/world.js?v=158';
+import { TUNING as T } from '../js/tuning.js?v=158';
+import * as PK from '../js/sim/pickups.js?v=158';
+import { invincible } from '../js/sim/hero.js?v=158';
+import { waveKind } from '../js/sim/director/arcade.js?v=158';
 
 let failed = 0, passed = 0;
 const check = (claim, ok, detail = '') => {

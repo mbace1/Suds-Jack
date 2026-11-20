@@ -10,8 +10,8 @@
 //   node scripts/lines-diff.mjs main --old old.json --new new.json --old-hard oh.json --new-hard nh.json
 import { readFileSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
-import { TUNING as T } from '../js/tuning.js?v=157';
-import { BOSS_TIERS } from '../js/tuning/bossfights.js?v=157';
+import { TUNING as T } from '../js/tuning.js?v=158';
+import { BOSS_TIERS } from '../js/tuning/bossfights.js?v=158';
 import { BANDS } from './lines.mjs';
 
 const args = process.argv.slice(2), opt = (k) => { const i = args.indexOf(k); return i < 0 ? null : args[i + 1]; };
