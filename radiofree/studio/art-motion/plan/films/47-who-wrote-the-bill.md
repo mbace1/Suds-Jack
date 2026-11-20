@@ -52,3 +52,7 @@ West Virginia's HB 2014 exempts state-certified data centers from towns' noise, 
 ```
 **X** (with the sign-off; 273 of 280 characters, so no hashtags): the body above alone.
 **YouTube Shorts** title: `Who Wrote the Bill? West Virginia's data center law | Radio Free Helsinki`; description = the body + hashtags.
+
+## On hold (20 Nov)
+Owner, 20 Nov: "Who wrote the bill is impossible to understand." Not posted; not marked. Needs a rethink of the story
+(not a caption polish) before anything else is done to it.
