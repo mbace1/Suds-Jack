@@ -1464,3 +1464,17 @@ scheduled task's last fire was 13 Nov 05:16), so **Give Way had no Tuesday-morni
 - **New leads:** Pentagon $200M ceilings vs small obligated sums (secondary, verify on USAspending); Kaleva — Ii (€1–3bn,
   Ingrid Capacity), Sievi (~500 MW), Pyhäjoki zoning starts, dates to confirm.
 - **Posted films now wrong:** none found.
+
+
+## Check Fri 20 Nov 17:17 (evening; search summaries only)
+- **No big global development.** ANT day-2 close not indexed yet; the Round Trip pinned-reply draft ($83 offer, $97.17
+  first-day close) still waits for Mikael's OK.
+- **Who Wrote the Bill v6 (stills awaiting OK): nothing it states has changed.** Gray TV (13 Nov) re-confirms the Davis
+  council resolution and HB 2014 as the law at issue; no certification filing found. Fundamental Data as a Virginia
+  developer and Morrisey's 30 Apr 2025 signature stand. Avoid any site size (500 vs 10,000 acres reported).
+- **Not Yet Listed (built, awaiting OK):** HE 282/2026 still a bill (no TaVM, no plenary); the "plans to" and "IF PASSED"
+  wording stays correct.
+- **Due 13 Nov:** still no OpenAI reply found; the premise holds.
+- **New lead (Yle, secondary, date to confirm):** Kitee's deviation permit for Scale42 at Puhos, against the permit
+  agency's advice to use zoning.
+- **Posted films now wrong:** none found.

@@ -1560,3 +1560,18 @@ Search summaries only; nothing opened. One device each, from STORY-DEVICES.md or
   municipalities moving fast on zoning before the register exists.
 - **Jokela, Muhos, Hamina, Lapinlahti:** nothing new found.
 - **Reactions (Trade Secret/Hamina, Count the Trees/Muhos):** nothing new; comment counts not visible to search.
+
+
+## Check Fri 20 Nov 17:17 (evening; search summaries only)
+- **HS:** no new hs.fi item found (search does not reach hs.fi). Helsinki city board approved its data-centre principles
+  on 2 Nov (city release; context, not a candidate). [hel.fi](https://www.hel.fi/fi/uutiset/kaupunginhallitus-hyvaksyi-datakeskusperiaatteet)
+- **Register, HE 282/2026 (film B):** still **no TaVM report or plenary decision** found. Still a bill; target 1.4.2027.
+  [edilex HE 282/2026](https://www.edilex.fi/he/20260282)
+- **Secondary candidate (Yle; date not shown, probably mid-2026 — confirm):** **Kitee granted Scale42 a deviation permit**
+  (poikkeamislupa) for a data centre at Puhos on land zoned for soil extraction, about four times the permitted building
+  volume. The regional permit agency said a project this size should be decided by zoning, not a deviation permit. The
+  same company is planning in Liperi. Device idea: a permit that says "except". Verify the date and the agency's wording
+  before use. [Yle](https://yle.fi/a/74-20235376), [Yle/Liperi](https://yle.fi/a/74-20225820)
+- **Kaleva leads (Ii, Sievi, Pyhäjoki):** dates still unconfirmed.
+- **Jokela, Muhos, Hamina, Lapinlahti:** nothing new found.
+- **Reactions (Trade Secret/Hamina, Count the Trees/Muhos):** nothing new; comment counts not visible to search.

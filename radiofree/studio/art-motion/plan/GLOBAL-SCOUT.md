@@ -1862,3 +1862,23 @@ Everything below comes from search summaries. No article was opened.
   USAspending before any use. Could pair with a "headline vs obligated" idea.
 - **NDA towns:** nothing dated November. **DRAM/GPU:** nothing new; answers due 7 Dec. **Whistleblower Act:** not enacted.
 - **Reactions:** ANT debut coverage is heavy (live blogs); no comment counts visible to search.
+
+
+## Check Fri 20 Nov 17:17 (evening; search summaries only)
+- **Anthropic (ANT), day 2 (Fri 20 Nov):** no closing price indexed yet (quote pages show placeholders; US close is 23:00
+  Helsinki). First-day figures stand: $83 offer, $97.17 close. [StockAnalysis](https://stockanalysis.com/stocks/ant/)
+- **Tucker County / Fundamental Data:** nothing new after 13 Nov. Still syndicated: Gray TV's "Davis V. Goliath" (13 Nov),
+  which confirms Mayor Al Tomson announcing the council's resolution against the data center beside Davis, and names
+  HB 2014 as the law critics focus on. A **second appeal** over the air permits, about withheld emissions data, by Tucker
+  United, Friends of Blackwater and WVHC (date not shown). Site size is reported inconsistently (500 acres for phase one,
+  up to 10,000 for all three phases) — do not quote a size. No certification filing found.
+  [WBTV/Gray](https://www.wbtv.com/2026/11/13/davis-v-goliath-small-town-fight-against-big-data/),
+  [Yahoo/second appeal](https://www.yahoo.com/news/articles/second-appeal-filed-against-tucker-141017440.html)
+- **OpenAI / the 29 Oct Casar letter:** still **no reply found** (7 days past 13 Nov). [Nextgov](https://nextgov.com/artificial-intelligence/2026/10/democrats-press-openai-over-safety-researcher-firings-security-incidents/416954)
+- **Military AI:** nothing dated November. Context: May 2026 classified-systems deals with seven companies (not
+  Anthropic); the Anthropic "supply-chain risk" lawsuit continues. The FourWeekMBA obligated-sums lead is still unverified.
+  [Al Jazeera](https://www.aljazeera.com/news/2026/5/1/pentagon-announces-deal-with-seven-ai-companies-for-classified-systems)
+- **NDA towns:** nothing dated November; the pattern holds (Farmington, Minn.; Wisconsin; Columbiana, Ala.; Boyce, La.; Falls
+  Twp., Pa.). [NPR](https://www.npr.org/2026/08/27/nx-s1-5879528/data-center-nda-disclosure-louisiana)
+- **DRAM/GPU:** nothing new; answers due 7 Dec. **Whistleblower Act:** not enacted.
+- **Reactions:** none new found; comment counts not visible to search.
