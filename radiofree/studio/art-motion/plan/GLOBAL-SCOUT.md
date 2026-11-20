@@ -1846,3 +1846,19 @@ Everything below comes from search summaries. No article was opened.
   **DRAM/GPU:** nothing new; DRAM answers due 7 Dec. **Whistleblower Act:** not enacted.
 - **Reactions:** no new official responses found; comment counts not visible to search.
 
+
+## Check Fri 20 Nov 07:16 (morning; search summaries only)
+- **Anthropic (ANT) first day, Thu 19 Nov — now reported:** priced $83 (raised $81.3B); opened $111.50 (trading began late
+  morning ET via a halt cross), intraday high ~$115, closed **$97.17, up ~17% on the offer** and ~13% below the open, on a
+  day the Nasdaq 100 fell 2.2%. Sources agree on close and % (Forbes, CBS, Fast Company, Bloomberg live blog); the market
+  value at the close differs between outlets — do not quote it. [Forbes](https://www.forbes.com/sites/fionariley/2026/11/19/anthropic-ipo-live-stock-closes-day-at-97-up-more-than-17/),
+  [CBS](https://www.cbsnews.com/news/anthropic-ipo-nasdaq-debut-claude-ai/), [Fast Company](https://www.fastcompany.com/91645598/anthropic-ipo-what-time-trading-start-stock-price-live-update)
+- **Tucker County / Fundamental Data:** nothing new after 19 Nov. Gray TV's "Davis V. Goliath" (13 Nov) still syndicated;
+  context only: lawsuit pending, state rule-violation notice contested, site-control questions (Aug). No certification
+  filing found.
+- **OpenAI / the 29 Oct House letter:** still **no reply found** (7 days past 13 Nov).
+- **Military AI — lead, unverified:** FourWeekMBA (read 12 Nov) says federal records show ~$13.1M obligated to OpenAI
+  Public Sector, $29.5M to Google, $2.0M to Anthropic against the $200M ceilings. Secondary arithmetic — confirm on
+  USAspending before any use. Could pair with a "headline vs obligated" idea.
+- **NDA towns:** nothing dated November. **DRAM/GPU:** nothing new; answers due 7 Dec. **Whistleblower Act:** not enacted.
+- **Reactions:** ANT debut coverage is heavy (live blogs); no comment counts visible to search.

@@ -1544,3 +1544,19 @@ Search summaries only; nothing opened. One device each, from STORY-DEVICES.md or
 - **Jokela, Muhos, Hamina, Lapinlahti:** nothing new found.
 - **Reactions (Trade Secret/Hamina, Count the Trees/Muhos):** nothing new; comment counts not visible to search.
 
+
+## Check Fri 20 Nov 07:16 (morning; search summaries only)
+- **HS:** no new hs.fi item found (search does not reach hs.fi).
+- **Register, HE 282/2026 (film B):** still **no talousvaliokunta report (TaVM) or plenary decision** found; the latest TaVM
+  listed in search is 21/2026 and is not this bill. Still a bill; target 1.4.2027. Quarterly summaries and the 0.5 MW
+  threshold not re-confirmed (bill PDF not opened). [edilex HE 282/2026](https://www.edilex.fi/he/20260282)
+- **Secondary candidates (Kaleva; dates not shown in search — confirm before use):** Ii — kunnanhallitus approved a
+  zoning initiative for a €1–3bn data centre by Ingrid Capacity AB near Isokangas substation
+  ([Kaleva](https://www.kaleva.fi/iihin-suunnitellaan-taas-uutta-miljardiluokan-data/13543839)); Sievi — ~500 MW campus
+  at Kukonkylä, zoning initiative proceeding ([Kaleva](https://www.kaleva.fi/sieviin-kaavaillaan-uutta-datakeskusta-kunnanjohta/13534857));
+  Pyhäjoki — zoning started for a Finnish AI firm's data centre ([Kaleva](https://www.kaleva.fi/suomalainen-tekoalyfirma-suunnittelee-datakeskusta/13658120)).
+  MTV: residents organising a network against data-centre decisions they call hasty
+  ([MTV](https://www.mtvuutiset.fi/artikkeli/datakeskuspaatoksia-on-tehty-kuntalaisten-mielesta-hahmaisesti-nyt-sita-vastaan-taistellaan-verkostolla/9390670)) — possibly older; date to check. Pattern: northern Ostrobothnia
+  municipalities moving fast on zoning before the register exists.
+- **Jokela, Muhos, Hamina, Lapinlahti:** nothing new found.
+- **Reactions (Trade Secret/Hamina, Count the Trees/Muhos):** nothing new; comment counts not visible to search.

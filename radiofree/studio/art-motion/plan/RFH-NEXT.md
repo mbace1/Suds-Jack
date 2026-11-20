@@ -1452,3 +1452,15 @@ scheduled task's last fire was 13 Nov 05:16), so **Give Way had no Tuesday-morni
 - **Posted films now wrong:** none found.
 - **Due:** tonight, ANT first-day close; 7 Dec, DRAM answers.
 
+
+## Check Fri 20 Nov 07:16 (morning; search summaries only)
+- **Anthropic IPO, first day:** opened $111.50, **closed $97.17 (+17% on the $83 offer)** (Forbes, CBS, Fast Company). The
+  Round Trip pinned reply can now carry it, e.g. "Update: Anthropic priced its IPO at $83 a share on 18 Nov, above the
+  $70–78 range in this film, and closed its first day at $97.17 (Forbes)." Awaits Mikael's OK.
+- **A "Who Wrote the Bill?" (awaiting OK):** nothing it depends on has changed; no certification filing found.
+- **B "Not Yet Listed" (stills sent):** still a bill (no TaVM report, no plenary) — the "plans to" wording and the
+  "IF PASSED" tag remain right. Quarterly summaries / 0.5 MW not re-confirmed.
+- **C "Due 13 Nov":** still no OpenAI reply found (7 days late); premise holds.
+- **New leads:** Pentagon $200M ceilings vs small obligated sums (secondary, verify on USAspending); Kaleva — Ii (€1–3bn,
+  Ingrid Capacity), Sievi (~500 MW), Pyhäjoki zoning starts, dates to confirm.
+- **Posted films now wrong:** none found.
