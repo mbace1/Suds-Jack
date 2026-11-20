@@ -56,3 +56,21 @@ West Virginia's HB 2014 exempts state-certified data centers from towns' noise, 
 ## On hold (20 Nov)
 Owner, 20 Nov: "Who wrote the bill is impossible to understand." Not posted; not marked. Needs a rethink of the story
 (not a caption polish) before anything else is done to it.
+
+## v2 plan (owner, 20 Nov: "rebuild it that way after the other one")
+Why v1 failed (owner: "The message was unclear… Is it against data centers?"): the town's NO was a background card, so
+there was no conflict; "certified" and "exempt" are law words; it opened on a generic line about towns; it ended on a
+question with no visible stake. The message, in one line: **a company may have written the law that takes away a town's
+say over that company's own project.** It is about who makes the rules, not against data centers.
+
+Story in order, same device (the clerk's office, the typewriter, the corkboard):
+- s1 the town says no — open ON the Davis card (TOWN OF DAVIS · RESOLUTION OPPOSING THE DATA CENTER · VOTE: 5–0), big,
+  then pull back to the clerk's typewriter. Caption: "A town voted 5–0 / [against] a data center."
+- s2 the law — the town's own rules typed and stamped. Caption: "A state law says / the town’s rules / [don’t apply]."
+  Stamp text DOESN'T APPLY (plain words; the code citation stays in the stamp's small print and the tag).
+- s3 who wrote it — the quote card. Caption: "Who wrote that law? / The developer’s engineer: / …" (fit to 800 px;
+  the quote stays verbatim, never trimmed).
+- s4 the denials — Caption: "The developer and / the governor’s office: / [they didn’t]."
+- s5 the stake — the bill sheet, DRAFTED BY: blank. Caption: "If it’s certified, / the town’s no / [won’t count]."
+  Accuracy: no certification application filed yet (state data economy office), so the ending is conditional; tag5 says so.
+Post copy to be rewritten to the same order.
