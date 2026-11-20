@@ -103,6 +103,19 @@ Toko 2 still needs to go out on Toko X ("Batteries included. Parents not include
 | Helsinki 3, Give Way v1 (posted by Grok Bot) | RFH X | https://x.com/radiofreehki/status/2123102565604716805 (18 Nov 19:13–19:17 Helsinki) | In 300 meters, give way to fighter jets. Highway 9 at Jännevirta near Kuopio is closed 18–25 Nov: the Air Force lands Hornets on it in Protective Fence 26 (19–27 Nov, 40+ aircraft). Dutch, French and Swedish jets fly too. Finland's new F-35s sit it out. #Finland #Kuopio |
 | Helsinki 3, Give Way v1 (posted by Grok Bot) | RFH YouTube Short | https://youtube.com/shorts/gJ_FpHFHaN4 (18 Nov 19:13–19:17 Helsinki; title "Give Way: fighter jets on Highway 9", Public, not made for kids) | same as Instagram (description) |
 
+## Gameplay Laboratory (GL)
+
+Accounts: Instagram `gameplay.laboratory`, X `@GameplayLabHki`, YouTube `@GameplayLaboratory`, TikTok `@gameplay.laboratory`, Bluesky `@gameplaylaboratory.bsky.social`.
+
+| Film | Channel | Link | Copy |
+|---|---|---|---|
+| TOP STEED (approved 20 Nov, "All can be used. Centered text is ok for this 1 but shouldn't be used otherwise"; posted by Grok Bot) | GL Instagram | https://www.instagram.com/reel/Df-DYHKvYZ_/ (20 Nov ~18:10–18:24 Helsinki) | A racing game where the car is a horse. In TOP STEED there's no steering wheel: you ride with outside leg and inside rein, drift the corners, and burn your horse's stamina to boost. Early Access 26 Nov on Steam: store.steampowered.com/app/4362880 #indiegames #racinggames #gamedesign #TopSteed |
+| TOP STEED (posted by Grok Bot) | GL X | https://x.com/GameplayLabHki/status/2123814571202707506 (20 Nov ~18:10–18:24 Helsinki; caption without #gamedesign, to fit X's limit; Mikael approved) | A racing game where the car is a horse. In TOP STEED there's no steering wheel: you ride with outside leg and inside rein, drift the corners, and burn your horse's stamina to boost. Early Access 26 Nov on Steam: store.steampowered.com/app/4362880 #indiegames #racinggames #TopSteed |
+| TOP STEED (posted by Grok Bot) | GL YouTube | https://youtu.be/cGrysaVN440 (20 Nov ~18:10–18:24 Helsinki) | same as Instagram (description) |
+| TOP STEED (posted by Grok Bot) | GL YouTube Short | https://youtube.com/shorts/zPLabNFpRfc (20 Nov ~18:10–18:24 Helsinki) | same as Instagram (description) |
+| TOP STEED (posted by Grok Bot) | GL TikTok | TikTok @gameplay.laboratory: under review, no public URL yet (20 Nov ~18:10–18:24 Helsinki) | same as Instagram |
+| TOP STEED (posted by Grok Bot) | GL Bluesky | https://bsky.app/profile/gameplaylaboratory.bsky.social/post/3n2qyiwmkfk2b (20 Nov ~18:10–18:24 Helsinki; 16:9 centred layout, a one-off) | same as Instagram |
+
 ## Scheduled (about 6 hours apart)
 
 The next RFH films and why each sits where it does: `plan/RFH-NEXT.md` (18 Oct). Cadence changed to about every 6 hours on 21 Oct; all times Helsinki (EEST).
