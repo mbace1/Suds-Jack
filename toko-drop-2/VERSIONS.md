@@ -19,6 +19,13 @@
     Never `--no-verify`.
 -->
 
+## v158 — 2026-11-20
+**TODO: one-line title**
+- TODO
+- Cache tokens `?v=157` → `?v=158`; HUD label → `2.0 · v158`
+
+---
+
 ## v157 — 2026-11-19
 **Bosses by turns (an ENDURANCE boss you outlast, then a STRATEGIC boss you read), fair spawns in the campaign, and portrait tested as fully as landscape**
 - Owner, 19 Nov, answering "should a boss be a puzzle or an endurance wall?": "make first boss endurance, second strategic, and so on". Worlds 1, 3, 5, 7 and 9 end on an endurance boss (TWIN PRISMS, MAW, KETTLE, BERG, OMEGA), worlds 2, 4, 6 and 8 on a strategic one (CURB KING, BLISTER, PIKE, ANGLER). `tuning/bosskinds.js`; ARCADE and HARDCADE, as the phases are; the campaign's boss rooms are as they were. `?bosskinds=off` is the v156 bosses, for an A/B on the phone.

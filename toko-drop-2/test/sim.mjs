@@ -8,7 +8,7 @@
 //
 // Usage: node test/sim.mjs           (exit 1 on any failure)
 import { makeRng, dailySeed } from '../js/sim/rng.js';
-import { press } from '../js/sim/press.js?v=157';
+import { press } from '../js/sim/press.js?v=158';
 
 let failed = 0, passed = 0;
 const check = (claim, ok, detail = '') => {
@@ -38,8 +38,8 @@ const check = (claim, ok, detail = '') => {
 }
 
 // ── a night ────────────────────────────────────────────────────────
-const { createWorld, step, api } = await import('../js/sim/world.js?v=157');
-const { TUNING: T } = await import('../js/tuning.js?v=157');
+const { createWorld, step, api } = await import('../js/sim/world.js?v=158');
+const { TUNING: T } = await import('../js/tuning.js?v=158');
 const IDLE = { mx: 0, mz: 0, ax: 0, az: 0, aim: false, fire: false, dash: false };
 const near = (a, b, eps = 1e-9) => Math.abs(Math.atan2(Math.sin(a - b), Math.cos(a - b))) <= eps;   // angles, wrapped
 
@@ -193,7 +193,7 @@ const run = (seed, mode, policy, maxSeconds) => {
   check('a wide screen gets 1.x\'s landscape arena', createWorld({ seed: 2 }).hx === 19);
 
   // 1.x's corpse colours (revenge-hardcade.md §4)
-  const { revengeColor } = await import('../js/sim/color.js?v=157');
+  const { revengeColor } = await import('../js/sim/color.js?v=158');
   check('SPITTOR\'s corpse fire is 1.x\'s 0xcb2c00', revengeColor('spittor') === 0xcb2c00, revengeColor('spittor').toString(16));
   check('YELA\'s turns poison green 0x87ec00', revengeColor('yela') === 0x87ec00, revengeColor('yela').toString(16));
 }

@@ -7,9 +7,9 @@
 // species are still being ported; the last block runs it in the real world.
 //
 // Usage: node test/director.mjs           (exit 1 on any failure)
-import { makeRng } from '../js/sim/rng.js?v=157';
-import { TUNING as T } from '../js/tuning.js?v=157';
-import arcade, * as A from '../js/sim/director/arcade.js?v=157';
+import { makeRng } from '../js/sim/rng.js?v=158';
+import { TUNING as T } from '../js/tuning.js?v=158';
+import arcade, * as A from '../js/sim/director/arcade.js?v=158';
 
 const W = T.waves, dt = T.sim.dt;
 let failed = 0, passed = 0;
@@ -631,8 +631,8 @@ const jumpTo = (w, n) => { w.dir.wave = n - 1; w.dir.gapT = 1e-9; w.dir.queue = 
 
 // ── in the real world ──────────────────────────────────────────────
 {
-  const { createWorld, step, api } = await import('../js/sim/world.js?v=157');
-  const { DIRECTORS } = await import('../js/sim/director/index.js?v=157');
+  const { createWorld, step, api } = await import('../js/sim/world.js?v=158');
+  const { DIRECTORS } = await import('../js/sim/director/index.js?v=158');
   check('ARCADE and HARDCADE run this director', DIRECTORS.arcade === arcade && DIRECTORS.hardcade === arcade);
   const IDLE = { mx: 0, mz: 0, ax: 0, az: 0, aim: false, fire: false, dash: false };
   const live = (seed) => {

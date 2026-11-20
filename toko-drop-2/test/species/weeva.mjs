@@ -3,10 +3,10 @@
 // 668-679, 2273-2278, 2741-2769, 2948-2957; tuning.js:43, 49, 301, 511),
 // asserted against the sim stepping on its fixed 1/60 s.
 import { readFileSync } from 'node:fs';
-import { createWorld, step, api } from '../../js/sim/world.js?v=157';
-import { TUNING as T } from '../../js/tuning.js?v=157';
-import look from '../../js/render/looks/weeva.js?v=157';
-import beh from '../../js/sim/species/weeva.js?v=157';
+import { createWorld, step, api } from '../../js/sim/world.js?v=158';
+import { TUNING as T } from '../../js/tuning.js?v=158';
+import look from '../../js/render/looks/weeva.js?v=158';
+import beh from '../../js/sim/species/weeva.js?v=158';
 
 let failed = 0, passed = 0;
 const check = (claim, ok, detail = '') => {
