@@ -83,3 +83,15 @@ Stamp now DOESN’T APPLY (auto-fitted). Post rewritten in story order (276 char
 "Davis, W. Va. voted 5–0 against a data center. A state law, HB 2014, says certified data centers don't follow towns'
 noise, lighting or zoning rules. A company engineer said "we were the guys that basically wrote the bill." The company
 and the governor's office say it didn't."
+
+## v3 captions (20 Nov) — owner: "and then who wrote what..? It's still not clear" / "The bill that says the town has no choice..?" / "Ok, make that clearer"
+The missing link was that the engineer works for the company building THIS data center, and that "the bill" is the same
+state law. Now said in words:
+1 "A town voted 5–0 / [against] / a data center."
+2 "A 2025 state law: / once it’s certified, / the town / gets [no say]."
+3 "Who wrote it? / An engineer / from the company / building it / says [they did]." (paraphrase; his exact words on the card)
+4 "The company and / the governor’s / office [deny] it."
+5 "The town said no. / The law says it / [doesn’t matter]."
+Tags: tag1 names Fundamental Data as the company planning the campus; tag4 now "FUNDAMENTAL DATA SAYS McGAVRAN SPOKE FOR
+HIMSELF" (the Speaker's-law-firm aside dropped: true, but a second thread). Post (269 chars) rewritten to match.
+Stills: previews/20-11-RFH-Who-Wrote-the-Bill-v3-stills.jpg

@@ -30,7 +30,7 @@
       "until": "s3-0.25",
       "hold": "s3",
       "text": {
-        "en": "A state law says / the town’s rules / [don’t apply]. / Who wrote it?"
+        "en": "A 2025 state law: / once it’s certified, / the town / gets [no say]."
       },
       "source": "W. Va. Code §5B-2-21b(d)(1), from HB 2014 (2025; signed 30 Apr 2025): certified microgrid districts and certified high impact data centers 'may not be subject to' 'County or municipal zoning, horticultural, noise, viewshed, lighting, development, or land use ordinances, restrictions, limitations, or approvals'. Applies to state-certified projects only; uncertified data centers stay under local rules. Same wording in the 2026 enrolled HB 5168. Cross-checked 19 Nov across search results from several outlets; the primary page could not be opened from the build machine."
     },
@@ -41,9 +41,9 @@
       "until": "s4-0.25",
       "hold": "s4",
       "text": {
-        "en": "The developer’s / engineer: / “we were the guys / that basically / [wrote] the bill.”"
+        "en": "Who wrote it? / An engineer / from the company / building it / says [they did]."
       },
-      "source": "Ted McGavran, a Fundamental Data engineer, at the Belmont, N.C. City Council, 6 Jul 2026. Country Roads News transcript (21 Jul 2026): 'We were the guys that basically wrote the bill and got it through the legislature in 2024 and early '25.' The same core phrase in WV Watch (22 Jul; 'who' for 'that'), WVHC and the Parsons Advocate. Gray TV (13 Nov) prints a different version ('we're the guys that wrote the bill'); not used. Cross-checked 19 Nov across search results from several outlets; the primary page could not be opened from the build machine."
+      "source": "Paraphrase of Ted McGavran (Fundamental Data engineer; the company planning the data center near Davis), Belmont, N.C. City Council, 6 Jul 2026: 'We were the guys that basically wrote the bill and got it through the legislature in 2024 and early '25.' (Country Roads News transcript; same core phrase in WV Watch, WVHC, Parsons Advocate). 'we' = Fundamental Data; 'the bill' = HB 2014 (timing matches). His exact words are on the card in the same shot."
     },
     {
       "id": "denied",
@@ -52,7 +52,7 @@
       "until": "s5-0.25",
       "hold": "s5",
       "text": {
-        "en": "The developer and / the governor’s / office: [it didn’t]."
+        "en": "The company and / the governor’s / office [deny] it."
       },
       "source": "Fundamental Data (spokesperson Andrea Khoury): it 'did not draft, write or play any role in drafting HB 2014'; McGavran spoke for himself. Governor's office (spokesperson Lars Dalseide): HB 2014 was 'the Governor's bill', its drafting 'deliberately limited to the Governor's office' (WV Watch 22 Jul 2026; Country Roads; WVHC). Cross-checked 19 Nov across search results from several outlets; the primary page could not be opened from the build machine."
     },
@@ -63,14 +63,14 @@
       "until": "end-0.3",
       "hold": "end",
       "text": {
-        "en": "If it’s certified, / the town / gets [no say]."
+        "en": "The town said no. / The law says it / [doesn’t matter]."
       },
-      "source": "W. Va. Code §5B-2-21b(d)(1): a certified high impact data center 'may not be subject to' municipal zoning, noise, lighting, development or land use ordinances or approvals. Conditional on purpose: no certification application filed yet (state data economy office; tag5)."
+      "source": "The town's resolution (5–0) and W. Va. Code §5B-2-21b(d)(1) for certified projects (caption 2 carries the condition; tag5: no certification application filed yet)."
     }
   ],
   "ui": {
     "tag1": {
-      "en": "DAVIS, W. VA. · A DATA CENTER CAMPUS PLANNED ABOUT A MILE AWAY (REPORTED)"
+      "en": "DAVIS, W. VA. · FUNDAMENTAL DATA PLANS A DATA CENTER CAMPUS ABOUT A MILE AWAY (REPORTED)"
     },
     "tag2": {
       "en": "W. VA. CODE §5B-2-21b(d), FROM HB 2014 (2025) · FOR STATE-CERTIFIED PROJECTS"
@@ -79,7 +79,7 @@
       "en": "TED McGAVRAN, FUNDAMENTAL DATA ENGINEER · BELMONT, N.C. CITY COUNCIL, 6 JUL 2026"
     },
     "tag4": {
-      "en": "THE HOUSE SPEAKER'S LAW FIRM REPRESENTS THE COMPANY IN ITS AIR-PERMIT APPEAL"
+      "en": "FUNDAMENTAL DATA SAYS McGAVRAN SPOKE FOR HIMSELF"
     },
     "tag5": {
       "en": "NO CERTIFICATION APPLICATION FILED YET, PER THE STATE DATA ECONOMY OFFICE"
@@ -168,6 +168,6 @@
   },
   "props": "No logos, no people, no faces. The typewriter, desk and corkboard are invented props. The ordinance is a generic blank (TOWN OF ____), not a Davis document. Quotes on the cards carry their speaker and outlet.",
   "post": {
-    "en": "Davis, W. Va. voted 5–0 against a data center. A state law, HB 2014, says certified data centers don't follow towns' noise, lighting or zoning rules. A company engineer said \"we were the guys that basically wrote the bill.\" The company and the governor's office say it didn't."
+    "en": "Davis, W. Va. voted 5–0 against a data center. A 2025 state law, HB 2014, says certified data centers don't follow towns' zoning, noise or lighting rules. An engineer from the company building it: \"we were the guys that basically wrote the bill.\" The company denies it."
   }
 }
