@@ -27,7 +27,7 @@ check('…and SURVIVAL (no boss of its own) is not asked', kindOf({ mode: 'survi
 BOSS_KINDS.on = false;
 check('?bosskinds=off is the v156 bosses', kindOf({ mode: 'arcade' }, 'maw') === null && kindOf({ mode: 'arcade' }, 'pike') === null);
 BOSS_KINDS.on = true;
-for (const key of Object.keys(BOSS_KINDS.endure.hold)) check(`${key}: an endurance boss has a hold`, BOSS_KINDS.kind[key] === 'endure' && BOSS_KINDS.endure.hold[key] > 20);
+for (const key of Object.keys(BOSS_KINDS.endure.hold)) check(`${key}: an endurance boss has a hold`, BOSS_KINDS.kind[key] === 'endure' && BOSS_KINDS.endure.hold[key] >= 15);
 
 // ── READ: armoured outside the window ──
 // the hero at the middle firing at the boss every step; every step's health is checked against whether the boss

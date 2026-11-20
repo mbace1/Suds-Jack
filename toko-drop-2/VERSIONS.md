@@ -20,8 +20,14 @@
 -->
 
 ## v158 — 2026-11-20
-**TODO: one-line title**
-- TODO
+**The first boss eased back, and fair spawns in ARCADE**
+- **TWIN PRISMS hold 30 s → 20 s** (`tuning/bosskinds.js`). v157 made the first boss of the game an endurance fight of 30 s, and measured with the average bot it took world 1 from 100% cleared to 67% (lives lost 1.0 → 2.1; the boss wave took 44 of its lives against v156's 17). `scripts/curve.mjs`, 24 seeds, every world started bare, v156 bosses (`?bosskinds=off`) against v157's. At 20 s world 1 clears 96% and the boss takes 21; 16 s read no easier and 24 s cleared 79%. Still an endurance fight: the bar is the clock, and a hit can shave it to 14 s at most. Owner, 18 Nov: start easy.
+- **Fair spawns in ARCADE, HARDCADE and DAILY** (owner, 20 Nov: "yes"). A wave's body that would land within 5 u of the hero, or in a 35° cone of its heading out to 9 u, moves along 1.x's spawn ring to the nearest fair angle, in 30° steps.
+  - A moved body also stays out of the hero's heading at any distance (the ring ahead of a runner is their path) and 2.5 u clear of any body under a second old (a front laid evenly round the ring, nudged, bunched).
+  - A boss lands where 1.x lands it. `TUNING.fairSpawn.arcade`; `?fair=off` is v156's spawns in every mode.
+  - Close landings for a roaming hero in world 1 went 7% → 0.5%.
+  - The human-like bots (`scripts/curve.mjs`, average skill, worlds 1–5, 12 seeds): cleared 50/58/17/8/25% → 50/75/33/0/8%, lives lost summed 13.1 → 12.3. Neutral to slightly better; a single seed is 8 points here. A crude bot with no reaction time took more hits with it on, because for it a body landing alongside is a free kill.
+- DESIGN.md: decisions of 20 Nov. No strategy bonus: a room is built so that its strategy is how it scores best. Steam is the landscape game, unchanged, with mouse and keyboard or a controller.
 - Cache tokens `?v=157` → `?v=158`; HUD label → `2.0 · v158`
 
 ---

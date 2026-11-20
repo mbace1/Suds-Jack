@@ -185,7 +185,8 @@ Classic `toko-drop/` remains the historical / hub v221 lineage. Godot port follo
   - 3, a strategy bonus: **"by default a strategy followed is optimizing in a way that may otherwise not happen."**
   - 4, Steam: **"steam landscape is the exact same as all landscape versions and can use m/kb or controller."**
 - **Locks:**
-  - ARCADE, HARDCADE and DAILY bodies arrive fair, like the campaign's. v158 is built and **under measurement**: a crude roaming bot took more hits with it on, so it ships only if the human-like bots (`scripts/curve.mjs`) do at least as well.
+  - ARCADE, HARDCADE and DAILY bodies arrive fair, like the campaign's (v158). Measured with the human-like bots (`scripts/curve.mjs`) it is neutral to slightly better.
+  - **The first boss eased back** (v158, found measuring the spawns). As an endurance boss at 30 s, the TWIN PRISMS took world 1 from 100% cleared to 67% for the average bot, so its hold is 20 s now (96%).
   - **No strategy bonus.** Following a room's strategy is itself the way to optimise its score: a room is built so that playing it its way scores what playing it otherwise cannot. This is a rule for designing rooms, not a mechanic. A room whose S line can be reached as well without its strategy is a room to look at. Sakurai §1 (#191: risk and return close together) and §4 (#244: the tutorial lives inside the real game).
   - **Steam is the landscape game, unchanged.** There is no separate Steam build or Steam-only feature. It plays with mouse and keyboard or a controller, as every landscape version does (both SHIPPED).
 

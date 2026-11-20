@@ -10,6 +10,10 @@
 import { makeRng } from '../js/sim/rng.js?v=158';
 import { TUNING as T } from '../js/tuning.js?v=158';
 import arcade, * as A from '../js/sim/director/arcade.js?v=158';
+import { BOSS_KINDS } from '../js/tuning/bosskinds.js?v=158';
+// v158: the director's own rules — a boss wave on 1.x's clock, a live boss holding the round — are tested with the
+// boss kinds off (an endurance boss's own clock ends its fight; test/bosskinds.mjs holds that)
+BOSS_KINDS.on = false;
 
 const W = T.waves, dt = T.sim.dt;
 let failed = 0, passed = 0;
