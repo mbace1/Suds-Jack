@@ -19,9 +19,9 @@
       "until": "s2-0.25",
       "hold": "s2",
       "text": {
-        "en": "A town voted 5–0 / [against] / a data center / by Fundamental / Data."
+        "en": "Davis, W. Va. / voted 5–0 [against] / a data center / by Fundamental / Data, a Virginia / developer."
       },
-      "source": "Town of Davis, W. Va.: council resolution opposing the planned data center, passed 5–0 (the card on the board, shown big). A resolution states the town's position; it is not a permit decision."
+      "source": "Town of Davis, W. Va.: council resolution opposing the planned data center, passed 5–0 (the card on the board, shown big). A resolution states the town's position; it is not a permit decision. Fundamental Data LLC: a Virginia-based developer planning a gas-fired power plant and data center between Davis and Thomas, Tucker County (WV Highlands Conservancy; Microgrid Knowledge; The Intermountain). Checked 20 Nov via search."
     },
     {
       "id": "preempted",
@@ -52,9 +52,9 @@
       "until": "s5-0.25",
       "hold": "s5",
       "text": {
-        "en": "Fundamental / Data and the / governor’s office / [deny] the claim."
+        "en": "Fundamental / Data and Gov. / Morrisey’s office / [deny] the claim."
       },
-      "source": "Fundamental Data (spokesperson Andrea Khoury): it 'did not draft, write or play any role in drafting HB 2014'; McGavran spoke for himself. Governor's office (spokesperson Lars Dalseide): HB 2014 was 'the Governor's bill', its drafting 'deliberately limited to the Governor's office' (WV Watch 22 Jul 2026; Country Roads; WVHC). Cross-checked 19 Nov across search results from several outlets; the primary page could not be opened from the build machine."
+      "source": "Fundamental Data (spokesperson Andrea Khoury): it 'did not draft, write or play any role in drafting HB 2014'; McGavran spoke for himself. Governor's office (spokesperson Lars Dalseide): HB 2014 was 'the Governor's bill', its drafting 'deliberately limited to the Governor's office' (WV Watch 22 Jul 2026; Country Roads; WVHC). Cross-checked 19 Nov across search results from several outlets; the primary page could not be opened from the build machine. Gov. Patrick Morrisey signed HB 2014, his priority bill, on 30 Apr 2025 (The Intermountain; governor.wv.gov)."
     },
     {
       "id": "who",
@@ -70,7 +70,7 @@
   ],
   "ui": {
     "tag1": {
-      "en": "DAVIS, W. VA. · FUNDAMENTAL DATA PLANS A DATA CENTER CAMPUS ABOUT A MILE AWAY (REPORTED)"
+      "en": "TOWN OF DAVIS · THE PLANNED SITE: ABOUT A MILE AWAY, WITH ITS OWN GAS POWER PLANT (REPORTED)"
     },
     "tag2": {
       "en": "HB 2014, SIGNED 30 APR 2025 · NOW W. VA. CODE §5B-2-21b(d) · CERTIFIED PROJECTS ONLY"
@@ -79,7 +79,7 @@
       "en": "TED McGAVRAN, FUNDAMENTAL DATA ENGINEER · BELMONT, N.C. CITY COUNCIL, 6 JUL 2026"
     },
     "tag4": {
-      "en": "FUNDAMENTAL DATA SAYS McGAVRAN SPOKE FOR HIMSELF"
+      "en": "GOV. PATRICK MORRISEY SIGNED HB 2014, HIS PRIORITY BILL, ON 30 APR 2025"
     },
     "tag5": {
       "en": "NO CERTIFICATION APPLICATION FILED YET, PER THE STATE DATA ECONOMY OFFICE"
@@ -148,7 +148,7 @@
       "en": "“did not draft, write or play any role in drafting HB 2014”"
     },
     "d2Who": {
-      "en": "GOVERNOR'S OFFICE (SPOKESPERSON):"
+      "en": "GOV. MORRISEY'S OFFICE (SPOKESPERSON):"
     },
     "d2": {
       "en": "“HB 2014 was the Governor's bill”"
@@ -171,6 +171,6 @@
   },
   "props": "No logos, no people, no faces. The typewriter, desk and corkboard are invented props. The ordinance is a generic blank (TOWN OF ____), not a Davis document. Quotes on the cards carry their speaker and outlet.",
   "post": {
-    "en": "Davis, W. Va. voted 5–0 against a data center planned by Fundamental Data. West Virginia's HB 2014 (2025) says town rules don't apply to certified data centers. A Fundamental Data engineer: \"we were the guys that basically wrote the bill.\" The company denies it wrote HB 2014."
+    "en": "Davis, W. Va. voted 5–0 against a data center by Fundamental Data, a Virginia developer. HB 2014 (2025) says town rules don't apply to certified data centers. A Fundamental Data engineer: \"we were the guys that basically wrote the bill.\" The company denies it wrote HB 2014."
   }
 }

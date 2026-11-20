@@ -113,3 +113,12 @@ named in caption 1 and by name thereafter:
 4 "Fundamental / Data and the / governor’s office / [deny] the claim."
 5 "The town said no. / If the data center / is certified, / the town / gets [no say]."
 Runs 26 s (reading time). Post (276 chars) rewritten with the name. Stills: previews/20-11-RFH-Who-Wrote-the-Bill-v5-stills.jpg
+
+## v6 (20 Nov) — owner: "You can also say what company etc"
+Who they are, on screen: caption 1 "Davis, W. Va. / voted 5–0 [against] / a data center / by Fundamental / Data, a Virginia /
+developer."; caption 4 "Fundamental / Data and Gov. / Morrisey’s office / [deny] the claim."; denial card "GOV. MORRISEY'S
+OFFICE (SPOKESPERSON)"; tag1 "TOWN OF DAVIS · THE PLANNED SITE: ABOUT A MILE AWAY, WITH ITS OWN GAS POWER PLANT (REPORTED)";
+tag4 "GOV. PATRICK MORRISEY SIGNED HB 2014, HIS PRIORITY BILL, ON 30 APR 2025". Checked 20 Nov by search: Fundamental Data
+LLC, Virginia-based, gas-fired plant + data center between Davis and Thomas (WV Highlands Conservancy, Microgrid Knowledge,
+The Intermountain); Morrisey signed HB 2014 30 Apr 2025, his priority bill (The Intermountain, governor.wv.gov). 27.5 s.
+Stills: previews/20-11-RFH-Who-Wrote-the-Bill-v6-stills.jpg
