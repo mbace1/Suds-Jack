@@ -21,14 +21,15 @@
 // runs down in its enemy loop — the same sequence 1.x runs, with the seam in
 // a different place. test/director.mjs holds all of it in lockstep with 1.x's
 // own loop source.
-import { TUNING } from '../../tuning.js?v=157';
-import * as worlds from '../worlds.js?v=157';
-import * as challenge from '../challenge.js?v=157';
-import { makeRng } from '../rng.js?v=157';
-import * as bossfight from '../bossfight.js?v=157';
-import * as floorshift from '../floorshift.js?v=157';
-import { phaseSpec, kindOf } from '../species/bosskit.js?v=157';
-import { BOSS_KINDS } from '../../tuning/bosskinds.js?v=157';
+import { fairPoint } from '../fairspawn.js?v=158';
+import { TUNING } from '../../tuning.js?v=158';
+import * as worlds from '../worlds.js?v=158';
+import * as challenge from '../challenge.js?v=158';
+import { makeRng } from '../rng.js?v=158';
+import * as bossfight from '../bossfight.js?v=158';
+import * as floorshift from '../floorshift.js?v=158';
+import { phaseSpec, kindOf } from '../species/bosskit.js?v=158';
+import { BOSS_KINDS } from '../../tuning/bosskinds.js?v=158';
 
 const T = TUNING, W = T.waves, TAU = Math.PI * 2;
 
@@ -351,7 +352,10 @@ function pump(w, d, dt, api) {
     if (q[0].front != null) d.frontLandedAt = d.waveT;
     alive++;
     const s = q.shift();
-    const p = api.ringPoint(w, s.angle, P.ring, P.clearOfHero);
+    // v158: fair, as the campaign's (sim/fairspawn.js): not on top of the hero nor just ahead of it, moved along the
+    // ring; a boss lands where 1.x lands it
+    let p = api.ringPoint(w, s.angle, P.ring, P.clearOfHero);
+    if (!s.boss) { const Fr = worlds.spawnFrame(w); p = fairPoint(w, p.x, p.z, { cx: Fr.cx, cz: Fr.cz, rx: Fr.hx * P.ring, rz: Fr.hz * P.ring }); }
     const S = T.species[s.kind];
     const o = { speedMult: s.speedMult, intervalMult: s.intervalMult, variant: s.variant, affix: s.affix,
                 ping: s.shooter || W.ping.includes(s.kind) };

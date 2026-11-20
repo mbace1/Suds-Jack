@@ -30,10 +30,10 @@
 // from its seed, and a pickup roll never shifts the wave's schedule: the
 // director's w.rng stays in lockstep with 1.x's own source
 // (test/director.mjs's oracle neutralises exactly these draws).
-import { TUNING } from '../tuning.js?v=157';
-import { makeRng } from './rng.js?v=157';
-import { equipWeapon, grantInvincibility, grantRapid } from './hero.js?v=157';
-import * as posts from './posts.js?v=157';
+import { TUNING } from '../tuning.js?v=158';
+import { makeRng } from './rng.js?v=158';
+import { equipWeapon, grantInvincibility, grantRapid } from './hero.js?v=158';
+import * as posts from './posts.js?v=158';
 
 const T = TUNING, P = T.pickups, H = T.hero, G = P.gate, C = P.convoy, B = P.bounty, FAM = G.family;
 

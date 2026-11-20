@@ -6,13 +6,13 @@
 // against the sim stepping on its fixed 1/60 s, and its look against a real
 // three. Timing is checked against 1.x's own per-frame countdown arithmetic.
 import { readFileSync } from 'node:fs';
-import { createWorld, step, api } from '../../js/sim/world.js?v=157';
-import { TUNING as T } from '../../js/tuning.js?v=157';
-import { waveScale } from '../../js/sim/director/arcade.js?v=157';
-import { revengeColor } from '../../js/sim/color.js?v=157';
-import { makeRng } from '../../js/sim/rng.js?v=157';
-import behaviour from '../../js/sim/species/orange.js?v=157';
-import look from '../../js/render/looks/orange.js?v=157';
+import { createWorld, step, api } from '../../js/sim/world.js?v=158';
+import { TUNING as T } from '../../js/tuning.js?v=158';
+import { waveScale } from '../../js/sim/director/arcade.js?v=158';
+import { revengeColor } from '../../js/sim/color.js?v=158';
+import { makeRng } from '../../js/sim/rng.js?v=158';
+import behaviour from '../../js/sim/species/orange.js?v=158';
+import look from '../../js/render/looks/orange.js?v=158';
 import * as THREE from '../../vendor/three/three.webgpu.js?v=r186';
 
 let failed = 0, passed = 0;

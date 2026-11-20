@@ -40,7 +40,10 @@ export const BOSS_KINDS = {
     lines: [0.71, 0.38],
     shave: 0.3,                              // dealing its whole health takes this share off the hold, and no more
     grade: { S: 0, A: 1, B: 2 },             // the most hits taken in the fight for each grade; past B is C
-    hold: { prism: 30, maw: 34, kettle: 38, berg: 36, omega: 44 },   // s: the v154 fights ran 26-36 s
+    // s: the v154 fights ran 26-36 s. v158: the TWIN PRISMS 30 → 20 — the first boss of the game at 30 s took world 1
+    // from 100% cleared to 67% for the average bot (scripts/curve.mjs, 24 seeds, bare), the boss wave 44 of its lives
+    // against 17; at 20 it clears 96% and the boss takes 21 (16 s read no easier, 24 s 79%). Start easy (owner, 18 Nov)
+    hold: { prism: 20, maw: 34, kettle: 38, berg: 36, omega: 44 },
   },
 
   read: {

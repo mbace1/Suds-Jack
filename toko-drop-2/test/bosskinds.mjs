@@ -8,12 +8,12 @@
 //   ENDURE       left alone the fight lasts its hold and the boss breaks at the end of it; hit as hard as you like
 //                it still lasts (1 - shave) of the hold; its phases come on the clock; graded on the hits taken
 import { arena, checker, dt } from './lib/boss.mjs';
-import { BOSS_KINDS } from '../js/tuning/bosskinds.js?v=157';
-import { BOSS_PHASES } from '../js/tuning/bossphases.js?v=157';
-import { kindOf, armoured } from '../js/sim/species/bosskit.js?v=157';
-import { BEHAVIOUR } from '../js/sim/species/index.js?v=157';
-import * as bossfight from '../js/sim/bossfight.js?v=157';
-import { TUNING as T } from '../js/tuning.js?v=157';
+import { BOSS_KINDS } from '../js/tuning/bosskinds.js?v=158';
+import { BOSS_PHASES } from '../js/tuning/bossphases.js?v=158';
+import { kindOf, armoured } from '../js/sim/species/bosskit.js?v=158';
+import { BEHAVIOUR } from '../js/sim/species/index.js?v=158';
+import * as bossfight from '../js/sim/bossfight.js?v=158';
+import { TUNING as T } from '../js/tuning.js?v=158';
 
 const { check, done } = checker('bosskinds');
 BOSS_KINDS.on = true; BOSS_PHASES.on = true;   // (lib/boss.mjs turns both off for the species' own specs)
@@ -27,7 +27,7 @@ check('…and SURVIVAL (no boss of its own) is not asked', kindOf({ mode: 'survi
 BOSS_KINDS.on = false;
 check('?bosskinds=off is the v156 bosses', kindOf({ mode: 'arcade' }, 'maw') === null && kindOf({ mode: 'arcade' }, 'pike') === null);
 BOSS_KINDS.on = true;
-for (const key of Object.keys(BOSS_KINDS.endure.hold)) check(`${key}: an endurance boss has a hold`, BOSS_KINDS.kind[key] === 'endure' && BOSS_KINDS.endure.hold[key] > 20);
+for (const key of Object.keys(BOSS_KINDS.endure.hold)) check(`${key}: an endurance boss has a hold`, BOSS_KINDS.kind[key] === 'endure' && BOSS_KINDS.endure.hold[key] >= 15);
 
 // ── READ: armoured outside the window ──
 // the hero at the middle firing at the boss every step; every step's health is checked against whether the boss
