@@ -123,6 +123,6 @@
   },
   "props": "Map: Natural Earth 10m (public domain), via ../iceye/geo.json. No logos, no people. The drawer and the summary sheet are invented props; the summary's bars carry no numbers (no summary exists yet). Pin labels name the place and the company or project as reported.",
   "post": {
-    "en": "Finland's bill HE 282/2026: from April 2027, every data center of 0.5 MW or more must register. The register itself would not be public; the public would get a summary, the first by Sep 2027 (as reported). The list is for them. The summary, for you."
+    "en": "Finland's bill HE 282/2026 would make every data center of 0.5 MW or more register, from April 2027 if it passes. The register itself would not be public; the public would get a summary, the first by Sep 2027 (as reported). The list is for them. The summary, for you."
   }
 }

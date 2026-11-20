@@ -27,3 +27,19 @@ Picture fixes from the first stills: map darker sea and coastline (key light 28 
 clear of the tag bar, Jokela's flag to the left of its pin, flags clear of the pin heads, drawer and lid framed whole,
 the summary shot near top-down so the sheet and the drawer label both read, pin holes larger.
 Open: the 0.5 MW threshold rests on one report; one source says the summaries are quarterly.
+
+## Build (20 Nov) — owner: "Render the other"
+`films/20-11-Doodle11-Not-Yet-Listed.mp4` (24.8 s with the sign-off, −14.6 LUFS, −3.0 dBTP), `-loop.mp4` (21.8 s, −13.9 LUFS,
+−1.6 dBTP), `.en.srt`, preview `previews/20-11-RFH-Not-Yet-Listed-en.mp4`, QA in `qa/not-yet-listed/` (85 pass, 0 warn, 0 fail).
+Sound: its own kit, ARCHIVE (`pipeline/sound/archive.py`; row in SOUND.md).
+Post re-worded so the bill is not stated as law ("would make… if it passes").
+
+## Socials copy (draft — NOT approved; awaiting the owner)
+**Instagram** (Reel, the loop master):
+```
+Finland's bill HE 282/2026 would make every data center of 0.5 MW or more register, from April 2027 if it passes. The register itself would not be public; the public would get a summary, the first by Sep 2027 (as reported). The list is for them. The summary, for you.
+
+#Finland #DataCenters #AI #Transparency
+```
+**X** (with the sign-off; the body alone, no hashtags).
+**YouTube Shorts** title: `Not Yet Listed: Finland's data center register | Radio Free Helsinki`; description = the body + hashtags.
