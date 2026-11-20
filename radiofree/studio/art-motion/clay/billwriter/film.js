@@ -147,7 +147,7 @@ const ink = '#1b1916';
 const RES = card(0.62, 0.44, '#f1ead6', (g, w, h) => { g.fillStyle = ink; g.textAlign = 'center'; g.font = '46px "Anton-400"'; g.fillText(UI.resTown, w / 2, 90); g.font = `bold 26px ${TYPE}`; wrapText(g, UI.res, w / 2, 150, w - 80, 34);
   g.font = '64px "Anton-400"'; g.fillStyle = '#0d3a26'; g.fillText(UI.resVote, w / 2, h - 60); }, [-0.68, -0.38], -0.04);
 const QUOTE = card(0.98, 0.62, '#f4efe2', (g, w, h) => { g.fillStyle = '#b4232c'; g.fillRect(0, 92, w, 3); g.fillStyle = ink; g.textAlign = 'left'; g.font = `bold 24px ${TYPE}`; g.fillText(UI.qHead, 90, 72);
-  g.font = '52px "Caveat-600"'; g.fillStyle = '#16233f'; const y = wrapText(g, UI.quote, 40, 150, w - 80, 62); g.font = `bold 22px ${TYPE}`; g.fillStyle = ink; wrapText(g, UI.qWho, 40, Math.min(h - 40, y + 70), w - 80, 28); }, [-0.42, 0.3], 0.03);
+  g.font = '52px "Caveat-600"'; g.fillStyle = '#16233f'; const y = wrapText(g, UI.quote, 40, 150, w - 80, 62); g.font = `bold 22px ${TYPE}`; g.fillStyle = ink; const y2 = wrapText(g, UI.qWho, 40, Math.min(h - 40, y + 70), w - 80, 28); g.fillStyle = '#b4232c'; g.font = `bold 27px ${TYPE}`; wrapText(g, UI.qNote, 40, Math.min(h - 30, y2 + 56), w - 80, 32); }, [-0.42, 0.3], 0.03);
 const DEN1 = card(0.74, 0.4, '#ffffff', (g, w, h) => { g.fillStyle = ink; g.textAlign = 'left'; g.font = '700 30px RobotoCondensed'; g.fillText(UI.d1Who, 36, 64); g.font = 'italic 600 40px RobotoCondensed'; g.fillStyle = '#16233f'; wrapText(g, UI.d1, 36, 128, w - 70, 50); }, [0.66, 0.42], -0.05, 'staple');
 const DEN2 = card(0.7, 0.32, '#ffffff', (g, w, h) => { g.fillStyle = ink; g.textAlign = 'left'; g.font = '700 30px RobotoCondensed'; g.fillText(UI.d2Who, 36, 64); g.font = 'italic 600 40px RobotoCondensed'; g.fillStyle = '#16233f'; wrapText(g, UI.d2, 36, 128, w - 70, 50); }, [0.62, -0.08], 0.05, 'staple');
 for (const [x, y, r] of [[0.66, -0.55, 0.08], [-0.05, -0.56, -0.06]]) card(0.36, 0.26, '#efe7cf', (g, w, h) => { g.fillStyle = 'rgba(27,25,22,.5)'; for (let i = 0; i < 6; i++) g.fillRect(28, 40 + i * 30, (w - 56) * (0.5 + 0.5 * hash2(i, x * 9)), 6); }, [x, y], r);   // old notices, unreadable
@@ -155,9 +155,9 @@ castAll(S); paper.castShadow = false;
 
 // ------------------------------------------------------------------ the camera: one move, the last frame is the first
 const CAMP = hermite3([[0, [-0.68, 1.36, -0.75]], [T.s2 - 1.0, [-0.68, 1.36, -0.72]], [T.s2 - 0.2, [0.14, 1.12, 1.95]], [T.s2 + 0.8, [-0.02, 1.04, 1.36]], [T.s3 - 0.4, [0.04, 1.0, 1.26]],
-  [T.s3 + 1.0, [-0.36, 1.92, 0.25]], [T.s4 - 0.5, [-0.3, 1.92, 0.05]], [T.s4 + 1.0, [0.5, 1.82, 0.25]], [T.s5 - 0.4, [0.42, 1.78, 0.45]], [T.s5 + 1.4, [0.04, 1.08, 1.5]], [T.s5 + 2.9, [0.04, 1.06, 1.4]], [DUR, [-0.68, 1.36, -0.75]]]);
+  [T.s3 + 1.0, [-0.36, 2.08, 0.25]], [T.s4 - 0.5, [-0.3, 2.08, 0.05]], [T.s4 + 1.0, [0.5, 1.82, 0.25]], [T.s5 - 0.4, [0.42, 1.78, 0.45]], [T.s5 + 1.4, [0.04, 1.08, 1.5]], [T.s5 + 2.9, [0.04, 1.06, 1.4]], [DUR, [-0.68, 1.36, -0.75]]]);
 const CAMT = hermite3([[0, [-0.68, 1.3, -2.65]], [T.s2 - 1.0, [-0.68, 1.3, -2.65]], [T.s2 - 0.2, [0, 0.98, -0.35]], [T.s2 + 0.8, [0.03, 0.97, -0.34]], [T.s3 - 0.4, [0.05, 0.95, -0.34]],
-  [T.s3 + 1.0, [-0.42, 1.92, -2.65]], [T.s4 - 0.5, [-0.38, 1.9, -2.65]], [T.s4 + 1.0, [0.6, 1.8, -2.65]], [T.s5 - 0.4, [0.55, 1.76, -2.65]], [T.s5 + 1.4, [0.03, 0.97, -0.34]], [T.s5 + 2.9, [0.03, 0.97, -0.34]], [DUR, [-0.68, 1.3, -2.65]]]);
+  [T.s3 + 1.0, [-0.42, 2.1, -2.65]], [T.s4 - 0.5, [-0.38, 2.08, -2.65]], [T.s4 + 1.0, [0.6, 1.8, -2.65]], [T.s5 - 0.4, [0.55, 1.76, -2.65]], [T.s5 + 1.4, [0.03, 0.97, -0.34]], [T.s5 + 2.9, [0.03, 0.97, -0.34]], [DUR, [-0.68, 1.3, -2.65]]]);
 const cam = new THREE.PerspectiveCamera(46, W / H, 0.05, 60), _t = new THREE.Vector3();
 function poseCam(t) { CAMP(t, cam.position); CAMT(t, _t); cam.position.y += 0.006 * Math.sin(t * 0.9); cam.lookAt(_t); cam.updateMatrixWorld(true); }
 

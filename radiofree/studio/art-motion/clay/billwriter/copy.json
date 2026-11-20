@@ -30,7 +30,7 @@
       "until": "s3-0.25",
       "hold": "s3",
       "text": {
-        "en": "A 2025 state law: / once it’s certified, / the town / gets [no say]."
+        "en": "West Virginia’s / HB 2014 (2025): / once it’s certified, / the town / gets [no say]."
       },
       "source": "W. Va. Code §5B-2-21b(d)(1), from HB 2014 (2025; signed 30 Apr 2025): certified microgrid districts and certified high impact data centers 'may not be subject to' 'County or municipal zoning, horticultural, noise, viewshed, lighting, development, or land use ordinances, restrictions, limitations, or approvals'. Applies to state-certified projects only; uncertified data centers stay under local rules. Same wording in the 2026 enrolled HB 5168. Cross-checked 19 Nov across search results from several outlets; the primary page could not be opened from the build machine."
     },
@@ -41,7 +41,7 @@
       "until": "s4-0.25",
       "hold": "s4",
       "text": {
-        "en": "Who wrote it? / An engineer / from the company / building it / says [they did]."
+        "en": "Who wrote / HB 2014? / An engineer / from the company / building it / says [they did]."
       },
       "source": "Paraphrase of Ted McGavran (Fundamental Data engineer; the company planning the data center near Davis), Belmont, N.C. City Council, 6 Jul 2026: 'We were the guys that basically wrote the bill and got it through the legislature in 2024 and early '25.' (Country Roads News transcript; same core phrase in WV Watch, WVHC, Parsons Advocate). 'we' = Fundamental Data; 'the bill' = HB 2014 (timing matches). His exact words are on the card in the same shot."
     },
@@ -73,7 +73,7 @@
       "en": "DAVIS, W. VA. · FUNDAMENTAL DATA PLANS A DATA CENTER CAMPUS ABOUT A MILE AWAY (REPORTED)"
     },
     "tag2": {
-      "en": "W. VA. CODE §5B-2-21b(d), FROM HB 2014 (2025) · FOR STATE-CERTIFIED PROJECTS"
+      "en": "HB 2014, SIGNED 30 APR 2025 · NOW W. VA. CODE §5B-2-21b(d) · CERTIFIED PROJECTS ONLY"
     },
     "tag3": {
       "en": "TED McGAVRAN, FUNDAMENTAL DATA ENGINEER · BELMONT, N.C. CITY COUNCIL, 6 JUL 2026"
@@ -164,6 +164,9 @@
     },
     "plate": {
       "en": "TOWN CLERK"
+    },
+    "qNote": {
+      "en": "THE BILL HE MEANT: W. VA. HB 2014, SIGNED 30 APR 2025 (AS REPORTED)"
     }
   },
   "props": "No logos, no people, no faces. The typewriter, desk and corkboard are invented props. The ordinance is a generic blank (TOWN OF ____), not a Davis document. Quotes on the cards carry their speaker and outlet.",

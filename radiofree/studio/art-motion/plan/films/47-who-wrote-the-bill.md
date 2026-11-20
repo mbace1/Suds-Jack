@@ -95,3 +95,11 @@ state law. Now said in words:
 Tags: tag1 names Fundamental Data as the company planning the campus; tag4 now "FUNDAMENTAL DATA SAYS McGAVRAN SPOKE FOR
 HIMSELF" (the Speaker's-law-firm aside dropped: true, but a second thread). Post (269 chars) rewritten to match.
 Stills: previews/20-11-RFH-Who-Wrote-the-Bill-v3-stills.jpg
+
+## v4 (20 Nov) — owner: "When you says 'bill' we need exact details to get the context"
+The bill is named wherever it is meant: caption 2 "West Virginia’s / HB 2014 (2025): / once it’s certified, / the town /
+gets [no say]."; caption 3 "Who wrote / HB 2014? / An engineer / from the company / building it / says [they did]."; the
+quote card carries, under his verbatim words, "THE BILL HE MEANT: W. VA. HB 2014, SIGNED 30 APR 2025 (AS REPORTED)" — the
+link is the reporting's and the company's own (its denial names HB 2014); tag2 "HB 2014, SIGNED 30 APR 2025 · NOW W. VA.
+CODE §5B-2-21b(d) · CERTIFIED PROJECTS ONLY". The s3 camera sits higher so the six-line caption clears the card.
+Stills: previews/20-11-RFH-Who-Wrote-the-Bill-v4-stills.jpg
