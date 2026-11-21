@@ -1615,3 +1615,7 @@ Search summaries only; nothing opened. One device each, from STORY-DEVICES.md or
 ships or crews — e.g. "no immediate military threat… situation stable" said while restrictions go up off Helsinki. Too fresh and
 too unverified to film today: wait for the Finnish official record (Defence Forces / Border Guard statements, any NOTAM text)
 and for Sparta II's facts. Owner to decide whether RFH touches it at all.
+
+## 21 Nov 2026, 17:16 Helsinki check (search summaries only)
+- Gulf of Finland: the Defence Forces' restriction pattern is now routine reporting (Kaleva, MTV, Verkkouutiset: restrictions "again"; an MTV piece on GPS jamming and boating restrictions "becoming everyday" in Kotka). Possible follow-up angle for Stable: life in Kotka under routine restrictions (MTV) — verify date.
+- Reactions: no new Yle/HS follow-ups found on Sparta II this run. No new Finnish candidates.

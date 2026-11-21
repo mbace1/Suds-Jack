@@ -1490,3 +1490,9 @@ scheduled task's last fire was 13 Nov 05:16), so **Give Way had no Tuesday-morni
 - **New pitch candidate:** Nscale × Anthropic × Nvidia financing loop (+ CRS 16 Nov report). Touches Anthropic → needs the
   on-screen disclosure. Verify the filing first.
 - No posted film is now wrong.
+
+## 21 Nov 2026, 17:16 Helsinki check (search summaries only) — pre-posting
+- **Stable (NOW):** nothing found that contradicts the film. This run's searches did NOT re-surface the Sparta II report or the 04:15 restriction time (the index returned older Ust-Luga/Oct items); the morning's sources stand (ERR news.err.ee/1610202715, TASS 2222875, UNITED24, GB News for Sparta II; Yle 74-20258231, MTV, ESS for 04:15/04:20). Naro-Fominsk unchanged (Al Jazeera 13 Nov; Finland and Estonia confirmed an explosion; SBU claim). No new Defence Forces statement found; their standing line remains "no direct military threat". Not a HOLD; if Grok Bot finds Sparta II reported differently before posting, the row already says HOLD.
+- **Who Wrote the Bill v7 (~21:30):** unchanged. Live5/Gray 13 Nov "Davis v. Goliath" still the latest; no certification filing found; Hanshaw-as-counsel reporting (WV Watch 26 Mar 2026) unchanged. Note only: Live5 repeats the 10,000-acre campus figure — the film quotes no size.
+- **Due 13 Nov (stills):** no public OpenAI answer found (TNW, Nextgov, FourWeekMBA, Common Dreams; Al Jazeera 9 Oct for the researchers). Premise holds, 8 days overdue.
+- **Not Yet Listed:** not re-checked beyond this morning (HE 282/2026 still a bill as of 21 Nov 07:16).

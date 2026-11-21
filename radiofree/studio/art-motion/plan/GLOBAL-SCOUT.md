@@ -1913,3 +1913,8 @@ Everything below comes from search summaries. No article was opened.
 - **Military AI / NDA towns / DRAM-GPU / Whistleblower Act:** nothing new dated November. FourWeekMBA obligated-sums lead
   still unverified.
 - **Reactions:** none new; comment counts not visible to search.
+
+## 21 Nov 2026, 17:16 Helsinki check (search summaries only)
+- Data centers on the ballot: Ballotpedia counted 47 local ballot measures on data centers in the midterms (via Live5/Gray, 13 Nov); Sens. Heinrich and Whitehouse introducing a data-center permitting reform bill (same piece). Candidate context for a US data-center film; verify the Ballotpedia count at source.
+- OpenAI / Casar: still no public reply found to the 29 Oct letter (deadline 13 Nov). Reactions: no new coverage since the deadline.
+- No new big developments found on Nscale/Anthropic, Pentagon contracts, GPU/memory probes this run (searches returned older items).
