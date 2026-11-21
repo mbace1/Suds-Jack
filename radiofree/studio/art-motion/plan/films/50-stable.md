@@ -41,3 +41,9 @@ Sound (next, after the owner's OK on the stills): its own kit, GULF.
 
 ## v1.1 (21 Nov) — owner: "use Finnish name, Gogland nobody knows"
 Suursaari throughout on screen (caption 1, the map label, the post); "Gogland" kept only in the source notes.
+
+## v1.2 (21 Nov) — a correction of my own
+The teleprinter had dated "SECURITY SITUATION REMAINS STABLE" 21 NOV; the only source has it after the 11 Nov strike. Both
+teleprinter lines are now 11 NOV; caption 5 "The official word, / 11 Nov: / the situation / remains [“stable.”]"; tag5 "SAID
+AFTER THE FIRST STRIKE, TEN DAYS BEFORE THE SECOND". Caption 1 shortened; the second marker reads 21 NOV (APPROX.). Post
+re-ordered so "stable" sits at its own date.

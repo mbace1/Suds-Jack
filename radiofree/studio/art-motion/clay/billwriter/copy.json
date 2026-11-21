@@ -19,7 +19,7 @@
       "until": "s2-0.25",
       "hold": "s2",
       "text": {
-        "en": "Davis, W. Va. / voted 5–0 [against] / a data center / by Fundamental / Data, a Virginia / developer."
+        "en": "Davis, W. Va. / voted 5–0 [against] / a data center."
       },
       "source": "Town of Davis, W. Va.: council resolution opposing the planned data center, passed 5–0 (the card on the board, shown big). A resolution states the town's position; it is not a permit decision. Fundamental Data LLC: a Virginia-based developer planning a gas-fired power plant and data center between Davis and Thomas, Tucker County (WV Highlands Conservancy; Microgrid Knowledge; The Intermountain). Checked 20 Nov via search."
     },
@@ -30,7 +30,7 @@
       "until": "s3-0.25",
       "hold": "s3",
       "text": {
-        "en": "West Virginia’s / HB 2014 (2025): / town rules / [don’t apply] to / certified / data centers."
+        "en": "West Virginia’s / HB 2014: certified / data centers / [skip] town rules."
       },
       "source": "W. Va. Code §5B-2-21b(d)(1), from HB 2014 (2025; signed 30 Apr 2025): certified microgrid districts and certified high impact data centers 'may not be subject to' 'County or municipal zoning, horticultural, noise, viewshed, lighting, development, or land use ordinances, restrictions, limitations, or approvals'. Applies to state-certified projects only; uncertified data centers stay under local rules. Same wording in the 2026 enrolled HB 5168. Cross-checked 19 Nov across search results from several outlets; the primary page could not be opened from the build machine."
     },
@@ -41,7 +41,7 @@
       "until": "s4-0.25",
       "hold": "s4",
       "text": {
-        "en": "Who wrote / HB 2014? / A Fundamental / Data engineer: / [his company did]."
+        "en": "Who wrote / HB 2014? / An engineer at / Fundamental / Data says: / [his company did]."
       },
       "source": "Paraphrase of Ted McGavran (Fundamental Data engineer; the company planning the data center near Davis), Belmont, N.C. City Council, 6 Jul 2026: 'We were the guys that basically wrote the bill and got it through the legislature in 2024 and early '25.' (Country Roads News transcript; same core phrase in WV Watch, WVHC, Parsons Advocate). 'we' = Fundamental Data; 'the bill' = HB 2014 (timing matches). His exact words are on the card in the same shot."
     },
@@ -52,9 +52,9 @@
       "until": "s5-0.25",
       "hold": "s5",
       "text": {
-        "en": "Fundamental / Data and Gov. / Morrisey’s office / [deny] the claim."
+        "en": "The company and / the governor / deny it. / The Speaker / of the House / is its [lawyer]."
       },
-      "source": "Fundamental Data (spokesperson Andrea Khoury): it 'did not draft, write or play any role in drafting HB 2014'; McGavran spoke for himself. Governor's office (spokesperson Lars Dalseide): HB 2014 was 'the Governor's bill', its drafting 'deliberately limited to the Governor's office' (WV Watch 22 Jul 2026; Country Roads; WVHC). Cross-checked 19 Nov across search results from several outlets; the primary page could not be opened from the build machine. Gov. Patrick Morrisey signed HB 2014, his priority bill, on 30 Apr 2025 (The Intermountain; governor.wv.gov)."
+      "source": "Fundamental Data (spokesperson Andrea Khoury): it 'did not draft, write or play any role in drafting HB 2014'; McGavran spoke for himself. Governor's office (spokesperson Lars Dalseide): HB 2014 was 'the Governor's bill', its drafting 'deliberately limited to the Governor's office' (WV Watch 22 Jul 2026; Country Roads; WVHC). Cross-checked 19 Nov across search results from several outlets; the primary page could not be opened from the build machine. Gov. Patrick Morrisey signed HB 2014, his priority bill, on 30 Apr 2025 (The Intermountain; governor.wv.gov). House Speaker Roger Hanshaw (Bowles Rice) is counsel for Fundamental Data in its air-permit appeal (notice of appearance 12 Feb 2026; West Virginia Watch 26 Mar 2026; WV Gazette-Mail). His office says the company did not take part in writing any version of HB 2014 (Country Roads). Whether he formally sponsored HB 2014 is NOT confirmed — not claimed."
     },
     {
       "id": "who",
@@ -63,14 +63,14 @@
       "until": "end-0.3",
       "hold": "end",
       "text": {
-        "en": "The town said no. / If the data center / is certified, / the town / gets [no say]."
+        "en": "The town said no. / Once certified, / the data center / [won’t need] its yes."
       },
-      "source": "The town's resolution (5–0) and W. Va. Code §5B-2-21b(d)(1) for certified projects (caption 2 carries the condition; tag5: no certification application filed yet)."
+      "source": "W. Va. Code §5B-2-21b(d)(1): a certified high impact data center 'may not be subject to' municipal zoning, noise, lighting, development or land use ordinances, restrictions or APPROVALS. No certification application filed yet (tag5)."
     }
   ],
   "ui": {
     "tag1": {
-      "en": "TOWN OF DAVIS · THE PLANNED SITE: ABOUT A MILE AWAY, WITH ITS OWN GAS POWER PLANT (REPORTED)"
+      "en": "PLANNED BY FUNDAMENTAL DATA, A VIRGINIA DEVELOPER, ABOUT A MILE AWAY (REPORTED)"
     },
     "tag2": {
       "en": "HB 2014, SIGNED 30 APR 2025 · NOW W. VA. CODE §5B-2-21b(d) · CERTIFIED PROJECTS ONLY"
@@ -79,7 +79,7 @@
       "en": "TED McGAVRAN, FUNDAMENTAL DATA ENGINEER · BELMONT, N.C. CITY COUNCIL, 6 JUL 2026"
     },
     "tag4": {
-      "en": "GOV. PATRICK MORRISEY SIGNED HB 2014, HIS PRIORITY BILL, ON 30 APR 2025"
+      "en": "SPEAKER ROGER HANSHAW REPRESENTS FUNDAMENTAL DATA IN ITS AIR-PERMIT APPEAL"
     },
     "tag5": {
       "en": "NO CERTIFICATION APPLICATION FILED YET, PER THE STATE DATA ECONOMY OFFICE"
@@ -171,6 +171,6 @@
   },
   "props": "No logos, no people, no faces. The typewriter, desk and corkboard are invented props. The ordinance is a generic blank (TOWN OF ____), not a Davis document. Quotes on the cards carry their speaker and outlet.",
   "post": {
-    "en": "Davis, W. Va. voted 5–0 against a data center by Fundamental Data, a Virginia developer. HB 2014 (2025) says town rules don't apply to certified data centers. A Fundamental Data engineer: \"we were the guys that basically wrote the bill.\" The company denies it wrote HB 2014."
+    "en": "Davis, W. Va. voted 5–0 against a Fundamental Data data center. HB 2014 lets certified data centers skip town rules. A Fundamental Data engineer: \"we were the guys that basically wrote the bill.\" The company denies it. The House Speaker is the company's lawyer."
   }
 }

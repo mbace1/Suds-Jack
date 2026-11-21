@@ -122,3 +122,12 @@ tag4 "GOV. PATRICK MORRISEY SIGNED HB 2014, HIS PRIORITY BILL, ON 30 APR 2025". 
 LLC, Virginia-based, gas-fired plant + data center between Davis and Thomas (WV Highlands Conservancy, Microgrid Knowledge,
 The Intermountain); Morrisey signed HB 2014 30 Apr 2025, his priority bill (The Intermountain, governor.wv.gov). 27.5 s.
 Stills: previews/20-11-RFH-Who-Wrote-the-Bill-v6-stills.jpg
+
+## v7 (21 Nov) — owner: "Are you happy with the Bill wording?" → my answer: too wordy, the strongest fact missing; "Yes, do both"
+1 "Davis, W. Va. / voted 5–0 [against] / a data center." (tag1 names Fundamental Data, a Virginia developer)
+2 "West Virginia’s / HB 2014: certified / data centers / [skip] town rules."
+3 "Who wrote / HB 2014? / An engineer at / Fundamental / Data says: / [his company did]." (his exact words on the card)
+4 "The company and / the governor / deny it. / The Speaker / of the House / is its [lawyer]." — Hanshaw is Fundamental Data's
+  counsel in its air-permit appeal (WV Watch 26 Mar 2026, Gazette-Mail). NOT claimed: that he sponsored HB 2014 (unconfirmed).
+5 "The town said no. / Once certified, / the data center / [won’t need] its yes." — §5B-2-21b(d)(1): not subject to municipal
+  ordinances or APPROVALS; the DRAFTED BY: blank sits under it. 25.75 s. Stills: previews/21-11-RFH-Who-Wrote-the-Bill-v7-stills.jpg

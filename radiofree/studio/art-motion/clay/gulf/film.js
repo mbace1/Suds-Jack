@@ -189,8 +189,9 @@ const R = {};
     mesh(new THREE.CylinderGeometry(0.35, 0.35, 9, 8), std('#bfc4ca', { metalness: 1, roughness: 0.3 }), { pos: [0, 4.5, 0], parent: G });
     mesh(new THREE.SphereGeometry(2.3, 20, 14), new THREE.MeshStandardMaterial({ color: '#c0141a', emissive: new THREE.Color(0.9, 0.05, 0.05), roughness: 0.3 }), { pos: [0, 9.6, 0], parent: G });
     const ring = mesh(new THREE.RingGeometry(3, 3.8, 48), new THREE.MeshBasicMaterial({ color: new THREE.Color(2.2, 0.25, 0.2), transparent: true, depthWrite: false, blending: THREE.AdditiveBlending }), { pos: [0, 0.15, 0], rot: [-Math.PI / 2, 0, 0], parent: G, cast: false, recv: false });
-    const lt = canvasTex(300, 90, (g) => { g.fillStyle = 'rgba(10,4,4,.85)'; g.fillRect(0, 0, 300, 90); g.strokeStyle = '#ff4a3a'; g.lineWidth = 4; g.strokeRect(2, 2, 296, 86); g.fillStyle = '#ff6a58'; g.font = '800 54px RobotoCondensed'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(label, 150, 48); });
-    mesh(new THREE.PlaneGeometry(15, 4.5), new THREE.MeshBasicMaterial({ map: lt }), { pos: [11, 0.2, 3], rot: [-Math.PI / 2, 0, 0], parent: G, cast: false, recv: false });
+    const LW = label.length > 8 ? 520 : 300, PW = LW / 20;   // the label is as wide as its words (21 NOV (APPROX.) was cut at a fixed 300)
+    const lt = canvasTex(LW, 90, (g) => { g.fillStyle = 'rgba(10,4,4,.85)'; g.fillRect(0, 0, LW, 90); g.strokeStyle = '#ff4a3a'; g.lineWidth = 4; g.strokeRect(2, 2, LW - 4, 86); g.fillStyle = '#ff6a58'; let px = 54; g.font = `800 ${px}px RobotoCondensed`; while (g.measureText(label).width > LW - 30 && px > 24) { px -= 2; g.font = `800 ${px}px RobotoCondensed`; } g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(label, LW / 2, 48); });
+    mesh(new THREE.PlaneGeometry(PW, 4.5), new THREE.MeshBasicMaterial({ map: lt }), { pos: [3.5 + PW / 2, 0.2, 3], rot: [-Math.PI / 2, 0, 0], parent: G, cast: false, recv: false });
     G.userData.ring = ring; return G; };
   R.m1 = marker(UI.m1); { const [x, z] = onTable(26.98, 60.06); R.m1.position.set(x, 0, z); }
   R.m2 = marker(UI.m2); { const [x, z] = onTable(27.75, 59.93); R.m2.position.set(x, 0, z); }
@@ -216,7 +217,7 @@ const R = {};
 }
 let paperKey = '';
 const wrapW = (str, n) => { const out = []; let line = ''; for (const w of str.split(' ')) { if ((line + ' ' + w).trim().length > n && line) { out.push(line); line = w; } else line = (line + ' ' + w).trim(); } if (line) out.push(line); return out; };
-const TTY1 = ['11 NOV', ...wrapW(UI.tty1, 15)], TTY2 = ['21 NOV', ...wrapW(UI.tty2, 15)];
+const TTY1 = ['11 NOV', ...wrapW(UI.tty1, 15)], TTY2 = ['11 NOV', ...wrapW(UI.tty2, 15)];   // both are the 11 Nov statement: no source has 'stable' on 21 Nov
 function drawPaper(t) {
   const c1 = TTY1.join('').length, c2 = TTY2.join('').length;
   const n1 = Math.floor(clamp((t - EV.tty1) / (EV.tty1End - EV.tty1)) * c1), n2 = Math.floor(clamp((t - EV.tty2) / (EV.tty2End - EV.tty2)) * c2);
