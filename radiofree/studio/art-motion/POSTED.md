@@ -146,6 +146,7 @@ Accounts: Instagram `@gameplaylaboratory` (new account, 21 Nov 2026; old `gamepl
 | The Last Caretaker teardown (catalogue repost to new IG; posted by Grok Bot) | GL Instagram @gameplaylaboratory | https://www.instagram.com/reel/DgA20FsvZVJ/ (21 Nov 20:20 Helsinki) | Gameplay teardown: The Last Caretaker https://store.steampowered.com/app/1783560 |
 | Slay the Spire → Balatro (catalogue repost to new IG; posted by Grok Bot) | GL Instagram @gameplaylaboratory | https://www.instagram.com/reel/DgA_95HhJLn/ (21 Nov 21:40 Helsinki) | Gameplay Laboratory: Slay the Spire → Balatro. https://store.steampowered.com/app/646570/ |
 | Mutations / Video 2 v2 (catalogue repost to new IG; posted by Grok Bot) | GL Instagram @gameplaylaboratory | https://www.instagram.com/reel/DgBI1pMhz9z/ (21 Nov 22:57 Helsinki) | Same loop. Swap the cards for anything. store.steampowered.com/app/3314790/ |
+| Underdog Reviews video 1 v8 (catalogue repost to new IG; posted by Grok Bot) | GL Instagram @gameplaylaboratory | https://www.instagram.com/reel/DgBRur5PFvH/ (22 Nov 00:14 Helsinki) | Next Fest is over. These demos aren't. https://store.steampowered.com/app/5037200 |
 
 ## Scheduled (about 6 hours apart)
 
