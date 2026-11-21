@@ -115,6 +115,19 @@ export default {
   onOver(w) { end(w, 'dead'); },
 };
 
+// v160, an ENDURANCE room (tuning/bosskinds.js `rooms`; owner, 21 Nov: "Score and time, and hits taken", then "A":
+// one number). The boss's clock sets how long the fight is, so the room's seconds left paid nearly all of its score
+// whatever was played (room 9: 10,750 for every bot). Instead: the score, plus `endure.cut` for every second the
+// fight was cut short of its hold (hitting hard takes up to 30% off it), less `endure.hit` of it for every hit taken
+// in the room. The parts ride on the result for the results card
+function endure(w, H, P, hard) {
+  const E = P.endure, play = w.score, cut = Math.max(0, H.hold - H.t), hits = w.hits || 0;
+  const time = Math.round(cut * E.cut * hard);
+  const keep = Math.pow(1 - E.hit, hits);
+  w.score = Math.round((play + time) * keep);
+  w.endureParts = { play, time, cut: Math.round(cut * 10) / 10, hits, lost: play + time - w.score };
+}
+
 export function end(w, outcome) {
   const d = w.dir, R = w.room;
   if (d.ended) return;
@@ -123,11 +136,14 @@ export function end(w, outcome) {
   // and under BANK the pot is banked (a room lost loses it)
   if (outcome === 'clear') {
     const P = C.points, hard = !!R.hard ? T.revenge.scoreMult : 1;
-    if (d.duration - d.t > 1e-6 && challenge.TIMED.has(w.ch?.goal?.type)) w.score += Math.round(Math.floor(d.duration - d.t) * P.timeLeft * hard);
+    const H = w.hold?.endure ? w.hold : null;
+    if (H) endure(w, H, P, hard);
+    else if (d.duration - d.t > 1e-6 && challenge.TIMED.has(w.ch?.goal?.type)) w.score += Math.round(Math.floor(d.duration - d.t) * P.timeLeft * hard);
     if (w.ch?.heart) w.score += Math.round(P.heart * Math.max(0, w.ch.heart.hp) / w.ch.heart.max * hard);
     heat.bank(w);
   } else if (w.pot > 0) { w.events.push({ type: 'potLost', n: w.pot }); w.pot = 0; }
   const result = { outcome, kills: w.kills, hits: w.hits || 0, time: Math.round(d.t * 10) / 10, score: w.score };
+  if (w.endureParts) result.parts = w.endureParts;
   result.value = w.score;
   result.why = outcome === 'clear' ? null : w.ch?.why ?? (outcome === 'fail' ? 'clock' : 'died');
   const g = grade(R, R.level, result);

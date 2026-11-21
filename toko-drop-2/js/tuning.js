@@ -1392,7 +1392,10 @@ export const TUNING = {
     // ring (hold), a leg the heart walks, a hunted body on top of its kill.
     // When a room is won early, every second left on its clock pays `timeLeft`
     // (flat), and a heart pays `heart` × the share of it kept.
-    points: { gate: 500, orb: 300, hill: 1000, holdPerS: 60, leg: 300, hunt: 300, timeLeft: 250, heart: 4000 },
+    points: { gate: 500, orb: 300, hill: 1000, holdPerS: 60, leg: 300, hunt: 300, timeLeft: 250, heart: 4000,
+      // v160: an ENDURANCE room's score: `cut` a second the fight came in under its hold, less `hit` of it for each hit
+      // taken in the room (sim/director/campaign.js `endure`)
+      endure: { cut: 600, hit: 0.15 } },
     // a room with no tiers yet: lines at these points a second of its clock
     scoreRate: { S: 900, A: 600, B: 400, C: 200 },
     heart: { bite: 0.6 },   // PROTECT: a body on the heart takes one of its hp a this many s

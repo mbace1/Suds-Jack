@@ -204,6 +204,10 @@ Classic `toko-drop/` remains the historical / hub v221 lineage. Godot port follo
 ### Decision 21 Nov 2026 — aim means hitting what is hard to hit
 - **Mikael:** "A". Of the five strategies, AIM is not leading a slow body (it does almost nothing: the bots score about the same without it, and 7 of the 11 rooms the v160 report still flags name aim). An aim room brings in bodies a sloppy shot misses — fast crossers, small targets, dodgers, a weak spot — so precision and leading pay. The fix is in what the 17 aim rooms bring in, not in the rules of shooting.
 
+### Decision 21 Nov 2026 — an endurance room is graded on score, time and hits, as one number
+- **Mikael:** "Score and time, and hits taken", then "A" (one number, not three grades).
+- **Locks (v160):** a campaign endurance room's score is its play score + 600 a second cut off the boss's clock − 15% of it for each hit taken in the room; the room list shows the three parts. The room's seconds left no longer pay there (the clock fixed them: room 9 paid every bot 10,750). Rooms 9 and 27 ask for twice the boss's health in damage for the whole 30% cut; room 34 once.
+
 ## 6. Sakurai principles (adopted 15 Nov 2026)
 
 **Source:** [kociden/sakurai-skill](https://github.com/kociden/sakurai-skill). It's an unofficial, fan-made AI summary of Masahiro Sakurai's YouTube series *桜井政博のゲーム作るには* and **not Sakurai's own words**. Agents load it as `.claude/skills/sakurai` (see `toko-drop-2/AGENTS.md`). Citations below use the skill's chapter (§) and video numbers (#NNN).

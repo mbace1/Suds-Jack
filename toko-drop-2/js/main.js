@@ -1011,7 +1011,7 @@ function finish() {
     const better = !was || betterGrade(R.grade, was) || (R.grade !== 'F' && !(old?.pts >= val));
     if (better) { p[R.id] = { grade: betterGrade(was ?? 'F', R.grade) ? was : R.grade, pts: R.grade === 'F' ? old?.pts ?? null : Math.max(val, old?.pts ?? 0), kills: R.kills }; store.set(hard ? HARD_KEY : CAMPAIGN_KEY, JSON.stringify(p)); }
     if (R.outcome === 'clear' && R.grade !== 'F') {
-      const played = { id: R.id, name: world.room.level.name, grade: R.grade, kills: R.kills, value: val };
+      const played = { id: R.id, name: world.room.level.name, grade: R.grade, kills: R.kills, value: val, parts: R.parts ?? null };
       if (!doneBefore && cleared(p)) { campaignDone(p, hard, played); return; }
       showCampaign(played); return;
     }
