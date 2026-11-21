@@ -4,10 +4,10 @@
 // sliding across), a FUSE (a burst when dashed) or a HOOP (crossed through its middle); each kind pays its own way.
 //
 //   node test/gates.mjs
-import { createWorld, step, api } from '../js/sim/world.js?v=158';
-import { TUNING as T } from '../js/tuning.js?v=158';
-import * as PK from '../js/sim/pickups.js?v=158';
-import { waveKind } from '../js/sim/director/arcade.js?v=158';
+import { createWorld, step, api } from '../js/sim/world.js?v=159';
+import { TUNING as T } from '../js/tuning.js?v=159';
+import * as PK from '../js/sim/pickups.js?v=159';
+import { waveKind } from '../js/sim/director/arcade.js?v=159';
 
 let failed = 0, passed = 0;
 const check = (claim, ok, detail = '') => {

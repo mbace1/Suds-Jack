@@ -21,15 +21,15 @@
 // runs down in its enemy loop — the same sequence 1.x runs, with the seam in
 // a different place. test/director.mjs holds all of it in lockstep with 1.x's
 // own loop source.
-import { fairPoint } from '../fairspawn.js?v=158';
-import { TUNING } from '../../tuning.js?v=158';
-import * as worlds from '../worlds.js?v=158';
-import * as challenge from '../challenge.js?v=158';
-import { makeRng } from '../rng.js?v=158';
-import * as bossfight from '../bossfight.js?v=158';
-import * as floorshift from '../floorshift.js?v=158';
-import { phaseSpec, kindOf } from '../species/bosskit.js?v=158';
-import { BOSS_KINDS } from '../../tuning/bosskinds.js?v=158';
+import { fairPoint } from '../fairspawn.js?v=159';
+import { TUNING } from '../../tuning.js?v=159';
+import * as worlds from '../worlds.js?v=159';
+import * as challenge from '../challenge.js?v=159';
+import { makeRng } from '../rng.js?v=159';
+import * as bossfight from '../bossfight.js?v=159';
+import * as floorshift from '../floorshift.js?v=159';
+import { phaseSpec, kindOf } from '../species/bosskit.js?v=159';
+import { BOSS_KINDS } from '../../tuning/bosskinds.js?v=159';
 
 const T = TUNING, W = T.waves, TAU = Math.PI * 2;
 

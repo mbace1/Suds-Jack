@@ -5,10 +5,10 @@
 // 496-497), asserted against the sim stepping on its fixed 1/60 s, and the
 // look against real three.
 import * as THREE from '../../vendor/three/three.webgpu.js?v=r186';
-import { createWorld, step, api } from '../../js/sim/world.js?v=158';
-import { TUNING as T } from '../../js/tuning.js?v=158';
-import { BEHAVIOUR } from '../../js/sim/species/index.js?v=158';
-import look from '../../js/render/looks/warden.js?v=158';
+import { createWorld, step, api } from '../../js/sim/world.js?v=159';
+import { TUNING as T } from '../../js/tuning.js?v=159';
+import { BEHAVIOUR } from '../../js/sim/species/index.js?v=159';
+import look from '../../js/render/looks/warden.js?v=159';
 
 let failed = 0, passed = 0;
 const check = (claim, ok, detail = '') => {
