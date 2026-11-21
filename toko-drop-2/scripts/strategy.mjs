@@ -4,7 +4,8 @@
 // switched OFF (scripts/bot.mjs `K.off`, and K's own numbers):
 //   priority  reads nothing (no shield, plate or boss window), hunts no quarry: the nearest body
 //   risk      never closes in for a hot kill (greed 0)
-//   aim       no lead on its shots
+//   aim       no lead on its shots, and a first-timer's unsteady aim (v160: the rough bot's noise; leading alone
+//             changed almost nothing, a body here moves at a sixth of a shot's speed or less)
 //   movement  never dashes
 //   position  goes nowhere the room asks (no ring, orb, heart or gate) and holds the middle (`still`)
 // A room is FLAGGED when the bot without its strategies still reaches the room's S line (median of its clears) — the
@@ -44,6 +45,7 @@ function without(strats, skill = 'sharp') {
   const K = { ...SKILLS[skill], off: new Set(strats) };
   if (K.off.has('priority')) K.reads = 0;
   if (K.off.has('risk')) K.greed = 0;
+  if (K.off.has('aim')) K.noise = Math.max(K.noise, SKILLS.rough.noise);
   if (K.off.has('position')) K.style = 'still';
   return K;
 }
