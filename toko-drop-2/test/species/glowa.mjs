@@ -2,8 +2,8 @@
 // glowa.mjs — GLOWA (THE DEEP), in bare node: it holds its lure out in front,
 // and lunges when you come close to the light.
 import { readFileSync } from 'node:fs';
-import { createWorld, step, api } from '../../js/sim/world.js?v=158';
-import { TUNING as T } from '../../js/tuning.js?v=158';
+import { createWorld, step, api } from '../../js/sim/world.js?v=159';
+import { TUNING as T } from '../../js/tuning.js?v=159';
 let failed = 0, passed = 0;
 const check = (c, ok, d = '') => { if (ok) { passed++; return; } failed++; console.log(`  ✗ ${c}${d ? ` — ${d}` : ''}`); };
 const S = T.species.glowa, dt = T.sim.dt, IDLE = { mx: 0, mz: 0, ax: 1, az: 0, aim: false, fire: false, dash: false };

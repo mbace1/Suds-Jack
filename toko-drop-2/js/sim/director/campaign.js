@@ -12,10 +12,13 @@
 // and w.over, as a death does. What the room ASKS — its goal and its mods —
 // is sim/challenge.js (CAMPAIGN_PLAN.md); `fail` is a room whose clock ran
 // out on a goal it did not meet. Every number is TUNING.campaign.
-import { fairPoint } from '../fairspawn.js?v=158';
-import { TUNING } from '../../tuning.js?v=158';
-import * as challenge from '../challenge.js?v=158';
-import * as heat from '../heat.js?v=158';
+import { kindOf } from '../species/bosskit.js?v=159';
+import { BOSS_KINDS } from '../../tuning/bosskinds.js?v=159';
+import { holdRoom } from '../bossfight.js?v=159';
+import { fairPoint } from '../fairspawn.js?v=159';
+import { TUNING } from '../../tuning.js?v=159';
+import * as challenge from '../challenge.js?v=159';
+import * as heat from '../heat.js?v=159';
 
 const T = TUNING, C = T.campaign, ORDER = ['F', 'D', 'C', 'B', 'A', 'S'];   // v157: D, a clear under C
 
@@ -93,12 +96,16 @@ export default {
       const o = { speedMult: s.speedMult, intervalMult: s.intervalMult, variant: s.elite ? 'elite' : 'normal' };
       if (s.boss) { o.isBoss = true; const S = T.species[s.kind]; o.hp = S.bossHp ?? (S.noHpMult ? S.hp : Math.ceil(S.hp * T.waves.boss.hpMult)); }
       if (s.hp) o.hp = s.hp;   // a room's own number for a body (a boss sized for the room)
+      // v159: a STRATEGIC boss is hurt only in its window, so its room gives it its own health (tuning/bosskinds.js)
+      if (s.boss && kindOf(w, s.kind) === 'read' && BOSS_KINDS.rooms?.[w.room.id]?.hp) o.hp = BOSS_KINDS.rooms[w.room.id].hp;
       // v157: not on top of the hero, nor just ahead of where it is going (sim/fairspawn.js); a boss as its room put it
       const p = s.boss ? s : fairPoint(w, s.x, s.z);
       const g = api.spawn(w, s.kind, p.x, p.z, o);
       api.clamp(w, g);
       challenge.onSpawn(w, g, s);
     }
+    // v159: an ENDURANCE boss's clock (sim/bossfight.js holdRoom): empty, the boss breaks and the room's boss is down
+    holdRoom(w, dt, api);
     // the goal and the clock (1.x main.js:11344-11356; sim/challenge.js)
     const outcome = challenge.step(w, dt, api);
     if (outcome) end(w, outcome);

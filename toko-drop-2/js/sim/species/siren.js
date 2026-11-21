@@ -49,6 +49,10 @@
 // its own (the core's kill, puddle and goo; a big death at r 0.75); not a
 // HARDCADE biter.
 export default {
+  // v159, a STRATEGIC boss in its campaign room (tuning/bosskinds.js): open while it inhales, and for `spent` s after
+  // it screams — the moment to reach it. An ordinary SIREN in a wave is never armoured (armoured() asks the boss only)
+  open(w, g) { return g.s.inhaleT > 0 || g.s.spentT > 0; },
+
   init(w, g, api) {
     const S = api.S(g), s = g.s;
     s.screamT = w.rng.range(S.screamFirst[0], S.screamFirst[1]);   // 1.x `_screamT = 2.5 + rand·1.5`
@@ -75,8 +79,10 @@ export default {
         g.tell = 0;                                                  // 1.x resets the swell the step it screams
         s.screamT = w.rng.range(S.screamEvery[0], S.screamEvery[1]);
         scream(w, g, dt, S, api);
+        s.spentT = S.spent ?? 0;                                     // v159 (a boss only reads it)
       }
     } else {
+      if (s.spentT > 0) s.spentT -= dt;
       g.tell = 0;
       s.screamT -= dt;
       if (s.screamT <= 0) s.inhaleT = S.inhale;

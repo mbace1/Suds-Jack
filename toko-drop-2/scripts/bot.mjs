@@ -6,7 +6,7 @@
 // coming by looking ahead (plan() below). Moved here from room-tiers.mjs in v42
 // so the passes play the same game.
 import { TUNING as T } from '../js/tuning.js?v=31';
-import { strands } from '../js/sim/formation.js?v=158';
+import { strands } from '../js/sim/formation.js?v=159';
 
 // v56 (owner, 2026-10-28: "Better line bots"): every skill looks AHEAD the way
 // v55's expert did, because a person reads a bullet's line and a hopper's tell,
@@ -59,8 +59,12 @@ export const LINE_SKILLS = ['sharp', 'average', 'rough'];
 // the bot's own dice (never the world's: the room must replay from its seed)
 export const prng = (seed) => () => { seed = (seed + 0x6d2b79f5) | 0; let t = Math.imul(seed ^ (seed >>> 15), 1 | seed); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
 // ── the bot ──────────────────────────────────────────────────────────
+// v159: `K.off`, a Set of a room's strategies this player does NOT play (scripts/strategy.mjs): 'priority' (no reads,
+// no quarry: the nearest body), 'aim' (no lead), 'movement' (no dash), 'position' (no going where the room asks).
+// 'risk' and the rest of 'priority' are K's own numbers (greed, reads), set by the caller
+const NONE = new Set();
 export function think(w, mem, K) {
-  const h = w.hero, ch = w.ch, G = ch?.goal ?? {}, gun = !w.gun?.off;
+  const h = w.hero, ch = w.ch, G = ch?.goal ?? {}, gun = !w.gun?.off, off = K.off ?? NONE;
   // what it can see: in THE VOID's dark only what the light reaches
   const vis = sight(w, K);
   const live = w.gels.filter((g) => g.alive && g.state === 'active' && (vis === Infinity || Math.hypot(g.x - h.x, g.z - h.z) <= vis + g.r));
@@ -70,13 +74,16 @@ export function think(w, mem, K) {
   for (const g of hurtable) {
     let d = Math.hypot(g.x - h.x, g.z - h.z);
     // a hunt: the quarry first, but not past a body already on top of you (v47)
-    if (G.type === 'hunt' && g.kind !== mem.quarry && d > 4) d += 30;
+    if (G.type === 'hunt' && !off.has('priority') && g.kind !== mem.quarry && d > 4) d += 30;
     // v46: reading the room — a body in a WARDEN's aura shrugs the shot off,
     // so a player who sees the shield shoots something it can hurt (the
     // sharp bot always, the average one more often than not, the rough one
     // never). The campaign only: the arcade's boss lines were measured
     // without it (tuning/bossfights.js).
     if (g.shield && w.mode === 'campaign' && (K.reads ?? 0) > ((mem.rnd?.() ?? 0.5))) d += 30;
+    // v159: reading a STRATEGIC boss's window (tuning/bosskinds.js; its ring says which, g.s.armour) — shut, a reader
+    // spends its shots on what it can hurt; open, it turns on the boss at once. The campaign only, as the reads above
+    if (g.isBoss && typeof g.s?.armour === 'boolean' && w.mode === 'campaign' && (K.reads ?? 0) > ((mem.rnd?.() ?? 0.5))) d += g.s.armour ? 30 : -30;
     if (d < td) { td = d; target = g; }
   }
   let mx = 0, mz = 0;
@@ -100,6 +107,11 @@ export function think(w, mem, K) {
     } else if (live.some((g) => Math.hypot(g.x - gt.x, g.z - gt.z) < 2.5)) goalPoint = { x: gt.x, z: gt.z, k: 1.5 };
     else goalPoint = { x: ax, z: az, k: 1.2 };
   }
+  // v159: an ANGLER shut and creeping opens only by biting: a reader steps up to its light to draw the bite (the room's
+  // lesson, "risk, position"), and the planner below takes it out of the lunge's way
+  const ang = w.mode === 'campaign' && (K.reads ?? 0) >= 0.5 ? live.find((g) => g.isBoss && g.kind === 'angler' && g.s?.armour === true && g.s.state === 'creep') : null;
+  if (ang && !goalPoint) goalPoint = { x: ang.s.lx, z: ang.s.lz, k: Math.hypot(ang.s.lx - h.x, ang.s.lz - h.z) > 3.5 ? 1.6 : -0.6 };
+  if (off.has('position')) goalPoint = null;
   if (goalPoint) pull(goalPoint.x, goalPoint.z, goalPoint.k);
   // the target: keep at range with a gun, close in with the CUT
   const cut = w.dashMode === 'cut' && !gun;
@@ -141,7 +153,7 @@ export function think(w, mem, K) {
   // aim with a little lead
   let ax = 1, az = 0;
   if (target) {
-    const lead = td / T.bullets.heroSpeed; ax = target.x + (target.velX || 0) * lead - h.x; az = target.z + (target.velZ || 0) * lead - h.z;
+    const lead = off.has('aim') ? 0 : td / T.bullets.heroSpeed; ax = target.x + (target.velX || 0) * lead - h.x; az = target.z + (target.velZ || 0) * lead - h.z;
     // v46: at a BULWARK's plate a reader aims for its rim, where a grazing shot lands outside the plate's arc
     if (target.kind === 'bulwark' && w.mode === 'campaign' && (K.reads ?? 0) >= 0.5 && (-ax * target.faceX - az * target.faceZ) / (Math.hypot(ax, az) || 1) > 0.5) {
       const l = Math.hypot(ax, az) || 1, off = (target.r + 0.15) * 0.95 * (mem.circle ?? 1);
@@ -157,7 +169,7 @@ export function think(w, mem, K) {
   // held its fire past 7 u, against bosses that keep their distance)
   const endless = !w.gun || w.gun.ammo === Infinity;
   const fire = gun && !!target && (endless ? td < 14 * K.range : td < 7 * K.range);
-  return { mx, mz, ax, az, aim: !!target, fire, dash: dash ? true : false };
+  return { mx, mz, ax, az, aim: !!target, fire, dash: dash && !off.has('movement') ? true : false };
 }
 
 

@@ -11,11 +11,11 @@
 // draws, so every step's position, every shot and every shot's path must
 // match 1.x's frame for frame.
 import * as THREE from '../../vendor/three/three.webgpu.js?v=r186';
-import { createWorld, step, api } from '../../js/sim/world.js?v=158';
-import { makeRng } from '../../js/sim/rng.js?v=158';
-import { TUNING as T } from '../../js/tuning.js?v=158';
-import { waveScale } from '../../js/sim/director/arcade.js?v=158';
-import look, { pose } from '../../js/render/looks/botfly.js?v=158';
+import { createWorld, step, api } from '../../js/sim/world.js?v=159';
+import { makeRng } from '../../js/sim/rng.js?v=159';
+import { TUNING as T } from '../../js/tuning.js?v=159';
+import { waveScale } from '../../js/sim/director/arcade.js?v=159';
+import look, { pose } from '../../js/render/looks/botfly.js?v=159';
 
 let failed = 0, passed = 0;
 const check = (claim, ok, detail = '') => {
