@@ -1,6 +1,6 @@
 // fsm.mjs — the declared state machine (js/fsm.js): moves, exit and enter actions in order, the record, and an
 // undeclared move recorded rather than refused. Bare node.
-import { machine } from '../js/fsm.js?v=158';
+import { machine } from '../js/fsm.js?v=159';
 
 let failed = 0, n = 0;
 const check = (name, ok, extra = '') => { n++; if (!ok) { failed++; console.log(`  ✗ ${name}${extra ? ` — ${extra}` : ''}`); } };

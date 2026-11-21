@@ -19,9 +19,9 @@
 //   node scripts/room-styles.mjs --part 1/4 --json a.json a quarter of the rooms, as JSON
 //   node scripts/room-styles.mjs --merge a.json,b.json,…  the parts, as one report
 import { readFileSync, writeFileSync } from 'node:fs';
-import { createWorld, step } from '../js/sim/world.js?v=158';
-import { TUNING as T } from '../js/tuning.js?v=158';
-import { rooms } from '../js/sim/director/campaign.js?v=158';
+import { createWorld, step } from '../js/sim/world.js?v=159';
+import { TUNING as T } from '../js/tuning.js?v=159';
+import { rooms } from '../js/sim/director/campaign.js?v=159';
 import { SKILLS, prng, think } from './bot.mjs';
 import { scoreLines } from './lines.mjs';
 

@@ -8,12 +8,12 @@
 //   ENDURE       left alone the fight lasts its hold and the boss breaks at the end of it; hit as hard as you like
 //                it still lasts (1 - shave) of the hold; its phases come on the clock; graded on the hits taken
 import { arena, checker, dt } from './lib/boss.mjs';
-import { BOSS_KINDS } from '../js/tuning/bosskinds.js?v=158';
-import { BOSS_PHASES } from '../js/tuning/bossphases.js?v=158';
-import { kindOf, armoured } from '../js/sim/species/bosskit.js?v=158';
-import { BEHAVIOUR } from '../js/sim/species/index.js?v=158';
-import * as bossfight from '../js/sim/bossfight.js?v=158';
-import { TUNING as T } from '../js/tuning.js?v=158';
+import { BOSS_KINDS } from '../js/tuning/bosskinds.js?v=159';
+import { BOSS_PHASES } from '../js/tuning/bossphases.js?v=159';
+import { kindOf, armoured } from '../js/sim/species/bosskit.js?v=159';
+import { BEHAVIOUR } from '../js/sim/species/index.js?v=159';
+import * as bossfight from '../js/sim/bossfight.js?v=159';
+import { TUNING as T } from '../js/tuning.js?v=159';
 
 const { check, done } = checker('bosskinds');
 BOSS_KINDS.on = true; BOSS_PHASES.on = true;   // (lib/boss.mjs turns both off for the species' own specs)
@@ -22,7 +22,7 @@ BOSS_KINDS.on = true; BOSS_PHASES.on = true;   // (lib/boss.mjs turns both off f
 const worlds = T.waves.boss.worlds;
 worlds.forEach((key, i) => check(`world ${i + 1}'s ${key.toUpperCase()} is ${i % 2 ? 'STRATEGIC' : 'ENDURANCE'}`, BOSS_KINDS.kind[key] === (i % 2 ? 'read' : 'endure'), BOSS_KINDS.kind[key]));
 check('ARCADE and HARDCADE fight the kinds', kindOf({ mode: 'arcade' }, 'maw') === 'endure' && kindOf({ mode: 'hardcade' }, 'pike') === 'read');
-check('…a campaign room keeps its own boss', kindOf({ mode: 'campaign' }, 'maw') === null && kindOf({ mode: 'campaign' }, 'pike') === null);
+check('…and the campaign too (v159, owner: "1 yes")', kindOf({ mode: 'campaign' }, 'kettle') === 'endure' && kindOf({ mode: 'campaign' }, 'angler') === 'read' && kindOf({ mode: 'campaign' }, 'sludge') === 'endure' && kindOf({ mode: 'campaign' }, 'siren') === 'read');
 check('…and SURVIVAL (no boss of its own) is not asked', kindOf({ mode: 'survival' }, 'maw') === null);
 BOSS_KINDS.on = false;
 check('?bosskinds=off is the v156 bosses', kindOf({ mode: 'arcade' }, 'maw') === null && kindOf({ mode: 'arcade' }, 'pike') === null);
@@ -94,5 +94,36 @@ for (const [key, world] of [['maw', 3], ['kettle', 5], ['berg', 7]]) {
   const hurt = fight(key, world, { hits: 2 });
   check(`${key}: two hits in the fight is a B`, hurt.F.grade === 'B' && hurt.F.hits === 2, `${hurt.F.grade} (${hurt.F.hits})`);
   check(`${key}: the HUD shows the clock and the grade`, (() => { const B = arena(key, { world }); bossfight.start(B.w, key); B.w.director = { step(w, d, api) { bossfight.step(w, d, api); } }; B.run(2); const oc = bossfight.onCourse(B.w); return oc?.hold && oc.grade === 'S' && Math.abs(oc.left - (hold - 2)) < 0.1; })());
+}
+
+// ── v159: the campaign's five boss rooms fight their boss as its kind ──
+{
+  const { readFileSync } = await import('node:fs');
+  const { createWorld, step } = await import('../js/sim/world.js?v=159');
+  const { rooms } = await import('../js/sim/director/campaign.js?v=159');
+  const room = (id) => ({ ...rooms().find((r) => r.id === id), level: JSON.parse(readFileSync(new URL(`../levels/${id}.json`, import.meta.url), 'utf8')) });
+  const IDLE = { mx: 0, mz: 0, ax: 1, az: 0, aim: false, fire: false, dash: false };
+  // the endurance rooms: left alone (the hero untouchable, not shooting), the boss breaks when its room's clock is out
+  // and the room is won with it
+  for (const id of ['the-sludge', 'boil-over', 'pack-ice']) {
+    const w = createWorld({ seed: 5, mode: 'campaign', room: room(id) }); w.hero.invinc = 1e9;
+    let end = null, seen = null;
+    for (let i = 0; i < 120 / dt && !end; i++) { step(w, IDLE); if (!seen && w.hold) seen = w.time; end = w.events.find((e) => e.type === 'roomEnd') ?? null; }
+    const hold = BOSS_KINDS.rooms[id].hold;
+    check(`${id}: its ${w.hold?.kind?.toUpperCase()} endures — the clock (${hold} s) breaks it and the room is won`, !!w.hold && end?.outcome === 'clear' && Math.abs(end.time - (seen + hold)) < 0.6, JSON.stringify({ seen, time: end?.time, outcome: end?.outcome }));
+  }
+  // the strategic rooms: the boss is armoured outside its window, and starts at the room's own health
+  for (const id of ['deep-end', 'siren']) {
+    const w = createWorld({ seed: 5, mode: 'campaign', room: room(id) }); w.hero.invinc = 1e9;
+    let b = null;
+    for (let i = 0; i < 4 / dt && !b; i++) { step(w, IDLE); b = w.gels.find((g) => g.isBoss) ?? null; }
+    step(w, IDLE);
+    check(`${id}: its ${b?.kind?.toUpperCase()} is read — armoured shut, at the room's ${BOSS_KINDS.rooms[id].hp} hp`, !!b && b.maxHp === BOSS_KINDS.rooms[id].hp && typeof b.s.armour === 'boolean', JSON.stringify({ kind: b?.kind, hp: b?.maxHp, armour: b?.s?.armour }));
+  }
+  // SIREN's window, in its room: open while it inhales, and spent for a moment after the scream
+  const w = createWorld({ seed: 5, mode: 'campaign', room: room('siren') }); w.hero.invinc = 1e9;
+  let opened = false, shut = false;
+  for (let i = 0; i < 14 / dt; i++) { step(w, IDLE); const b = w.gels.find((g) => g.isBoss); if (b?.s.armour === false) opened = true; if (b?.s.armour === true) shut = true; }
+  check('siren: opens and shuts with its scream', opened && shut, JSON.stringify({ opened, shut }));
 }
 done();
