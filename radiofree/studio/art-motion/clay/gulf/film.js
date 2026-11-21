@@ -6,7 +6,7 @@
 // phosphor-green radar map of the gulf with a sweep, red markers, a hatched restricted zone, a teleprinter typing the official
 // lines). The lamp flickers on a distant thud and goes OUT on the last word.
 // Five beats, one thing happening in each:
-//   1 · SEA     night, sleet, the swell; a flash under the cloud behind Gogland on "40 km"                     "hit"
+//   1 · SEA     night, sleet, the swell; a flash under the cloud behind Suursaari (Gogland) on "40 km"                     "hit"
 //   2 · ROOM    the table: the first red marker at Gogland pulses; the teleprinter types NO IMMEDIATE THREAT     "threat"
 //   3 · SEA     a ship burning low on the horizon, smoke leaning in the wind                                    "fire"
 //   4 · ROOM    a red beacon turns; the hatched restricted zone floods in on "Again"; the second marker          "closed"
@@ -155,7 +155,7 @@ const map = (() => { const latC = (MV.lat0 + MV.lat1) / 2, cl = Math.cos(latC * 
   g.font = '700 34px RobotoCondensed'; g.textBaseline = 'middle';
   for (const [n, lon, lat] of [['HELSINKI', 24.94, 60.17], ['TALLINN', 24.75, 59.44], ['KOTKA', 26.95, 60.47], ['ST PETERSBURG', 30.32, 59.94], ['NARVA', 28.19, 59.38], ['PORVOO', 25.66, 60.39], ['HAMINA', 27.20, 60.57]]) {
     const [x, y] = pr([lon, lat]); g.fillStyle = 'rgba(255,190,110,.95)'; g.beginPath(); g.arc(x, y, 8, 0, TAU); g.fill(); g.fillStyle = 'rgba(200,255,220,.85)'; g.fillText(n, x + 18, y); }
-  { const [x, y] = pr([26.98, 60.05]); g.fillStyle = 'rgba(200,255,220,.6)'; g.font = '600 28px RobotoCondensed'; g.fillText('GOGLAND', x + 26, y + 30); }
+  { const [x, y] = pr([26.98, 60.05]); g.fillStyle = 'rgba(200,255,220,.6)'; g.font = '600 28px RobotoCondensed'; g.fillText('SUURSAARI', x + 26, y + 30); }
   g.fillStyle = 'rgba(150,255,190,.35)'; g.font = '700 64px RobotoCondensed'; g.textAlign = 'center'; { const [x, y] = pr([25.6, 59.95]); g.fillText(UI.map, x, y); }
   return { canvas: c, pr }; })();
 const mapTex = canvasTex(MPW, MPH, (g) => g.drawImage(map.canvas, 0, 0));

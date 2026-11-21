@@ -38,3 +38,6 @@ the teleprinter, and the lamp out.
 Build note: the scratch font folder had lost NotoSansJP-800.woff (CAP.loadFonts needs it even for en); restored from
 @fontsource/noto-sans-jp 5.3.1 (japanese subset, weight 800) via npm pack.
 Sound (next, after the owner's OK on the stills): its own kit, GULF.
+
+## v1.1 (21 Nov) — owner: "use Finnish name, Gogland nobody knows"
+Suursaari throughout on screen (caption 1, the map label, the post); "Gogland" kept only in the source notes.

@@ -19,9 +19,9 @@
       "until": "s2-0.25",
       "hold": "s2",
       "text": {
-        "en": "11 Nov. / A Russian warship / is hit off Gogland, / [40 km] from / Finland’s coast."
+        "en": "11 Nov. / A Russian warship / is hit off Suursaari, / [40 km] from / Finland’s coast."
       },
-      "source": "Naro-Fominsk (Buyan-M missile ship), 11 Nov 2026, international waters near Gogland, roughly 40 km off the Finnish coast (Helsinki Times). Ukraine's SBU claims the strike (no weapon named, no damage shown); a senior Finnish official confirmed to Yle that Finland detected an attack near Gogland (yle.fi/a/74-20256496). The ship sailed to Kronstadt under its own power. Search summaries, 21 Nov."
+      "source": "Naro-Fominsk (Buyan-M missile ship), 11 Nov 2026, international waters near Gogland, roughly 40 km off the Finnish coast (Helsinki Times). Ukraine's SBU claims the strike (no weapon named, no damage shown); a senior Finnish official confirmed to Yle that Finland detected an attack near Gogland (yle.fi/a/74-20256496). The ship sailed to Kronstadt under its own power. Search summaries, 21 Nov. Suursaari is the Finnish name of the island (Russian: Gogland)."
     },
     {
       "id": "threat",
@@ -109,6 +109,6 @@
     }
   },
   "post": {
-    "en": "11 Nov: a Russian warship hit off Gogland, 40 km from Finland's coast (Ukraine claims it). 21 Nov: a Russian cargo ship on fire in the same gulf (Russia says drones). Finland closes the eastern gulf's sky and sea, again. The official word: the situation remains \"stable.\""
+    "en": "11 Nov: a Russian warship hit off Suursaari, 40 km from Finland's coast (Ukraine claims it). 21 Nov: a Russian cargo ship on fire in the same gulf (Russia says drones). Finland closes the eastern gulf's sky and sea, again. The official word: the situation remains \"stable.\""
   }
 }
