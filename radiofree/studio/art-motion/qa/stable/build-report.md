@@ -2,7 +2,7 @@
 
 **PASSED**: 82 pass, 0 warn, 0 fail (preview build: unread languages warn)
 
-- length 25.23 s · holds none
+- length 25.25 s · holds none
 - delivered -14.0 LUFS, -3.1 dBTP, LRA 2.5
 
 | stage | check | result | why |
@@ -86,6 +86,6 @@
 | sound | coverage | pass | 10/10 cues have a sound within 40 ms |
 | delivery | delivered loudness | pass | -14.0 LUFS in the MP4 |
 | delivery | delivered true peak | pass | -3.1 dBTP in the MP4 |
-| delivery | length | pass | 25.23 s, the picture says 25.25 s |
+| delivery | length | pass | 25.25 s, the picture says 25.25 s |
 | delivery | with sign-off: loudness | pass | -14.2 LUFS (stable.en+signoff.mp4) |
-| delivery | with sign-off: true peak | pass | -3.8 dBTP |
+| delivery | with sign-off: true peak | pass | -3.0 dBTP |

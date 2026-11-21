@@ -63,3 +63,9 @@ Do not pin. No comments from the account on the war itself.
 ## Build (21 Nov)
 `films/21-11-Helsinki4-Stable.mp4` (28.2 s with the sign-off, −14.2 LUFS, −3.8 dBTP), `-loop.mp4` (25.2 s, −14.0 LUFS, −3.1 dBTP),
 `.en.srt`, preview `previews/21-11-RFH-Stable-en.mp4`, QA in `qa/stable/` (82 pass, 0 warn, 0 fail). Marked NOW in POSTED.md.
+
+## v1.3 (21 Nov) — owner, on the v1.2 preview: "The graphics seem to glitch a bit"
+Measured frame to frame: the two static frames on each cut, the fire's glow halo jumping (its flicker ran faster than the
+frame rate), and a 30 Hz lamp strobe. Now hard cuts, a tighter flame shape flickering slowly, a smooth flash, and the lamp
+stutters slowly, blinks once and goes out. Re-rendered in full; 82 checks pass. Files replaced in place; NOW again in POSTED.
+Render note: with the machine to itself a frame takes ~2 s (it was ~6 s while two renders shared the 4 cores).
