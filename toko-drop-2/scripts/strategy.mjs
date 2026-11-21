@@ -9,15 +9,18 @@
 //   position  goes nowhere the room asks (no ring, orb, heart or gate) and holds the middle (`still`)
 // A room is FLAGGED when the bot without its strategies still reaches the room's S line (median of its clears) — the
 // strategy is then not what the room pays for — or gets through about as often and scores as much: the room to look at.
+// v160: the AVERAGE player is asked the same, and a room is flagged only when the strategy pays neither of them: a
+// room can be easy for the sharp player's hands and still be won by its strategy for an ordinary one (room 20: the
+// average bot without its positioning gets through 8 in 12, the rough one none)
 // Not a gate: a report for a person, as room-tiers.mjs is.
 //
 //   node scripts/strategy.mjs                    every room, 12 seeds, sideways
 //   node scripts/strategy.mjs --room in-order    one room
 //   node scripts/strategy.mjs --seeds 24 --portrait
 import { readFileSync } from 'node:fs';
-import { createWorld, step } from '../js/sim/world.js?v=159';
-import { TUNING as T } from '../js/tuning.js?v=159';
-import { rooms } from '../js/sim/director/campaign.js?v=159';
+import { createWorld, step } from '../js/sim/world.js?v=160';
+import { TUNING as T } from '../js/tuning.js?v=160';
+import { rooms } from '../js/sim/director/campaign.js?v=160';
 import { SKILLS, prng, think } from './bot.mjs';
 
 const args = process.argv.slice(2), opt = (k, d) => { const i = args.indexOf(k); return i < 0 ? d : args[i + 1]; };
@@ -37,8 +40,8 @@ function play(L, seed, K) {
   return end ?? { outcome: 'stuck', score: 0 };
 }
 // the sharp player without these strategies
-function without(strats) {
-  const K = { ...SKILLS.sharp, off: new Set(strats) };
+function without(strats, skill = 'sharp') {
+  const K = { ...SKILLS[skill], off: new Set(strats) };
   if (K.off.has('priority')) K.reads = 0;
   if (K.off.has('risk')) K.greed = 0;
   if (K.off.has('position')) K.style = 'still';
@@ -47,18 +50,25 @@ function without(strats) {
 const med = (a) => { if (!a.length) return null; const s = [...a].sort((x, y) => x - y); return s[Math.floor((s.length - 1) / 2)]; };
 const k = (v) => (v == null ? '    -' : `${(v / 1000).toFixed(1)}k`.padStart(6));
 
-console.log(`room          strategies                       with: through  median   without: through  median   S line   verdict`);
+console.log(`  # room          strategies                     sharp with / without          S line   average with / without       verdict`);
 const flagged = [];
-for (const r of rooms()) {
-  if (ONLY && r.id !== ONLY) continue;
+for (const [n, r] of rooms().entries()) {
+  if (ONLY && r.id !== ONLY && String(n + 1) !== ONLY) continue;
   const L = level(r.id), S = L.plan?.strategy ?? [];
   const run = (K) => { const rs = Array.from({ length: SEEDS }, (_, i) => play(L, 101 + i * 7, K)); const ok = rs.filter((e) => e.outcome === 'clear'); return { pass: ok.length / rs.length, med: med(ok.map((e) => e.score)) }; };
   const a = run(SKILLS.sharp), b = run(without(S)), line = L.tiers?.S;
-  // the strategy pays when, without it, the bot gets through clearly less often, or scores clearly less (under the S line)
+  const c = run(SKILLS.average), e = run(without(S, 'average'));
+  // owner, 19 Nov: "Sometimes proper strategy should earn you A or S a bit more easily" — the A line is the average
+  // player's median and the S line the sharp one's, so the strategy pays a player when, without it, they get through
+  // clearly less often, or reach the line with it and fall under it without
+  const A = L.tiers?.A;
+  const avgPays = e.pass < c.pass - 0.1 || (A != null && (c.med ?? 0) >= A * 0.97 && (e.med ?? 0) < A * 0.97);
+  // (labels only: whether the sharp player without it still reaches the S line)
   const reachesS = b.med != null && line != null && b.med >= line && b.pass >= a.pass - 0.1;
-  const same = b.pass >= a.pass - 0.05 && b.med != null && a.med != null && b.med >= a.med * 0.95;
-  const verdict = reachesS ? 'FLAG: S without it' : same ? 'FLAG: no difference' : 'pays';
-  if (verdict !== 'pays') flagged.push(r.id);
-  console.log(`${r.id.padEnd(13)} ${S.join(',').padEnd(32)} ${String(Math.round(a.pass * 100)).padStart(4)}%  ${k(a.med)}         ${String(Math.round(b.pass * 100)).padStart(4)}%  ${k(b.med)}   ${k(line)}   ${verdict}`);
+  const sharpPays = b.pass < a.pass - 0.1 || (line != null && (a.med ?? 0) >= line * 0.97 && (b.med ?? 0) < line * 0.97);
+  const verdict = !S.length ? 'no strategy' : sharpPays && avgPays ? 'pays both' : sharpPays ? 'pays sharp' : avgPays ? 'pays average' : reachesS ? 'FLAG: S without it' : 'FLAG: no difference';
+  if (verdict.startsWith('FLAG')) flagged.push(n + 1);
+  const pc = (x) => `${String(Math.round(x.pass * 100)).padStart(3)}% ${k(x.med)}`;
+  console.log(`${String(n + 1).padStart(3)} ${r.id.padEnd(13)} ${S.join(',').padEnd(30)} ${pc(a)} / ${pc(b)}   ${k(line)}   ${pc(c)} / ${pc(e)}   ${verdict}`);
 }
-console.log(flagged.length ? `\n${flagged.length} room(s) where the strategy does not clearly pay: ${flagged.join(', ')}` : '\nevery room: its strategy pays');
+console.log(flagged.length ? `\n${flagged.length} room(s) where the strategy pays neither player: ${flagged.join(', ')}` : '\nevery room: its strategy pays');

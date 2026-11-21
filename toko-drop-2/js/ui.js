@@ -2,13 +2,13 @@
 // crisp vector type on near-black (DIRECTION). Menus are pad-first — a d-pad
 // or arrow keys move a gold focus ring (1.x v134), A / Enter picks, B / Esc
 // backs out — and a tap or click works on every button just the same.
-import { TUNING } from './tuning.js?v=159';
-import { GEL_LINES } from './gels-said.js?v=159';
-import { goalOf, modsOf, speciesOf } from './sim/challenge.js?v=159';
-import { mult as heatMult } from './sim/heat.js?v=159';
-import { tiersFor, onCourse } from './sim/director/campaign.js?v=159';
-import { onCourse as fightCourse } from './sim/bossfight.js?v=159';
-import { roomChart, routeChart, goalGlyph, GRADE_COLORS } from './chart.js?v=159';
+import { TUNING } from './tuning.js?v=160';
+import { GEL_LINES } from './gels-said.js?v=160';
+import { goalOf, modsOf, speciesOf } from './sim/challenge.js?v=160';
+import { mult as heatMult } from './sim/heat.js?v=160';
+import { tiersFor, onCourse } from './sim/director/campaign.js?v=160';
+import { onCourse as fightCourse } from './sim/bossfight.js?v=160';
+import { roomChart, routeChart, goalGlyph, GRADE_COLORS } from './chart.js?v=160';
 
 const STR = {
   en: {
@@ -463,7 +463,7 @@ export class UI {
     if (r.hard) startBtn.classList.add('hard-go');
     this._panel([...tag, el('h2', r.hard ? 'card hard' : 'card', r.name), head, el('p', 'goal', goalText(r)), ...(chart ? [chart] : []),
       ...(L?.plan?.teaches ? [el('p', 'teaches', `${t('teaches')}: ${L.plan.teaches}`)] : []),
-      ...(L?.plan?.strategy ? [el('p', 'skills', `${t('skills')}: ${L.plan.strategy.map((k) => t(`sk_${k}`)).join(' · ')}`)] : []),
+      ...(L?.plan?.strategy?.length ? [el('p', 'skills', `${t('skills')}: ${L.plan.strategy.map((k) => t(`sk_${k}`)).join(' · ')}`)] : []),
       rows, ...(L?.score?.mutators ?? []).map((k) => el('p', 'mutator', t(MUTATOR_KEY[k] ?? 'mBank'))), bestEl,
       startBtn, this._button(t('back'), null, () => this.closeOptions())]);
   }

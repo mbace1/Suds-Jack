@@ -6,7 +6,7 @@
 // coming by looking ahead (plan() below). Moved here from room-tiers.mjs in v42
 // so the passes play the same game.
 import { TUNING as T } from '../js/tuning.js?v=31';
-import { strands } from '../js/sim/formation.js?v=159';
+import { strands } from '../js/sim/formation.js?v=160';
 
 // v56 (owner, 2026-10-28: "Better line bots"): every skill looks AHEAD the way
 // v55's expert did, because a person reads a bullet's line and a hopper's tell,

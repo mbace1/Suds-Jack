@@ -19,196 +19,12 @@
     Never `--no-verify`.
 -->
 
-## v159 — 2026-11-21
-**The campaign's boss rooms fight as their kind, and the bots read a boss's window**
-- Owner, 21 Nov, "1 yes": the campaign's five boss rooms take the boss kinds (`tuning/bosskinds.js`, `campaign: true`).
-  - **Endurance**, on a clock inside the room's own (`sim/bossfight.js holdRoom`): THE SLUDGE's SLUDGE CUBE 26 s, BOIL OVER's KETTLE 38 s, PACK ICE's BERG 34 s. The bar is the clock; empty, the boss breaks and the room is won.
-  - **Strategic**: THE DEEP END's ANGLER (open while it tells or rests after a bite, 40 hp) and SIREN (new window: open while it inhales and for 1.4 s after it screams, 120 hp). Armoured otherwise; the ring under it says which.
-  - THE SLUDGE and SIREN are no arcade boss; each takes the kind its pattern suits (a poison trail you outlast; a support you reach when it screams).
-- **The bots read a boss's window** (`scripts/bot.mjs`, the campaign only, as the WARDEN and BULWARK reads): shut, a reader shoots what it can hurt; open, it turns on the boss; an ANGLER shut and creeping, it steps up to the light to draw the bite. Without it the sharp bot cleared THE DEEP END 21% of the time; with it 100%, while the weakest bot (which reads nothing) clears 54%. Playing the room its way is what clears it (owner, 20 Nov).
-- The numbers were measured, sideways and upright (`room-tiers.mjs --both`): SIREN at 60 hp let the weakest bot through 83% (its band says ≤ 60%), so 120; THE DEEP END at 40.
-- All five rooms' lines re-measured, normal and HARD, both orientations. The sharp bot clears every one.
-- Tests: `test/bosskinds.mjs` 57 checks (each room's boss as its kind; SIREN's window opens and shuts).
-- Cache tokens `?v=158` → `?v=159`; HUD label → `2.0 · v159`
-
----
-
-## v158 — 2026-11-20
-**The first boss eased back, and fair spawns in ARCADE**
-- **TWIN PRISMS hold 30 s → 20 s** (`tuning/bosskinds.js`). v157 made the first boss of the game an endurance fight of 30 s, and measured with the average bot it took world 1 from 100% cleared to 67% (lives lost 1.0 → 2.1; the boss wave took 44 of its lives against v156's 17). `scripts/curve.mjs`, 24 seeds, every world started bare, v156 bosses (`?bosskinds=off`) against v157's. At 20 s world 1 clears 96% and the boss takes 21; 16 s read no easier and 24 s cleared 79%. Still an endurance fight: the bar is the clock, and a hit can shave it to 14 s at most. Owner, 18 Nov: start easy.
-- **Fair spawns in ARCADE, HARDCADE and DAILY** (owner, 20 Nov: "yes"). A wave's body that would land within 5 u of the hero, or in a 35° cone of its heading out to 9 u, moves along 1.x's spawn ring to the nearest fair angle, in 30° steps.
-  - A moved body also stays out of the hero's heading at any distance (the ring ahead of a runner is their path) and 2.5 u clear of any body under a second old (a front laid evenly round the ring, nudged, bunched).
-  - A boss lands where 1.x lands it. `TUNING.fairSpawn.arcade`; `?fair=off` is v156's spawns in every mode.
-  - Close landings for a roaming hero in world 1 went 7% → 0.5%.
-  - The human-like bots (`scripts/curve.mjs`, average skill, worlds 1–5, 12 seeds): cleared 50/58/17/8/25% → 50/75/33/0/8%, lives lost summed 13.1 → 12.3. Neutral to slightly better; a single seed is 8 points here. A crude bot with no reaction time took more hits with it on, because for it a body landing alongside is a free kill.
-- DESIGN.md: decisions of 20 Nov. No strategy bonus: a room is built so that its strategy is how it scores best. Steam is the landscape game, unchanged, with mouse and keyboard or a controller.
-- Cache tokens `?v=157` → `?v=158`; HUD label → `2.0 · v158`
-
----
-
-## v157 — 2026-11-19
-**Bosses by turns (an ENDURANCE boss you outlast, then a STRATEGIC boss you read), fair spawns in the campaign, and portrait tested as fully as landscape**
-- Owner, 19 Nov, answering "should a boss be a puzzle or an endurance wall?": "make first boss endurance, second strategic, and so on". Worlds 1, 3, 5, 7 and 9 end on an endurance boss (TWIN PRISMS, MAW, KETTLE, BERG, OMEGA), worlds 2, 4, 6 and 8 on a strategic one (CURB KING, BLISTER, PIKE, ANGLER). `tuning/bosskinds.js`; ARCADE and HARDCADE, as the phases are; the campaign's boss rooms are as they were. `?bosskinds=off` is the v156 bosses, for an A/B on the phone.
-- **ENDURANCE** (`sim/bossfight.js clock()`): the fight is a clock (`hold`: 30, 34, 38, 36 and 44 s). The boss's health bar IS the clock and runs out on its own; then the boss breaks (its whole death). Hits on it take time off, at most 30% of the hold, so you shorten the wall but cannot skip it. The phases come on the clock (stages 1 : 1.15 : 1.3). **Graded on the hits you took** in the fight: S none, A one, B two. The HUD reads `MAW · S · HOLD OUT 23s`.
-  - The TWIN PRISMS break one body at a time, so one shatters halfway and the other rages on alone, as in 1.x.
-- **STRATEGIC** (`bosskit.armoured()`, each species' `open()`): the boss is armoured, so a shot clinks off and a dash passes through, except in a window its own pattern opens. The ring under it says which: dark slate shut, magenta open.
-  - CURB KING: open while it squats, and DAZED for 1.2 s after each landing (new: it sits where it came down).
-  - BLISTER: its shell, as it always was.
-  - PIKE: open while it lines up its charge (you stand in its lane to shoot it) and while stunned against a wall; the stun is 1.9 s and a charge runs long enough to reach the wall. 28 hp.
-  - ANGLER: open while it tells its bite and while it rests after one (1.9 s). 36 hp.
-  - Graded on time, as before.
-- **The boss intro card says which kind**: `BOSS · WORLD 6 · THE RIVER · FIND THE OPENING`, or `OUTLAST IT`.
-- **The grade lines are measured** (`scripts/boss-tiers.mjs --write`, 12 seeds, phases and kinds on), so v154's `tiers` estimate is gone from `bossphases.js`. Every fight is 21–35 s for the bots (v154: 26–36).
-  - Hits the bots take in the endurance fights: sharp 0.3–0.8 (S), average 1.2–3.5, rough 4–7.
-- **Campaign bodies arrive fair** (owner, 19 Nov, after FIRST LIGHT beat him at every tier: "They shouldn't spawn too close and also could avoid the direction of movement slightly"). `sim/fairspawn.js`, `TUNING.fairSpawn`; `?fair=off` is v156.
-  - A body never arrives within 5 u of the hero, nor, while it moves, in a 35° cone ahead of it out to 9 u.
-  - A fair authored point is kept. An unfair one moves to its nearest fair mirror or turn round the room's middle, so the room keeps its shape, count and timing. A boss is placed as its room says.
-  - A roaming hero in FIRST LIGHT (a loop near the walls, 30 seeds): bodies arriving within 5 u 14% → 0.2%, ahead 9% → 0.7%, hits 0.8 → 0 a run, score 50k → 54k. Upright, the same.
-- **The grades are a climb: F, D, C, B, A, S** (owner, 19 Nov: "F likely for first 2 or so tries, the D and C.. only after really great runs should get B, A, and really practice gets you an S"; "there is a fail state").
-  - A clear under C is now **D** (it was F) and opens the next room. **F** is the fail state: not getting through.
-  - The room card lists S, A, B, C, then D ("through the room") and F ("dying, or the clock"). The campaign's end tallies D too. Colour `#c9a27a`.
-- **Two games, tested equally** (owner, 19 Nov: "we are making 2 games, landscape and portrait"). The browser smoke's `portrait` scenario walks the same menus, pause, settings and campaign as `landscape`, and runs in `--quick` too. `scripts/room-tiers.mjs --portrait` plays every room turned (a report only).
-- Tests: new `test/bosskinds.mjs` (51 checks). `test/lib/boss.mjs` and `test/bossfight.mjs` hold the kinds off, as they hold the phases off: they test each species' own fight.
-- Cache tokens `?v=156` → `?v=157`; HUD label → `2.0 · v157`
-
----
-
-## v156 — 2026-11-19
-**A player's pause menu and settings list, a start menu in one style, sticks that follow the thumb, and the owner's recorded intro**
-- Owner, 18–19 Nov: the pause menu "is insanely cluttered and not for the public"; "Pause menu needs a restart if you want to abandon run but no enemy card"; "Should be neat list of toggles or options"; the controls are "not responsive enough ... shooting at 16 sub directions instead of closer to 360 degrees"; the start menu is "a bit" messy; "there is no voice announce that I recorded"; "No announcer needed for now".
-- **The pause menu** (`ui.pause`): PAUSED · RESUME · RESTART · SETTINGS · QUIT. The enemy card is gone from it; the result screen keeps its GOT YOU card.
-  - RESTART (`main.js onRestart`) is the result screen's AGAIN for an abandoned run: recorded as quit, then the same mode, start world, room or day again. The flow table declares paused → intro for it.
-- **SETTINGS** (was OPTIONS, and the title's MENU) is a list: a row per setting, its name left and its value right (`ui._setting`), under SOUND (volume, music, intro voice), CONTROLS (move with left or right thumb, stick size: were HAND and STICK) and GENERAL (reduce motion, language). RECORDS is a row only from the title.
-  - The other 14 switches (the test, look and quality switches, the announcer, the play record, STICK FOLLOW) are a DEVELOPER block shown only with `?dev`. Nothing removed; a stored choice still applies.
-- **The start menu** is one family: ARCADE, CAMPAIGN, DAILY (and CONTINUE) are the same full-width boxes with one short line each; HARD and START AT (was FROM WORLD) are rows under ARCADE; SETTINGS is a row last. The owner's order (v89) is kept. Sideways it is two columns, and the logo is 158 px there, so neither scrolls.
-- **The touch sticks follow the thumb** (`TUNING.input.follow`, `followAim` 45 px). Nothing rounded the aim; 1.x's stick (ported as-is) kept its centre where the thumb landed, so a thumb 100 px out turned the aim only 18° for a 30 px circle (59° now). `?dev` STICK FOLLOW turns it off to compare.
-- **The camera trails the hero less**: `TUNING.camera.follow.tau` 0.22 → 0.1 s (a walking hero ran 1.26 m ahead of the view; 0.55 m now).
-- **The owner's recorded intro** ("TOKO DROP — START SHOOTING!", 1.x's v121) plays on arriving at the title, once a visit, retried on the first tap if blocked; its own INTRO VOICE switch, on by default (1.x v122). Carried as a data URI (`js/introvoice.js`) so the single-file itch build has it.
-- **No announcer for now**: the commentary voice is off for players whatever was saved; `?dev` keeps its switch. Its lines were rewritten for 2.0 (gel, the world by name, the boss by name), with SMASH TV's game show gone, for when it comes back.
-- Strings in en, ja and fi for everything new.
-- Cache tokens `?v=155` → `?v=156`; HUD label → `2.0 · v156`
-
----
-
-## v155 — 2026-11-18
-**A room's RETRY is under the heading, and the result says how far the next grade was**
-- Owner, 2026-11-18, of the Sakurai fast-retry and reward rows (`DESIGN.md` §6 rows 5 and 10): do the fixes that need no decision.
-- **RETRY** (`ui.results`): on a room's result card, AGAIN is RETRY (en / ja リトライ / fi YRITÄ UUDESTAAN) and is the first button, straight under the heading. It used to come after the GOT YOU card, the numbers and the grade lines, which is below the fold on a phone held upright. It was already the focused button; now it is also in reach. A run's card (ARCADE, HARDCADE, DAILY) is unchanged.
-- **The next grade** (`nextGrade` in `ui.js`): the GRADE row reads, for example, `B  ·  +3,200 for A`: the grade above yours and the points it still needed, from the room's own lines (`tiersFor`). Shown only when the points decided the grade. An S shows nothing; so does an F for dying, a hit, the heart or the clock, which says why instead (as before).
-- **Measured, not changed:**
-  - Death to control is the 1.4 s death beat (`TUNING.flow.deathBeat`) plus one tap: RETRY / AGAIN goes straight back into play with no intro and no countdown (since v39). This is inside Sakurai's #116 aim of ≤2 s, so nothing moved.
-  - Spawn safety: in ARCADE and HARDCADE with no input (12 seeds a world, first 4 s), no body lands nearer the hero than 3.4 m, and in worlds 1, 2 and 4–8 none nearer than 7 m. A safe-landing radius (8 m for the first 3 s) was built, measured, and **cut**: it changed nothing, because nothing lands on the hero.
-  - **World 8's first hit** (the 11 Nov playtest's *22 gels on the player at 0:03*) is speed, not placement. Bodies there walk at ×2.3–2.7, so a GLOBBO from 13 m reaches an idle hero in about 1.2 s (first hit 1.1–2.7 s, 12 seeds; world 1: 2.7–5.2 s). This is the opener's pressure, and so an owner question: the 18 Nov answer is that a new world should feel **fresh** (a breath, then the squeeze). It is left for a brief.
-- Cache tokens `?v=154` → `?v=155`; HUD label → `2.0 · v155`
-
----
-
-## v154 — 2026-11-15
-**Bosses fight in three phases, each a little longer, and die slowly; WORLD CLEAR moves to a side card; a testers' unlock (?unlock=all, ?room=N)**
-- Owner decisions of 2026-11-15 (producer doc `DESIGN.md`):
-  - "Bosses should be multiple waves, like 3 with harder strategy each wave. Usually ramping up pacing."
-  - "No need for any freezes. Big bosses can have elaborate death animations instead."
-  - Full health on arrival in each world is unchanged.
-  - "3 stages, slightly longer each time is a good general rule."
-  - WORLD CLEAR becomes a side card at the far right, showing the world transition, instead of the centred card over the boss's death.
-- **Three phases** (`js/tuning/bossphases.js`, `sim/species/bosskit.js`). The seven world bosses (CURB KING, MAW, BLISTER, KETTLE, PIKE, BERG, ANGLER) now fight in phases instead of one rage at half health:
-  - P1 is the boss's own pattern.
-  - P2 is its old rage.
-  - P3 brings in the world's own gel (HOPPA, WORMA, BUBBLA, STEAMA, SALMA, SKATA, GLOWA), raises the pace and tightens the boss's numbers: shorter tells and windows, more shots, longer chains.
-  - Each phase is data: `at` (a health share), an optional `after` (seconds), `pace`, `adds`, and `set`, which is laid over the species' tuning and reaches the behaviour through `api.S(g)`.
-  - A phase cannot be skipped. Health holds one point above the next line until the phase has lasted its own `min` (else `minPhase`, 5 s). BLISTER's first bare window used to carry it through both lines at once.
-    - The hold now sits a whole point over the line. Before this fix, a line that fell on a whole number (BLISTER's 40 × 0.55 = 22) counted as crossed, so P2 could still be skipped.
-    - At most one phase is entered per step.
-  - **Stage lengths: each stage a little longer than the one before** (target 1 : 1.15 : 1.3). The lines are per boss, not 66%/33%, and so are the P1/P2 `min`s. Both were tuned on the bot bench, because each boss deals out its damage windows in its own rhythm. The table is in `DESIGN.md`.
-  - The phases apply in ARCADE and HARDCADE. Campaign boss rooms are unchanged unless `?bossphases=all` is set. `?bossphases=off` gives the v153 bosses back for an A/B.
-  - TWIN PRISMS and OMEGA keep their own 1.x phases.
-- **The fights evened out.**
-  - Health: CURB KING 200→110, MAW 54→70, BLISTER 30→40, KETTLE 140→120, PIKE 80→90, BERG 88→100; ANGLER unchanged.
-  - A simple dodge-and-shoot bot (16 seeds, ARCADE, medians) took worlds 2–8 in 7–38 s on v153 and **26–36 s** here (table in `DESIGN.md`, "Boss phases").
-  - Stages, P1 / P2 / P3 in s:
-    - CURB KING 7.8 / 9.2 / 9.9
-    - MAW 8.5 / 10.2 / 12.3
-    - BLISTER 6.6 / 8.5 / 9.2
-    - KETTLE 7.7 / 10.4 / 10.5
-    - PIKE 7.6 / 9.2 / 10.4
-    - BERG 6.7 / 7.9 / 8.9
-    - ANGLER 7.9 / 9.1 / 10.0
-  - In HARDCADE, BLISTER does not keep the shape (7.2 / 13.3 / 6.9).
-  - The grade lines are the measured v42 lines × a per-boss estimate (`tiers`). `scripts/boss-tiers.mjs` has not been re-run with the phases on.
-- **A big boss's death** (`TUNING.bossDeath`, `render/actors.js` `_throe`). The worlds' bosses and OMEGA no longer pop at once:
-  - Over 2 s the body stays where it fell. It shudders, swells and flashes white faster and faster.
-  - Six cracks of light and dark goo run out across the floor, and eight bursts of goo break out of it, each with a small shake.
-  - It ends in a kill burst 1.6× its size, with its death sound again.
-  - Nothing freezes: the sim has already removed it, scored it and cleared the wave. REDUCE MOTION drops the shudder and the shakes.
-  - Placeholder art.
-- **WORLD CLEAR is a side card** (`ui.card(..., 'side')`, `index.html` `#card.side`):
-  - It sits flush to the right edge, halfway down, and slides in from off-screen.
-  - It shows the world just cleared with its grade, and `NEXT → WORLD n · NAME`.
-  - The middle of the floor, where the boss dies, stays clear.
-  - REDUCE MOTION, whether the in-game option (now also an `html.calm` class) or the device setting, shows it without the slide.
-  - On a phone held upright it sits at 58% height, ≤46vw wide.
-  - The boss's intro card stays in the top band.
-- **Testers' unlock** (`main.js`):
-  - `?unlock=all` opens all 36 campaign rooms (HARD PAIN's too) and every arcade start world.
-  - `?room=N` (1–36, or a room id) goes straight into that room and implies the unlock.
-  - Either makes the page a sandbox: saves are read, never written, and the title says `TEST UNLOCK · NOT SAVED`.
-  - Documented in `AGENTS.md`.
-- `DESIGN.md` and `AGENTS.md` are #647's producer docs, plus a "Boss phases" section and a testers' section.
-- Checked in headless Chrome (software WebGL) on the default URL:
-  - Loads with no page errors.
-  - The rooms grid has 0 of 36 locked with `?unlock=all` and 35 of 36 without.
-  - `?room=12` lands in UNDERTOW, playing, and localStorage is byte-identical afterwards.
-  - World 2's boss goes P1→P2→P3 with banners and adds.
-  - The death plays over about 2 s of real frames.
-  - WORLD CLEAR shows as the side card during the death, in landscape (960×540), portrait (390×844) and reduced motion (no animation).
-  - Not checked on a phone or a real GPU.
-- Cache tokens `?v=153` → `?v=155`; HUD label → `2.0 · v154`
-
----
-
-## v153 — 2026-11-12
-**A campaign room can wear any world: the shaped and moving rooms take the neon grid, and the sewer and the core are in the campaign**
-- The owner, 2026-11-12: "campaign can use any world", and of the neon grid: "Circular, moving, shape shifting levels would work there better anyways. And these levels fit those better than the environment ones". Since v73 each campaign world wore one place, the arcade world its rule comes from, and every one of its six rooms wore it. A room may name a look of its own now (`TUNING.campaign.worlds[].rooms[].look`, any arcade world's id) and wears that: its floor, the set round it, its light and its rail.
-- Seventeen rooms whose floor is a shape or moves wear the neon grid, in their own world's colours and rail (THE WELL's teal, THE VEIN's red, THE VOID's violet, THE FOAM's pale green, THE KILN's amber, THE SURFACE's blue): THREE RINGS; EDDY, THE SLUDGE, FLOTSAM; CLOT, PULSE, CROSSFIRE; THE PULL, ORBIT, THE DEEP END, SIREN; RINK, BREATH, BUBBLE BATH; FORGE, BOIL OVER, CRUCIBLE. Rendered both ways first: a place cannot explain a floor that is three circles going round each other (the river ran on outside EDDY's ring as it did inside, and BREATH's ice lay white on white snow), and on the grid the floor is the one lit thing in the void. The nineteen plain rectangles keep a place, so every world of the campaign has rooms of both kinds.
-- The two places no campaign world wore are in it: NEEDLE is in the sewer (THE VEIN, with the stream down its middle) and the last room, THE CORE, is in the core. All nine arcade worlds are worn somewhere in the campaign.
-- Nothing a room plays by has moved: its rule, its goal, its clock and its grade lines are what they were. Only what it is drawn as.
-- Tests: `test/campaign.mjs` 305 checks (every room's look is an arcade world's; a shape or a moving floor wears the grid and a plain rectangle a place; every world has both; every arcade world is worn somewhere), `test/smoke.mjs` reads the room's own look.
-- Cache tokens `?v=152` → `?v=155`; HUD label → `2.0 · v153`
-
----
-
-## v152 — 2026-11-12
-**The sewer's stream runs in a gentle trench: shallow, rounded, level water in the bottom of it**
-- The owner, playing v151 on the phone: "The 'pipe' is a rectangular hole, when it should be a gentle concave stream. Previous stream water was good, no need to have a small river going back and forth. Just make the trench itself look subtle and rounded, not boxy". v148's half-pipe was as deep as it was half wide; walls that stand nearly upright are two flat faces from above, a lit one and a shadowed one, and that is a box.
-- The trench is a cosine dip now: 0.6 m at its middle in 3.4 m, level at both shoulders, so it has no lip — the floor turns down into it. Its banks are the floor's own stone at the shoulder, going to smooth damp stone toward the water, and are shaded as a slope is (a little lighter where it turns to the light, a little darker where it turns away, nothing at the shoulders): a gradient and no line. No brick courses, no lip shadow, no gleam.
-- The water is v145's again: level, filling the bottom half of the dip, running fast along the flow with a brighter thread down it and foam where it meets the banks. The stream that swung from wall to wall is gone.
-- The view ray is met with the bank by three Newton steps kept between the floor and the trench's bottom (`test/view.mjs` runs the same steps for rays out to the far edge of a phone's view).
-- Tests: `test/view.mjs` 161 checks.
-- Cache tokens `?v=151` → `?v=152`; HUD label → `2.0 · v152`
-
----
-
-## v151 — 2026-11-12
-**REDUCE MOTION reaches the floors: the core's beat and the boiler's flare are held back when it is on**
-- OPTIONS' REDUCE MOTION (and the device's own setting) stilled the camera's shake and softened the dark, and nothing a shader drew knew of it. v149 and v150 gave two floors a pulse — the boiler's stoke, and the core's beat, a flash across the whole deck that the LOOK 3 film measured at about 6% of full brightness from one frame to the next. With REDUCE MOTION on, the core keeps a quarter of its beat and of its rings and none of the arcs on its grid; the boiler keeps 40% of its flare (`kit.js` CALM, set from the option, on the toggle, and when the device's setting changes). With it off, nothing is changed.
-- The boiler's fire pits are worked out only where there is a hole in a grate, and a shoal's cloud once a kind (it was asked twice, and a fish was looked for where there was no cloud). Neither showed as a saving on the software GPU, which may run both sides of a branch; they are kept for the GPUs that do not.
-- Measured (`docs/ENVIRONMENTS.md`): against v147, a frame of the boiler costs about 11 to 18% more and of the deep about 6 to 16%; the sewer, the cistern, the river, the ice and the core are inside the measurement's noise. Not timed on a phone.
-- The owner's read of the LOOK 3 film (v150): the sewer "about right", no preference on the other six. The looks pass is closed; A8 9 of 10, C10 5 of 5 (`docs/COMPLETION.md`: ARCADE 93, CAMPAIGN 93).
-- Tests: `test/view.mjs` 161 checks; `test/smoke.mjs`: the pulses are whole with REDUCE MOTION off.
-- Cache tokens `?v=150` → `?v=151`; HUD label → `2.0 · v151`
-
----
-
-## v150 — 2026-11-12
-**The deep is alive and lit from above — shoals, jellyfish, crabs, shafts of the surface's light; the core's heart drives its machine, every beat a kick**
-- From the owner's read of the LOOK 2 film (v147): the deep, "Needs both" (more life, more light); the core, "Needs more". With v148 and v149 this answers all seven.
-- **Deep — life.** SHOALS of small fish over the bed, two kinds, each its own size, colour and heading, swimming in clouds that travel with them, weaving, tails working; each throws a shadow on the silt a little way off, which is what says they are above it; they part round the hero. CRABS on the bed (`render/leaves.js` 'crabs'): each scuttles sideways a little way, waits, goes again, and runs from any body that comes near; a burst throws them. JELLYFISH adrift over the far side, the sides and a little way in over the floor's edge: a bell that pulses, tentacles trailing, clear but for its rim.
-- **Deep — light.** SHAFTS of the surface's light come down in three fans (the cistern's rays) and the bed is lit where they land, the caustic web at its brightest under them; the surface's dapple is stronger everywhere; the bed a little lighter and bluer; the plankton brighter where the water is stirred.
-- **Core — the heart DRIVES the machine.** Every beat kicks the rotor on part of a segment (a ratchet now, not a fan). Between the rotor and the heart stands the STATOR: ten great vanes, dark against the heart, its light coming up between them in beams; a conduit down each, and on every beat a charge runs out along it. On the deck the beat hits harder: a second ring follows the first, the pane takes a breath of the heart's light, a pad flares as a ring crosses it, and for a moment after each beat the grid near the heart is live with arcs.
-- `scripts/itch-clips.mjs`: a LOOK 3 clip — the seven worlds again, one shot each and its question.
-- Tests: `test/view.mjs` 159 checks (crabs: where they start, that they scuttle and wait, never sleep, never walk through what stands on the bed, run from a body; the deep's lights and shoals; the stator between rotor and heart; the kick).
-- Archive: v140 to v149 rolled to one line each.
-- Cache tokens `?v=149` → `?v=150`; HUD label → `2.0 · v150`
+## v160 — 2026-11-21
+**Room 1 asks for no strategy, and the strategy report asks the ordinary player too**
+- Owner, 21 Nov: "Recommend and choose will be the answer to all room questions." Room 1 (FIRST LIGHT) teaches the controls: move, shoot, stay alive. It no longer names a strategy (it named aim, which does nothing against GLOBBOs: the bot without it scored the same), and the room card shows no strategy line for it. THE SURFACE's other five rooms still teach one each, all five.
+- `scripts/strategy.mjs` (a report, not a gate): it plays the AVERAGE bot with and without each room's strategy too, and a strategy pays a player when, without it, they get through clearly less often, or reach their line with it (S for the sharp player, A for the average one; owner, 19 Nov: "proper strategy should earn you A or S a bit more easily") and fall under it without. Rooms are numbered. Rooms 20 and 31 pay the ordinary player (without positioning, the average bot gets through room 20 nine times in 12 instead of 12, and room 31 eight times in 12 at a fifth of the score).
+- Archive: v150 to v159 rolled to one line each.
+- Cache tokens `?v=159` → `?v=160`; HUD label → `2.0 · v160`
 
 ---
 
@@ -216,6 +32,16 @@
 
 One line per version; the full entries are in git history (`git log -p VERSIONS.md`).
 
+- **v159** (2026-11-21) — The campaign's boss rooms fight as their kind, and the bots read a boss's window
+- **v158** (2026-11-20) — The first boss eased back, and fair spawns in ARCADE
+- **v157** (2026-11-19) — Bosses by turns (an ENDURANCE boss you outlast, then a STRATEGIC boss you read), fair spawns in the campaign, and portrait tested as fully as landscape
+- **v156** (2026-11-19) — A player's pause menu and settings list, a start menu in one style, sticks that follow the thumb, and the owner's recorded intro
+- **v155** (2026-11-18) — A room's RETRY is under the heading, and the result says how far the next grade was
+- **v154** (2026-11-15) — Bosses fight in three phases, each a little longer, and die slowly; WORLD CLEAR moves to a side card; a testers' unlock (?unlock=all, ?room=N)
+- **v153** (2026-11-12) — A campaign room can wear any world: the shaped and moving rooms take the neon grid, and the sewer and the core are in the campaign
+- **v152** (2026-11-12) — The sewer's stream runs in a gentle trench: shallow, rounded, level water in the bottom of it
+- **v151** (2026-11-12) — REDUCE MOTION reaches the floors: the core's beat and the boiler's flare are held back when it is on
+- **v150** (2026-11-12) — The deep is alive and lit from above — shoals, jellyfish, crabs, shafts of the surface's light; the core's heart drives its machine, every beat a kick
 - **v149** (2026-11-11) — The boiler room stokes — fire in pits under the grates, blown on a beat, steam off the floor, engines turning; the ice keeps the trails of what slides over it, under more snow
 - **v148** (2026-11-11) — The river's lily pads stay where they grow; the sewer's chute is a half-pipe with the stream swinging in it; leaves afloat in the cistern
 - **v147** (2026-11-11) — The core's deck is glass, and the machine is under it: a great rotor turning over a heart that beats
