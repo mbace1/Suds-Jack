@@ -105,7 +105,7 @@ Toko 2 still needs to go out on Toko X ("Batteries included. Parents not include
 
 ## Gameplay Laboratory (GL)
 
-Accounts: Instagram `gameplay.laboratory`, X `@GameplayLabHki`, YouTube `@GameplayLaboratory`, TikTok `@gameplay.laboratory`, Bluesky `@gameplaylaboratory.bsky.social`.
+Accounts: Instagram `@gameplaylaboratory` (new account, 21 Nov 2026; old `gameplay.laboratory` permanently banned that day), X `@GameplayLabHki`, YouTube `@GameplayLaboratory`, TikTok `@gameplay.laboratory`, Bluesky `@gameplaylaboratory.bsky.social`.
 
 | Film | Channel | Link | Copy |
 |---|---|---|---|
@@ -115,6 +115,8 @@ Accounts: Instagram `gameplay.laboratory`, X `@GameplayLabHki`, YouTube `@Gamepl
 | TOP STEED (posted by Grok Bot) | GL YouTube Short | https://youtube.com/shorts/zPLabNFpRfc (20 Nov ~18:10–18:24 Helsinki) | same as Instagram (description) |
 | TOP STEED (posted by Grok Bot) | GL TikTok | TikTok @gameplay.laboratory: under review, no public URL yet (20 Nov ~18:10–18:24 Helsinki) | same as Instagram |
 | TOP STEED (posted by Grok Bot) | GL Bluesky | https://bsky.app/profile/gameplaylaboratory.bsky.social/post/3n2qyiwmkfk2b (20 Nov ~18:10–18:24 Helsinki; 16:9 centred layout, a one-off) | same as Instagram |
+| PETAFAB: Bot Invasion highlights (catalogue repost to new IG; posted by Grok Bot) | GL Instagram @gameplaylaboratory | https://www.instagram.com/reel/Df_1iAMsbhe/ (21 Nov 10:48 Helsinki) | Highlights from Petafab: Bot Invasion |
+| Sektori gameplay breakdown (catalogue repost to new IG; posted by Grok Bot) | GL Instagram @gameplaylaboratory | https://www.instagram.com/reel/Df__OsKvKlM/ (21 Nov 12:13 Helsinki) | Gameplay breakdown: Sektori |
 
 ## Scheduled (about 6 hours apart)
 
