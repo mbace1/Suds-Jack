@@ -190,6 +190,11 @@ Classic `toko-drop/` remains the historical / hub v221 lineage. Godot port follo
   - **No strategy bonus.** Following a room's strategy is itself the way to optimise its score: a room is built so that playing it its way scores what playing it otherwise cannot. This is a rule for designing rooms, not a mechanic. A room whose S line can be reached as well without its strategy is a room to look at. Sakurai §1 (#191: risk and return close together) and §4 (#244: the tutorial lives inside the real game).
   - **Steam is the landscape game, unchanged.** There is no separate Steam build or Steam-only feature. It plays with mouse and keyboard or a controller, as every landscape version does (both SHIPPED).
 
+### Decision 21 Nov 2026 — the campaign's boss rooms take the kinds; a bot that plays the room's way
+- **Mikael:** "1 yes" (the campaign's boss rooms follow their arcade boss's kind, and THE SLUDGE and SIREN take the suggested ones), and "5 yes" (a bot that plays each room with and without its strategy).
+- **Locks (v159):** THE SLUDGE, BOIL OVER and PACK ICE are endurance rooms; THE DEEP END and SIREN are strategic. SIREN's window is its scream: open while it inhales and for a moment after.
+- **First result of the strategy rule:** a bot that reads a boss's window clears THE DEEP END every time, one that does not 21% (sharp) to 54% (the weakest, at the lower health). The bot that plays every room with and without its strategy is next.
+
 ## 6. Sakurai principles (adopted 15 Nov 2026)
 
 **Source:** [kociden/sakurai-skill](https://github.com/kociden/sakurai-skill). It's an unofficial, fan-made AI summary of Masahiro Sakurai's YouTube series *桜井政博のゲーム作るには* and **not Sakurai's own words**. Agents load it as `.claude/skills/sakurai` (see `toko-drop-2/AGENTS.md`). Citations below use the skill's chapter (§) and video numbers (#NNN).
@@ -276,7 +281,7 @@ No questions from 18 Nov are open.
 
 **How to read it.** `[x]` is done, with its evidence. `[ ]` is open. The percentage to shipping is the share of boxes ticked. Ticking a box needs the evidence named on its line: a version, a playtest note or an owner answer. An agent may not tick a design box on its own judgment. Rows tagged **PROPOSAL** are the producer's suggestion until Mikael confirms them; he may cut or add rows.
 
-**Count at v158: 19 of 40 (about 48%).** Most of the remaining boxes are decisions and playtests, not code. (v155: 17 of 36; v157 added the campaign boss rooms, landscape-and-portrait parity and a Steam build as rows.)
+**Count at v159: 20 of 40 (50%).** Most of the remaining boxes are decisions and playtests, not code. (v155: 17 of 36; v157 added the campaign boss rooms, landscape-and-portrait parity and a Steam build as rows.)
 
 ### A. The target (owner)
 - [x] Where 2.0 is released: **itch.io, as an HTML game played in the browser** (owner, 18 Nov).
@@ -297,7 +302,7 @@ No questions from 18 Nov are open.
 
 ### C. Design (from the 18 Nov answers)
 - [x] Every boss is named as a **puzzle** (strategic) or an **endurance wall**, and plays as its kind, in ARCADE and HARDCADE: endurance first, then strategic, by turns (owner, 19 Nov; v157).
-- [ ] The campaign's boss rooms follow the same call (owner to confirm; v157 leaves them as they were).
+- [x] The campaign's boss rooms follow the same call (owner, 21 Nov; v159).
 - [x] Boss grade lines re-measured with `scripts/boss-tiers.mjs` with the phases and kinds on (v157).
 - [ ] Room 1 asks for the simplest strategy, and the campaign climbs in tiers that ask for more complex ones, with fun twists and easier stretches along the way: a roller coaster (owner, 18 Nov).
 - [ ] A new world opens **fresh**: a breath, then the squeeze. World 8's first hit at about 1 s is answered (v155 measured it).

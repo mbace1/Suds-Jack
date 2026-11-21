@@ -77,6 +77,9 @@ export function think(w, mem, K) {
     // never). The campaign only: the arcade's boss lines were measured
     // without it (tuning/bossfights.js).
     if (g.shield && w.mode === 'campaign' && (K.reads ?? 0) > ((mem.rnd?.() ?? 0.5))) d += 30;
+    // v159: reading a STRATEGIC boss's window (tuning/bosskinds.js; its ring says which, g.s.armour) — shut, a reader
+    // spends its shots on what it can hurt; open, it turns on the boss at once. The campaign only, as the reads above
+    if (g.isBoss && typeof g.s?.armour === 'boolean' && w.mode === 'campaign' && (K.reads ?? 0) > ((mem.rnd?.() ?? 0.5))) d += g.s.armour ? 30 : -30;
     if (d < td) { td = d; target = g; }
   }
   let mx = 0, mz = 0;
@@ -100,6 +103,10 @@ export function think(w, mem, K) {
     } else if (live.some((g) => Math.hypot(g.x - gt.x, g.z - gt.z) < 2.5)) goalPoint = { x: gt.x, z: gt.z, k: 1.5 };
     else goalPoint = { x: ax, z: az, k: 1.2 };
   }
+  // v159: an ANGLER shut and creeping opens only by biting: a reader steps up to its light to draw the bite (the room's
+  // lesson, "risk, position"), and the planner below takes it out of the lunge's way
+  const ang = w.mode === 'campaign' && (K.reads ?? 0) >= 0.5 ? live.find((g) => g.isBoss && g.kind === 'angler' && g.s?.armour === true && g.s.state === 'creep') : null;
+  if (ang && !goalPoint) goalPoint = { x: ang.s.lx, z: ang.s.lz, k: Math.hypot(ang.s.lx - h.x, ang.s.lz - h.z) > 3.5 ? 1.6 : -0.6 };
   if (goalPoint) pull(goalPoint.x, goalPoint.z, goalPoint.k);
   // the target: keep at range with a gun, close in with the CUT
   const cut = w.dashMode === 'cut' && !gun;

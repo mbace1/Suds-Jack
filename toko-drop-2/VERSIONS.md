@@ -20,8 +20,15 @@
 -->
 
 ## v159 — 2026-11-21
-**TODO: one-line title**
-- TODO
+**The campaign's boss rooms fight as their kind, and the bots read a boss's window**
+- Owner, 21 Nov, "1 yes": the campaign's five boss rooms take the boss kinds (`tuning/bosskinds.js`, `campaign: true`).
+  - **Endurance**, on a clock inside the room's own (`sim/bossfight.js holdRoom`): THE SLUDGE's SLUDGE CUBE 26 s, BOIL OVER's KETTLE 38 s, PACK ICE's BERG 34 s. The bar is the clock; empty, the boss breaks and the room is won.
+  - **Strategic**: THE DEEP END's ANGLER (open while it tells or rests after a bite, 40 hp) and SIREN (new window: open while it inhales and for 1.4 s after it screams, 120 hp). Armoured otherwise; the ring under it says which.
+  - THE SLUDGE and SIREN are no arcade boss; each takes the kind its pattern suits (a poison trail you outlast; a support you reach when it screams).
+- **The bots read a boss's window** (`scripts/bot.mjs`, the campaign only, as the WARDEN and BULWARK reads): shut, a reader shoots what it can hurt; open, it turns on the boss; an ANGLER shut and creeping, it steps up to the light to draw the bite. Without it the sharp bot cleared THE DEEP END 21% of the time; with it 100%, while the weakest bot (which reads nothing) clears 54%. Playing the room its way is what clears it (owner, 20 Nov).
+- The numbers were measured, sideways and upright (`room-tiers.mjs --both`): SIREN at 60 hp let the weakest bot through 83% (its band says ≤ 60%), so 120; THE DEEP END at 40.
+- All five rooms' lines re-measured, normal and HARD, both orientations. The sharp bot clears every one.
+- Tests: `test/bosskinds.mjs` 57 checks (each room's boss as its kind; SIREN's window opens and shuts).
 - Cache tokens `?v=158` → `?v=159`; HUD label → `2.0 · v159`
 
 ---

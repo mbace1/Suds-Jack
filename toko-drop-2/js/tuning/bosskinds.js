@@ -66,7 +66,7 @@ export const BOSS_KINDS = {
     'the-sludge': { hold: 26 },
     'boil-over': { hold: 38 },
     'pack-ice': { hold: 34 },
-    'deep-end': { hp: 40 },
-    siren: { hp: 60 },
+    'deep-end': { hp: 40 },   // measured: the reading bots 100%, the weakest (no reads) 54%
+    siren: { hp: 120 },   // measured: at 60 the weakest bot (which reads no window) got through 83%, its band says ≤ 60%
   },
 };
