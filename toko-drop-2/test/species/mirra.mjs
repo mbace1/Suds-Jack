@@ -2,8 +2,8 @@
 // mirra.mjs — MIRRA (THE CORE), in bare node: it goes to your mirror point
 // and fires volleys at you across the floor.
 import { readFileSync } from 'node:fs';
-import { createWorld, step, api } from '../../js/sim/world.js?v=158';
-import { TUNING as T } from '../../js/tuning.js?v=158';
+import { createWorld, step, api } from '../../js/sim/world.js?v=159';
+import { TUNING as T } from '../../js/tuning.js?v=159';
 let failed = 0, passed = 0;
 const check = (c, ok, d = '') => { if (ok) { passed++; return; } failed++; console.log(`  ✗ ${c}${d ? ` — ${d}` : ''}`); };
 const S = T.species.mirra, dt = T.sim.dt;

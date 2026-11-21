@@ -14,25 +14,25 @@
 // moves, then everything is tested, against post-move positions.
 //
 // Modes: 'arcade', 'hardcade' (corpses fire back) and 'survival'.
-import { TUNING } from '../tuning.js?v=158';
-import { press, pressReset } from './press.js?v=158';
-import { makeRng } from './rng.js?v=158';
-import { BEHAVIOUR } from './species/index.js?v=158';
-import { armoured } from './species/bosskit.js?v=158';
-import { DIRECTORS } from './director/index.js?v=158';
-import * as fire from './fire.js?v=158';
-import { makeHero, heroStep, applyPull, hurtHero, invincible } from './hero.js?v=158';
-import { swarmForces, resolveCrowd } from './crowd.js?v=158';
-import { revengeColor } from './color.js?v=158';
-import * as pickups from './pickups.js?v=158';
-import * as worlds from './worlds.js?v=158';
-import * as reshape from './reshape.js?v=158';
-import { Arena, levelShape, levelMoves, levelEnvelope, KIND } from './shape.js?v=158';
-import * as rules from './rules.js?v=158';
-import * as heat from './heat.js?v=158';
-import * as formation from './formation.js?v=158';
-import * as posts from './posts.js?v=158';
-import * as slam from './slam.js?v=158';
+import { TUNING } from '../tuning.js?v=159';
+import { press, pressReset } from './press.js?v=159';
+import { makeRng } from './rng.js?v=159';
+import { BEHAVIOUR } from './species/index.js?v=159';
+import { armoured, baseOf } from './species/bosskit.js?v=159';
+import { DIRECTORS } from './director/index.js?v=159';
+import * as fire from './fire.js?v=159';
+import { makeHero, heroStep, applyPull, hurtHero, invincible } from './hero.js?v=159';
+import { swarmForces, resolveCrowd } from './crowd.js?v=159';
+import { revengeColor } from './color.js?v=159';
+import * as pickups from './pickups.js?v=159';
+import * as worlds from './worlds.js?v=159';
+import * as reshape from './reshape.js?v=159';
+import { Arena, levelShape, levelMoves, levelEnvelope, KIND } from './shape.js?v=159';
+import * as rules from './rules.js?v=159';
+import * as heat from './heat.js?v=159';
+import * as formation from './formation.js?v=159';
+import * as posts from './posts.js?v=159';
+import * as slam from './slam.js?v=159';
 
 const T = TUNING;
 
@@ -284,6 +284,8 @@ function gelStep(w, g, dt) {
   if (!(g.form && formation.ride(w, g, dt, api))) BEHAVIOUR[g.kind].step(w, g, dt, api);
   // v157: a STRATEGIC boss says whether it is open, for its ring (render/looks/bossaura.js); null for any other
   if (g.isBoss) g.s.armour = BEHAVIOUR[g.kind].open ? armoured(w, g, BEHAVIOUR[g.kind]) : null;
+  // v159: and its window's numbers, in a mode with no phases (the campaign's rooms): bosskit's phases set them otherwise
+  if (g.isBoss && g.s.phS === undefined) g.s.phS = baseOf(w, g) === T.species[g.kind] ? null : baseOf(w, g);
   if (!g.alive) return;
   if (g.size === 5) slam.step(w, g, dt, api);   // v112: a giant's own attack (sim/slam.js)
   const fr = Math.exp(-T.gel.knockFriction * dt);

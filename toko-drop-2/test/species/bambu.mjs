@@ -9,10 +9,10 @@
 // segments on must match 1.x's frame for frame.
 import { readFileSync } from 'node:fs';
 import * as THREE from '../../vendor/three/three.webgpu.js?v=r186';
-import { createWorld, step, api } from '../../js/sim/world.js?v=158';
-import { TUNING as T } from '../../js/tuning.js?v=158';
-import behaviour from '../../js/sim/species/bambu.js?v=158';
-import look from '../../js/render/looks/bambu.js?v=158';
+import { createWorld, step, api } from '../../js/sim/world.js?v=159';
+import { TUNING as T } from '../../js/tuning.js?v=159';
+import behaviour from '../../js/sim/species/bambu.js?v=159';
+import look from '../../js/render/looks/bambu.js?v=159';
 
 let failed = 0, passed = 0;
 const check = (claim, ok, detail = '') => {

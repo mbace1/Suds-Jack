@@ -19,6 +19,13 @@
     Never `--no-verify`.
 -->
 
+## v159 — 2026-11-21
+**TODO: one-line title**
+- TODO
+- Cache tokens `?v=158` → `?v=159`; HUD label → `2.0 · v159`
+
+---
+
 ## v158 — 2026-11-20
 **The first boss eased back, and fair spawns in ARCADE**
 - **TWIN PRISMS hold 30 s → 20 s** (`tuning/bosskinds.js`). v157 made the first boss of the game an endurance fight of 30 s, and measured with the average bot it took world 1 from 100% cleared to 67% (lives lost 1.0 → 2.1; the boss wave took 44 of its lives against v156's 17). `scripts/curve.mjs`, 24 seeds, every world started bare, v156 bosses (`?bosskinds=off`) against v157's. At 20 s world 1 clears 96% and the boss takes 21; 16 s read no easier and 24 s cleared 79%. Still an endurance fight: the bar is the clock, and a hit can shave it to 14 s at most. Owner, 18 Nov: start easy.

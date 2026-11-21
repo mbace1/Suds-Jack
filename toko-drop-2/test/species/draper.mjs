@@ -12,13 +12,13 @@
 // every bullet of every curtain, must match 1.x's frame for frame.
 import { readFileSync } from 'node:fs';
 import * as THREE from '../../vendor/three/three.webgpu.js?v=r186';
-import { createWorld, step, api } from '../../js/sim/world.js?v=158';
-import { makeRng } from '../../js/sim/rng.js?v=158';
-import { TUNING as T } from '../../js/tuning.js?v=158';
-import { BEHAVIOUR } from '../../js/sim/species/index.js?v=158';
-import { LOOKS } from '../../js/render/looks/index.js?v=158';
-import behaviour from '../../js/sim/species/draper.js?v=158';
-import look from '../../js/render/looks/draper.js?v=158';
+import { createWorld, step, api } from '../../js/sim/world.js?v=159';
+import { makeRng } from '../../js/sim/rng.js?v=159';
+import { TUNING as T } from '../../js/tuning.js?v=159';
+import { BEHAVIOUR } from '../../js/sim/species/index.js?v=159';
+import { LOOKS } from '../../js/render/looks/index.js?v=159';
+import behaviour from '../../js/sim/species/draper.js?v=159';
+import look from '../../js/render/looks/draper.js?v=159';
 
 let failed = 0, passed = 0;
 const check = (claim, ok, detail = '') => {

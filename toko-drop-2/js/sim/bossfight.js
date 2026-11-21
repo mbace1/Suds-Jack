@@ -11,12 +11,12 @@
 //   w.fight  { kind, t, seen, done, tiers, hp, max, ids, x, z, grade, bonus }
 //            v157, an ENDURANCE boss: + { endure, hold, left, dealt, prev, hits0, hits } and tiers are HITS
 //   events   bossDown { kind, grade, time, bonus, tiers }
-import { TUNING } from '../tuning.js?v=158';
-import { BOSS_TIERS } from '../tuning/bossfights.js?v=158';
-import * as pickups from './pickups.js?v=158';
-import { endsWorld, endsRun } from './worlds.js?v=158';
-import { kindOf } from './species/bosskit.js?v=158';
-import { BOSS_KINDS } from '../tuning/bosskinds.js?v=158';
+import { TUNING } from '../tuning.js?v=159';
+import { BOSS_TIERS } from '../tuning/bossfights.js?v=159';
+import * as pickups from './pickups.js?v=159';
+import { endsWorld, endsRun } from './worlds.js?v=159';
+import { kindOf } from './species/bosskit.js?v=159';
+import { BOSS_KINDS } from '../tuning/bosskinds.js?v=159';
 
 const T = TUNING;
 const ORDER = ['S', 'A', 'B', 'C'];
@@ -97,6 +97,24 @@ function clock(w, F, api) {
     F.prev.set(g.id, g.hp); hp += g.hp;
   }
   return hp;
+}
+
+// v159: a campaign boss room's ENDURANCE boss — the same clock, kept on w.hold (the room has no w.fight; its own goal,
+// the boss down, ends the room). Started the step the boss is first on the floor; the room's own clock is the room's
+export function holdRoom(w, dt, api) {
+  let H = w.hold;
+  const bosses = (w.gels ?? []).filter((g) => g.isBoss && g.alive);
+  if (!H) {
+    const g = bosses[0];
+    if (!g || kindOf(w, g.kind) !== 'endure') return;
+    const E = BOSS_KINDS.endure, hold = BOSS_KINDS.rooms?.[w.room?.id]?.hold ?? E.hold[g.kind] ?? 36;
+    H = w.hold = { kind: g.kind, endure: true, hold, left: hold, t: 0, dealt: 0, prev: new Map(), ids: new Map(), max: 0, hp: 0, hits0: w.hits || 0, hits: 0 };
+  }
+  if (H.left <= 0 || !bosses.length) return;
+  H.t += dt;
+  for (const g of bosses) if (!H.ids.has(g.id)) H.ids.set(g.id, g.maxHp ?? g.hp);
+  H.max = 0; for (const m of H.ids.values()) H.max += m;
+  H.hp = clock(w, H, api);
 }
 
 function finish(w, F, api) {

@@ -22,16 +22,20 @@
 //                        punish
 //           `set` is laid over the species' tuning for the boss in these modes (the windows a little wider).
 //
-// The same modes as the phases (bossphases.js): ARCADE and HARDCADE. The campaign's boss rooms keep their own
-// fights until the owner says (`campaign`). `?bosskinds=off` is the v156 bosses, for an A/B on the phone.
+// ARCADE and HARDCADE, and (v159, owner 21 Nov: "1 yes") the CAMPAIGN's five boss rooms: the three arcade bosses there
+// fight as their arcade kind (BOIL OVER's KETTLE and PACK ICE's BERG endure, THE DEEP END's ANGLER is read), and the
+// two that are no arcade boss take one each — THE SLUDGE's SLUDGE CUBE endures (its poison trail is a floor you
+// outlast), SIREN is read (open while it inhales and spent after it screams: get to it then). A room's boss clock and
+// a strategic boss's health in a room are the room's own (`rooms`). `?bosskinds=off` is the v156 bosses, for an A/B.
 export const BOSS_KINDS = {
   on: true,
-  campaign: false,
+  campaign: true,
   modes: ['arcade', 'hardcade'],
 
   kind: {
     prism: 'endure', curbking: 'read', maw: 'endure', blister: 'read', kettle: 'endure',
     pike: 'read', berg: 'endure', angler: 'read', omega: 'endure',
+    sludge: 'endure', siren: 'read',   // v159: the campaign's own two boss rooms
   },
 
   endure: {
@@ -52,5 +56,17 @@ export const BOSS_KINDS = {
     // `hp`: only the windows count, so the health is lower than bossphases.js's (measured, scripts/boss-tiers.mjs)
     pike: { hp: 28, set: { stun: { time: 1.9 }, charge: { time: 1.7 } } },   // a charge reaches the wall; the stun lasts
     angler: { hp: 36, set: { bite: { rest: 1.9 } } },                       // the rest after a bite is the window
+    siren: { set: { spent: 1.4 } },                                         // v159: open while it inhales, and spent after a scream
+  },
+
+  // v159: the campaign's boss rooms. An endurance boss's clock (`hold`, s, inside the room's own clock) and a strategic
+  // boss's health (`hp`: its window is all that counts, so the room's v153 number is far too much). Measured with
+  // scripts/room-tiers.mjs --both
+  rooms: {
+    'the-sludge': { hold: 26 },
+    'boil-over': { hold: 38 },
+    'pack-ice': { hold: 34 },
+    'deep-end': { hp: 40 },
+    siren: { hp: 60 },
   },
 };
