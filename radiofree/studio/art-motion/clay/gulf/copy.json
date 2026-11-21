@@ -3,7 +3,7 @@
   "cut": "3D v1 stills (21 Nov, en only). Owner, 21 Nov: 'Look into the Russian boat being attacked by drones next to helsinki' / 'Make the feeling a bit more ominous, with visuals and sounds. This is a war piece'. See plan/films/50-stable.md.",
   "series": "rfh",
   "captionSize": "big",
-  "argument": "Drone strikes on Russian ships have reached the Gulf of Finland, off Helsinki's coast; Finland closes its sky and sea in the east of the gulf, again; the official word is that the situation remains stable.",
+  "argument": "Drone strikes on Russian ships have reached the Gulf of Finland, off Helsinki; Finland closes the eastern gulf's sky and sea again, while the official word is that the situation remains stable.",
   "langs": [
     "en"
   ],
@@ -58,7 +58,7 @@
     },
     {
       "id": "stable",
-      "role": "payoff",
+      "role": "punchline",
       "at": "s5+0.6",
       "until": "end-0.3",
       "text": {
