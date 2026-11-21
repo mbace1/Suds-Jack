@@ -117,6 +117,7 @@ Accounts: Instagram `@gameplaylaboratory` (new account, 21 Nov 2026; old `gamepl
 | TOP STEED (posted by Grok Bot) | GL Bluesky | https://bsky.app/profile/gameplaylaboratory.bsky.social/post/3n2qyiwmkfk2b (20 Nov ~18:10–18:24 Helsinki; 16:9 centred layout, a one-off) | same as Instagram |
 | PETAFAB: Bot Invasion highlights (catalogue repost to new IG; posted by Grok Bot) | GL Instagram @gameplaylaboratory | https://www.instagram.com/reel/Df_1iAMsbhe/ (21 Nov 10:48 Helsinki) | Highlights from Petafab: Bot Invasion |
 | Sektori gameplay breakdown (catalogue repost to new IG; posted by Grok Bot) | GL Instagram @gameplaylaboratory | https://www.instagram.com/reel/Df__OsKvKlM/ (21 Nov 12:13 Helsinki) | Gameplay breakdown: Sektori |
+| ULTRAKILL breakdown (catalogue repost to new IG; posted by Grok Bot) | GL Instagram @gameplaylaboratory | https://www.instagram.com/reel/DgAJdfdt0qF/ (21 Nov 13:43 Helsinki) | Gameplay breakdown: ULTRAKILL https://store.steampowered.com/app/1229490 |
 
 ## Scheduled (about 6 hours apart)
 
