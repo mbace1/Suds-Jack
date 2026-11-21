@@ -131,3 +131,9 @@ Stills: previews/20-11-RFH-Who-Wrote-the-Bill-v6-stills.jpg
   counsel in its air-permit appeal (WV Watch 26 Mar 2026, Gazette-Mail). NOT claimed: that he sponsored HB 2014 (unconfirmed).
 5 "The town said no. / Once certified, / the data center / [won’t need] its yes." — §5B-2-21b(d)(1): not subject to municipal
   ordinances or APPROVALS; the DRAFTED BY: blank sits under it. 25.75 s. Stills: previews/21-11-RFH-Who-Wrote-the-Bill-v7-stills.jpg
+
+## Build v7 (21 Nov) and socials
+`films/19-11-Coxon16-Who-Wrote-the-Bill.mp4` (28.8 s with the sign-off, −14.6 LUFS, −2.2 dBTP), `-loop.mp4` (25.75 s), `.en.srt`,
+preview `previews/21-11-RFH-Who-Wrote-the-Bill-v7-en.mp4`, QA in `qa/who-wrote-the-bill/` (104 pass, 1 warn: the argument is 36 words).
+Scheduled in POSTED.md for Sat 21 Nov ~21:30 Helsinki (owner: "post ... bill later tonight"). Post body = copy.json post.en; IG adds
+#WestVirginia #DataCenters #AI #TuckerCounty; X the body alone; YouTube title "Who Wrote the Bill? West Virginia's data center law".

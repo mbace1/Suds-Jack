@@ -1,23 +1,24 @@
 1
 00:00:00,600 --> 00:00:04,150
-Towns set rules for noise, light and
-zoning.
+Davis, W. Va. voted 5–0 against a data
+center.
 
 2
-00:00:04,800 --> 00:00:08,950
-In West Virginia, certified data centers
-are exempt.
+00:00:04,800 --> 00:00:09,200
+West Virginia’s HB 2014: certified data
+centers skip town rules.
 
 3
-00:00:09,600 --> 00:00:14,400
-The developer’s engineer: “we were the
-guys that basically wrote the bill.”
+00:00:09,850 --> 00:00:14,650
+Who wrote HB 2014? An engineer at
+Fundamental Data says: his company did.
 
 4
-00:00:15,050 --> 00:00:18,650
-The developer and the governor’s office:
-it didn’t.
+00:00:15,300 --> 00:00:20,150
+The company and the governor deny it. The
+Speaker of the House is its lawyer.
 
 5
-00:00:19,400 --> 00:00:23,200
-So who wrote the town’s rules?
+00:00:20,900 --> 00:00:25,450
+The town said no. Once certified, the data
+center won’t need its yes.
