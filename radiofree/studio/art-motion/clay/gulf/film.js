@@ -67,6 +67,8 @@ const mesh = (geo, mat, { pos = [0, 0, 0], rot = [0, 0, 0], parent, cast = true,
 const rbox = (w, h, d, r = 0.25, seg = 3) => new RoundedBoxGeometry(w, h, d, seg, Math.min(r, w / 2 - 0.01, h / 2 - 0.01, d / 2 - 0.01));
 function rings(g, list, proj, how) { for (const r of list) { g.beginPath(); r.forEach((p, i) => { const [x, y] = proj(p); i ? g.lineTo(x, y) : g.moveTo(x, y); }); if (how === 'fill') { g.closePath(); g.fill(); } else g.stroke(); } }
 const glowTex = canvasTex(256, 256, (g) => { const gr = g.createRadialGradient(128, 128, 0, 128, 128, 128); gr.addColorStop(0, 'rgba(255,255,255,1)'); gr.addColorStop(0.25, 'rgba(255,255,255,.45)'); gr.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = gr; g.fillRect(0, 0, 256, 256); });
+const flameTex = canvasTex(128, 256, (g) => { const gr = g.createRadialGradient(64, 170, 0, 64, 170, 64); gr.addColorStop(0, 'rgba(255,255,255,1)'); gr.addColorStop(0.45, 'rgba(255,255,255,.55)'); gr.addColorStop(1, 'rgba(255,255,255,0)');
+  g.save(); g.scale(1, 2.0); g.translate(0, -85); g.fillStyle = gr; g.fillRect(0, 0, 128, 256); g.restore(); });
 const smokeTex = canvasTex(256, 256, (g) => { const R = rng(5); for (let i = 0; i < 40; i++) { const x = 128 + (R() - 0.5) * 120, y = 128 + (R() - 0.5) * 120, r = 30 + R() * 50;
   const gr = g.createRadialGradient(x, y, 0, x, y, r); gr.addColorStop(0, 'rgba(255,255,255,.18)'); gr.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = gr; g.fillRect(0, 0, 256, 256); } });
 
@@ -104,7 +106,7 @@ const SHIP = new THREE.Group(); SEA.add(SHIP); SHIP.position.set(-46, 0, -380); 
   for (const x of [-4, 4, 12]) mesh(new THREE.BoxGeometry(1, 10, 1), k, { pos: [x, 9, 0], parent: SHIP, cast: false, recv: false }); }
 const FIRE = [], SMOKE = [];
 { const R = rng(41);
-  for (let i = 0; i < 9; i++) { const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, color: new THREE.Color(2.6, 1.1, 0.35), transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, fog: false }));
+  for (let i = 0; i < 9; i++) { const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: flameTex, color: new THREE.Color(2.2, 0.95, 0.3), transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, fog: false }));
     s.userData = { x: -6 + R() * 18, ph: R() * TAU, s: 5 + R() * 6 }; SHIP.add(s); FIRE.push(s); }
   for (let i = 0; i < 26; i++) { const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: smokeTex, color: C3('#3a3f4a'), transparent: true, opacity: 0.0, depthWrite: false, fog: true }));
     s.userData = { ph: R(), x: R() * 10 - 2, s: 14 + R() * 18 }; SEA.add(s); SMOKE.push(s); } }
@@ -121,13 +123,13 @@ const camS = new THREE.PerspectiveCamera(30, W / H, 0.5, 4000);
 function seaAt(t, which) {
   waterAt(t); sleetAt(t);
   // the flash: a sharp rise on "40 km", a second smaller one, then a dull ember that will not go out
-  const f = (dt) => dt < 0 ? 0 : Math.exp(-dt * 5) * (1 + 0.5 * Math.sin(dt * 37));
+  const f = (dt) => dt < 0 ? 0 : Math.exp(-dt * 4) * (1 + 0.25 * Math.sin(dt * 9));
   const fl = which === 1 ? f(t - EV.flash) + 0.55 * f(t - EV.flash - 0.42) + (t > EV.flash ? 0.12 * clamp((t - EV.flash) / 0.8) : 0) : 0;
   FL.light.intensity = fl * 260; FL.glow.material.opacity = Math.min(1, fl * 0.9); ISL.visible = true;
   SHIP.visible = which === 3;
   if (which === 3) { const lt = t - EV.fire;
-    FIRE.forEach((s, i) => { const u = s.userData, fl2 = 0.75 + 0.25 * Math.sin(t * 13 + u.ph) * Math.sin(t * 7.3 + u.ph * 2); s.position.set(u.x, 8 + fl2 * 5 + (i % 3) * 3, 0); s.scale.set(u.s * 0.8 * fl2, u.s * 2.6 * fl2, 1); s.material.opacity = clamp(lt / 0.6) * 0.9; });
-    fireLight.intensity = clamp(lt / 0.6) * (160 + 50 * Math.sin(t * 11) * Math.sin(t * 6.1));
+    FIRE.forEach((s, i) => { const u = s.userData, fl2 = 0.88 + 0.12 * Math.sin(t * 4.1 + u.ph) * Math.sin(t * 2.3 + u.ph * 2); s.position.set(u.x, 8 + fl2 * 5 + (i % 3) * 3, 0); s.scale.set(u.s * 0.8 * fl2, u.s * 2.6 * fl2, 1); s.material.opacity = clamp(lt / 0.6) * 0.9; });
+    fireLight.intensity = clamp(lt / 0.6) * (160 + 25 * Math.sin(t * 3.7) * Math.sin(t * 2.2));
     SMOKE.forEach((s) => { const u = s.userData, ph = ((u.ph + t * 0.09) % 1); s.position.set(SHIP.position.x + u.x + ph * 90, 14 + ph * 110, SHIP.position.z - 6 - ph * 30); const sc = u.s * (1 + ph * 3.2); s.scale.set(sc, sc, 1); s.material.opacity = Math.sin(ph * Math.PI) * clamp(lt / 1.2); });
   } else { fireLight.intensity = 0; SMOKE.forEach((s) => (s.material.opacity = 0)); }
   // a camera on a boat: low, the horizon rolling a little, slowly pushing toward the far light
@@ -241,8 +243,8 @@ function roomAt(t, which) {
   const bOn = t > EV.beacon ? 1 : 0; R.beacon.intensity = bOn * 26000; const ba = t * 4.2; R.beaconT.position.set(Math.cos(ba) * 100, -40, Math.sin(ba) * 100 + 80);
   // the lamp: it swings after the thud, flickers, and goes out with everything on it (the sweep too) at EV.out
   const sw = t > EV.thud ? Math.sin((t - EV.thud) * 3.1) * Math.exp(-(t - EV.thud) * 0.6) * 0.07 : Math.sin(t * 0.6) * 0.006; R.lampG.rotation.set(sw * 0.4, 0, sw);
-  let L = 1; const dt = t - EV.thud; if (dt > 0) L = 0.55 + 0.45 * (Math.sin(dt * 47) > 0.2 ? 1 : 0.15) * (Math.sin(dt * 13) > -0.6 ? 1 : 0.3);
-  if (t > EV.out) L = 0; else if (t > EV.out - 0.25) L *= Math.floor((t - EV.out) * 30) % 2 ? 0.1 : 1;
+  let L = 1; const dt = t - EV.thud; if (dt > 0) L = 0.7 + 0.3 * (Math.sin(dt * 7.5) > 0.6 ? 0.35 : 1);   // a few slow stutters, then one blink and out (no strobe)
+  if (t > EV.out) L = 0; else if (t > EV.out - 0.42 && t < EV.out - 0.3) L *= 0.15;
   R.key.intensity = 13000 * L; R.bulb.material.color.setRGB(3.0 * L, 3.2 * L, 2.8 * L); R.green.intensity = 90 * (t > EV.out ? 0.25 : 1); R.sweep.material.uniforms.uOn.value = t > EV.out ? 0.35 : 1;
   R.mapMat.color.setScalar(t > EV.out ? 0.1 : 0.42); R.hemi.intensity = t > EV.out ? 0.0 : 0.3; ROOM.environmentIntensity = t > EV.out ? 0.0 : 0.1; if (t > EV.out) R.green.intensity = 0;
   const lt = t - [0, 0, T.s2, 0, T.s4, T.s5][which], d = [0, 0, T.s3 - T.s2, 0, T.s5 - T.s4, T.end - T.s5][which], k = smooth(lt / d), kk = kickAt(t);
@@ -286,9 +288,7 @@ function frame(t, captions = true) {
   }
   g2d.setTransform(1, 0, 0, 1, 0, 0); g2d.drawImage(renderer.domElement, 0, 0);
   scanlines(g2d, S.kind === 1 || S.kind === 3 ? 0.14 : 0.08); stamp(g2d, t);
-  // each cut lands on a single frame of white noise (a feed dropping), and the out goes to black
-  const cut = SHOTS.some((s, i) => i > 0 && t >= s.t0() && t < s.t0() + 1 / FPS * 2);
-  if (cut) { const Rn = rng(Math.floor(t * 999) + 1); g2d.save(); for (let i = 0; i < 2200; i++) { g2d.fillStyle = `rgba(220,225,235,${Rn() * 0.5})`; g2d.fillRect(Rn() * W, Rn() * H, 3 + Rn() * 14, 2); } g2d.restore(); }
+  // hard cuts (21 Nov: the static frames on each cut read as glitches)
   CAP.bug(g2d);
   const tg = (a0, a1) => clamp((t - a0) / 0.3) * clamp((a1 - t) / 0.3);
   for (const [k, a0, a1] of TAGS) tag(g2d, UI[k], tg(a0, a1));
