@@ -1575,3 +1575,21 @@ Search summaries only; nothing opened. One device each, from STORY-DEVICES.md or
 - **Kaleva leads (Ii, Sievi, Pyhäjoki):** dates still unconfirmed.
 - **Jokela, Muhos, Hamina, Lapinlahti:** nothing new found.
 - **Reactions (Trade Secret/Hamina, Count the Trees/Muhos):** nothing new; comment counts not visible to search.
+
+
+## Check Sat 21 Nov 07:16 (morning; search summaries only)
+- **Kitee / Scale42 Puhos — source confirmed, date NOT:** Yle, "Kiteen kaupunki kiirehtii datakeskuksen rakentamista –
+  myönsi hankkeelle poikkeamisluvan" (yle.fi/a/74-20235376). The city board granted a deviation permit: the plot is zoned
+  for earth extraction and the centre would exceed the building rights about fourfold; the permit lets the builder apply
+  for a building permit before rezoning is final. Valid two years; conditions: noise and stormwater modelling, landscape
+  visualisations; an environmental permit may also be needed. ~10 ha leased from the city (Suorlahti industrial area);
+  ready 2027–28 if on plan. Same company also plans Liperi (Yle 74-20225820). The publication date is not shown in search
+  — read the article or the Kitee board minutes before use. Fit: "the rules bent first, the plan follows" — a Finnish
+  cousin of Who Wrote the Bill. [Yle](https://yle.fi/a/74-20235376), [Yle/Liperi](https://yle.fi/a/74-20225820)
+- **HE 282/2026 (Not Yet Listed):** still no committee report found; bill as proposed, in force 1 Apr 2027 if passed. The
+  bill text (edilex) adds: the register covers planned centres too — uses, ownership, electricity use, grid effects; and a
+  ministerial committee line ties data-centre support to registration (+ waste-heat or efficiency conditions).
+  [edilex HE 282/2026](https://www.edilex.fi/he/20260282),
+  [VN](https://valtioneuvosto.fi/-/talouspoliittinen-ministerivaliokunta-linjasi-datakeskusten-tuen-ja-rekisteroinnin-valmistelusta)
+- **HS:** nothing new found in the last two days on the scout terms. **Trade Secret / Count the Trees:** no follow-ups found.
+- **Reactions:** comment counts not visible to search.

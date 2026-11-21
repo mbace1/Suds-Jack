@@ -1882,3 +1882,34 @@ Everything below comes from search summaries. No article was opened.
   Twp., Pa.). [NPR](https://www.npr.org/2026/08/27/nx-s1-5879528/data-center-nda-disclosure-louisiana)
 - **DRAM/GPU:** nothing new; answers due 7 Dec. **Whistleblower Act:** not enacted.
 - **Reactions:** none new found; comment counts not visible to search.
+
+
+## Check Sat 21 Nov 07:16 (morning; search summaries only)
+- **NEW / strongest global lead — Nscale × Anthropic × Nvidia (AI money loop, touches Anthropic → disclosure):**
+  Nscale's IPO filing (covered 13 Nov) says its agreements with Anthropic — up to ~$44.6B for the first 460 MW building of
+  a West Virginia campus — have **no binding financing yet**, and Anthropic can walk away if financing is not in place by a
+  deadline. Nvidia (already an Nscale investor, incl. $1B convertible in Sept) is **reported in talks** to guarantee the
+  construction debt (The Information; Bloomberg corroborated; one report says >$5B; not signed). The loop: Nvidia funds
+  the builder, guarantees its debt, the builder buys Nvidia chips, Anthropic rents them. Also a **CRS In Focus, 16 Nov,
+  "The Role of Circular Finance in Funding AI Investment"** — a congressional record naming the pattern. Verify the
+  filing text before pitching. Possible tie to Who Wrote the Bill: reports place the campus in West Virginia (DCD calls it
+  the Monarch compute campus; Morrisey signed HB 2014 beside the Fidelis Monarch site) — **unconfirmed link, check.**
+  [VKTR](https://www.vktr.com/ai-market/nscale-says-it-needs-more-financing-to-deliver-on-446b-anthropic-deal/),
+  [TNW](https://thenextweb.com/news/nvidia-nscale-anthropic-data-centre-debt-guarantee),
+  [DCD](https://www.datacenterdynamics.com/en/news/nvidia-in-talks-to-backstop-nscales-monarch-compute-campus-project-for-anthropic-report/),
+  [CRS IF13349](https://www.everycrsreport.com/reports/IF13349.html),
+  [WV governor](https://governor.wv.gov/article/governor-morriseys-ai-strategy-positions-west-virginia-reported-45-billion-agreement)
+- **Anthropic (ANT):** day-2 (20 Nov) close still not indexed; first-day $83 offer / $97.17 close stand.
+  [StockAnalysis](https://stockanalysis.com/stocks/ant/)
+- **Tucker County / Fundamental Data:** nothing new dated after 13 Nov (Fox19/Gray "Davis V. Goliath" syndication). New
+  context in summaries: the air-permit process reported **on hold** awaiting a company response (date unclear); Fundamental
+  Data's listed Purcellville, Va. office shows no company name (Country Roads). **Flag:** one search summary calls McGavran
+  "a former company worker"; the film calls him "a Fundamental Data engineer" (Country Roads transcript, WV Watch). Not
+  confirmed either way here — check before Who Wrote the Bill posts.
+  [Fox19](https://www.fox19.com/2026/11/13/davis-v-goliath-small-town-fight-against-big-data/),
+  [Country Roads](https://countryroads.substack.com/p/fundamental-data-distances-itself)
+- **OpenAI / Casar 29 Oct letter:** still **no reply found** (8 days past 13 Nov). OpenAI's 9 Oct line stands.
+  [Nextgov](https://nextgov.com/artificial-intelligence/2026/10/democrats-press-openai-over-safety-researcher-firings-security-incidents/416954)
+- **Military AI / NDA towns / DRAM-GPU / Whistleblower Act:** nothing new dated November. FourWeekMBA obligated-sums lead
+  still unverified.
+- **Reactions:** none new; comment counts not visible to search.

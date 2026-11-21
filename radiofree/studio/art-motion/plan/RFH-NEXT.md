@@ -1478,3 +1478,15 @@ scheduled task's last fire was 13 Nov 05:16), so **Give Way had no Tuesday-morni
 - **New lead (Yle, secondary, date to confirm):** Kitee's deviation permit for Scale42 at Puhos, against the permit
   agency's advice to use zoning.
 - **Posted films now wrong:** none found.
+
+
+## Check Sat 21 Nov 07:16 — pre-posting
+- **Who Wrote the Bill v6 (stills with owner):** facts unchanged (Davis 5–0; HB 2014 signed by Morrisey 30 Apr 2025;
+  denials; no certification filing). **Check before posting:** one summary calls McGavran a "former" Fundamental Data
+  worker — if he had left the company by 6 Jul 2026, caption 3 and tag3 must say "a former Fundamental Data engineer".
+- **Not Yet Listed (built, with owner):** HE 282/2026 still a bill — "plans to" / "IF PASSED" correct.
+- **Due 13 Nov:** still no OpenAI reply (8 days late) — premise holds.
+- **Round Trip pinned reply:** awaiting owner OK; ANT day-2 close not yet reported.
+- **New pitch candidate:** Nscale × Anthropic × Nvidia financing loop (+ CRS 16 Nov report). Touches Anthropic → needs the
+  on-screen disclosure. Verify the filing first.
+- No posted film is now wrong.
