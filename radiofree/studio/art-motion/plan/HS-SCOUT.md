@@ -1593,3 +1593,25 @@ Search summaries only; nothing opened. One device each, from STORY-DEVICES.md or
   [VN](https://valtioneuvosto.fi/-/talouspoliittinen-ministerivaliokunta-linjasi-datakeskusten-tuen-ja-rekisteroinnin-valmistelusta)
 - **HS:** nothing new found in the last two days on the scout terms. **Trade Secret / Count the Trees:** no follow-ups found.
 - **Reactions:** comment counts not visible to search.
+
+## 21 Nov 2026 — owner asked: "Look into the Russian boat being attacked by drones next to Helsinki" (search only; snippets, not opened pages)
+**Two incidents in the Gulf of Finland, ten days apart.**
+1. **11 Nov — the missile ship Naro-Fominsk (Buyan-M class).** Ukraine's SBU says it struck the ship in international waters
+   near Gogland (Suursaari), roughly 40 km off the Finnish coast; the SBU named no weapon and showed no damage. A senior Finnish
+   official confirmed to Yle that Finland detected an attack near Gogland (yle.fi/a/74-20256496); the Defence Forces said
+   "no immediate military threat to Finland" and the Baltic security situation "remains stable", declining details. The ship
+   sailed toward Kronstadt under its own power. Estonia's defence minister could not say whether attack or accident. Reported as
+   the first Ukrainian drone strike on a Russian ship in a Baltic area open to civilian traffic. Crew casualties: one
+   unverified Telegram claim only — do not use.
+   Sources: Helsinki Times; Yle (via others); eualive; globaldefensecorp (says "destroyed" — contradicts "own power"; do not use).
+2. **21 Nov (today) — the dry cargo ship Sparta II, bound for Kaliningrad.** Leningrad Region governor Alexander Drozdenko:
+   attacked by two drones in international waters three nautical miles from the Russian border; crew being evacuated; no
+   damage/casualty details, no attacker named. Estonia's PPA rescue centre got word of a fire and preliminary reports of
+   onboard explosions at 09:35. No independent confirmation. Sources: ERR News (news.err.ee/1610202715), TASS, UNITED24, GB News.
+3. **Also today:** the Defence Forces set temporary aviation and maritime restrictions in the eastern Gulf of Finland over a
+   possible drone interception — not confirming an incursion, origin or number (aviationtoday.in). Finland's intelligence
+   chief has said the risk of drones drifting into Finnish airspace is growing (via Yahoo/Yle).
+**Film fit:** a war story with possible casualties; the satire target could only ever be the OFFICIAL MESSAGING, never the
+ships or crews — e.g. "no immediate military threat… situation stable" said while restrictions go up off Helsinki. Too fresh and
+too unverified to film today: wait for the Finnish official record (Defence Forces / Border Guard statements, any NOTAM text)
+and for Sparta II's facts. Owner to decide whether RFH touches it at all.
