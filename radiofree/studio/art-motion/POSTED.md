@@ -118,6 +118,7 @@ Accounts: Instagram `@gameplaylaboratory` (new account, 21 Nov 2026; old `gamepl
 | PETAFAB: Bot Invasion highlights (catalogue repost to new IG; posted by Grok Bot) | GL Instagram @gameplaylaboratory | https://www.instagram.com/reel/Df_1iAMsbhe/ (21 Nov 10:48 Helsinki) | Highlights from Petafab: Bot Invasion |
 | Sektori gameplay breakdown (catalogue repost to new IG; posted by Grok Bot) | GL Instagram @gameplaylaboratory | https://www.instagram.com/reel/Df__OsKvKlM/ (21 Nov 12:13 Helsinki) | Gameplay breakdown: Sektori |
 | ULTRAKILL breakdown (catalogue repost to new IG; posted by Grok Bot) | GL Instagram @gameplaylaboratory | https://www.instagram.com/reel/DgAJdfdt0qF/ (21 Nov 13:43 Helsinki) | Gameplay breakdown: ULTRAKILL https://store.steampowered.com/app/1229490 |
+| Compilation 01 (PETAFAB, Sektori, ULTRAKILL) (catalogue repost to new IG; posted by Grok Bot) | GL Instagram @gameplaylaboratory | https://www.instagram.com/reel/DgASZnWhwms/ (21 Nov 15:01 Helsinki) | Compilation of our first Gameplay Laboratory videos! PETAFAB, Sektori and ULTRAKILL. |
 
 ## Scheduled (about 6 hours apart)
 
