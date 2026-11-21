@@ -1,0 +1,114 @@
+{
+  "film": "stable",
+  "cut": "3D v1 stills (21 Nov, en only). Owner, 21 Nov: 'Look into the Russian boat being attacked by drones next to helsinki' / 'Make the feeling a bit more ominous, with visuals and sounds. This is a war piece'. See plan/films/50-stable.md.",
+  "series": "rfh",
+  "captionSize": "big",
+  "argument": "Drone strikes on Russian ships have reached the Gulf of Finland, off Helsinki's coast; Finland closes its sky and sea in the east of the gulf, again; the official word is that the situation remains stable.",
+  "langs": [
+    "en"
+  ],
+  "native_read": {
+    "en": true
+  },
+  "syntax": "'/' breaks a line, [word] is the pop word",
+  "captions": [
+    {
+      "id": "hit",
+      "role": "setup",
+      "at": "s1+0.5",
+      "until": "s2-0.25",
+      "hold": "s2",
+      "text": {
+        "en": "11 Nov. / A Russian warship / is hit off Gogland, / [40 km] from / Finland’s coast."
+      },
+      "source": "Naro-Fominsk (Buyan-M missile ship), 11 Nov 2026, international waters near Gogland, roughly 40 km off the Finnish coast (Helsinki Times). Ukraine's SBU claims the strike (no weapon named, no damage shown); a senior Finnish official confirmed to Yle that Finland detected an attack near Gogland (yle.fi/a/74-20256496). The ship sailed to Kronstadt under its own power. Search summaries, 21 Nov."
+    },
+    {
+      "id": "threat",
+      "role": "evidence",
+      "at": "s2+0.4",
+      "until": "s3-0.25",
+      "hold": "s3",
+      "text": {
+        "en": "Finland’s / Defence Forces: / no immediate / [military threat]."
+      },
+      "source": "Finnish Defence Forces spokesperson after the 11 Nov strike: 'no immediate military threat to Finland'; declined details on location, timing or detection (Helsinki Times, others). Search summaries, 21 Nov."
+    },
+    {
+      "id": "fire",
+      "role": "evidence",
+      "at": "s3+0.4",
+      "until": "s4-0.25",
+      "hold": "s4",
+      "text": {
+        "en": "21 Nov. / A cargo ship / [on fire] / in the same gulf."
+      },
+      "source": "Sparta II, bound for Kaliningrad, 21 Nov 2026. Leningrad Region governor Alexander Drozdenko: attacked by two drones in international waters three nautical miles from the Russian border, crew evacuating. Estonia's PPA rescue centre: reports of a fire and possible onboard explosions at 09:35. Not independently confirmed (ERR News 1610202715; TASS; UNITED24). Search summaries, 21 Nov."
+    },
+    {
+      "id": "closed",
+      "role": "evidence",
+      "at": "s4+0.4",
+      "until": "s5-0.25",
+      "hold": "s5",
+      "text": {
+        "en": "Finland closes / the sky and sea / of the eastern gulf. / [Again]."
+      },
+      "source": "Finnish Defence Forces, 21 Nov 2026: a temporary aviation restriction area from 04:15 and a maritime restriction from 04:20 in the eastern Gulf of Finland, a precaution while preparing to counter possible drones (Yle 74-20258231; MTV; ESS/Uutissuomalainen 'jälleen'). Similar restrictions just over a week earlier, after a reported drone strike on Ust-Luga. Search summaries, 21 Nov."
+    },
+    {
+      "id": "stable",
+      "role": "payoff",
+      "at": "s5+0.6",
+      "until": "end-0.3",
+      "text": {
+        "en": "The official word: / the situation / remains [“stable.”]"
+      },
+      "source": "Finnish Defence Forces after the 11 Nov strike: the security situation in the Baltic Sea 'remains stable' (Helsinki Times; others). Search summaries, 21 Nov. Quoted as their word, set against the record above."
+    }
+  ],
+  "ui": {
+    "tag1": {
+      "en": "NARO-FOMINSK · UKRAINE'S SBU CLAIMS THE STRIKE · FINLAND CONFIRMED IT DETECTED AN ATTACK"
+    },
+    "tag2": {
+      "en": "NO DETAILS ON LOCATION, TIMING OR DETECTION"
+    },
+    "tag3": {
+      "en": "SPARTA II · RUSSIA SAYS TWO DRONES · NOT INDEPENDENTLY CONFIRMED"
+    },
+    "tag4": {
+      "en": "21 NOV, FROM 04:15 · TEN DAYS AFTER THE LAST TIME"
+    },
+    "tag5": {
+      "en": "FINNISH DEFENCE FORCES, AFTER THE 11 NOV STRIKE"
+    },
+    "map": {
+      "en": "GULF OF FINLAND"
+    },
+    "m1": {
+      "en": "11 NOV"
+    },
+    "m2": {
+      "en": "21 NOV ≈"
+    },
+    "zone": {
+      "en": "RESTRICTED 04:15"
+    },
+    "zoneSub": {
+      "en": "(AREA ILLUSTRATIVE)"
+    },
+    "tty1": {
+      "en": "NO IMMEDIATE MILITARY THREAT TO FINLAND"
+    },
+    "tty2": {
+      "en": "SECURITY SITUATION REMAINS STABLE"
+    },
+    "ttyHead": {
+      "en": "PUOLUSTUSVOIMAT · DEFENCE FORCES"
+    }
+  },
+  "post": {
+    "en": "11 Nov: a Russian warship hit off Gogland, 40 km from Finland's coast (Ukraine claims it). 21 Nov: a Russian cargo ship on fire in the same gulf (Russia says drones). Finland closes the eastern gulf's sky and sea, again. The official word: the situation remains \"stable.\""
+  }
+}
