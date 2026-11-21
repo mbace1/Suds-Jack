@@ -1,0 +1,135 @@
+{
+  "film": "due-13-nov",
+  "cut": "2D v1 stills (21 Nov, en only). Owner, 21 Nov: 'Move to next video' (after rating Stable 5/10). Pitch C of plan/PITCHES-19-11.md; plan/films/49-due-13-nov.md. A 2D borrowed format (an email client's Sent view), crisp and fast to render, instead of another 3D scene.",
+  "series": "rfh",
+  "captionSize": "big",
+  "argument": "Twenty House Democrats sent OpenAI eleven questions about three fired safety researchers, with answers due on 13 November; no public answer has been found.",
+  "langs": [
+    "en"
+  ],
+  "native_read": {
+    "en": true
+  },
+  "syntax": "'/' breaks a line, [word] is the pop word",
+  "captions": [
+    {
+      "id": "asked",
+      "role": "setup",
+      "at": "s1+0.4",
+      "until": "s2-0.25",
+      "hold": "s2",
+      "text": {
+        "en": "20 House / Democrats asked / OpenAI / [11] questions."
+      },
+      "source": "Letter of 29 Oct 2026 from Rep. Greg Casar and 19 other House Democrats to Sam Altman; 11 questions (FourWeekMBA, 'Ask OpenAI 11 Questions'; plan 49). Search summaries, 19 and 21 Nov; the letter itself could not be opened from the build machine."
+    },
+    {
+      "id": "fired",
+      "role": "evidence",
+      "at": "s2+0.4",
+      "until": "s3-0.25",
+      "hold": "s3",
+      "text": {
+        "en": "About three / safety / researchers / OpenAI [fired]."
+      },
+      "source": "Tomek Korbak, Mikita Balesni and Jasmine Wang, named in the letter (reports). OpenAI spokesperson: 'These personnel decisions were not about raising safety concerns or speaking out' (as quoted by Common Dreams/FourWeekMBA summaries; CNBC 9 Oct renders it without 'personnel'). The researchers say they never shared confidential data (The Deep Dive). Both sides on screen as tags."
+    },
+    {
+      "id": "due",
+      "role": "evidence",
+      "at": "s3+0.4",
+      "until": "s4-0.25",
+      "hold": "s4",
+      "text": {
+        "en": "Answers / were due / [13 Nov]."
+      },
+      "source": "Letter of 29 Oct: answers requested by Friday 13 Nov 2026 (FourWeekMBA; TNW; plan 49)."
+    },
+    {
+      "id": "none",
+      "role": "evidence",
+      "at": "s4+0.4",
+      "until": "s5-0.25",
+      "hold": "s5",
+      "text": {
+        "en": "Public answer / found so far: / [none]."
+      },
+      "source": "Searches on 19, 20 and 21 Nov 2026 found no public response from OpenAI to the 29 Oct letter. Said as 'found so far', never 'ignored'."
+    },
+    {
+      "id": "status",
+      "role": "punchline",
+      "at": "s5+0.5",
+      "until": "end-0.3",
+      "text": {
+        "en": "Status: / [delivered]."
+      },
+      "source": "The station's line: the letter was sent and published; nothing has come back in public."
+    }
+  ],
+  "ui": {
+    "app": {
+      "en": "Mail"
+    },
+    "sent": {
+      "en": "Sent"
+    },
+    "from": {
+      "en": "Rep. Greg Casar + 19 House Democrats"
+    },
+    "to": {
+      "en": "Sam Altman, OpenAI"
+    },
+    "subj": {
+      "en": "11 questions: the firing of three safety researchers"
+    },
+    "date": {
+      "en": "29 Oct 2026"
+    },
+    "due": {
+      "en": "Answers due: 13 Nov"
+    },
+    "ask": {
+      "en": "“We demand that you commit to not firing whistleblowers sharing information related to the safety of your models…”"
+    },
+    "askWho": {
+      "en": "— from the letter, as reported"
+    },
+    "oai": {
+      "en": "OPENAI: “These personnel decisions were not about raising safety concerns or speaking out.”"
+    },
+    "res": {
+      "en": "THE RESEARCHERS: they never shared confidential data"
+    },
+    "qNote": {
+      "en": "Questions 1–11 (full text in the letter)"
+    },
+    "reply": {
+      "en": "Reply"
+    },
+    "replies": {
+      "en": "Replies"
+    },
+    "delivered": {
+      "en": "Delivered"
+    },
+    "tag1": {
+      "en": "LETTER OF 29 OCT 2026 · REP. GREG CASAR AND 19 HOUSE DEMOCRATS"
+    },
+    "tag2": {
+      "en": "OPENAI: NOT ABOUT SAFETY · THE RESEARCHERS: NOTHING CONFIDENTIAL SHARED"
+    },
+    "tag3": {
+      "en": "A LETTER, NOT A SUBPOENA"
+    },
+    "tag4": {
+      "en": "SEARCHED 19–21 NOV 2026"
+    },
+    "tag5": {
+      "en": "RADIO FREE HELSINKI WILL KEEP CHECKING"
+    }
+  },
+  "post": {
+    "en": "On 29 Oct, 20 House Democrats sent OpenAI 11 questions about three fired safety researchers. Answers were due 13 Nov. Public answer found so far: none. OpenAI says the firings were not about raising safety concerns. Status: delivered."
+  }
+}

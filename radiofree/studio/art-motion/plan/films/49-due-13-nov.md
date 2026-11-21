@@ -16,3 +16,11 @@ A congressional envelope on a mail-room conveyor, scanned DELIVERED 29 OCT. It l
 
 ## Before building (blocked here)
 The letter text (questions, demand, deadline); OpenAI's exact line from CNBC; a fresh search for any reply up to build day.
+
+## v1 stills (21 Nov) — owner: "Move to next video" (after rating Stable 5/10)
+A 2D borrowed format, an email client's Sent view, instead of another 3D scene: crisp, readable, and it renders in a fraction of
+the time (no WebGL). `clay/deadline/`. Captions: "20 House / Democrats asked / OpenAI / [11] questions." · "About three /
+safety / researchers / OpenAI [fired]." · "Answers / were due / [13 Nov]." · "Public answer / found so far: / [none]." ·
+"Status: / [delivered]." Both sides on screen: OpenAI's line (quoted as in Common Dreams/FourWeekMBA summaries) and the
+researchers' (nothing confidential shared). No "seen"/"read" claim; no invented question text (placeholders). Checked again
+21 Nov: no public answer found. 22.2 s. Stills: previews/21-11-RFH-Due-13-Nov-stills.jpg

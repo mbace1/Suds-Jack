@@ -69,3 +69,9 @@ Measured frame to frame: the two static frames on each cut, the fire's glow halo
 frame rate), and a 30 Hz lamp strobe. Now hard cuts, a tighter flame shape flickering slowly, a smooth flash, and the lamp
 stutters slowly, blinks once and goes out. Re-rendered in full; 82 checks pass. Files replaced in place; NOW again in POSTED.
 Render note: with the machine to itself a frame takes ~2 s (it was ~6 s while two renders shared the 4 cores).
+
+## Owner's verdict (21 Nov): "Ready for posting, quality is 5/10 but no more renders. Move to next video"
+What held it back (my read, for the next war piece): the sea is a flat dark plane with no real wave detail; the flash and fire are
+soft sprites with bloom halos rather than fire; the map table is the ICEYE look reused; and three iterations went into caption
+fixes and a date error of mine instead of into the picture. Next time: build the look from a reference first, judge it in motion
+before the captions, and keep the frames after a build so a fix re-renders only the shots it touches.
