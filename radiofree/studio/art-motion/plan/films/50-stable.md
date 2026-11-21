@@ -47,3 +47,15 @@ The teleprinter had dated "SECURITY SITUATION REMAINS STABLE" 21 NOV; the only s
 teleprinter lines are now 11 NOV; caption 5 "The official word, / 11 Nov: / the situation / remains [“stable.”]"; tag5 "SAID
 AFTER THE FIRST STRIKE, TEN DAYS BEFORE THE SECOND". Caption 1 shortened; the second marker reads 21 NOV (APPROX.). Post
 re-ordered so "stable" sits at its own date.
+
+## Socials copy (RFH; English, US spelling) — owner, Sat 21 Nov: "Render both, post drone now and bill later tonight"
+Body = `clay/gulf/copy.json` post.en (255 chars).
+**Instagram** (Reel; the loop master `films/21-11-Helsinki4-Stable-loop.mp4`, Original aspect, uncropped):
+```
+11 Nov: a Russian warship hit off Suursaari, 40 km from Finland (Ukraine claims it). Finland: the situation remains "stable." 21 Nov: a Russian cargo ship on fire in the same gulf (Russia says drones). Finland closes the eastern gulf's sky and sea, again.
+
+#Suursaari #GulfOfFinland #Finland #drones
+```
+**X** (`films/21-11-Helsinki4-Stable.mp4`, with the sign-off; 255 of 280 characters): the body alone, no hashtags.
+**YouTube Shorts** (`films/21-11-Helsinki4-Stable.mp4`): title `Stable: drone strikes in the Gulf of Finland | Radio Free Helsinki`; description = the IG text.
+Do not pin. No comments from the account on the war itself.
