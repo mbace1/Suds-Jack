@@ -39,7 +39,8 @@
   "world": 0,
   "d": 3,
   "teaches": "shooters first: the one that fires, before the ones that walk",
-  "strategy": [
+  "first": ["SPITTOR", "FANNER"],
+    "strategy": [
    "priority"
   ]
  },
