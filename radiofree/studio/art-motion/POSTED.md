@@ -105,7 +105,7 @@ Toko 2 still needs to go out on Toko X ("Batteries included. Parents not include
 
 ## Gameplay Laboratory (GL)
 
-Accounts: Instagram `gameplay.laboratory`, X `@GameplayLabHki`, YouTube `@GameplayLaboratory`, TikTok `@gameplay.laboratory`, Bluesky `@gameplaylaboratory.bsky.social`.
+Accounts: Instagram `@gameplaylaboratory` (new account, 21 Nov 2026; old `gameplay.laboratory` permanently banned that day), X `@GameplayLabHki`, YouTube `@GameplayLaboratory`, TikTok `@gameplay.laboratory`, Bluesky `@gameplaylaboratory.bsky.social`.
 
 | Film | Channel | Link | Copy |
 |---|---|---|---|
@@ -115,6 +115,8 @@ Accounts: Instagram `gameplay.laboratory`, X `@GameplayLabHki`, YouTube `@Gamepl
 | TOP STEED (posted by Grok Bot) | GL YouTube Short | https://youtube.com/shorts/zPLabNFpRfc (20 Nov ~18:10–18:24 Helsinki) | same as Instagram (description) |
 | TOP STEED (posted by Grok Bot) | GL TikTok | TikTok @gameplay.laboratory: under review, no public URL yet (20 Nov ~18:10–18:24 Helsinki) | same as Instagram |
 | TOP STEED (posted by Grok Bot) | GL Bluesky | https://bsky.app/profile/gameplaylaboratory.bsky.social/post/3n2qyiwmkfk2b (20 Nov ~18:10–18:24 Helsinki; 16:9 centred layout, a one-off) | same as Instagram |
+| PETAFAB: Bot Invasion highlights (catalogue repost to new IG; posted by Grok Bot) | GL Instagram @gameplaylaboratory | https://www.instagram.com/reel/Df_1iAMsbhe/ (21 Nov 10:48 Helsinki) | Highlights from Petafab: Bot Invasion |
+| Sektori gameplay breakdown (catalogue repost to new IG; posted by Grok Bot) | GL Instagram @gameplaylaboratory | https://www.instagram.com/reel/Df__OsKvKlM/ (21 Nov 12:13 Helsinki) | Gameplay breakdown: Sektori |
 
 ## Scheduled (about 6 hours apart)
 
@@ -157,3 +159,9 @@ Approval of the three v2 drafts (Tailgated, Per Caller, That's a Wednesday): Mik
 - Toko set film 3, Five Is the New Fifty (v2, 28 Oct), was shelved by the owner on 30 Oct (glitches; quality mediocre).
 - Genius, The Newsreader Was Fake, Doodle 3 (Irreversible, 18 Oct), Nordic 2 (The Scoreboard, 18 Oct) and Secret Inquiry (Doodle 7 draft, 27 Oct: too close to Count the Trees and Trade Secret) were scrapped.
 - ~~Grok Bot: delete the duplicate Committee of the Whole post on RFH X (owner OK, 18 Oct; link above).~~ Done: deleted 18 Oct (per Grok Bot).
+| Hexmental (approved 20 Nov; posted 21 Nov ~09:20-09:30 Helsinki by Grok Bot) | GL X @GameplayLabHki | https://x.com/GameplayLabHki/status/2124041088663195746 | caption.txt without #tactics |
+| Hexmental | GL YouTube video (16:9) | https://www.youtube.com/watch?v=8A9dy9DAb1Y (title "Hexmental: turn-based tactics where nobody waits \| Gameplay Laboratory"; Public; oEmbed OK logged out) | caption.txt (description) |
+| Hexmental | GL YouTube Short | https://www.youtube.com/shorts/4dLCQaJBQh4 (title "Hexmental: nobody waits their turn #shorts"; Public; playable logged out) | caption.txt (description) |
+| Hexmental | GL Bluesky | https://bsky.app/profile/gameplaylaboratory.bsky.social/post/3n2sl6tmdlk2b | caption.txt |
+| Hexmental | GL TikTok | UNDER REVIEW (TikTok shows "Only me / content under review"); link pending | caption.txt |
+| Hexmental | GL Instagram Reel | NOT POSTED: Instagram suspended/verification wall (phone number needed) on gameplay.laboratory | caption.txt |
