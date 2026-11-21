@@ -57,5 +57,9 @@ Body = `clay/gulf/copy.json` post.en (255 chars).
 #Suursaari #GulfOfFinland #Finland #drones
 ```
 **X** (`films/21-11-Helsinki4-Stable.mp4`, with the sign-off; 255 of 280 characters): the body alone, no hashtags.
-**YouTube Shorts** (`films/21-11-Helsinki4-Stable.mp4`): title `Stable: drone strikes in the Gulf of Finland | Radio Free Helsinki`; description = the IG text.
+**YouTube Shorts** (`films/21-11-Helsinki4-Stable.mp4`): title `Stable: drone strikes in the Gulf of Finland`; description = the IG text.
 Do not pin. No comments from the account on the war itself.
+
+## Build (21 Nov)
+`films/21-11-Helsinki4-Stable.mp4` (28.2 s with the sign-off, −14.2 LUFS, −3.8 dBTP), `-loop.mp4` (25.2 s, −14.0 LUFS, −3.1 dBTP),
+`.en.srt`, preview `previews/21-11-RFH-Stable-en.mp4`, QA in `qa/stable/` (82 pass, 0 warn, 0 fail). Marked NOW in POSTED.md.
