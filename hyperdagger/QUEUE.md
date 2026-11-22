@@ -113,6 +113,23 @@ Plan sketch: change the truck mesh/visuals only — remove wheels, add a hover h
 
 Note, 18 Oct (HD-018, v58): there is no haul scoring any more, and the missiles no longer jackknife a truck. The fold itself stays, for the pile-up and HD-016. Read "do not change haul scoring" as "do not bring a cargo score back", and "jackknife" as the fold.
 
+### HD-024 — The top visual: sky, lit bodies, the sea as a surface, the platforms, SDF as the hero
+
+- status: In progress
+- size: L
+- blocked-by: —
+- design: Mikael, 11 Nov 2026 — asked *"What's the top visual we can aim for"*, given five gaps in order of payoff, answered *"All in order"*
+
+In order, each looked at on a contact sheet before the next:
+
+1. **The sky.** The largest thing in every frame and the least drawn. A season declares what hangs in it (`sky.air`): EMBER smoke lit from below, INCA the sun's shafts and gilded cloud bars, HAUL dusk stratus across a low sun and heat off the road.
+2. **The world lights the bodies.** One shared shader term (`voxel.js`, `WORLD_LIGHT`): the season's key as a stepped modulation, a rim that follows the body's roundness, and the same four event lights the floor reads. `light` per season.
+3. **INCA's sea as a surface.** The crest is a block mesh; a shaded, foaming face.
+4. **HAUL's platforms.** Slabs with a cab. Built in code (no Blender or mesh generator in the cloud session), toward the landspeeder direction (HD-014).
+5. **SDF as the hero look.** As far as it can go without a real GPU: budgets and a fallback. It does not become the default without frame times from a real phone.
+
+All of it sits behind the switches the look already has: EFFECTS OFF and the lowest perf tier draw the sky and the bodies as they were. VOID stays the control.
+
 ### HD-023 — Three seasons, feature complete: a run can be finished, and finishing counts
 
 - status: In progress

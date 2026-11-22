@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { VoxelSprite, MODELS } from './voxel.js?v=85';
+import { VoxelSprite, MODELS } from './voxel.js?v=86';
 import { terraceGeometry } from './gel.js?v=85';
 
 /**

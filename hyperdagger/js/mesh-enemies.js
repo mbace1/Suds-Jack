@@ -1,6 +1,6 @@
 import * as THREE from 'three';
-import { toLambert, voxelizeMesh, reliableTextures } from './meshassets.js?v=107';
-import { MODELS, registerVoxelModel, modelFor } from './voxel.js?v=85';
+import { toLambert, voxelizeMesh, reliableTextures } from './meshassets.js?v=108';
+import { MODELS, registerVoxelModel, modelFor, applyWorldLightLit } from './voxel.js?v=86';
 
 // v45: a season's recolour of the alive-skin (roster.js `mosaicSkin`), set
 // beside the lattice palette so the skin and the cubes under it agree
@@ -380,6 +380,7 @@ export function cloneMeshEnemy(kind, bodyVoxelized = false) {
       o.material = o.material.clone();
       o.userData.baseColor = o.material.color.clone();
       if (rosterSkin) rosterSkin(o.material, pitch / Math.max(1e-6, o.matrixWorld.getMaxScaleOnAxis()));
+      applyWorldLightLit(o.material);   // v63: on the spawned material, after the roster's skin, composed with it
     }
     o.layers?.enable(2);
   });

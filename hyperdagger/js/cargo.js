@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { Solver } from './avbd/solver.js?v=1';
 import { Rigid } from './avbd/body.js?v=1';
-import { shadedBox, applyFaceShade } from './voxel.js?v=85';
+import { shadedBox, applyFaceShade } from './voxel.js?v=86';
 
 /**
  * CARGO (v53, season 3 — owner: *cargo, not decks*). Trailers carry stacked
