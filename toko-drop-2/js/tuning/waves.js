@@ -50,7 +50,8 @@ export default {
   // runs reach wave 49 on average (two of twelve won), HARDCADE's wave 35
   // (v62, with a life back per world; 31 with none).
   // sim/director/arcade.js pressure()
-  gentle: { from: 4, slope: 0.5, hard: 1.25,
+  // v162 `plateau`: ARCADE's worlds past it press at its height (sim/director/arcade.js pressure)
+  gentle: { from: 4, slope: 0.5, hard: 1.25, plateau: 6,
     // v59, the curve on purpose (scripts/curve.mjs, docs/CURVE.md): a world's first two
     // waves press 2 and 1 waves lower, a breather after the fall. `world` is each world's
     // own offset in waves of pressure, all 0: a weak knob (two waves easier everywhere moved

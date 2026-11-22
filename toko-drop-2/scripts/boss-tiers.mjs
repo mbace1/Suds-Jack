@@ -17,9 +17,9 @@
 //   node scripts/boss-tiers.mjs --world 3    one world
 //   node scripts/boss-tiers.mjs --write      write js/tuning/bossfights.js
 import { writeFileSync } from 'node:fs';
-import { createWorld, step } from '../js/sim/world.js?v=161';
-import { TUNING as T } from '../js/tuning.js?v=161';
-import { headliner } from '../js/sim/director/arcade.js?v=161';
+import { createWorld, step } from '../js/sim/world.js?v=162';
+import { TUNING as T } from '../js/tuning.js?v=162';
+import { headliner } from '../js/sim/director/arcade.js?v=162';
 import { SKILLS, LINE_SKILLS, prng, think } from './bot.mjs';
 
 const args = process.argv.slice(2), opt = (k, d) => { const i = args.indexOf(k); return i < 0 ? d : args[i + 1]; };

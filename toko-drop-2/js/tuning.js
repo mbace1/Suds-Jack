@@ -7,10 +7,10 @@
 // things that work"). The arena is 1.x's, so every 1.x number ports as it is
 // instead of through a rescale. Axes: x across the screen (right +), y up,
 // z toward the bottom of the screen. The arena is centred on the origin.
-import { SPECIES } from './tuning/species/index.js?v=161';
-import WAVES from './tuning/waves.js?v=161';
-import PICKUPS from './tuning/pickups.js?v=161';
-import MUSIC from './tuning/music.js?v=161';
+import { SPECIES } from './tuning/species/index.js?v=162';
+import WAVES from './tuning/waves.js?v=162';
+import PICKUPS from './tuning/pickups.js?v=162';
+import MUSIC from './tuning/music.js?v=162';
 
 export const TUNING = {
   render: {
@@ -1602,7 +1602,8 @@ export const TUNING = {
     // `kind`), landing `apart` rad round the ring from each other, a goo STRAND between them held `min`–`max`
     // long by a spring (`spring` /s, at most `give` a step for each end). It hurts within `r` (+ the hero's
     // hit radius), between the two bodies; a dash through cuts it, and so does either death (`keep` s for the view)
-    pair: { from: 3, chance: 0.35, kinds: ['globbo', 'yela', 'redd', 'bulwark', 'hoppa', 'salma'], kind: 'globbo', apart: 0.6,
+    // v162: from world `late.from`, up to `late.pairs` pairs a wave, each at `late.chance` (worlds 7-9 change shape)
+    pair: { from: 3, chance: 0.35, late: { from: 7, chance: 0.7, pairs: 2 }, kinds: ['globbo', 'yela', 'redd', 'bulwark', 'hoppa', 'salma'], kind: 'globbo', apart: 0.6,
             min: 4, max: 9, spring: 6, give: 0.2, r: 0.2, keep: 0.4,
             view: { max: 6, segs: 10, w: 0.2, thin: 0.35, y: 0.32, lift: 0.18, amp: 0.12, hz: 5, waves: 6, snap: 10, snapSize: [0.08, 0.16] } },
   },
