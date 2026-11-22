@@ -8,8 +8,8 @@
 // through the music's bus, a hidden tab coming back without a burst, MUSIC
 // off making nothing, a song changing fading out and going, and the cues —
 // a rule's warning, a hit's flinch, the dark, the pause — doing what they say.
-import { TUNING as T } from '../js/tuning.js?v=159';
-import { compile, notesAt, parseChord, midiOf, parseBars, Music } from '../js/music.js?v=159';
+import { TUNING as T } from '../js/tuning.js?v=160';
+import { compile, notesAt, parseChord, midiOf, parseBars, Music } from '../js/music.js?v=160';
 import { FakeAudioContext, reaches } from './lib/fakeaudio.mjs';
 
 const M = T.music;

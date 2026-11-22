@@ -63,9 +63,9 @@ export const BOSS_KINDS = {
   // boss's health (`hp`: its window is all that counts, so the room's v153 number is far too much). Measured with
   // scripts/room-tiers.mjs --both
   rooms: {
-    'the-sludge': { hold: 26 },
-    'boil-over': { hold: 38 },
-    'pack-ice': { hold: 34 },
+    'the-sludge': { hold: 26, need: 2 },
+    'boil-over': { hold: 38, need: 1 },
+    'pack-ice': { hold: 34, need: 2 },
     'deep-end': { hp: 40 },   // measured: the reading bots 100%, the weakest (no reads) 54%
     siren: { hp: 120 },   // measured: at 60 the weakest bot (which reads no window) got through 83%, its band says ≤ 60%
   },

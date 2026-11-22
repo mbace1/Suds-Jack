@@ -11,12 +11,12 @@
 //   w.fight  { kind, t, seen, done, tiers, hp, max, ids, x, z, grade, bonus }
 //            v157, an ENDURANCE boss: + { endure, hold, left, dealt, prev, hits0, hits } and tiers are HITS
 //   events   bossDown { kind, grade, time, bonus, tiers }
-import { TUNING } from '../tuning.js?v=159';
-import { BOSS_TIERS } from '../tuning/bossfights.js?v=159';
-import * as pickups from './pickups.js?v=159';
-import { endsWorld, endsRun } from './worlds.js?v=159';
-import { kindOf } from './species/bosskit.js?v=159';
-import { BOSS_KINDS } from '../tuning/bosskinds.js?v=159';
+import { TUNING } from '../tuning.js?v=160';
+import { BOSS_TIERS } from '../tuning/bossfights.js?v=160';
+import * as pickups from './pickups.js?v=160';
+import { endsWorld, endsRun } from './worlds.js?v=160';
+import { kindOf } from './species/bosskit.js?v=160';
+import { BOSS_KINDS } from '../tuning/bosskinds.js?v=160';
 
 const T = TUNING;
 const ORDER = ['S', 'A', 'B', 'C'];
@@ -85,7 +85,9 @@ function clock(w, F, api) {
     F.dealt += Math.max(0, (F.prev.get(g.id) ?? F.ids.get(g.id)) - g.hp);
   }
   F.hits = (w.hits || 0) - F.hits0;
-  F.left = Math.max(0, F.hold - F.t - Math.min(cap, (F.dealt / (F.max || 1)) * cap));
+  // (v160: a campaign room may ask for more than the boss's health in damage for the whole shave, `need` — the
+  // sharp and the ordinary player both took the whole 30% off room 9's boss, so the time it saved paid them alike)
+  F.left = Math.max(0, F.hold - F.t - Math.min(cap, (F.dealt / ((F.max || 1) * (F.need ?? 1))) * cap));
   // a boss of more than one body (the TWIN PRISMS) breaks one body at a time: the hold in equal shares, in the order
   // they came, so the first shatters halfway and the other rages on alone (prism.js) for the rest
   const order = [...F.ids.keys()], n = order.length || 1, gone = F.hold - F.left;
@@ -108,7 +110,7 @@ export function holdRoom(w, dt, api) {
     const g = bosses[0];
     if (!g || kindOf(w, g.kind) !== 'endure') return;
     const E = BOSS_KINDS.endure, hold = BOSS_KINDS.rooms?.[w.room?.id]?.hold ?? E.hold[g.kind] ?? 36;
-    H = w.hold = { kind: g.kind, endure: true, hold, left: hold, t: 0, dealt: 0, prev: new Map(), ids: new Map(), max: 0, hp: 0, hits0: w.hits || 0, hits: 0 };
+    H = w.hold = { kind: g.kind, endure: true, hold, left: hold, t: 0, dealt: 0, prev: new Map(), ids: new Map(), max: 0, hp: 0, hits0: w.hits || 0, hits: 0, need: BOSS_KINDS.rooms?.[w.room?.id]?.need ?? 1 };
   }
   if (H.left <= 0 || !bosses.length) return;
   H.t += dt;

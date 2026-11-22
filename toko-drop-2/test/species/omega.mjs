@@ -10,11 +10,11 @@
 // draws, so every step's position, every volley's step and every bullet's
 // angle must match 1.x's frame for frame.
 import * as THREE from '../../vendor/three/three.webgpu.js?v=r186';
-import { createWorld, step, api } from '../../js/sim/world.js?v=159';
-import { makeRng } from '../../js/sim/rng.js?v=159';
-import { TUNING as T } from '../../js/tuning.js?v=159';
-import { headliner, schedule, waveScale } from '../../js/sim/director/arcade.js?v=159';
-import look from '../../js/render/looks/omega.js?v=159';
+import { createWorld, step, api } from '../../js/sim/world.js?v=160';
+import { makeRng } from '../../js/sim/rng.js?v=160';
+import { TUNING as T } from '../../js/tuning.js?v=160';
+import { headliner, schedule, waveScale } from '../../js/sim/director/arcade.js?v=160';
+import look from '../../js/render/looks/omega.js?v=160';
 
 let failed = 0, passed = 0;
 const check = (claim, ok, detail = '') => {

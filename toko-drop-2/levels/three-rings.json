@@ -39,6 +39,10 @@
   "world": 0,
   "d": 3,
   "teaches": "shooters first: the one that fires, before the ones that walk",
+  "first": [
+   "SPITTOR",
+   "FANNER"
+  ],
   "strategy": [
    "priority"
   ]
@@ -450,17 +454,17 @@
   }
  ],
  "tiers": {
-  "S": 39000,
-  "A": 23000,
-  "B": 21000,
-  "C": 16000,
-  "source": "bot pass (v56 look-ahead bots; v157: sideways and upright, each line the lower), 24 seeds a skill an orientation: got through sharp 100%, average 100%, rough 96%. score lines: S the sharp median, A the average median, B the average's weaker quarter, C the rough median or the average's weakest tenth (scripts/lines.mjs)"
+  "S": 35000,
+  "A": 32000,
+  "B": 29000,
+  "C": 26000,
+  "source": "bot pass (v56 look-ahead bots; v157: sideways and upright, each line the lower), 24 seeds a skill an orientation: got through sharp 100%, average 100%, rough 92%. score lines: S the sharp median, A the average median, B the average's weaker quarter, C the rough median or the average's weakest tenth (scripts/lines.mjs)"
  },
  "tiersHard": {
-  "S": 60000,
-  "A": 35000,
-  "B": 32000,
-  "C": 20000,
-  "source": "HARD bot pass (v56 look-ahead bots; v157: sideways and upright, each line the lower), 24 seeds a skill an orientation: got through sharp 100%, average 100%, rough 25%. score lines: S the sharp median, A the average median, B the average's weaker quarter, C the rough median or the average's weakest tenth (scripts/lines.mjs)"
+  "S": 54000,
+  "A": 46000,
+  "B": 41000,
+  "C": 35000,
+  "source": "HARD bot pass (v56 look-ahead bots; v157: sideways and upright, each line the lower), 24 seeds a skill an orientation: got through sharp 100%, average 92%, rough 25%. score lines: S the sharp median, A the average median, B the average's weaker quarter, C the rough median or the average's weakest tenth (scripts/lines.mjs)"
  }
 }

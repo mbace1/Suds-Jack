@@ -6,12 +6,12 @@
 //
 //   node test/campaign.mjs
 import { readFileSync } from 'node:fs';
-import { createWorld, step, api } from '../js/sim/world.js?v=159';
-import { TUNING as T } from '../js/tuning.js?v=159';
-import { grade, rooms, isOpen, roomBodies, tiersFor } from '../js/sim/director/campaign.js?v=159';
-import { speciesOf, goalOf, metricOf } from '../js/sim/challenge.js?v=159';
-import * as heatMod from '../js/sim/heat.js?v=159';
-import { Arena, levelShape, rectShape, circleShape, unionShape, intersectShape } from '../js/sim/shape.js?v=159';
+import { createWorld, step, api } from '../js/sim/world.js?v=160';
+import { TUNING as T } from '../js/tuning.js?v=160';
+import { grade, rooms, isOpen, roomBodies, tiersFor } from '../js/sim/director/campaign.js?v=160';
+import { speciesOf, goalOf, metricOf } from '../js/sim/challenge.js?v=160';
+import * as heatMod from '../js/sim/heat.js?v=160';
+import { Arena, levelShape, rectShape, circleShape, unionShape, intersectShape } from '../js/sim/shape.js?v=160';
 
 let failed = 0, passed = 0;
 const check = (claim, ok, detail = '') => { if (ok) { passed++; return; } failed++; console.log(`  ✗ ${claim}${detail ? ` — ${detail}` : ''}`); };
@@ -185,12 +185,14 @@ for (const r of rooms()) {
     C.worlds.map((wd) => wd.rooms.map((r) => level(r.id).plan.d).join(' ')).join(' | '));
   const types = all.map((r) => { const L = level(r.id), g = L.goal, m = L.mods ?? {}; return [g.type, g.metric, m.noGun && 'nogun', m.dash, m.ammo && 'ammo', m.flawless && 'flawless', m.escalate && 'esc', L.gates?.length && 'gates', (L.arena.shapes ?? []).map((p) => p.orbit ? 'orbit' : p.pulse?.mode ?? '').join('')].filter(Boolean).join('+'); });
   check('the goals and mods: at least twenty kinds of room', new Set(types).size >= 20, `${new Set(types).size}: ${[...new Set(types)].join(' | ')}`);
-  // the strategy curve (CAMPAIGN_PLAN.md): THE SURFACE teaches one skill a room, all five;
+  // the strategy curve (CAMPAIGN_PLAN.md): THE SURFACE teaches one skill a room, all five — but room 1, which teaches
+  // the controls and nothing more (v160);
   // the next two worlds a pair a room, every one of the ten pairs; the last three three or more
   const SK = ['position', 'priority', 'aim', 'movement', 'risk'], st = (r) => level(r.id).plan?.strategy ?? [];
   const w1 = all.filter((r) => r.world === 0), w23 = all.filter((r) => r.world === 1 || r.world === 2), w46 = all.filter((r) => r.world >= 3);
-  check('strategy: every skill named is one of the five', all.every((r) => st(r).length && st(r).every((k) => SK.includes(k))));
-  check('strategy: THE SURFACE teaches one skill a room, and all five', w1.every((r) => st(r).length === 1) && new Set(w1.map((r) => st(r)[0])).size === 5);
+  check('strategy: every skill named is one of the five', all.slice(1).every((r) => st(r).length && st(r).every((k) => SK.includes(k))));
+  check('strategy: room 1 asks for none (v160: it teaches the controls)', st(all[0]).length === 0);
+  check('strategy: the rest of THE SURFACE teaches one skill a room, and all five', w1.slice(1).every((r) => st(r).length === 1) && new Set(w1.slice(1).map((r) => st(r)[0])).size === 5);
   check('strategy: worlds two and three pair them, every pair at least once', w23.every((r) => st(r).length === 2) && new Set(w23.map((r) => [...st(r)].sort().join('+'))).size === 10);
   check('strategy: the last three worlds ask for three or more, and the end for more still', w46.every((r) => st(r).length >= 3) && st(all.at(-2)).length >= 4 && st(all.at(-1)).length === 5);
   check('every room says what it teaches and how hard it is', all.every((r) => { const P = level(r.id).plan; return P && P.d >= 1 && P.d <= 10 && P.teaches; }));
