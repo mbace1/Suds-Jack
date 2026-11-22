@@ -7,7 +7,8 @@
 //   aim       no lead on its shots, and a first-timer's unsteady aim (v160: the rough bot's noise; leading alone
 //             changed almost nothing, a body here moves at a sixth of a shot's speed or less)
 //   movement  never dashes
-//   position  goes nowhere the room asks (no ring, orb, heart or gate) and holds the middle (`still`)
+//   position  goes nowhere the room asks (no ring, orb, heart or gate, nor the middle a room names, `plan.place`),
+//             and moves as it always does (v161: it used to hold the middle, which IS room 22's positioning)
 // A room is FLAGGED when the bot without its strategies still reaches the room's S line (median of its clears) — the
 // strategy is then not what the room pays for — or gets through about as often and scores as much: the room to look at.
 // v160: the AVERAGE player is asked the same, and a room is flagged only when the strategy pays neither of them: a
@@ -46,7 +47,6 @@ function without(strats, skill = 'sharp') {
   if (K.off.has('priority')) K.reads = 0;
   if (K.off.has('risk')) K.greed = 0;
   if (K.off.has('aim')) K.noise = Math.max(K.noise, SKILLS.rough.noise);
-  if (K.off.has('position')) K.style = 'still';
   return K;
 }
 const med = (a) => { if (!a.length) return null; const s = [...a].sort((x, y) => x - y); return s[Math.floor((s.length - 1) / 2)]; };

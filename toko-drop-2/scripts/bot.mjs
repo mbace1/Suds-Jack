@@ -132,7 +132,9 @@ export function think(w, mem, K) {
       // bodies, no gel bullet coming — and backs off to range otherwise. `greed`
       // is how close and how often; never at a boss or a big body (the campaign only: the arcade's boss lines
       // were measured standing off at 5)
-      const style = K.style, G2 = w.mode === 'campaign' || style === 'close' ? (K.greed ?? 0) : 0;
+      // v161: a room whose right place is the middle says so (`plan.place: 'middle'`, room 22: the floor is three
+      // circles turning, and only the middle is always floor); a player who plays its positioning holds it
+      const style = K.style ?? (!off.has('position') && w.room?.level?.plan?.place === 'middle' ? 'still' : undefined), G2 = w.mode === 'campaign' || style === 'close' ? (K.greed ?? 0) : 0;
       const calm = G2 > 0 && !target.isBoss && target.r < 1 && !live.some((g) => g.isBoss) && live.length <= 1 + Math.round(3 * G2) && !w.bullets.some((b) => !b.hero && !b.dead && Math.hypot(b.x - h.x, b.z - h.z) < 4.5);
       const near = (calm ? 5 - 2.4 * G2 : target.isBoss || target.r > 1.2 ? 7.5 : 5) + (style === 'kite' ? 3 : 0);
       // v59's styles: a turret holds the middle (the planner still steps it out of the way);
