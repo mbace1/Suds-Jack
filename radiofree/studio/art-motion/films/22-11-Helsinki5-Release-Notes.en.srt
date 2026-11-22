@@ -1,0 +1,19 @@
+1
+00:00:00,400 --> 00:00:03,750
+ICEYE began as an Aalto course project.
+
+2
+00:00:04,400 --> 00:00:08,750
+16 Nov: a radar satellite that sees 11 cm.
+
+3
+00:00:09,400 --> 00:00:13,150
+17 Nov: a bid for an Italian rocket maker.
+
+4
+00:00:13,800 --> 00:00:16,550
+Price: €2 billion.
+
+5
+00:00:17,300 --> 00:00:21,300
+Still needs five approvals.

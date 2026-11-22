@@ -21,3 +21,7 @@ Not about Anthropic: no disclosure line. Stills: previews/22-11-RFH-Release-Note
 The bid also needs French and UK investment clearance and an EU foreign-subsidies review besides Italy and the US (Defense Post,
 AeroTime); Italy's defence minister urged caution, Leonardo holds ~18% of Avio (Reuters 18 Nov). Punchline now "Still needs /
 [five] approvals."; the status screen lists Rome, Washington, Paris, London, Brussels (EU); tag5 and the post updated.
+
+## Build (22 Nov) — owner: "Go ahead"
+`films/22-11-Helsinki5-Release-Notes.mp4` (with the sign-off), `-loop.mp4`, `.en.srt`, preview `previews/22-11-RFH-Release-Notes-en.mp4`,
+QA in `qa/release-notes/` (91 pass, 1 warn: continuity 8%). Sound: its own kit, CHANGELOG.
