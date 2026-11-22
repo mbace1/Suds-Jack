@@ -22,3 +22,10 @@ the table carries the news. Each beat the shelter fills further; the last shot c
 Captions: "13 Nov: / every US flight / [grounded]." · "Then email. / Then banks. / [Down]." · "A bunker seller: / one sold in 2018. /
 Now [one a day]." · "Generators: / [selling out]." · "The Vice / President: no / crisis is coming. / But be [prepared]." — the last is a
 PARAPHRASE (no quotation marks); his exact full sentence types onto the TV and sits in tag5. 22.6 s. Sound: its own kit, next.
+
+## v1.1 (22 Nov) — owner: "Maybe mixed with redneck prep and cheaper feel"
+Restyled DIY and cheap, aimed at the panic-buying and the official line, never at rural people: a buried culvert pipe, bare bulbs
+sagging on an orange extension cord, plywood shelves on cinder blocks, five-gallon buckets marker-labelled BEANS / RICE / H2O, gallon
+jugs, camping cots and sleeping bags, a boxy TV with foil-tipped rabbit ears and duct tape on milk crates, a blue tarp and a
+hand-lettered cardboard SHELTER (keep out) sign. No DIY-bunker trend is claimed (none found in reporting): the look is a choice,
+the captions stay on the record. Stills replaced in previews/22-11-RFH-Be-Prepared-stills.jpg.

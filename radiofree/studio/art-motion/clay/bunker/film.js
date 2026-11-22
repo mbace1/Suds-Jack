@@ -19,8 +19,8 @@ import * as CAP from '../../pipeline/text/captions.js';
 const W = 1080, H = 1920, TAU = Math.PI * 2, FPS = 30;
 const Q = new URLSearchParams(location.search), LANG = Q.get('lang') || 'en';
 const FONT_DIR = Q.get('fonts') || '../../am/' + encodeURIComponent('代码工程') + '/lib/fonts/';
-for (const [fam, file] of [['Inter', 'Inter-var.woff'], ['Anton-400', 'Anton-400.woff'], ['RobotoCondensed', 'RobotoCondensed-var.woff']]) {
-  const f = new FontFace(fam, `url(${FONT_DIR}${file})`, fam === 'Anton-400' ? {} : { weight: '100 900' }); document.fonts.add(await f.load()); }
+for (const [fam, file] of [['Inter', 'Inter-var.woff'], ['Anton-400', 'Anton-400.woff'], ['RobotoCondensed', 'RobotoCondensed-var.woff'], ['Caveat-600', 'Caveat-600.woff']]) {
+  const f = new FontFace(fam, `url(${FONT_DIR}${file})`, (fam === 'Anton-400' || fam === 'Caveat-600') ? {} : { weight: '100 900' }); document.fonts.add(await f.load()); }
 const clamp = (v, a = 0, b = 1) => Math.max(a, Math.min(b, v)), lerp = (a, b, k) => a + (b - a) * k;
 const smooth = (k) => { k = clamp(k); return k * k * (3 - 2 * k); };
 const ease = { io: (k) => { k = clamp(k); return k < 0.5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2; }, out: (k) => 1 - Math.pow(1 - clamp(k), 3) };
@@ -62,16 +62,19 @@ const rust = canvasTex(512, 512, (g, w, h) => { g.fillStyle = '#5f7672'; g.fillR
 rust.wrapS = rust.wrapT = THREE.RepeatWrapping; rust.repeat.set(4, 2);
 const tube = mesh(new THREE.CylinderGeometry(RAD, RAD, LEN, 64, 1, true), std('#ffffff', { map: rust, normalMap: corrN, normalScale: new THREE.Vector2(0.9, 0.9), metalness: 0.55, roughness: 0.5, side: THREE.BackSide }),
   { rot: [Math.PI / 2, 0, 0], pos: [0, 0, -LEN / 2 + 1], parent: S, cast: false });
-const floorT = canvasTex(256, 1024, (g, w, h) => { g.fillStyle = '#4a3624'; g.fillRect(0, 0, w, h); for (let x = 0; x < w; x += 32) { g.fillStyle = `rgba(0,0,0,.4)`; g.fillRect(x, 0, 2, h); } const R = rng(9); for (let i = 0; i < 1200; i++) { g.fillStyle = `rgba(${R() < 0.5 ? '90,64,40' : '30,20,12'},${R() * 0.25})`; g.fillRect(R() * w, R() * h, 1 + R() * 3, 6 + R() * 30); } });
+const floorT = canvasTex(256, 1024, (g, w, h) => { g.fillStyle = '#9c7a4e'; g.fillRect(0, 0, w, h); for (let y = 0; y < h; y += 256) { g.fillStyle = `rgba(0,0,0,.5)`; g.fillRect(0, y, w, 3); } g.fillStyle = 'rgba(0,0,0,.4)'; g.fillRect(w / 2, 0, 3, h); const R = rng(9); for (let i = 0; i < 1200; i++) { g.fillStyle = `rgba(${R() < 0.5 ? '90,64,40' : '30,20,12'},${R() * 0.25})`; g.fillRect(R() * w, R() * h, 1 + R() * 3, 6 + R() * 30); } });
 mesh(new THREE.PlaneGeometry(1.9, LEN), std('#ffffff', { map: floorT, roughness: 0.8 }), { rot: [-Math.PI / 2, 0, 0], pos: [0, -0.72, -LEN / 2 + 1], parent: S });
 // the far end wall, the near end wall with the ladder and the hatch above it
 const wallM = std('#56706a', { roughness: 0.6, metalness: 0.5, normalMap: corrN });
 mesh(new THREE.CircleGeometry(RAD, 48), wallM, { pos: [0, 0, -LEN + 1.01], parent: S, cast: false });
 // the shelter sign (civil-defence: three yellow triangles in a black circle, a yellow plate)
-const signT = canvasTex(512, 300, (g, w, h) => { g.fillStyle = '#f2c21a'; g.fillRect(0, 0, w, h); g.fillStyle = '#111'; g.beginPath(); g.arc(w / 2, 120, 95, 0, TAU); g.fill();
-  g.fillStyle = '#f2c21a'; for (let i = 0; i < 3; i++) { const a = -Math.PI / 2 + i * TAU / 3; g.beginPath(); g.moveTo(w / 2, 120); g.lineTo(w / 2 + Math.cos(a - 0.5) * 85, 120 + Math.sin(a - 0.5) * 85); g.lineTo(w / 2 + Math.cos(a + 0.5) * 85, 120 + Math.sin(a + 0.5) * 85); g.fill(); }
-  g.fillStyle = '#111'; g.font = '800 54px Anton-400'; g.textAlign = 'center'; g.fillText(UI.sign, w / 2, 272); });
-mesh(new THREE.PlaneGeometry(0.5, 0.3), std('#ffffff', { map: signT, roughness: 0.5 }), { pos: [0, 0.55, -LEN + 1.03], parent: S, cast: false });
+const tarpT = canvasTex(256, 256, (g, w, h) => { g.fillStyle = '#2d5fa8'; g.fillRect(0, 0, w, h); g.strokeStyle = 'rgba(255,255,255,.08)'; for (let i = 0; i < w; i += 8) { g.beginPath(); g.moveTo(i, 0); g.lineTo(i, h); g.stroke(); g.beginPath(); g.moveTo(0, i); g.lineTo(w, i); g.stroke(); } });
+const tarp = mesh(new THREE.PlaneGeometry(2.0, 1.9, 20, 20), std('#ffffff', { map: tarpT, roughness: 0.6 }), { pos: [0, -0.1, -LEN + 1.08], parent: S, cast: false });
+{ const p_ = tarp.geometry.attributes.position; for (let i = 0; i < p_.count; i++) p_.setZ(i, 0.04 * Math.sin(p_.getX(i) * 7) * Math.sin(p_.getY(i) * 3 + 1)); p_.needsUpdate = true; tarp.geometry.computeVertexNormals(); }
+const signT = canvasTex(512, 300, (g, w, h) => { g.fillStyle = '#b48a56'; g.fillRect(0, 0, w, h); const R = rng(4); for (let i = 0; i < 400; i++) { g.fillStyle = `rgba(80,50,20,${R() * 0.15})`; g.fillRect(R() * w, R() * h, 30, 2); }
+  g.fillStyle = '#111'; g.textAlign = 'center'; g.font = '700 120px Caveat-600'; g.fillText(UI.sign, w / 2, 150); g.font = '700 54px Caveat-600'; g.fillText('(keep out)', w / 2, 230);
+  g.fillStyle = 'rgba(170,170,170,.85)'; g.save(); g.translate(40, 20); g.rotate(-0.5); g.fillRect(-40, -12, 110, 26); g.restore(); g.save(); g.translate(w - 40, 20); g.rotate(0.5); g.fillRect(-70, -12, 110, 26); g.restore(); });
+mesh(new THREE.PlaneGeometry(0.62, 0.36), std('#ffffff', { map: signT, roughness: 0.9 }), { pos: [0, 0.42, -LEN + 1.13], rot: [0, 0, 0.04], parent: S, cast: false });
 // a ladder up into a short neck, the hatch at the top (it shuts at the end)
 const LAD = new THREE.Group(); S.add(LAD); LAD.position.set(0, 0, 0.6);
 { const steel = std('#3c4a48', { metalness: 0.8, roughness: 0.35 });
@@ -84,20 +87,26 @@ mesh(new THREE.CylinderGeometry(0.47, 0.47, 0.06, 32), std('#2f3b39', { metalnes
 const shaft = new THREE.SpotLight('#fff3dc', 0, 8, 0.32, 0.6, 1.4); shaft.position.set(0, 2.9, 0.6); shaft.target.position.set(0, -0.7, 0.4); S.add(shaft, shaft.target);
 // the bunks (left), the shelves (right), water jugs, the generator, the table and the TV
 const wood = std('#6b4a2c', { roughness: 0.7 }), green = std('#3f5a3c', { roughness: 0.8 }), tan = std('#a8936a', { roughness: 0.9 });
-for (const z of [-2.0, -4.2]) { const B = new THREE.Group(); S.add(B); B.position.set(-0.62, 0, z);
-  for (const y of [-0.35, 0.25]) { mesh(new THREE.BoxGeometry(0.7, 0.05, 1.9), wood, { pos: [0, y, 0], parent: B }); mesh(new THREE.BoxGeometry(0.62, 0.1, 1.8), green, { pos: [0, y + 0.07, 0], parent: B }); }
-  for (const dz of [-0.92, 0.92]) mesh(new THREE.BoxGeometry(0.05, 1.0, 0.05), wood, { pos: [-0.3, -0.2, dz], parent: B }); }
+for (const [z, col] of [[-2.2, '#d4692c'], [-4.4, '#3f5a3c']]) { const B = new THREE.Group(); S.add(B); B.position.set(-0.6, -0.5, z);   // camping cots, a sleeping bag on each
+  mesh(new THREE.BoxGeometry(0.62, 0.02, 1.85), std('#3d5a3a', { roughness: 0.9 }), { pos: [0, 0, 0], parent: B });
+  for (const dz of [-0.85, 0, 0.85]) for (const sx of [-1, 1]) mesh(new THREE.CylinderGeometry(0.01, 0.01, 0.3, 6), std('#888', { metalness: 0.9 }), { pos: [sx * 0.25, -0.1, dz], rot: [0, 0, sx * 0.5], parent: B });
+  mesh(rbox(0.52, 0.1, 1.5, 0.05), std(col, { roughness: 0.7 }), { pos: [0, 0.06, 0.1], parent: B }); }
 const SHELF = new THREE.Group(); S.add(SHELF); SHELF.position.set(0.66, 0, -2.6); SHELF.rotation.y = -0.03;
 const LEVELS = [-0.5, -0.15, 0.2, 0.52];
-for (const y of LEVELS) mesh(new THREE.BoxGeometry(0.4, 0.03, 3.2), wood, { pos: [0, y, 0], parent: SHELF });
-for (const z of [-1.55, 1.55]) mesh(new THREE.BoxGeometry(0.4, 1.3, 0.04), wood, { pos: [0, -0.05, z], parent: SHELF });
+const ply = std('#c9a674', { roughness: 0.85 }), block = std('#8d8d88', { roughness: 0.95 });
+for (const y of LEVELS) mesh(new THREE.BoxGeometry(0.4, 0.02, 3.2), ply, { pos: [0, y, 0], parent: SHELF });
+for (let li = 0; li < LEVELS.length - 1; li++) for (const z of [-1.4, 0, 1.4]) mesh(new THREE.BoxGeometry(0.36, LEVELS[li + 1] - LEVELS[li] - 0.02, 0.18), block, { pos: [0, (LEVELS[li] + LEVELS[li + 1]) / 2, z], parent: SHELF });
+mesh(new THREE.BoxGeometry(0.36, 0.2, 0.18), block, { pos: [0, -0.62, -1.4], parent: SHELF }); mesh(new THREE.BoxGeometry(0.36, 0.2, 0.18), block, { pos: [0, -0.62, 1.4], parent: SHELF });
 // cans: instanced, each with a label colour; they drop in row by row in beat 2
 const canLab = canvasTex(512, 128, (g, w, h) => { const cols = ['#c8382a', '#e8d6a4', '#2f6f8a', '#d9a62a']; cols.forEach((c, i) => { g.fillStyle = c; g.fillRect(i * 128, 0, 128, h); g.fillStyle = 'rgba(0,0,0,.75)'; g.font = '800 26px RobotoCondensed'; g.textAlign = 'center'; g.fillText(i % 2 ? UI.brand : UI.beans, i * 128 + 64, 74); }); });
 const CANS = []; { const geo = new THREE.CylinderGeometry(0.045, 0.045, 0.12, 20), R = rng(21);
   LEVELS.slice(0, 3).forEach((y, li) => { for (let i = 0; i < 26; i++) { const m = new THREE.MeshStandardMaterial({ map: canLab, roughness: 0.35, metalness: 0.4 }); m.map = canLab.clone(); m.map.offset.x = Math.floor(R() * 4) / 4; m.map.repeat.x = 0.25; m.map.needsUpdate = true;
     const c = mesh(geo, m, { parent: SHELF, pos: [-0.06 + (i % 2) * 0.1, y + 0.075, -1.45 + Math.floor(i / 2) * 0.23] }); c.userData = { y: y + 0.075, at: li * 0.32 + (i / 26) * 0.6 }; CANS.push(c); } }); }
-const JUG = new THREE.MeshPhysicalMaterial({ color: '#6fb6e8', roughness: 0.2, transmission: 0.6, thickness: 0.1, transparent: true, opacity: 0.85 });
-for (let i = 0; i < 6; i++) mesh(rbox(0.22, 0.3, 0.22, 0.04), JUG, { pos: [0.62, -0.57, -5.0 - i * 0.26], parent: S });
+const JUG = new THREE.MeshPhysicalMaterial({ color: '#f2f0e6', roughness: 0.35, transmission: 0.35, thickness: 0.1, transparent: true, opacity: 0.9 });
+for (let i = 0; i < 8; i++) mesh(rbox(0.15, 0.25, 0.15, 0.03), JUG, { pos: [0.58 + (i % 2) * 0.16, -0.6, -4.6 - Math.floor(i / 2) * 0.18], parent: S });
+const bucketT = canvasTex(256, 128, (g, w, h) => { g.fillStyle = '#f4f2ea'; g.fillRect(0, 0, w, h); g.fillStyle = '#111'; g.font = '700 54px Caveat-600'; g.textAlign = 'center'; g.fillText(['BEANS', 'RICE', 'H2O'][Math.floor(Math.random() * 0) ] || 'BEANS', w / 2, 80); });
+for (const [x, z, w_] of [[0.55, -5.6, 'BEANS'], [0.55, -5.95, 'RICE'], [-0.55, -5.8, 'H2O']]) { const bt = canvasTex(256, 128, (g, w, h) => { g.fillStyle = '#f4f2ea'; g.fillRect(0, 0, w, h); g.fillStyle = '#111'; g.font = '700 58px Caveat-600'; g.textAlign = 'center'; g.fillText(w_, w / 2, 82); });
+  mesh(new THREE.CylinderGeometry(0.15, 0.13, 0.36, 24), std('#ffffff', { map: bt, roughness: 0.6 }), { pos: [x, -0.54, z], rot: [0, 1.4, 0], parent: S }); }
 const GEN = new THREE.Group(); S.add(GEN); GEN.position.set(0.42, -0.5, -1.0); GEN.rotation.y = -0.5;
 { const red = std('#c8382a', { roughness: 0.4, metalness: 0.3 }), blk = std('#1c1c1c', { metalness: 0.7, roughness: 0.4 }), tube_ = std('#2a2a2a', { metalness: 0.9, roughness: 0.3 });
   mesh(rbox(0.46, 0.2, 0.3, 0.05), red, { pos: [0, 0.18, 0], parent: GEN });                         // the fuel tank on top
@@ -112,19 +121,25 @@ const GEN = new THREE.Group(); S.add(GEN); GEN.position.set(0.42, -0.5, -1.0); G
   for (const x of [-0.25, 0.25]) mesh(new THREE.CylinderGeometry(0.012, 0.012, 0.34, 8), tube_, { pos: [x, -0.14, 0], rot: [Math.PI / 2, 0, 0], parent: GEN });
   for (const z of [-0.18, 0.18]) mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.03, 16), blk, { pos: [0.25, -0.18, z], rot: [Math.PI / 2, 0, 0], parent: GEN }); }
 const TABLE = new THREE.Group(); S.add(TABLE); TABLE.position.set(-0.45, -0.72, -0.6);
-mesh(new THREE.BoxGeometry(0.6, 0.04, 0.45), wood, { pos: [0, 0.55, 0], parent: TABLE });
-for (const [x, z] of [[-0.26, -0.18], [0.26, -0.18], [-0.26, 0.18], [0.26, 0.18]]) mesh(new THREE.CylinderGeometry(0.02, 0.015, 0.55, 8), wood, { pos: [x, 0.27, z], parent: TABLE });
+const crateT = canvasTex(128, 128, (g, w, h) => { g.fillStyle = '#1e5fb0'; g.fillRect(0, 0, w, h); g.fillStyle = 'rgba(0,0,0,.65)'; for (let x = 10; x < w - 10; x += 22) for (let y = 14; y < h - 10; y += 26) g.fillRect(x, y, 14, 18); });
+for (const y of [0.14, 0.42]) mesh(new THREE.BoxGeometry(0.44, 0.27, 0.34), std('#ffffff', { map: crateT, roughness: 0.6 }), { pos: [0, y, 0], parent: TABLE });
+mesh(new THREE.BoxGeometry(0.6, 0.02, 0.45), ply, { pos: [0, 0.57, 0], parent: TABLE });
 // the TV: a round-cornered cabinet on legs, the screen a canvas the news is drawn into
 const TV = new THREE.Group(); TABLE.add(TV); TV.position.set(0, 0.8, 0); TV.rotation.y = 0.55;
-mesh(rbox(0.52, 0.42, 0.36, 0.08), std('#7a5a36', { roughness: 0.45 }), { parent: TV });
+mesh(rbox(0.52, 0.42, 0.4, 0.03), std('#4a4a48', { roughness: 0.5 }), { parent: TV });
+const tapeM = std('#a9a9a4', { roughness: 0.4, metalness: 0.3 }); mesh(new THREE.BoxGeometry(0.06, 0.2, 0.005), tapeM, { pos: [0.205, 0.12, 0.204], rot: [0, 0, 0.3], parent: TV }); mesh(new THREE.BoxGeometry(0.5, 0.05, 0.005), tapeM, { pos: [0, 0.22, 0.12], rot: [Math.PI / 2, 0, 0.05], parent: TV });
+for (const sx of [-1, 1]) { const ant = mesh(new THREE.CylinderGeometry(0.004, 0.004, 0.5, 6), std('#ccc', { metalness: 1, roughness: 0.2 }), { pos: [sx * 0.08, 0.42, -0.05], rot: [0, 0, -sx * 0.5], parent: TV });
+  if (sx > 0) mesh(new THREE.IcosahedronGeometry(0.03, 1), std('#d8d8d8', { metalness: 1, roughness: 0.35 }), { pos: [0.2, 0.64, -0.05], parent: TV }); }
 const tvC = document.createElement('canvas'); tvC.width = 640; tvC.height = 480; const tvTex = new THREE.CanvasTexture(tvC); tvTex.colorSpace = THREE.SRGBColorSpace;
-const SCREEN = mesh(new THREE.PlaneGeometry(0.4, 0.3), new THREE.MeshBasicMaterial({ map: tvTex, color: new THREE.Color(1.6, 1.6, 1.6) }), { pos: [-0.02, 0.02, 0.181], parent: TV, cast: false });
-for (const x of [0.17, 0.2]) mesh(new THREE.CylinderGeometry(0.012, 0.012, 0.02, 12), std('#d8c8a0', { metalness: 0.6 }), { pos: [0.21, x - 0.25, 0.185], rot: [Math.PI / 2, 0, 0], parent: TV });
+const SCREEN = mesh(new THREE.PlaneGeometry(0.4, 0.3), new THREE.MeshBasicMaterial({ map: tvTex, color: new THREE.Color(1.6, 1.6, 1.6) }), { pos: [-0.02, 0.02, 0.202], parent: TV, cast: false });
+for (const x of [0.17, 0.2]) mesh(new THREE.CylinderGeometry(0.012, 0.012, 0.02, 12), std('#d8c8a0', { metalness: 0.6 }), { pos: [0.21, x - 0.25, 0.205], rot: [Math.PI / 2, 0, 0], parent: TV });
 const tvGlow = new THREE.PointLight('#bfe8ff', 0, 3, 2); tvGlow.position.set(-0.3, 0.3, -0.2); S.add(tvGlow);
 // the bulbs: caged, warm, along the crown of the tube
-const BULBS = []; for (let i = 0; i < 4; i++) { const z = -0.8 - i * 2.2, b = mesh(new THREE.SphereGeometry(0.05, 16, 12), new THREE.MeshBasicMaterial({ color: '#000' }), { pos: [0, 1.0, z], parent: S, cast: false });
-  mesh(new THREE.TorusGeometry(0.07, 0.006, 6, 20), std('#222', { metalness: 0.8 }), { pos: [0, 1.0, z], rot: [Math.PI / 2, 0, 0], parent: S, cast: false });
-  const L = new THREE.PointLight('#ffb35c', 0, 4.5, 1.6); L.position.set(0, 0.92, z); L.castShadow = i < 2; if (L.castShadow) { L.shadow.mapSize.set(1024, 1024); L.shadow.bias = -0.002; } S.add(L); BULBS.push({ b, L }); }
+{ const pts = []; for (let i = 0; i <= 40; i++) { const z = 0.4 - i * 0.24, sag = 0.12 * Math.sin(((z - 0.4) / 2.2) * Math.PI) ** 2; pts.push(new THREE.Vector3(0.18, 1.1 - sag, z)); }
+  mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 200, 0.008, 6), std('#e8a020', { roughness: 0.5 }), { parent: S, cast: false }); }   // an orange extension cord along the crown
+const BULBS = []; for (let i = 0; i < 4; i++) { const z = -0.8 - i * 2.2, b = mesh(new THREE.SphereGeometry(0.04, 16, 12), new THREE.MeshBasicMaterial({ color: '#000' }), { pos: [0.18, 0.88 - (i % 2) * 0.05, z], parent: S, cast: false });
+  mesh(new THREE.CylinderGeometry(0.004, 0.004, 0.2, 6), std('#222'), { pos: [0.18, 0.99 - (i % 2) * 0.03, z], parent: S, cast: false });
+  const L = new THREE.PointLight(i % 2 ? '#ffd9a0' : '#ffb35c', 0, 4.5, 1.6); L.position.set(0.18, 0.84, z); L.castShadow = i < 2; if (L.castShadow) { L.shadow.mapSize.set(1024, 1024); L.shadow.bias = -0.002; } S.add(L); BULBS.push({ b, L }); }
 S.add(new THREE.HemisphereLight('#2a4a48', '#100a06', 0.12));
 
 // ------------------------------------------------------------------ the TV picture, per beat
