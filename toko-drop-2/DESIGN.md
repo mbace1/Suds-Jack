@@ -195,6 +195,19 @@ Classic `toko-drop/` remains the historical / hub v221 lineage. Godot port follo
 - **Locks (v159):** THE SLUDGE, BOIL OVER and PACK ICE are endurance rooms; THE DEEP END and SIREN are strategic. SIREN's window is its scream: open while it inhales and for a moment after.
 - **First result of the strategy rule:** a bot that reads a boss's window clears THE DEEP END every time, one that does not 21% (sharp) to 54% (the weakest, at the lower health). The bot that plays every room with and without its strategy is next.
 
+### Decision 21 Nov 2026 — room questions are Claude's to answer; rooms go by number
+- **Mikael:** "Ask me only design questions 1 at a time", then "Campaign rooms just have simple numbers", and "Recommend and choose will be the answer to all room questions." So a question about one room is answered by the agent, recorded here, and not brought to Mikael; a campaign room is named by its number (1–36).
+- **Room 1 (v160):** asks for no strategy: it teaches the controls (move, shoot, stay alive). It named aim, and leading a shot does nothing against GLOBBOs.
+- **Rooms 20 and 31 (chosen, not built):** room 20 is to reward the back to the wall (a CLOAKER cannot take a flank point past a wall), room 31 the change of rooms (a DRAPER's curtain stops at the corridor). Measured again with the ordinary player first (v160 `scripts/strategy.mjs`): their strategies already decide whether the AVERAGE player gets through (room 20: 12 of 12 with, 9 without; room 31: 12 with, 8 without, at a fifth of the score). The sharp player is the one who does not need them, so neither is built until the sharp player's score is the question.
+- **What the report can and cannot see:** the bot plays a room's "priority" only as a hunt's quarry, a shield, a plate and a boss's window, so a room whose priority is anything else (room 3's "shooters first") reads as no difference whatever the room does. A blanket "shooters first" for the bot was tried and dropped: it lowered the sharp bot's score in most rooms (about 20 of 36), and in room 35 it took its rate of getting through from 100% to 58%. Such a room is taught to the bot one room at a time (as THE DEEP END's bait was), or answered by a person playing it.
+
+### Decision 21 Nov 2026 — aim means hitting what is hard to hit
+- **Mikael:** "A". Of the five strategies, AIM is not leading a slow body (it does almost nothing: the bots score about the same without it, and 7 of the 11 rooms the v160 report still flags name aim). An aim room brings in bodies a sloppy shot misses — fast crossers, small targets, dodgers, a weak spot — so precision and leading pay. The fix is in what the 17 aim rooms bring in, not in the rules of shooting.
+
+### Decision 21 Nov 2026 — an endurance room is graded on score, time and hits, as one number
+- **Mikael:** "Score and time, and hits taken", then "A" (one number, not three grades).
+- **Locks (v160):** a campaign endurance room's score is its play score + 600 a second cut off the boss's clock − 15% of it for each hit taken in the room; the room list shows the three parts. The room's seconds left no longer pay there (the clock fixed them: room 9 paid every bot 10,750). Rooms 9 and 27 ask for twice the boss's health in damage for the whole 30% cut; room 34 once.
+
 ## 6. Sakurai principles (adopted 15 Nov 2026)
 
 **Source:** [kociden/sakurai-skill](https://github.com/kociden/sakurai-skill). It's an unofficial, fan-made AI summary of Masahiro Sakurai's YouTube series *桜井政博のゲーム作るには* and **not Sakurai's own words**. Agents load it as `.claude/skills/sakurai` (see `toko-drop-2/AGENTS.md`). Citations below use the skill's chapter (§) and video numbers (#NNN).

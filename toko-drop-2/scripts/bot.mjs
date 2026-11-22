@@ -6,7 +6,7 @@
 // coming by looking ahead (plan() below). Moved here from room-tiers.mjs in v42
 // so the passes play the same game.
 import { TUNING as T } from '../js/tuning.js?v=31';
-import { strands } from '../js/sim/formation.js?v=159';
+import { strands } from '../js/sim/formation.js?v=160';
 
 // v56 (owner, 2026-10-28: "Better line bots"): every skill looks AHEAD the way
 // v55's expert did, because a person reads a bullet's line and a hopper's tell,
@@ -69,10 +69,15 @@ export function think(w, mem, K) {
   const vis = sight(w, K);
   const live = w.gels.filter((g) => g.alive && g.state === 'active' && (vis === Infinity || Math.hypot(g.x - h.x, g.z - h.z) <= vis + g.r));
   const hurtable = live.filter((g) => !g.locked);
+  // v160: a room that names what to put down first (its level's `plan.first`, room 3: "shooters first: the one that
+  // fires, before the ones that walk") — a player who plays the room's priority does that, but not past a body
+  // already on top of them. Only that room: a blanket "shooters first" made most rooms worse (DESIGN, 21 Nov)
+  const first = !off.has('priority') && w.mode === 'campaign' ? (mem.firstKinds ??= new Set((w.room?.level?.plan?.first ?? []).map((k) => T.campaign.kinds[k] ?? k))) : null;
   // the nearest body it may hurt (an order room: the lit one; a hunt: the quarry first)
   let target = null, td = Infinity;
   for (const g of hurtable) {
     let d = Math.hypot(g.x - h.x, g.z - h.z);
+    if (first?.size && !first.has(g.kind) && d > 3) d += 12;
     // a hunt: the quarry first, but not past a body already on top of you (v47)
     if (G.type === 'hunt' && !off.has('priority') && g.kind !== mem.quarry && d > 4) d += 30;
     // v46: reading the room — a body in a WARDEN's aura shrugs the shot off,

@@ -51,10 +51,10 @@ Math.random = ((a) => () => { a = (a + 0x6d2b79f5) | 0; let t = Math.imul(a ^ (a
 
 const at = (p) => new URL(p, ROOT).href;
 const THREE = await import(MAP['three/webgpu']);
-const { Actors } = await import(at('js/render/actors.js?v=159'));
-const { LOOKS } = await import(at('js/render/looks/index.js?v=159'));
-const { createWorld, step, api } = await import(at('js/sim/world.js?v=159'));
-const { TUNING: T } = await import(at('js/tuning.js?v=159'));
+const { Actors } = await import(at('js/render/actors.js?v=160'));
+const { LOOKS } = await import(at('js/render/looks/index.js?v=160'));
+const { createWorld, step, api } = await import(at('js/sim/world.js?v=160'));
+const { TUNING: T } = await import(at('js/tuning.js?v=160'));
 
 let failed = 0, passed = 0;
 const check = (claim, ok, detail = '') => { if (ok) { passed++; return; } failed++; console.log(`  ✗ ${claim}${detail ? ` — ${detail}` : ''}`); };
@@ -216,8 +216,8 @@ for (const kind of ['globbo', 'yela', 'redd', 'spittor']) {
 // light, a physical one has neither; the shared uniform follows the switch; actors.setStyle rebuilds the hero
 // and the chunks in the style and sends every view back to its pool
 {
-  const { gelMaterial } = await import('../js/render/gel.js?v=159');
-  const { setStyle, STYLE_U, STYLES, styleName } = await import('../js/render/style.js?v=159');
+  const { gelMaterial } = await import('../js/render/gel.js?v=160');
+  const { setStyle, STYLE_U, STYLES, styleName } = await import('../js/render/style.js?v=160');
   const phys = gelMaterial(0x40c0a0, 'blob', 1, { style: 'physical' }), cel = gelMaterial(0x40c0a0, 'blob', 1, { style: 'cel' }), wc = gelMaterial(0x40c0a0, 'blob', 1, { style: 'watercolor' });
   check('STYLES are physical, cel and watercolor, physical first', JSON.stringify(STYLES) === '["physical","cel","watercolor"]');
   check('a physical body has no fragment of its own and bends light', !phys.fragmentNode && phys.transmission > 0 && phys.userData.style === 'physical', `${phys.transmission}`);
@@ -234,13 +234,13 @@ for (const kind of ['globbo', 'yela', 'redd', 'spittor']) {
 // three keys a compiled shader by its graph's nodes, so fresh nodes a body were a build a body, mid-fight; one
 // graph a kind of gel is shared, each body's own numbers read off its own material as it is drawn
 {
-  const { gelMaterial } = await import(at('js/render/gel.js?v=159'));
+  const { gelMaterial } = await import(at('js/render/gel.js?v=160'));
   const a = gelMaterial(0x33ddaa, 'blob', 1), b = gelMaterial(0xff5577, 'blob', 0.6), c = gelMaterial(0x33ddaa, 'cube', 1);
   check('two bodies of one kind of gel share one graph and one program key (one shader for all of them)',
     a.positionNode === b.positionNode && a.emissiveNode === b.emissiveNode && a.thicknessNode === b.thicknessNode && a.customProgramCacheKey() === b.customProgramCacheKey());
   check('…each with its own numbers (a hit on one is not a hit on the other)', a.userData.u !== b.userData.u && a.gel.hit !== b.gel.hit && a.userData.u.hit === a.gel.hit);
   check('another family has a graph of its own', c.positionNode !== a.positionNode);
-  const { sprite, setPicture, labelTexture } = await import(at('js/render/pickups.js?v=159'));
+  const { sprite, setPicture, labelTexture } = await import(at('js/render/pickups.js?v=160'));
   const s1 = sprite(5), s2 = sprite(6), tex = labelTexture('X', '#ffffff', '#000000');
   setPicture(s1, tex);
   check('a label sprite\'s picture is its material\'s map, and every sprite shares one program key', s1.material.map === tex && s1.material.customProgramCacheKey() === s2.material.customProgramCacheKey());
@@ -250,7 +250,7 @@ for (const kind of ['globbo', 'yela', 'redd', 'spittor']) {
 // started again draws its heart's ring whole — reset() had marked the arc whole without redrawing it, so a fresh
 // heart matched the mark and the ring went on showing what the last attempt left
 {
-  const { ChallengeView } = await import(at('js/render/challenge.js?v=159'));
+  const { ChallengeView } = await import(at('js/render/challenge.js?v=160'));
   const v = new ChallengeView(new THREE.Scene()), ring = () => v.heartArc.geometry.parameters.thetaLength / (2 * Math.PI);
   const room = (hp) => ({ ch: { goal: { type: 'protect' }, heart: { x: 0, z: 0, r: 1.4, hp, max: 8 } }, gels: [] });
   v.sync(room(4), 1, 0); const bitten = ring();
@@ -260,7 +260,7 @@ for (const kind of ['globbo', 'yela', 'redd', 'spittor']) {
 
 // ── v138: the driveway's fallen leaves (render/leaves.js) ──────────────
 {
-  const { LeafLitter } = await import(at('js/render/leaves.js?v=159'));
+  const { LeafLitter } = await import(at('js/render/leaves.js?v=160'));
   const L = T.scenery.driveway.leaves, HX = 16, HZ = 27.5, make = () => { const l = new LeafLitter(); l.build(HX, HZ, (m) => m); return l; };
   const a = make(), b = make(), IDLE = { mx: 0, mz: 0, ax: 1, az: 0, aim: false, fire: false, dash: false }, dt = T.sim.dt;
   check('the same leaves lie in the same places every time (their own seed)', a.n === L.slab + 2 * L.corner + L.lawn && a.n === b.n && a.x.every((v, i) => v === b.x[i] && a.z[i] === b.z[i]), `${a.n}`);
@@ -302,7 +302,7 @@ for (const kind of ['globbo', 'yela', 'redd', 'spittor']) {
 
 // ── v139: a hole in the ice is broken through (render/posts.js shatter) ──────────────
 {
-  const { shatter, seededDots, ICE_SHATTER, pitSeed } = await import(at('js/render/posts.js?v=159'));
+  const { shatter, seededDots, ICE_SHATTER, pitSeed } = await import(at('js/render/posts.js?v=160'));
   const K = ICE_SHATTER(), pits = T.posts.worlds[7].pits.at.map(([x, z, r]) => ({ x, z, r })), brk = (p) => shatter(p, K, seededDots(pitSeed(p)));
   const A = brk(pits[0]), A2 = brk(pits[0]), B = brk(pits[1]), d = (p, [x, z]) => Math.hypot(x - p.x, z - p.z);
   check('the same hole breaks the same way every time', JSON.stringify(A) === JSON.stringify(A2));
@@ -331,7 +331,7 @@ for (const kind of ['globbo', 'yela', 'redd', 'spittor']) {
 
 // ── v141: the ice's chips (render/leaves.js 'chips') ──────────────
 {
-  const { LeafLitter } = await import(at('js/render/leaves.js?v=159'));
+  const { LeafLitter } = await import(at('js/render/leaves.js?v=160'));
   const C = T.scenery.ice.chips, Lv = T.scenery.driveway.leaves, dt = T.sim.dt, IDLE = { mx: 0, mz: 0, ax: 1, az: 0, aim: false, fire: false, dash: false };
   const world = (n) => { const w = createWorld({ seed: 3, mode: 'arcade', world: n, shape: 'portrait' }); w.director = { step() {} }; w.gels.length = 0; w.bullets.length = 0; w.hero.invinc = 1e9; return w; };
   const w7 = world(7), HX = w7.hx, HZ = w7.hz, make = () => { const l = new LeafLitter('chips'); l.build(HX, HZ, (m) => m); return l; };
@@ -360,7 +360,7 @@ for (const kind of ['globbo', 'yela', 'redd', 'spittor']) {
 
 // ── v142: a smaller floor takes its share of what lies loose on it (render/leaves.js) ──────────────
 {
-  const { LeafLitter } = await import(at('js/render/leaves.js?v=159'));
+  const { LeafLitter } = await import(at('js/render/leaves.js?v=160'));
   const L = T.scenery.driveway.leaves, C = T.scenery.ice.chips, lay = (kind, hx, hz) => { const l = new LeafLitter(kind); l.build(hx, hz, (m) => m); return l; };
   const big = lay('leaves', 16, 27.5), room = lay('leaves', 8, 14), onSlab = (l, hx, hz) => { let n = 0; for (let i = 0; i < l.n; i++) if (l.free[i]) n++; return n; };
   const want = Math.round(L.slab * (8 * 14) / (16 * 27.5)) + 2 * Math.round(L.corner * (8 * 14) / (16 * 27.5));
@@ -380,7 +380,7 @@ for (const kind of ['globbo', 'yela', 'redd', 'spittor']) {
 
 // ── v144: the water as water (render/water.js) — what can be held without a GPU ──────────────
 {
-  const { Water } = await import(at('js/render/water.js?v=159'));
+  const { Water } = await import(at('js/render/water.js?v=160'));
   const P = T.water.cistern, wk = new Water();
   check('a world with no water of its own has none: nothing is stamped, nothing stepped', !wk.on && (wk.splash(0, 0, 1, 0.1), wk.step(0.1), wk.ns === 0));
   wk.use(P); wk.setArena(16, 27.5);
@@ -429,7 +429,7 @@ for (const kind of ['globbo', 'yela', 'redd', 'spittor']) {
   check('the sewer\'s trench is GENTLE: shallow for its width, its banks never steep, and the walk down the view ray to them closes', Ch.deep <= 0.8 && Ch.deep >= 0.4 && steepest * 1.35 < 0.8 && walkOff < 0.01, `${Ch.deep} m deep in ${R * 2} m, steepest ${steepest.toFixed(2)}, the walk off by ${walkOff.toFixed(3)} m at worst`);
   const waterHalf = (2 * R / Math.PI) * Math.acos(Math.sqrt(1 - Ch.fill));
   check('its water lies level in the bottom of it, with bank to see on both sides, and nothing swings', Ch.fill >= 0.3 && Ch.fill <= 0.65 && waterHalf / R > 0.35 && waterHalf / R < 0.65 && Ch.stream === undefined && Ch.relief > 0 && Ch.dark < 0.6, `water over ${(waterHalf / R * 100).toFixed(0)}% of the width`);
-  const { createWorld } = await import(at('js/sim/world.js?v=159'));
+  const { createWorld } = await import(at('js/sim/world.js?v=160'));
   // a deck is drawn as the box round its circles: nowhere on that box's edge may be far from a circle that blocks
   let worst = 0, decks = 0;
   for (const shape of ['portrait', 'landscape']) {
@@ -451,7 +451,7 @@ for (const kind of ['globbo', 'yela', 'redd', 'spittor']) {
   check('the boiler\'s decks are rectangles, and what blocks is what is drawn (no edge of a deck further than a step from a circle)', decks === 4 && worst < 0.45, `${decks} decks, ${worst.toFixed(2)} m at worst`);
   const fans = T.worlds.lit.boiler.fans;
   check('the boiler room is dark, and its fans turn opposite ways, slowly', T.worlds.lit.boiler.ambient <= 0.3 && fans.length === 2 && fans[0].period * fans[1].period < 0 && fans.every((f) => Math.abs(f.period) >= 10 && f.k <= 1 && f.duty > 0.3 && f.duty < 0.7), fans.map((f) => f.period).join(' and ') + ' s a turn');
-  const { ICE_SHATTER } = await import(at('js/render/posts.js?v=159'));
+  const { ICE_SHATTER } = await import(at('js/render/posts.js?v=160'));
   const K = ICE_SHATTER();
   check('a hole in the ice is uneven, and the ice round it is broken back at least to where a body stops', K.uneven && K.oval >= 0.3 && K.hole[1] < 1 && K.collar[0] >= 1 && K.collar[1] > 1.25 && K.cracks.len[1] >= 2, `collar ${K.collar}, oval ${K.oval}`);
   const Sn = F.ice.snow;
@@ -460,7 +460,7 @@ for (const kind of ['globbo', 'yela', 'redd', 'spittor']) {
 
 // ── v146: the river's water flows (render/water.js in the stream's own frame) and its fish are of several kinds ──────────────
 {
-  const { Water } = await import(at('js/render/water.js?v=159'));
+  const { Water } = await import(at('js/render/water.js?v=160'));
   const P = T.water.river, wk = new Water();
   check('the river\'s water runs at the pace its floor is drawn running', P.flow.speed === T.worlds.floor.river.flow && P.flow.bank < T.worlds.floor.river.bank + 1e-9, `${P.flow.speed} and ${T.worlds.floor.river.flow} m/s`);
   wk.use(P); wk.setArena(16, 27.5);   // upright: the river runs along z
@@ -499,7 +499,7 @@ for (const kind of ['globbo', 'yela', 'redd', 'spittor']) {
   // a pad is drawn inside its own cell: its home (± 0.1 of a cell), its radius (≤ 0.27), and how far it may be moved
   const moved = (Pd.lean + Pd.sway + Pd.ride * 0.5 * Wv.gain) / Pd.cell;
   check('a lily pad is tethered: lean, swing and the waves together never carry it out of its own cell', 0.1 + 0.27 + moved <= 0.5 && Pd.lean > 0.1 && Pd.lean < 0.5 && Pd.ease > 0.3, `${(0.37 + moved).toFixed(3)} of a cell at most`);
-  const { LeafLitter } = await import(at('js/render/leaves.js?v=159'));
+  const { LeafLitter } = await import(at('js/render/leaves.js?v=160'));
   const Fl = T.scenery.cistern.flotsam, HX = 16, HZ = 27.5, src = [{ x: -6, z: -14 }], pit = { x: 6, z: 8, r: 1.7, pit: true };
   const make = (sources = src) => { const l = new LeafLitter('flotsam'); l.build(HX, HZ, (m) => m, sources); return l; };
   const a = make(), b = make();
@@ -534,7 +534,7 @@ for (const kind of ['globbo', 'yela', 'redd', 'spittor']) {
 
 // ── v149: the ice keeps a trail (render/water.js `trail`), the boiler room stokes (render/kit.js stoke) ──────────────
 {
-  const { Water } = await import(at('js/render/water.js?v=159'));
+  const { Water } = await import(at('js/render/water.js?v=160'));
   const P = T.water.ice, Tr = P.trail, wk = new Water();
   wk.use(P); wk.setArena(16, 27.5);
   check('the ice keeps a trail, not a wave: its step fills in and softens, nothing runs', wk.U.trail.value === 1 && wk.paintU.value === 1 && wk.U.level.value < 1 && wk.U.level.value > 0.99 && wk.U.blur.value > 0 && wk.U.blur.value < 0.2, `kept ${wk.U.level.value.toFixed(5)} a step`);
@@ -557,7 +557,7 @@ for (const kind of ['globbo', 'yela', 'redd', 'spittor']) {
   const Sn = T.worlds.floor.ice.snow;
   check('the ice has snow to sweep everywhere: a dusting thinner than the drifts, spindrift thinner still, and a swept trail is nearly bare', Sn.dust.k > 0.2 && Sn.dust.k < Sn.k && Sn.spindrift.k < Sn.dust.k && Sn.trail.sweep > 0.8 && Sn.trail.sweep <= 1);
   // the stoke: a flare that runs the length of the hall once a beat
-  const { stokeAt } = await import(at('js/render/kit.js?v=159'));
+  const { stokeAt } = await import(at('js/render/kit.js?v=160'));
   const B = T.worlds.floor.boiler, Sk = B.stoke, span = Math.abs(stokeAt(Sk, [0, 27.5]) - stokeAt(Sk, [0, -27.5]));
   check('the boiler room stokes on a slow beat, and the flare runs the hall\'s length in under one of them', Sk.period >= 5 && Sk.period <= 12 && Sk.rise < Sk.fall && Sk.fall < 0.8 && span > 0.5 && span < 1, `every ${Sk.period} s, ${span.toFixed(2)} of a cycle end to end`);
   check('under each grate is a pit with a bed in it, shallower than the grate is wide', B.lattice.pit.depth > 0.2 && B.lattice.pit.depth < 2 * (B.grateW[1] - B.lattice.frame));
@@ -567,7 +567,7 @@ for (const kind of ['globbo', 'yela', 'redd', 'spittor']) {
 
 // ── v150: the deep has life and light (crabs, shoals, shafts), the core's machine is driven by its heart ──────────────
 {
-  const { LeafLitter } = await import(at('js/render/leaves.js?v=159'));
+  const { LeafLitter } = await import(at('js/render/leaves.js?v=160'));
   const Cr = T.scenery.deep.crabs, HX = 16, HZ = 27.5, dt = 1 / 30;
   const make = () => { const l = new LeafLitter('crabs'); l.build(HX, HZ, (m) => m); return l; };
   const a = make(), b = make();
@@ -593,7 +593,7 @@ for (const kind of ['globbo', 'yela', 'redd', 'spittor']) {
 
 // ── v151: REDUCE MOTION reaches the floors' own pulses (render/kit.js CALM) ──────────────
 {
-  const { CALM } = await import(at('js/render/kit.js?v=159'));
+  const { CALM } = await import(at('js/render/kit.js?v=160'));
   const Un = T.worlds.floor.core.tiles.under, Sk = T.worlds.floor.boiler.stoke;
   check('the floors\' pulses are whole until REDUCE MOTION is on', CALM.value === 0);
   check('under REDUCE MOTION the core keeps a quarter of its beat or less, and the boiler under half its flare', Un.calm >= 0.6 && Un.calm < 1 && Sk.calm >= 0.5 && Sk.calm < 1, `the beat ${Un.calm} held back, the flare ${Sk.calm}`);

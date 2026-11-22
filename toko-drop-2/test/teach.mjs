@@ -5,11 +5,11 @@
 // of it when it came), and not by being hit; and never past `cap` showings.
 //
 //   node test/teach.mjs
-import { createWorld, step, api } from '../js/sim/world.js?v=159';
-import { TUNING as T } from '../js/tuning.js?v=159';
-import { reach } from '../js/sim/slam.js?v=159';
-import { inLane } from '../js/sim/posts.js?v=159';
-import { create, update, learned } from '../js/sim/teach.js?v=159';
+import { createWorld, step, api } from '../js/sim/world.js?v=160';
+import { TUNING as T } from '../js/tuning.js?v=160';
+import { reach } from '../js/sim/slam.js?v=160';
+import { inLane } from '../js/sim/posts.js?v=160';
+import { create, update, learned } from '../js/sim/teach.js?v=160';
 
 let failed = 0, passed = 0;
 const check = (claim, ok, detail = '') => {

@@ -21,8 +21,8 @@
 // ring (`ring`: an ellipse round the spawn frame, sim/director/arcade.js), so an unfair landing moves ALONG THAT RING —
 // the same angle turned in 30° steps either way, the nearest fair one — rather than across the room. Off the ring a
 // body would land somewhere 1.x never put one.
-import { TUNING } from '../tuning.js?v=159';
-import * as posts from './posts.js?v=159';
+import { TUNING } from '../tuning.js?v=160';
+import * as posts from './posts.js?v=160';
 
 const T = TUNING;
 
