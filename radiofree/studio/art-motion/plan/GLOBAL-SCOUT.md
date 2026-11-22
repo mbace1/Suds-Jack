@@ -1918,3 +1918,17 @@ Everything below comes from search summaries. No article was opened.
 - Data centers on the ballot: Ballotpedia counted 47 local ballot measures on data centers in the midterms (via Live5/Gray, 13 Nov); Sens. Heinrich and Whitehouse introducing a data-center permitting reform bill (same piece). Candidate context for a US data-center film; verify the Ballotpedia count at source.
 - OpenAI / Casar: still no public reply found to the 29 Oct letter (deadline 13 Nov). Reactions: no new coverage since the deadline.
 - No new big developments found on Nscale/Anthropic, Pentagon contracts, GPU/memory probes this run (searches returned older items).
+
+## Check Sun 22 Nov 07:16 (search summaries only)
+- **ICEYE / Avio (Release Notes, stills with owner):** the bid has a cool reception in Rome. Reuters (via The Star, Euronext, 18 Nov): Defence
+  Minister Guido Crosetto urged caution and told state-controlled Leonardo (≈18% of Avio) to think carefully before selling; government
+  sources: no formal notification yet, golden power review will apply (Agenzia Nova; Milano Finanza: "golden power the real test").
+  Offer terms (Defense Post, AeroTime): €41/share (~21.3% premium), conditional on ≥66.67% acceptance and on golden power, French and
+  UK FDI clearance, EU foreign-subsidies review and US CFIUS; ICEYE pledges ~€1B Italian investment, up to 400 jobs. → The film's
+  "Still needs Rome's and Washington's OK" is TRUE but understates: the conditions also name France, the UK and the EU. Suggest the tag
+  or caption say so (e.g. tag5 "ALSO NEEDS FRENCH, UK AND EU CLEARANCE · ROME'S DEFENCE MINISTER URGES CAUTION").
+- **Circular financing:** nothing new in the 21–22 Nov window found; the CRS In Focus IF13349 (16 Nov) remains the freshest documented
+  item. Older context: Google guaranteeing Anthropic's Texas data-center financing (Jul 2026, via WSJ/Asia Economy) — covers Anthropic,
+  disclosure needed if used.
+- **OpenAI / Casar letter (Due 13 Nov):** still no public answer found (Nextgov, Common Dreams, TechCrunch, CTV coverage unchanged);
+  OpenAI's on-record line on the firings: "a significant breach of trust"; the researchers: nothing confidential shared. Premise holds.

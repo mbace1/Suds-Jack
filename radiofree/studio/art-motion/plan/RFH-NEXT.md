@@ -1496,3 +1496,12 @@ scheduled task's last fire was 13 Nov 05:16), so **Give Way had no Tuesday-morni
 - **Who Wrote the Bill v7 (~21:30):** unchanged. Live5/Gray 13 Nov "Davis v. Goliath" still the latest; no certification filing found; Hanshaw-as-counsel reporting (WV Watch 26 Mar 2026) unchanged. Note only: Live5 repeats the 10,000-acre campus figure — the film quotes no size.
 - **Due 13 Nov (stills):** no public OpenAI answer found (TNW, Nextgov, FourWeekMBA, Common Dreams; Al Jazeera 9 Oct for the researchers). Premise holds, 8 days overdue.
 - **Not Yet Listed:** not re-checked beyond this morning (HE 282/2026 still a bill as of 21 Nov 07:16).
+
+## Pre-posting check Sun 22 Nov 07:16
+- **Release Notes (ICEYE):** FIX SUGGESTED before render — the Avio offer is also conditional on French and UK FDI clearance, the EU
+  foreign-subsidies review and CFIUS; Rome's defence minister urged caution (Reuters 18 Nov). "Rome's and Washington's OK" stays true
+  but incomplete; add the others to tag5 (or caption: "Still needs / Rome, Washington, / Paris, London / and [Brussels]").
+- **Be Prepared:** facts hold. Note: AP already reported in Dec 2024 that Atlas's owner said he sells at least one bunker most days —
+  so "now one a day" is not new to Nov 2026; the TribLive "one in 2018, now one a day" framing is still his claim, attributed. Vance
+  quote unchanged. No new outage news found.
+- **Due 13 Nov:** no public OpenAI answer found; holds. **Not Yet Listed:** HE 282/2026 not re-checked today (no new search result).

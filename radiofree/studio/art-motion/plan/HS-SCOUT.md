@@ -1619,3 +1619,14 @@ and for Sparta II's facts. Owner to decide whether RFH touches it at all.
 ## 21 Nov 2026, 17:16 Helsinki check (search summaries only)
 - Gulf of Finland: the Defence Forces' restriction pattern is now routine reporting (Kaleva, MTV, Verkkouutiset: restrictions "again"; an MTV piece on GPS jamming and boating restrictions "becoming everyday" in Kotka). Possible follow-up angle for Stable: life in Kotka under routine restrictions (MTV) — verify date.
 - Reactions: no new Yle/HS follow-ups found on Sparta II this run. No new Finnish candidates.
+
+## Check Sun 22 Nov 07:16 (search summaries only)
+- No new Helsingin Sanomat data-center story found for 20–22 Nov. Background only: HS (Apr 2026, via dp.ru) a 200 MW data center
+  planned in Helsinki on ~7.3 ha; IS: Supo sees security risks in the data-center wave (Verkkouutiset); a professor (Kangasharju)
+  says public debate uses wrong figures. Nothing to pitch today.
+- **Gulf of Finland (Stable, posted 21 Nov):** no new Sparta II reporting found today; Verkkouutiset headlines "Suomenlahden iskut
+  jatkuvat – Puolustusvoimat nosti valmiutta" (strikes continue, Defence Forces raised readiness; date to confirm) and an earlier
+  "Ukraina hyökkäsi Suomen lähelle 2500 droonilla" (via Yle). Earlier 2026 incidents: two Ukrainian drones fell in Kouvola; Ukraine
+  apologised. Possible Stable follow-up material; nothing in the posted film is now wrong.
+- **Reactions:** no visible reader reaction found by search for Stable or Who Wrote the Bill (posted 21 Nov); search does not index our
+  own posts' comments.
