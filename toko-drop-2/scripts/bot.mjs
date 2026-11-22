@@ -6,7 +6,7 @@
 // coming by looking ahead (plan() below). Moved here from room-tiers.mjs in v42
 // so the passes play the same game.
 import { TUNING as T } from '../js/tuning.js?v=31';
-import { strands } from '../js/sim/formation.js?v=160';
+import { strands } from '../js/sim/formation.js?v=161';
 
 // v56 (owner, 2026-10-28: "Better line bots"): every skill looks AHEAD the way
 // v55's expert did, because a person reads a bullet's line and a hopper's tell,
@@ -78,6 +78,10 @@ export function think(w, mem, K) {
   for (const g of hurtable) {
     let d = Math.hypot(g.x - h.x, g.z - h.z);
     if (first?.size && !first.has(g.kind) && d > 3) d += 12;
+    // v161: an ENDURANCE boss in a campaign room is cut short by hitting it (bossfight.js `clock`, and the room pays
+    // for the seconds, campaign.js `endure`): a player who plays the room's priority keeps on it, but not past a body
+    // already on top of them
+    if (w.hold?.endure && !off.has("priority") && g.isBoss && d < 8 && w.mode === "campaign" && (K.reads ?? 0) > ((mem.rnd?.() ?? 0.5))) d -= 10;
     // a hunt: the quarry first, but not past a body already on top of you (v47)
     if (G.type === 'hunt' && !off.has('priority') && g.kind !== mem.quarry && d > 4) d += 30;
     // v46: reading the room — a body in a WARDEN's aura shrugs the shot off,
@@ -128,7 +132,9 @@ export function think(w, mem, K) {
       // bodies, no gel bullet coming — and backs off to range otherwise. `greed`
       // is how close and how often; never at a boss or a big body (the campaign only: the arcade's boss lines
       // were measured standing off at 5)
-      const style = K.style, G2 = w.mode === 'campaign' || style === 'close' ? (K.greed ?? 0) : 0;
+      // v161: a room whose right place is the middle says so (`plan.place: 'middle'`, room 22: the floor is three
+      // circles turning, and only the middle is always floor); a player who plays its positioning holds it
+      const style = K.style ?? (!off.has('position') && w.room?.level?.plan?.place === 'middle' ? 'still' : undefined), G2 = w.mode === 'campaign' || style === 'close' ? (K.greed ?? 0) : 0;
       const calm = G2 > 0 && !target.isBoss && target.r < 1 && !live.some((g) => g.isBoss) && live.length <= 1 + Math.round(3 * G2) && !w.bullets.some((b) => !b.hero && !b.dead && Math.hypot(b.x - h.x, b.z - h.z) < 4.5);
       const near = (calm ? 5 - 2.4 * G2 : target.isBoss || target.r > 1.2 ? 7.5 : 5) + (style === 'kite' ? 3 : 0);
       // v59's styles: a turret holds the middle (the planner still steps it out of the way);
