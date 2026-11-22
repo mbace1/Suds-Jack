@@ -1,0 +1,135 @@
+{
+  "film": "be-prepared",
+  "cut": "3D v1 stills (22 Nov, en only). Owner, 22 Nov: 'How about prepping in the US?' / 'Maybe show bunker footage. A bit like fallout vibe'. See plan/films/52-be-prepared.md.",
+  "series": "rfh",
+  "captionSize": "big",
+  "argument": "After a nationwide flight ground stop and bank and email outages, Americans are buying generators and bunkers, while the Vice President says no crisis is coming but to be prepared for everything.",
+  "langs": [
+    "en"
+  ],
+  "native_read": {
+    "en": true
+  },
+  "syntax": "'/' breaks a line, [word] is the pop word",
+  "captions": [
+    {
+      "id": "ground",
+      "role": "setup",
+      "at": "s1+0.4",
+      "until": "s2-0.25",
+      "hold": "s2",
+      "text": {
+        "en": "13 Nov: / every US flight / [grounded]."
+      },
+      "source": "13 Nov 2026: a nationwide FAA ground stop of more than four hours; the FAA called it a technical problem (communication failures at several air route traffic control centers); DHS said it did not appear to be a cyberattack (CNBC, FAA Q&A, Axios, 13 Nov). Search summaries, 22 Nov."
+    },
+    {
+      "id": "outage",
+      "role": "evidence",
+      "at": "s2+0.4",
+      "until": "s3-0.25",
+      "hold": "s3",
+      "text": {
+        "en": "Then email. / Then banks. / [Down]."
+      },
+      "source": "Outages at Microsoft (Outlook) and at banks including JPMorgan Chase followed (Fortune 18 Nov; NewsNation; Yahoo). Search summaries, 22 Nov."
+    },
+    {
+      "id": "bunker",
+      "role": "evidence",
+      "at": "s3+0.4",
+      "until": "s4-0.25",
+      "hold": "s4",
+      "text": {
+        "en": "A bunker seller: / one sold in 2018. / Now [one a day]."
+      },
+      "source": "Atlas Survival Shelters' owner, as reported by TribLive (Nov 2026): one bomb shelter sold in 2018, now one a day in most cases; prices from about $20,000 to millions. The seller's own claim, attributed in the tag."
+    },
+    {
+      "id": "gen",
+      "role": "evidence",
+      "at": "s4+0.4",
+      "until": "s5-0.25",
+      "hold": "s5",
+      "text": {
+        "en": "Generators: / [selling out]."
+      },
+      "source": "Fortune, 19 Nov 2026: 'Now Costco is selling out of generators'; big-box runs on water, generators and power banks (NewsNation, Fox LA, Axios 19 Nov)."
+    },
+    {
+      "id": "vp",
+      "role": "punchline",
+      "at": "s5+0.5",
+      "until": "end-0.3",
+      "text": {
+        "en": "The Vice / President: no / crisis is coming. / But be [prepared]."
+      },
+      "source": "JD Vance to Laura Ingraham, Fox News (aired 16/17 Nov 2026): 'We do not see a crisis coming down, but you have to be prepared for everything' (Yahoo/Fox; Fortune renders 'We don't see'). The caption PARAPHRASES (no quotation marks); the exact full sentence is in tag5 and on the TV."
+    }
+  ],
+  "ui": {
+    "tag1": {
+      "en": "FAA: A TECHNICAL PROBLEM · MORE THAN FOUR HOURS · NOT A CYBERATTACK, PER DHS"
+    },
+    "tag2": {
+      "en": "OUTLOOK AND BANKS INCLUDING JPMORGAN CHASE (FORTUNE, 18 NOV)"
+    },
+    "tag3": {
+      "en": "ATLAS SURVIVAL SHELTERS' OWNER, AS REPORTED · $20,000 TO MILLIONS"
+    },
+    "tag4": {
+      "en": "FORTUNE, 19 NOV: COSTCO SELLING OUT OF GENERATORS"
+    },
+    "tag5": {
+      "en": "FULL LINE: \"WE DO NOT SEE A CRISIS COMING DOWN, BUT YOU HAVE TO BE PREPARED FOR EVERYTHING\" · FOX NEWS"
+    },
+    "sign": {
+      "en": "FALLOUT SHELTER"
+    },
+    "tv1": {
+      "en": "GROUND STOP"
+    },
+    "tv1s": {
+      "en": "ALL US DEPARTURES"
+    },
+    "cx": {
+      "en": "CANCELLED"
+    },
+    "tv2": {
+      "en": "SERVICE UNAVAILABLE"
+    },
+    "tv2s": {
+      "en": "EMAIL · BANKING"
+    },
+    "tv3": {
+      "en": "SHELTERS SOLD"
+    },
+    "tv3a": {
+      "en": "2018: 1 A YEAR"
+    },
+    "tv3b": {
+      "en": "NOW: 1 A DAY"
+    },
+    "tv4": {
+      "en": "GENERATORS"
+    },
+    "tv4s": {
+      "en": "SOLD OUT"
+    },
+    "tv5": {
+      "en": "WE DO NOT SEE A CRISIS COMING DOWN"
+    },
+    "tv5s": {
+      "en": "BUT YOU HAVE TO BE PREPARED FOR EVERYTHING"
+    },
+    "brand": {
+      "en": "CANNED WATER"
+    },
+    "beans": {
+      "en": "BEANS"
+    }
+  },
+  "post": {
+    "en": "13 Nov: every US flight grounded. Then email and banks went down. A bunker seller says he sold one in 2018 and now sells one a day; generators are selling out. The Vice President: \"We do not see a crisis coming down, but you have to be prepared for everything.\""
+  }
+}
