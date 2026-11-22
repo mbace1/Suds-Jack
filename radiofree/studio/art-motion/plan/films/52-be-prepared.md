@@ -34,3 +34,7 @@ the captions stay on the record. Stills replaced in previews/22-11-RFH-Be-Prepar
 - Built: `films/22-11-Coxon18-Be-Prepared.mp4` (25.6 s with sign-off), `-loop.mp4`, `.en.srt`; preview `previews/22-11-RFH-Be-Prepared-en.mp4`.
 - QA: 88 pass, 0 warn, 0 fail; sound −14.1 LUFS, −3.3 dBTP, LRA 3.5. Frames in `qa/be-prepared/`.
 - Status: built, NOT posted — waiting on the owner's go.
+
+## v1.2 fix (22 Nov) — owner: "huge black glitch in first 5 secs"
+Shot 1's camera started at z 0.75 and dollied through the ladder (z 0.6); a rung at lens height crossed the lens as a black slab
+(~0.5–1.9 s). The camera now starts at z 0.52, on the TV's side of the ladder (fov 48→42 to keep the framing). Beat 1 re-rendered.

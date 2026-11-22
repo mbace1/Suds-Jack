@@ -29,3 +29,6 @@ researchers' (nothing confidential shared). No "seen"/"read" claim; no invented 
 `films/22-11-Coxon17-Due-13-Nov.mp4` (with the sign-off), `-loop.mp4`, `.en.srt`, preview `previews/22-11-RFH-Due-13-Nov-en.mp4`, QA in
 `qa/due-13-nov/` (87 pass, 1 warn: continuity 9%). Sound: its own kit, HOLD LINE. The calendar runs to 21 Nov (OVERDUE: 8 DAYS) and the
 tag says "searched 19–21 Nov"; the 22 Nov check found no answer either.
+
+## Scrapped (22 Nov)
+Owner: "Due 13 scrapped." Not to be posted. The built files stay in `films/` as a record.

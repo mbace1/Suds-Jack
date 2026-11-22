@@ -25,3 +25,6 @@ AeroTime); Italy's defence minister urged caution, Leonardo holds ~18% of Avio (
 ## Build (22 Nov) — owner: "Go ahead"
 `films/22-11-Helsinki5-Release-Notes.mp4` (with the sign-off), `-loop.mp4`, `.en.srt`, preview `previews/22-11-RFH-Release-Notes-en.mp4`,
 QA in `qa/release-notes/` (91 pass, 1 warn: continuity 8%). Sound: its own kit, CHANGELOG.
+
+## Approved (22 Nov)
+Owner: "Release notes approved for immediate post." Marked **NOW** in `POSTED.md`.

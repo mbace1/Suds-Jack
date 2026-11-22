@@ -181,7 +181,7 @@ function stateAt(t) {
   const hs = ease.io((t - EV.shut) / 0.35); HATCH.rotation.z = lerp(-1.7, 0, hs); shaft.intensity = t > T.s5 ? 1.6 * (1 - hs) : 0; SKY.material.color.setRGB(0.55 * (1 - hs) + 0.02, 0.62 * (1 - hs) + 0.02, 0.75 * (1 - hs) + 0.02);
   // the camera, per beat
   const lt = (s) => t - T[s];
-  if (t < T.s2) { const k = ease.io(lt('s1') / 4); cam.position.set(lerp(0.15, 0.05, k), lerp(0.05, 0.0, k), lerp(0.75, 0.45, k)); cam.lookAt(-0.47, 0.06, -0.6); cam.fov = 42; }
+  if (t < T.s2) { const k = ease.io(lt('s1') / 4); cam.position.set(lerp(0.15, 0.05, k), lerp(0.05, 0.0, k), lerp(0.52, 0.42, k)); cam.lookAt(-0.47, 0.06, -0.6); cam.fov = lerp(48, 42, k); }   // stays on the TV's side of the ladder (z 0.6): starting behind it put a rung across the lens
   else if (t < T.s3) { const k = ease.io(lt('s2') / 4); cam.position.set(lerp(-0.1, -0.05, k), lerp(0.15, 0.1, k), lerp(-0.6, -0.9, k)); cam.lookAt(0.66, -0.05, -2.6); cam.fov = 52; }
   else if (t < T.s4) { const k = ease.io(lt('s3') / 4.6); cam.position.set(0, 0.2, lerp(0.3, -2.4, k)); cam.lookAt(0, 0.0, -9); cam.fov = 58; }
   else if (t < T.s5) { const k = ease.io(lt('s4') / 3.8); cam.position.set(lerp(-0.25, -0.2, k), lerp(0.05, -0.02, k), lerp(0.1, -0.02, k)); cam.lookAt(0.38, -0.42, -1.0); cam.fov = 50; }
