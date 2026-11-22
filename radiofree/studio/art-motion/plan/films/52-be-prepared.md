@@ -29,3 +29,8 @@ sagging on an orange extension cord, plywood shelves on cinder blocks, five-gall
 jugs, camping cots and sleeping bags, a boxy TV with foil-tipped rabbit ears and duct tape on milk crates, a blue tarp and a
 hand-lettered cardboard SHELTER (keep out) sign. No DIY-bunker trend is claimed (none found in reporting): the look is a choice,
 the captions stay on the record. Stills replaced in previews/22-11-RFH-Be-Prepared-stills.jpg.
+
+## Build — 22 Nov (v1.1)
+- Built: `films/22-11-Coxon18-Be-Prepared.mp4` (25.6 s with sign-off), `-loop.mp4`, `.en.srt`; preview `previews/22-11-RFH-Be-Prepared-en.mp4`.
+- QA: 88 pass, 0 warn, 0 fail; sound −14.1 LUFS, −3.3 dBTP, LRA 3.5. Frames in `qa/be-prepared/`.
+- Status: built, NOT posted — waiting on the owner's go.

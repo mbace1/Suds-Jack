@@ -1,0 +1,60 @@
+{
+ "wav": "/tmp/claude-0/-home-user-Suds-Jack/83745c96-d2f6-5fb2-9ae6-f4818d9d4e36/scratchpad/F_bunker/build/en/score.wav",
+ "measured": {
+  "I": -14.1,
+  "LRA": 3.5,
+  "TP": -3.3
+ },
+ "limiter": [
+  "None:13.0",
+  "-2:12.4",
+  "-3:11.6",
+  "-4:11.4",
+  "-5:11.4",
+  "-6:10.8"
+ ],
+ "ducks": [
+  {
+   "t0": 21.580000000000002,
+   "t1": 22.200000000000003,
+   "db": -8,
+   "attack": 0.01,
+   "release": 0.3,
+   "why": "the hatch"
+  }
+ ],
+ "quiet": [
+  [
+   21.900000000000002,
+   22.6
+  ]
+ ],
+ "checks": [
+  {
+   "check": "loudness",
+   "result": "pass",
+   "why": "-14.1 LUFS integrated (target -14.0)"
+  },
+  {
+   "check": "true peak",
+   "result": "pass",
+   "why": "-3.3 dBTP (at most -1.0)"
+  },
+  {
+   "check": "silence",
+   "result": "pass",
+   "why": "no unmarked gap over 1.5 s"
+  },
+  {
+   "check": "continuity",
+   "result": "pass",
+   "why": "0% of the film below \u221235 dBFS outside the quiet spans (at most 8%)"
+  },
+  {
+   "check": "coverage",
+   "result": "pass",
+   "why": "9/9 cues have a sound within 40 ms"
+  }
+ ],
+ "placed": 136
+}

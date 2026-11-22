@@ -1,0 +1,154 @@
+{
+ "lang": "en",
+ "end": 22.6,
+ "holds": [],
+ "captions": [
+  {
+   "id": "ground",
+   "text": "13 Nov: / every US flight / [grounded].",
+   "plain": "13 Nov: every US flight grounded.",
+   "t0": 0.4,
+   "t1": 3.75,
+   "shown": 3.35,
+   "read": 2.65,
+   "lastWord": 1.385,
+   "widths": [
+    290,
+    613,
+    444
+   ],
+   "box": {
+    "x": 223,
+    "y": 162,
+    "w": 635,
+    "h": 308
+   },
+   "inSafe": true,
+   "inRail": false,
+   "covers": [],
+   "busy": {
+    "edge": 19.51,
+    "busy": 0.96
+   },
+   "native": true
+  },
+  {
+   "id": "outage",
+   "text": "Then email. / Then banks. / [Down].",
+   "plain": "Then email. Then banks. Down.",
+   "t0": 4.4,
+   "t1": 7.75,
+   "shown": 3.35,
+   "read": 2.45,
+   "lastWord": 5.385,
+   "widths": [
+    497,
+    520,
+    266
+   ],
+   "box": {
+    "x": 269,
+    "y": 162,
+    "w": 542,
+    "h": 308
+   },
+   "inSafe": true,
+   "inRail": false,
+   "covers": [],
+   "busy": {
+    "edge": 15.31,
+    "busy": 0.67
+   },
+   "native": true
+  },
+  {
+   "id": "bunker",
+   "text": "A bunker seller: / one sold in 2018. / Now [one a day].",
+   "plain": "A bunker seller: one sold in 2018. Now one a day.",
+   "t0": 8.4,
+   "t1": 12.35,
+   "shown": 3.95,
+   "read": 3.45,
+   "lastWord": 9.863,
+   "widths": [
+    661,
+    678,
+    639
+   ],
+   "box": {
+    "x": 190,
+    "y": 162,
+    "w": 700,
+    "h": 308
+   },
+   "inSafe": true,
+   "inRail": false,
+   "covers": [],
+   "busy": {
+    "edge": 14.18,
+    "busy": 0.58
+   },
+   "native": true
+  },
+  {
+   "id": "gen",
+   "text": "Generators: / [selling out].",
+   "plain": "Generators: selling out.",
+   "t0": 13,
+   "t1": 16.15,
+   "shown": 3.15,
+   "read": 2.2,
+   "lastWord": 13.675,
+   "widths": [
+    506,
+    468
+   ],
+   "box": {
+    "x": 276,
+    "y": 162,
+    "w": 528,
+    "h": 210
+   },
+   "inSafe": true,
+   "inRail": false,
+   "covers": [],
+   "busy": {
+    "edge": 16.3,
+    "busy": 0.74
+   },
+   "native": true
+  },
+  {
+   "id": "vp",
+   "text": "The Vice / President: no / crisis is coming. / But be [prepared].",
+   "plain": "The Vice President: no crisis is coming. But be prepared.",
+   "t0": 16.9,
+   "t1": 22.3,
+   "shown": 5.4,
+   "read": 3.85,
+   "lastWord": 18.651,
+   "widths": [
+    359,
+    557,
+    685,
+    705
+   ],
+   "box": {
+    "x": 176,
+    "y": 162,
+    "w": 727,
+    "h": 406
+   },
+   "inSafe": true,
+   "inRail": false,
+   "covers": [],
+   "busy": {
+    "edge": 18.76,
+    "busy": 0.91
+   },
+   "native": true
+  }
+ ],
+ "frames": 678,
+ "fps": 30
+}
