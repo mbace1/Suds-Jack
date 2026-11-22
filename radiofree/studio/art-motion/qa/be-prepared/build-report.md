@@ -54,7 +54,7 @@
 | text | reading time en:ground | pass | on screen 3.35 s, needs 2.65 s (33 chars at 20/s + 1 s) |
 | text | last word en:ground | pass | last word up 2.37 s (at least 0.8) |
 | text | key detail en:ground | pass | covers nothing the shot needs |
-| text | scrim en:ground | pass | picture behind: edge 19.51 → scrim 0.69 |
+| text | scrim en:ground | pass | picture behind: edge 19.8 → scrim 0.71 |
 | text | width en:outage | pass | widest line 520 px (limit 800) |
 | text | safe zone en:outage | pass | box {'x': 269, 'y': 162, 'w': 542, 'h': 308} |
 | text | reading time en:outage | pass | on screen 3.35 s, needs 2.45 s (29 chars at 20/s + 1 s) |
