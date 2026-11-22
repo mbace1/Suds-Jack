@@ -19,6 +19,14 @@
     Never `--no-verify`.
 -->
 
+## v162 — 2026-11-22
+**Room 1 eases; ARCADE's worlds 7–9 change shape at world 6's pressure** (in progress)
+- **Room 1 (FIRST LIGHT)** (owner, 22 Nov: "B" — the same rule, an F likely the first try or two, built easier than now): every fourth GLOBBO is gone (87 bodies → 67) and the walkers come at 0.9 of their speed, the fronts' rhythm kept. No bot can measure it (one weaker than the first-timer gets through 23 times in 24), so the owner's playtest is the check. Lines re-measured.
+- **ARCADE, worlds 7–9** (owner: "A for both" — new shapes, not more pressure): a world past 6 presses as the same wave of world 6 would (`waves.gentle.plateau`, `pressure()`; HARDCADE keeps climbing), and from world 7 a wave carries up to two linked pairs, each at 70% (`forms.pair.late`; before, one at 35%). Being measured against the v161 curve (`scripts/curve.mjs`).
+- Cache tokens `?v=161` → `?v=162`; HUD label → `2.0 · v162`
+
+---
+
 ## v161 — 2026-11-22
 **Room 20's hunt can end early; the bots hit an endurance boss to cut its clock and hold room 22's middle**
 - `scripts/bot.mjs`: in a campaign endurance room a bot that plays the room's priority keeps on the boss when it is within 8 (hitting it cuts the fight short, and v160 pays the seconds). Measured first without the 8: every shot at a far, tumbling SLUDGE CUBE met an add on the way and the room scored less. With it, room 27 (PACK ICE) pays the best bot +6% and room 34 (BOIL OVER) +16%, and the ordinary bot gets through room 34 nine times in 12 instead of seven; room 9 does not move.

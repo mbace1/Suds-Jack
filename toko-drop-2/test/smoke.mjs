@@ -55,7 +55,7 @@ import { join, dirname, extname, normalize, sep } from 'node:path';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { inflateSync } from 'node:zlib';
-import { TUNING } from '../js/tuning.js?v=161';
+import { TUNING } from '../js/tuning.js?v=162';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const PREFIX = '/toko-drop/';

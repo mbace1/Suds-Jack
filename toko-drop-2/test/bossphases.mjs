@@ -5,9 +5,9 @@
 // phase is announced with its own banner; phase 3 brings the world's own gel and its pace; with the phases switched off
 // it is the v153 boss (one rage at half health); and a campaign room keeps the v153 boss unless `campaign` is set.
 import { arena, checker, dt } from './lib/boss.mjs';
-import { BOSS_PHASES } from '../js/tuning/bossphases.js?v=161';
-import { phaseSpec } from '../js/sim/species/bosskit.js?v=161';
-import { TUNING as T } from '../js/tuning.js?v=161';
+import { BOSS_PHASES } from '../js/tuning/bossphases.js?v=162';
+import { phaseSpec } from '../js/sim/species/bosskit.js?v=162';
+import { TUNING as T } from '../js/tuning.js?v=162';
 
 const { check, done } = checker('bossphases');
 const WORLD = { curbking: 2, maw: 3, blister: 4, kettle: 5, pike: 6, berg: 7, angler: 8 };

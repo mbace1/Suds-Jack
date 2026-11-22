@@ -8,10 +8,10 @@
 // per-frame arithmetic for the death pop (`_deathT = 0.28`, `−= dt` a frame,
 // the brood on the frame it reaches 0).
 import { readFileSync } from 'node:fs';
-import { createWorld, step, api } from '../../js/sim/world.js?v=161';
-import { TUNING as T } from '../../js/tuning.js?v=161';
-import behaviour from '../../js/sim/species/splitta.js?v=161';
-import look from '../../js/render/looks/splitta.js?v=161';
+import { createWorld, step, api } from '../../js/sim/world.js?v=162';
+import { TUNING as T } from '../../js/tuning.js?v=162';
+import behaviour from '../../js/sim/species/splitta.js?v=162';
+import look from '../../js/render/looks/splitta.js?v=162';
 
 let failed = 0, passed = 0;
 const check = (claim, ok, detail = '') => {

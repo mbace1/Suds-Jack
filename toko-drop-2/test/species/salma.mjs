@@ -2,8 +2,8 @@
 // salma.mjs — SALMA (THE RIVER), in bare node: it darts and glides, turns
 // toward you between darts, and noses against a current.
 import { readFileSync } from 'node:fs';
-import { createWorld, step, api } from '../../js/sim/world.js?v=161';
-import { TUNING as T } from '../../js/tuning.js?v=161';
+import { createWorld, step, api } from '../../js/sim/world.js?v=162';
+import { TUNING as T } from '../../js/tuning.js?v=162';
 let failed = 0, passed = 0;
 const check = (c, ok, d = '') => { if (ok) { passed++; return; } failed++; console.log(`  ✗ ${c}${d ? ` — ${d}` : ''}`); };
 const S = T.species.salma, dt = T.sim.dt, IDLE = { mx: 0, mz: 0, ax: 1, az: 0, aim: false, fire: false, dash: false };

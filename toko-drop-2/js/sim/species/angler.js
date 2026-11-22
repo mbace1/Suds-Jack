@@ -9,8 +9,8 @@
 //
 //   CREEP → (near the light) TELL → BITE → REST → CREEP
 // Numbers: js/tuning/species/angler.js. Seeded: w.rng only.
-import { steerTo } from './base.js?v=161';
-import { rage, range, toHero, inside } from './bosskit.js?v=161';
+import { steerTo } from './base.js?v=162';
+import { rage, range, toHero, inside } from './bosskit.js?v=162';
 
 export default {
   // v157, a STRATEGIC boss (tuning/bosskinds.js): open while it tells its bite (you are in front of it: the risk next
