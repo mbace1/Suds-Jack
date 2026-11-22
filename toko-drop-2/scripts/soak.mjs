@@ -13,10 +13,10 @@
 //   node scripts/soak.mjs                          every arcade world and every room, three bots, 6 seeds
 //   node scripts/soak.mjs --seeds 12 --skills sharp,still --part 1/4
 import { readFileSync } from 'node:fs';
-import { createWorld, step } from '../js/sim/world.js?v=160';
-import { TUNING as T } from '../js/tuning.js?v=160';
-import { rooms } from '../js/sim/director/campaign.js?v=160';
-import { ceiling } from '../js/sim/heat.js?v=160';
+import { createWorld, step } from '../js/sim/world.js?v=161';
+import { TUNING as T } from '../js/tuning.js?v=161';
+import { rooms } from '../js/sim/director/campaign.js?v=161';
+import { ceiling } from '../js/sim/heat.js?v=161';
 import { SKILLS, prng, think } from './bot.mjs';
 
 const args = process.argv.slice(2), opt = (k, d) => { const i = args.indexOf(k); return i < 0 ? d : args[i + 1]; };

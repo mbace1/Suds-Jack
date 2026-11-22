@@ -8,10 +8,10 @@
 // shot that dies on it nudges it on.
 //
 //   node test/posts.mjs
-import { createWorld, step, api } from '../js/sim/world.js?v=160';
-import { TUNING as T } from '../js/tuning.js?v=160';
-import * as posts from '../js/sim/posts.js?v=160';
-import { rooms } from '../js/sim/director/campaign.js?v=160';
+import { createWorld, step, api } from '../js/sim/world.js?v=161';
+import { TUNING as T } from '../js/tuning.js?v=161';
+import * as posts from '../js/sim/posts.js?v=161';
+import { rooms } from '../js/sim/director/campaign.js?v=161';
 import { readFileSync } from 'node:fs';
 
 let failed = 0, passed = 0;

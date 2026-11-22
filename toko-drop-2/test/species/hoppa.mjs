@@ -2,11 +2,11 @@
 // hoppa.mjs — HOPPA, the driveway's curb-hopper, in bare node: it squats,
 // marks where it will land, hops there out of reach, and lands with a ring.
 import { readFileSync } from 'node:fs';
-import { createWorld, step, api } from '../../js/sim/world.js?v=160';
-import { TUNING as T } from '../../js/tuning.js?v=160';
-import behaviour from '../../js/sim/species/hoppa.js?v=160';
-import { schedule } from '../../js/sim/director/arcade.js?v=160';
-import { makeRng } from '../../js/sim/rng.js?v=160';
+import { createWorld, step, api } from '../../js/sim/world.js?v=161';
+import { TUNING as T } from '../../js/tuning.js?v=161';
+import behaviour from '../../js/sim/species/hoppa.js?v=161';
+import { schedule } from '../../js/sim/director/arcade.js?v=161';
+import { makeRng } from '../../js/sim/rng.js?v=161';
 
 let failed = 0, passed = 0;
 const check = (claim, ok, detail = '') => { if (ok) { passed++; return; } failed++; console.log(`  ✗ ${claim}${detail ? ` — ${detail}` : ''}`); };

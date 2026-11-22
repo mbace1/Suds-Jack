@@ -19,6 +19,21 @@
     Never `--no-verify`.
 -->
 
+## v161 — 2026-11-22
+**Room 20's hunt can end early; the bots hit an endurance boss to cut its clock and hold room 22's middle**
+- `scripts/bot.mjs`: in a campaign endurance room a bot that plays the room's priority keeps on the boss when it is within 8 (hitting it cuts the fight short, and v160 pays the seconds). Measured first without the 8: every shot at a far, tumbling SLUDGE CUBE met an add on the way and the room scored less. With it, room 27 (PACK ICE) pays the best bot +6% and room 34 (BOIL OVER) +16%, and the ordinary bot gets through room 34 nine times in 12 instead of seven; room 9 does not move.
+- Rooms 9, 27 and 34's lines re-measured with it, normal and HARD, both orientations.
+- **Room 20 (LIGHTS OUT):** the second five CLOAKERS come 20 s sooner (27–35 s, not 47–55), so the hunt can end early and putting the quarry down first pays: a first-timer who hunts gets through 10 times in 12, one who does not 3; the ordinary bot scores 6% more. A back-to-the-wall rule (a CLOAKER's flank point past a wall taken on your other side) was built and dropped: from the wall the dark hides the far side, and the best bot then got through 4 times in 12.
+- `scripts/strategy.mjs`: without POSITION, a bot no longer holds the middle (that IS room 22's positioning — three turning circles, and only the middle is always floor); it moves as it always does. A room may name its place for the bot (`plan.place: 'middle'`, room 22). Room 22 and room 34 now pay their strategy; rooms 7 and 12 had looked as if they did only because holding the middle was bad there.
+- A two-rooms rule for room 31 (cross to the other room when a DRAPER in yours winds up) was built and dropped: the bots kill every DRAPER before its first curtain.
+- Rooms 20 and 22's lines re-measured, normal and HARD, both orientations.
+- `scripts/strategy.mjs` flags 7 rooms: 4 and 16 pay the first-timer; 7's order is the room's own rule; 9, 14 and 31 go to a playtest (no bot is hit there, or a DRAPER never fires); 12 is next.
+- `itch/tokodropv161.html`; the hub note and `hub/versions.json` at 161.
+- (superseded) `scripts/strategy.mjs` flagged 6 rooms (4, 9, 14, 16, 22, 34). Rooms 4 and 16 pay the first-timer (room 4 without aim: 12% less; room 16: slower), which the report does not ask; rooms 9 and 14 are rooms where nothing a bot chooses changes anything, because no bot is ever hit there — a person's read, not a bot's (DESIGN, 22 Nov); in rooms 22 and 34 holding the middle still beats moving.
+- Cache tokens `?v=160` → `?v=161`; HUD label → `2.0 · v161`
+
+---
+
 ## v160 — 2026-11-21
 **An endurance room is graded on its score, the time cut off its boss's clock and the hits taken; room 1 asks for no strategy; room 3 puts its shooters first**
 - Owner, 21 Nov: "Recommend and choose will be the answer to all room questions." Room 1 (FIRST LIGHT) teaches the controls: move, shoot, stay alive. It no longer names a strategy (it named aim, which does nothing against GLOBBOs: the bot without it scored the same), and the room card shows no strategy line for it. THE SURFACE's other five rooms still teach one each, all five.

@@ -4,9 +4,9 @@
 // dash you are not; the bodies in reach are thrown out; a tank never slams, nor a boss; two giants do not slam as one.
 //
 //   node test/slam.mjs
-import { createWorld, step, api } from '../js/sim/world.js?v=160';
-import { TUNING as T } from '../js/tuning.js?v=160';
-import { reach } from '../js/sim/slam.js?v=160';
+import { createWorld, step, api } from '../js/sim/world.js?v=161';
+import { TUNING as T } from '../js/tuning.js?v=161';
+import { reach } from '../js/sim/slam.js?v=161';
 
 let failed = 0, passed = 0;
 const check = (claim, ok, detail = '') => {
