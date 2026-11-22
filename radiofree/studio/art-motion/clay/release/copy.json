@@ -1,0 +1,138 @@
+{
+  "film": "release-notes",
+  "cut": "2D v1 stills (22 Nov, en only). Owner, 22 Nov: 'More into ICEYE' then 'Combine 2 and 1' (the Gen5 satellite, 16 Nov, and the €2B bid for Avio, 17 Nov). A sequel to Sleep Tight (Helsinki 2). Device: a borrowed format, the company's own release notes.",
+  "series": "rfh",
+  "captionSize": "big",
+  "argument": "ICEYE, which began as a 2012 Aalto University course project, unveiled an 11-centimeter radar satellite and bid two billion euros for an Italian rocket maker in the same week; the deal still needs government approval.",
+  "langs": [
+    "en"
+  ],
+  "native_read": {
+    "en": true
+  },
+  "syntax": "'/' breaks a line, [word] is the pop word",
+  "captions": [
+    {
+      "id": "project",
+      "role": "setup",
+      "at": "s1+0.4",
+      "until": "s2-0.25",
+      "hold": "s2",
+      "text": {
+        "en": "ICEYE began / as an Aalto / course [project]."
+      },
+      "source": "Aalto University: 'ICEYE was founded as a course project at Aalto University in 2012' (aalto.fi; as used in Sleep Tight, plan 9 Nov)."
+    },
+    {
+      "id": "sees",
+      "role": "evidence",
+      "at": "s2+0.4",
+      "until": "s3-0.25",
+      "hold": "s3",
+      "text": {
+        "en": "16 Nov: / a radar satellite / that sees [11 cm]."
+      },
+      "source": "ICEYE press release, 16 Nov 2026: Gen5 SAR satellite, resolution 11 cm for government customers and 16 cm for commercial, an onboard AI processor; first units in customer service in 2027 (Janes; SatNews 16 Nov; Via Satellite 16 Nov). Search summaries, 22 Nov."
+    },
+    {
+      "id": "rocket",
+      "role": "evidence",
+      "at": "s3+0.4",
+      "until": "s4-0.25",
+      "hold": "s4",
+      "text": {
+        "en": "17 Nov: / a bid for an / Italian / [rocket maker]."
+      },
+      "source": "Defense News and Via Satellite, 17 Nov 2026: an ICEYE subsidiary, Iris 2 S.p.A., made an all-cash offer to take Avio private at €41 a share. Search summaries, 22 Nov."
+    },
+    {
+      "id": "price",
+      "role": "evidence",
+      "at": "s4+0.4",
+      "until": "s5-0.25",
+      "hold": "s5",
+      "text": {
+        "en": "Price: / [€2 billion]."
+      },
+      "source": "The offer values Avio at €2 billion ($2.2 billion) (Defense News, 17 Nov 2026)."
+    },
+    {
+      "id": "ok",
+      "role": "punchline",
+      "at": "s5+0.5",
+      "until": "end-0.3",
+      "text": {
+        "en": "Still needs / Rome’s and / Washington’s [OK]."
+      },
+      "source": "An Avio spokesman told Defense News that US government approval would be required in the event of a takeover by ICEYE, as well as Italian government approval (17 Nov 2026). The bid is pending."
+    }
+  ],
+  "ui": {
+    "app": {
+      "en": "ICEYE · Release notes"
+    },
+    "vh": {
+      "en": "Version history"
+    },
+    "v0": {
+      "en": "2012"
+    },
+    "v0t": {
+      "en": "Course project, Aalto University"
+    },
+    "v1": {
+      "en": "2018"
+    },
+    "v1t": {
+      "en": "First small radar satellite (under 100 kg)"
+    },
+    "v2": {
+      "en": "16 Nov 2026"
+    },
+    "v2t": {
+      "en": "Gen5: sees 11 cm · onboard AI"
+    },
+    "v2s": {
+      "en": "11 cm for governments, 16 cm commercial · in service from 2027"
+    },
+    "v3": {
+      "en": "17 Nov 2026"
+    },
+    "v3t": {
+      "en": "Bid: Avio, Italian rocket maker"
+    },
+    "v3s": {
+      "en": "All cash, €41 a share, via a subsidiary"
+    },
+    "status": {
+      "en": "Status"
+    },
+    "pending": {
+      "en": "Pending approval"
+    },
+    "rome": {
+      "en": "Rome"
+    },
+    "wash": {
+      "en": "Washington"
+    },
+    "tag1": {
+      "en": "AALTO UNIVERSITY: FOUNDED AS A COURSE PROJECT IN 2012"
+    },
+    "tag2": {
+      "en": "ICEYE GEN5, 16 NOV · 11 CM FOR GOVERNMENTS, 16 CM COMMERCIAL"
+    },
+    "tag3": {
+      "en": "ALL-CASH OFFER FOR AVIO VIA AN ICEYE SUBSIDIARY, €41 A SHARE"
+    },
+    "tag4": {
+      "en": "VALUING AVIO AT €2 BILLION (DEFENSE NEWS)"
+    },
+    "tag5": {
+      "en": "AVIO: ITALIAN AND US GOVERNMENT APPROVAL REQUIRED · BID PENDING"
+    }
+  },
+  "post": {
+    "en": "ICEYE began as a 2012 Aalto course project. On 16 Nov it unveiled a radar satellite that sees 11 cm. On 17 Nov it bid €2 billion for Avio, an Italian rocket maker. The deal still needs Rome's and Washington's OK."
+  }
+}
