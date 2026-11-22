@@ -61,7 +61,7 @@ permissions:
 
 jobs:
   looks:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04   # pinned: ubuntu-latest became 26.04, which the pinned Playwright cannot install chromium on
     # toko-live's browser job had no timeout and hung to the six-hour workflow
     # ceiling on every PR in the repo, reporting `cancelled` rather than
     # failing. Twenty-four cabinets is about four minutes; twenty-five is a
