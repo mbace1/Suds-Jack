@@ -1,4 +1,4 @@
-## v62 — in progress
+## v62 — 2026-11-11
 **Three seasons that can be finished, and a finish that counts (HD-023)**
 
 Mikael, 11 Nov 2026: *"Plan and execute to ship 3 seasons feature complete.
@@ -54,11 +54,17 @@ crest is cleared with a real Space press and pays 2 s, a crest that hits pays
 nothing, LAST STAND, the count, the clear saved and shown, a second run opens
 in act one).
 
+Shipped: #640 (v61) merged as `9e63e2c4`, #641 (v62) as `b765a555`; published to
+`gh-pages` as `ca06ec17` (hyperdagger/ and its version row only), Pages run
+42986772311 concluded success. The live host cannot be reached from the cloud
+session, so the live cabinet itself was NOT opened; the same tree passed
+`offline.cjs` 6/0 and the arcade → cabinet → START walk before the push.
+
 Not done, and not claimed: nobody has played this at speed. The numbers say a
 season CAN be finished; whether it is the right difficulty is a playtest. The
 pause menu still has the v48 look. HAUL's skulls still roll `Math.random`.
 
-## v61 — in progress
+## v61 — 2026-11-11
 **The look: particles, a fluid floor and light, a different one per season (HD-022)**
 
 Mikael, 10 Nov 2026: *"Plan and execute the most visually impressive version
