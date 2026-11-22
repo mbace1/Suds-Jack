@@ -3,9 +3,9 @@
 // carry what stands in their way, and nothing else changes.
 //
 //   node test/reshape.mjs
-import { createWorld, step, api } from '../js/sim/world.js?v=160';
-import { TUNING as T } from '../js/tuning.js?v=160';
-import * as reshape from '../js/sim/reshape.js?v=160';
+import { createWorld, step, api } from '../js/sim/world.js?v=161';
+import { TUNING as T } from '../js/tuning.js?v=161';
+import * as reshape from '../js/sim/reshape.js?v=161';
 
 let failed = 0, passed = 0;
 const check = (claim, ok, detail = '') => {

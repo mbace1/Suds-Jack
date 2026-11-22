@@ -24,9 +24,9 @@
 //   node scripts/record.mjs record.txt
 //   node scripts/record.mjs record.txt --since 61     only entries from v61 on
 import { readFileSync } from 'node:fs';
-import { unpack } from '../js/record.js?v=160';
-import { TUNING as T } from '../js/tuning.js?v=160';
-import { rooms } from '../js/sim/director/campaign.js?v=160';
+import { unpack } from '../js/record.js?v=161';
+import { TUNING as T } from '../js/tuning.js?v=161';
+import { rooms } from '../js/sim/director/campaign.js?v=161';
 
 const args = process.argv.slice(2), opt = (k, d) => { const i = args.indexOf(k); return i < 0 ? d : args[i + 1]; };
 const file = args.find((a) => !a.startsWith('--') && a !== opt('--since', null));

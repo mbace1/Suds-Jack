@@ -8,13 +8,13 @@
 // also checked against an ORACLE: 1.x's own code for them, transcribed with
 // 1.x's literals and fed the same random stream.
 import { readFileSync } from 'node:fs';
-import { createWorld, step, api } from '../../js/sim/world.js?v=160';
-import { TUNING as T } from '../../js/tuning.js?v=160';
-import { waveScale } from '../../js/sim/director/arcade.js?v=160';
-import { makeRng } from '../../js/sim/rng.js?v=160';
-import behaviour, { broodSize, orbitHeading } from '../../js/sim/species/purp.js?v=160';
-import look from '../../js/render/looks/purp.js?v=160';
-import reddLook from '../../js/render/looks/redd.js?v=160';
+import { createWorld, step, api } from '../../js/sim/world.js?v=161';
+import { TUNING as T } from '../../js/tuning.js?v=161';
+import { waveScale } from '../../js/sim/director/arcade.js?v=161';
+import { makeRng } from '../../js/sim/rng.js?v=161';
+import behaviour, { broodSize, orbitHeading } from '../../js/sim/species/purp.js?v=161';
+import look from '../../js/render/looks/purp.js?v=161';
+import reddLook from '../../js/render/looks/redd.js?v=161';
 import * as THREE from '../../vendor/three/three.webgpu.js?v=r186';
 
 let failed = 0, passed = 0;

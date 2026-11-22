@@ -6,9 +6,9 @@
 // coming straight at it: it steps off the line. A ring closing on it that it
 // cannot walk out of: it dashes. A hopper about to land on it: it is gone
 // before the landing. The three skills that set the grade lines never plan.
-import { createWorld, step } from '../js/sim/world.js?v=160';
-import { TUNING as T } from '../js/tuning.js?v=160';
-import * as fire from '../js/sim/fire.js?v=160';
+import { createWorld, step } from '../js/sim/world.js?v=161';
+import { TUNING as T } from '../js/tuning.js?v=161';
+import * as fire from '../js/sim/fire.js?v=161';
 import { SKILLS, plan, think, prng, sight } from '../scripts/bot.mjs';
 
 let failed = 0, passed = 0;
