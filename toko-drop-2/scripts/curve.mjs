@@ -28,8 +28,8 @@
 //   node scripts/curve.mjs --kit none …                      every world started with the bare gun (v59's first instrument)
 //   node scripts/curve.mjs --merge a.json,b.json,…           the parts, as one table
 import { writeFileSync, readFileSync } from 'node:fs';
-import { createWorld, step } from '../js/sim/world.js?v=160';
-import { TUNING as T } from '../js/tuning.js?v=160';
+import { createWorld, step } from '../js/sim/world.js?v=161';
+import { TUNING as T } from '../js/tuning.js?v=161';
 import { SKILLS, prng, think } from './bot.mjs';
 
 const args = process.argv.slice(2), opt = (k, d) => { const i = args.indexOf(k); return i < 0 ? d : args[i + 1]; };

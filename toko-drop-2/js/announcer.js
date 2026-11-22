@@ -6,7 +6,7 @@
 // tied to the master it went inaudible on a quiet setup). The lines and the
 // pacing are 1.x's (audio.js:6-41, 149-170); what calls it is main.js, off
 // the sim's events.
-import { INTRO_VOICE } from './introvoice.js?v=160';
+import { INTRO_VOICE } from './introvoice.js?v=161';
 
 // v156 (owner, 18 Nov: the announcer's trouble "is what he says, those are from the Smash tv mode"): 1.x's lines
 // were its SMASH TV cabinet's game show — the studio, the contestant, prizes, money, the mop. 2.0 is one drop of

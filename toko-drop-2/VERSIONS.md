@@ -19,6 +19,15 @@
     Never `--no-verify`.
 -->
 
+## v161 — 2026-11-22
+**The bots hit an endurance boss to cut its clock; the endurance rooms' lines re-measured**
+- `scripts/bot.mjs`: in a campaign endurance room a bot that plays the room's priority keeps on the boss when it is within 8 (hitting it cuts the fight short, and v160 pays the seconds). Measured first without the 8: every shot at a far, tumbling SLUDGE CUBE met an add on the way and the room scored less. With it, room 27 (PACK ICE) pays the best bot +6% and room 34 (BOIL OVER) +16%, and the ordinary bot gets through room 34 nine times in 12 instead of seven; room 9 does not move.
+- Rooms 9, 27 and 34's lines re-measured with it, normal and HARD, both orientations.
+- `scripts/strategy.mjs` now flags 6 rooms (4, 9, 14, 16, 22, 34). Rooms 4 and 16 pay the first-timer (room 4 without aim: 12% less; room 16: slower), which the report does not ask; rooms 9 and 14 are rooms where nothing a bot chooses changes anything, because no bot is ever hit there — a person's read, not a bot's (DESIGN, 22 Nov); in rooms 22 and 34 holding the middle still beats moving.
+- Cache tokens `?v=160` → `?v=161`; HUD label → `2.0 · v161`
+
+---
+
 ## v160 — 2026-11-21
 **An endurance room is graded on its score, the time cut off its boss's clock and the hits taken; room 1 asks for no strategy; room 3 puts its shooters first**
 - Owner, 21 Nov: "Recommend and choose will be the answer to all room questions." Room 1 (FIRST LIGHT) teaches the controls: move, shoot, stay alive. It no longer names a strategy (it named aim, which does nothing against GLOBBOs: the bot without it scored the same), and the room card shows no strategy line for it. THE SURFACE's other five rooms still teach one each, all five.

@@ -208,6 +208,9 @@ Classic `toko-drop/` remains the historical / hub v221 lineage. Godot port follo
 - **Mikael:** "Score and time, and hits taken", then "A" (one number, not three grades).
 - **Locks (v160):** a campaign endurance room's score is its play score + 600 a second cut off the boss's clock − 15% of it for each hit taken in the room; the room list shows the three parts. The room's seconds left no longer pay there (the clock fixed them: room 9 paid every bot 10,750). Rooms 9 and 27 ask for twice the boss's health in damage for the whole 30% cut; room 34 once.
 
+### Decision 22 Nov 2026 — the rooms the bots cannot read go to a playtest
+- **Agent's call (room questions are the agent's, 21 Nov).** After v160/v161 the strategy report flags 6 rooms. Rooms 4 and 16 stay: their strategy pays the first-timer. Rooms 9 and 14 stay as they are and go to Mikael's playtest list: no bot is ever hit in them, so no choice a bot makes moves the result, and a human's read is the only measurement left (rooms 9 and 14 also hold the only "movement + priority" and "priority + risk" pairs of worlds 2–3, so they cannot be re-tagged without breaking the strategy curve). Rooms 22 and 34, where holding the middle beats the room's positioning, are next.
+
 ## 6. Sakurai principles (adopted 15 Nov 2026)
 
 **Source:** [kociden/sakurai-skill](https://github.com/kociden/sakurai-skill). It's an unofficial, fan-made AI summary of Masahiro Sakurai's YouTube series *桜井政博のゲーム作るには* and **not Sakurai's own words**. Agents load it as `.claude/skills/sakurai` (see `toko-drop-2/AGENTS.md`). Citations below use the skill's chapter (§) and video numbers (#NNN).

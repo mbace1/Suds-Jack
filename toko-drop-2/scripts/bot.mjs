@@ -6,7 +6,7 @@
 // coming by looking ahead (plan() below). Moved here from room-tiers.mjs in v42
 // so the passes play the same game.
 import { TUNING as T } from '../js/tuning.js?v=31';
-import { strands } from '../js/sim/formation.js?v=160';
+import { strands } from '../js/sim/formation.js?v=161';
 
 // v56 (owner, 2026-10-28: "Better line bots"): every skill looks AHEAD the way
 // v55's expert did, because a person reads a bullet's line and a hopper's tell,
@@ -78,6 +78,10 @@ export function think(w, mem, K) {
   for (const g of hurtable) {
     let d = Math.hypot(g.x - h.x, g.z - h.z);
     if (first?.size && !first.has(g.kind) && d > 3) d += 12;
+    // v161: an ENDURANCE boss in a campaign room is cut short by hitting it (bossfight.js `clock`, and the room pays
+    // for the seconds, campaign.js `endure`): a player who plays the room's priority keeps on it, but not past a body
+    // already on top of them
+    if (w.hold?.endure && !off.has("priority") && g.isBoss && d < 8 && w.mode === "campaign" && (K.reads ?? 0) > ((mem.rnd?.() ?? 0.5))) d -= 10;
     // a hunt: the quarry first, but not past a body already on top of you (v47)
     if (G.type === 'hunt' && !off.has('priority') && g.kind !== mem.quarry && d > 4) d += 30;
     // v46: reading the room — a body in a WARDEN's aura shrugs the shot off,
