@@ -8,12 +8,12 @@
 //   ENDURE       left alone the fight lasts its hold and the boss breaks at the end of it; hit as hard as you like
 //                it still lasts (1 - shave) of the hold; its phases come on the clock; graded on the hits taken
 import { arena, checker, dt } from './lib/boss.mjs';
-import { BOSS_KINDS } from '../js/tuning/bosskinds.js?v=159';
-import { BOSS_PHASES } from '../js/tuning/bossphases.js?v=159';
-import { kindOf, armoured } from '../js/sim/species/bosskit.js?v=159';
-import { BEHAVIOUR } from '../js/sim/species/index.js?v=159';
-import * as bossfight from '../js/sim/bossfight.js?v=159';
-import { TUNING as T } from '../js/tuning.js?v=159';
+import { BOSS_KINDS } from '../js/tuning/bosskinds.js?v=160';
+import { BOSS_PHASES } from '../js/tuning/bossphases.js?v=160';
+import { kindOf, armoured } from '../js/sim/species/bosskit.js?v=160';
+import { BEHAVIOUR } from '../js/sim/species/index.js?v=160';
+import * as bossfight from '../js/sim/bossfight.js?v=160';
+import { TUNING as T } from '../js/tuning.js?v=160';
 
 const { check, done } = checker('bosskinds');
 BOSS_KINDS.on = true; BOSS_PHASES.on = true;   // (lib/boss.mjs turns both off for the species' own specs)
@@ -99,8 +99,8 @@ for (const [key, world] of [['maw', 3], ['kettle', 5], ['berg', 7]]) {
 // ── v159: the campaign's five boss rooms fight their boss as its kind ──
 {
   const { readFileSync } = await import('node:fs');
-  const { createWorld, step } = await import('../js/sim/world.js?v=159');
-  const { rooms } = await import('../js/sim/director/campaign.js?v=159');
+  const { createWorld, step } = await import('../js/sim/world.js?v=160');
+  const { rooms } = await import('../js/sim/director/campaign.js?v=160');
   const room = (id) => ({ ...rooms().find((r) => r.id === id), level: JSON.parse(readFileSync(new URL(`../levels/${id}.json`, import.meta.url), 'utf8')) });
   const IDLE = { mx: 0, mz: 0, ax: 1, az: 0, aim: false, fire: false, dash: false };
   // the endurance rooms: left alone (the hero untouchable, not shooting), the boss breaks when its room's clock is out
@@ -111,6 +111,10 @@ for (const [key, world] of [['maw', 3], ['kettle', 5], ['berg', 7]]) {
     for (let i = 0; i < 120 / dt && !end; i++) { step(w, IDLE); if (!seen && w.hold) seen = w.time; end = w.events.find((e) => e.type === 'roomEnd') ?? null; }
     const hold = BOSS_KINDS.rooms[id].hold;
     check(`${id}: its ${w.hold?.kind?.toUpperCase()} endures — the clock (${hold} s) breaks it and the room is won`, !!w.hold && end?.outcome === 'clear' && Math.abs(end.time - (seen + hold)) < 0.6, JSON.stringify({ seen, time: end?.time, outcome: end?.outcome }));
+    // v160 (owner: "Score and time, and hits taken" — "A", one number): left alone nothing came off its clock, so the
+    // time pays nothing; the room's seconds left pay nothing either; the parts add up to the score
+    const P = end?.parts, E = T.campaign.points.endure;
+    check(`${id}: graded on score, time off its clock and hits (untouched: no time, and the parts add up)`, !!P && P.time === 0 && P.cut === 0 && end.score === Math.round((P.play + P.time) * Math.pow(1 - E.hit, P.hits)) && P.lost === P.play + P.time - end.score, JSON.stringify({ P, score: end?.score }));
   }
   // the strategic rooms: the boss is armoured outside its window, and starts at the room's own health
   for (const id of ['deep-end', 'siren']) {

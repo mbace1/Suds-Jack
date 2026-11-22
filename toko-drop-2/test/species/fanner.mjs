@@ -7,9 +7,9 @@
 // from the same starting clock, so the steps the glows start and the fans
 // leave on must match 1.x's frame for frame.
 import { readFileSync } from 'node:fs';
-import { createWorld, step, api } from '../../js/sim/world.js?v=159';
-import { TUNING as T } from '../../js/tuning.js?v=159';
-import look from '../../js/render/looks/fanner.js?v=159';
+import { createWorld, step, api } from '../../js/sim/world.js?v=160';
+import { TUNING as T } from '../../js/tuning.js?v=160';
+import look from '../../js/render/looks/fanner.js?v=160';
 
 let failed = 0, passed = 0;
 const check = (claim, ok, detail = '') => {
@@ -88,7 +88,7 @@ function oracle(t0, interval, steps) {
   const tun = readFileSync(new URL('../../js/tuning/species/fanner.js', import.meta.url), 'utf8');
   const lookSrc = readFileSync(new URL('../../js/render/looks/fanner.js', import.meta.url), 'utf8');
   const self = readFileSync(new URL(import.meta.url), 'utf8');
-  check('every game-module import in its four files carries ?v=159 (node builtins exempt)', [src, tun, lookSrc, self].every((s) => [...s.matchAll(/from\s+'(\.\.?\/[^']+)'/g)].every((m) => m[1].endsWith('?v=159'))));
+  check('every game-module import in its four files carries ?v=160 (node builtins exempt)', [src, tun, lookSrc, self].every((s) => [...s.matchAll(/from\s+'(\.\.?\/[^']+)'/g)].every((m) => m[1].endsWith('?v=160'))));
   check('the look keeps no clock of its own (it is handed the frame time; 1.x read _wobbleT)', !/Date\.now|performance\./.test(lookSrc));
 }
 

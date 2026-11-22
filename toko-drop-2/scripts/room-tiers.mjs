@@ -24,9 +24,9 @@
 // does not get through). A room the average bot gets through less than half
 // the time is reported, not tiered — that is a room to fix, not to grade.
 import { readFileSync, writeFileSync } from 'node:fs';
-import { createWorld, step } from '../js/sim/world.js?v=159';
-import { TUNING as T } from '../js/tuning.js?v=159';
-import { rooms, roomBodies } from '../js/sim/director/campaign.js?v=159';
+import { createWorld, step } from '../js/sim/world.js?v=160';
+import { TUNING as T } from '../js/tuning.js?v=160';
+import { rooms, roomBodies } from '../js/sim/director/campaign.js?v=160';
 import { SKILLS, LINE_SKILLS, prng, think } from './bot.mjs';
 import { scoreLines, BANDS, bandOf } from './lines.mjs';
 

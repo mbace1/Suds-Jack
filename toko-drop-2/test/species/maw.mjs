@@ -4,7 +4,7 @@
 // it stands, and goes back down; raging, every hole it goes down fills with
 // sludge.
 import { checker, arena, common } from '../lib/boss.mjs';
-import BEH from '../../js/sim/species/maw.js?v=159';
+import BEH from '../../js/sim/species/maw.js?v=160';
 const K = 'maw', { check, done } = checker(K);
 const { S } = common(K, 3, { check });
 {

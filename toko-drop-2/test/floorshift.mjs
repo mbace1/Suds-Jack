@@ -4,13 +4,13 @@
 // boss's, warned before it moves, the floor really moving and the hero kept on
 // it, whole again at the next wave, and sized off the world's floor even while
 // a challenge has its walls closed in.
-import { createWorld, step } from '../js/sim/world.js?v=159';
-import { TUNING as T } from '../js/tuning.js?v=159';
+import { createWorld, step } from '../js/sim/world.js?v=160';
+import { TUNING as T } from '../js/tuning.js?v=160';
 // the floor's moves are held on 1.x's pressure: under v54's gentler ramp the
 // shifted wave can clear before the 12 s these checks watch it for
 T.waves.gentle = null;
-import { shiftFor } from '../js/sim/floorshift.js?v=159';
-import { trialFor } from '../js/sim/challenge.js?v=159';
+import { shiftFor } from '../js/sim/floorshift.js?v=160';
+import { trialFor } from '../js/sim/challenge.js?v=160';
 
 let failed = 0, passed = 0;
 const check = (c, ok, d = '') => { if (ok) { passed++; return; } failed++; console.log(`  ✗ ${c}${d ? ` — ${d}` : ''}`); };
@@ -87,7 +87,7 @@ for (const k of withShift) {
   w.squeeze = { phase: 'hold', t: 0, from: home, to: { hx: home.hx * 0.7, hz: home.hz * 0.7 }, home, back: false, world: k };
   w.hx = home.hx * 0.7; w.hz = home.hz * 0.7;
   w.shift = null;
-  const { start } = await import('../js/sim/floorshift.js?v=159');
+  const { start } = await import('../js/sim/floorshift.js?v=160');
   start(w, S);
   check('a shift begun while the walls are in is sized off the world\'s floor', w.shift.box.hx === home.hx && w.shift.box.hz === home.hz, JSON.stringify(w.shift.box));
 }
