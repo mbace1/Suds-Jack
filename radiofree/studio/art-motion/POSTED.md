@@ -148,6 +148,7 @@ Accounts: Instagram `@gameplaylaboratory` (new account, 21 Nov 2026; old `gamepl
 | Mutations / Video 2 v2 (catalogue repost to new IG; posted by Grok Bot) | GL Instagram @gameplaylaboratory | https://www.instagram.com/reel/DgBI1pMhz9z/ (21 Nov 22:57 Helsinki) | Same loop. Swap the cards for anything. store.steampowered.com/app/3314790/ |
 | Underdog Reviews video 1 v8 (catalogue repost to new IG; posted by Grok Bot) | GL Instagram @gameplaylaboratory | https://www.instagram.com/reel/DgBRur5PFvH/ (22 Nov 00:14 Helsinki) | Next Fest is over. These demos aren't. https://store.steampowered.com/app/5037200 |
 | Hot Wax design (catalogue repost to new IG; posted by Grok Bot) | GL Instagram @gameplaylaboratory | https://www.instagram.com/reel/DgBa-oaPmYV/ (22 Nov 01:35 Helsinki) | A new take on Tetris.. You don't clear lines, you light a path. In Hot Wax every piece is a candle: connect the wicks and the fire walks the chain, burnt wax clears, and one bad drop snuffs it out. Keep placing, because the fire always needs somewhere to go. Out now on Steam: store.steampowered.com/app/3041750 |
+| Slam Tank design v1 (catalogue repost to new IG; posted by Grok Bot) | GL Instagram @gameplaylaboratory | https://www.instagram.com/reel/DgBkh1vvs-z/ (22 Nov 02:58 Helsinki) | The cannon barrel is a melee weapon. In SLAM TANK you spin the turret to hit everything around you, ram straight through enemy lines off boost pads, and your score is the bill for everything you wreck. Free demo on Steam: store.steampowered.com/app/5186030 |
 
 ## Scheduled (about 6 hours apart)
 
