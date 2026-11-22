@@ -21,15 +21,15 @@
 // runs down in its enemy loop — the same sequence 1.x runs, with the seam in
 // a different place. test/director.mjs holds all of it in lockstep with 1.x's
 // own loop source.
-import { fairPoint } from '../fairspawn.js?v=161';
-import { TUNING } from '../../tuning.js?v=161';
-import * as worlds from '../worlds.js?v=161';
-import * as challenge from '../challenge.js?v=161';
-import { makeRng } from '../rng.js?v=161';
-import * as bossfight from '../bossfight.js?v=161';
-import * as floorshift from '../floorshift.js?v=161';
-import { phaseSpec, kindOf } from '../species/bosskit.js?v=161';
-import { BOSS_KINDS } from '../../tuning/bosskinds.js?v=161';
+import { fairPoint } from '../fairspawn.js?v=162';
+import { TUNING } from '../../tuning.js?v=162';
+import * as worlds from '../worlds.js?v=162';
+import * as challenge from '../challenge.js?v=162';
+import { makeRng } from '../rng.js?v=162';
+import * as bossfight from '../bossfight.js?v=162';
+import * as floorshift from '../floorshift.js?v=162';
+import { phaseSpec, kindOf } from '../species/bosskit.js?v=162';
+import { BOSS_KINDS } from '../../tuning/bosskinds.js?v=162';
 
 const T = TUNING, W = T.waves, TAU = Math.PI * 2;
 
@@ -61,6 +61,10 @@ export function pressure(w, wave) {
   const G = W.gentle;
   if (!G || !worlds.on(w) || !w.world) return wave;
   const k = w.mode === 'hardcade' ? G.hard : G.slope, n = wave - (w.world - 1) * W.rhythm.bossEvery;
+  // v162 (owner, 22 Nov: worlds 7-9 "change shape, not pressure"): in ARCADE a world past `plateau` presses as the
+  // same wave of world `plateau` would — its own first waves' breather and its climb to the boss, at world 6's
+  // height. HARDCADE keeps climbing (it is the harder mode)
+  if (G.plateau && w.mode === 'arcade' && w.world > G.plateau) wave -= (w.world - G.plateau) * W.rhythm.bossEvery;
   const base = wave <= G.from ? wave : G.from + (wave - G.from) * k;
   return Math.max(1, base - (G.entry?.[n - 1] ?? 0) + (G.world?.[w.world - 1] ?? 0));
 }
@@ -439,10 +443,13 @@ function formWave(w, d) {
     q.splice(i + 1, 0, ...moons);
     i += n;
   }
-  const P = F.pair;
-  if (w.world >= P.from && d.plan.kind !== 'boss' && r.next() < P.chance) {
+  const P = F.pair, late = P.late && w.world >= P.late.from;
+  // v162: from world `late.from` a wave carries up to `late.pairs` pairs, each at `late.chance` (the shape changes
+  // where the pressure stops climbing)
+  for (let pi = 0; pi < (late ? P.late.pairs : 1); pi++) {
+  if (w.world >= P.from && d.plan.kind !== 'boss' && r.next() < (late ? P.late.chance : P.chance)) {
     const at = [];
-    for (let i = 0; i < q.length && at.length < 2; i++) { const s = q[i]; if (s.front != null && !s.shooter && !s.boss && (s.size === 2 || s.size === 3)) at.push(i); }
+    for (let i = 0; i < q.length && at.length < 2; i++) { const s = q[i]; if (s.front != null && !s.shooter && !s.boss && !s.pair && (s.size === 2 || s.size === 3)) at.push(i); }
     if (at.length === 2) {
       const a = q[at[0]], [b] = q.splice(at[1], 1);
       const kind = P.kinds.includes(a.kind) ? a.kind : P.kinds.includes(b.kind) ? b.kind : P.kind;
@@ -451,6 +458,7 @@ function formWave(w, d) {
       Object.assign(b, { delay: a.delay, angle: a.angle + P.apart, ox: 0, oz: 0, front: a.front, pair: { id, end: 1 } });
       q.splice(at[0] + 1, 0, b);
     }
+  }
   }
 }
 
