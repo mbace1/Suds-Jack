@@ -28,6 +28,7 @@
 - A two-rooms rule for room 31 (cross to the other room when a DRAPER in yours winds up) was built and dropped: the bots kill every DRAPER before its first curtain.
 - Rooms 20 and 22's lines re-measured, normal and HARD, both orientations.
 - `scripts/strategy.mjs` flags 7 rooms: 4 and 16 pay the first-timer; 7's order is the room's own rule; 9, 14 and 31 go to a playtest (no bot is hit there, or a DRAPER never fires); 12 is next.
+- `itch/tokodropv161.html`; the hub note and `hub/versions.json` at 161.
 - (superseded) `scripts/strategy.mjs` flagged 6 rooms (4, 9, 14, 16, 22, 34). Rooms 4 and 16 pay the first-timer (room 4 without aim: 12% less; room 16: slower), which the report does not ask; rooms 9 and 14 are rooms where nothing a bot chooses changes anything, because no bot is ever hit there — a person's read, not a bot's (DESIGN, 22 Nov); in rooms 22 and 34 holding the middle still beats moving.
 - Cache tokens `?v=160` → `?v=161`; HUD label → `2.0 · v161`
 
