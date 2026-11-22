@@ -11,11 +11,11 @@
 // every step's position, spin and squash must match 1.x's frame for frame.
 import { readFileSync } from 'node:fs';
 import * as THREE from '../../vendor/three/three.webgpu.js?v=r186';
-import { createWorld, step, api } from '../../js/sim/world.js?v=161';
-import { TUNING as T } from '../../js/tuning.js?v=161';
-import { BEHAVIOUR } from '../../js/sim/species/index.js?v=161';
-import behaviour from '../../js/sim/species/shepherd.js?v=161';
-import look from '../../js/render/looks/shepherd.js?v=161';
+import { createWorld, step, api } from '../../js/sim/world.js?v=162';
+import { TUNING as T } from '../../js/tuning.js?v=162';
+import { BEHAVIOUR } from '../../js/sim/species/index.js?v=162';
+import behaviour from '../../js/sim/species/shepherd.js?v=162';
+import look from '../../js/render/looks/shepherd.js?v=162';
 
 let failed = 0, passed = 0;
 const check = (claim, ok, detail = '') => {

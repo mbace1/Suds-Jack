@@ -5,10 +5,10 @@
 // 10894; tuning.js:315, 334-338; audio.js:248), asserted against the sim
 // stepping on its fixed 1/60 s, and its look against a real three.
 import { readFileSync } from 'node:fs';
-import { createWorld, step, api } from '../../js/sim/world.js?v=161';
-import { TUNING as T } from '../../js/tuning.js?v=161';
-import behaviour from '../../js/sim/species/slug.js?v=161';
-import look, { segRadius } from '../../js/render/looks/slug.js?v=161';
+import { createWorld, step, api } from '../../js/sim/world.js?v=162';
+import { TUNING as T } from '../../js/tuning.js?v=162';
+import behaviour from '../../js/sim/species/slug.js?v=162';
+import look, { segRadius } from '../../js/render/looks/slug.js?v=162';
 import * as THREE from '../../vendor/three/three.webgpu.js?v=r186';
 
 let failed = 0, passed = 0;

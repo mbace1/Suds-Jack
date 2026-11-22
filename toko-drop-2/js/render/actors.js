@@ -15,25 +15,25 @@
 // that springs in and fades (splats.js). Views are pooled per species, so a
 // gel's material is built once and reused, never compiled mid-fight.
 import * as THREE from 'three/webgpu';
-import { TUNING } from '../tuning.js?v=161';
+import { TUNING } from '../tuning.js?v=162';
 import * as TSL from 'three/tsl';
-import { gelMaterial, domeGeometry, cubeGeometry, heroGeometry, GEL_TIME, GEL_SUN, GEL_GLINT, GEL_CORE } from './gel.js?v=161';
-import { LOOKS } from './looks/index.js?v=161';
-import { styleName, setStyle as setStyleMode, styledBody } from './style.js?v=161';
-import { JellyBody } from './jelly.js?v=161';
-import { Juice } from './juice.js?v=161';
-import { ArenaLight } from './light.js?v=161';
-import { toSdf } from './sdf.js?v=161';
-import { PickupView } from './pickups.js?v=161';
-import { ChallengeView } from './challenge.js?v=161';
-import { PostView } from './posts.js?v=161';
-import { SlamView } from './slam.js?v=161';
-import { HintView } from './hints.js?v=161';
-import { Goo } from './goo.js?v=161';
-import { Water } from './water.js?v=161';
-import { mult as heatMult } from '../sim/heat.js?v=161';
-import { CALM } from './kit.js?v=161';
-import { strands as liveStrands } from '../sim/formation.js?v=161';
+import { gelMaterial, domeGeometry, cubeGeometry, heroGeometry, GEL_TIME, GEL_SUN, GEL_GLINT, GEL_CORE } from './gel.js?v=162';
+import { LOOKS } from './looks/index.js?v=162';
+import { styleName, setStyle as setStyleMode, styledBody } from './style.js?v=162';
+import { JellyBody } from './jelly.js?v=162';
+import { Juice } from './juice.js?v=162';
+import { ArenaLight } from './light.js?v=162';
+import { toSdf } from './sdf.js?v=162';
+import { PickupView } from './pickups.js?v=162';
+import { ChallengeView } from './challenge.js?v=162';
+import { PostView } from './posts.js?v=162';
+import { SlamView } from './slam.js?v=162';
+import { HintView } from './hints.js?v=162';
+import { Goo } from './goo.js?v=162';
+import { Water } from './water.js?v=162';
+import { mult as heatMult } from '../sim/heat.js?v=162';
+import { CALM } from './kit.js?v=162';
+import { strands as liveStrands } from '../sim/formation.js?v=162';
 
 const T = TUNING;
 const B = T.blob, D = T.death;

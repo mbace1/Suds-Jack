@@ -2,10 +2,10 @@
 // trials.mjs — the arcade's CHALLENGE WAVES (v36, sim/challenge.js), in bare
 // node: which waves carry one, that it does not move the waves' own schedule,
 // and that met pays and missed does not.
-import { createWorld, step, api } from '../js/sim/world.js?v=161';
-import { TUNING as T } from '../js/tuning.js?v=161';
-import { trialFor, TRIALS } from '../js/sim/challenge.js?v=161';
-import { schedule } from '../js/sim/director/arcade.js?v=161';
+import { createWorld, step, api } from '../js/sim/world.js?v=162';
+import { TUNING as T } from '../js/tuning.js?v=162';
+import { trialFor, TRIALS } from '../js/sim/challenge.js?v=162';
+import { schedule } from '../js/sim/director/arcade.js?v=162';
 // the trials are held on 1.x's own pressure: a gentler wave (v54's ramp) clears
 // before a protect clock runs out when every body is killed the step it lands
 T.waves.gentle = null;
