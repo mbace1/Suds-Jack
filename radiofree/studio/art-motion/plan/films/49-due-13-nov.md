@@ -24,3 +24,8 @@ safety / researchers / OpenAI [fired]." · "Answers / were due / [13 Nov]." · "
 "Status: / [delivered]." Both sides on screen: OpenAI's line (quoted as in Common Dreams/FourWeekMBA summaries) and the
 researchers' (nothing confidential shared). No "seen"/"read" claim; no invented question text (placeholders). Checked again
 21 Nov: no public answer found. 22.2 s. Stills: previews/21-11-RFH-Due-13-Nov-stills.jpg
+
+## Build (22 Nov) — owner: "Go ahead"
+`films/22-11-Coxon17-Due-13-Nov.mp4` (with the sign-off), `-loop.mp4`, `.en.srt`, preview `previews/22-11-RFH-Due-13-Nov-en.mp4`, QA in
+`qa/due-13-nov/` (87 pass, 1 warn: continuity 9%). Sound: its own kit, HOLD LINE. The calendar runs to 21 Nov (OVERDUE: 8 DAYS) and the
+tag says "searched 19–21 Nov"; the 22 Nov check found no answer either.

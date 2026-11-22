@@ -1,4 +1,4 @@
-"""Be Prepared (RFH, Coxon 17 · the US prepper boom), 3D v1.1 — the cue sheet. Its own kit: BACKYARD (pipeline/sound/backyard.py).
+"""Be Prepared (RFH, Coxon 18 · the US prepper boom), 3D v1.1 — the cue sheet. Its own kit: BACKYARD (pipeline/sound/backyard.py).
 A cheerful, slightly out-of-tune picking tune that keeps going; the bulbs' buzz, the TV's whine, cans, the generator, the ladder; the
 hatch slams and EVERYTHING stops (the tune too), then the station's sting.
     uv run --with numpy --with soundfile python clay/bunker/score.py <events.json> <out.wav> [<report.json> <stems>]

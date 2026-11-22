@@ -1,4 +1,4 @@
-// BE PREPARED (RFH, Coxon 17 · the US prepper boom), 3D v1 stills, 22 Nov. Owner, 22 Nov: "How about prepping in the US?", then
+// BE PREPARED (RFH, Coxon 18 · the US prepper boom), 3D v1 stills, 22 Nov. Owner, 22 Nov: "How about prepping in the US?", then
 // "Maybe show bunker footage. A bit like fallout vibe". See plan/films/52-be-prepared.md.
 // LOOK: the mid-century civil-defence era — a corrugated steel shelter tube under a backyard, caged amber bulbs against teal steel,
 // canned rations, a round-cornered TV, the yellow-and-black shelter sign. ORIGINAL: nothing from the Fallout games.

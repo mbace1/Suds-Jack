@@ -1,4 +1,4 @@
-# 52 · Be Prepared (RFH, Coxon 17 · the US prepper boom) — 3D v1 stills
+# 52 · Be Prepared (RFH, Coxon 18 · the US prepper boom) — 3D v1 stills
 
 Owner, Sun 22 Nov: "How about prepping in the US?", then "Maybe show bunker footage. A bit like fallout vibe".
 Look: the mid-century civil-defence era (1950s shelter brochures, the yellow-and-black fallout-shelter sign, canned rations, a round-
