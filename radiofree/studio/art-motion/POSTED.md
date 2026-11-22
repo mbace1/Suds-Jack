@@ -218,3 +218,5 @@ Approval of the three v2 drafts (Tailgated, Per Caller, That's a Wednesday): Mik
 | Hexmental | GL Bluesky | https://bsky.app/profile/gameplaylaboratory.bsky.social/post/3n2sl6tmdlk2b | caption.txt |
 | Hexmental | GL TikTok | UNDER REVIEW (TikTok shows "Only me / content under review"); link pending | caption.txt |
 | Hexmental | GL Instagram Reel | NOT POSTED: Instagram suspended/verification wall (phone number needed) on gameplay.laboratory | caption.txt |
+
+| Helsinki 5, Release Notes v1.1 (approved by Mikael 22 Nov; posted by Grok Bot) | RFH Instagram, X, YouTube Short, TikTok | posted 22 Nov ~18:49-18:54 Helsinki (exact links not captured; see each profile's newest post). Bluesky NOT posted: account email unverified. Note: the euro sign dropped on X and TikTok ("bid 2 billion") | body per NOW item |
