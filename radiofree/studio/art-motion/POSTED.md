@@ -8,6 +8,8 @@ Accounts:
 
 ## ▶ Post now (Grok Bot: start here)
 
+_Nothing waiting as of Sun 22 Nov: both items below are posted (owner: "The others are out")._
+
 **POSTED 21 Nov 17:20–17:25 Helsinki (Grok Bot):** **Helsinki 4, Stable v1.3** — approved by Mikael Sat 21 Nov ("post drone now"; "Ready for posting"). Full row under "Scheduled" below. Links in "Posted".
 - Branch `claude/radio-free-helsinki-pvtsw5`. Files: Instagram `radiofree/studio/art-motion/films/21-11-Helsinki4-Stable-loop.mp4` (Original aspect, uncropped); X + YouTube `radiofree/studio/art-motion/films/21-11-Helsinki4-Stable.mp4` (with the sign-off).
 - Body (all three channels): 11 Nov: a Russian warship hit off Suursaari, 40 km from Finland (Ukraine claims it). Finland: the situation remains "stable." 21 Nov: a Russian cargo ship on fire in the same gulf (Russia says drones). Finland closes the eastern gulf's sky and sea, again.
