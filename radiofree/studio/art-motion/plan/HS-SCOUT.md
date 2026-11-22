@@ -1630,3 +1630,11 @@ and for Sparta II's facts. Owner to decide whether RFH touches it at all.
   apologised. Possible Stable follow-up material; nothing in the posted film is now wrong.
 - **Reactions:** no visible reader reaction found by search for Stable or Who Wrote the Bill (posted 21 Nov); search does not index our
   own posts' comments.
+
+## Check Sun 22 Nov 17:16 (search summaries only)
+- No new Helsingin Sanomat candidate for 20–22 Nov found. Context: the Helsinki city board approved data-centre principles on
+  2 Nov (STT press release), alongside the Hanasaari idea competition — background for a Helsinki data-centre story, not a pitch.
+  [STT](https://www.sttinfo.fi/tiedote/72466598/helsingin-kaupunginhallitus-hyvaksyi-datakeskusperiaatteet?lang=fi)
+- **Gulf of Finland (Stable):** no restriction or Sparta II follow-up dated 22 Nov found; the latest dated restriction items in the
+  index are older (Kaleva/MTV). Nothing in the posted film is now wrong.
+- **Reactions:** none visible to search for Stable, Trade Secret or Count the Trees.

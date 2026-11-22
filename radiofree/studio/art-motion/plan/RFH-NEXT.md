@@ -1505,3 +1505,12 @@ scheduled task's last fire was 13 Nov 05:16), so **Give Way had no Tuesday-morni
   so "now one a day" is not new to Nov 2026; the TribLive "one in 2018, now one a day" framing is still his claim, attributed. Vance
   quote unchanged. No new outage news found.
 - **Due 13 Nov:** no public OpenAI answer found; holds. **Not Yet Listed:** HE 282/2026 not re-checked today (no new search result).
+
+## Pre-posting check Sun 22 Nov 17:16
+- **Release Notes (NOW):** holds. Bid live at €41/share (~€2.05B); not withdrawn or rejected; approvals list (Rome, Washington,
+  Paris, London, EU) unchanged; Leonardo's CEO calls it "a positive signal" and rules out a counter-bid (19 Nov). Post as approved.
+- **Be Prepared (built v1.2, not approved):** holds. FAA ground stop Fri 13 Nov (TheWrap: router/server overload during telecom
+  upgrades; thousands of cancellations, WCAX 14 Nov). Vance quote confirmed: The Ingraham Angle, 16 Nov (TheWrap, TheGrio, IBTimes),
+  where he also said people shouldn't build bunkers — consistent with the film's paraphrase. Atlas "one a day": no new reporting
+  found; stays attributed to the seller. Costco generators (Fortune 19 Nov) not re-surfaced; no contradiction found.
+- **Due 13 Nov:** scrapped by the owner 22 Nov; no further checks.

@@ -1932,3 +1932,22 @@ Everything below comes from search summaries. No article was opened.
   disclosure needed if used.
 - **OpenAI / Casar letter (Due 13 Nov):** still no public answer found (Nextgov, Common Dreams, TechCrunch, CTV coverage unchanged);
   OpenAI's on-record line on the firings: "a significant breach of trust"; the researchers: nothing confidential shared. Premise holds.
+
+## Check Sun 22 Nov 17:16 (search summaries only)
+- **ICEYE / Avio (Release Notes, NOW):** nothing newer than 19 Nov found. Leonardo CEO Lorenzo Mariani (Sole 24 Ore, Teleborsa 19 Nov):
+  the offer is "a positive signal", staying a shareholder is one option, a counter-bid is ruled out. Crosetto's "think carefully"
+  (Reuters 18 Nov) and the conditions (≥66.67%, golden power, France and UK FDI, EU FSR, CFIUS) unchanged. Leonardo's 18.04% matters:
+  if it stays out, ICEYE needs >80% of the rest (Agenzia Nova). Bid not withdrawn or rejected; €41/share (~€2.05B) unchanged.
+  [Sole 24 Ore](https://en.ilsole24ore.com/art/avio-mariani-leonardo-iceye-offer-positive-signal-well-consider-it-AJSJIaJC),
+  [Teleborsa](https://www.teleborsa.it/DettaglioNews/239_2026-11-19_TLB/Avio-Mariani-Leonardo-restare-azionisti-una-delle-opzioni-Esclusa-una-contro-OPA.html),
+  [Agenzia Nova](https://www.agenzianova.com/en/news/Iceye%27s-lopa-on-Avio-between-Qatari-partners--Leonardo%27s-position-and-Golden-Power/)
+- **Data-centre jobs and NDAs (background, not new):** the Warren / Van Hollen / Blumenthal Senate report "Power and Profits" (9 Oct;
+  TIME exclusive 8 Oct) — seven firms (Amazon, Google, Meta, Microsoft, CoreWeave, Digital Realty, Equinix), several declined to give
+  permanent-job numbers, the big four regularly sought NDAs, none agreed to pay for grid build-out. These are the senators' findings;
+  company rebuttals not seen in summaries. Fits the "town NDAs" watch item; a film would need the report itself and the companies' replies.
+  An aggregator also lists a newer Bloomberg headline on a Democratic report about data-center tax breaks — **undated here, verify.**
+  [TIME](https://time.com/article/2026/10/08/senate-investigation-ai-data-centers/)
+- **OpenAI / Casar letter:** still no public answer found (9 days past 13 Nov). Due 13 Nov was scrapped by the owner today, so this is
+  now tracking only.
+- **Military AI / GPU-DRAM / whistleblower act / Nscale-Anthropic:** nothing new dated after 19 Nov found.
+- **Reactions:** none visible to search.
