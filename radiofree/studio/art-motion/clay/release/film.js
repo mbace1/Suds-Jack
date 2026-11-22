@@ -96,12 +96,12 @@ function shot5(t) {
   const a = ease.out((t - EV.status) / 0.4); g.save(); g.globalAlpha = a;
   rr(80, 980, W - 160, 600, 24); g.fillStyle = C.panel2; g.fill();
   text(UI.status, 120, 1050, '600 26px Inter', C.dim); text(UI.pending.toUpperCase(), 120, 1120, '800 56px RobotoCondensed', C.amber);
-  [[UI.rome, 1250], [UI.wash, 1400]].forEach(([n, y], i) => { text(n, 120, y, '700 46px Inter', C.ink);
-    const cx = W - 170, cy = y - 16, a0 = t * 4 + i; g.strokeStyle = C.faint; g.lineWidth = 7; g.beginPath(); g.arc(cx, cy, 30, 0, TAU); g.stroke();
-    g.strokeStyle = C.amber; g.beginPath(); g.arc(cx, cy, 30, a0, a0 + 1.6); g.stroke(); g.fillStyle = C.line; g.fillRect(120, y + 46, W - 240, 2); });
+  [UI.rome, UI.wash, UI.paris, UI.london, UI.brussels].forEach((n, i) => { const y = 1200 + i * 72, ai = clamp((t - EV.status - 0.15 * i) / 0.3); g.save(); g.globalAlpha *= ai; text(n, 120, y, '700 38px Inter', C.ink);
+    const cx = W - 160, cy = y - 13, a0 = t * 4 + i; g.strokeStyle = C.faint; g.lineWidth = 6; g.beginPath(); g.arc(cx, cy, 22, 0, TAU); g.stroke();
+    g.strokeStyle = C.amber; g.beginPath(); g.arc(cx, cy, 22, a0, a0 + 1.6); g.stroke(); g.fillStyle = C.line; g.fillRect(120, y + 24, W - 240, 2); g.restore(); });
   const p = t > EV.ok ? ease.back((t - EV.ok) / 0.35) : 0; g.restore();
-  if (p > 0) { g.save(); g.translate(W / 2, 1530); g.scale(p, p); rr(-230, -40, 460, 80, 40); g.fillStyle = 'rgba(242,184,58,.16)'; g.fill(); g.strokeStyle = C.amber; g.lineWidth = 3; g.stroke();
-    text('AWAITING 2 APPROVALS', 0, 2, '800 32px RobotoCondensed', C.amber, 'center', 'middle'); g.restore(); }
+  if (p > 0) { g.save(); g.translate(W / 2, 1600); g.scale(p, p); rr(-230, -40, 460, 80, 40); g.fillStyle = 'rgba(242,184,58,.16)'; g.fill(); g.strokeStyle = C.amber; g.lineWidth = 3; g.stroke();
+    text('AWAITING 5 APPROVALS', 0, 2, '800 32px RobotoCondensed', C.amber, 'center', 'middle'); g.restore(); }
 }
 
 function tag(s, a, y = 1700) {

@@ -62,9 +62,9 @@
       "at": "s5+0.5",
       "until": "end-0.3",
       "text": {
-        "en": "Still needs / Rome’s and / Washington’s [OK]."
+        "en": "Still needs / [five] approvals."
       },
-      "source": "An Avio spokesman told Defense News that US government approval would be required in the event of a takeover by ICEYE, as well as Italian government approval (17 Nov 2026). The bid is pending."
+      "source": "Avio's spokesman: Italian and US government approval required (Defense News, 17 Nov). The offer is also conditional on French and UK investment clearance and an EU foreign-subsidies review (Defense Post; AeroTime). Italy's defence minister urged caution; Leonardo holds about 18% of Avio (Reuters, 18 Nov). Search summaries, 22 Nov."
     }
   ],
   "ui": {
@@ -129,10 +129,19 @@
       "en": "VALUING AVIO AT €2 BILLION (DEFENSE NEWS)"
     },
     "tag5": {
-      "en": "AVIO: ITALIAN AND US GOVERNMENT APPROVAL REQUIRED · BID PENDING"
+      "en": "ROME AND WASHINGTON, PLUS FRENCH AND UK CLEARANCE AND AN EU REVIEW · BID PENDING"
+    },
+    "paris": {
+      "en": "Paris"
+    },
+    "london": {
+      "en": "London"
+    },
+    "brussels": {
+      "en": "Brussels (EU)"
     }
   },
   "post": {
-    "en": "ICEYE began as a 2012 Aalto course project. On 16 Nov it unveiled a radar satellite that sees 11 cm. On 17 Nov it bid €2 billion for Avio, an Italian rocket maker. The deal still needs Rome's and Washington's OK."
+    "en": "ICEYE began as a 2012 Aalto course project. On 16 Nov it unveiled a radar satellite that sees 11 cm. On 17 Nov it bid €2 billion for Avio, an Italian rocket maker. The deal still needs Rome, Washington, Paris, London and the EU."
   }
 }

@@ -16,3 +16,8 @@ radar picture of a parking lot is DRAWN and labelled ILLUSTRATION; it sharpens t
 Captions: "ICEYE began / as an Aalto / course [project]." · "16 Nov: / a radar satellite / that sees [11 cm]." · "17 Nov: / a bid for an /
 Italian / [rocket maker]." · "Price: / [€2 billion]." · "Still needs / Rome’s and / Washington’s [OK]." 21.6 s.
 Not about Anthropic: no disclosure line. Stills: previews/22-11-RFH-Release-Notes-stills.jpg
+
+## v1.1 (22 Nov, the 07:16 check)
+The bid also needs French and UK investment clearance and an EU foreign-subsidies review besides Italy and the US (Defense Post,
+AeroTime); Italy's defence minister urged caution, Leonardo holds ~18% of Avio (Reuters 18 Nov). Punchline now "Still needs /
+[five] approvals."; the status screen lists Rome, Washington, Paris, London, Brussels (EU); tag5 and the post updated.
