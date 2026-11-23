@@ -5,10 +5,10 @@
 // against the sim stepping on its fixed 1/60 s, and the look against 1.x's
 // one-mesh transform.
 import { readFileSync } from 'node:fs';
-import { createWorld, step, api } from '../../js/sim/world.js?v=162';
-import { TUNING as T } from '../../js/tuning.js?v=162';
-import behaviour, { lunge } from '../../js/sim/species/globbo.js?v=162';
-import look from '../../js/render/looks/globbo.js?v=162';
+import { createWorld, step, api } from '../../js/sim/world.js?v=163';
+import { TUNING as T } from '../../js/tuning.js?v=163';
+import behaviour, { lunge } from '../../js/sim/species/globbo.js?v=163';
+import look from '../../js/render/looks/globbo.js?v=163';
 
 let failed = 0, passed = 0;
 const check = (claim, ok, detail = '') => {

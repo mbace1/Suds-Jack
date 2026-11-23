@@ -20,9 +20,9 @@
 //   node scripts/strategy.mjs --room in-order    one room
 //   node scripts/strategy.mjs --seeds 24 --portrait
 import { readFileSync } from 'node:fs';
-import { createWorld, step } from '../js/sim/world.js?v=162';
-import { TUNING as T } from '../js/tuning.js?v=162';
-import { rooms } from '../js/sim/director/campaign.js?v=162';
+import { createWorld, step } from '../js/sim/world.js?v=163';
+import { TUNING as T } from '../js/tuning.js?v=163';
+import { rooms } from '../js/sim/director/campaign.js?v=163';
 import { SKILLS, prng, think } from './bot.mjs';
 
 const args = process.argv.slice(2), opt = (k, d) => { const i = args.indexOf(k); return i < 0 ? d : args[i + 1]; };

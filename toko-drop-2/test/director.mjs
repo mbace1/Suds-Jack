@@ -7,10 +7,10 @@
 // species are still being ported; the last block runs it in the real world.
 //
 // Usage: node test/director.mjs           (exit 1 on any failure)
-import { makeRng } from '../js/sim/rng.js?v=162';
-import { TUNING as T } from '../js/tuning.js?v=162';
-import arcade, * as A from '../js/sim/director/arcade.js?v=162';
-import { BOSS_KINDS } from '../js/tuning/bosskinds.js?v=162';
+import { makeRng } from '../js/sim/rng.js?v=163';
+import { TUNING as T } from '../js/tuning.js?v=163';
+import arcade, * as A from '../js/sim/director/arcade.js?v=163';
+import { BOSS_KINDS } from '../js/tuning/bosskinds.js?v=163';
 // v158: the director's own rules — a boss wave on 1.x's clock, a live boss holding the round — are tested with the
 // boss kinds off (an endurance boss's own clock ends its fight; test/bosskinds.mjs holds that)
 BOSS_KINDS.on = false;
@@ -635,8 +635,8 @@ const jumpTo = (w, n) => { w.dir.wave = n - 1; w.dir.gapT = 1e-9; w.dir.queue = 
 
 // ── in the real world ──────────────────────────────────────────────
 {
-  const { createWorld, step, api } = await import('../js/sim/world.js?v=162');
-  const { DIRECTORS } = await import('../js/sim/director/index.js?v=162');
+  const { createWorld, step, api } = await import('../js/sim/world.js?v=163');
+  const { DIRECTORS } = await import('../js/sim/director/index.js?v=163');
   check('ARCADE and HARDCADE run this director', DIRECTORS.arcade === arcade && DIRECTORS.hardcade === arcade);
   const IDLE = { mx: 0, mz: 0, ax: 0, az: 0, aim: false, fire: false, dash: false };
   const live = (seed) => {

@@ -14,25 +14,25 @@
 // moves, then everything is tested, against post-move positions.
 //
 // Modes: 'arcade', 'hardcade' (corpses fire back) and 'survival'.
-import { TUNING } from '../tuning.js?v=162';
-import { press, pressReset } from './press.js?v=162';
-import { makeRng } from './rng.js?v=162';
-import { BEHAVIOUR } from './species/index.js?v=162';
-import { armoured, baseOf } from './species/bosskit.js?v=162';
-import { DIRECTORS } from './director/index.js?v=162';
-import * as fire from './fire.js?v=162';
-import { makeHero, heroStep, applyPull, hurtHero, invincible } from './hero.js?v=162';
-import { swarmForces, resolveCrowd } from './crowd.js?v=162';
-import { revengeColor } from './color.js?v=162';
-import * as pickups from './pickups.js?v=162';
-import * as worlds from './worlds.js?v=162';
-import * as reshape from './reshape.js?v=162';
-import { Arena, levelShape, levelMoves, levelEnvelope, KIND } from './shape.js?v=162';
-import * as rules from './rules.js?v=162';
-import * as heat from './heat.js?v=162';
-import * as formation from './formation.js?v=162';
-import * as posts from './posts.js?v=162';
-import * as slam from './slam.js?v=162';
+import { TUNING } from '../tuning.js?v=163';
+import { press, pressReset } from './press.js?v=163';
+import { makeRng } from './rng.js?v=163';
+import { BEHAVIOUR } from './species/index.js?v=163';
+import { armoured, baseOf } from './species/bosskit.js?v=163';
+import { DIRECTORS } from './director/index.js?v=163';
+import * as fire from './fire.js?v=163';
+import { makeHero, heroStep, applyPull, hurtHero, invincible } from './hero.js?v=163';
+import { swarmForces, resolveCrowd } from './crowd.js?v=163';
+import { revengeColor } from './color.js?v=163';
+import * as pickups from './pickups.js?v=163';
+import * as worlds from './worlds.js?v=163';
+import * as reshape from './reshape.js?v=163';
+import { Arena, levelShape, levelMoves, levelEnvelope, KIND } from './shape.js?v=163';
+import * as rules from './rules.js?v=163';
+import * as heat from './heat.js?v=163';
+import * as formation from './formation.js?v=163';
+import * as posts from './posts.js?v=163';
+import * as slam from './slam.js?v=163';
 
 const T = TUNING;
 

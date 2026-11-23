@@ -12,13 +12,13 @@
 // and w.over, as a death does. What the room ASKS — its goal and its mods —
 // is sim/challenge.js (CAMPAIGN_PLAN.md); `fail` is a room whose clock ran
 // out on a goal it did not meet. Every number is TUNING.campaign.
-import { kindOf } from '../species/bosskit.js?v=162';
-import { BOSS_KINDS } from '../../tuning/bosskinds.js?v=162';
-import { holdRoom } from '../bossfight.js?v=162';
-import { fairPoint } from '../fairspawn.js?v=162';
-import { TUNING } from '../../tuning.js?v=162';
-import * as challenge from '../challenge.js?v=162';
-import * as heat from '../heat.js?v=162';
+import { kindOf } from '../species/bosskit.js?v=163';
+import { BOSS_KINDS } from '../../tuning/bosskinds.js?v=163';
+import { holdRoom } from '../bossfight.js?v=163';
+import { fairPoint } from '../fairspawn.js?v=163';
+import { TUNING } from '../../tuning.js?v=163';
+import * as challenge from '../challenge.js?v=163';
+import * as heat from '../heat.js?v=163';
 
 const T = TUNING, C = T.campaign, ORDER = ['F', 'D', 'C', 'B', 'A', 'S'];   // v157: D, a clear under C
 
