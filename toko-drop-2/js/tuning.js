@@ -80,8 +80,8 @@ export const TUNING = {
       // v163 (owner, 23 Nov: world-specific enemies): a world's own kind at `speciesWeight` 6 (was 3-4), about a third
       // of what it brings, and one shared kind that belongs to its place drawn more there (`favour`, arcade.js schedule)
       { id: 'grid', heavy: 0 },
-      { id: 'driveway', trial: 'gates', heavy: 0.35, species: [['hoppa', 0, 3]], speciesWeight: 6, favour: [['orange', 4]], arena: { landscape: { hx: 27.5, hz: 16 }, portrait: { hx: 16, hz: 27.5 } } },
-      { id: 'sewer', trial: 'hold', heavy: 0.5, species: [['worma', 0, 3]], speciesWeight: 6, favour: [['slug', 4]], arena: { landscape: { hx: 30, hz: 11 }, portrait: { hx: 11, hz: 30 } } },
+      { id: 'driveway', trial: 'gates', heavy: 0.35, species: [['hoppa', 0, 3]], speciesWeight: 4, favour: [['redd', 4]], arena: { landscape: { hx: 27.5, hz: 16 }, portrait: { hx: 16, hz: 27.5 } } },
+      { id: 'sewer', trial: 'hold', heavy: 0.5, species: [['worma', 0, 3]], speciesWeight: 3, favour: [['sludge', 4]], arena: { landscape: { hx: 30, hz: 11 }, portrait: { hx: 11, hz: 30 } } },
       // v27 (owner, 2026-10-23: "let's do both and make it 9 worlds"): down
       // the pipes, then out to sea. Each world past the sewer plays under one
       // of 1.x's world rules (sim/rules.js; TUNING.campaign.rules), and has a
