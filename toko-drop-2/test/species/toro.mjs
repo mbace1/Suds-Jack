@@ -12,10 +12,10 @@
 // test dashes against a charging wheel, and the dying view's swell.
 import { readFileSync } from 'node:fs';
 import * as THREE from '../../vendor/three/three.webgpu.js?v=r186';
-import { createWorld, step, api } from '../../js/sim/world.js?v=162';
-import { makeRng } from '../../js/sim/rng.js?v=162';
-import { TUNING as T } from '../../js/tuning.js?v=162';
-import look from '../../js/render/looks/toro.js?v=162';
+import { createWorld, step, api } from '../../js/sim/world.js?v=163';
+import { makeRng } from '../../js/sim/rng.js?v=163';
+import { TUNING as T } from '../../js/tuning.js?v=163';
+import look from '../../js/render/looks/toro.js?v=163';
 
 let failed = 0, passed = 0;
 const check = (claim, ok, detail = '') => {

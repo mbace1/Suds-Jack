@@ -9,13 +9,13 @@
 // ORACLE: 1.x's own code, transcribed with 1.x's literals and fed the same
 // random stream.
 import { readFileSync } from 'node:fs';
-import { createWorld, step, api } from '../../js/sim/world.js?v=162';
-import { TUNING as T } from '../../js/tuning.js?v=162';
-import { waveScale } from '../../js/sim/director/arcade.js?v=162';
-import { makeRng } from '../../js/sim/rng.js?v=162';
-import behaviour from '../../js/sim/species/reddmini.js?v=162';
-import look from '../../js/render/looks/reddmini.js?v=162';
-import reddLook from '../../js/render/looks/redd.js?v=162';
+import { createWorld, step, api } from '../../js/sim/world.js?v=163';
+import { TUNING as T } from '../../js/tuning.js?v=163';
+import { waveScale } from '../../js/sim/director/arcade.js?v=163';
+import { makeRng } from '../../js/sim/rng.js?v=163';
+import behaviour from '../../js/sim/species/reddmini.js?v=163';
+import look from '../../js/render/looks/reddmini.js?v=163';
+import reddLook from '../../js/render/looks/redd.js?v=163';
 import * as THREE from '../../vendor/three/three.webgpu.js?v=r186';
 
 let failed = 0, passed = 0;

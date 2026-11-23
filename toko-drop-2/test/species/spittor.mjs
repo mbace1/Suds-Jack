@@ -7,9 +7,9 @@
 // starting clock, so the steps the tells start and the rings leave on must
 // match 1.x's frame for frame.
 import { readFileSync } from 'node:fs';
-import { createWorld, step, api } from '../../js/sim/world.js?v=162';
-import { TUNING as T } from '../../js/tuning.js?v=162';
-import look from '../../js/render/looks/spittor.js?v=162';
+import { createWorld, step, api } from '../../js/sim/world.js?v=163';
+import { TUNING as T } from '../../js/tuning.js?v=163';
+import look from '../../js/render/looks/spittor.js?v=163';
 
 let failed = 0, passed = 0;
 const check = (claim, ok, detail = '') => {

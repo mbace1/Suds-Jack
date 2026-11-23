@@ -9,8 +9,8 @@
 //   node scripts/reach.mjs                                    expert, sharp, average × 8 seeds, ARCADE
 //   node scripts/reach.mjs --skills expert --seeds 12 --mode hardcade
 //   node scripts/reach.mjs --cap 1800                         seconds of play before a run is stopped
-import { createWorld, step } from '../js/sim/world.js?v=162';
-import { TUNING as T } from '../js/tuning.js?v=162';
+import { createWorld, step } from '../js/sim/world.js?v=163';
+import { TUNING as T } from '../js/tuning.js?v=163';
 import { SKILLS, prng, think } from './bot.mjs';
 
 const args = process.argv.slice(2), opt = (k, d) => { const i = args.indexOf(k); return i < 0 ? d : args[i + 1]; };

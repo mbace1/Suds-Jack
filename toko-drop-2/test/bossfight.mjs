@@ -4,13 +4,13 @@
 // world's own boss (v45) and the measured lines, the boss going down ends the wave (what it
 // brought is popped: no score, no streak, no corpse fire, no carry into the
 // next wave), and the grade pays its share and, on an S or an A, a pod.
-import { createWorld, step, api } from '../js/sim/world.js?v=162';
-import { TUNING as T } from '../js/tuning.js?v=162';
-import { gradeOf, tiersFor } from '../js/sim/bossfight.js?v=162';
-import { headliner } from '../js/sim/director/arcade.js?v=162';
-import { BOSS_TIERS } from '../js/tuning/bossfights.js?v=162';
-import { phaseSpec } from '../js/sim/species/bosskit.js?v=162';
-import { BOSS_KINDS } from '../js/tuning/bosskinds.js?v=162';
+import { createWorld, step, api } from '../js/sim/world.js?v=163';
+import { TUNING as T } from '../js/tuning.js?v=163';
+import { gradeOf, tiersFor } from '../js/sim/bossfight.js?v=163';
+import { headliner } from '../js/sim/director/arcade.js?v=163';
+import { BOSS_TIERS } from '../js/tuning/bossfights.js?v=163';
+import { phaseSpec } from '../js/sim/species/bosskit.js?v=163';
+import { BOSS_KINDS } from '../js/tuning/bosskinds.js?v=163';
 // v157: the fight on the clock, graded on time, as v156 fought every boss; the kinds (an endurance boss's clock and
 // hits, a strategic boss's armour) are test/bosskinds.mjs
 BOSS_KINDS.on = false;
