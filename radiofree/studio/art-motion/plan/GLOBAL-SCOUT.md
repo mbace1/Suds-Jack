@@ -1960,3 +1960,13 @@ Everything below comes from search summaries. No article was opened.
   rates" language, which OpenAI and the Pentagon say is not in the executed contract).
 - **Data-centre NDAs (Senate report, 9 Oct), GPU/DRAM, whistleblower act:** nothing new found.
 - **Reactions:** none visible to search.
+
+## Check — Mon 23 Nov 17:16 Helsinki
+- **AI money / circular deals, data-centre NDAs, military AI, GPU/DRAM, whistleblower act:** nothing new dated after the 07:16 check
+  found. Searches returned only older items already logged (Nvidia–OpenAI 10 GW LOI 2025; Anthropic–Lambda/Hut 8 Texas, Sept 2026).
+- **ICEYE / Avio:** no report dated 19–23 Nov beyond what is logged. Offer still €41/share, max €2,052,657,251 (offer notice);
+  conditions unchanged (66.67% waivable, golden power, France + UK FDI, EU FSR, CFIUS; close targeted Q1 2027). No formal response
+  from Leonardo's or Avio's board found. [The Next Web](https://thenextweb.com/news/finlands-iceye-bids-e2-05bn-for-italian-rocket-maker-avio),
+  [Breaking Defense](https://breakingdefense.com/2026/11/iceye-makes-2b-bid-for-italian-rocket-firm-avio/),
+  [Börsen-Zeitung](https://www.boersen-zeitung.de/unternehmen-branchen/rom-warnt-leonardo-vor-angebot-von-iceye)
+- **Reactions:** none visible to search.

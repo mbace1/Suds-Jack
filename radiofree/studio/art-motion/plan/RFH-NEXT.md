@@ -1521,3 +1521,15 @@ scheduled task's last fire was 13 Nov 05:16), so **Give Way had no Tuesday-morni
   targeted Q1 2027. Leonardo (18.04%) has not decided; its board was to review. Rome said it had no formal notification yet.
 - **Be Prepared (Coxon 18, built, not approved):** no change to its facts since 22 Nov (ground stop 13 Nov; Vance quote, Ingraham
   Angle 16 Nov; Atlas "one a day" attributed; Costco generators per Fortune 19 Nov). No new reporting found either way.
+
+## Pre-posting check — Mon 23 Nov 17:16 Helsinki
+- **Release Notes (Helsinki 5, NOW, not yet posted):** still correct. No withdrawal, rejection or revision; €41/share (~€2.05bn)
+  unchanged; approvals list unchanged; Leonardo (18.04%) still has no formal decision found.
+- **Be Prepared (Coxon 18, built, not approved) — FLAG, check the quote wording before approval:** Sinclair stations' write-up
+  (KATU and others) renders Vance as "We don't see a crisis coming down. But you have to be prepared for everything." The film's TV,
+  tag5 and post copy say "We do not see a crisis coming down, but you have to be prepared for everything." One of the two is a
+  transcription; check the Ingraham Angle (16 Nov) video/transcript and match it exactly. Same reports: asked whether to build a bunker
+  or stock up, he said no — supports adding that context (owner's call, raised 22 Nov). Costco generators (Fortune 19 Nov) not
+  re-surfaced in this search, no contradiction found. Ground stop 13 Nov and Atlas attribution unchanged.
+  [KATU](https://katu.com/news/nation-world/vance-said-he-doesnt-see-a-crisis-coming-when-asked-if-americans-should-stockpile-food-laura-ingraham-fema-dan-bongino-united-kingdom-rtt),
+  [Fortune 18 Nov](https://fortune.com/2026/11/18/jd-vance-stock-up-supplies-outages-allies-prepare-pentagon/)

@@ -1647,3 +1647,12 @@ and for Sparta II's facts. Owner to decide whether RFH touches it at all.
   was taken out of Finland's economic zone. A Russian helicopter is suspected of violating Finnish airspace. Orpo: "war is spilling
   over into our neighbouring areas." Verified: Yle headlines/summaries via search. Nothing in the posted film or its copy is now wrong.
 - **Reactions:** none visible to search for Stable, Trade Secret or Count the Trees.
+
+## Check — Mon 23 Nov 17:16 Helsinki
+- **HS:** no new candidate. Nearest (not new): City of Helsinki data-centre principles approved with the Hanasaari competition
+  programme (STT info, 2 Nov) — a city release, not HS; tracking only.
+  [STT info](https://www.sttinfo.fi/tiedote/72466598/helsingin-kaupunginhallitus-hyvaksyi-datakeskusperiaatteet?lang=fi)
+- **Gulf of Finland (Stable):** no follow-up to the 22 Nov Yle report (Sparta II off Loviisa, the suspected Russian helicopter
+  airspace violation) surfaced in search; English and Finnish searches return only older incidents (Loviisa June 2024, aircraft).
+  The helicopter item stays as logged from Yle 22 Nov, unconfirmed by a second source. Nothing in the posted film is now wrong.
+- **Reactions:** none visible to search for Stable, Trade Secret or Count the Trees.
