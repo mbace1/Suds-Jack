@@ -3,11 +3,11 @@
 // nothing reaches it and it reaches nothing; it comes up near you, spits two
 // fans, and goes back down.
 import { readFileSync } from 'node:fs';
-import { createWorld, step, api } from '../../js/sim/world.js?v=162';
-import { TUNING as T } from '../../js/tuning.js?v=162';
-import behaviour from '../../js/sim/species/worma.js?v=162';
-import { schedule } from '../../js/sim/director/arcade.js?v=162';
-import { makeRng } from '../../js/sim/rng.js?v=162';
+import { createWorld, step, api } from '../../js/sim/world.js?v=163';
+import { TUNING as T } from '../../js/tuning.js?v=163';
+import behaviour from '../../js/sim/species/worma.js?v=163';
+import { schedule } from '../../js/sim/director/arcade.js?v=163';
+import { makeRng } from '../../js/sim/rng.js?v=163';
 
 let failed = 0, passed = 0;
 const check = (claim, ok, detail = '') => { if (ok) { passed++; return; } failed++; console.log(`  ✗ ${claim}${detail ? ` — ${detail}` : ''}`); };

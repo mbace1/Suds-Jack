@@ -7,10 +7,10 @@
 // things that work"). The arena is 1.x's, so every 1.x number ports as it is
 // instead of through a rescale. Axes: x across the screen (right +), y up,
 // z toward the bottom of the screen. The arena is centred on the origin.
-import { SPECIES } from './tuning/species/index.js?v=162';
-import WAVES from './tuning/waves.js?v=162';
-import PICKUPS from './tuning/pickups.js?v=162';
-import MUSIC from './tuning/music.js?v=162';
+import { SPECIES } from './tuning/species/index.js?v=163';
+import WAVES from './tuning/waves.js?v=163';
+import PICKUPS from './tuning/pickups.js?v=163';
+import MUSIC from './tuning/music.js?v=163';
 
 export const TUNING = {
   render: {
@@ -77,33 +77,35 @@ export const TUNING = {
     // skilled bots' lives in its world; with this and the floe moved, no wave but a boss takes a third
     shift: { warn: 1.6, close: 1.2 },   // `close`: s the floor takes to close in on its shape (v59)
     list: [
+      // v163 (owner, 23 Nov: world-specific enemies): a world's own kind at `speciesWeight` 6 (was 3-4), about a third
+      // of what it brings, and one shared kind that belongs to its place drawn more there (`favour`, arcade.js schedule)
       { id: 'grid', heavy: 0 },
-      { id: 'driveway', trial: 'gates', heavy: 0.35, species: [['hoppa', 0, 3]], speciesWeight: 4, arena: { landscape: { hx: 27.5, hz: 16 }, portrait: { hx: 16, hz: 27.5 } } },
-      { id: 'sewer', trial: 'hold', heavy: 0.5, species: [['worma', 0, 3]], speciesWeight: 3, arena: { landscape: { hx: 30, hz: 11 }, portrait: { hx: 11, hz: 30 } } },
+      { id: 'driveway', trial: 'gates', heavy: 0.35, species: [['hoppa', 0, 3]], speciesWeight: 4, favour: [['redd', 4]], arena: { landscape: { hx: 27.5, hz: 16 }, portrait: { hx: 16, hz: 27.5 } } },
+      { id: 'sewer', trial: 'hold', heavy: 0.5, species: [['worma', 0, 3]], speciesWeight: 3, favour: [['sludge', 4]], arena: { landscape: { hx: 30, hz: 11 }, portrait: { hx: 11, hz: 30 } } },
       // v27 (owner, 2026-10-23: "let's do both and make it 9 worlds"): down
       // the pipes, then out to sea. Each world past the sewer plays under one
       // of 1.x's world rules (sim/rules.js; TUNING.campaign.rules), and has a
       // floor of its own (render/floor.js, TUNING.worlds.floor[id])
-      { id: 'cistern', trial: 'collect', squeeze: 0.72, heavy: 0.5, species: [['bubbla', 0, 3]], speciesWeight: 3, rule: 'sweep', rail: 0x3fb8d0,
+      { id: 'cistern', trial: 'collect', squeeze: 0.72, heavy: 0.5, species: [['bubbla', 0, 3]], speciesWeight: 6, favour: [['splitta', 4]], rule: 'sweep', rail: 0x3fb8d0,
         arena: { landscape: { hx: 26, hz: 14 }, portrait: { hx: 14, hz: 26 } } },
-      { id: 'boiler', trial: 'protect', squeeze: 0.78, heavy: 0.55, species: [['steama', 0, 3]], speciesWeight: 3, rule: 'updraft', rail: 0xff8a33,
+      { id: 'boiler', trial: 'protect', squeeze: 0.78, heavy: 0.55, species: [['steama', 0, 3]], speciesWeight: 6, favour: [['pyra', 4]], rule: 'updraft', rail: 0xff8a33,
         arena: { landscape: { hx: 23, hz: 14 }, portrait: { hx: 14, hz: 23 } } },
-      { id: 'river', trial: 'hold', heavy: 0.55, species: [['salma', 0, 3]], speciesWeight: 3, rule: 'current', rail: 0x44ddbb,
+      { id: 'river', trial: 'hold', heavy: 0.55, species: [['salma', 0, 3]], speciesWeight: 6, favour: [['ribbon', 4]], rule: 'current', rail: 0x44ddbb,
         // its third wave the banks breathe in and out (sim/floorshift.js, v44)
         shift: { at: 3, kind: 'breathe', room: 0.8, parts: [{ kind: 'rect', hx: 1, hz: 1, pulse: { from: 1, to: 0.58, period: 9, mode: 'breathe' } }] },
         arena: { landscape: { hx: 34, hz: 12 }, portrait: { hx: 12, hz: 34 } } },
       // v110 `room` 0.92: the ice's blocks drift (TUNING.posts), and a floor that moves under a fight costs a sharp
       // player ~10 points of its clears (scripts/curve.mjs, 48 seeds); 8% fewer bodies gives them back
-      { id: 'ice', trial: 'combo', heavy: 0.6, room: 0.92, species: [['skata', 0, 3]], speciesWeight: 3, rule: 'slip', rail: 0xbfe6ff,
+      { id: 'ice', trial: 'combo', heavy: 0.6, room: 0.92, species: [['skata', 0, 3]], speciesWeight: 6, favour: [['yela', 4]], rule: 'slip', rail: 0xbfe6ff,
         // its seventh wave, the breather before its boss, the floor is a round floe drifting round the
         // middle (v59: it was the third, a swarm — on a third of the floor, on ice, that one wave took 40%
         // of the six skilled bots' lives in the world, 62% of the expert's; the river's and the core's
         // shifts fall on breathers too)
         shift: { at: 7, kind: 'floe', room: 0.54, parts: [{ kind: 'circle', c: [0, 0], r: 0.78, orbit: { r: 0.32, period: 16 } }] },
         arena: { landscape: { hx: 28, hz: 17 }, portrait: { hx: 17, hz: 28 } } },
-      { id: 'deep', trial: 'collect', heavy: 0.6, species: [['glowa', 0, 3]], speciesWeight: 3, rule: 'dark', rail: 0x4455cc,
+      { id: 'deep', trial: 'collect', heavy: 0.6, species: [['glowa', 0, 3]], speciesWeight: 6, favour: [['cloaker', 4]], rule: 'dark', rail: 0x4455cc,
         arena: { landscape: { hx: 24, hz: 16 }, portrait: { hx: 16, hz: 24 } } },
-      { id: 'core', squeeze: 0.7, heavy: 0.65, species: [['mirra', 0, 3]], speciesWeight: 3, rule: 'cycle', rail: 0xee44dd,
+      { id: 'core', squeeze: 0.7, heavy: 0.65, species: [['mirra', 0, 3]], speciesWeight: 6, favour: [['magna', 4]], rule: 'cycle', rail: 0xee44dd,
         // its third wave the floor is two discs going round each other: cross the gap when they meet
         shift: { at: 3, kind: 'twins', room: 0.51, combine: 'union', parts: [{ kind: 'circle', r: 0.55, orbit: { r: 0.42, period: 14 } }, { kind: 'circle', r: 0.55, orbit: { r: 0.42, period: 14, phase: 3.14159 } }] },
         arena: { landscape: { hx: 19, hz: 11 }, portrait: { hx: 11, hz: 19 } } },

@@ -21,15 +21,15 @@
 // runs down in its enemy loop — the same sequence 1.x runs, with the seam in
 // a different place. test/director.mjs holds all of it in lockstep with 1.x's
 // own loop source.
-import { fairPoint } from '../fairspawn.js?v=162';
-import { TUNING } from '../../tuning.js?v=162';
-import * as worlds from '../worlds.js?v=162';
-import * as challenge from '../challenge.js?v=162';
-import { makeRng } from '../rng.js?v=162';
-import * as bossfight from '../bossfight.js?v=162';
-import * as floorshift from '../floorshift.js?v=162';
-import { phaseSpec, kindOf } from '../species/bosskit.js?v=162';
-import { BOSS_KINDS } from '../../tuning/bosskinds.js?v=162';
+import { fairPoint } from '../fairspawn.js?v=163';
+import { TUNING } from '../../tuning.js?v=163';
+import * as worlds from '../worlds.js?v=163';
+import * as challenge from '../challenge.js?v=163';
+import { makeRng } from '../rng.js?v=163';
+import * as bossfight from '../bossfight.js?v=163';
+import * as floorshift from '../floorshift.js?v=163';
+import { phaseSpec, kindOf } from '../species/bosskit.js?v=163';
+import { BOSS_KINDS } from '../../tuning/bosskinds.js?v=163';
 
 const T = TUNING, W = T.waves, TAU = Math.PI * 2;
 
@@ -144,6 +144,9 @@ export function schedule(wave, rng, seed, world = 1, bossWorld = 0, press = wave
   // each of the world's own as often as `speciesWeight` of 1.x's, so it is the world's
   const own = T.worlds.list[world - 1], extra = [];
   for (let i = 0; i < (own?.speciesWeight ?? 1); i++) extra.push(...(own?.species ?? []));
+  // v163 (owner, 23 Nov: world-specific enemies, "a signature enemy or two per world"): a world also favours one of
+  // the shared kinds that belongs to its place, `favour` [key, extra copies], drawn that much more often there
+  for (const [k, n] of own?.favour ?? []) { const e = W.pool.find(([key]) => key === k); if (e) for (let i = 0; i < n; i++) extra.push(e); }
   const pool = world > 1 ? W.pool.concat(extra) : W.pool;
   const available = pool.filter(([, min]) => wave >= min);
   const SHOOT = new Set(W.shooters);

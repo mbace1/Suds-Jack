@@ -159,7 +159,7 @@ async function page(url) {
   // frames are 1/30 s apart, and sampled that far apart it is the whole picture jumping between frames (v122's trailer
   // jumped through the world 9 boss's landing and the first frames of four shots: the owner saw it as a glitch). The
   // page's own tuning, the module the game imported, for this page alone
-  await ev(`(async () => { const { TUNING } = await import('/js/tuning.js?v=162'); TUNING.shake.amp = [0, 0, 0]; })()`);
+  await ev(`(async () => { const { TUNING } = await import('/js/tuning.js?v=163'); TUNING.shake.amp = [0, 0, 0]; })()`);
   // v123: a lower third for a trailer (a segment's `caption` and `sub`), in the game's own lettering
   await ev(`(() => { const st = document.createElement('style'); st.textContent = '#tcap{position:fixed;left:50%;bottom:6.5%;transform:translateX(-50%);z-index:20;text-align:center;pointer-events:none;width:max-content;max-width:94vw}'
     + '#tcap .t{font-size:clamp(22px,3.4vw,46px);letter-spacing:.16em;color:#fff;text-shadow:0 0 2px #000,0 0 3px #000,0 2px 10px rgba(0,0,0,.85)}'
@@ -182,7 +182,7 @@ async function film(p, sg, dir, at) {
   const mode = sg.room ? 'campaign' : sg.mode;
   // v143: a DIRECTED shot (`stage`, above): the hero alone on its floor, walked by a path
   const G = sg.stage;
-  const state = G ? await p.ev(`(async () => { const t = __toko, { TUNING } = await import('/js/tuning.js?v=162'), DT = TUNING.sim.dt;
+  const state = G ? await p.ev(`(async () => { const t = __toko, { TUNING } = await import('/js/tuning.js?v=163'), DT = TUNING.sim.dt;
     t.toMenu();
     localStorage.setItem('toko2.hard', 'off');
     ${G.world ? `localStorage.setItem('toko2.reached.arcade', '9'); localStorage.setItem('toko2.startAt.arcade', '${G.world}');` : ''}
