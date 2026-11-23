@@ -1638,3 +1638,12 @@ and for Sparta II's facts. Owner to decide whether RFH touches it at all.
 - **Gulf of Finland (Stable):** no restriction or Sparta II follow-up dated 22 Nov found; the latest dated restriction items in the
   index are older (Kaleva/MTV). Nothing in the posted film is now wrong.
 - **Reactions:** none visible to search for Stable, Trade Secret or Count the Trees.
+
+## Check — Mon 23 Nov 07:16 Helsinki
+- **HS:** no new candidate in the last ~2 days. The nearest is HS 11 Nov (via Suomenmaa): an AI review commissioned by PM Orpo,
+  critical of data-centre investments, unpublished; the PM's Office says it is not finished. Already old; tracking only.
+- **Gulf of Finland (Stable) — follow-up (Yle, 22 Nov):** Sparta II (hit Sat 21 Nov west of Suursaari; Border Guard: Ukrainian
+  drones) lost steering, drifted into Finnish territorial waters off Loviisa, crew evacuated; towing to Russia began Sun ~17:00 and it
+  was taken out of Finland's economic zone. A Russian helicopter is suspected of violating Finnish airspace. Orpo: "war is spilling
+  over into our neighbouring areas." Verified: Yle headlines/summaries via search. Nothing in the posted film or its copy is now wrong.
+- **Reactions:** none visible to search for Stable, Trade Secret or Count the Trees.

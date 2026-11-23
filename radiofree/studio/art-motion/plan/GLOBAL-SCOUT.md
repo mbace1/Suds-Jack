@@ -1951,3 +1951,12 @@ Everything below comes from search summaries. No article was opened.
   now tracking only.
 - **Military AI / GPU-DRAM / whistleblower act / Nscale-Anthropic:** nothing new dated after 19 Nov found.
 - **Reactions:** none visible to search.
+
+## Check — Mon 23 Nov 07:16 Helsinki
+- **AI money / circular deals:** nothing new since 22 Nov. Latest dated items stay as logged: Nvidia's Ohio backing for OpenAI is up to
+  $105bn, not the ~$250bn reported, and conditional (Yahoo Finance; Nvidia's Kress on neocloud financing, TechCrunch 18 Nov);
+  OpenAI–Foxconn rack partnership 20 Nov; Anthropic's ~$3.4bn gas-generator commitment (FT via CNBC/Bloomberg 8 Nov, Fortune 10 Nov).
+- **Military AI:** nothing new dated after 19 Nov. Background stays: FOIA'd contract pages (The Intercept 8 Sep; "minimal refusal
+  rates" language, which OpenAI and the Pentagon say is not in the executed contract).
+- **Data-centre NDAs (Senate report, 9 Oct), GPU/DRAM, whistleblower act:** nothing new found.
+- **Reactions:** none visible to search.

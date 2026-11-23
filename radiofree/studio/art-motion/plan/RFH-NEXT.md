@@ -1514,3 +1514,10 @@ scheduled task's last fire was 13 Nov 05:16), so **Give Way had no Tuesday-morni
   where he also said people shouldn't build bunkers — consistent with the film's paraphrase. Atlas "one a day": no new reporting
   found; stays attributed to the seller. Costco generators (Fortune 19 Nov) not re-surfaced; no contradiction found.
 - **Due 13 Nov:** scrapped by the owner 22 Nov; no further checks.
+
+## Pre-posting check — Mon 23 Nov 07:16 Helsinki
+- **Release Notes (Helsinki 5, NOW):** still correct. Offer unchanged at €41/share, ~€2.05bn (Il Sole 24 Ore, Defense News, The Next
+  Web); no withdrawal, rejection or revision found. Approvals list unchanged: Italy, France, UK, US and the European Commission; close
+  targeted Q1 2027. Leonardo (18.04%) has not decided; its board was to review. Rome said it had no formal notification yet.
+- **Be Prepared (Coxon 18, built, not approved):** no change to its facts since 22 Nov (ground stop 13 Nov; Vance quote, Ingraham
+  Angle 16 Nov; Atlas "one a day" attributed; Costco generators per Fortune 19 Nov). No new reporting found either way.
