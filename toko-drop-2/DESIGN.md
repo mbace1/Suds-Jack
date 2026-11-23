@@ -215,6 +215,9 @@ Classic `toko-drop/` remains the historical / hub v221 lineage. Godot port follo
 - **Room 1. Mikael:** "B" — room 1 follows every room's rule (an F is likely the first try or two) but is built easier than now, so a few tries are enough. Fixed difficulty: nothing changes with the number of tries ("Do you mean to dynamic all change difficulty based on number of tries?" — no). No bot can measure it (even a bot weaker than the first-timer gets through 23 times in 24), so the easing is by design and Mikael's playtest is the check: a quarter fewer GLOBBOs, the walkers 10% slower, the fronts' rhythm kept (v162).
 - **Worlds 7–9. Mikael:** "Yeah that sounds a bit too hard" (to more pressure after world 6), then "A for both": from world 7 the waves change SHAPE — new mixes (a heavy with escorts, pairs that cover each other, a world's own rule as the ask) — at about world 6's pressure. Speed and fire clocks stay capped. Not built yet.
 
+### Decision 23 Nov 2026 — every arcade world has its own enemies
+- **Mikael:** "Go ahead, world specific enemies" (the 22 Nov question: A, a signature enemy or two per world, seen mostly there). Each world already had a kind of its own; it now comes about twice as often, and one shared kind that fits the place is favoured there too (v163). The worlds should stay as hard as they were: measured with `scripts/curve.mjs` before it ships.
+
 ## 6. Sakurai principles (adopted 15 Nov 2026)
 
 **Source:** [kociden/sakurai-skill](https://github.com/kociden/sakurai-skill). It's an unofficial, fan-made AI summary of Masahiro Sakurai's YouTube series *桜井政博のゲーム作るには* and **not Sakurai's own words**. Agents load it as `.claude/skills/sakurai` (see `toko-drop-2/AGENTS.md`). Citations below use the skill's chapter (§) and video numbers (#NNN).

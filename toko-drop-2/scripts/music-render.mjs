@@ -17,9 +17,9 @@ import { readFileSync, writeFileSync, existsSync, statSync, mkdtempSync, mkdirSy
 import { join, extname, normalize, sep, resolve, dirname } from 'node:path';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
-import { TUNING as T } from '../js/tuning.js?v=162';
-import { compile, worldWant, cueFor } from '../js/music.js?v=162';
-import { createWorld, step } from '../js/sim/world.js?v=162';
+import { TUNING as T } from '../js/tuning.js?v=163';
+import { compile, worldWant, cueFor } from '../js/music.js?v=163';
+import { createWorld, step } from '../js/sim/world.js?v=163';
 import { SKILLS, prng, think } from './bot.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
@@ -30,10 +30,10 @@ mkdirSync(OUT, { recursive: true });
 
 // ── the page: the game's own modules, rendering offline ──────────────────────
 const PAGE = `<!doctype html><meta charset="utf-8"><script type="module">
-import { renderMusicWav, Music, cueFor } from './js/music.js?v=162';
-import { Sound } from './js/audio.js?v=162';
-import { wavBytes } from './js/intro/sfx.js?v=162';
-import { TUNING } from './js/tuning.js?v=162';
+import { renderMusicWav, Music, cueFor } from './js/music.js?v=163';
+import { Sound } from './js/audio.js?v=163';
+import { wavBytes } from './js/intro/sfx.js?v=163';
+import { TUNING } from './js/tuning.js?v=163';
 const b64 = (u8) => { let s = ''; for (let i = 0; i < u8.length; i += 0x8000) s += String.fromCharCode(...u8.subarray(i, i + 0x8000)); return btoa(s); };
 window.render = async (id, o) => b64(await renderMusicWav(id, o));
 // the live game's loop, offline: the context suspended every frame, the music's say set and its frame run,

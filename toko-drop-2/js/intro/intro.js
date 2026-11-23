@@ -25,9 +25,9 @@
 // "drop" is made of the owner's own letters — Midori's d, r and o, and a p
 // that is the d turned over (a geometric face's p is its d, half a turn round).
 import * as THREE from 'three/webgpu';
-import { fillMaster, masterBounds } from './master.js?v=162';
-import { LOGO } from './wordmark.js?v=162';
-import { CUES } from './sfx.js?v=162';
+import { fillMaster, masterBounds } from './master.js?v=163';
+import { LOGO } from './wordmark.js?v=163';
+import { CUES } from './sfx.js?v=163';
 
 export { CUES };
 

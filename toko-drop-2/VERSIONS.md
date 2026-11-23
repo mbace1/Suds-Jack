@@ -19,6 +19,13 @@
     Never `--no-verify`.
 -->
 
+## v163 — 2026-11-23
+**Every arcade world has its own enemies** (in progress)
+- Owner, 23 Nov: "Go ahead, world specific enemies" (DESIGN 22 Nov, A: a signature enemy or two per world, seen mostly there). A world's own kind (HOPPA, WORMA, BUBBLA, STEAMA, SALMA, SKATA, GLOWA, MIRRA — only ever drawn in its world) now comes at `speciesWeight` 6, not 3-4, and each world also favours one of the shared kinds that belongs to its place, four copies more in its draw (`favour`): the driveway ORANGE, the sewer SLUG, the cistern SPLITTA, the boiler PYRA, the river RIBBON, the ice YELA, the deep CLOAKER, the core MAGNA. In the ice's late waves the two are about half of the mob's draws (were about a quarter). Being measured against v162 (`scripts/curve.mjs`): different, not harder.
+- Cache tokens `?v=162` → `?v=163`; HUD label → `2.0 · v163`
+
+---
+
 ## v162 — 2026-11-22
 **Room 1 eases; ARCADE's worlds 7–9 change shape at world 6's pressure**
 - **Room 1 (FIRST LIGHT)** (owner, 22 Nov: "B" — the same rule, an F likely the first try or two, built easier than now): every fourth GLOBBO is gone (87 bodies → 67) and the walkers come at 0.9 of their speed, the fronts' rhythm kept. No bot can measure it (one weaker than the first-timer gets through 23 times in 24), so the owner's playtest is the check. Lines re-measured.

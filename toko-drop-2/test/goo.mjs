@@ -7,8 +7,8 @@
 // and the stamps they lay down.
 //
 // Usage: node test/goo.mjs           (exit 1 on any failure)
-import { GooSim, BODY, STAMP, AIR, SLIDE, RIDE, CLING, radiusAt, wallLen, wallS, wallXZ } from '../js/render/goo-sim.js?v=162';
-import { TUNING as T } from '../js/tuning.js?v=162';
+import { GooSim, BODY, STAMP, AIR, SLIDE, RIDE, CLING, radiusAt, wallLen, wallS, wallXZ } from '../js/render/goo-sim.js?v=163';
+import { TUNING as T } from '../js/tuning.js?v=163';
 
 let failed = 0, passed = 0;
 const check = (claim, ok, detail = '') => { if (ok) { passed++; return; } failed++; console.log(`  ✗ ${claim}${detail ? ` — ${detail}` : ''}`); };

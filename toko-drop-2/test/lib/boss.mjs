@@ -4,11 +4,11 @@
 // them answers the same way (seeded, its look, its world's boss wave, the
 // rage at half health).
 import { readFileSync } from 'node:fs';
-import { createWorld, step, api } from '../../js/sim/world.js?v=162';
-import { TUNING as T } from '../../js/tuning.js?v=162';
-import { LOOKS } from '../../js/render/looks/index.js?v=162';
-import { BOSS_PHASES } from '../../js/tuning/bossphases.js?v=162';
-import { BOSS_KINDS } from '../../js/tuning/bosskinds.js?v=162';
+import { createWorld, step, api } from '../../js/sim/world.js?v=163';
+import { TUNING as T } from '../../js/tuning.js?v=163';
+import { LOOKS } from '../../js/render/looks/index.js?v=163';
+import { BOSS_PHASES } from '../../js/tuning/bossphases.js?v=163';
+import { BOSS_KINDS } from '../../js/tuning/bosskinds.js?v=163';
 
 // v156: since v154 a world boss in ARCADE fights in three phases (tuning/bossphases.js), and its old single rage at half
 // health is what ?bossphases=off gives back. These specs hold each boss's own pattern and that v153 rage, so they run
