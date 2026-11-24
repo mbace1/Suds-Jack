@@ -1970,3 +1970,7 @@ Everything below comes from search summaries. No article was opened.
   [Breaking Defense](https://breakingdefense.com/2026/11/iceye-makes-2b-bid-for-italian-rocket-firm-avio/),
   [Börsen-Zeitung](https://www.boersen-zeitung.de/unternehmen-branchen/rom-warnt-leonardo-vor-angebot-von-iceye)
 - **Reactions:** none visible to search.
+
+## Check 24 Nov 07:16 Helsinki
+- No new filings, regulator moves or named investigative reporting since 23 Nov 17:16 on the watch-list topics (AI money/circular deals, military AI, GPU/memory, whistleblowers). Searches returned only law-firm round-ups and items already logged.
+- Data-centre NDAs (background, already-known thread, re-found): Effingham County, Ga. residents' 6 Nov suit against OpenAI entities, county officials and the development authority over the Project Camellia data centre (alleges secrecy, conspiracy, fraud, civil racketeering — unproven allegations; latest coverage found 14 Nov, IBTimes/Daily Signal). NPR/OPB 27 Aug piece on NDAs (Boyce, La. "Project Lightning"); WPR on Beloit, Wis. NDA. No new development after 14 Nov found. Reactions: none new.

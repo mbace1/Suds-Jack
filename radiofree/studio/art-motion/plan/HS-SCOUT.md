@@ -1656,3 +1656,8 @@ and for Sparta II's facts. Owner to decide whether RFH touches it at all.
   airspace violation) surfaced in search; English and Finnish searches return only older incidents (Loviisa June 2024, aircraft).
   The helicopter item stays as logged from Yle 22 Nov, unconfirmed by a second source. Nothing in the posted film is now wrong.
 - **Reactions:** none visible to search for Stable, Trade Secret or Count the Trees.
+
+## Check 24 Nov 07:16 Helsinki
+- HS sweep (datakeskus / tekoäly, last ~2 days): no new Helsingin Sanomat candidate found. Search, not browse.
+- Sparta II / Russian helicopter (Stable follow-up): no new reporting found beyond Yle's 22 Nov report; searches only return older Loviisa airspace items (EFP10 prohibited area, July temporary restriction). Stable remains accurate.
+- Trade Secret / Count the Trees: no new follow-ups found this check.
