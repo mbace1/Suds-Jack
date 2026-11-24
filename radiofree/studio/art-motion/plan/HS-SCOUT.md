@@ -1661,3 +1661,7 @@ and for Sparta II's facts. Owner to decide whether RFH touches it at all.
 - HS sweep (datakeskus / tekoäly, last ~2 days): no new Helsingin Sanomat candidate found. Search, not browse.
 - Sparta II / Russian helicopter (Stable follow-up): no new reporting found beyond Yle's 22 Nov report; searches only return older Loviisa airspace items (EFP10 prohibited area, July temporary restriction). Stable remains accurate.
 - Trade Secret / Count the Trees: no new follow-ups found this check.
+
+## Check 24 Nov 17:16 Helsinki
+- HS sweep (datakeskus / tekoäly): no new Helsingin Sanomat candidate. Nearest remain the City of Helsinki data-centre principles (STT info, 2 Nov; tracking only).
+- Sparta II / helicopter (Stable): no new reporting beyond Yle 22 Nov. Trade Secret / Count the Trees: no follow-ups found. Reactions: none visible to search.
