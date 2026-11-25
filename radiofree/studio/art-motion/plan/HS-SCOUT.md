@@ -1670,3 +1670,7 @@ and for Sparta II's facts. Owner to decide whether RFH touches it at all.
 - HS sweep (datakeskus / tekoäly): no new Helsingin Sanomat candidate.
 - Helsinki data-centre principles: confirmed NOT new — the city board approved them 2 Nov (city release hel.fi + STT info; Verkkouutiset on the five candidate areas: Myllypuro, Salmisaari, Heikinlaakso, Malmi, Östersundom; waste-heat targets ~350 MW by 2035). The Greens asked for stricter nature limits and mandatory heat recovery. A city policy story with no conflict yet; stays tracking only. [hel.fi](https://www.hel.fi/fi/uutiset/kaupunginhallitus-hyvaksyi-datakeskusperiaatteet), [Verkkouutiset](https://www.verkkouutiset.fi/a/naille-viidelle-helsingin-alueelle-voi-tulla-datakeskus)
 - Sparta II / helicopter (Stable), Trade Secret, Count the Trees: no follow-ups found. Reactions: none visible to search.
+
+## Check 25 Nov 17:16 Helsinki
+- HS sweep (datakeskus / tekoäly): no new Helsingin Sanomat candidate dated in the last ~2 days. Undated items only: a Verkkouutiset piece on a professor warning of uncontrolled data-centre growth, and an ERR item citing HS on Google's Kajaani/Vaala/Muhos plans (undated; not new).
+- Sparta II / helicopter (Stable), Trade Secret, Count the Trees: no follow-ups found. Reactions: none visible to search.

@@ -1548,3 +1548,8 @@ scheduled task's last fire was 13 Nov 05:16), so **Give Way had no Tuesday-morni
 - Candidate worth a pitch: **California v. OpenAI** (filed 16 Nov) over the Hugging Face breach — a follow-up to Coxon 8 (It Was Only a Test): the "test" is now a state lawsuit. Allegations only; OpenAI's response not yet reported. Details in GLOBAL-SCOUT.
 - Release Notes (posted 22 Nov): still accurate; no board decision from Leonardo or Avio.
 - Be Prepared (Coxon18, not approved): no Fox transcript found; a second IBTimes piece repeats "You have to be prepared for everything" with the no-bunkers answer. The quote fix logged 24 Nov 07:16 still stands, pending the owner's OK.
+
+## Check 25 Nov 17:16 Helsinki
+- **California v. OpenAI** (sequel to Coxon 8): OpenAI has now answered on the record ("completely without merit", per CNBC), and the complaint is reported to allege 80+ losses of control in testing against about 27 disclosed. Both sides are documented, so it is ready to pitch. Allegations only.
+- Release Notes (posted 22 Nov): still accurate; no board decision.
+- Be Prepared (Coxon18, not approved): nothing new. The Vance quote fix is still pending the owner's OK.
