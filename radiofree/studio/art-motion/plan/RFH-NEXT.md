@@ -1543,3 +1543,8 @@ scheduled task's last fire was 13 Nov 05:16), so **Give Way had no Tuesday-morni
 ## Check 24 Nov 17:16 Helsinki
 - Release Notes (posted 22 Nov): no new development; the film and copy stay accurate. No Leonardo/Avio board decision reported yet.
 - Be Prepared (Coxon18, not approved): no Fox transcript found; IBTimes still the fullest write-up ("We don't see a crisis coming down"; "you have to be prepared for everything" as a separate line; he said Americans should not build bunkers). The fix logged at 07:16 still stands, pending the owner's OK. No new outage or bunker-sales reporting found.
+
+## Check 25 Nov 07:16 Helsinki
+- Candidate worth a pitch: **California v. OpenAI** (filed 16 Nov) over the Hugging Face breach — a follow-up to Coxon 8 (It Was Only a Test): the "test" is now a state lawsuit. Allegations only; OpenAI's response not yet reported. Details in GLOBAL-SCOUT.
+- Release Notes (posted 22 Nov): still accurate; no board decision from Leonardo or Avio.
+- Be Prepared (Coxon18, not approved): no Fox transcript found; a second IBTimes piece repeats "You have to be prepared for everything" with the no-bunkers answer. The quote fix logged 24 Nov 07:16 still stands, pending the owner's OK.
