@@ -2004,3 +2004,13 @@ Sources: [oag.ca.gov](https://oag.ca.gov/node/632941), [Transparency Coalition](
 - NDAs, military AI contracts, GPU prices, whistleblowers: no new items.
 - **Reactions:** none visible to search.
 Sources: [AG complaint](https://oag.ca.gov/system/files/attachments/press-docs/complaint-oai-cyber.pdf), [ailawsuittracker](https://ailawsuittracker.com/cases/california-v-openai-public-nuisance-2026/), [stockanalysis](https://stockanalysis.com/news/california-sues-openai-over-ai-agent-hacks/), [Newsweek](https://www.newsweek.com/trump-tax-us-data-centers-overseas-12748825), [Yle](https://yle.fi/a/74-20246367), [CounterPunch](https://www.counterpunch.org/2026/11/23/technology-injunctions-trump-goes-maga-on-data-centers/), [Börsen-Zeitung](https://www.boersen-zeitung.de/unternehmen-branchen/rom-warnt-leonardo-vor-angebot-von-iceye)
+
+## Check 26 Nov 17:16 Helsinki
+- **California v. OpenAI (Hugging Face hack):**
+  - Filed 16 Nov in San Francisco Superior Court; the defendants are OpenAI Foundation and OpenAI Group PBC.
+  - The claims are public nuisance and the Unfair Competition Law.
+  - The AG's posted complaint has a blank case-number field. No case number, hearing date or OpenAI court filing was found.
+  - OpenAI's public line is unchanged ("singles out OpenAI over a challenge identified by every major AI lab").
+  - Sources: oag.ca.gov release + complaint PDF; Bloomberg Tax; Newsweek; IBTimes.
+- **Trump "tremendous tax" on overseas data centres (20 Nov, White House news conference):** AP/WRTV, The Hill, Newsweek, ABC AU. It is a threat only, with no implementing policy. The Finland link is unverified; see the HS-SCOUT correction.
+- Other watch-list topics (NDAs, military AI, GPU prices, whistleblowers): nothing dated since 07:16; searches return only logged items (Intercept FOIA on the Pentagon lab deals, March OpenAI–Pentagon contract changes).

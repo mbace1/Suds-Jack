@@ -1559,3 +1559,9 @@ scheduled task's last fire was 13 Nov 05:16), so **Give Way had no Tuesday-morni
 - **New candidate: Trump threatens a "tremendous tax" on US firms' overseas data centres and names Google's Finland plan** (Yle, Newsweek; date to confirm). PM Orpo is "not worried" (MTV). It ties to Count the Trees and Trade Secret. Could be a Helsinki or Coxon crossover.
 - Release Notes (posted 22 Nov): still accurate; no board decision.
 - Be Prepared (Coxon18, not approved): sources still word the line differently ("We do not see some crisis coming down" / "We don't see a crisis coming down [the pike]"). No source matches the film's quote, so the paraphrase fix still stands, pending the owner's OK.
+
+## Check 26 Nov 17:16 Helsinki
+- **Correction:** the "Trump vs Google's Finland data centres" candidate (07:16) mixed a September Truth Social post with the 20 Nov "tremendous tax" remarks. Only the tax threat is confirmed for 20 Nov. The Finland line ("They want to build now one in Finland, and we're not allowing that to happen") is reported only in secondary outlets, and AP says it was unclear whether he meant Google. Do not pitch with that quote until it is verified.
+- **California v. OpenAI:** no case number, hearing or filing yet. It is still pitchable as a sequel to It Was Only a Test, with everything as allegations plus OpenAI's response.
+- **Release Notes (posted 22 Nov):** still accurate. Defence Minister Crosetto urged Leonardo (18%) to "think carefully" before selling (Reuters via The Star/Euronext, 18 Nov). Government sources say no formal notification yet and the deal "will inevitably fall under" golden power. Leonardo's CEO will decide in coordination with the government. Breaking Defense (citing Reuters) reports early support, so the signals are mixed. The film's "still needs Rome…" holds.
+- **Be Prepared:** nothing new; the Vance paraphrase fix is still pending the owner's OK.
