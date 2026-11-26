@@ -1553,3 +1553,9 @@ scheduled task's last fire was 13 Nov 05:16), so **Give Way had no Tuesday-morni
 - **California v. OpenAI** (sequel to Coxon 8): OpenAI has now answered on the record ("completely without merit", per CNBC), and the complaint is reported to allege 80+ losses of control in testing against about 27 disclosed. Both sides are documented, so it is ready to pitch. Allegations only.
 - Release Notes (posted 22 Nov): still accurate; no board decision.
 - Be Prepared (Coxon18, not approved): nothing new. The Vance quote fix is still pending the owner's OK.
+
+## Check 26 Nov 07:16 Helsinki
+- **California v. OpenAI** (sequel to Coxon 8): no case number or hearing yet; the 80+ vs 27 gap is restated in more outlets. Still ready to pitch, allegations only.
+- **New candidate: Trump threatens a "tremendous tax" on US firms' overseas data centres and names Google's Finland plan** (Yle, Newsweek; date to confirm). PM Orpo is "not worried" (MTV). It ties to Count the Trees and Trade Secret. Could be a Helsinki or Coxon crossover.
+- Release Notes (posted 22 Nov): still accurate; no board decision.
+- Be Prepared (Coxon18, not approved): sources still word the line differently ("We do not see some crisis coming down" / "We don't see a crisis coming down [the pike]"). No source matches the film's quote, so the paraphrase fix still stands, pending the owner's OK.

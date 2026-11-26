@@ -1674,3 +1674,8 @@ and for Sparta II's facts. Owner to decide whether RFH touches it at all.
 ## Check 25 Nov 17:16 Helsinki
 - HS sweep (datakeskus / tekoäly): no new Helsingin Sanomat candidate dated in the last ~2 days. Undated items only: a Verkkouutiset piece on a professor warning of uncontrolled data-centre growth, and an ERR item citing HS on Google's Kajaani/Vaala/Muhos plans (undated; not new).
 - Sparta II / helicopter (Stable), Trade Secret, Count the Trees: no follow-ups found. Reactions: none visible to search.
+
+## Check 26 Nov 07:16 Helsinki
+- **New secondary candidate (Yle / MTV, not HS): Trump vs Google's Finland data centres.** Yle English, "Trump complains about Google's €13bn data centre, development plans in Finland" (yle.fi/a/74-20246367). At a White House news conference (date not confirmed; reported around 20–23 Nov) Trump threatened a "tremendous tax" on US firms building data centres abroad and named Google's Finland plan (Hamina, Kajaani, Muhos, Vaala). MTV Uutiset: PM Orpo is "not worried". A University of Helsinki professor said not to put much weight on it. Google: no change announced. It links to our own films: Count the Trees (Muhos) and Trade Secret (Hamina). Verified: Yle + Newsweek + Yahoo/AFP headlines via search only; the exact date and HS coverage are NOT confirmed. Next check: find HS's piece and the date.
+- HS sweep (datakeskus / tekoäly): no new Helsingin Sanomat item found.
+- Sparta II / helicopter (Stable), Trade Secret, Count the Trees: no follow-ups beyond the Trump item above. Reactions: none visible to search.
