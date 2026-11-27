@@ -1689,3 +1689,8 @@ and for Sparta II's facts. Owner to decide whether RFH touches it at all.
      - Not found for the 20 Nov event: HS coverage; responses from Google, the Finnish government, or the Hamina, Kajaani, Muhos or Vaala municipalities.
 - Count the Trees context (not new, already in the record): LVV ordered Google's Tuike Finland Oy to halt site work at Muhos and Kajaani pending EIA (Oct; Yle, Al Jazeera 7 Oct, Kaleva). Kaleva says the halt may last over winter. A police preliminary inquiry into the Muhos work was opened after a private complaint.
 - HS sweep: no new Helsingin Sanomat item in the last ~2 days. Stable / Trade Secret: no follow-ups. Reactions: none visible to search.
+
+## 27 Nov 07:16 Helsinki
+- No new HS candidate found in the last ~2 days (searched "Helsingin Sanomat datakeskus marraskuu 2026"). Only older items returned: Helsinki city board data-centre principles (2 Nov, STT info) and the Kangasharju commentary (Verkkouutiset).
+- Reactions: Count the Trees (Muhos) / Trade Secret (Hamina) — no new follow-up found; the Trump 20 Nov Finland line remains unverified and has no Finnish official response on record. Sparta II / Stable: no follow-up beyond Yle 22 Nov.
+- ICEYE/Avio (Release Notes, posted): no Finnish-outlet follow-up found; Italian side unchanged since 18 Nov.

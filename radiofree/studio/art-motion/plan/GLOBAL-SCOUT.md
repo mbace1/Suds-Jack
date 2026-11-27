@@ -2014,3 +2014,8 @@ Sources: [AG complaint](https://oag.ca.gov/system/files/attachments/press-docs/c
   - Sources: oag.ca.gov release + complaint PDF; Bloomberg Tax; Newsweek; IBTimes.
 - **Trump "tremendous tax" on overseas data centres (20 Nov, White House news conference):** AP/WRTV, The Hill, Newsweek, ABC AU. It is a threat only, with no implementing policy. The Finland link is unverified; see the HS-SCOUT correction.
 - Other watch-list topics (NDAs, military AI, GPU prices, whistleblowers): nothing dated since 07:16; searches return only logged items (Intercept FOIA on the Pentagon lab deals, March OpenAI–Pentagon contract changes).
+
+## 27 Nov 07:16 Helsinki
+- No new filings, regulator moves or named reporting dated after 26 Nov 17:16 on any watch-list topic. Pentagon AI search returned only May 2026 background (seven-company classified-network deals, Anthropic excluded; Scale AI $500M), already logged.
+- California v. OpenAI (AG, filed 16 Nov, SF Superior Court): case number still not public (reported blank on the posted complaint); no hearing date; OpenAI has not yet filed a response. Reactions: unchanged; OpenAI on record "completely without merit" (CNBC).
+- Trump overseas data-centre tax (20 Nov): primary transcript still not found; Finland line unverified (Newsweek: referent unconfirmed). Daily Caller (21 Nov) adds coverage, no new wording.
