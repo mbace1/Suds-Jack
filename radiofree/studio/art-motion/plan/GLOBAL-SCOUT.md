@@ -2019,3 +2019,6 @@ Sources: [AG complaint](https://oag.ca.gov/system/files/attachments/press-docs/c
 - No new filings, regulator moves or named reporting dated after 26 Nov 17:16 on any watch-list topic. Pentagon AI search returned only May 2026 background (seven-company classified-network deals, Anthropic excluded; Scale AI $500M), already logged.
 - California v. OpenAI (AG, filed 16 Nov, SF Superior Court): case number still not public (reported blank on the posted complaint); no hearing date; OpenAI has not yet filed a response. Reactions: unchanged; OpenAI on record "completely without merit" (CNBC).
 - Trump overseas data-centre tax (20 Nov): primary transcript still not found; Finland line unverified (Newsweek: referent unconfirmed). Daily Caller (21 Nov) adds coverage, no new wording.
+
+### 27 Nov 17:16
+- Hugging Face hack, two suits: LASST v. OpenAI Group PBC & OpenAI Foundation (SF Superior Court, filed 29 Sep 2026; UCL + CDAFA; injunctive relief; Axios 29 Sep, TNW, Gizmodo, Bloomberg Government) and California v. OpenAI (AG, filed 16 Nov; UCL + public nuisance). Neither has a public case number or hearing date in reporting. OpenAI's response to both: "completely without merit". Allegations only. Reactions: legal and tech press frame LASST as the first suit holding an AI developer liable for its agents' actions.

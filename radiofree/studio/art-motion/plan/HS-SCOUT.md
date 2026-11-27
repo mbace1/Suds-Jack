@@ -1694,3 +1694,6 @@ and for Sparta II's facts. Owner to decide whether RFH touches it at all.
 - No new HS candidate found in the last ~2 days (searched "Helsingin Sanomat datakeskus marraskuu 2026"). Only older items returned: Helsinki city board data-centre principles (2 Nov, STT info) and the Kangasharju commentary (Verkkouutiset).
 - Reactions: Count the Trees (Muhos) / Trade Secret (Hamina) — no new follow-up found; the Trump 20 Nov Finland line remains unverified and has no Finnish official response on record. Sparta II / Stable: no follow-up beyond Yle 22 Nov.
 - ICEYE/Avio (Release Notes, posted): no Finnish-outlet follow-up found; Italian side unchanged since 18 Nov.
+
+### 27 Nov 17:16
+- No new HS candidate. No new Finnish reporting found on Google's Hamina/Muhos/Kajaani/Vaala sites since the 26 Nov check. Trump's 20 Nov remark still has no primary transcript. Reactions: no change.

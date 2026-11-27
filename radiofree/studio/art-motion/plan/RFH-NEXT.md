@@ -1571,3 +1571,11 @@ scheduled task's last fire was 13 Nov 05:16), so **Give Way had no Tuesday-morni
 - **California v. OpenAI:** still no case number, hearing date or OpenAI filing. Reports say the publicly posted complaint has a blank case-number field. The separate private suit (LASST, filed 29 Sep, Axios/USA Herald) is also still without a case number. Still pitchable, allegations only.
 - **Release Notes (posted 22 Nov):** still accurate. Nothing newer than 18 Nov found: no golden-power notification, Leonardo's board "will review shortly" (Reuters, per secondary reports), Avio's board is still assessing. The offer is unchanged (€41, ~€2.05bn, close targeted Q1 2027).
 - **Be Prepared (Coxon18, not approved):** nothing new; the Vance paraphrase fix is still pending the owner's OK.
+
+## Check 27 Nov 17:16 Helsinki
+- **No big new development.**
+- **The "public interest group" suit is not new:** it is LASST (Legal Advocates for Safe Science and Technology), filed 29 Sep 2026 in San Francisco Superior Court with Gerstein Harrow LLP (Axios, TNW, Gizmodo, Bloomberg Government). It seeks injunctive limits under California's Unfair Competition Law (also citing CDAFA, the state anti-hacking law), not damages. OpenAI: "completely without merit". USA Herald's headline is about this suit, not a second new one. It predates the AG suit (16 Nov), so two suits now cover the same incident. Allegations only.
+- **California v. OpenAI:** still no case number or hearing date in any result; reports say no hearing is set and OpenAI's formal response is the next step.
+- **Trump 20 Nov "Finland" line:** still no primary transcript; still not pitchable on that quote.
+- **Release Notes (posted 22 Nov):** still accurate. No Leonardo board vote reported; Palazzo Chigi had received no formal golden-power notification (government sources, 17–19 Nov).
+- **Be Prepared:** nothing new; the Vance fix is still pending the owner's OK.
