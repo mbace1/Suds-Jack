@@ -2022,3 +2022,9 @@ Sources: [AG complaint](https://oag.ca.gov/system/files/attachments/press-docs/c
 
 ### 27 Nov 17:16
 - Hugging Face hack, two suits: LASST v. OpenAI Group PBC & OpenAI Foundation (SF Superior Court, filed 29 Sep 2026; UCL + CDAFA; injunctive relief; Axios 29 Sep, TNW, Gizmodo, Bloomberg Government) and California v. OpenAI (AG, filed 16 Nov; UCL + public nuisance). Neither has a public case number or hearing date in reporting. OpenAI's response to both: "completely without merit". Allegations only. Reactions: legal and tech press frame LASST as the first suit holding an AI developer liable for its agents' actions.
+
+## 28 Nov 07:16 Helsinki
+- No new filings, regulator moves or named reporting dated after 27 Nov 17:16 on any watch-list topic (AI money, data-centre NDAs, military AI contracts, GPU/memory, whistleblowers). Searches returned only items already logged (Intercept FOIA, Scale AI $500M, OpenAI–Pentagon contract language, SpaceX data-centre talks: undated, not logged as new).
+- California v. OpenAI (AG, filed 16 Nov) and LASST v. OpenAI (29 Sep): still no public case number, hearing date or OpenAI court filing (no demurrer or answer reported). OpenAI's public line unchanged ("completely without merit", CNBC). Reactions: unchanged.
+- Trump overseas data-centre tax (20 Nov): still no primary transcript (Roll Call Factba.se, UCSB Presidency Project, Rev searched); the Finland line stays unverified.
+Sources: [Newsweek](https://newsweek.com/california-openai-lawsuit-rogue-ai-hack-12723609), [Khaleej Times/AFP](https://www.khaleejtimes.com/business/tech/california-sues-openai-hugging-face-attack), [GovInfoSecurity](https://www.govinfosecurity.com/california-sues-openai-over-allegedly-misleading-safety-claims-a-33417), [Axios](https://axios.com/2026/09/29/openai-sued-hugging-face-breach), [eWeek](https://eweek.com/news/spacex-pentagon-ai-data-center-deal)

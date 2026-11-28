@@ -1579,3 +1579,9 @@ scheduled task's last fire was 13 Nov 05:16), so **Give Way had no Tuesday-morni
 - **Trump 20 Nov "Finland" line:** still no primary transcript; still not pitchable on that quote.
 - **Release Notes (posted 22 Nov):** still accurate. No Leonardo board vote reported; Palazzo Chigi had received no formal golden-power notification (government sources, 17–19 Nov).
 - **Be Prepared:** nothing new; the Vance fix is still pending the owner's OK.
+
+## Check 28 Nov 07:16 Helsinki
+- Nothing new since 27 Nov 17:16. Pitchable: the It Was Only a Test sequel (LASST 29 Sep, then California 16 Nov; allegations + OpenAI "completely without merit"). Not pitchable: Trump's 20 Nov Finland line (no transcript).
+- Release Notes (posted 22 Nov): still accurate. Offer €41/share (~€2.05bn), target close Q1 2027; no golden-power notification, no Leonardo or Avio board decision reported (latest dated reporting 18–19 Nov). Nothing makes the film or copy wrong.
+- Be Prepared: nothing new; the Vance quote fix (paraphrase, no quote marks) still waits on the owner's OK.
+Sources: [Il Sole 24 Ore](https://en.ilsole24ore.com/art/avio-mariani-leonardo-iceye-offer-positive-signal-well-consider-it-AJSJIaJC), [Agenzia Nova](https://www.agenzianova.com/en/news/Iceye%27s-lopa-on-Avio-between-Qatari-partners--Leonardo%27s-position-and-Golden-Power/), [Breaking Defense](https://breakingdefense.com/2026/11/iceye-makes-2b-bid-for-italian-rocket-firm-avio/)

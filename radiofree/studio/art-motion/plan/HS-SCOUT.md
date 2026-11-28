@@ -1697,3 +1697,9 @@ and for Sparta II's facts. Owner to decide whether RFH touches it at all.
 
 ### 27 Nov 17:16
 - No new HS candidate. No new Finnish reporting found on Google's Hamina/Muhos/Kajaani/Vaala sites since the 26 Nov check. Trump's 20 Nov remark still has no primary transcript. Reactions: no change.
+
+## 28 Nov 07:16 Helsinki
+- No new HS candidate in the last ~2 days (searched HS exposé + kunta/salassapito terms; results were older stories: Viestikoekeskus ruling, Telia tax, Helsinki comms spending, none dated this week).
+- Google Finland sites (Hamina, Kajaani, Muhos, Vaala; Trade Secret / Count the Trees): no November follow-up found; no response from Google, the government or the four towns to the 20 Nov "tremendous tax" remarks. The September Truth Social post (Yle 74-20246367) remains the only verified Trump–Finland statement.
+- Reactions: none visible to search.
+Sources: [Yle](https://yle.fi/a/74-20246367), [Google blog](https://blog.google/innovation-and-ai/infrastructure-and-cloud/global-network/google-ai-commitment-to-finland/), [Kaleva](https://www.kaleva.fi/kko-hylkasi-valituslupahakemukset-hsn-viestikoekes/12453949)
